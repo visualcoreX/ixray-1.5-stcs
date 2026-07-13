@@ -18,16 +18,17 @@ public:
 	virtual void	net_Destroy		();
 	virtual void	OnH_B_Chield	();
 
-	//анимации
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	virtual void	PlayAnimShow	();
 	virtual void	PlayAnimIdle	();
 	virtual void	PlayAnimIdleMoving	();
 	virtual void	PlayAnimIdleSprint	();
 	virtual void	PlayAnimHide	();
 	virtual void	PlayAnimReload	();
-	virtual void	PlayAnimShoot	();
+	virtual void	SelectShootAnim	(string_path& result);	// ADS shoot + last-round slide-lock
+	virtual void	SelectAimTransitionAnim(bool bAimIn, string_path& result);	// empty aim in/out
 	virtual void	PlayAnimBore	();
-	virtual void	PlayAnimAim		();
+	virtual void	SelectAimIdleAnim(string_path& result);	// empty + directional aim-walk
 
 	virtual void	UpdateSounds	();
 protected:	

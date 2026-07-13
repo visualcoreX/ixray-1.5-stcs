@@ -167,6 +167,7 @@
 #define CLSID_DEVICE_TORCH			MK_CLSID('D','_','T','O','R','C','H',' ')
 #define CLSID_DEVICE_AF_MERGER		MK_CLSID('D','_','A','F','M','E','R','G')
 #define CLSID_DEVICE_FLARE			MK_CLSID('D','_','F','L','A','R','E',' ')
+#define CLSID_WPN_ACTION_ANIMATOR	MK_CLSID('W','P','_','A','C','T','A','N')
 
 // Inventory items
 #define CLSID_IITEM_BOLT			MK_CLSID('I','I','_','B','O','L','T',' ')

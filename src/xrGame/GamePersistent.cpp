@@ -9,6 +9,7 @@
 #include "UICursor.h"
 #include "game_base_space.h"
 #include "level.h"
+#include "Level_Bullet_Manager.h"
 #include "ParticlesObject.h"
 #include "actor.h"
 #include "game_base_space.h"
@@ -690,6 +691,13 @@ void CGamePersistent::OnRenderPPUI_main()
 void CGamePersistent::OnRenderPPUI_PP()
 {
 	MainMenu()->OnRenderPPUI_PP();
+}
+
+void CGamePersistent::OnRenderForward()
+{
+	// draw world tracers with the scene depth still bound (MSAA path) so the HUD occludes them
+	if (g_pGameLevel && g_pGameLevel->bReady)
+		Level().BulletManager().Render();
 }
 #include "string_table.h"
 #include "../xrEngine/x_ray.h"

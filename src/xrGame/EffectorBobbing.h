@@ -17,6 +17,9 @@ class CEffectorBobbing : public CEffectorCam
 	bool	is_limping;
 	bool	m_bZoomMode;
 
+	float	m_fPhase;		// continuously accumulated bob phase (no jump on speed change)
+	float	m_fCurrAmp;		// smoothed bob amplitude (no jump on run<->walk)
+
 	float	m_fAmplitudeRun;
 	float	m_fAmplitudeWalk;
 	float	m_fAmplitudeLimp;

@@ -1,0 +1,14 @@
+<Project>
+  <!--
+    MSVC 17.14+ build-compat: the default /Zc:inline is stricter about emitting
+    inline functions/COMDATs, which leaves several inline methods defined in .cpp
+    (e.g. CVisualMemoryManager::current_state) or in-class template members
+    (CPHItemList<>::iterator) as unresolved externals at link time.
+    /Zc:inline- (RemoveUnreferencedCodeData=false) restores the previous behavior.
+  -->
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <RemoveUnreferencedCodeData>false</RemoveUnreferencedCodeData>
+    </ClCompile>
+  </ItemDefinitionGroup>
+</Project>

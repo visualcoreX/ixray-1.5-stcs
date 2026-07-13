@@ -350,12 +350,12 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 		else
 			moving_idx				= STorsoWpn::eWalk;
 	}
-	// анимации
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	MotionID 						M_legs;
 	MotionID 						M_torso;
 	MotionID 						M_head;
 
-	//если мы просто стоим на месте
+	//пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	bool is_standing = false;
 
 	// Legs
@@ -385,6 +385,17 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 		if ((mstate_rl&mcAnyMove) != (mstate_old&mcAnyMove))
 		{
 			g_player_hud->OnMovementChanged(mcAnyMove);
+		}else
+		if ((mstate_rl&mcAnyMove) &&
+			( (bAccelerated != isActorAccelerated(mstate_old, IsZoomAimingMode())) ||
+			  (((mstate_rl^mstate_old)&mcCrouch)!=0) ||
+			  (IsZoomAimingMode() && (((mstate_rl^mstate_old)&(mcFwd|mcBack|mcLStrafe|mcRStrafe))!=0)) ))
+		{
+			// while already moving, re-select the movement idle so it blends immediately:
+			//  - run<->walk speed change -> anm_idle_moving <-> anm_idle_moving_slow
+			//  - stand<->crouch change -> anm_idle_moving <-> anm_idle_moving_crouch[_slow]
+			//  - (while aiming) strafe direction change -> directional anm_idle_aim_walk_*
+			g_player_hud->OnMovementChanged(mcAccel);
 		}
 	};
 
@@ -531,7 +542,7 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 		else						M_torso = ST->m_torso_idle;
 	}
 	
-	// есть анимация для всего - запустим / иначе запустим анимацию по частям
+	// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ / пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	if (m_current_torso!=M_torso){
 		if (m_bAnimTorsoPlayed)		m_current_torso_blend = smart_cast<IKinematicsAnimated*>	(Visual())->PlayCycle(M_torso,TRUE,AnimTorsoPlayCallBack,this);
 		else						/**/m_current_torso_blend = /**/smart_cast<IKinematicsAnimated*>	(Visual())->PlayCycle(M_torso);

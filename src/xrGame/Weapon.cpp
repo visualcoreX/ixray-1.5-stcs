@@ -881,6 +881,7 @@ void CWeapon::SetDefaults()
 
 	m_flags.set			(FUsingCondition, TRUE);
 	bMisfire			= false;
+	m_bMisfireCooldown	= false;
 	m_flagsAddOnState	= 0;
 	m_zoom_params.m_bIsZoomModeNow	= false;
 }
@@ -930,6 +931,8 @@ bool CWeapon::Action(s32 cmd, u32 flags)
 						{
 							if(!IsPending())
 							{
+								// aiming stops the current action (incl. firing) and plays the
+								// aim-in transition (deferred to switch2_Idle when mid-fire)
 								if(GetState()!=eIdle)
 									SwitchState(eIdle);
 								OnZoomIn	();
@@ -943,11 +946,13 @@ bool CWeapon::Action(s32 cmd, u32 flags)
 					{
 						if(!IsZoomed() && !IsPending())
 						{
+							// aiming stops the current action (incl. firing) and plays the
+							// aim-in transition (deferred to switch2_Idle when mid-fire)
 							if(GetState()!=eIdle)
 								SwitchState(eIdle);
 							OnZoomIn	();
 						}
-					}else 
+					}else
 						if(IsZoomed())
 							OnZoomOut	();
 				}
@@ -1169,6 +1174,13 @@ BOOL CWeapon::CheckForMisfire	()
 {
 	if (OnClient()) return FALSE;
 
+	// the shot right after clearing a jam never jams again -> no back-to-back jams (min 1 clean shot)
+	if (m_bMisfireCooldown)
+	{
+		m_bMisfireCooldown = false;
+		return FALSE;
+	}
+
 	float rnd = ::Random.randF(0.f,1.f);
 	float mp = GetConditionMisfireProbability();
 	if(rnd < mp)
@@ -1176,8 +1188,9 @@ BOOL CWeapon::CheckForMisfire	()
 		FireEnd();
 
 		bMisfire = true;
-		SwitchState(eMisfire);		
-		
+		m_bMisfireCooldown = true;	// suppress the very next shot's jam roll
+		SwitchState(eMisfire);
+
 		return TRUE;
 	}
 	else
@@ -1576,6 +1589,26 @@ bool CWeapon::ready_to_kill	() const
 	);
 }
 
+
+// Ease the HUD (weapon-render) FOV from hud_fov toward hud_fov_aim as the weapon
+// rotates into aim (m_fZoomRotationFactor 0..1, over zoom_rotate_time) — Gunslinger's
+// smooth hud_fov_zoom_factor. hud_fov_aim<hud_fov narrows the HUD FOV = the weapon/sight
+// "zooms in" smoothly. When hud_fov_aim is unset (0) nothing changes.
+float CWeapon::GetHudFov()
+{
+	float base = inherited::GetHudFov();
+	if(m_fHudFovAim <= 0.f)
+		return base;
+
+	float f = m_zoom_params.m_fZoomRotationFactor;
+	clamp(f, 0.f, 1.f);
+	if(f <= 0.f)
+		return base;
+
+	float aim = m_fHudFovAim;
+	clamp(aim, 0.1f, 1.0f);
+	return base + (aim - base) * f;
+}
 
 void CWeapon::UpdateHudAdditonal		(Fmatrix& trans)
 {

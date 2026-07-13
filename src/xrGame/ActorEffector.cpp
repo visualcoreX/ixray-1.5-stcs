@@ -147,6 +147,21 @@ CAnimatorCamEffector::CAnimatorCamEffector()
 	m_bCyclic				= true;
 	m_objectAnimator		= xr_new<CObjectAnimator>();
 	m_bAbsolutePositioning	= false;
+	m_blend_from.identity	();
+	m_blend_time			= 0.f;
+	m_blend_elapsed			= 0.f;
+}
+
+const Fmatrix& CAnimatorCamEffector::OffsetXForm() const
+{
+	return m_objectAnimator->XFORM();
+}
+
+void CAnimatorCamEffector::SetBlendFrom(const Fmatrix& from_offset, float blend_time)
+{
+	m_blend_from	= from_offset;
+	m_blend_time	= blend_time;
+	m_blend_elapsed	= 0.f;
 }
 
 CAnimatorCamEffector::~CAnimatorCamEffector()
@@ -156,6 +171,7 @@ CAnimatorCamEffector::~CAnimatorCamEffector()
 
 void CAnimatorCamEffector::Start(LPCSTR fn)
 {
+	m_anm_name					= fn;
 	m_objectAnimator->Load		(fn);
 	m_objectAnimator->Play		(Cyclic());
 	fLifeTime					= m_objectAnimator->GetLength();
@@ -169,11 +185,26 @@ BOOL CAnimatorCamEffector::Valid()
 
 BOOL CAnimatorCamEffector::ProcessCam(SCamEffectorInfo& info)
 {
-	if(!inherited::ProcessCam(info))	
+	if(!inherited::ProcessCam(info))
 		return FALSE;
 
-	const Fmatrix& m			= m_objectAnimator->XFORM();
+	Fmatrix m					= m_objectAnimator->XFORM();
 	m_objectAnimator->Update	(Device.fTimeDelta);
+
+	// ease the camera offset in from the outgoing effector's offset so a take-over doesn't snap
+	if(m_blend_time>0.f)
+	{
+		m_blend_elapsed			+= Device.fTimeDelta;
+		float t					= m_blend_elapsed / m_blend_time;
+		if(t>=1.f)	{ t=1.f; m_blend_time=0.f; }
+		Fquaternion q0, q1, qr;
+		q0.set					(m_blend_from);
+		q1.set					(m);
+		qr.slerp				(q0, q1, t);
+		Fvector c;				c.lerp(m_blend_from.c, m.c, t);
+		m.rotation				(qr);
+		m.c						= c;
+	}
 
 	if(!m_bAbsolutePositioning){
 		Fmatrix Mdef;
@@ -390,7 +421,7 @@ BOOL CControllerPsyHitCamEffector::ProcessCam(SCamEffectorInfo& info)
 	
 	//////////////////////////////////////////////////////////////////////////
 
-	// Установить углы смещения
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	Fmatrix		R;
 	if (m_time_current > m_time_total) 
 		R.identity	();

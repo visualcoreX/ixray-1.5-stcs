@@ -22,6 +22,8 @@ CEffectorBobbing::CEffectorBobbing() : CEffectorCam(eCEBobbing,10000.f)
 	fTime			= 0;
 	fReminderFactor	= 0;
 	is_limping		= false;
+	m_fPhase		= 0.f;
+	m_fCurrAmp		= 0.f;
 
 	m_fAmplitudeRun		= pSettings->r_float(BOBBING_SECT, "run_amplitude");
 	m_fAmplitudeWalk	= pSettings->r_float(BOBBING_SECT, "walk_amplitude");
@@ -65,24 +67,32 @@ BOOL CEffectorBobbing::ProcessCam(SCamEffectorInfo& info)
 		Fvector dangle;
 		float k		= ((dwMState& ACTOR_DEFS::mcCrouch)?CROUCH_FACTOR:1.f);
 
-		float A, ST;
-
+		// target amplitude/speed for the current gait
+		float A_t, spd;
 		if(isActorAccelerated(dwMState, m_bZoomMode))
 		{
-			A	= m_fAmplitudeRun*k;
-			ST	= m_fSpeedRun*fTime*k;
+			A_t	= m_fAmplitudeRun*k;	spd = m_fSpeedRun*k;
 		}
 		else if(is_limping)
 		{
-			A	= m_fAmplitudeLimp*k;
-			ST	= m_fSpeedLimp*fTime*k;
+			A_t	= m_fAmplitudeLimp*k;	spd = m_fSpeedLimp*k;
 		}
 		else
 		{
-			A	= m_fAmplitudeWalk*k;
-			ST	= m_fSpeedWalk*fTime*k;
+			A_t	= m_fAmplitudeWalk*k;	spd = m_fSpeedWalk*k;
 		}
-	
+
+		// Accumulate the sine PHASE continuously (was ST=speed*fTime, which jumps when
+		// speed changes - e.g. aiming forces run->walk - snapping the camera). Ease the
+		// AMPLITUDE too so run<->walk doesn't step the bob magnitude.
+		const float AMP_LERP = 6.f;
+		m_fPhase	+= spd * Device.fTimeDelta;
+		m_fPhase	= (float)fmod(m_fPhase, 2.0*PI);
+		m_fCurrAmp	+= (A_t - m_fCurrAmp) * _min(1.f, AMP_LERP*Device.fTimeDelta);
+
+		float ST	= m_fPhase;
+		float A		= m_fCurrAmp;
+
 		float _sinA	= _abs(_sin(ST)*A)*fReminderFactor;
 		float _cosA	= _cos(ST)*A*fReminderFactor;
 

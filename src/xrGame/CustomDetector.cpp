@@ -66,7 +66,19 @@ void CCustomDetector::HideDetector(bool bFastMode)
 void CCustomDetector::ShowDetector(bool bFastMode)
 {
 	if(GetState()==eHidden)
+	{
+		m_bEmergencyShow = false;
 		ToggleDetector(bFastMode);
+	}
+}
+
+void CCustomDetector::ShowDetectorEmergency()
+{
+	if(GetState()==eHidden)
+	{
+		m_bEmergencyShow = true;		// use the anm_show_emergency draw (weapon in the other hand)
+		ToggleDetector(false);
+	}
 }
 
 void CCustomDetector::ToggleDetector(bool bFastMode)
@@ -98,7 +110,10 @@ void CCustomDetector::OnStateSwitch(u32 S)
 		{
 			g_player_hud->attach_item	(this);
 			m_sounds.PlaySound			("sndShow", Fvector().set(0,0,0), this, true, false);
-			PlayHUDMotion				(m_bFastAnimMode?"anm_show_fast":"anm_show", FALSE, this, GetState());
+			LPCSTR show_anm = m_bFastAnimMode ? "anm_show_fast" : "anm_show";
+			if (m_bEmergencyShow && isHUDAnimationExist("anm_show_emergency"))
+				show_anm = "anm_show_emergency";		// drawn together with a weapon
+			PlayHUDMotion				(show_anm, FALSE, this, GetState());
 			SetPending					(TRUE);
 		}break;
 	case eHiding:
@@ -112,6 +127,12 @@ void CCustomDetector::OnStateSwitch(u32 S)
 			PlayAnimIdle				();
 			SetPending					(FALSE);
 		}break;
+	case eDetActionAnim:
+		{
+			if (m_action_anim.size())
+				PlayHUDMotion			(m_action_anim, TRUE, this, GetState());
+			SetPending					(TRUE);
+		}break;
 }
 }
 
@@ -124,6 +145,10 @@ void CCustomDetector::OnAnimationEnd(u32 state)
 		{
 			SwitchState					(eIdle);
 		} break;
+	case eDetActionAnim:
+		{
+			SwitchState					(eIdle);	// gesture finished -> back to the working idle
+		} break;
 	case eHiding:
 		{
 			SwitchState					(eHidden);
@@ -131,6 +156,17 @@ void CCustomDetector::OnAnimationEnd(u32 state)
 			g_player_hud->detach_item	(this);
 		} break;
 	}
+}
+
+// One-shot torch/NV toggle gesture played on the detector's HUD (left hand). Detectors have no
+// magazine/GL, so only the plain alias (anm_headlamp_on/off, anm_nv_on/off) is used.
+bool CCustomDetector::PlayHudActionAnim(LPCSTR base)
+{
+	if (!IsWorking() || GetState() != eIdle || IsPending())	return false;	// not shown/idle -> skip
+	if (!isHUDAnimationExist(base))							return false;	// this detector has no such gesture
+	m_action_anim = base;
+	SwitchState		(eDetActionAnim);
+	return true;
 }
 
 void CCustomDetector::UpdateXForm()
@@ -161,9 +197,10 @@ CCustomDetector::~CCustomDetector()
 	xr_delete				(m_ui);
 }
 
-BOOL CCustomDetector::net_Spawn(CSE_Abstract* DC) 
+BOOL CCustomDetector::net_Spawn(CSE_Abstract* DC)
 {
 	TurnDetectorInternal(false);
+	m_bEmergencyShow = false;
 	return		(inherited::net_Spawn(DC));
 }
 

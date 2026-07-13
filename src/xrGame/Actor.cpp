@@ -21,6 +21,7 @@
 #include "character_info.h"
 #include "CustomOutfit.h"
 #include "actorcondition.h"
+#include "../xrEngine/IGame_Persistent.h"
 #include "UIGameCustom.h"
 #include "matrix_utils.h"
 #include "clsid_game.h"
@@ -123,7 +124,7 @@ CActor::CActor() : CEntityAlive()
 	fPrevCamPos				= 0.0f;
 	vPrevCamDir.set			(0.f,0.f,1.f);
 	fCurAVelocity			= 0.0f;
-	// эффекторы
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	pCamBobbing				= 0;
 
 
@@ -159,7 +160,7 @@ CActor::CActor() : CEntityAlive()
 	Device.seqRender.Add	(this,REG_PRIORITY_LOW);
 #endif
 
-	//разрешить использование пояса в inventory
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ inventory
 	inventory().SetBeltUseful(true);
 
 	m_pPersonWeLookingAt	= NULL;
@@ -343,7 +344,7 @@ void CActor::Load	(LPCSTR section )
 	
 	character_physics_support()->in_Load		(section);
 	
-	//загрузить параметры смещения firepoint
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ firepoint
 	m_vMissileOffset			= pSettings->r_fvector3(section,"missile_throw_offset");
 
 
@@ -382,7 +383,7 @@ if(!g_dedicated_server)
 	// sheduler
 	shedule.t_min				= shedule.t_max = 1;
 
-	// настройки дисперсии стрельбы
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	m_fDispBase					= pSettings->r_float		(section,"disp_base"		 );
 	m_fDispBase					= deg2rad(m_fDispBase);
 
@@ -461,12 +462,12 @@ void	CActor::Hit							(SHit* pHDS)
 			if (Device.dwFrame != last_hit_frame &&
 				HDS.bone() != BI_NONE)
 			{		
-				// вычислить позицию и направленность партикла
+				// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 				Fmatrix pos; 
 
 				CParticlesPlayer::MakeXFORM(this,HDS.bone(),HDS.dir,HDS.p_in_bone_space,pos);
 
-				// установить particles
+				// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ particles
 				CParticlesObject* ps_ = NULL;
 
 				if (eacFirstEye == cam_active && this == Level().CurrentEntity())
@@ -723,7 +724,7 @@ void CActor::Die	(CObject* who)
 		};
 
 
-		///!!! чистка пояса
+		///!!! пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 		TIItemContainer &l_blist = inventory().m_belt;
 		while (!l_blist.empty())	
 			inventory().Ruck(l_blist.front());
@@ -842,23 +843,48 @@ float CActor::currentFOV()
 	if (!psHUD_Flags.is(HUD_WEAPON|HUD_WEAPON_RT|HUD_WEAPON_RT2))
 		return g_fov;
 
-	CWeapon* pWeapon = smart_cast<CWeapon*>(inventory().ActiveItem());	
+	CWeapon* pWeapon = smart_cast<CWeapon*>(inventory().ActiveItem());
 
-	if (eacFirstEye == cam_active && pWeapon &&
-		pWeapon->IsZoomed() && 
-		( !pWeapon->ZoomTexture() || (!pWeapon->IsRotatingToZoom() && pWeapon->ZoomTexture()) )
-		 )
+	if (eacFirstEye != cam_active || !pWeapon)
+		return g_fov;
+
+	if (pWeapon->ZoomTexture())
 	{
-		return pWeapon->GetZoomFactor() * (0.75f);
-	}else
-	{
+		// scoped weapons: full zoom FOV only once fully rotated in (unchanged)
+		if (pWeapon->IsZoomed() && !pWeapon->IsRotatingToZoom())
+			return pWeapon->GetZoomFactor() * (0.75f);
 		return g_fov;
 	}
+
+	// iron sights: ease the FOV with the aim-in/out rotation (m_fZoomRotationFactor
+	// ramps over zoom_rotate_time) so it tracks the weapon rotating into aim instead
+	// of snapping the FOV the instant IsZoomed() flips (Gunslinger-style smooth ADS).
+	float f = pWeapon->GetZoomRotationFactor();
+	clamp(f, 0.f, 1.f);
+	if (f <= 0.f)
+		return g_fov;
+	float target = pWeapon->CurrentZoomFactor() * (0.75f);
+	return g_fov + (target - g_fov) * f;
 }
 
 void CActor::UpdateCL	()
 {
 	UpdateInventoryOwner			(Device.dwTimeDelta);
+
+	// Feed the exo HUD-screen shader constants (m_actor_params) consumed by the render binder
+	// (model_exohealth / model_exoscreen). .y = outfit condition drives the screen color.
+	if (g_pGamePersistent)
+	{
+		CCustomOutfit*	outfit		= GetOutfit();
+		PIItem			active_item	= inventory().ActiveItem();
+		g_pGamePersistent->hud_actor_params.set(
+			conditions().GetHealth(),
+			outfit		? outfit->GetCondition()		: -1.f,
+			active_item	? active_item->GetCondition()	: -1.f,
+			1.f);
+	}
+
+	UpdateDelayedDeviceSwitch	();		// fire any pending delayed torch/NV toggle
 
 	if(m_feel_touch_characters>0)
 	{
@@ -1141,7 +1167,7 @@ void CActor::shedule_Update	(u32 DT)
 
 	inherited::shedule_Update	(DT);
 
-	//эффектор включаемый при ходьбе
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	if (!pCamBobbing)
 	{
 		pCamBobbing = xr_new<CEffectorBobbing>	();
@@ -1149,7 +1175,7 @@ void CActor::shedule_Update	(u32 DT)
 	}
 	pCamBobbing->SetState						(mstate_real, conditions().IsLimping(), IsZoomAimingMode());
 
-	//звук тяжелого дыхания при уталости и хромании
+	//пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if(this==Level().CurrentControlEntity() && !g_dedicated_server )
 	{
 		if(conditions().IsLimping() && g_Alive()){
@@ -1209,11 +1235,11 @@ void CActor::shedule_Update	(u32 DT)
 			m_DangerSnd.stop();
 	}
 	
-	//если в режиме HUD, то сама модель актера не рисуется
+	//пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ HUD, пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if(!character_physics_support()->IsRemoved())
 		setVisible				(!HUDview	());
 
-	//что актер видит перед собой
+	//пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	collide::rq_result& RQ				= HUD().GetCurrentRayQuery();
 	
 
@@ -1272,7 +1298,7 @@ void CActor::shedule_Update	(u32 DT)
 
 //	UpdateSleep									();
 
-	//для свойст артефактов, находящихся на поясе
+	//пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	UpdateArtefactsOnBeltAndOutfit				();
 	m_pPhysics_support->in_shedule_Update		(DT);
 	Check_for_AutoPickUp						();
@@ -1603,7 +1629,7 @@ void CActor::MoveArtefactBelt(const CArtefact* artefact, bool on_belt)
 {
 	VERIFY(artefact);
 
-	//повесить артефакт на пояс
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ
 	if(on_belt)
 	{
 		VERIFY(m_ArtefactsOnBelt.end() == std::find(m_ArtefactsOnBelt.begin(), m_ArtefactsOnBelt.end(), artefact));
@@ -1833,11 +1859,11 @@ bool CActor::can_attach			(const CInventoryItem *inventory_item) const
 	if (!item || /*!item->enabled() ||*/ !item->can_be_attached())
 		return			(false);
 
-	//можно ли присоединять объекты такого типа
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 	if( m_attach_item_sections.end() == std::find(m_attach_item_sections.begin(),m_attach_item_sections.end(),inventory_item->object().cNameSect()) )
 		return false;
 
-	//если уже есть присоединненый объет такого типа 
+	//пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ 
 	if(attached(inventory_item->object().cNameSect()))
 		return false;
 

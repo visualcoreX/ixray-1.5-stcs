@@ -19,12 +19,12 @@ struct ITEM_TYPE
 	shared_str			nightvision_particle;
 };
 
-//описание зоны, обнаруженной детектором
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 struct ITEM_INFO
 {
 	ITEM_TYPE*						curr_ref;
 	float							snd_time;
-	//текущая частота работы датчика
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	float							cur_period;
 	//particle for night-vision mode
 	CParticlesObject*				pParticle;
@@ -122,6 +122,7 @@ class CCustomDetector :		public CHudItemObject
 protected:
 	CUIArtefactDetectorBase*			m_ui;
 	bool			m_bFastAnimMode;
+	bool			m_bEmergencyShow;	// next show plays anm_show_emergency (drawn together with a weapon)
 	bool			m_bNeedActivation;
 
 public:
@@ -152,6 +153,7 @@ public:
 	void			ToggleDetector		(bool bFastMode);
 	void			HideDetector		(bool bFastMode);
 	void			ShowDetector		(bool bFastMode);
+	void			ShowDetectorEmergency();	// show with the anm_show_emergency (weapon-in-hand) draw
 	float			m_fAfDetectRadius;
 	virtual bool	CheckCompatibility	(CHudItem*);
 
@@ -159,7 +161,14 @@ public:
 
 	virtual bool	NeedActivation		() const	{return m_bNeedActivation;};
 
+	// Play a one-shot torch/NV toggle gesture on this detector's HUD (left hand). Returns false
+	// (so the caller falls back) if the detector isn't idle/working or has no matching anm_* alias.
+	bool			PlayHudActionAnim	(LPCSTR base);
+
 protected:
+	enum { eDetActionAnim = eBore + 1 };	// one-shot torch/NV gesture state
+	shared_str		m_action_anim;			// the chosen gesture motion alias
+
 			bool	CheckCompatibilityInt		(CHudItem*);
 			void 	TurnDetectorInternal		(bool b);
 	void 			UpdateNightVisionMode		(bool b_off);

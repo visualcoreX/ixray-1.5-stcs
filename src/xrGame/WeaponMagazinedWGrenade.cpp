@@ -242,7 +242,7 @@ void CWeaponMagazinedWGrenade::state_Fire(float dt)
 {
 	VERIFY(fOneShotTime>0.f);
 
-	//режим стрельбы подствольника
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if(m_bGrenadeMode)
 	{
 		/*
@@ -267,7 +267,7 @@ void CWeaponMagazinedWGrenade::state_Fire(float dt)
 			FireEnd();
 		*/
 	} 
-	//режим стрельбы очередями
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	else 
 		inherited::state_Fire(dt);
 }
@@ -425,7 +425,7 @@ void CWeaponMagazinedWGrenade::ReloadMagazine()
 	auto last_bMisfire = bMisfire;
 	inherited::ReloadMagazine();
 	
-	//перезарядка подствольного гранатомета
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if(m_bGrenadeMode)
 	{
 		bMisfire = last_bMisfire;
@@ -508,7 +508,7 @@ bool CWeaponMagazinedWGrenade::Attach(PIItem pIItem, bool b_send_event)
 
 		CRocketLauncher::m_fLaunchSpeed = pGrenadeLauncher->GetGrenadeVel();
 
- 		//уничтожить подствольник из инвентаря
+ 		//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		if(b_send_event)
 		{
 			if (OnServer()) 
@@ -576,7 +576,7 @@ float	CWeaponMagazinedWGrenade::CurrentZoomFactor	()
 	return inherited::CurrentZoomFactor();
 }
 
-//виртуальные функции для проигрывания анимации HUD
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ HUD
 void CWeaponMagazinedWGrenade::PlayAnimShow()
 {
 	VERIFY(GetState()==eShowing);
@@ -616,13 +616,39 @@ void CWeaponMagazinedWGrenade::PlayAnimReload()
 			PlayHUDMotion("anm_reload_misfire_w_gl", TRUE, this, GetState());
 			bMisfireReload = true;
 		}
-		else if (isHUDAnimationExist("anm_reload_empty_w_gl"))
+		else if (isHUDAnimationExist("anm_reload_empty_w_gl") && iAmmoElapsed == 0)
 			PlayHUDMotion("anm_reload_empty_w_gl", TRUE, this, GetState());
 		else
 			PlayHUDMotion("anm_reload_w_gl", TRUE, this, GetState());
 	}
 	else
 		inherited::PlayAnimReload();
+}
+
+void CWeaponMagazinedWGrenade::SelectActionAnim(LPCSTR base, string_path& result)
+{
+	if (IsGrenadeLauncherAttached())
+	{
+		string_path tmp;
+		if (m_bGrenadeMode)		// grenade-launcher active
+		{
+			strconcat(sizeof(tmp), tmp, base, "_g");
+			if (isHUDAnimationExist(tmp)) { xr_strcpy(result, tmp); return; }
+		}
+		if (IsMisfire())
+		{
+			strconcat(sizeof(tmp), tmp, base, "_jammed_w_gl");
+			if (isHUDAnimationExist(tmp)) { xr_strcpy(result, tmp); return; }
+		}
+		if (iAmmoElapsed == 0)
+		{
+			strconcat(sizeof(tmp), tmp, base, "_empty_w_gl");
+			if (isHUDAnimationExist(tmp)) { xr_strcpy(result, tmp); return; }
+		}
+		strconcat(sizeof(tmp), tmp, base, "_w_gl");
+		if (isHUDAnimationExist(tmp)) { xr_strcpy(result, tmp); return; }
+	}
+	inherited::SelectActionAnim(base, result);
 }
 
 void CWeaponMagazinedWGrenade::PlayAnimIdle()
@@ -651,9 +677,9 @@ void CWeaponMagazinedWGrenade::PlayAnimIdleMoving()
 	if (IsGrenadeLauncherAttached())
 	{
 		if (m_bGrenadeMode)
-			PlayHUDMotion("anm_idle_moving_g", TRUE, NULL, eIdle);
+			PlayHUDMotion(SelectMovingAnim("anm_idle_moving_g"), TRUE, NULL, eIdle);
 		else
-			PlayHUDMotion("anm_idle_moving_w_gl", TRUE, NULL, eIdle);
+			PlayHUDMotion(SelectMovingAnim("anm_idle_moving_w_gl"), TRUE, NULL, eIdle);
 	}
 	else
 		inherited::PlayAnimIdleMoving();
@@ -672,33 +698,97 @@ void CWeaponMagazinedWGrenade::PlayAnimIdleSprint()
 		inherited::PlayAnimIdleSprint();
 }
 
-void CWeaponMagazinedWGrenade::PlayAnimAim()
+void CWeaponMagazinedWGrenade::SelectDryFireAnim(string_path& result)
 {
 	if (IsGrenadeLauncherAttached())
 	{
-		if (m_bGrenadeMode)
-			PlayHUDMotion("anm_idle_g_aim", TRUE, NULL, eIdle);
-		else
-			PlayHUDMotion("anm_idle_w_gl_aim", TRUE, NULL, eIdle);
+		LPCSTR gl = m_bGrenadeMode ? "_g" : "_w_gl";
+		bool empty = (iAmmoElapsed == 0);
+		string_path tmp;
+		if (IsZoomed())
+		{
+			strconcat(sizeof(tmp), tmp, empty ? "anm_dry_aim_empty" : "anm_dry_aim", gl);
+			if (isHUDAnimationExist(tmp))	{ xr_strcpy(result, tmp); return; }
+			strconcat(sizeof(tmp), tmp, "anm_dry_aim", gl);
+			if (isHUDAnimationExist(tmp))	{ xr_strcpy(result, tmp); return; }
+		}
+		strconcat(sizeof(tmp), tmp, empty ? "anm_dry_empty" : "anm_dry", gl);
+		if (isHUDAnimationExist(tmp))		{ xr_strcpy(result, tmp); return; }
 	}
-	else
-		inherited::PlayAnimAim();
+	inherited::SelectDryFireAnim(result);
+}
+
+void CWeaponMagazinedWGrenade::SelectAimIdleAnim(string_path& result)
+{
+	if (IsGrenadeLauncherAttached())
+	{
+		LPCSTR glsuf = m_bGrenadeMode ? "_g" : "_w_gl";
+		LPCSTR dir   = AimWalkDirSuffix();
+		if (dir[0])
+		{
+			// directional GL aim-walk: anm_idle_aim_walk[_dir]_g / _w_gl
+			xr_sprintf(result, "anm_idle_aim%s%s", dir, glsuf);
+			if (isHUDAnimationExist(result))	return;
+			xr_sprintf(result, "anm_idle_aim_walk%s", glsuf);	// GL forward fallback
+			if (isHUDAnimationExist(result))	return;
+		}
+		// static GL aim (existing aliases)
+		xr_strcpy(result, m_bGrenadeMode ? "anm_idle_g_aim" : "anm_idle_w_gl_aim");
+		return;
+	}
+	inherited::SelectAimIdleAnim(result);
+}
+
+void CWeaponMagazinedWGrenade::SelectAimTransitionAnim(bool bAimIn, string_path& result)
+{
+	LPCSTR base = bAimIn ? "anm_idle_aim_start" : "anm_idle_aim_end";
+	if (IsGrenadeLauncherAttached())
+	{
+		string_path tmp;
+		strconcat(sizeof(tmp), tmp, base, m_bGrenadeMode ? "_g" : "_w_gl");
+		if (isHUDAnimationExist(tmp)) { xr_strcpy(result, tmp); return; }
+	}
+	xr_strcpy(result, isHUDAnimationExist(base) ? base : "");
+}
+
+void CWeaponMagazinedWGrenade::SelectShootAnim(string_path& result)
+{
+	if (m_bGrenadeMode)
+	{
+		if (IsZoomed() && isHUDAnimationExist("anm_shots_aim_g"))
+			{ xr_strcpy(result, "anm_shots_aim_g"); return; }
+		xr_strcpy(result, "anm_shots_g");
+		return;
+	}
+	if (IsGrenadeLauncherAttached())
+	{
+		if (IsZoomed() && isHUDAnimationExist("anm_shots_aim_w_gl"))
+			{ xr_strcpy(result, "anm_shots_aim_w_gl"); return; }
+		xr_strcpy(result, "anm_shots_w_gl");
+		return;
+	}
+	inherited::SelectShootAnim(result);
 }
 
 void CWeaponMagazinedWGrenade::PlayAnimShoot()
 {
-	if(m_bGrenadeMode)
+	string_path anim;
+	SelectShootAnim(anim);
+	PlayHUDMotion(anim, FALSE, this, eFire);
+}
+
+void CWeaponMagazinedWGrenade::PlayAnimFireModeSwitch()
+{
+	LPCSTR base = m_sFireModeAnim.size()
+		? m_sFireModeAnim.c_str()
+		: (IsAutoFireMode() ? "anm_firemode_1_to_a" : "anm_firemode_a_to_1");
+	if (IsGrenadeLauncherAttached())
 	{
-		PlayHUDMotion("anm_shots_g" ,FALSE, this, eFire);
+		string_path a;
+		strconcat(sizeof(a), a, base, m_bGrenadeMode ? "_g" : "_w_gl");
+		if (isHUDAnimationExist(a)) { PlayHUDMotion(a, TRUE, this, eFireModeSwitch); return; }
 	}
-	else
-	{
-		VERIFY(GetState()==eFire);
-		if(IsGrenadeLauncherAttached())
-			PlayHUDMotion("anm_shots_w_gl" ,FALSE, this, GetState());
-		else
-			inherited::PlayAnimShoot();
-	}
+	inherited::PlayAnimFireModeSwitch();
 }
 
 void CWeaponMagazinedWGrenade::PlayAnimModeSwitch()

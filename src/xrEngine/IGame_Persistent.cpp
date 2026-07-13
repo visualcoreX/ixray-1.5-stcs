@@ -33,6 +33,9 @@ IGame_Persistent::IGame_Persistent	()
 
 	m_pMainMenu						= NULL;
 
+	hud_actor_params.set			(1.f, 1.f, 1.f, 1.f);	// default "healthy" until CActor updates it
+	hud_affects.set					(0.f, 0.f, 0.f, 0.f);	// no exo electronics problems -> clean screen
+
 #ifndef INGAME_EDITOR
 	#ifndef _EDITOR
 	pEnvironment					= xr_new<CEnvironment>();

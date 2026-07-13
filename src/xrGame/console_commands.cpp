@@ -1949,6 +1949,16 @@ void CCC_RegisterCommands()
 	CMD3(CCC_Mask,				"ai_dbg_lua",					&psAI_Flags,			aiLua);
 #endif // MASTER_GOLD
 
+	// weapon/slot-switch block for animated item-use (must be OUTSIDE #ifdef DEBUG so it exists in Release)
+	{
+		extern int g_block_wpn_switch;
+		CMD4(CCC_Integer,		"g_block_wpn_switch",	&g_block_wpn_switch,	0, 1);
+		extern int g_torch_switch_delay;
+		CMD4(CCC_Integer,		"g_torch_switch_delay",	&g_torch_switch_delay,	0, 5000);
+		extern int g_torch_action_time;
+		CMD4(CCC_Integer,		"g_torch_action_time",	&g_torch_action_time,	0, 5000);
+	}
+
 #ifdef DEBUG
 	CMD4(CCC_Integer,			"lua_gcstep",			&psLUA_GCSTEP,	1, 1000);
 	CMD3(CCC_Mask,				"ai_debug",				&psAI_Flags,	aiDebug);

@@ -115,6 +115,22 @@ public:
 	virtual void				PlayAnimIdleMoving	();
 	virtual void				PlayAnimIdleSprint	();
 
+	// walk_slow: when the actor is walking (not running) inserts "_slow" after the
+	// "anm_idle_moving" prefix of any moving-anim name, falling back to the plain
+	// name if the slow variant is absent on this HUD. m_bStepSlow is refreshed each
+	// TryPlayAnimIdle() and consumed by the PlayAnimIdleMoving() overrides.
+	LPCSTR						SelectMovingAnim	(LPCSTR base);
+	bool						m_bStepSlow;
+	bool						m_bStepCrouch;	// crouch-move: anm_idle_moving_crouch[_slow]
+
+	// true iff this HUD has a movement-dependent idle (slow-walk, or directional
+	// aim-walk for weapons) -> OnMovementChanged re-plays it immediately on a
+	// speed/direction change instead of waiting for the current cycle to end.
+	virtual bool				HasMovementIdleVariant();
+	// set while an aim in/out transition (an eIdle-owned motion) is playing so the
+	// movement refresh does not cut it short; cleared when that motion ends.
+	bool						m_bIdleTransitionLock;
+
 	virtual void				UpdateCL			();
 	virtual void				renderable_Render	();
 
@@ -140,15 +156,22 @@ public:
 
 	virtual bool				CheckCompatibility		(CHudItem*)			{return true;}
 
-	float						GetHudFov();
+	// hud_fov (weapon-render FOV as a fraction of world FOV). Weapons ease it toward
+	// m_fHudFovAim while aiming (Gunslinger hud_fov_zoom_factor), so override.
+	virtual float				GetHudFov();
 
 	bool						isHUDAnimationExist		(LPCSTR anim_name);
+	// while the weapon is jammed, every HUD gesture uses its "_jammed" variant (stuck bolt).
+	// NeedJammedAnim() is overridden by CWeaponMagazined to return IsMisfire(); MakeJammedName
+	// inserts "_jammed" before a trailing GL/shell suffix (falls back to the base if absent).
+	virtual bool				NeedJammedAnim			() { return false; }
+	void						MakeJammedName			(LPCSTR name, string_path& out);
 protected:
 
 	IC		void				SetPending			(BOOL H)			{ m_huditem_flags.set(fl_pending, H);}
 	shared_str					hud_sect;
 
-	//кадры момента пересчета XFORM и FirePos
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ XFORM пїЅ FirePos
 	u32							dwFP_Frame;
 	u32							dwXF_Frame;
 
@@ -157,6 +180,7 @@ protected:
 	HUD_SOUND_COLLECTION		m_sounds;
 	InertionData				m_current_inertion;
 	float						m_fHudFov;
+	float						m_fHudFovAim;	// hud_fov while fully aimed (0 => same as m_fHudFov)
 
 private:
 	CPhysicItem					*m_object;

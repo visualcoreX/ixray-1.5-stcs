@@ -377,26 +377,41 @@ u32 attachable_hud_item::anim_play(const shared_str& anm_name_b, BOOL bMixIn, co
 		VERIFY					(current_actor);
 		CEffectorCam* ec		= current_actor->Cameras().GetCamEffector(eCEWeaponAction);
 
-	
-		if(NULL==ec)
+		string_path			ce_path;
+		string_path			anm_name;
+		strconcat			(sizeof(anm_name),anm_name,"camera_effects\\weapon\\", M.name.c_str(),".anm");
+		if (FS.exist( ce_path, "$game_anims$", anm_name))
 		{
-			string_path			ce_path;
-			string_path			anm_name;
-			strconcat			(sizeof(anm_name),anm_name,"camera_effects\\weapon\\", M.name.c_str(),".anm");
-			if (FS.exist( ce_path, "$game_anims$", anm_name))
+			// if a different action's camera effector is still running (e.g. a shot's, when a
+			// reload/draw starts right after), replace it so this motion's camera anim plays.
+			// Skip when the same anim is already active, or when both are shots (so rapid auto
+			// fire doesn't restart the recoil effector every shot -> stutter).
+			CAnimatorCamEffector* cur = smart_cast<CAnimatorCamEffector*>(ec);
+			bool same_anim	= cur && cur->AnimName()==anm_name;
+			bool both_shoot	= cur && strstr(M.name.c_str(),"shoot") && strstr(cur->AnimName().c_str(),"shoot");
+			if(!same_anim && !both_shoot)
 			{
+				// grab the outgoing effector's current offset so the new one can ease in from it
+				Fmatrix	from_offset;
+				bool	has_from = false;
+				if(cur)	{ from_offset = cur->OffsetXForm(); has_from = true; }
+
+				if(ec)
+					current_actor->Cameras().RemoveCamEffector(eCEWeaponAction);
+
 				CAnimatorCamEffector* e		= xr_new<CAnimatorCamEffector>();
 				e->SetType					(eCEWeaponAction);
 				e->SetHudAffect				(false);
 				e->SetCyclic				(false);
 				e->Start					(anm_name);
+				if(has_from)
+					e->SetBlendFrom			(from_offset, 0.15f);	// smooth take-over, no snap
 				current_actor->Cameras().AddCamEffector(e);
 			}
 		}
 	}
 	return ret;
 }
-
 
 player_hud::player_hud()
 {

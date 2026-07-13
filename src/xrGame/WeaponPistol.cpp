@@ -63,7 +63,7 @@ void CWeaponPistol::PlayAnimIdleMoving()
 {
 	if(iAmmoElapsed==0)
 	{
-		PlayHUDMotion("anm_idle_moving_empty", TRUE, NULL, GetState());
+		PlayHUDMotion(SelectMovingAnim("anm_idle_moving_empty"), TRUE, NULL, GetState());
 	}else{
 		inherited::PlayAnimIdleMoving();
 	}
@@ -75,25 +75,52 @@ void CWeaponPistol::PlayAnimIdle()
 	if (TryPlayAnimIdle()) return;
 
 	VERIFY(GetState()==eIdle);
-	if(iAmmoElapsed==0)
+	if(IsZoomed())
 	{
-		PlayHUDMotion("anm_idle_empty", TRUE, NULL, GetState());
-	}else{
-		inherited::PlayAnimIdle		();
+		PlayAnimAim();	// ADS idle -> anm_idle_aim_empty (empty) / directional aim-walk
+		return;
 	}
+	if(iAmmoElapsed==0)
+		PlayHUDMotion("anm_idle_empty", TRUE, NULL, GetState());
+	else
+		inherited::PlayAnimIdle		();
 }
 
-void CWeaponPistol::PlayAnimAim()
+// empty magazine: directional empty aim-walk (anm_idle_aim_walk[_dir]_empty) when
+// moving, else the static empty aim (anm_idle_aim_empty). Loaded -> base directional.
+void CWeaponPistol::SelectAimIdleAnim(string_path& result)
 {
 	if(iAmmoElapsed==0)
-		PlayHUDMotion("anm_idle_aim_empty", TRUE, NULL, GetState());
-	else
-		inherited::PlayAnimAim();
+	{
+		LPCSTR dir = AimWalkDirSuffix();
+		if(dir[0])
+		{
+			xr_sprintf(result, "anm_idle_aim%s_empty", dir);
+			if(isHUDAnimationExist(result))		return;
+			if(xr_strcmp(dir, "_walk") != 0 && isHUDAnimationExist("anm_idle_aim_walk_empty"))
+				{ xr_strcpy(result, "anm_idle_aim_walk_empty"); return; }
+		}
+		xr_strcpy(result, "anm_idle_aim_empty");
+		return;
+	}
+	inherited::SelectAimIdleAnim(result);
 }
 
 void CWeaponPistol::PlayAnimReload()
 {
 	inherited::PlayAnimReload();
+}
+
+// empty aim in/out: slide-locked transition (anm_idle_aim_empty_start/_end) when the
+// magazine is empty, else the normal aim transition.
+void CWeaponPistol::SelectAimTransitionAnim(bool bAimIn, string_path& result)
+{
+	if (iAmmoElapsed == 0)
+	{
+		LPCSTR e = bAimIn ? "anm_idle_aim_empty_start" : "anm_idle_aim_empty_end";
+		if (isHUDAnimationExist(e)) { xr_strcpy(result, e); return; }
+	}
+	inherited::SelectAimTransitionAnim(bAimIn, result);
 }
 
 
@@ -109,17 +136,23 @@ void CWeaponPistol::PlayAnimHide()
 		inherited::PlayAnimHide();
 }
 
-void CWeaponPistol::PlayAnimShoot	()
+// Pick the pistol shoot motion. When zoomed use the ADS shot (anm_shots_aim, with an
+// _empty/last variant if present); otherwise the hip-fire shot, with anm_shot_l for the
+// last chambered round (slide locks back). Base PlayAnimShoot() plays the result.
+void CWeaponPistol::SelectShootAnim(string_path& result)
 {
-	VERIFY(GetState()==eFire);
-	if(iAmmoElapsed > 1) 
+	if (IsZoomed() && isHUDAnimationExist("anm_shots_aim"))
 	{
-		PlayHUDMotion("anm_shots" , FALSE, this, GetState());
+		if (iAmmoElapsed <= 1 && isHUDAnimationExist("anm_shots_aim_last"))
+			xr_strcpy(result, "anm_shots_aim_last");
+		else
+			xr_strcpy(result, "anm_shots_aim");
+		return;
 	}
-	else 
-	{
-		PlayHUDMotion("anm_shot_l", FALSE, this, GetState()); 
-	}
+	if (iAmmoElapsed > 1)
+		xr_strcpy(result, "anm_shots");
+	else
+		xr_strcpy(result, "anm_shot_l");
 }
 
 
@@ -146,13 +179,13 @@ void CWeaponPistol::OnShot		()
 	PHGetLinearVell(vel);
 	OnShellDrop					(get_LastSP(),  vel);
 
-	// Огонь из ствола
+	// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	
 	StartFlameParticles	();
 	R_ASSERT2(!m_pFlameParticles || !m_pFlameParticles->IsLooped(),
 			  "can't set looped particles system for shoting with pistol");
 	
-	//дым из ствола
+	//пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	StartSmokeParticles	(get_LastFP(), vel);
 }
 

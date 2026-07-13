@@ -6,7 +6,7 @@
 // 2: vector population heuristics
 // 3: dynamic map population heuristics
 
-#define FIND_CHUNK_HEU
+//#define FIND_CHUNK_HEU  // disabled: find_chunk is now defined in-class in FS.h (MSVC 17.14 build-compat)
 //#define FIND_CHUNK_STD
 //#define FIND_CHUNK_VEC
 //#define FIND_CHUNK_MAP

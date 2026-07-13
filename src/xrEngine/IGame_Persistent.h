@@ -54,6 +54,12 @@ public:
 	xr_vector<CPS_Instance*>		ps_destroy;
 	xr_vector<CPS_Instance*>		ps_needtoplay;
 
+	// Gunslinger exo HUD-screen shader constants, filled by CActor each frame, read by the render constant binder.
+	// m_actor_params: x=actor_health, y=outfit_cond, z=weapon_cond, w=weapon_loading (all 0..1, or -1 when absent)
+	// m_affects: exo "electronics problems" (no such system in IX-Ray -> kept 0 = clean screen); kept for shader compatibility
+	Fvector4						hud_actor_params;
+	Fvector4						hud_affects;
+
 public:
 			void					destroy_particles	(const bool &all_particles);
 
@@ -79,7 +85,7 @@ public:
 	virtual void					OnAppDeactivate		();
 	virtual void					OnFrame				();
 
-	// вызывается только когда изменяется тип игры
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 	virtual	void					OnGameStart			(); 
 	virtual void					OnGameEnd			();
 
@@ -114,6 +120,10 @@ public:
 #endif
 	virtual	void					LoadTitle			(LPCSTR str){}
 	virtual bool					CanBePaused			()		{ return true;}
+	// Appended at the end of the class on purpose: keeps every existing vtable index unchanged so a
+	// stock xrEngine.dll stays ABI-compatible. Called from the R3 forward phase (scene depth bound)
+	// so world tracers depth-test against the HUD under MSAA. No-op outside a level.
+	virtual void					OnRenderForward		() {};
 };
 
 class IMainMenu

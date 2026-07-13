@@ -139,7 +139,6 @@ dxRender_Visual*	CModelPool::Instance_Load		(const char* N, BOOL allow_register)
 dxRender_Visual*	CModelPool::Instance_Load(LPCSTR name, IReader* data, BOOL allow_register)
 {
 	dxRender_Visual	*V;
-	
 	ogf_header			H;
 	data->r_chunk_safe	(OGF_HEADER,&H,sizeof(H));
 	V = Instance_Create (H.type);

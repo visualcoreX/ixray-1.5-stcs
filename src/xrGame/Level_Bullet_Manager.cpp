@@ -1,5 +1,5 @@
-// Level_Bullet_Manager.cpp:	для обеспечения полета пули по траектории
-//								все пули и осколки передаются сюда
+// Level_Bullet_Manager.cpp:	пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+//								пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 //////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
@@ -126,6 +126,7 @@ void CBulletManager::Load		()
 	m_fTracerWidth			= pSettings->r_float("bullet_manager", "tracer_width");
 	m_fTracerLengthMax		= pSettings->r_float("bullet_manager", "tracer_length_max");
 	m_fTracerLengthMin		= pSettings->r_float("bullet_manager", "tracer_length_min");
+	m_fTracerMinFlyDist		= READ_IF_EXISTS(pSettings, r_float, "bullet_manager", "tracer_min_fly_dist", 0.f);
 
 	m_fGravityConst			= pSettings->r_float("bullet_manager", "gravity_const");
 	m_fAirResistanceK		= pSettings->r_float("bullet_manager", "air_resistance_k");
@@ -687,14 +688,14 @@ BOOL CBulletManager::firetrace_callback	(collide::rq_result& result, LPVOID para
 	if ( fis_zero(data.collide_time) )
 		return						(TRUE);
 
-	//статический объект
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	if (!result.O) {
 		CDB::TRI const& triangle	= *(Level().ObjectSpace.GetStaticTris() + result.element);
 		bullet_manager.RegisterEvent(EVENT_HIT, FALSE, &bullet, collide_position, result, triangle.material);
 		return						(FALSE);
 	}
 
-	//динамический объект
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	VERIFY							( !(result.O->ID() == bullet.parent_id &&  bullet.fly_dist < parent_ignore_distance) );
 	IKinematics* const kinematics	= smart_cast<IKinematics*>(result.O->Visual());
 	if (!kinematics)
@@ -892,6 +893,7 @@ float SqrDistancePointToSegment(const Fvector& pt, const Fvector& orig, const Fv
 
 void CBulletManager::Render	()
 {
+	m_bRenderedThisFrame = true;	// mark so the UI-pass render doesn't draw the tracers again
 #ifdef DEBUG
 	if (g_bDrawBulletHit && !m_bullet_points.empty()) {
 		VERIFY							(!(m_bullet_points.size() % 2));
@@ -915,9 +917,9 @@ void CBulletManager::Render	()
 	else
 		m_bullet_points.clear();
 
-	//0-рикошет
-	//1-застрявание пули в материале
-	//2-пробивание материала
+	//0-пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	//1-пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	//2-пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if (g_bDrawBulletHit) {
 		extern FvectorVec g_hit[];
 		FvectorIt it;
@@ -944,6 +946,11 @@ void CBulletManager::Render	()
 			continue;
 
 		if (!bullet->CanBeRenderedNow())
+			continue;
+
+		// hold the tracer off until the bullet has flown far enough from the muzzle
+		// (tracer_length_min is only the per-tick segment min, not a muzzle delay)
+		if (bullet->fly_dist < m_fTracerMinFlyDist)
 			continue;
 
 		Fvector const tracer			= Fvector().sub(bullet->bullet_pos, bullet->tracer_start_position);
@@ -991,6 +998,7 @@ void CBulletManager::Render	()
 
 void CBulletManager::CommitRenderSet		()	// @ the end of frame
 {
+	m_bRenderedThisFrame = false;			// reset for the new frame
 	m_BulletsRendered	= m_Bullets			;
 	if (g_mt_config.test(mtBullets))		{
 		Device.seqParallel.push_back		(fastdelegate::FastDelegate0<>(this,&CBulletManager::UpdateWorkload));

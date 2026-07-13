@@ -254,6 +254,9 @@ void	CRenderTarget::phase_combine	()
 		//	TODO: DX10: CHeck this!
 		//g_pGamePersistent->Environment().RenderClouds	();
 		RImplementation.render_forward	();
+		// under MSAA, draw world tracers here (scene depth is bound) so the HUD occludes them;
+		// the game's UI-pass tracer render is skipped this frame. Non-MSAA keeps the UI-pass path.
+		if (RImplementation.o.dx10_msaa && g_pGamePersistent)	g_pGamePersistent->OnRenderForward();
 		if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_main()	;	// PP-UI
 	}
 

@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////
-// script_game_object_inventory_owner.сpp :	функции для inventory owner
+// script_game_object_inventory_owner.пїЅpp :	пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ inventory owner
 //////////////////////////////////////////////////////////////////////////
 
 #include "pch_script.h"
@@ -32,6 +32,7 @@
 #include "infoportion.h"
 #include "AI/Monsters/BaseMonster/base_monster.h"
 #include "weaponmagazined.h"
+#include "CustomDetector.h"
 #include "ai/stalker/ai_stalker.h"
 #include "agent_manager.h"
 #include "agent_member_manager.h"
@@ -368,7 +369,7 @@ void CScriptGameObject::MakeItemActive(CScriptGameObject* pItem)
 
 }
 
-//передаче вещи из своего инвентаря в инвентарь партнера
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 void CScriptGameObject::TransferItem(CScriptGameObject* pItem, CScriptGameObject* pForWho)
 {
 	if (!pItem || !pForWho) {
@@ -383,13 +384,13 @@ void CScriptGameObject::TransferItem(CScriptGameObject* pItem, CScriptGameObject
 		return ;
 	}
 
-	// выбросить у себя 
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ 
 	NET_Packet						P;
 	CGameObject::u_EventGen			(P,GE_TRADE_SELL, object().ID());
 	P.w_u16							(pIItem->object().ID());
 	CGameObject::u_EventSend		(P);
 
-	// отдать партнеру
+	// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	CGameObject::u_EventGen			(P,GE_TRADE_BUY, pForWho->object().ID());
 	P.w_u16							(pIItem->object().ID());
 	CGameObject::u_EventSend		(P);
@@ -703,7 +704,7 @@ void  CScriptGameObject::SwitchToTrade		()
 {
 	CActor* pActor = smart_cast<CActor*>(&object());	if(!pActor) return;
 
-	//только если находимся в режиме single
+	//пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ single
 	CUIGameSP* pGameSP = smart_cast<CUIGameSP*>(HUD().GetUI()->UIGame());
 	if(!pGameSP) return;
 
@@ -717,7 +718,7 @@ void  CScriptGameObject::SwitchToUpgrade		()
 {
 	CActor* pActor = smart_cast<CActor*>(&object());	if(!pActor) return;
 
-	//только если находимся в режиме single
+	//пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ single
 	CUIGameSP* pGameSP = smart_cast<CUIGameSP*>(HUD().GetUI()->UIGame());
 	if(!pGameSP) return;
 
@@ -1059,6 +1060,33 @@ void CScriptGameObject::activate_slot	(u32 slot_id)
 		return						;
 	}
 	inventory_owner->inventory().Activate(slot_id);
+}
+
+bool CScriptGameObject::detector_active()
+{
+	CInventoryOwner* inventory_owner = smart_cast<CInventoryOwner*>(&object());
+	if (!inventory_owner)	return false;
+	CCustomDetector* det = smart_cast<CCustomDetector*>(inventory_owner->inventory().ItemFromSlot(DETECTOR_SLOT));
+	return det && det->IsWorking();
+}
+
+bool CScriptGameObject::active_item_busy()
+{
+	CInventoryOwner* inventory_owner = smart_cast<CInventoryOwner*>(&object());
+	if (!inventory_owner)	return false;
+	PIItem		itm = inventory_owner->inventory().ActiveItem();
+	CHudItem*	hi  = itm ? itm->cast_hud_item() : NULL;
+	return hi && (hi->GetState() != CHUDState::eIdle || hi->IsPending());	// reload / fire / draw / holster
+}
+
+void CScriptGameObject::show_detector(bool emergency)
+{
+	CInventoryOwner* inventory_owner = smart_cast<CInventoryOwner*>(&object());
+	if (!inventory_owner)	return;
+	CCustomDetector* det = smart_cast<CCustomDetector*>(inventory_owner->inventory().ItemFromSlot(DETECTOR_SLOT));
+	if (!det)	return;
+	if (emergency)	det->ShowDetectorEmergency();
+	else			det->ShowDetector(false);
 }
 
 void CScriptGameObject::enable_movement	(bool enable)

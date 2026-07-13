@@ -5,6 +5,7 @@
 #include "ai_sounds.h"
 
 class ENGINE_API CMotionDef;
+class CBoneInstance;
 
 //размер очереди считается бесконечность
 //заканчиваем стрельбу, только, если кончились патроны
@@ -39,6 +40,49 @@ protected:
 	virtual void	switch2_Reload	();
 	virtual void	switch2_Hiding	();
 	virtual void	switch2_Hidden	();
+	virtual void	switch2_ActionAnim	();
+	// Pick the HUD-animation variant for `base` (e.g. "anm_headlamp_on") from the weapon's state.
+	// Overridden by the GL subclass to add _w_gl / _g variants. Returns "" if none exists.
+	virtual void	SelectActionAnim	(LPCSTR base, string_path& result);
+public:
+	// Play a one-shot fire-locked HUD gesture (headlamp/NV toggle) on this weapon. Returns
+	// false (so the caller can fall back to the generic left-hand animator) if the weapon is
+	// busy or the config has no matching anm_* alias.
+	virtual bool	PlayHudActionAnim	(LPCSTR base);
+protected:
+	shared_str		m_action_anim;
+
+	// --- fire-mode selector (single<->auto): light firemode -- play a switch gesture, then HOLD the
+	// selector bone's last-frame pose across all other anims (config `fire_mode_bone` names the bone).
+	shared_str		m_fire_mode_bone;		// HUD-model bone of the fire selector ("" = feature off)
+	u16				m_fire_mode_bone_id;	// resolved id (BI_NONE if absent)
+	Fmatrix			m_fire_selector_xform;	// captured/held local transform of the selector bone
+	bool			m_fire_selector_hold;	// true (auto) = override bone to xform
+	bool			m_fire_selector_capturing;	// true during the switch gesture = sample the bone
+	bool			m_fire_selector_valid;	// the captured/restored pose is valid (guard vs identity)
+	bool			m_fire_selector_cb;		// callback currently attached to the live HUD model
+	void			UpdateFireSelectorBone	();	// (re)attach callback to the current HUD model
+	void			DetachFireSelectorBone	();
+	void			SampleFireSelectorAutoPose();	// derive the auto selector pose from the anim's last frame
+	virtual void	on_a_hud_attach			();
+	virtual void	on_b_hud_detach			();
+	static void		FireSelectorBoneCallback(CBoneInstance* B);
+	bool			IsAutoFireMode			() const { return m_iQueueSize == WEAPON_ININITE_QUEUE; }
+	// May a trigger held through an aim in/out transition auto-resume firing at the handoff?
+	// Only genuine continuous-auto weapons. NOTE: pistols/shotguns/SVD keep the default
+	// m_iQueueSize == WEAPON_ININITE_QUEUE (they gate semi-auto via bWorking in switch2_Fire),
+	// so IsAutoFireMode() alone is TRUE for them and must NOT be used here — CWeaponCustomPistol
+	// overrides this to false. (Without it, a held pistol self-fires after aiming.)
+	virtual bool	CanAutoResumeFire		() const { return IsAutoFireMode(); }
+	void			switch2_FireModeSwitch	();
+	// play the fire-selector gesture for an oldMode->newMode change (auto = -1 -> token "a",
+	// else the mode number): anm_firemode_<from>_to_<to>. Falls back to the single<->auto
+	// pair when that specific transition alias is absent.
+	void			TriggerFireModeSwitchAnim(int oldMode, int newMode);
+	static void		FireModeToken			(int mode, string16& out);	// -1->"a", N->"N"
+	shared_str		m_sFireModeAnim;	// transition alias chosen by TriggerFireModeSwitchAnim
+	virtual void	PlayAnimFireModeSwitch	();	// picks anm_firemode_<from>_to_<to> (+GL in WGrenade)
+
 	virtual void	switch2_Showing	();
 	
 	virtual void	OnShot			();	
@@ -47,6 +91,7 @@ protected:
 
 	virtual void	OnAnimationEnd	(u32 state);
 	virtual void	OnStateSwitch	(u32 S);
+	virtual bool	NeedJammedAnim	() { return !!IsMisfire(); }	// jammed -> play "_jammed" HUD gestures
 
 	virtual void	UpdateSounds	();
 
@@ -128,6 +173,9 @@ protected:
 	bool m_bLockType;
 
 public:
+	// true while the jam (misfire) inspect gesture is on screen -> block aim / headlamp / NV /
+	// detector so nothing interrupts it (it owns the hands until it finishes)
+	bool			IsJamInspectPlaying	() const { return m_bDryFirePlaying && !!IsMisfire(); }
 	virtual void	OnZoomIn			();
 	virtual void	OnZoomOut			();
 			void	OnNextFireMode		();
@@ -150,8 +198,32 @@ protected:
 	virtual void	PlayAnimReload		();
 	virtual void	PlayAnimIdle		();
 	virtual void	PlayAnimShoot		();
+	virtual void	SelectShootAnim		(string_path& result);	// hip / ADS / scope shoot motion
+	// dry-fire ("pull the trigger, nothing happens") on empty/jammed. GL subclass overrides.
+	virtual void	SelectDryFireAnim	(string_path& result);
+			void	PlayAnimDryFire		();
+	bool			m_bDryFirePending;	// switch2_Idle should play the dry-fire, not the idle
+	bool			m_bDryFirePlaying;	// a dry-fire gesture is in progress -> FireStart ignored
+	bool			m_bAimInPending;	// aim pressed mid-fire: play aim-in once fire stops (switch2_Idle)
+	bool			m_bAimOutPending;	// aim released mid-fire: keep aiming, play aim-out when fire ends
+	bool			m_bTriggerHeld;		// trigger currently pressed (FireStart..FireEnd); resume fire after a transition
 	virtual void	PlayReloadSound		();
 	virtual void	PlayAnimAim			();
+	// directional aim-walk: picks anm_idle_aim / _walk / _walk_back / _walk_left /
+	// _walk_right by movement, with isHUDAnimationExist fallback to the static aim.
+	// The GL subclass overrides for the _w_gl / _g variants.
+	virtual void	SelectAimIdleAnim	(string_path& result);
+	LPCSTR			AimWalkDirSuffix	();	// "", "_walk", "_walk_back/left/right"
+	virtual bool	HasMovementIdleVariant();
+
+	// aim-in / aim-out (ADS) transition. SelectAimTransitionAnim is overridden by the GL
+	// subclass for _w_gl / _g variants; PlayAimTransition returns false if no motion exists.
+	virtual void	SelectAimTransitionAnim	(bool bAimIn, string_path& result);
+			bool	PlayAimTransition		(bool bAimIn);
+	// wall-clock deadline for the aim transition (0=none). CHudItem::OnAnimationEnd is
+	// unreliable while moving (fires seconds late), which lets the one-shot transition
+	// stick/loop = the ADS "snap"; UpdateCL forces the handoff to the aim/moving idle here.
+	u32				m_dwAimTransitionEndTm;
 
 	virtual	int		ShotsFired			() { return m_iShotNum; }
 	virtual float	GetWeaponDeterioration	();

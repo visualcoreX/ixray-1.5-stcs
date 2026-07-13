@@ -53,12 +53,21 @@ class CAnimatorCamEffector :public CEffectorCam
 protected:
 	virtual bool		Cyclic					() const		{return m_bCyclic;}
 	CObjectAnimator*							m_objectAnimator;
+	shared_str			m_anm_name;				// source .anm, so callers can tell which motion owns this effector
+	// smooth take-over: blend the camera offset from a captured start offset into this anim so a
+	// replacement (e.g. shot cam -> reload cam) eases in instead of snapping.
+	Fmatrix				m_blend_from;			// offset to blend from (camera-local, like m_objectAnimator->XFORM())
+	float				m_blend_time;			// blend-in duration (0 = no blend)
+	float				m_blend_elapsed;
 public:
 	bool				m_bAbsolutePositioning;
 
 						CAnimatorCamEffector	();
 	virtual				~CAnimatorCamEffector	();
 			void		Start					(LPCSTR fn);
+	const shared_str&	AnimName				() const		{return m_anm_name;}
+	const Fmatrix&		OffsetXForm				() const;		// this effector's current camera-local offset
+	void				SetBlendFrom			(const Fmatrix& from_offset, float blend_time);
 	virtual BOOL		ProcessCam				(SCamEffectorInfo& info);
 			void		SetCyclic				(bool b)				{m_bCyclic=b;}
 	virtual	BOOL		Valid					();

@@ -59,7 +59,7 @@ bool CWeaponShotgun::Action(s32 cmd, u32 flags)
 	if (inherited::Action(cmd, flags))
 		return true;
 
-	if (m_bTriStateReload && cmd == kWPN_FIRE && flags & CMD_START && GetState() == eReload && (m_sub_state == eSubstateReloadInProcess || m_sub_state == eSubstateReloadBegin))//остановить перезарядку
+	if (m_bTriStateReload && cmd == kWPN_FIRE && flags & CMD_START && GetState() == eReload && (m_sub_state == eSubstateReloadInProcess || m_sub_state == eSubstateReloadBegin))//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	{
 		bStopReloadSignal = true;
 		return true;
@@ -103,8 +103,12 @@ void CWeaponShotgun::OnAnimationEnd(u32 state)
 	};
 }
 
-void CWeaponShotgun::Reload() 
+void CWeaponShotgun::Reload()
 {
+	// let the jam inspect gesture finish before the jam can be cleared (see CWeaponMagazined::Reload)
+	if (m_bDryFirePlaying && IsMisfire())
+		return;
+
 	if(m_bTriStateReload)
 		TriStateReload();
 	else
@@ -196,14 +200,14 @@ bool CWeaponShotgun::HaveCartridgeInInventory		(u8 cnt)
 	m_pAmmo = NULL;
 	if(m_pInventory) 
 	{
-		//попытаться найти в инвентаре патроны текущего типа 
+		//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ 
 		m_pAmmo = smart_cast<CWeaponAmmo*>(m_pInventory->GetAny(*m_ammoTypes[m_ammoType]));
 		
 		if(!m_pAmmo )
 		{
 			for(u32 i = 0; i < m_ammoTypes.size(); ++i) 
 			{
-				//проверить патроны всех подходящих типов
+				//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 				m_pAmmo = smart_cast<CWeaponAmmo*>(m_pInventory->GetAny(*m_ammoTypes[i]));
 				if(m_pAmmo) 
 				{ 
@@ -251,7 +255,7 @@ u8 CWeaponShotgun::AddCartridge		(u8 cnt)
 
 	VERIFY((u32)iAmmoElapsed == m_magazine.size());
 
-	//выкинуть коробку патронов, если она пустая
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	if(m_pAmmo && !m_pAmmo->m_boxCurr && OnServer()) 
 		m_pAmmo->SetDropManual(TRUE);
 

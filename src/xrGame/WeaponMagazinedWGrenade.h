@@ -52,24 +52,29 @@ public:
 
 	virtual void	UpdateSounds	();
 
-	//переключение в режим подствольника
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	virtual bool	SwitchMode		();
 	void			PerformSwitchGL	();
 	void			OnAnimationEnd	(u32 state);
 
 	virtual bool	IsNecessaryItem	    (const shared_str& item_sect);
 
-	//виртуальные функции для проигрывания анимации HUD
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ HUD
 	virtual void	PlayAnimShow		();
 	virtual void	PlayAnimHide		();
 	virtual void	PlayAnimReload		();
+	virtual void	SelectActionAnim	(LPCSTR base, string_path& result);
 	virtual void	PlayAnimIdle		();
 	virtual void	PlayAnimShoot		();
+	virtual void	SelectShootAnim		(string_path& result);
+	virtual void	PlayAnimFireModeSwitch	();
 	virtual void	PlayAnimModeSwitch	();
 	virtual void	PlayAnimBore		();
 	virtual void	PlayAnimIdleMoving	();
 	virtual void	PlayAnimIdleSprint	();
-	virtual void	PlayAnimAim			();
+	virtual void	SelectAimIdleAnim	(string_path& result);
+	virtual void	SelectDryFireAnim	(string_path& result);
+	virtual void	SelectAimTransitionAnim	(bool bAimIn, string_path& result);
 	
 private:
 	virtual	void	net_Spawn_install_upgrades	( Upgrades_type saved_upgrades );
@@ -77,8 +82,8 @@ private:
 	virtual	bool	install_upgrade_ammo_class	( LPCSTR section, bool test );
 	
 public:
-	//дополнительные параметры патронов 
-	//для подствольника
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 
+	//пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	CWeaponAmmo*			m_pAmmo2;
 	shared_str				m_ammoSect2;
 	xr_vector<shared_str>	m_ammoTypes2;

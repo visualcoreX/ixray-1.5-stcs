@@ -2,6 +2,13 @@
 #include <dinput.h>
 #include "Actor.h"
 #include "Torch.h"
+#include "WeaponMagazined.h"
+#include "CustomOutfit.h"
+#include "CustomDetector.h"
+#include "player_hud.h"
+#include <luabind/functor.hpp>
+#include "ai_space.h"
+#include "script_engine.h"
 #include "trade.h"
 #include "../xrEngine/CameraBase.h"
 
@@ -31,8 +38,13 @@
 #include "CustomDetector.h"
 #include "clsid_game.h"
 
+static bool gwr_actor_hud_busy(CActor* actor);	// defined below; true while a weapon/eat/torch animation runs
+
 bool g_bAutoClearCrouch = true;
 extern u32 hud_adj_mode;
+
+// Block weapon/slot switching while an item-use animation plays (toggled from Lua via console var).
+int g_block_wpn_switch = 0;
 
 void CActor::IR_OnKeyboardPress(int cmd)
 {
@@ -42,7 +54,13 @@ void CActor::IR_OnKeyboardPress(int cmd)
 
 	if (IsTalking())	return;
 	if (m_input_external_handler && !m_input_external_handler->authorized(cmd))	return;
-	
+
+	if (g_block_wpn_switch &&
+		(cmd==kWPN_1 || cmd==kWPN_2 || cmd==kWPN_3 || cmd==kWPN_4 ||
+		 cmd==kWPN_5 || cmd==kWPN_6 || cmd==kARTEFACT || cmd==kWPN_NEXT ||
+		 cmd==kNEXT_SLOT || cmd==kPREV_SLOT))
+		return;
+
 	switch (cmd)
 	{
 	case kWPN_FIRE:
@@ -112,6 +130,11 @@ void CActor::IR_OnKeyboardPress(int cmd)
 
 	case kDETECTOR:
 		{
+			// don't draw/holster the detector mid jam-inspect (the weapon gesture owns the hands)
+			{
+				CWeaponMagazined* wmj = smart_cast<CWeaponMagazined*>(inventory().ActiveItem());
+				if (wmj && wmj->IsJamInspectPlaying())	break;
+			}
 			PIItem det_active					= inventory().ItemFromSlot(DETECTOR_SLOT);
 			if(det_active)
 			{
@@ -160,8 +183,10 @@ void CActor::IR_OnKeyboardPress(int cmd)
 		{
 			if(IsGameTypeSingle())
 			{
-				PIItem itm = inventory().item((cmd==kUSE_BANDAGE)?  CLSID_IITEM_BANDAGE:CLSID_IITEM_MEDKIT );	
-				if(itm)
+				PIItem itm = inventory().item((cmd==kUSE_BANDAGE)?  CLSID_IITEM_BANDAGE:CLSID_IITEM_MEDKIT );
+				// don't quick-use (and don't print "used: ...") while a weapon/eat animation is playing --
+				// the item wouldn't actually be applied (the gwr script hands it back)
+				if(itm && !gwr_actor_hud_busy(this))
 				{
 					inventory().Eat				(itm);
 					SDrawStaticStruct* _s		= HUD().GetUI()->UIGame()->AddCustomStatic("item_used", true);
@@ -185,6 +210,7 @@ void CActor::IR_OnMouseWheel(int direction)
 
 	if(inventory().Action( (direction>0)? kWPN_ZOOM_DEC:kWPN_ZOOM_INC , CMD_START)) return;
 
+	if (g_block_wpn_switch)	return;
 
 	if (direction>0)
 		OnNextWeaponSlot				();
@@ -393,10 +419,10 @@ void CActor::ActorUse()
 					TryToTalk();
 				}else
 
-				//обыск трупа
+				//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 				if(!Level().IR_GetKeyState(DIK_LSHIFT))
 				{
-					//только если находимся в режиме single
+					//пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ single
 					CUIGameSP* pGameSP = smart_cast<CUIGameSP*>(HUD().GetUI()->UIGame());
 					if(pGameSP)
 						pGameSP->StartCarBody(this, m_pPersonWeLookingAt );
@@ -544,34 +570,164 @@ void CActor::set_input_external_handler(CActorInputHandler *handler)
 	m_input_external_handler	= handler;
 }
 
-void CActor::SwitchNightVision()
+// Notify a Lua handler for the headlamp/NV toggle. `spawn_left_hand` = play the generic left-hand
+// headflash animator (ONLY when hands are empty); otherwise the script just plays the toggle sound.
+static void gwr_call_action_animator(LPCSTR fn_name, bool on, bool spawn_left_hand)
 {
-	xr_vector<CAttachableItem*> const& all = CAttachmentOwner::attached_objects();
+	luabind::functor<void>	fn;
+	if (ai().script_engine().functor(fn_name, fn))
+		fn(on, spawn_left_hand);
+}
+
+// Delay (ms) between pressing the torch/NV key (starts the animation) and the light/NV actually
+// toggling, so the effect syncs with the hand reaching the head. Tunable in console.
+int g_torch_switch_delay = 350;
+// Anti-spam + slot-block window (ms) covering the whole toggle gesture. Tune to your animation length.
+int g_torch_action_time  = 1200;
+
+// Pending deferred toggles + the shared anti-spam / slot-block window (single local actor).
+static u32  s_torch_switch_at		= 0;
+static u32  s_nv_switch_at			= 0;
+static u32  s_action_busy_until		= 0;	// ignore new torch/NV presses while Device.dwTimeGlobal < this
+static bool s_block_set_by_action	= false;// we raised g_block_wpn_switch and must lower it again
+
+static CTorch* gwr_find_actor_torch(CActor* actor)
+{
+	xr_vector<CAttachableItem*> const& all = actor->attached_objects();
 	xr_vector<CAttachableItem*>::const_iterator it = all.begin();
 	xr_vector<CAttachableItem*>::const_iterator it_e = all.end();
 	for ( ; it != it_e; ++it )
 	{
 		CTorch* torch = smart_cast<CTorch*>(*it);
-		if ( torch )
-		{		
-			torch->SwitchNightVision();
-			return;
-		}
+		if (torch)	return torch;
+	}
+	return NULL;
+}
+
+// Open the anti-spam window and block slot switching for the duration of the gesture.
+static void gwr_begin_torch_action()
+{
+	s_action_busy_until = Device.dwTimeGlobal + (u32)g_torch_action_time;
+	if (g_block_wpn_switch == 0)		// don't stomp an item-use (eat) animation's own block
+	{
+		g_block_wpn_switch		= 1;
+		s_block_set_by_action	= true;
 	}
 }
 
+// True if ANY HUD animation is running, so a torch/NV toggle must be ignored entirely:
+//  - g_block_wpn_switch != 0  -> an item-use (eat/medkit) animation OR a torch/NV gesture is playing
+//  - active weapon not idle   -> reload / fire / draw / holster / another action
+// The detector currently shown in the left hand (idx 1), or NULL.
+static CCustomDetector* gwr_active_detector()
+{
+	if (!g_player_hud)	return NULL;
+	attachable_hud_item* a = g_player_hud->attached_item(1);
+	return a ? smart_cast<CCustomDetector*>(a->m_parent_hud_item) : NULL;
+}
+
+static bool gwr_actor_hud_busy(CActor* actor)
+{
+	if (g_block_wpn_switch != 0)	return true;
+	CWeapon* w = smart_cast<CWeapon*>(actor->inventory().ActiveItem());
+	if (w && (w->GetState() != CHUDState::eIdle || w->IsPending()))	return true;
+	// the jam-inspect gesture plays in eIdle without pending -> catch it explicitly
+	CWeaponMagazined* wm = smart_cast<CWeaponMagazined*>(w);
+	if (wm && wm->IsJamInspectPlaying())	return true;
+	// a detector in the left hand mid-gesture (or showing/hiding) is busy too, even though it's
+	// not the "active item" -- otherwise a spammed toggle would fire with no animation
+	CCustomDetector* det = gwr_active_detector();
+	if (det && (det->GetState() != CHUDState::eIdle || det->IsPending()))	return true;
+	return false;
+}
+
+void CActor::SwitchNightVision()
+{
+	if (gwr_actor_hud_busy(this))	return;		// don't toggle while any animation (reload/eat/gesture) plays
+	CTorch* torch = gwr_find_actor_torch(this);
+	if (!torch)	return;
+
+	// night-vision must actually be available (outfit provides it, incl. via installed upgrade);
+	// otherwise ignore the key entirely -- no toggle, no animation, no sound
+	CCustomOutfit* outfit = GetOutfit();
+	if (!outfit || outfit->m_NightVisionSect.size() == 0)	return;
+
+	bool desired = !torch->GetNightVisionStatus();				// what it WILL become after the (deferred) toggle
+	LPCSTR base = desired ? "anm_nv_on" : "anm_nv_off";
+	PIItem ai = inventory().ActiveItem();
+	CCustomDetector* det = gwr_active_detector();
+	CWeaponMagazined* wpn = smart_cast<CWeaponMagazined*>(ai);
+	if (det)		det->PlayHudActionAnim(base);					// detector in the left hand
+	else if (wpn)	wpn->PlayHudActionAnim(base);					// weapon's own left hand
+	// generic left-hand headflash for empty hands OR a non-weapon item (knife/grenade/bolt/binoc);
+	// never over a real (magazined) weapon or an out detector
+	gwr_call_action_animator("gwr_eatable.on_nv_switch", desired, det == NULL && wpn == NULL);
+
+	if (g_torch_switch_delay > 0)	s_nv_switch_at = Device.dwTimeGlobal + (u32)g_torch_switch_delay;
+	else							torch->SwitchNightVision();
+	gwr_begin_torch_action();
+}
+
 void CActor::SwitchTorch()
-{ 
-	xr_vector<CAttachableItem*> const& all = CAttachmentOwner::attached_objects();
-	xr_vector<CAttachableItem*>::const_iterator it = all.begin();
-	xr_vector<CAttachableItem*>::const_iterator it_e = all.end();
-	for ( ; it != it_e; ++it )
+{
+	if (gwr_actor_hud_busy(this))	return;		// don't toggle while any animation (reload/eat/gesture) plays
+	CTorch* torch = gwr_find_actor_torch(this);
+	if (!torch)	return;											// headlamp is always present, but guard anyway
+
+	bool desired = !torch->torch_active();
+	LPCSTR base = desired ? "anm_headlamp_on" : "anm_headlamp_off";
+	PIItem ai = inventory().ActiveItem();
+	CCustomDetector* det = gwr_active_detector();
+	CWeaponMagazined* wpn = smart_cast<CWeaponMagazined*>(ai);
+	if (det)		det->PlayHudActionAnim(base);					// detector in the left hand
+	else if (wpn)	wpn->PlayHudActionAnim(base);					// weapon's own left hand
+	// generic left-hand headflash for empty hands OR a non-weapon item (knife/grenade/bolt/binoc);
+	// never over a real (magazined) weapon or an out detector
+	gwr_call_action_animator("gwr_eatable.on_headlamp_switch", desired, det == NULL && wpn == NULL);
+
+	if (g_torch_switch_delay > 0)	s_torch_switch_at = Device.dwTimeGlobal + (u32)g_torch_switch_delay;
+	else							torch->Switch();
+	gwr_begin_torch_action();
+}
+
+// Called every frame from CActor::UpdateCL: fire pending deferred toggles and end the block window.
+void CActor::UpdateDelayedDeviceSwitch()
+{
+	if (s_block_set_by_action && Device.dwTimeGlobal >= s_action_busy_until)
 	{
-		CTorch* torch = smart_cast<CTorch*>(*it);
-		if ( torch )
-		{		
-			torch->Switch();
-			return;
-		}
+		g_block_wpn_switch		= 0;
+		s_block_set_by_action	= false;
 	}
+
+	if (s_torch_switch_at == 0 && s_nv_switch_at == 0)	return;
+
+	CTorch* torch = gwr_find_actor_torch(this);
+	if (!torch)											// torch gone (dropped/unequipped) -> drop the pending toggles
+	{
+		s_torch_switch_at	= 0;
+		s_nv_switch_at		= 0;
+		return;
+	}
+
+	if (s_torch_switch_at != 0 && Device.dwTimeGlobal >= s_torch_switch_at)
+	{
+		s_torch_switch_at = 0;
+		torch->Switch();
+	}
+	if (s_nv_switch_at != 0 && Device.dwTimeGlobal >= s_nv_switch_at)
+	{
+		s_nv_switch_at = 0;
+		torch->SwitchNightVision();
+	}
+}
+
+// Clear all torch/NV gesture state. Called on actor spawn/load so a save made mid-gesture (or a
+// desynced Lua block mirror) can't leave the slot-switch block stuck on after loading.
+void CActor::ResetTorchActionState()
+{
+	g_block_wpn_switch		= 0;
+	s_action_busy_until		= 0;
+	s_block_set_by_action	= false;
+	s_torch_switch_at		= 0;
+	s_nv_switch_at			= 0;
 }

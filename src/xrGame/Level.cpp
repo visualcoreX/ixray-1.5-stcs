@@ -723,7 +723,7 @@ void CLevel::OnFrame	()
 	m_ph_commander_scripts->update		();
 //	autosave_manager().update			();
 
-	//просчитать полет пуль
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 	Device.Statistic->TEST0.Begin		();
 	BulletManager().CommitRenderSet		();
 	Device.Statistic->TEST0.End			();
@@ -777,11 +777,14 @@ void CLevel::OnRender()
 		return;
 
 	Game().OnRender();
-	//отрисовать трассы пуль
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 	//Device.Statistic->TEST1.Begin();
-	BulletManager().Render();
+	// under MSAA the tracers were already drawn in the R3 forward phase (correct depth vs HUD);
+	// only draw them here otherwise, to keep the non-MSAA look (post-tonemap) unchanged.
+	if (!BulletManager().WasRenderedThisFrame())
+		BulletManager().Render();
 	//Device.Statistic->TEST1.End();
-	//отрисовать интерфейc пользователя
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅc пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	HUD().RenderUI();
 
 #ifdef DEBUG

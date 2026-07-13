@@ -20,6 +20,18 @@ CHudItem::CHudItem()
 	m_bStopAtEndAnimIsRunning = false;
 	m_current_motion_def		= NULL;
 	m_started_rnd_anim_idx		= u8(-1);
+	m_fHudFov					= 0.f;
+	m_fHudFovAim				= 0.f;
+	m_bStepSlow					= false;
+	m_bStepCrouch				= false;
+	m_bIdleTransitionLock		= false;
+}
+
+bool CHudItem::HasMovementIdleVariant()
+{
+	// base HUD items (detectors, etc.) vary by walk speed and/or crouch posture
+	return isHUDAnimationExist("anm_idle_moving_slow")
+		|| isHUDAnimationExist("anm_idle_moving_crouch");
 }
 
 DLL_Pure *CHudItem::_construct	()
@@ -43,6 +55,7 @@ void CHudItem::Load(LPCSTR section)
 	m_animation_slot		= pSettings->r_u32			(section,"animation_slot");
 
 	m_fHudFov = READ_IF_EXISTS(pSettings, r_float, hud_sect, "hud_fov", 0.f);
+	m_fHudFovAim = READ_IF_EXISTS(pSettings, r_float, hud_sect, "hud_fov_aim", 0.f);
 
 	m_current_inertion.PitchOffsetR = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_pitch_offset_r", PITCH_OFFSET_R);
 	m_current_inertion.PitchOffsetD = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_pitch_offset_d", PITCH_OFFSET_D);
@@ -142,6 +155,9 @@ void CHudItem::OnStateSwitch(u32 S)
 
 void CHudItem::OnAnimationEnd(u32 state)
 {
+	// any motion that was holding the transition lock (aim in/out) has now ended
+	m_bIdleTransitionLock = false;
+
 	switch(state)
 	{
 	case eBore:
@@ -295,9 +311,39 @@ void CHudItem::on_a_hud_attach()
 	}
 }
 
+void CHudItem::MakeJammedName(LPCSTR name, string_path& out)
+{
+	// "_jammed" goes before a trailing GL suffix, else at the very end. NOTE: no numeric _0.._3
+	// suffixes here — they collide with firemode tokens like anm_firemode_a_to_1 (the "_1").
+	static const LPCSTR sfx[] = { "_gl_off", "_gl_on", "_w_gl", "_g" };
+	int len = (int)xr_strlen(name);
+	for (u32 i=0; i<sizeof(sfx)/sizeof(sfx[0]); ++i)
+	{
+		int sl = (int)xr_strlen(sfx[i]);
+		if (len>sl && 0==xr_strcmp(name+len-sl, sfx[i]))
+		{
+			xr_strcpy	(out, name);
+			out[len-sl]	= 0;
+			xr_strcat	(out, "_jammed");
+			xr_strcat	(out, sfx[i]);
+			return;
+		}
+	}
+	xr_strcpy	(out, name);
+	xr_strcat	(out, "_jammed");
+}
+
 u32 CHudItem::PlayHUDMotion(const shared_str& M, BOOL bMixIn, CHudItem*  W, u32 state)
 {
-	u32 anim_time					= PlayHUDMotion_noCB(M, bMixIn);
+	shared_str playM = M;
+	if (NeedJammedAnim())
+	{
+		string_path jam;
+		MakeJammedName	(M.c_str(), jam);
+		if (isHUDAnimationExist(jam))
+			playM = jam;
+	}
+	u32 anim_time					= PlayHUDMotion_noCB(playM, bMixIn);
 	if (anim_time>0)
 	{
 		m_bStopAtEndAnimIsRunning = true;
@@ -375,9 +421,22 @@ bool CHudItem::TryPlayAnimIdle()
 				PlayAnimIdleSprint();
 				return true;
 			}else
-			if(!st.bCrouch && pActor->AnyMove())
+			if(pActor->AnyMove())
 			{
+				// not accelerated (walk) -> slow variant; standing: walk<->walk_slow,
+				// crouch: crouch<->crouch_slow (creep). Crouch branch only when the
+				// weapon actually has crouch-move anims, else fall through to idle.
+				bool accel = isActorAccelerated(pActor->MovingState(), pActor->IsZoomAimingMode());
+				if(st.bCrouch)
+				{
+					if(!isHUDAnimationExist("anm_idle_moving_crouch"))
+						return false;
+					m_bStepCrouch = true;
+				}
+				m_bStepSlow   = !accel;
 				PlayAnimIdleMoving();
+				m_bStepSlow   = false;
+				m_bStepCrouch = false;
 				return true;
 			}
 		}
@@ -385,9 +444,39 @@ bool CHudItem::TryPlayAnimIdle()
 	return false;
 }
 
+LPCSTR CHudItem::SelectMovingAnim(LPCSTR base)
+{
+	if(!m_bStepSlow && !m_bStepCrouch)
+		return base;
+	// base is "anm_idle_moving" + <weapon-state suffix> ("" / "_g" / "_w_gl" / "_empty"
+	// / "_0"..). Compose posture(_crouch) + speed(_slow) + suffix, most-specific first
+	// with graceful fallback: crouch_slow -> crouch -> slow -> base.
+	static const size_t prefix_len = xr_strlen("anm_idle_moving");
+	LPCSTR suffix = base + prefix_len;
+	static string128 name;
+	if(m_bStepCrouch && m_bStepSlow)
+	{
+		xr_sprintf(name, "anm_idle_moving_crouch_slow%s", suffix);
+		if(isHUDAnimationExist(name)) return name;
+		xr_sprintf(name, "anm_idle_moving_crouch%s", suffix);
+		if(isHUDAnimationExist(name)) return name;
+	}
+	else if(m_bStepCrouch)
+	{
+		xr_sprintf(name, "anm_idle_moving_crouch%s", suffix);
+		if(isHUDAnimationExist(name)) return name;
+	}
+	else // slow only
+	{
+		xr_sprintf(name, "anm_idle_moving_slow%s", suffix);
+		if(isHUDAnimationExist(name)) return name;
+	}
+	return base;
+}
+
 void CHudItem::PlayAnimIdleMoving()
 {
-	PlayHUDMotion("anm_idle_moving", TRUE, NULL, GetState());
+	PlayHUDMotion(SelectMovingAnim("anm_idle_moving"), TRUE, NULL, GetState());
 }
 
 void CHudItem::PlayAnimIdleSprint()
@@ -397,7 +486,33 @@ void CHudItem::PlayAnimIdleSprint()
 
 void CHudItem::OnMovementChanged(ACTOR_DEFS::EMoveCommand cmd)
 {
-	if(GetState()==eIdle && !m_bStopAtEndAnimIsRunning)
+	if(GetState()!=eIdle)
+		return;
+
+	// never cut an aim in/out transition short (it owns the eIdle slot until it ends)
+	if(m_bIdleTransitionLock)
+		return;
+
+	// a one-shot gesture (dry-fire / jam inspect / bore) is playing in the idle slot: let it
+	// finish — interrupting it with the moving idle broke the misfire inspect (its OnAnimationEnd
+	// never fired, so the dry-fire flag stayed set and firing stuck). It refreshes to the right
+	// (moving) idle itself when it ends.
+	if(m_bStopAtEndAnimIsRunning)
+		return;
+
+	// Items with a movement-dependent idle (slow-walk, or directional aim-walk on
+	// weapons) re-play IMMEDIATELY on any speed/direction change so the right variant
+	// blends in (bMixIn) instead of only switching at the next cycle boundary.
+	// PlayAnimIdle() routes to the aim idle when zoomed, the moving idle otherwise.
+	if(HasMovementIdleVariant())
+	{
+		PlayAnimIdle						();
+		ResetSubStateTime					();
+		return;
+	}
+
+	// Plain items keep the original start/stop-at-cycle-boundary behaviour.
+	if(!m_bStopAtEndAnimIsRunning)
 	{
 		if( (cmd == ACTOR_DEFS::mcSprint) || (cmd == ACTOR_DEFS::mcAnyMove)  )
 		{

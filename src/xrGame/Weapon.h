@@ -102,6 +102,9 @@ public:
 		eReload,
 		eMisfire,
 		eSwitch,
+		eActionAnim,		// one-shot HUD gesture (headlamp / night-vision toggle), fire-locked
+		eFireModeSwitch,	// single<->auto fire-selector gesture, fire-locked
+
 	};
 	enum EWeaponSubStates{
 		eSubstateReloadBegin		=0,
@@ -125,7 +128,9 @@ protected:
 	bool					m_bTriStateReload;
 	u8						m_sub_state;
 	// a misfire happens, you'll need to rearm weapon
-	bool					bMisfire;				
+	bool					bMisfire;
+	// guarantees at least one clean shot right after a jam is cleared (no back-to-back jams)
+	bool					m_bMisfireCooldown;
 
 	BOOL					m_bAutoSpawnAmmo;
 
@@ -235,6 +240,9 @@ public:
 	virtual	float			CurrentZoomFactor	();
 	//показывает, что оружие находится в соостоянии поворота для приближенного прицеливания
 			bool			IsRotatingToZoom	() const		{	return (m_zoom_params.m_fZoomRotationFactor<1.f);}
+	// 0..1 aim-in/out rotation progress (ramps over zoom_rotate_time); used to ease the
+	// iron-sight FOV in sync with the weapon rotating into aim (no instant FOV snap).
+	IC		float			GetZoomRotationFactor() const		{	return m_zoom_params.m_fZoomRotationFactor;}
 
 	virtual	u8				GetCurrentHudOffsetIdx ();
 
@@ -276,6 +284,7 @@ protected:
 	virtual void			UpdatePosition			(const Fmatrix& transform);	//.
 	virtual void			UpdateXForm				();
 	virtual void			UpdateHudAdditonal		(Fmatrix&);
+	virtual float			GetHudFov				();	// eases hud_fov -> hud_fov_aim while aiming
 	IC		void			UpdateFireDependencies	()			{ if (dwFP_Frame==Device.dwFrame) return; UpdateFireDependencies_internal(); };
 
 	virtual void			LoadFireParams		(LPCSTR section);

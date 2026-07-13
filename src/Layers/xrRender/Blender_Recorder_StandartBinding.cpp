@@ -201,6 +201,26 @@ class cl_times		: public R_constant_setup {
 };
 static cl_times		binder_times;
 
+// Gunslinger exo HUD-screen constants (model_exohealth / model_exoscreen).
+// Filled by CActor each frame into g_pGamePersistent; see IGame_Persistent.
+class cl_actor_params : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent)	RCache.set_c (C, g_pGamePersistent->hud_actor_params);
+		else					RCache.set_c (C, 1.f, 1.f, 1.f, 1.f);
+	}
+};
+static cl_actor_params	binder_actor_params;
+
+class cl_affects : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent)	RCache.set_c (C, g_pGamePersistent->hud_affects);
+		else					RCache.set_c (C, 0.f, 0.f, 0.f, 0.f);
+	}
+};
+static cl_affects	binder_affects;
+
 // eye-params
 class cl_eye_P		: public R_constant_setup {
 	virtual void setup(R_constant* C)
@@ -342,6 +362,10 @@ void	CBlender_Compile::SetMapping	()
 #endif
 	// time
 	r_Constant				("timers",			&binder_times);
+
+	// Gunslinger exo HUD-screen shader constants
+	r_Constant				("m_actor_params",	&binder_actor_params);
+	r_Constant				("m_affects",		&binder_affects);
 
 	// eye-params
 	r_Constant				("eye_position",	&binder_eye_P);
