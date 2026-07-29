@@ -95,6 +95,7 @@ private:
 public:
 	void						ViewGlobalMap	();
 	void						ViewActor		();
+	void						ResetToDefaultView();
 	void						ViewZoomIn		();
 	void						ViewZoomOut		();
 

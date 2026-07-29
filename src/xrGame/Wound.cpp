@@ -1,4 +1,4 @@
-// Wound.cpp: класс описания раны
+// Wound.cpp: пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -64,7 +64,7 @@ float CWound::TypeSize(ALife::EHitType hit_type)
 	return m_Wounds[hit_type];
 }
 
-//кол-во кровавых ран
+//пїЅпїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
 float CWound::BloodSize	()
 {
 	return m_Wounds[ALife::eHitTypeWound]+ m_Wounds[ALife::eHitTypeFireWound];
@@ -77,7 +77,20 @@ void CWound::AddHit(float hit_power, ALife::EHitType hit_type)
 }
 
 
-void CWound::Incarnation	(float percent, float min_wound_size)
+void CWound::IncarnationByType(float percent, float min_wound_size, ALife::EHitType hit_type)
+{
+	if(fis_zero(TotalSize()))
+	{
+		for(int i=0; i<ALife::eHitTypeMax; i++)
+			m_Wounds[i] = 0.f;
+		return;
+	}
+	m_Wounds[hit_type] -= percent;
+	if(m_Wounds[hit_type] < min_wound_size)
+		m_Wounds[hit_type] = 0;
+}
+
+void CWound::Incarnation	(float percent, float min_wound_size, int skip_hit_type)
 {
 	float total_size = TotalSize();
 
@@ -88,9 +101,10 @@ void CWound::Incarnation	(float percent, float min_wound_size)
 		return;
 	}
 
-	//заживить все раны пропорционально их размеру
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	for(int i=0; i<ALife::eHitTypeMax; i++)
 	{
+		if(i == skip_hit_type)	continue;		// gwr: e.g. burn -- a bandage doesn't put you out
 		m_Wounds[i] -= percent/* *m_Wounds[i]*/;
 		if(m_Wounds[i]<min_wound_size)
 			m_Wounds[i] = 0;

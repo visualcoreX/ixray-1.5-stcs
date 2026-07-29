@@ -5,6 +5,8 @@
 #include "UIBtnHint.h"
 #include "../../Include/xrRender/UIShader.h"
 
+extern bool gwr_pda_visible_rect(Frect& r);		// UIPdaWnd.cpp
+
 #define PUSH_OFFSET_RIGHT 1
 #define PUSH_OFFSET_DOWN  1
 
@@ -229,7 +231,10 @@ void  CUIButton::Update()
 
 		Fvector2 c_pos			= GetUICursor()->GetCursorPosition();
 		Frect vis_rect;
-		vis_rect.set			(0,0,UI_BASE_WIDTH, UI_BASE_HEIGHT);
+		// While the 3D PDA is up only a crop of the screen reaches the model, so fit the hint to
+		// THAT -- against the full screen it reads as "fits" and quietly sits past the edge.
+		if (!gwr_pda_visible_rect(vis_rect))
+			vis_rect.set		(0,0,UI_BASE_WIDTH, UI_BASE_HEIGHT);
 
 		//select appropriate position
 		Frect r;

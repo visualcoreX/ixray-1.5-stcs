@@ -599,6 +599,28 @@ void CUIMapWnd::SetZoom(float value)
 	clamp			(m_currentZoom, GlobalMap()->GetMinZoom(), GlobalMap()->GetMaxZoom());
 }
 
+// Put the map back to the view a player who has never touched it would see: exactly what Init leaves
+// behind (global map fitted, hence GetCurrentZoom()==min), then the ViewActor the first PDA open
+// would have done from there. Doing it in this order matters -- ViewActor only zooms in when the map
+// is AT min zoom, and it reads GlobalMap()'s live rect, not the m_currentZoom target, so setting the
+// target first would be ignored and it would merely re-centre at whatever zoom the player left.
+void CUIMapWnd::ResetToDefaultView()
+{
+	if (!m_GlobalMap)	return;
+	m_GlobalMap->OptimalFit		(m_UILevelFrame->GetWndRect());
+	SetZoom						(m_GlobalMap->GetMinZoom());
+
+	// The level maps derive their own rect from the global map's transform (CUILevelMap::Update), so
+	// refitting the global map above leaves them stale for a frame. ViewActor centres via the level
+	// map's GetWndPos(), so without this it aims at where the map used to be -- which reads as the
+	// whole thing zooming into a corner.
+	for (GameMapsPairIt it = m_GameMaps.begin(); it != m_GameMaps.end(); ++it)
+		it->second->Update		();
+
+	m_prev_actor_pos.set		(0.0f, 0.0f);	// so ViewActor/Activated treat this as a first look
+	ViewActor					();
+}
+
 void CUIMapWnd::ViewGlobalMap()
 {
 	if (GlobalMap()->Locked())			return;

@@ -67,4 +67,7 @@ public:
 
 	Fvector2			UIItemImageSize; 
 	CUIStatic*			UIItemImage;
+	// GS layered weapon icon: sprite layers drawn over UIItemImage (a composed weapon's own inv_grid
+	// slot is empty, so without these the info panel would show no picture at all)
+	xr_vector<CUIStatic*>	m_gwr_icon_layers;
 };

@@ -8,6 +8,8 @@
 #include "../RadioactiveZone.h"
 
 #include "UIStatic.h"
+#include "UICellCustomItems.h"	// GWR_AttachIconLayers: layered weapon icon
+#include "../Weapon.h"
 #include "UIProgressBar.h"
 #include "UIProgressShape.h"
 #include "UIXmlInit.h"
@@ -233,7 +235,10 @@ void CUIHudStatesWnd::UpdateHealth( CActor* actor )
 		m_ui_armor_bar->Show( false );
 	}
 	
-	if ( actor->conditions().BleedingSpeed() > 0.01f )
+	// gwr: burning counts toward BleedingSpeed (it's a burn wound) but gets the fire indicator, not the
+	// blood drop. Light the drop for the NON-burn bleeding only -- so a real wound bleeding at the same
+	// time as a fire still shows its icon, while fire alone doesn't.
+	if ( actor->conditions().BleedingSpeedExcept( ALife::eHitTypeBurn ) > 0.01f )
 	{
 		m_bleeding->Show( true );
 	}
@@ -260,7 +265,7 @@ void CUIHudStatesWnd::UpdateActiveItemInfo( CActor* actor )
 //		UIWeaponBack.SetText		( str_name.c_str() );
 		m_fire_mode->Show			( true );
 		m_fire_mode->SetText		( str_fire_mode );
-		SetAmmoIcon					( icon_sect_name.c_str() );
+		SetAmmoIcon					( icon_sect_name.c_str(), item );
 		m_ui_weapon_sign_ammo->SetText( str_count.c_str() );
 		
 		// hack ^ begin
@@ -290,7 +295,7 @@ void CUIHudStatesWnd::UpdateActiveItemInfo( CActor* actor )
 	}
 }
 
-void CUIHudStatesWnd::SetAmmoIcon( const shared_str& sect_name )
+void CUIHudStatesWnd::SetAmmoIcon( const shared_str& sect_name, CInventoryItem* src )
 {
 	if ( !sect_name.size() )
 	{
@@ -353,7 +358,23 @@ void CUIHudStatesWnd::SetAmmoIcon( const shared_str& sect_name )
 
 		m_ui_weapon_icon->SetWidth((is_16x10) ? w * 0.833f * m_ui_weapon_icon_scale : w * m_ui_weapon_icon_scale);
 		m_ui_weapon_icon->SetHeight(h * m_ui_weapon_icon_scale);
-		
+
+		// GS layered weapon icon: a composed weapon's own inv_grid slot is EMPTY (the picture is made of
+		// sprite layers), so the rect above draws nothing and the HUD icon came out blank. Derive the
+		// scale from the FINAL widget size rather than from the intermediate w/h -- this icon is clamped
+		// and squashed on purpose (0.65f, the gridWidth>2 width cap, the 16:10 factor), and the base rect
+		// is stretched into it, so the layers have to be stretched by exactly the same non-uniform ratio.
+		{
+			float sx = m_ui_weapon_icon->GetWidth()  / (gridWidth  * INV_GRID_WIDTH(GameConstants::GetUseHQ_Icons()));
+			float sy = m_ui_weapon_icon->GetHeight() / (gridHeight * INV_GRID_HEIGHT(GameConstants::GetUseHQ_Icons()));
+			// GetBriefInfo can hand back a section that isn't the weapon's own (ammo etc.); only compose
+			// when the rect above really is this weapon's icon, otherwise the layers wouldn't match it.
+			CWeapon* w = smart_cast<CWeapon*>(src);
+			if (w && w->cNameSect() == sect_name)
+				GWR_AttachIconLayers(m_ui_weapon_icon, w, sx, sy, m_gwr_icon_layers, color_rgba(255,255,255,255));
+			else
+				GWR_AttachIconLayers(m_ui_weapon_icon, nullptr, sx, sy, m_gwr_icon_layers, 0);
+		}
 	}
 
 }
@@ -525,9 +546,21 @@ void CUIHudStatesWnd::UpdateIndicatorType( CActor* actor, ALife::EInfluenceType 
 	}
 
 
+	// gwr: while the actor is actually on fire (a burn wound, not just standing in a fire zone), drive
+	// the fire indicator to its danger state directly, so the same icon that warns about a fire zone
+	// now also means "you're burning". Done here rather than after the fact so it doesn't fight the
+	// per-frame zone logic (which would otherwise switch the blink off again next frame).
+	if ( type == ALife::infl_fire &&
+		 actor->conditions().BleedingSpeedByType( ALife::eHitTypeBurn ) > 0.0f )
+	{
+		m_indik[type]->SetColor( c_red );
+		SwitchLA( true, type );
+		return;
+	}
+
 	float           hit_power = m_zone_cur_power[type];
 	ALife::EHitType hit_type  = m_zone_hit_type[type];
-	
+
 	CCustomOutfit* outfit = actor->GetOutfit();
 	float protect = (outfit) ? outfit->GetDefHitTypeProtection( hit_type ) : 0.0f;
 	protect += actor->GetProtection_ArtefactsOnBelt( hit_type );

@@ -17,6 +17,11 @@ struct v_filter {
 
 void	CRenderTarget::phase_luminance()
 {
+	// 3D PiP scope: FREEZE auto-exposure for the whole time a lensed scope is aimed (not just lens frames) --
+	// the close-up weapon body would otherwise drag the average luminance and shift world brightness on
+	// aim-in/out. See R2 note.
+	if (g_pGamePersistent && g_pGamePersistent->m_bLensAimActive)	return;
+
 	u32		Offset	= 0;
 //	float	eps		= EPS_S;
 	float	eps		= 0;

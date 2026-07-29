@@ -15,7 +15,11 @@ public:
 	virtual			~CWeaponMagazinedWGrenade	();
 
 	virtual void	Load				(LPCSTR section);
-	
+
+	// gwr: the loaded grenade's HUD bone (gl_ammo_params_section_<type> -> configuration_<count>)
+	virtual int		gwr_GLBonesState	();
+	virtual void	gwr_UpdateBonesGL	();
+
 	virtual BOOL	net_Spawn			(CSE_Abstract* DC);
 	virtual void	net_Destroy			();
 	virtual void	net_Export			(NET_Packet& P);
@@ -71,7 +75,7 @@ public:
 	virtual void	PlayAnimModeSwitch	();
 	virtual void	PlayAnimBore		();
 	virtual void	PlayAnimIdleMoving	();
-	virtual void	PlayAnimIdleSprint	();
+	virtual LPCSTR	SprintLoopBase		();
 	virtual void	SelectAimIdleAnim	(string_path& result);
 	virtual void	SelectDryFireAnim	(string_path& result);
 	virtual void	SelectAimTransitionAnim	(bool bAimIn, string_path& result);
@@ -92,9 +96,11 @@ public:
 	int						iMagazineSize2;
 	xr_vector<CCartridge>	m_magazine2;
 	bool					m_bGrenadeMode;
+	virtual bool			InertionGrenadeModeNow	() const	{ return m_bGrenadeMode; }
 
 	CCartridge				m_DefaultCartridge2;
 	int						iAmmoElapsed2;
 
 	virtual void UpdateGrenadeVisibility(bool visibility);
+	virtual bool IsGrenadeMode	() const { return m_bGrenadeMode; }
 };

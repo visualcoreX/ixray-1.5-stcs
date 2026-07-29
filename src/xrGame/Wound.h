@@ -1,4 +1,4 @@
-// Wound.h: класс описания раны
+// Wound.h: пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -25,8 +25,11 @@ public:
 
 	void	AddHit		(float hit_power, ALife::EHitType hit_type);
 	
-	//заживление раны
-	void	Incarnation	(float percent, float min_wound_size);
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+	// gwr: skip_hit_type (-1 = none) leaves that type untouched -- a bandage must not put a fire out
+	void	Incarnation	(float percent, float min_wound_size, int skip_hit_type = -1);
+	// gwr: heal one hit type only (see CEntityCondition::ChangeBleedingByType)
+	void	IncarnationByType(float percent, float min_wound_size, ALife::EHitType hit_type);
 	u16		GetBoneNum	() {return m_iBoneNum;}
 	void 	SetBoneNum	(u16 bone_num) {m_iBoneNum = bone_num;}
 
@@ -39,19 +42,19 @@ public:
 	void  SetDestroy(bool destroy) {m_bToBeDestroy = destroy;}
 	bool  GetDestroy()			   {return m_bToBeDestroy;}
 
-	//время обновления (для капель крови)
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ)
 	float m_fDropTime;
 
 protected:
-	//косточка на которой появилась рана
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 	u16 m_iBoneNum;
 
-	//косточка, если на ране отыгрывается партикл
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	u16 m_iParticleBoneNum;
-	//имя этого партикла
+	//пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	shared_str m_sParticleName;
 
-	//список составляющих раны 
+	//пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ 
 	HitImmunity::HitTypeSVec m_Wounds;
 
 	bool		m_bToBeDestroy;

@@ -63,6 +63,10 @@ public:
 	virtual void 			Update				();
 	virtual void 			Show				();
 	virtual void 			Hide				();
+	// 3D PDA. RMB holds the PDA to the face (the dialog eats the input, so the item can never see
+	// kWPN_ZOOM by itself); MMB flips the mouse between the PDA cursor and looking around.
+	virtual bool			IR_OnKeyboardPress	(int dik);
+	virtual bool			IR_OnMouseMove		(int dx, int dy);
 	virtual bool			OnMouseAction		(float x, float y, EUIMessages mouse_action) {CUIDialogWnd::OnMouseAction(x,y,mouse_action);return true;} //always true because StopAnyMove() == false
 		
 			UIHint*			get_hint_wnd		() const { return m_hint_wnd; }
@@ -70,6 +74,7 @@ public:
 
 			void			SetActiveCaption	();
 			void			SetCaption			(LPCSTR text);
+			void			ResetMapView		();
 			void			Show_SecondTaskWnd	(bool status);
 			void			Show_MapLegendWnd	(bool status);
 

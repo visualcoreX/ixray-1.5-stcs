@@ -10,6 +10,9 @@
 #include "ui/UIMainIngameWnd.h"
 #include "ui/UIMessagesWindow.h"
 #include "ui/UIPdaWnd.h"
+#include "UIGameCustom.h"
+
+extern bool gwr_pda_screen_active();		// ui\UIPdaWnd.cpp
 
 CUI::CUI(CHUDManager* p)
 {
@@ -75,8 +78,16 @@ bool CUI::Render()
 {
 	if( GameIndicatorsShown() )
 	{
-		if (pUIGame) 
+		if (pUIGame)
 			pUIGame->Render	();
+	}
+	else if (pUIGame && gwr_pda_screen_active())
+	{
+		// The NV mask is a viewport effect, not a HUD indicator -- it belongs with the ppe, which
+		// stays. Raising the 3D PDA hides the indicators (that's wanted), but it must not take the
+		// goggles off your eyes. OnFrame updates statics ungated, so its flicker keeps running.
+		SDrawStaticStruct* s = pUIGame->GetCustomStatic("gwr_nv_screen_mask");
+		if (s)	s->Draw();
 	}
 
 	CEntity* pEntity = smart_cast<CEntity*>(Level().CurrentEntity());

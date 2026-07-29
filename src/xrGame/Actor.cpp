@@ -97,6 +97,7 @@ Flags32			psActorFlags={/*AF_DYNAMIC_MUSIC|*/AF_GODMODE_RT};
 
 CActor::CActor() : CEntityAlive()
 {
+	m_dwBayonetHitTm		= 0;
 	encyclopedia_registry	= xr_new<CEncyclopediaRegistryWrapper	>();
 	game_news_registry		= xr_new<CGameNewsRegistryWrapper		>();
 	// Cameras
@@ -177,6 +178,8 @@ CActor::CActor() : CEntityAlive()
 	m_sDefaultObjAction		= NULL;
 
 	m_fSprintFactor			= 4.f;
+	m_fSprintAccelTime		= 0.4f;
+	m_fSprintRamp			= 0.f;
 
 	//hFriendlyIndicator.create(FVF::F_LIT,RCache.Vertex.Buffer(),RCache.QuadIB);
 
@@ -326,6 +329,7 @@ void CActor::Load	(LPCSTR section )
 	m_fCrouchFactor				= pSettings->r_float(section,"crouch_coef");
 	m_fClimbFactor				= pSettings->r_float(section,"climb_coef");
 	m_fSprintFactor				= pSettings->r_float(section,"sprint_koef");
+	m_fSprintAccelTime			= READ_IF_EXISTS(pSettings, r_float, section, "sprint_accel_time", 0.4f);	// smooth sprint ramp-up (s); 0 = instant
 
 	m_fWalk_StrafeFactor		= READ_IF_EXISTS(pSettings, r_float, section, "walk_strafe_coef", 1.0f);
 	m_fRun_StrafeFactor			= READ_IF_EXISTS(pSettings, r_float, section, "run_strafe_coef", 1.0f);
@@ -838,6 +842,8 @@ void CActor::g_Physics			(Fvector& _accel, float jump, float dt)
 }
 float g_fov = 67.5f;
 
+extern void gwr_update_burning(CActor* actor);		// ActorInput.cpp
+
 float CActor::currentFOV()
 {
 	if (!psHUD_Flags.is(HUD_WEAPON|HUD_WEAPON_RT|HUD_WEAPON_RT2))
@@ -846,6 +852,21 @@ float CActor::currentFOV()
 	CWeapon* pWeapon = smart_cast<CWeapon*>(inventory().ActiveItem());
 
 	if (eacFirstEye != cam_active || !pWeapon)
+		return g_fov;
+
+	// 3D PiP lensed scope: keep the WORLD FOV at base -- all magnification lives in the scope lens itself
+	// (the double-rendered $user$scope). Zooming the main view too would double-zoom and defeat the PiP.
+	if (pWeapon->IsLensedScope())
+		return g_fov;
+
+	// Gunslinger: aiming the GL (grenade mode) never zooms the WORLD -- it uses its own HUD fov
+	// (hud_fov_gl_zoom_factor), so the scope's zoom must not leak onto GL aiming (ActorUtils.pas grenade branch).
+	if (pWeapon->IsGrenadeMode())
+		return g_fov;
+
+	// PDA held up: only the HUD model comes to the face (hud_fov_aim), the world FOV stays put --
+	// zooming it would be wrong on its own, and doubly so because our HUD FOV is a FRACTION of it
+	if (pWeapon->UsesPdaCursorAnims())
 		return g_fov;
 
 	if (pWeapon->ZoomTexture())
@@ -870,6 +891,14 @@ float CActor::currentFOV()
 void CActor::UpdateCL	()
 {
 	UpdateInventoryOwner			(Device.dwTimeDelta);
+	gwr_update_burning				(this);		// burn wound drains: fast while beating it out, slow otherwise
+
+	// GS bayonet stab: land the melee hit at the scheduled mark (the ak74_bayonet plays on the weapon's own hud)
+	if (m_dwBayonetHitTm && Device.dwTimeGlobal >= m_dwBayonetHitTm)
+	{
+		m_dwBayonetHitTm = 0;
+		QuickKickHit();
+	}
 
 	// Feed the exo HUD-screen shader constants (m_actor_params) consumed by the render binder
 	// (model_exohealth / model_exoscreen). .y = outfit condition drives the screen color.
@@ -882,9 +911,38 @@ void CActor::UpdateCL	()
 			outfit		? outfit->GetCondition()		: -1.f,
 			active_item	? active_item->GetCondition()	: -1.f,
 			1.f);
+
+		// Feed the 3D PiP scope lens constants (m_hud_params) consumed by model_scope_lense.ps.
+		// Lens alpha = min(aim_factor, lens_visibility): fades in with aim, hidden otherwise -> Gunslinger
+		// GetZoomLensVisibilityFactor (lens shown only while aiming through a lensed scope).
+		// Lens output alpha = min(m_hud_params.y, m_hud_params.w) with aref(true,0) discard -> the lens only
+		// renders while aiming (GS binder_cur_zoom_factor: y=aim factor). When not aiming aim=0 -> alpha 0 ->
+		// discarded -> lens not drawn at all (the see-through refraction is killed separately by dropping
+		// distort() from the models_zoom blender).
+		float	aspect	= Device.dwWidth ? (float)Device.dwHeight / (float)Device.dwWidth : 0.75f;
+		CWeapon* wpn	= smart_cast<CWeapon*>(active_item);
+		if (wpn && wpn->IsLensedScope())
+		{
+			float	aim		= wpn->GetInertionAimFactor();		// 0..1 ADS ramp; 0 when not aiming
+			// GS multi-scope: chromatic aberration is per-scope; read from the active scope section, weapon fallback.
+			shared_str asc = wpn->GetCurrentScopeSection();
+			float	abber	= (asc.size() && pSettings->line_exist(*asc, "scope_abberation"))
+							? pSettings->r_float(*asc, "scope_abberation")
+							: READ_IF_EXISTS(pSettings, r_float, wpn->cNameSect(), "scope_abberation", 0.f);
+			g_pGamePersistent->hud_scope_params.set(aspect, aim, abber, 1.f);
+			// GS scope illumination -> m_zoom_deviation.z = brightness, .w = jitter (used by the NV lens shader
+			// model_scope_lense_night). Day scopes ignore .z/.w and use the reticle-glow bones instead.
+			g_pGamePersistent->hud_zoom_deviation.set(0.f, 0.f, wpn->ScopeIllumValue(), wpn->ScopeIllumJitter());
+		}
+		else
+		{
+			g_pGamePersistent->hud_scope_params.set(aspect, 0.f, 0.f, 0.f);
+			g_pGamePersistent->hud_zoom_deviation.set(0.f, 0.f, 0.f, 0.f);
+		}
 	}
 
 	UpdateDelayedDeviceSwitch	();		// fire any pending delayed torch/NV toggle
+	UpdateElectronicsProblems	();		// GS blowout: glitch/disable devices during a surge
 
 	if(m_feel_touch_characters>0)
 	{
@@ -972,7 +1030,24 @@ void CActor::UpdateCL	()
 
 	UpdateDefferedMessages();
 
-	if (g_Alive()) 
+	// GS-like velocity-proportional footstep cadence (task): stock CS/Gunslinger time footsteps off the
+	// actor's SPEED (material_manager's step_time), but IX-Ray drives them off the leg-anim loop via the
+	// step manager (2 steps per loop). Those loops are ~as short for walk/crouch as for run, so cadence
+	// barely drops on slow gaits. Scale the leg blend by actual/reference speed BEFORE the step manager
+	// reads it (get_blend_time = timeTotal/speed), capped at 1.0 so no gait is ever sped up (no regression):
+	// slow gaits now play the loop slower -> fewer footsteps + less foot-slide, matching GS. Tunable via
+	// [actor] legs_anim_ref_speed / legs_anim_speed_min, no rebuild.
+	if (m_current_legs_blend && (mstate_real & mcAnyMove) && !fis_zero(m_current_legs_blend->timeTotal))
+	{
+		const float ref = READ_IF_EXISTS(pSettings, r_float, cNameSect(), "legs_anim_ref_speed", 4.0f);
+		const float lo  = READ_IF_EXISTS(pSettings, r_float, cNameSect(), "legs_anim_speed_min",  0.35f);
+		const float spd = character_physics_support()->movement()->GetVelocityActual();
+		float k = (ref > 0.001f) ? (spd / ref) : 1.0f;
+		clamp(k, lo, 1.0f);
+		m_current_legs_blend->speed = k;
+	}
+
+	if (g_Alive())
 		CStepManager::update();
 
 	spatial.type |=STYPE_REACTTOSOUND;
@@ -1014,7 +1089,21 @@ void CActor::UpdateCL	()
 	
 	
 	if(IsFocused())
+	{
+		// GS hud_move: drag the hands attach toward the per-state offsets BEFORE the hud reads it
+		extern void gwr_UpdateHudMove(u32 mreal, u32 mwish, u32 dt);
+		gwr_UpdateHudMove				(mstate_real, mstate_wishful, Device.dwTimeDelta);
 		g_player_hud->update			(trans);
+		// position the laser dot now: the HUD item transform is fresh for THIS render frame, so the dot
+		// tracks the gun smoothly instead of lagging a frame (it ran earlier in the weapon's own UpdateCL).
+		if (CInventoryItem* aitm = inventory().ActiveItem())
+			if (CWeapon* awpn = smart_cast<CWeapon*>(aitm))
+			{
+				awpn->UpdateLaserDot();
+				awpn->UpdateFlashlight();
+				awpn->UpdateCollimatorGlitch();		// GS: collimator reticle bone glitches out during an emission
+			}
+	}
 }
 
 float	NET_Jump = 0;
@@ -1360,6 +1449,10 @@ extern	BOOL	g_ShowAnimationInfo		;
 void CActor::OnHUDDraw	(CCustomHUD*)
 {
 	R_ASSERT						(IsFocused());
+	// 3D PiP scope: on a lens frame the scene is captured world-only (no first-person weapon) into $user$scope,
+	// so skip the HUD entirely -- otherwise the weapon (and its lens) would appear inside the scope image.
+	if (g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow)
+		return;
 	if(! ( (mstate_real & mcLookout) && !IsGameTypeSingle() ) )
 		g_player_hud->render_hud		();
 

@@ -36,7 +36,7 @@ void CUIInventoryWnd::EatItem(PIItem itm)
 #include "../Antirad.h"
 void CUIInventoryWnd::ActivatePropertiesBox()
 {
-	// Флаг-признак для невлючения пункта контекстного меню: Dreess Outfit, если костюм уже надет
+	// пїЅпїЅпїЅпїЅ-пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ: Dreess Outfit, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	bool bAlreadyDressed = false; 
 
 		
@@ -82,7 +82,7 @@ void CUIInventoryWnd::ActivatePropertiesBox()
 		b_show			= true;
 	}
 	
-	//отсоединение аддонов от вещи
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ
 	if(pWeapon)
 	{
 		if(pWeapon->GrenadeLauncherAttachable() && pWeapon->IsGrenadeLauncherAttached())
@@ -125,7 +125,7 @@ void CUIInventoryWnd::ActivatePropertiesBox()
 		}
 	}
 	
-	//присоединение аддонов к активному слоту (2 или 3)
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ (2 пїЅпїЅпїЅ 3)
 	if(pScope)
 	{
 		if(m_pInv->m_slots[PISTOL_SLOT].m_pIItem != NULL &&
@@ -242,7 +242,7 @@ void CUIInventoryWnd::ProcessPropertiesBoxClicked	()
 			AttachAddon((PIItem)(UIPropertiesBox.GetClickedItem()->GetData()));
 			break;
 		case INVENTORY_DETACH_SCOPE_ADDON:
-			DetachAddon(*(smart_cast<CWeapon*>(CurrentIItem()))->GetScopeName());
+			DetachAddon(*(smart_cast<CWeapon*>(CurrentIItem()))->GetAttachedScopeName());
 			break;
 		case INVENTORY_DETACH_SILENCER_ADDON:
 			DetachAddon(*(smart_cast<CWeapon*>(CurrentIItem()))->GetSilencerName());

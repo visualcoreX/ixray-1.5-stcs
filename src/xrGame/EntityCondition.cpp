@@ -7,11 +7,31 @@
 #include "level.h"
 #include "game_cl_base.h"
 #include "entity_alive.h"
+#include "actor.h"
 #include "../Include/xrRender/KinematicsAnimated.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "object_broker.h"
 
 #define MAX_HEALTH 1.0f
+
+// How big a burn wound a burn hit leaves; 0 disables them entirely (stock Clear Sky behaviour).
+// Gunslinger's equivalent knob is wound_factor_for_hit_type_0. Read once -- ConditionHit is hot.
+float gwr_burn_wound_factor()
+{
+	static float	s_k		= -1.0f;
+	if (s_k < 0.0f)
+		s_k = READ_IF_EXISTS(pSettings, r_float, "gwr_burning", "burn_wound_factor", 0.0f);
+	return s_k;
+}
+
+// Multiplier on the GRADUAL damage a burn wound deals (BleedingSpeed -> UpdateHealth). 1 = stock.
+float gwr_burn_damage_factor()
+{
+	static float	s_k		= -1.0f;
+	if (s_k < 0.0f)
+		s_k = READ_IF_EXISTS(pSettings, r_float, "gwr_burning", "burn_damage_factor", 1.0f);
+	return s_k;
+}
 #define MIN_HEALTH -0.01f
 
 
@@ -166,12 +186,49 @@ void CEntityCondition::ChangeEntityMorale(float value)
 }
 
 
-void CEntityCondition::ChangeBleeding(float percent)
+// How much of the wound load is of this hit type (burn, for the fire anomaly). >0 = still burning.
+float CEntityCondition::BleedingSpeedByType(ALife::EHitType hit_type) const
 {
-	//затянуть раны
+	float sz = 0.0f;
+	for(WOUND_VECTOR::const_iterator it = m_WoundVector.begin(); m_WoundVector.end() != it; ++it)
+		sz += (*it)->TypeSize(hit_type);
+	return sz;
+}
+
+float CEntityCondition::BleedingSpeedExcept(ALife::EHitType skip_hit_type) const
+{
+	if(m_WoundVector.empty())	return 0.0f;
+	float sum = 0.0f;
+	for(WOUND_VECTOR::const_iterator it = m_WoundVector.begin(); m_WoundVector.end() != it; ++it)
+		sum += ((*it)->TotalSize() - (*it)->TypeSize(skip_hit_type));
+	return sum / m_WoundVector.size();
+}
+
+// Same shape as ChangeBleeding, but only the given hit type is touched -- see the header note.
+// Positive percent heals, exactly as the caller of ChangeBleeding expects.
+void CEntityCondition::ChangeBleedingByType(float percent, ALife::EHitType hit_type)
+{
 	for(WOUND_VECTOR_IT it = m_WoundVector.begin(); m_WoundVector.end() != it; ++it)
 	{
-		(*it)->Incarnation			(percent, m_fMinWoundSize);
+		(*it)->IncarnationByType	(percent, m_fMinWoundSize, hit_type);
+		if(0 == (*it)->TotalSize	())
+			(*it)->SetDestroy		(true);
+	}
+}
+
+void CEntityCondition::ChangeBleeding(float percent)
+{
+	// gwr: on the ACTOR, leave the burn out of it -- this is what bandages and the natural wound
+	// regen call, and a bandage putting a fire out makes the whole thing pointless. Fire has its own
+	// way out (beat it with your hands). NPCs keep stock behaviour, and so does everyone when the
+	// feature is off. Gunslinger hooks this very function and masks burn off for the actor exactly so.
+	int skip = (gwr_burn_wound_factor() > 0.0f && smart_cast<CActor*>(m_object))
+					? int(ALife::eHitTypeBurn) : -1;
+
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+	for(WOUND_VECTOR_IT it = m_WoundVector.begin(); m_WoundVector.end() != it; ++it)
+	{
+		(*it)->Incarnation			(percent, m_fMinWoundSize, skip);
 		if(0 == (*it)->TotalSize	())
 			(*it)->SetDestroy		(true);
 	}
@@ -189,7 +246,7 @@ bool RemoveWoundPred(CWound* pWound)
 
 void  CEntityCondition::UpdateWounds		()
 {
-	//убрать все зашившие раны из списка
+	//пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	m_WoundVector.erase(
 		std::remove_if(
 			m_WoundVector.begin(),
@@ -228,7 +285,7 @@ void CEntityCondition::UpdateConditionTime()
 	m_iLastTimeCalled			= _cur_time;
 }
 
-//вычисление параметров с ходом игрового времени
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 void CEntityCondition::UpdateCondition()
 {
 	if(GetHealth()<=0)			return;
@@ -318,7 +375,7 @@ float CEntityCondition::HitOutfitEffect( float hit_power, ALife::EHitType hit_ty
 		new_hit_power				-= protect * one;
 		if( new_hit_power < 0.0f ) { new_hit_power = 0.0f; }
 		
-		//увеличить изношенность костюма
+		//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		pOutfit->Hit				(new_hit_power, hit_type);
 	}
 	if( bDebug )	Msg( "new_hit_power = %.3f  hit_type = %s  ap = %.3f", new_hit_power, ALife::g_cafHitType2String(hit_type), ap );
@@ -341,10 +398,10 @@ float CEntityCondition::HitPowerEffect(float power_loss)
 
 CWound* CEntityCondition::AddWound(float hit_power, ALife::EHitType hit_type, u16 element)
 {
-	//максимальное число косточек 64
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 64
 	VERIFY(element  < 64 || BI_NONE == element);
 
-	//запомнить кость по которой ударили и силу удара
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	WOUND_VECTOR_IT it = m_WoundVector.begin();
 	for(;it != m_WoundVector.end(); it++)
 	{
@@ -354,14 +411,14 @@ CWound* CEntityCondition::AddWound(float hit_power, ALife::EHitType hit_type, u1
 	
 	CWound* pWound = NULL;
 
-	//новая рана
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 	if (it == m_WoundVector.end())
 	{
 		pWound = xr_new<CWound>(element);
 		pWound->AddHit(hit_power*::Random.randF(0.5f,1.5f), hit_type);
 		m_WoundVector.push_back(pWound);
 	}
-	//старая 
+	//пїЅпїЅпїЅпїЅпїЅпїЅ 
 	else
 	{
 		pWound = *it;
@@ -374,7 +431,7 @@ CWound* CEntityCondition::AddWound(float hit_power, ALife::EHitType hit_type, u1
 
 CWound* CEntityCondition::ConditionHit(SHit* pHDS)
 {
-	//кто нанес последний хит
+	//пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
 	m_pWho = pHDS->who;
 	m_iWhoID = (NULL != pHDS->who) ? pHDS->who->ID() : 0;
 
@@ -399,7 +456,14 @@ CWound* CEntityCondition::ConditionHit(SHit* pHDS)
 		m_fHealthLost = hit_power*m_fHealthHitPart*m_fHitBoneScale;
 		m_fDeltaHealth -= CanBeHarmed() ? m_fHealthLost : 0;
 		m_fDeltaPower -= hit_power*m_fPowerHitPart;
-		bAddWound		=  false;
+		// Stock Clear Sky refuses a wound for burn hits, so the fire anomaly only ever drained health
+		// -- nothing was left burning afterwards. The burn WOUND is what "the actor is on fire" means
+		// (both to us and to [entity_fire_particles]), so let it through, config-gated the way
+		// Gunslinger does it (its wound_factor_for_hit_type_0). 0 = stock behaviour.
+		// Actor only: this whole burning feature is his. NPCs keep stock Clear Sky (no burn wound, just
+		// the health tick above), so nothing about their fire behaviour or balance changes.
+		bAddWound		=  (gwr_burn_wound_factor() > 0.0f) && (smart_cast<CActor*>(m_object) != NULL);
+		hit_power		*= (bAddWound ? gwr_burn_wound_factor() : 1.0f);
 		break;
 	case ALife::eHitTypeChemicalBurn:
 		hit_power *= m_HitTypeK[pHDS->hit_type];
@@ -440,7 +504,7 @@ CWound* CEntityCondition::ConditionHit(SHit* pHDS)
 	}
 
 	if (bDebug) Msg("%s hitted in %s with %f[%f]", m_object->Name(), smart_cast<IKinematics*>(m_object->Visual())->LL_BoneName_dbg(pHDS->boneID), m_fHealthLost*100.0f, hit_power_org);
-	//раны добавляются только живому
+	//пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	if( bAddWound && GetHealth()>0 )
 	{
 		return AddWound(hit_power*m_fWoundBoneScale, pHDS->hit_type, pHDS->boneID);
@@ -454,10 +518,19 @@ float CEntityCondition::BleedingSpeed()
 {
 	float bleeding_speed		=0;
 
+	// gwr: the burn part of a wound can pull harder than the rest. This is the gradual damage --
+	// UpdateHealth turns this into the health drain -- not the anomaly's hit, which is untouched.
+	// k=1 (or the feature off) leaves the stock sum exactly as it was.
+	float burn_k				= (gwr_burn_wound_factor() > 0.0f && smart_cast<CActor*>(m_object))
+									? gwr_burn_damage_factor() : 1.0f;
+
 	for(WOUND_VECTOR_IT it = m_WoundVector.begin(); m_WoundVector.end() != it; ++it)
+	{
 		bleeding_speed			+= (*it)->TotalSize();
-	
-	
+		if(!fsimilar(burn_k, 1.0f))
+			bleeding_speed		+= (*it)->TypeSize(ALife::eHitTypeBurn) * (burn_k - 1.0f);
+	}
+
 	return (m_WoundVector.empty() ? 0.f : bleeding_speed / m_WoundVector.size());
 }
 

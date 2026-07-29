@@ -221,6 +221,26 @@ class cl_affects : public R_constant_setup {
 };
 static cl_affects	binder_affects;
 
+// Gunslinger 3D PiP scope lens constants (model_scope_lense.ps): m_hud_params (aim/abberation/lens-visibility)
+// and m_zoom_deviation (lens image offset). Filled by CActor each frame into g_pGamePersistent.
+class cl_hud_params : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent)	RCache.set_c (C, g_pGamePersistent->hud_scope_params);
+		else					RCache.set_c (C, 1.f, 0.f, 0.f, 0.f);
+	}
+};
+static cl_hud_params	binder_hud_params;
+
+class cl_zoom_deviation : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent)	RCache.set_c (C, g_pGamePersistent->hud_zoom_deviation);
+		else					RCache.set_c (C, 0.f, 0.f, 0.f, 0.f);
+	}
+};
+static cl_zoom_deviation	binder_zoom_deviation;
+
 // eye-params
 class cl_eye_P		: public R_constant_setup {
 	virtual void setup(R_constant* C)
@@ -366,6 +386,10 @@ void	CBlender_Compile::SetMapping	()
 	// Gunslinger exo HUD-screen shader constants
 	r_Constant				("m_actor_params",	&binder_actor_params);
 	r_Constant				("m_affects",		&binder_affects);
+
+	// Gunslinger 3D PiP scope lens shader constants
+	r_Constant				("m_hud_params",	&binder_hud_params);
+	r_Constant				("m_zoom_deviation",&binder_zoom_deviation);
 
 	// eye-params
 	r_Constant				("eye_position",	&binder_eye_P);

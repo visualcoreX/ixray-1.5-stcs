@@ -105,7 +105,7 @@ public:
 	void			render_hud			();	
 	void			render_item_ui		();
 	bool			render_item_ui_query();
-	u32				anim_play			(u16 part, const MotionID& M, BOOL bMixIn, const CMotionDef*& md, float speed);
+	u32				anim_play			(u16 part, const MotionID& M, BOOL bMixIn, const CMotionDef*& md, float speed, float blend_accrue = 0.f);
 	const shared_str& section_name		() const {return m_sect_name;}
 
 	attachable_hud_item* create_hud_item(const shared_str& sect);

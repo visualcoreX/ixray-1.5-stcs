@@ -17,7 +17,7 @@ protected:
 	virtual void	PlayReloadSound					();
 	virtual void	PlayAnimIdle					();
 	virtual void	PlayAnimIdleMoving				();
-	virtual void	PlayAnimIdleSprint				();
+	virtual LPCSTR	SprintLoopBase					();
 	virtual void	PlayAnimShow					();
 	virtual void	PlayAnimHide					();
 	virtual void	PlayAnimBore					();

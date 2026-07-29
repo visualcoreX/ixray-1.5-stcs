@@ -247,11 +247,17 @@ void CUISequenceSimpleItem::Start()
 		
 		if ( ui_game_sp )
 		{
-			if ( ( !ui_game_sp->PdaMenu().IsShown() &&  bShowPda ) || 
-				(   ui_game_sp->PdaMenu().IsShown() && !bShowPda ) )
+			bool was_shown = !!ui_game_sp->PdaMenu().IsShown();
+			if ( ( !was_shown &&  bShowPda ) ||
+				(   was_shown && !bShowPda ) )
 			{
 				HUD().GetUI()->StartStopMenu( &ui_game_sp->PdaMenu(), true );
 			}
+			// The tutorial points at fixed screen spots, so the map has to be at the view they were
+			// drawn against -- otherwise a player who zoomed or panned it earlier gets arrows aimed
+			// at nothing. Only on the open, so it stays put while the tutorial walks its steps.
+			if ( !was_shown && bShowPda )
+				ui_game_sp->PdaMenu().ResetMapView();
 		}
 	}
 }
@@ -273,14 +279,11 @@ bool CUISequenceSimpleItem::Stop			(bool bForce)
 	if(m_flags.test(etiNeedPauseSound))
 		Device.Pause			(FALSE, FALSE, TRUE, "simpleitem_stop");
 
-	if ( g_pGameLevel )
-	{
-		CUIGameSP* ui_game_sp	= smart_cast<CUIGameSP*>( HUD().GetUI()->UIGame() );
-		if ( ui_game_sp && ui_game_sp->PdaMenu().IsShown() )
-		{
-			HUD().GetUI()->StartStopMenu( &ui_game_sp->PdaMenu(), true );
-		}
-	}
+	// NOTE: this used to close the PDA unconditionally, so every step of the tutorial shut it and the
+	// next step's Start() reopened it. With a 2D window that toggle was invisible; with the 3D PDA
+	// it's a full holster + 1.2s draw between EVERY line. The next item's Start() already closes the
+	// PDA when it doesn't want it (see bShowPda there), so the only close still owed is at the end
+	// of the tutorial -- CUISequencer::Destroy does that one now.
 	inherited::Stop				();
 	return true;
 }

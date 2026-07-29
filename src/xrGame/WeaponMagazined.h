@@ -61,9 +61,31 @@ protected:
 	bool			m_fire_selector_capturing;	// true during the switch gesture = sample the bone
 	bool			m_fire_selector_valid;	// the captured/restored pose is valid (guard vs identity)
 	bool			m_fire_selector_cb;		// callback currently attached to the live HUD model
+	bool			m_selector_model_warm;	// the selector bone has been through >=1 NORMAL render calc (model posed)
+	u8				m_selector_sample_tries;	// bounded retries of the auto-pose sample (model may not be posed yet on attach)
 	void			UpdateFireSelectorBone	();	// (re)attach callback to the current HUD model
 	void			DetachFireSelectorBone	();
 	void			SampleFireSelectorAutoPose();	// derive the auto selector pose from the anim's last frame
+	bool			IsActorSprinting		();	// parent actor currently in the sprint movement state
+	bool			DetectorCompanionOut	();	// a detector is out in the left hand (hud idx 1)
+public:
+	// play the "take out / put away the detector" hand gesture on the weapon (anm_draw_detector /
+	// anm_prepare_detector) when the detector is toggled with this weapon in hand. Returns true if played.
+	bool			PlayDetectorGesture		(bool draw);
+	// two-phase detector DRAW: play anm_prepare_detector (hand goes off-screen) now; when it ends the
+	// detector is actually shown + anm_draw_detector (hand returns) plays. Returns true if it deferred.
+	bool			BeginDetectorDraw		();
+	// HOLSTER: anm_holster_detector (= <pref>_hand_draw) returns the support hand to idle. It plays at
+	// the same time as the detector's own holster (anm_hide_fast), NOT before/after it.
+	bool			PlayDetectorHandReturn	();
+	bool			m_bDetectorDrawPending;	// anm_prepare_detector is playing -> show the detector when it ends
+	// anm_prepare_detector's last frames are static, so waiting for its natural end shows a frozen pose
+	// (the hitch). Fire the draw early instead - the next motion overrides the static tail. Gunslinger
+	// does exactly this via a config lock_time. 0 = inactive.
+	u32				m_dwDetectorShowTm;
+	void			ArmDetectorShowTimer	();	// call once anm_prepare_detector has actually started
+	void			FireDetectorShow		();	// show the detector + play anm_draw_detector now
+protected:
 	virtual void	on_a_hud_attach			();
 	virtual void	on_b_hud_detach			();
 	static void		FireSelectorBoneCallback(CBoneInstance* B);
@@ -92,6 +114,9 @@ protected:
 	virtual void	OnAnimationEnd	(u32 state);
 	virtual void	OnStateSwitch	(u32 S);
 	virtual bool	NeedJammedAnim	() { return !!IsMisfire(); }	// jammed -> play "_jammed" HUD gestures
+	virtual bool	NeedEmptyAnim	() { return iAmmoElapsed == 0; }	// empty mag -> "_empty" (bolt held back)
+	virtual void	MakeFireModeName(LPCSTR name, string_path& out);	// GS mask_firemode_<a|N> suffix per fire mode
+	virtual bool	IsGrenadeMode	() const { return false; }			// GL grenade mode (WGrenade overrides)
 
 	virtual void	UpdateSounds	();
 
@@ -119,6 +144,43 @@ public:
 	
 
 	virtual	void	UpdateCL		();
+
+	// ---- Gunslinger-style HUD-model bone visibility (attachments / ammo count / ammo type / firemode) ----
+	// Bones of the first-person model are shown/hidden to match state: individual rounds in the mag,
+	// a different bullet mesh per ammo type, a firemode selector, and static per-weapon hides.
+	// Config keys live in the weapon's hud section, same names as GS. Re-run only on change.
+	// GS use_light_misfire: rolls the per-shot "light misfire" (light strike). If it hits, plays
+	// anm_shoot_lightmisfire + sndLightMisfire, does NOT fire the round or jam the weapon, and returns true
+	// (state_Fire then stops the shot -- the player just pulls again). Opt-in via use_light_misfire in cfg.
+			bool	gwr_TryLightMisfire		();
+			void	gwr_UpdateBones			(bool force = false);
+	void			gwr_SetBones			(LPCSTR csv, BOOL show);
+	// true if the magazine keeps the round that fires next (the "chamber") at the BACK rather than the
+	// last-loaded round -- chamber-first pump shotguns. Lets the ammo-type display read the newest round
+	// (index size-2) instead of the pinned chamber. Base: normal push_back order, so false.
+	virtual bool	GwrChamberAtBack		() const { return false; }
+	// GL/grenade weapons add their own pass (the loaded grenade's bone) and fold GL state into the
+	// change-detection so it re-runs when the grenade or its type changes. Base = no GL, no-op.
+	virtual int		gwr_GLBonesState		() { return 0; }
+	virtual void	gwr_UpdateBonesGL		() {}
+
+	// ---- Gunslinger world-model animations (WeaponUpdate.pas: ReassignWorldAnims) ----
+	// Opt-in per weapon via `use_world_anims` in the WEAPON section. The state picks a base config key
+	// (wanm_idle/draw/holster/shoot/reload) in that same section; suffixes are appended only when the
+	// resulting KEY exists (GS's AddSuffixIfStringExist), and the key's VALUE is the motion name played
+	// on the world visual. Lets the third-person/dropped model animate from wpn_*_animation.omf.
+			void	gwr_UpdateWorldAnims	();
+			void	gwr_WorldAnimSuffix		(const shared_str& sect, LPCSTR suffix, string128& anm);
+	shared_str		m_sLastWorldAnim;		// last motion played on the world model (replay only on change)
+	u32				m_dwLastWorldAnimState;	// and the state it was picked for (so a re-fire restarts it)
+
+	int				m_gwr_bones_state[6];	// last {ammo, ammotype, firemode, misfire, gl_state, valid}
+	u8				m_gwr_last_fired_type;	// ammo type of the last round fired (chamber-first: the ejecting
+	u32				m_gwr_fired_until;		// shell's colour must be the FIRED round, not the next chamber);
+											// shown until this wall-clock time (the eject/pump window)
+	u8				m_gwr_last_mag_type;	// ammo type last held in the magazine (tracked while non-empty) -- the
+											// spent-casing colour after the mag empties by FIRING or UNLOADING
+
 	virtual void	net_Destroy		();
 	virtual void	net_Export		(NET_Packet& P);
 	virtual void	net_Import		(NET_Packet& P);
@@ -134,7 +196,7 @@ public:
 
 	virtual bool	Action			(s32 cmd, u32 flags);
 	bool			IsAmmoAvailable	();
-	virtual void	UnloadMagazine	(bool spawn_ammo = true);
+	virtual void	UnloadMagazine	(bool spawn_ammo = true, u32 keep_count = 0);	// keep_count: stop unloading with this many rounds left (GS ammo_in_chamber save)
 
 	virtual void	GetBriefInfo				(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count, string16& fire_mode);
 
@@ -171,6 +233,8 @@ protected:
 	//переменная блокирует использование
 	//только разных типов патронов
 	bool m_bLockType;
+	bool m_bAmmoInChamber;	// Gunslinger ammo_in_chamber: cfg mag_size = real mag + 1 (chambered round)
+	bool m_bSaveCartridgeInAmmoChange;	// GS save_cartridge_in_ammochange (default true): keep the OLD-type chambered round when swapping ammo type
 
 public:
 	// true while the jam (misfire) inspect gesture is on screen -> block aim / headlamp / NV /
@@ -204,9 +268,20 @@ protected:
 			void	PlayAnimDryFire		();
 	bool			m_bDryFirePending;	// switch2_Idle should play the dry-fire, not the idle
 	bool			m_bDryFirePlaying;	// a dry-fire gesture is in progress -> FireStart ignored
+	bool			m_bLightMisfirePlaying;	// a light-misfire (light strike) gesture is in progress -> owns the hands until it ends
+	// unified "is firing locked right now?" query (GS SetShootLockTime): folds the base SetShootLock timer
+	// together with this weapon's bespoke fire-lock deadlines (aim in/out, sprint-exit).
+	virtual bool	IsShootLocked		() const override;
 	bool			m_bAimInPending;	// aim pressed mid-fire: play aim-in once fire stops (switch2_Idle)
 	bool			m_bAimOutPending;	// aim released mid-fire: keep aiming, play aim-out when fire ends
 	bool			m_bTriggerHeld;		// trigger currently pressed (FireStart..FireEnd); resume fire after a transition
+	bool			m_bAimLockFirePressed;	// fire pressed DURING the aim fire-lock -> autoshoot when it ends (robust vs m_bTriggerHeld)
+	bool			m_bZoomPendingSprint;	// aim pressed during sprint: aim-in once the sprint-exit anim is (almost) done
+	bool			m_bFirePendingSprint;	// fire pressed during sprint: fire once the sprint-exit anim is (almost) done
+	// aiming is blocked during a light-misfire strike (task): an aim press/release that arrives while the
+	// click gesture plays is remembered here and replayed by UpdateCL once the strike ends (like the sprint defer).
+	bool			m_bZoomPendingMisfire;	// an aim press/release was deferred past a light-misfire strike
+	bool			m_bZoomPendingMisfireIn;// true = the deferred intent was aim-IN, false = aim-OUT
 	virtual void	PlayReloadSound		();
 	virtual void	PlayAnimAim			();
 	// directional aim-walk: picks anm_idle_aim / _walk / _walk_back / _walk_left /
@@ -224,6 +299,23 @@ protected:
 	// unreliable while moving (fires seconds late), which lets the one-shot transition
 	// stick/loop = the ADS "snap"; UpdateCL forces the handoff to the aim/moving idle here.
 	u32				m_dwAimTransitionEndTm;
+	// A shoot anim is playing until this wall-clock time -> don't let switch2_Idle cut it with the idle
+	// (Gunslinger CanAssignIdleAnimNow: no idle while an anm_shoot* motion is running). Lets longer random
+	// shoot variants (e.g. de_shoot2) play to the end instead of being clipped by the fire-rate timing.
+	u32				m_dwShootAnimEndTm;
+	// Firing is blocked only for a short lock (Gunslinger's lock_time_anm_idle_aim_start/_end),
+	// NOT for the whole transition -- so you can fire before the aim-in/out animation finishes.
+	u32				m_dwAimFireLockTm;
+	// GS's autoshoot_anm_idle_aim_start/_end: a trigger held THROUGH the lock fires the instant the
+	// lock ends, instead of needing a re-press. On by default (GS sets it on ~all weapons); a weapon
+	// can disable it in config. NOTE this fires at the short LOCK end (~0.2s), not the full transition.
+	bool			m_bAimLockAutoShoot;
+public:
+	// The aim transition runs at eIdle and deliberately WITHOUT SetPending (so firing can cut it),
+	// which makes it indistinguishable from "settled" to anyone testing state alone -- ask this instead.
+	bool			IsAimTransitionPlaying	() const
+	{ return m_dwAimTransitionEndTm && Device.dwTimeGlobal < m_dwAimTransitionEndTm; }
+protected:
 
 	virtual	int		ShotsFired			() { return m_iShotNum; }
 	virtual float	GetWeaponDeterioration	();

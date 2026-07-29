@@ -421,6 +421,14 @@ _DDS_2D:
 			if (img_loaded_lod)
 			{
 				Reduce(LoadInfo.Width, LoadInfo.Height, IMG.MipLevels, img_loaded_lod);
+				// BUGFIX: Reduce() shrinks W/H but takes the mip count by VALUE, so LoadInfo.MipLevels kept the
+				// ORIGINAL count. A LOD-reduced texture (e.g. 2048^2/12mips -> 512^2) was then asked for 12 mips,
+				// which exceeds the max for the smaller size -> D3DX10CreateTextureFromMemory fails and the engine
+				// FATALs. Hit any large full-mip texture whenever LOD reduction is on -- e.g. re-uploading on the
+				// device reset that "Apply video settings" triggers (crash on wpn_m203.dds). Clamp mips to the size.
+				UINT maxdim = (LoadInfo.Width > LoadInfo.Height) ? LoadInfo.Width : LoadInfo.Height;
+				UINT maxmip = 1; while (maxdim > 1) { maxdim >>= 1; ++maxmip; }
+				if (LoadInfo.MipLevels > maxmip)	LoadInfo.MipLevels = maxmip;
 			}
 
 			//LoadInfo.Usage = D3D10_USAGE_IMMUTABLE;

@@ -7,11 +7,18 @@
 #include "profiler.h"
 #include "MainMenu.h"
 #include "UICursor.h"
+#include "ui/UIBtnHint.h"
+#include "ui/UIPdaWnd.h"
+#include "UI.h"
+#include "HUDManager.h"
+extern bool g_pda_rt_pass;
 #include "game_base_space.h"
 #include "level.h"
 #include "Level_Bullet_Manager.h"
 #include "ParticlesObject.h"
 #include "actor.h"
+#include "Weapon.h"
+#include "inventory.h"
 #include "game_base_space.h"
 #include "stalker_animation_data_storage.h"
 #include "stalker_velocity_holder.h"
@@ -691,6 +698,92 @@ void CGamePersistent::OnRenderPPUI_main()
 void CGamePersistent::OnRenderPPUI_PP()
 {
 	MainMenu()->OnRenderPPUI_PP();
+}
+
+// 3D PDA: draw the PDA window (+cursor) into the backbuffer; the renderer calls this just before
+// the scene and then snapshots the result into "$user$ui", which the PDA hud model's screen
+// material samples. Returning true is the renderer's cue that there IS something to snapshot.
+// g_pda_rt_pass tells CUIPdaWnd::Draw that this is the RT pass, not the normal on-screen one
+// (which is suppressed while the 3D PDA is in hand).
+bool CGamePersistent::OnRenderPdaUI()
+{
+	if (!g_pGameLevel || !g_pGameLevel->bReady)		return false;
+	if (!HUD().GetUI() || !HUD().GetUI()->UIGame())	return false;
+	CUIPdaWnd& pda = HUD().GetUI()->UIGame()->PdaMenu();
+	if (!pda.IsShown())								return false;
+
+	g_pda_rt_pass	= true;
+	pda.Draw						();
+	// A running tutorial points at the PDA's own UI (highlights, arrows), so it belongs on the
+	// model's screen with it -- between the window and the cursor, the order it draws in normally.
+	if (g_tutorial && g_tutorial->IsActive())
+		g_tutorial->OnRender		();
+	// Button tooltips are deferred: CUIButton::DrawText only calls g_btnHint->Draw_(), which merely
+	// raises a flag, and the real draw happens from Device.seqRender at the very end of the frame --
+	// long after this capture, hence hints landing on top of the world instead of on the model. The
+	// flag was just raised by pda.Draw() above, so render it here and clear it; the late global pass
+	// then finds nothing to do. Outside the PDA the hint keeps working exactly as before.
+	if (g_btnHint)
+		g_btnHint->OnRender			();
+	if (GetUICursor()->IsVisible())
+		GetUICursor()->OnRender		();
+	g_pda_rt_pass	= false;
+	return true;
+}
+
+// 3D PiP scope: the renderer asks whether to snapshot the scene into $user$scope this frame. True only
+// while the actor aims through an attached scope (the ak74 PSO etc.) -- so the lens shows the world and
+// the cost (one surface copy / re-render) is paid only when scoped.
+bool CGamePersistent::OnRenderScopeActive()
+{
+	if (!g_pGameLevel || !g_pGameLevel->bReady)		return false;
+	CActor* a = Actor();
+	if (!a)											return false;
+	CWeapon* w = smart_cast<CWeapon*>(a->inventory().ActiveItem());
+	if (!w)											return false;
+	// Fill $user$scope only while aiming a lensed scope (matches the lens being drawn only then).
+	return w->IsLensedScope() && (w->IsZoomed() || w->GetZoomRotationFactor() > 0.01f);
+}
+
+// 3D PiP double-render (Gunslinger LensDoubleRender). On a throttled "lens frame" while aiming a lensed
+// scope, tell the engine to render the whole scene at the magnified scope FOV -> the world-only capture in
+// $user$scope becomes a true optical zoom. Every other frame is a lens frame (rendered but not presented);
+// the frames in between are the normal view. -> screen + lens each refresh at ~half rate while scoped.
+bool CGamePersistent::ComputeLensFrame(float& out_fov)
+{
+	m_bLensFrameNow = false;
+	m_bLensAimActive = false;
+	out_fov = 0.f;
+	if (!g_pGameLevel || !g_pGameLevel->bReady)		return false;
+	CActor* a = Actor();
+	if (!a)											return false;
+	CWeapon* w = smart_cast<CWeapon*>(a->inventory().ActiveItem());
+	if (!w || !w->IsLensedScope())					return false;
+
+	// The world FOV is OVERRIDDEN on EVERY frame while a lensed scope is in hand (this runs in ApplyDevice,
+	// AFTER the camera zoom/dispersion effectors, so it wins). Forcing it even when NOT aiming keeps the vanilla
+	// aim-zoom effector fully hidden -- otherwise its residual zoom pops on aim-OUT (camera snaps to a small FOV
+	// and eases back). On a LENS frame (even + aiming) -> the magnified GetLensFOV (captured to $user$scope, not
+	// presented); otherwise -> the base g_fov, so the presented main view is always wide, steady, un-zoomed.
+	extern float g_fov;
+	const bool aiming = (w->IsZoomed() || w->GetZoomRotationFactor() > 0.01f);
+	m_bLensAimActive = aiming;						// drives the present bridge (save/restore) while aiming
+	if (!aiming)
+		m_bLensSaveValid = false;					// aim released -> invalidate the saved frame for next session
+	// A lens frame is only allowed once a valid normal frame has been saved this session (m_bLensSaveValid, set
+	// by PresentBridgeLens after a save). So the FIRST aim frame(s) render normally and populate rt_scope_save
+	// first -> the present bridge never restores a STALE save from a previous aim (the 1-frame camera pop).
+	if (aiming && m_bLensSaveValid && (Device.dwFrame & 1) == 0)		// even + aiming + valid save = lens frame
+	{
+		out_fov = w->GetLensFOV();
+		if (out_fov <= 0.f)							{ out_fov = g_fov; return true; }
+		m_bLensFrameNow = true;
+	}
+	else											// presented normal frame (also the first aim frame)
+	{
+		out_fov = g_fov;
+	}
+	return true;
 }
 
 void CGamePersistent::OnRenderForward()

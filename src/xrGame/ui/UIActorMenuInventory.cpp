@@ -17,6 +17,7 @@
 #include "../silencer.h"
 #include "../scope.h"
 #include "../grenadelauncher.h"
+#include "../string_table.h"		// CStringTable for the "attach to <weapon name>" menu text
 #include "../Artefact.h"
 #include "../eatable_item.h"
 #include "../BottleItem.h"
@@ -460,9 +461,7 @@ bool CUIActorMenu::ToSlot(CUICellItem* itm, bool force_place)
 
 	if(m_pActorInvOwner->inventory().CanPutInSlot(iitem))
 	{
-		CUIDragDropListEx* new_owner		= GetSlotList(_slot);
-		
-		if ( _slot == GRENADE_SLOT || !new_owner )
+		if ( _slot == GRENADE_SLOT || !GetSlotList(_slot) )
 		{
 			return true; //fake, sorry (((
 		}
@@ -470,10 +469,16 @@ bool CUIActorMenu::ToSlot(CUICellItem* itm, bool force_place)
 		bool result							= (!b_own_item) || m_pActorInvOwner->inventory().Slot(iitem);
 		VERIFY								(result);
 
+		// Slot() may have resolved a weapon to the OTHER interchangeable slot (pistol<->primary) when
+		// the configured one was taken, so read the actual slot back before touching the UI lists.
+		_slot								= iitem->GetSlot();
+		CUIDragDropListEx* new_owner		= GetSlotList(_slot);
+		VERIFY								(new_owner);
+
 		CUICellItem* i						= old_owner->RemoveItem(itm, (old_owner==new_owner) );
-		
+
 		new_owner->SetItem					(i);
-	
+
 //.		if(!b_own_item)
 		SendEvent_Item2Slot					(iitem, m_pActorInvOwner->object_id());
 
@@ -734,7 +739,7 @@ void CUIActorMenu::PropertiesBoxForSlots( PIItem item, bool& b_show )
 	CCustomOutfit* pOutfit = smart_cast<CCustomOutfit*>( item );
 	CInventory*  inv = &m_pActorInvOwner->inventory();
 
-	// Флаг-признак для невлючения пункта контекстного меню: Dreess Outfit, если костюм уже надет
+	// пїЅпїЅпїЅпїЅ-пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ: Dreess Outfit, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	bool bAlreadyDressed = false;
 	u32 const cur_slot = item->GetSlot();
 
@@ -773,7 +778,7 @@ void CUIActorMenu::PropertiesBoxForSlots( PIItem item, bool& b_show )
 
 void CUIActorMenu::PropertiesBoxForWeapon( CUICellItem* cell_item, PIItem item, bool& b_show )
 {
-	//отсоединение аддонов от вещи
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ
 	CWeapon*	pWeapon = smart_cast<CWeapon*>( item );
 	if ( !pWeapon )
 	{
@@ -820,54 +825,28 @@ void CUIActorMenu::PropertiesBoxForWeapon( CUICellItem* cell_item, PIItem item, 
 
 void CUIActorMenu::PropertiesBoxForAddon( PIItem item, bool& b_show )
 {
-	//присоединение аддонов к активному слоту (2 или 3)
+	// "Attach <addon> to <weapon>" using the TARGET WEAPON's localized name (CoP/Gunslinger style,
+	// e.g. "РџСЂРёРєСЂРµРїРёС‚СЊ РіР»СѓС€РёС‚РµР»СЊ Рє РђРљ-74Рњ"), offered for either weapon slot (both are interchangeable
+	// now, and the concrete name distinguishes them). The prefix key holds "РџСЂРёРєСЂРµРїРёС‚СЊ <addon> Рє".
+	LPCSTR prefix = nullptr;
+	if      ( smart_cast<CScope*>(item) )			prefix = "st_attach_scope_to_wpn";
+	else if ( smart_cast<CSilencer*>(item) )		prefix = "st_attach_silencer_to_wpn";
+	else if ( smart_cast<CGrenadeLauncher*>(item) )	prefix = "st_attach_gl_to_wpn";
+	if ( !prefix )	return;
 
-	CScope*				pScope				= smart_cast<CScope*>			(item);
-	CSilencer*			pSilencer			= smart_cast<CSilencer*>		(item);
-	CGrenadeLauncher*	pGrenadeLauncher	= smart_cast<CGrenadeLauncher*>	(item);
-	CInventory*			inv					= &m_pActorInvOwner->inventory();
-
-	if ( pScope )
+	CInventory* inv = &m_pActorInvOwner->inventory();
+	// RIFLE_SLOT (main-weapon slot) first so it's the TOP menu entry, PISTOL_SLOT (former pistol slot)
+	// second/bottom -- the reverse read wrong (top entry attached to the bottom weapon).
+	const u32 wpn_slots[2] = { RIFLE_SLOT, PISTOL_SLOT };
+	for ( u32 i = 0; i < 2; ++i )
 	{
-		if ( inv->m_slots[PISTOL_SLOT].m_pIItem && inv->m_slots[PISTOL_SLOT].m_pIItem->CanAttach(pScope) )
+		PIItem tgt = inv->m_slots[wpn_slots[i]].m_pIItem;
+		if ( tgt && tgt->CanAttach(item) )
 		{
-			PIItem tgt = inv->m_slots[PISTOL_SLOT].m_pIItem;
-			m_UIPropertiesBox->AddItem( "st_attach_scope_to_pistol",  (void*)tgt, INVENTORY_ATTACH_ADDON );
-			b_show			= true;
-		}
-		if ( inv->m_slots[RIFLE_SLOT].m_pIItem && inv->m_slots[RIFLE_SLOT].m_pIItem->CanAttach(pScope) )
-		{
-			PIItem tgt = inv->m_slots[RIFLE_SLOT].m_pIItem;
-			m_UIPropertiesBox->AddItem( "st_attach_scope_to_rifle",  (void*)tgt, INVENTORY_ATTACH_ADDON );
-			b_show			= true;
-		}
-		return;
-	}
-	
-	if ( pSilencer )
-	{
-		if ( inv->m_slots[PISTOL_SLOT].m_pIItem && inv->m_slots[PISTOL_SLOT].m_pIItem->CanAttach(pSilencer) )
-		{
-			PIItem tgt = inv->m_slots[PISTOL_SLOT].m_pIItem;
-			m_UIPropertiesBox->AddItem( "st_attach_silencer_to_pistol",  (void*)tgt, INVENTORY_ATTACH_ADDON );
-			b_show			= true;
-		}
-		if ( inv->m_slots[RIFLE_SLOT].m_pIItem && inv->m_slots[RIFLE_SLOT].m_pIItem->CanAttach(pSilencer) )
-		{
-			PIItem tgt = inv->m_slots[RIFLE_SLOT].m_pIItem;
-			m_UIPropertiesBox->AddItem( "st_attach_silencer_to_rifle",  (void*)tgt, INVENTORY_ATTACH_ADDON );
-			b_show			= true;
-		}
-		return;
-	}
-	
-	if ( pGrenadeLauncher )
-	{
-		if ( inv->m_slots[RIFLE_SLOT].m_pIItem && inv->m_slots[RIFLE_SLOT].m_pIItem->CanAttach(pGrenadeLauncher) )
-		{
-			PIItem tgt = inv->m_slots[RIFLE_SLOT].m_pIItem;
-			m_UIPropertiesBox->AddItem( "st_attach_gl_to_rifle",  (void*)tgt, INVENTORY_ATTACH_ADDON );
-			b_show			= true;
+			string256 buf;
+			strconcat( sizeof(buf), buf, *CStringTable().translate(prefix), " ", tgt->NameItem() );
+			m_UIPropertiesBox->AddItem( buf, (void*)tgt, INVENTORY_ATTACH_ADDON );
+			b_show = true;
 		}
 	}
 }
@@ -963,7 +942,7 @@ void CUIActorMenu::ProcessPropertiesBoxClicked( CUIWindow* w, void* d )
 	case INVENTORY_DETACH_SCOPE_ADDON:
 		if ( weapon )
 		{
-			DetachAddon( weapon->GetScopeName().c_str() );
+			DetachAddon( weapon->GetAttachedScopeName().c_str() );	// spawn the ACTUAL attached scope, not the default
 		}
 		break;
 	case INVENTORY_DETACH_SILENCER_ADDON:

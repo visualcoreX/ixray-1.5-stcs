@@ -195,6 +195,11 @@ void	CRenderTarget::phase_combine	()
 		if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_main()	;	// PP-UI
 	}
 
+	// 3D PiP scope: snapshot the combined scene into $user$scope AFTER render_forward, so rt_Generic_0 now
+	// includes the forward/sorted geometry -- particles, tracers, rain -- as well as the deferred world. On a
+	// LENS frame the HUD is off, so there is no weapon/lens here -> no mirror. (No-op unless it's a lens frame.)
+	RImplementation.RenderScopeToRT	();
+
 	//	Igor: for volumetric lights
 	//	combine light volume here
 	if (m_bHasActiveVolumetric)
@@ -308,7 +313,10 @@ void	CRenderTarget::phase_combine	()
 
 	//*** exposure-pipeline-clear
 	{
-		std::swap					(rt_LUM_pool[gpu_id*2+0],rt_LUM_pool[gpu_id*2+1]);
+		// 3D PiP: don't ping-pong the exposure pool while aiming a lensed scope (phase_luminance is frozen there),
+		// so the world brightness stays steady across aim-in/out -- see phase_luminance.
+		if (!(g_pGamePersistent && g_pGamePersistent->m_bLensAimActive))
+			std::swap				(rt_LUM_pool[gpu_id*2+0],rt_LUM_pool[gpu_id*2+1]);
 		t_LUM_src->surface_set		(NULL);
 		t_LUM_dest->surface_set		(NULL);
 	}

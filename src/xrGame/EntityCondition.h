@@ -65,19 +65,28 @@ public:
 	IC float				GetMaxPower				() const			{return m_fPowerMax;};
 
 	void 					ChangeBleeding			(float percent);
+	// gwr: heal/grow only the wounds of ONE hit type, leaving the rest of the wound alone. Plain
+	// ChangeBleeding hits every type in every wound at once, so putting a fire out would also close
+	// your bullet holes. Gunslinger reimplements the pair the same way (ChangeBleeding_custom).
+	void					ChangeBleedingByType	(float percent, ALife::EHitType hit_type);
+	float					BleedingSpeedByType		(ALife::EHitType hit_type) const;
+	// Same as BleedingSpeed() but with one hit type left out, on the same (averaged) scale -- so the
+	// blood-drop HUD icon can ignore the burn share (which gets the fire icon) yet still light up for
+	// real wounds bleeding at the same time.
+	float					BleedingSpeedExcept		(ALife::EHitType skip_hit_type) const;
 
 	void 					ChangeCircumspection	(float value);
 	void 					ChangeEntityMorale		(float value);
 
 	virtual CWound*			ConditionHit			(SHit* pHDS);
-	//обновления состояния с течением времени
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	virtual void			UpdateCondition			();
 	void					UpdateWounds			();
 	void					UpdateConditionTime		();
 	IC void					SetConditionDeltaTime	(float DeltaTime) { m_fDeltaTime = DeltaTime; };
 
 	
-	//скорость потери крови из всех открытых ран 
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ 
 	float					BleedingSpeed			();
 
 	CObject*				GetWhoHitLastTime		() {return m_pWho;}
@@ -98,30 +107,30 @@ protected:
 	void					UpdateEntityMorale		();
 
 
-	//изменение силы хита в зависимости от надетого костюма
-	//(только для InventoryOwner)
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	//(пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ InventoryOwner)
 	float					HitOutfitEffect			(float hit_power, ALife::EHitType hit_type, s16 element, float ap, bool& add_wound );
-	//изменение потери сил в зависимости от надетого костюма
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	float					HitPowerEffect			(float power_loss);
 	
-	//для подсчета состояния открытых ран,
-	//запоминается кость куда был нанесен хит
-	//и скорость потери крови из раны
+	//пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ,
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
+	//пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ
 	using WOUND_VECTOR = xr_vector<CWound*>;
 	using WOUND_VECTOR_IT = WOUND_VECTOR::iterator;
 
 	WOUND_VECTOR			m_WoundVector;
-	//очистка массива ран
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
 	
 
-	//все величины от 0 до 1			
-	float m_fPower;					//сила
-	float m_fRadiation;				//доза радиактивного облучения
-	float m_fPsyHealth;				//здоровье
+	//пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ 0 пїЅпїЅ 1			
+	float m_fPower;					//пїЅпїЅпїЅпїЅ
+	float m_fRadiation;				//пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	float m_fPsyHealth;				//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
-	float m_fEntityMorale;			//мораль
+	float m_fEntityMorale;			//пїЅпїЅпїЅпїЅпїЅпїЅ
 
-	//максимальные величины
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	//	float m_fSatietyMax;
 	float m_fPowerMax;
 	float m_fRadiationMax;
@@ -129,7 +138,7 @@ protected:
 
 	float m_fEntityMoraleMax;
 
-	//величины изменения параметров на каждом обновлении
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	float m_fDeltaHealth;
 	float m_fDeltaPower;
 	float m_fDeltaRadiation;
@@ -154,25 +163,25 @@ protected:
 	SConditionChangeV m_change_v;
 
 	float				m_fMinWoundSize;
-	bool				m_bIsBleeding;		//есть кровотечение
+	bool				m_bIsBleeding;		//пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
-	//части хита, затрачиваемые на уменьшение здоровья и силы
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ
 	float				m_fHealthHitPart;
 	float				m_fPowerHitPart;
 
 
-	//потеря здоровья от последнего хита
+	//пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 	float				m_fHealthLost;
 
 
-	//для отслеживания времени 
+	//пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ 
 	u64					m_iLastTimeCalled;
 	float				m_fDeltaTime;
-	//кто нанес последний хит
+	//пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
 	CObject*			m_pWho;
 	u16					m_iWhoID;
 
-	//для передачи параметров из DamageManager
+	//пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ DamageManager
 	float				m_fHitBoneScale;
 	float				m_fWoundBoneScale;
 

@@ -6,12 +6,22 @@
 #include "inventory.h"
 #include "level.h"
 #include "actor.h"
+#include "object_broker.h"		// READ_IF_EXISTS
 
 CWeaponShotgun::CWeaponShotgun()
 {
 	m_eSoundClose			= ESoundTypes(SOUND_TYPE_WEAPON_SHOOTING);
 	m_eSoundAddCartridge	= ESoundTypes(SOUND_TYPE_WEAPON_SHOOTING);
 	bStopReloadSignal		= false;
+	m_bReloadEmpty			= false;
+	m_bJustAfterReload		= false;
+	m_bPreloaded			= false;
+	m_bAddCartridgeInOpen	= false;
+	m_bEmptyPreloadMode		= false;
+	m_bChamberFirstRound	= false;
+	m_bTriInsertDone		= false;
+	m_dwTriInsertTm			= 0;
+	m_dwTriPhaseTm			= 0;
 }
 
 CWeaponShotgun::~CWeaponShotgun()
@@ -36,14 +46,109 @@ void CWeaponShotgun::Load	(LPCSTR section)
 		m_sounds.LoadSound(section, "snd_add_cartridge", "sndAddCartridge", false, m_eSoundAddCartridge);
 
 		m_sounds.LoadSound(section, "snd_close_weapon", "sndClose", false, m_eSoundClose);
+
+		// GS per-anim reload sounds: snd_<anim> played when the matching variant plays, else the fixed
+		// sndOpen/sndAddCartridge/sndClose fall back. Load each that the config actually defines; the
+		// label is the config key itself ("snd_anm_..."), so PlayReloadPhaseSound can look it up by anim.
+		static const char* s_open[]  = { "anm_open", "anm_open_empty", "anm_open_first" };
+		static const char* s_add[]   = { "anm_add_cartridge", "anm_add_cartridge_empty", "anm_add_cartridge_first",
+			"anm_add_cartridge_preloaded", "anm_add_cartridge_empty_preloaded", "anm_add_cartridge_first_preloaded" };
+		static const char* s_close[] = { "anm_close", "anm_close_final", "anm_close_first", "anm_close_first_final",
+			"anm_close_empty", "anm_close_empty_final", "anm_close_preloaded", "anm_close_preloaded_final",
+			"anm_close_first_preloaded", "anm_close_first_preloaded_final", "anm_close_empty_preloaded",
+			"anm_close_empty_preloaded_final" };
+		string_path key;
+		for (auto a : s_open)	{ strconcat(sizeof(key), key, "snd_", a); if (pSettings->line_exist(section, key)) m_sounds.LoadSound(section, key, key, false, m_eSoundOpen); }
+		for (auto a : s_add)	{ strconcat(sizeof(key), key, "snd_", a); if (pSettings->line_exist(section, key)) m_sounds.LoadSound(section, key, key, false, m_eSoundAddCartridge); }
+		for (auto a : s_close)	{ strconcat(sizeof(key), key, "snd_", a); if (pSettings->line_exist(section, key)) m_sounds.LoadSound(section, key, key, false, m_eSoundClose); }
+
+		// pump feed order: the round chambered on an empty-start reload fires first, then the tube LIFO
+		m_bChamberFirstRound = READ_IF_EXISTS(pSettings, r_bool, section, "chamber_first_round", FALSE);
 	};
 
+}
+
+// Play snd_<anim> if the config defined & loaded it for this exact variant; otherwise the fixed fallback
+// label (sndOpen/sndAddCartridge/sndClose). Mirrors GS PlaySoundByAnimName's fallback contract.
+void CWeaponShotgun::PlayReloadPhaseSound(LPCSTR anim, LPCSTR fallback_label)
+{
+	string_path key;	strconcat(sizeof(key), key, "snd_", anim);
+	if (m_sounds.FindSoundItem(key, false))	PlaySound(key, get_LastFP());
+	else									PlaySound(fallback_label, get_LastFP());
+}
+
+// Build "<base>[_empty][_preloaded][_final]" and return the most specific alias that actually exists
+// (so a config that only defines a subset still resolves). Mirrors GS's anm_open/add/close selectors.
+void CWeaponShotgun::SelectTriReloadAnim(LPCSTR base, bool final_close, string_path& out)
+{
+	// Infix families, tried most-specific first. Emptiness (mutually exclusive per GS): when the mag is
+	// currently empty prefer "_first" (the drum/tube "no shell" start, e.g. striker12_reload_noshell_start),
+	// then "_empty"; otherwise no emptiness infix. Then optional "_preloaded" (a round seated during the
+	// empty open) and "_final" (the close that tops off / chambers). Returns the first alias that exists.
+	// GS ModifierStd order: an EMPTY mag -> "_empty"; a non-empty mag that was just reloaded with no shot
+	// since -> "_first" (the drum's fresh-round start, replayed every top-off until you fire). Mutually
+	// exclusive. Falls through to no emptiness infix when neither applies.
+	const char* emps[2]; int ne = 0;
+	if (iAmmoElapsed == 0)			emps[ne++] = "_empty";
+	else if (m_bJustAfterReload)	emps[ne++] = "_first";
+	emps[ne++] = "";
+	const char* pres[2]; int np = 0;
+	if (m_bPreloaded)		pres[np++] = "_preloaded";
+	pres[np++] = "";
+	const char* fins[2]; int nf = 0;
+	if (final_close)		fins[nf++] = "_final";
+	fins[nf++] = "";
+
+	string_path cand;
+	for (int e = 0; e < ne; ++e)
+		for (int p = 0; p < np; ++p)
+			for (int f = 0; f < nf; ++f)
+			{
+				xr_strcpy(cand, base);
+				xr_strcat(cand, emps[e]);
+				xr_strcat(cand, pres[p]);
+				xr_strcat(cand, fins[f]);
+				if (isHUDAnimationExist(cand))	{ xr_strcpy(out, cand); return; }
+			}
+	xr_strcpy(out, base);	// nothing matched -> the plain base (PlayHUDMotion still guards existence)
+}
+
+// Read lock_time_start_/lock_time_end_/lock_time_ for the just-played <anim> and arm the shell-insert
+// and phase-advance timers. inserts_shell = this phase seats a round (add_cartridge, or open when
+// add_cartridge_in_open). If no lock_time is configured, leaves m_dwTriPhaseTm=0 -> OnAnimationEnd drives it.
+void CWeaponShotgun::ArmTriReloadPhase(LPCSTR anim, bool inserts_shell)
+{
+	m_sTriCurAnim		= anim;
+	m_bTriInsertDone	= !inserts_shell;
+	m_dwTriInsertTm		= 0;
+	m_dwTriPhaseTm		= 0;
+
+	string_path key;
+	strconcat(sizeof(key), key, "lock_time_start_", anim);
+	float ls = READ_IF_EXISTS(pSettings, r_float, HudSection(), key, -1.0f);
+	strconcat(sizeof(key), key, "lock_time_end_", anim);
+	float le = READ_IF_EXISTS(pSettings, r_float, HudSection(), key, -1.0f);
+	strconcat(sizeof(key), key, "lock_time_", anim);
+	float single = READ_IF_EXISTS(pSettings, r_float, HudSection(), key, -1.0f);
+
+	u32 now = Device.dwTimeGlobal;
+	if (inserts_shell && ls >= 0.0f)
+	{
+		m_dwTriInsertTm	= now + u32(ls * 1000.0f);					// seat the shell mid-anim
+		m_dwTriPhaseTm	= now + u32((ls + (le >= 0.0f ? le : 0.0f)) * 1000.0f);	// then advance
+	}
+	else if (single >= 0.0f)
+	{
+		m_dwTriPhaseTm	= now + u32(single * 1000.0f);				// timed phase, shell (if any) at phase end
+	}
+	// else: no lock_time -> m_dwTriPhaseTm stays 0 -> OnAnimationEnd(eReload) advances (legacy behaviour)
 }
 
 void CWeaponShotgun::switch2_Fire	()
 {
 	inherited::switch2_Fire	();
 	bWorking = false;
+	m_bJustAfterReload = false;	// a shot was fired -> the drum is no longer "just reloaded" (clears _first)
 }
 
 bool CWeaponShotgun::SwitchAmmoType(u32 flags)
@@ -67,7 +172,7 @@ bool CWeaponShotgun::Action(s32 cmd, u32 flags)
 	return false;
 }
 
-void CWeaponShotgun::OnAnimationEnd(u32 state) 
+void CWeaponShotgun::OnAnimationEnd(u32 state)
 {
 	if (!m_bTriStateReload || state != eReload)
 	{
@@ -75,10 +180,26 @@ void CWeaponShotgun::OnAnimationEnd(u32 state)
 		return inherited::OnAnimationEnd(state);
 	}
 
-	switch(m_sub_state){
+	// When a lock_time is configured the phase is advanced by the UpdateCL timer, so ignore the natural
+	// anim end (it comes later than lock_time_end -- the tail is meant to be cut). Only drive from the
+	// anim end when there's no lock_time for this phase (legacy behaviour).
+	if (m_dwTriPhaseTm != 0)
+		return;
+
+	AdvanceTriReload();
+}
+
+// The tri-state phase transition (open -> add x N -> close -> idle). Called either from the UpdateCL
+// lock_time timer or, when no lock_time is set, from OnAnimationEnd. Does NOT itself seat a round unless
+// the insert timer never fired (no lock_time_start), matching the legacy add-at-anim-end behaviour.
+void CWeaponShotgun::AdvanceTriReload()
+{
+	switch(m_sub_state)
+	{
 		case eSubstateReloadBegin:
 		{
-			if (bStopReloadSignal)
+			// open finished. add_cartridge_in_open already seated a shell (at the insert timer).
+			if (bStopReloadSignal || m_magazine.size() >= (u32)iMagazineSize || !HaveCartridgeInInventory(1))
 				m_sub_state = eSubstateReloadEnd;
 			else
 				m_sub_state = eSubstateReloadInProcess;
@@ -87,7 +208,12 @@ void CWeaponShotgun::OnAnimationEnd(u32 state)
 
 		case eSubstateReloadInProcess:
 		{
-			if (0 != AddCartridge(1) || bStopReloadSignal)
+			if (!m_bTriInsertDone)		// no lock_time_start -> seat the shell now, at the anim end
+			{
+				AddCartridge(1);
+				m_bTriInsertDone = true;
+			}
+			if (bStopReloadSignal || m_magazine.size() >= (u32)iMagazineSize || !HaveCartridgeInInventory(1))
 				m_sub_state = eSubstateReloadEnd;
 			SwitchState(eReload);
 		}break;
@@ -97,10 +223,38 @@ void CWeaponShotgun::OnAnimationEnd(u32 state)
 			bStopReloadSignal = false;
 			bReloadKeyPressed = false;
 			bAmmotypeKeyPressed = false;
+			m_dwTriInsertTm = 0;
+			m_dwTriPhaseTm  = 0;
+			m_bJustAfterReload = true;	// reloaded, no shot since -> next reload plays the _first family
 			SwitchState(eIdle);
 		}break;
-		
 	};
+}
+
+void CWeaponShotgun::UpdateCL()
+{
+	inherited::UpdateCL();
+
+	if (!m_bTriStateReload || GetState() != eReload)
+		return;
+
+	// seat the shell mid-anim at lock_time_start (GS OnAddCartridge)
+	if (m_dwTriInsertTm && Device.dwTimeGlobal >= m_dwTriInsertTm)
+	{
+		m_dwTriInsertTm = 0;
+		if (!m_bTriInsertDone)
+		{
+			AddCartridge(1);
+			m_bTriInsertDone = true;
+		}
+	}
+
+	// advance to the next phase at lock_time_start+lock_time_end (the anim tail is cut) -- GS lock_time_end
+	if (m_dwTriPhaseTm && Device.dwTimeGlobal >= m_dwTriPhaseTm)
+	{
+		m_dwTriPhaseTm = 0;
+		AdvanceTriReload();
+	}
 }
 
 void CWeaponShotgun::Reload()
@@ -119,6 +273,13 @@ void CWeaponShotgun::TriStateReload()
 {
 	if( !HaveCartridgeInInventory(1) )return;
 	CWeapon::Reload		();
+	// GS tri-state options live in the HUD section (valid now that the weapon is in hand)
+	m_bAddCartridgeInOpen	= READ_IF_EXISTS(pSettings, r_bool, HudSection(), "add_cartridge_in_open", FALSE);
+	m_bEmptyPreloadMode		= READ_IF_EXISTS(pSettings, r_bool, HudSection(), "empty_preload_mode", FALSE);
+	m_bReloadEmpty		= (iAmmoElapsed == 0);	// remember for the whole reload (the _empty family)
+	m_bPreloaded		= false;
+	m_dwTriInsertTm		= 0;
+	m_dwTriPhaseTm		= 0;
 	m_sub_state			= eSubstateReloadBegin;
 	SwitchState			(eReload);
 }
@@ -158,40 +319,57 @@ void CWeaponShotgun::OnStateSwitch	(u32 S)
 
 void CWeaponShotgun::switch2_StartReload()
 {
-	PlaySound			("sndOpen",get_LastFP());
-	PlayAnimOpenWeapon	();
+	PlayAnimOpenWeapon	();							// selects the variant -> m_sTriCurAnim
+	PlayReloadPhaseSound(m_sTriCurAnim.c_str(), "sndOpen");
+	// empty + preload mode: anm_open_empty seats one round into the chamber -> the follow-up phases use
+	// their _preloaded variants and don't double-count it.
+	if (m_bReloadEmpty && m_bEmptyPreloadMode)
+		m_bPreloaded = true;
+	ArmTriReloadPhase	(m_sTriCurAnim.c_str(), m_bAddCartridgeInOpen);	// open only seats a shell if add_cartridge_in_open
 	SetPending			(TRUE);
 }
 
 void CWeaponShotgun::switch2_AddCartgidge	()
 {
-	PlaySound	("sndAddCartridge",get_LastFP());
 	PlayAnimAddOneCartridgeWeapon();
+	PlayReloadPhaseSound(m_sTriCurAnim.c_str(), "sndAddCartridge");
+	ArmTriReloadPhase	(m_sTriCurAnim.c_str(), true);	// this phase seats a round
 	SetPending			(TRUE);
 }
 
 void CWeaponShotgun::switch2_EndReload	()
 {
 	SetPending			(FALSE);
-	PlaySound			("sndClose",get_LastFP());
 	PlayAnimCloseWeapon	();
+	PlayReloadPhaseSound(m_sTriCurAnim.c_str(), "sndClose");
+	ArmTriReloadPhase	(m_sTriCurAnim.c_str(), false);	// close seats nothing; timer (or anim end) -> idle
 }
 
 void CWeaponShotgun::PlayAnimOpenWeapon()
 {
 	VERIFY(GetState()==eReload);
-	PlayHUDMotion("anm_open",FALSE,this,GetState());
+	string_path anim;	SelectTriReloadAnim("anm_open", false, anim);
+	PlayHUDMotion(anim,FALSE,this,GetState());
+	m_sTriCurAnim = anim;
 }
 void CWeaponShotgun::PlayAnimAddOneCartridgeWeapon()
 {
 	VERIFY(GetState()==eReload);
-	PlayHUDMotion("anm_add_cartridge",FALSE,this,GetState());
+	string_path anim;	SelectTriReloadAnim("anm_add_cartridge", false, anim);
+	PlayHUDMotion(anim,FALSE,this,GetState());
+	m_sTriCurAnim = anim;
+	m_bPreloaded = false;	// GS SetPreloadedStatus(false): only the first insert after an empty open is "_preloaded"
 }
 void CWeaponShotgun::PlayAnimCloseWeapon()
 {
 	VERIFY(GetState()==eReload);
-
-	PlayHUDMotion("anm_close",FALSE,this,GetState());
+	// the close that tops the magazine off gets the _final variant (chambers/racks the last round);
+	// a close after stopping early (mag not full) uses the plain anm_close.
+	bool final_close = (m_magazine.size() >= (u32)iMagazineSize);
+	string_path anim;	SelectTriReloadAnim("anm_close", final_close, anim);
+	PlayHUDMotion(anim,FALSE,this,GetState());
+	m_sTriCurAnim = anim;
+	m_bPreloaded = false;	// consumed by the close too (open-empty then immediate close, no tube shell added)
 }
 
 bool CWeaponShotgun::HaveCartridgeInInventory		(u8 cnt)
@@ -200,19 +378,21 @@ bool CWeaponShotgun::HaveCartridgeInInventory		(u8 cnt)
 	m_pAmmo = NULL;
 	if(m_pInventory) 
 	{
-		//���������� ����� � ��������� ������� �������� ���� 
+		//���������� ����� � ��������� ������� �������� ����
 		m_pAmmo = smart_cast<CWeaponAmmo*>(m_pInventory->GetAny(*m_ammoTypes[m_ammoType]));
-		
-		if(!m_pAmmo )
+
+		// GS DISABLE_AUTOAMMOCHANGE: only fall back to another ammo type when the gun is empty or an explicit
+		// type change was requested; with rounds loaded and no requested change, reload does nothing.
+		if(!m_pAmmo && (m_set_next_ammoType_on_reload != u32(-1) || m_magazine.empty()))
 		{
-			for(u32 i = 0; i < m_ammoTypes.size(); ++i) 
+			for(u32 i = 0; i < m_ammoTypes.size(); ++i)
 			{
 				//��������� ������� ���� ���������� �����
 				m_pAmmo = smart_cast<CWeaponAmmo*>(m_pInventory->GetAny(*m_ammoTypes[i]));
-				if(m_pAmmo) 
-				{ 
-					m_ammoType = i; 
-					break; 
+				if(m_pAmmo)
+				{
+					m_ammoType = i;
+					break;
 				}
 			}
 		}
@@ -248,7 +428,15 @@ u8 CWeaponShotgun::AddCartridge		(u8 cnt)
 		--cnt;
 		++iAmmoElapsed;
 		l_cartridge.m_LocalAmmoType = u8(m_ammoType);
-		m_magazine.push_back(l_cartridge);
+		// pump chamber-first feed: a round loaded into an EMPTY gun goes to the chamber = m_magazine.back()
+		// (fire pops the back -> it fires first). Any round loaded while a round is already chambered is a
+		// TUBE round -> insert it just under the chambered one (before the back) so the chambered round still
+		// fires first and the tube feeds LIFO. Based on the LIVE state, so it survives multi-cycle / ammo-type
+		// switches (each switch restarts the reload). Off (default) or empty gun -> plain push_back.
+		if (m_bChamberFirstRound && !m_magazine.empty())
+			m_magazine.insert(m_magazine.end() - 1, l_cartridge);
+		else
+			m_magazine.push_back(l_cartridge);
 //		m_fCurrentCartirdgeDisp = l_cartridge.m_kDisp;
 	}
 	m_ammoName = (m_pAmmo) ? m_pAmmo->m_nameShort : NULL;

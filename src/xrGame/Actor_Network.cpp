@@ -493,8 +493,11 @@ void	CActor::net_Import_Physic_proceed	( )
 	CrPr_SetActivationStep(0);
 };
 
+extern void gwr_ResetCamHeight();	// GS camera-height inertia state (ActorCameras.cpp)
+
 BOOL CActor::net_Spawn		(CSE_Abstract* DC)
 {
+	gwr_ResetCamHeight		();		// don't glide from the previous level/save's camera height
 	ResetTorchActionState	();		// never load into a stuck slot-switch block
 	m_holder_id				= ALife::_OBJECT_ID(-1);
 	m_feel_touch_characters = 0;

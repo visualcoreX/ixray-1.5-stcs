@@ -124,6 +124,12 @@ protected:
 	bool			m_bFastAnimMode;
 	bool			m_bEmergencyShow;	// next show plays anm_show_emergency (drawn together with a weapon)
 	bool			m_bNeedActivation;
+	bool			m_bAutoToggle;		// this show/hide is an auto hide/re-show (reload/aim), NOT a manual toggle
+										// -> don't play the weapon's draw/prepare-detector gesture
+	bool			m_bCompanionOneShot;	// the companion now playing is a one-shot (CMotionDef::StopAtEnd):
+											// it freezes on its last frame when done, a loop (aim idle) doesn't
+	shared_str		m_companion_done;		// a one-shot companion that just ended; the idle mirror must not
+											// re-pick it while the weapon still plays its own one-shot
 
 public:
 					CCustomDetector		();
@@ -148,7 +154,13 @@ public:
 	virtual void	OnHiddenItem		();
 	virtual void	OnStateSwitch		(u32 S);
 	virtual void	OnAnimationEnd		(u32 state);
+	virtual void	PlayAnimIdle		();	// mirror an out weapon's aim (companion anim) instead of the own idle
+	virtual bool	PlayCompanionAction	(LPCSTR action, bool bRestart = false);	// play anm_wpn_<action> synced to the weapon's action; true if played
+	void			WeaponDetectorGesture(bool draw);	// tell an in-hand weapon to play its draw/prepare detector gesture
+	void			ShowAfterPrepare	();	// weapon's anm_prepare_detector finished -> actually show the detector now
 	virtual	void	UpdateXForm			();
+	// re-select the detector's (companion) idle NOW — called by the weapon when its aim state changes
+	void			RefreshCompanionIdle();
 
 	void			ToggleDetector		(bool bFastMode);
 	void			HideDetector		(bool bFastMode);
@@ -169,7 +181,7 @@ protected:
 	enum { eDetActionAnim = eBore + 1 };	// one-shot torch/NV gesture state
 	shared_str		m_action_anim;			// the chosen gesture motion alias
 
-			bool	CheckCompatibilityInt		(CHudItem*);
+			bool	CheckCompatibilityInt		(CHudItem*, u32* slot_to_activate = NULL);
 			void 	TurnDetectorInternal		(bool b);
 	void 			UpdateNightVisionMode		(bool b_off);
 	void			UpdateVisibility			();

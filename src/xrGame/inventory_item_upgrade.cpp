@@ -210,7 +210,9 @@ void CInventoryItem::pre_install_upgrade()
 		//weapon->SwitchAmmoType( CMD_START );
 		if ( weapon->ScopeAttachable() && weapon->IsScopeAttached() )
 		{
-			weapon->Detach( weapon->GetScopeName().c_str(), true );
+			// GS multi-scope: detach the ACTUALLY attached scope item (e.g. wpn_addon_scope_cobra), not the
+			// weapon's default scope_name -- otherwise upgrading returns the wrong (default PSO) scope to inventory.
+			weapon->Detach( weapon->GetAttachedScopeName().c_str(), true );
 		}
 		if ( weapon->SilencerAttachable() && weapon->IsSilencerAttached() )
 		{

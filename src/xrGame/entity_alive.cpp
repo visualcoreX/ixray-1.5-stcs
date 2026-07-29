@@ -6,6 +6,7 @@
 #include "../xrEngine/gamemtllib.h"
 #include "phmovementcontrol.h"
 #include "wound.h"
+#include "actor.h"
 #include "xrmessages.h"
 #include "level.h"
 #include "../Include/xrRender/Kinematics.h"
@@ -24,26 +25,26 @@
 #define SMALL_ENTITY_RADIUS		0.6f
 #define BLOOD_MARKS_SECT		"bloody_marks"
 
-//отметки крови на стенах 
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ 
 FactoryPtr<IWallMarkArray>* CEntityAlive::m_pBloodMarksVector = NULL;
 float CEntityAlive::m_fBloodMarkSizeMin = 0.f;
 float CEntityAlive::m_fBloodMarkSizeMax = 0.f;
 float CEntityAlive::m_fBloodMarkDistance = 0.f;
 float CEntityAlive::m_fNominalHit = 0.f;
 
-//капание крови
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 FactoryPtr<IWallMarkArray>* CEntityAlive::m_pBloodDropsVector = NULL;
 float CEntityAlive::m_fStartBloodWoundSize = 0.3f;
 float CEntityAlive::m_fStopBloodWoundSize = 0.1f;
 float CEntityAlive::m_fBloodDropSize = 0.03f;
 
 
-//минимальный размер ожега, после которого горят партиклы
-//минимальное время горения
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 u32	  CEntityAlive::m_dwMinBurnTime = 10000;
-//размер раны, чтоб запустить партиклы
+//пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 float CEntityAlive::m_fStartBurnWoundSize = 0.3f;
-//размер раны, чтоб остановить партиклы
+//пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 float CEntityAlive::m_fStopBurnWoundSize = 0.1f;
 
 STR_VECTOR* CEntityAlive::m_pFireParticlesVector = NULL;
@@ -90,7 +91,7 @@ void CEntityAlive::Load		(LPCSTR section)
 	if(0==m_pFireParticlesVector)
 		LoadFireParticles	("entity_fire_particles");
 
-	//биолог. вид к торому принадлежит монстр или персонаж
+	//пїЅпїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	monster_community->set	(pSettings->r_string(section, "species"));
 }
 
@@ -101,7 +102,7 @@ void CEntityAlive::LoadBloodyWallmarks (LPCSTR section)
 	m_pBloodMarksVector		= xr_new<FactoryPtr<IWallMarkArray> >();
 	m_pBloodDropsVector		= xr_new<FactoryPtr<IWallMarkArray> >();
 	
-	//кровавые отметки на стенах
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	string256	tmp;
 	LPCSTR wallmarks_name = pSettings->r_string(section, "wallmarks"); 
 	
@@ -127,7 +128,7 @@ void CEntityAlive::LoadBloodyWallmarks (LPCSTR section)
 
 
 
-	//капли крови с открытых ран
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
 	wallmarks_name = pSettings->r_string(section, "blood_drops");
 	cnt		=_GetItemCount(wallmarks_name);
 
@@ -217,14 +218,14 @@ void CEntityAlive::shedule_Update(u32 dt)
 	//condition update with the game time pass
 	conditions().UpdateConditionTime	();
 	conditions().UpdateCondition		();
-	//Обновление партиклов огня
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 	UpdateFireParticles	();
-	//капли крови
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	UpdateBloodDrops	();
-	//обновить раны
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 	conditions().UpdateWounds		();
 
-	//убить сущность
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if(Local() && !g_Alive() && !AlreadyDie())
 	{
 		if(conditions().GetWhoHitLastTime()) {
@@ -240,7 +241,7 @@ void CEntityAlive::shedule_Update(u32 dt)
 
 BOOL CEntityAlive::net_Spawn	(CSE_Abstract* DC)
 {
-	//установить команду в соответствии с community
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ community
 /*	if(monster_community->team() != 255)
 		id_Team = monster_community->team();*/
 
@@ -250,7 +251,7 @@ BOOL CEntityAlive::net_Spawn	(CSE_Abstract* DC)
 	m_BloodWounds.clear			();
 	m_ParticleWounds.clear		();
 
-	//добавить кровь и огонь на партиклы, если нужно
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	for(WOUND_VECTOR::const_iterator it = conditions().wounds().begin(); conditions().wounds().end() != it; ++it)
 	{
 		CWound					*pWound = *it;
@@ -282,7 +283,7 @@ void	CEntityAlive::Hit							(SHit* pHDS)
 	//-------------------------------------------------------------------
 	CDamageManager::HitScale(HDS.boneID, conditions().hit_bone_scale(), conditions().wound_bone_scale(),pHDS->aim_bullet);
 
-	//изменить состояние, перед тем как родительский класс обработает хит
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
 	CWound* pWound = conditions().ConditionHit(&HDS);
 
 	if(pWound){
@@ -293,7 +294,7 @@ void	CEntityAlive::Hit							(SHit* pHDS)
 	}
 
 	if (HDS.hit_type != ALife::eHitTypeTelepatic){
-		//добавить кровь на стены
+		//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 		if (!use_simplified_visual())
 			BloodyWallmarks (HDS.damage(), HDS.dir, HDS.bone(), HDS.p_in_bone_space);
 	}
@@ -337,7 +338,7 @@ void CEntityAlive::Die	(CObject* who)
 		character_physics_support()->in_Die();
 }
 
-//вывзывает при подсчете хита
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 float CEntityAlive::CalcCondition(float /**hit/**/)
 {	
 	conditions().UpdateCondition();
@@ -369,14 +370,14 @@ void CEntityAlive::PHFreeze()
 }
 //////////////////////////////////////////////////////////////////////
 
-//добавление кровавых отметок на стенах, после получения хита
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 void CEntityAlive::BloodyWallmarks (float P, const Fvector &dir, s16 element, 
 									const Fvector& position_in_object_space)
 {
 	if(BI_NONE == (u16)element)
 		return;
 
-	//вычислить координаты попадания
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	IKinematics* V = smart_cast<IKinematics*>(Visual());
 		
 	Fvector start_pos = position_in_object_space;
@@ -419,7 +420,7 @@ void CEntityAlive::PlaceBloodWallmark(const Fvector& dir, const Fvector& start_p
 		&&
 		!result.O;
 
-	//если кровь долетела до статического объекта
+	//пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if(reach_wall)
 	{
 		CDB::TRI*	pTri	= Level().ObjectSpace.GetStaticTris()+result.element;
@@ -427,10 +428,10 @@ void CEntityAlive::PlaceBloodWallmark(const Fvector& dir, const Fvector& start_p
 
 		if(pMaterial->Flags.is(SGameMtl::flBloodmark))
 		{
-			//вычислить нормаль к пораженной поверхности
+			//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 			Fvector*	pVerts	= Level().ObjectSpace.GetStaticVerts();
 
-			//вычислить точку попадания
+			//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 			Fvector end_point;
 			end_point.set(0,0,0);
 			end_point.mad(start_pos, dir, result.range);
@@ -439,7 +440,7 @@ void CEntityAlive::PlaceBloodWallmark(const Fvector& dir, const Fvector& start_p
 			//ref_shader wallmarkShader = wallmarks_vector[::Random.randI(wallmarks_vector.size())];
 			VERIFY(!pwallmarks_vector->empty());
 			{
-				//добавить отметку на материале
+				//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 				//::Render->add_StaticWallmark(wallmarkShader, end_point, wallmark_size, pTri, pVerts);
 				::Render->add_StaticWallmark(pwallmarks_vector, end_point, wallmark_size, pTri, pVerts);
 			}
@@ -453,12 +454,21 @@ void CEntityAlive::StartFireParticles(CWound* pWound)
 {
 	if(pWound->TypeSize(ALife::eHitTypeBurn)>m_fStartBurnWoundSize)
 	{
-		if(std::find(m_ParticleWounds.begin(),
-			m_ParticleWounds.end(),
-			pWound) == m_ParticleWounds.end())
+		// The fire anomaly hits every frame, each hit lands here, and it lands on DIFFERENT bones --
+		// so AddWound makes a separate burn wound per bone and each would light its own flamethrower,
+		// stacking into a solid wall. (Stock CS never made burn wounds at all, so this never showed.)
+		// Gunslinger doesn't hit this because CoP's anomaly burns one bone -> one wound; ours doesn't,
+		// so cap the ACTOR at a single body fire: one flamethrower total, no matter how many wounds.
+		// Non-actors keep the per-wound behaviour (their fire comes from weapons, one bone at a time).
+		bool actor = (smart_cast<CActor*>(this) != NULL);
+		if(actor)
 		{
-			m_ParticleWounds.push_back(pWound);
+			if(!m_ParticleWounds.empty())	return;		// already one body fire -> that's enough
 		}
+		else if(std::find(m_ParticleWounds.begin(), m_ParticleWounds.end(), pWound) != m_ParticleWounds.end())
+			return;
+
+		m_ParticleWounds.push_back(pWound);
 
 		IKinematics* V = smart_cast<IKinematics*>(Visual());
 
@@ -498,8 +508,11 @@ void CEntityAlive::UpdateFireParticles()
 		CWound* pWound = *it;
 		float burn_size = pWound->TypeSize(ALife::eHitTypeBurn);
 
-		if(pWound->GetDestroy() || 
-			(burn_size>0 && (burn_size<m_fStopBurnWoundSize || !g_Alive())))
+		// Stop the fire once the BURN is gone -- even to exactly 0. The old `burn_size>0` guard meant
+		// a wound whose burn we cleared but which still has a non-burn component (bleeding) never hit
+		// this branch, so the body fire burned forever after you'd put yourself out but were still
+		// bleeding. Gunslinger fixes the same spot the same way (its `burn_size>0` -> `>=0` patch).
+		if(pWound->GetDestroy() || burn_size < m_fStopBurnWoundSize || !g_Alive())
 		{
 			CParticlesPlayer::AutoStopParticles(pWound->GetParticleName(),
 												pWound->GetParticleBoneNum(),

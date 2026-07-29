@@ -11,6 +11,8 @@
 #include "../level.h"
 #include "../GameObject.h"
 
+extern bool gwr_pda_lookout();		// UIPdaWnd.cpp
+
 CUIDialogWnd:: CUIDialogWnd()
 {
 	m_pHolder		= NULL;
@@ -129,8 +131,10 @@ bool CUIDialogWnd::IR_OnMouseMove(int dx, int dy)
 {
 	if(!IR_process()) return false;
 	
-	if (GetUICursor()->IsVisible())
-	{ 
+	// gwr: the 3D PDA's look-around (MMB) keeps its cursor visible but frozen -- the mouse drives the
+	// camera instead, so it must take the actor branch below even though the cursor is on screen.
+	if (GetUICursor()->IsVisible() && !gwr_pda_lookout())
+	{
 //		GetUICursor()->MoveDelta(float(dx), float(dy));
 		GetUICursor()->UpdateCursorPosition();
 		Fvector2 cPos = GetUICursor()->GetCursorPosition();

@@ -52,6 +52,14 @@ public:
 	ref_rt						rt_Generic_1;		// 32bit		(r,g,b,a)				// post-process, intermidiate results, etc.
 	//	Igor: for volumetric lights
 	ref_rt						rt_Generic_2;		// 32bit		(r,g,b,a)				// post-process, intermidiate results, etc.
+	// 3D PDA: the PDA window is drawn into this before the scene; the PDA hud model's screen
+	// material samples it as "$user$ui" (r2_RT_ui). Only touched while the PDA window is open.
+	ref_rt						rt_ui;				// 32bit		(r,g,b,a)
+	// 3D PiP scope lens: the magnified scene re-rendered on a lens frame (see r2_RT_scope). Only written
+	// while aiming through a lensed scope. rt_scope_save keeps the last NORMAL frame so a lens frame (which
+	// renders the zoomed view) can present the previous un-zoomed frame instead of flashing the zoom.
+	ref_rt						rt_scope;			// 32bit		(r,g,b,a)
+	ref_rt						rt_scope_save;		// 32bit		(r,g,b,a)
 	ref_rt						rt_Bloom_1;			// 32bit, dim/4	(r,g,b,?)
 	ref_rt						rt_Bloom_2;			// 32bit, dim/4	(r,g,b,?)
 	ref_rt						rt_LUM_64;			// 64bit, 64x64,	log-average in all components

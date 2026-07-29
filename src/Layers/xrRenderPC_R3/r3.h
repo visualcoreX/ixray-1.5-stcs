@@ -340,6 +340,14 @@ public:
 	virtual ~CRender				();
 protected:
 	virtual	void					ScreenshotImpl				(ScreenshotMode mode, LPCSTR name, CMemoryWriter* memory_writer);
+public:
+	// 3D PDA: have the game draw the PDA window into the backbuffer and snapshot it into
+	// $user$ui for the model's screen material. Plain member -- NOT a virtual on
+	// IRender_interface (that class is ENGINE_API/dllimport outside xrEngine, so an inline
+	// virtual there becomes an unresolved import at load time).
+	void							RenderPdaUIToRT				();
+	void							RenderScopeToRT				();	// 3D PiP scope: snapshot the scene into $user$scope for the lens
+	void							PresentBridgeLens			();	// 3D PiP: save/restore the backbuffer so lens frames present the last normal frame
 };
 
 extern CRender						RImplementation;

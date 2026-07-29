@@ -45,7 +45,7 @@ protected:
 	CUIMotionIcon		UIMotionIcon;
 	CUIZoneMap*			UIZoneMap;
 
-	//иконка, показывающая количество активных PDA
+	//пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ PDA
 //	CUIStatic			UIPdaOnline;
 	
 	CUIHudStatesWnd*	m_ui_hud_states;
@@ -60,12 +60,12 @@ public:
 
 protected:
 
-	// 5 статиков для отображения иконок:
-	// - сломанного оружия
-	// - радиации
-	// - ранения
-	// - голода
-	// - усталости
+	// 5 пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ:
+	// - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+	// - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	// - пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	// - пїЅпїЅпїЅпїЅпїЅпїЅ
+	// - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	CUIStatic			UIWeaponJammedIcon;
 //	CUIStatic			UIRadiaitionIcon;
 //	CUIStatic			UIWoundIcon;
@@ -81,7 +81,7 @@ protected:
 
 public:
 	
-	// Енумы соответсвующие предупреждающим иконкам 
+	// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ 
 	enum EWarningIcons
 	{
 		ewiAll				= 0,
@@ -97,16 +97,16 @@ public:
 
 	void				SetMPChatLog					(CUIWindow* pChat, CUIWindow* pLog);
 
-	// Задаем цвет соответствующей иконке
+	// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	void				SetWarningIconColor				(EWarningIcons icon, const u32 cl);
 	void				TurnOffWarningIcon				(EWarningIcons icon);
 
-	// Пороги изменения цвета индикаторов, загружаемые из system.ltx
+	// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ system.ltx
 	typedef				xr_map<EWarningIcons, xr_vector<float> >	Thresholds;
 	typedef				Thresholds::iterator						Thresholds_it;
 	Thresholds			m_Thresholds;
 
-	// Енум перечисления возможных мигающих иконок
+	// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	enum EFlashingIcons
 	{
 		efiPdaTask	= 0,
@@ -127,9 +127,9 @@ protected:
 	void				UpdateFlashingIcons				();
 //	void				UpdateActiveItemInfo			();
 
-//	void				SetAmmoIcon						(const shared_str& seсt_name);
+//	void				SetAmmoIcon						(const shared_str& seпїЅt_name);
 
-	// first - иконка, second - анимация
+	// first - пїЅпїЅпїЅпїЅпїЅпїЅ, second - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	using FlashingIcons = xr_map<EFlashingIcons, CUIStatic*>;
 	using FlashingIcons_it = FlashingIcons::iterator;
 
@@ -139,7 +139,7 @@ protected:
 	CMissile*			m_pGrenade;
 	CInventoryItem*		m_pItem;
 
-	// Отображение подсказок при наведении прицела на объект
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	void				RenderQuickInfos();
 
 public:
@@ -151,6 +151,9 @@ public:
 protected:
 	CInventoryItem*		m_pPickUpItem;
 	CUIStatic* UIPickUpItemIcon;
+	// GS layered weapon icon: sprite layers drawn over UIPickUpItemIcon (a composed weapon has an empty
+	// inv_grid slot, so without these the pickup indicator would be blank)
+	xr_vector<CUIStatic*>	m_gwr_pickup_layers;
 
 	float				m_iPickUpItemIconX;
 	float				m_iPickUpItemIconY;

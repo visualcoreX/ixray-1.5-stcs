@@ -20,10 +20,10 @@
 #ifdef DEBUG
 #include "phdebug.h"
 #endif
-static const float	s_fLandingTime1		= 0.1f;// через сколько снять флаг Landing1 (т.е. включить следующую анимацию)
-static const float	s_fLandingTime2		= 0.3f;// через сколько снять флаг Landing2 (т.е. включить следующую анимацию)
+static const float	s_fLandingTime1		= 0.1f;// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ Landing1 (пїЅ.пїЅ. пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
+static const float	s_fLandingTime2		= 0.3f;// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ Landing2 (пїЅ.пїЅ. пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 static const float	s_fJumpTime			= 0.3f;
-static const float	s_fJumpGroundTime	= 0.1f;	// для снятия флажка Jump если на земле
+static const float	s_fJumpGroundTime	= 0.1f;	// пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ Jump пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	   const float	s_fFallTime			= 0.2f;
 
 IC static void generate_orthonormal_basis1(const Fvector& dir,Fvector& updir, Fvector& right)
@@ -44,7 +44,7 @@ void CActor::g_cl_ValidateMState(float dt, u32 mstate_wf)
 	if (mstate_real&(mcJump|mcFall|mcLanding|mcLanding2))
 		mstate_real		&= ~mcLookout;
 
-	// закончить приземление
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if (mstate_real&(mcLanding|mcLanding2)){
 		m_fLandingTime		-= dt;
 		if (m_fLandingTime<=0.f){
@@ -52,7 +52,7 @@ void CActor::g_cl_ValidateMState(float dt, u32 mstate_wf)
 			mstate_real		&=~	(mcFall|mcJump);
 		}
 	}
-	// закончить падение
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if (character_physics_support()->movement()->gcontact_Was){
 		if (mstate_real&mcFall){
 			if (character_physics_support()->movement()->GetContactSpeed()>4.f){
@@ -72,14 +72,14 @@ void CActor::g_cl_ValidateMState(float dt, u32 mstate_wf)
 	if ((mstate_wf&mcJump)==0)	
 		m_bJumpKeyPressed	=	FALSE;
 
-	// Зажало-ли меня/уперся - не двигаюсь
+	// пїЅпїЅпїЅпїЅпїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅпїЅ/пїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if (((character_physics_support()->movement()->GetVelocityActual()<0.2f)&&(!(mstate_real&(mcFall|mcJump)))) || character_physics_support()->movement()->bSleep) 
 	{
 		mstate_real				&=~ mcAnyMove;
 	}
 	if (character_physics_support()->movement()->Environment()==CPHMovementControl::peOnGround || character_physics_support()->movement()->Environment()==CPHMovementControl::peAtWall)
 	{
-		// если на земле гарантированно снимать флажок Jump
+		// пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ Jump
 		if (((s_fJumpTime-m_fJumpTime)>s_fJumpGroundTime)&&(mstate_real&mcJump))
 		{
 			mstate_real			&=~	mcJump;
@@ -196,7 +196,7 @@ void CActor::g_cl_CheckControls(u32 mstate_wf, Fvector &vControlAccel, float &Ju
 			m_fJumpTime			= s_fJumpTime;
 
 
-			//уменьшить силу игрока из-за выполненого прыжка
+			//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 			if (!GodMode())
 				conditions().ConditionJump(inventory().TotalWeight() / MaxCarryWeight());
 		}
@@ -234,7 +234,17 @@ void CActor::g_cl_CheckControls(u32 mstate_wf, Fvector &vControlAccel, float &Ju
 			mstate_real&=~mcSprint;
 			mstate_wishful&=~mcSprint;
 		}
-				
+
+		// smooth sprint acceleration ramp (0..1): while sprinting, ease up over m_fSprintAccelTime; reset the
+		// instant we're not sprinting so each fresh sprint accelerates from run speed again (see the scale use).
+		if(mstate_real&mcSprint)
+		{
+			m_fSprintRamp += (m_fSprintAccelTime>EPS) ? (dt/m_fSprintAccelTime) : 1.f;
+			clamp(m_fSprintRamp, 0.f, 1.f);
+		}
+		else
+			m_fSprintRamp = 0.f;
+
 		// check player move state
 		if(mstate_real&mcAnyMove)
 		{
@@ -262,7 +272,8 @@ void CActor::g_cl_CheckControls(u32 mstate_wf, Fvector &vControlAccel, float &Ju
 
 				if (mstate_real&mcCrouch)	scale *= m_fCrouchFactor;
 				if (mstate_real&mcClimb)	scale *= m_fClimbFactor;
-				if (mstate_real&mcSprint)	scale *= m_fSprintFactor;
+				// ramp the sprint boost from 1x (run speed) up to m_fSprintFactor so top speed eases in
+				if (mstate_real&mcSprint)	scale *= (1.f + (m_fSprintFactor - 1.f) * m_fSprintRamp);
 
 				if (mstate_real&(mcLStrafe|mcRStrafe) && !(mstate_real&mcCrouch))
 				{
@@ -278,44 +289,95 @@ void CActor::g_cl_CheckControls(u32 mstate_wf, Fvector &vControlAccel, float &Ju
 		}//(mstate_real&mcAnyMove)
 	}//peOnGround || peAtWall
 
-	if(IsGameTypeSingle() && cam_eff_factor>EPS)
+	// GS actor-move camera anims (GetActorCameraMovingAnim, ActorUtils.pas:3290): the vanilla
+	// sprint/strafe/move selector extended with lookouts, crouch down/up, jump, fall, landing/landing2 --
+	// each with an _aim variant when zoomed and a per-weapon override `cam_<name>` in the hud section;
+	// per-category effector types so e.g. a landing shake can start over a running strafe effect.
+	// Special (non-move) events use full factor and are NOT gated on cam_eff_factor (a straight-down
+	// landing with no movement keys must still shake).
+	if(IsGameTypeSingle())
 	{
-	LPCSTR state_anm				= NULL;
+		LPCSTR state_anm			= NULL;
+		ECamEffectorType eff_id		= eCEActorMoving;
+		float factor				= cam_eff_factor/70.f;
+		bool gated					= true;		// requires cam_eff_factor>EPS (vanilla movement gate)
 
-	if(mstate_real&mcSprint && !(mstate_old&mcSprint) )
-		state_anm					= "sprint";
-	else
-	if(mstate_real&mcLStrafe && !(mstate_old&mcLStrafe) )
-		state_anm					= "strafe_left";
-	else
-	if(mstate_real&mcRStrafe && !(mstate_old&mcRStrafe) )
-		state_anm					= "strafe_right";
-	else
-	if(mstate_real&mcFwd && !(mstate_old&mcFwd) )
-		state_anm					= "move_fwd";
-	else
-	if(mstate_real&mcBack && !(mstate_old&mcBack) )
-		state_anm					= "move_back";
+		if(!(mstate_real&mcRLookout) || !(mstate_real&mcLLookout))
+		{
+			if(!(mstate_real&mcRLookout) && (mstate_wishful&mcRLookout))
+				{ state_anm = "lookout_right_start";eff_id = eCEActorRLookoutStart;	factor = 1.f; gated = false; }
+			else if((mstate_real&mcRLookout) && !(mstate_wishful&mcRLookout))
+				{ state_anm = "lookout_right_end";	eff_id = eCEActorRLookoutEnd;	factor = 1.f; gated = false; }
+			else if(!(mstate_real&mcLLookout) && (mstate_wishful&mcLLookout))
+				{ state_anm = "lookout_left_start";	eff_id = eCEActorLLookoutStart;	factor = 1.f; gated = false; }
+			else if((mstate_real&mcLLookout) && !(mstate_wishful&mcLLookout))
+				{ state_anm = "lookout_left_end";	eff_id = eCEActorLLookoutEnd;	factor = 1.f; gated = false; }
+		}
+		if(!state_anm)
+		{
+			if(mstate_real&mcLStrafe && !(mstate_old&mcLStrafe))
+				{ state_anm = "strafe_left";	eff_id = eCEActorMovingLeft; }
+			else if(mstate_real&mcRStrafe && !(mstate_old&mcRStrafe))
+				{ state_anm = "strafe_right";	eff_id = eCEActorMovingRight; }
+			else if(mstate_real&mcFwd && !(mstate_old&mcFwd))
+				{ state_anm = "move_fwd";		eff_id = eCEActorMovingFwd; }
+			else if(mstate_real&mcBack && !(mstate_old&mcBack))
+				{ state_anm = "move_back";		eff_id = eCEActorMovingBack; }
+			else if(mstate_real&mcCrouch && !(mstate_old&mcCrouch))
+				{ state_anm = "crouch_down";	eff_id = eCEActorCrouchDown;	factor = 1.f; gated = false; }
+			else if(mstate_real&mcCrouch && !(mstate_wishful&mcCrouch))
+				{ state_anm = "crouch_up";		eff_id = eCEActorCrouchUp;		factor = 1.f; gated = false; }
+			else if(mstate_real&mcJump && !(mstate_old&mcJump))
+				{ state_anm = "jump";			eff_id = eCEActorJump;			factor = 1.f; gated = false; }
+			else if(mstate_real&mcFall && !(mstate_old&mcFall))
+				{ state_anm = "fall";			eff_id = eCEActorFallCam;		factor = 1.f; gated = false; }
+			else if(mstate_real&mcLanding2)
+				{ state_anm = "landing2";		eff_id = eCEActorLanding;		factor = 1.f; gated = false; }
+			else if(mstate_real&mcLanding)
+				{ state_anm = "landing";		eff_id = eCEActorLanding;		factor = 1.f; gated = false; }
+			else if(mstate_real&mcSprint)
+				{ state_anm = "sprint";			eff_id = eCEActorMovingSprint; }
+		}
 
-		if(state_anm)
-		{ //play moving cam effect
+		if(state_anm && (!gated || cam_eff_factor>EPS))
+		{
+			// _aim variant + per-weapon cam_<name> override from the active item's hud section
+			string128 base_name;
+			xr_strcpy(base_name, state_anm);
+			CHudItem* itm = smart_cast<CHudItem*>(inventory().ActiveItem());
+			if(itm)
+			{
+				CWeapon* wpn = smart_cast<CWeapon*>(itm);
+				if(wpn && wpn->IsZoomed())
+					xr_strcat(base_name, "_aim");
+				string128 key;
+				xr_sprintf(key, "cam_%s", base_name);
+				LPCSTR hs = itm->HudSection().c_str();
+				if(pSettings->line_exist(hs, key))
+					xr_strcpy(base_name, pSettings->r_string(hs, key));
+			}
+
 			CActor*	control_entity		= static_cast_checked<CActor*>(Level().CurrentControlEntity());
 			R_ASSERT2					(control_entity, "current control entity is NULL");
-			CEffectorCam* ec			= control_entity->Cameras().GetCamEffector(eCEActorMoving);
+			CEffectorCam* ec			= control_entity->Cameras().GetCamEffector(eff_id);
 			if(NULL==ec)
 			{
 				string_path			eff_name;
-				xr_sprintf			(eff_name, sizeof(eff_name), "%s.anm", state_anm);
+				xr_sprintf			(eff_name, sizeof(eff_name), "%s.anm", base_name);
 				string_path			ce_path;
 				string_path			anm_name;
 				strconcat			(sizeof(anm_name), anm_name, "camera_effects\\actor_move\\", eff_name);
+				// _aim variant falls back to the base anm when the file is absent
+				if (!FS.exist(ce_path, "$game_anims$", anm_name) && state_anm)
+				{
+					xr_sprintf		(eff_name, sizeof(eff_name), "%s.anm", state_anm);
+					strconcat		(sizeof(anm_name), anm_name, "camera_effects\\actor_move\\", eff_name);
+				}
 				if (FS.exist( ce_path, "$game_anims$", anm_name))
 				{
 					CAnimatorCamLerpEffectorConst* e		= xr_new<CAnimatorCamLerpEffectorConst>();
-					float max_scale				= 70.0f;
-					float factor				= cam_eff_factor/max_scale;
 					e->SetFactor				(factor);
-					e->SetType					(eCEActorMoving);
+					e->SetType					(eff_id);
 					e->SetHudAffect				(false);
 					e->SetCyclic				(false);
 					e->Start					(anm_name);
@@ -393,9 +455,29 @@ void CActor::g_Orientate	(u32 mstate_rl, float dt)
 		if( (mstate_rl&mcLLookout) && (mstate_rl&mcRLookout) )
 			tgt_roll	= 0.0f;
 	}
-	if (!fsimilar(tgt_roll,r_torso_tgt_roll,EPS)){
-		angle_lerp		(r_torso_tgt_roll,tgt_roll,PI_MUL_2,dt);
-		r_torso_tgt_roll= angle_normalize_signed(r_torso_tgt_roll);
+	// GS LookoutFunctionReplace (WeaponInertion.pas:828): amplified lean with a nonlinear approach --
+	// tgt_roll is scaled by lookout_ampl_k (GS 1.5 -> deeper lean) and approached at
+	// |dx|^dx_pow * dt * speed (GS speed 6, pow 0.6: fast start, smooth settle), replacing the vanilla
+	// fsimilar-guarded linear angle_lerp (GS nops that guard for smoothness). Per-weapon multipliers
+	// lookout_speed_koef / lookout_ampl_k come from the active item's hud section.
+	{
+		LPCSTR GB	= "gunslinger_base";
+		float speed	= READ_IF_EXISTS(pSettings, r_float, GB, "lookout_speed", 1.0f);
+		float ampl	= READ_IF_EXISTS(pSettings, r_float, GB, "lookout_ampl_k", 1.0f);
+		float dxpow	= READ_IF_EXISTS(pSettings, r_float, GB, "lookout_ampl_dx_pow", 1.0f);
+		if (CHudItem* itm = smart_cast<CHudItem*>(inventory().ActiveItem()))
+		{
+			LPCSTR hs	= itm->HudSection().c_str();
+			speed		*= READ_IF_EXISTS(pSettings, r_float, hs, "lookout_speed_koef", 1.0f);
+			ampl		*= READ_IF_EXISTS(pSettings, r_float, hs, "lookout_ampl_k", 1.0f);
+		}
+		tgt_roll		*= ampl;
+		float dx		= tgt_roll - r_torso_tgt_roll;
+		float delta		= _abs(powf(_abs(dx), dxpow) * dt * speed);
+		if (dx < 0.f)				delta = -delta;
+		if (_abs(delta) > _abs(dx))	delta = dx;
+		r_torso_tgt_roll += delta;
+		r_torso_tgt_roll = angle_normalize_signed(r_torso_tgt_roll);
 	}
 }
 bool CActor::g_LadderOrient()
@@ -470,7 +552,7 @@ void CActor::g_cl_Orientate	(u32 mstate_rl, float dt)
 		r_torso.pitch	=	unaffected_r_torso.pitch + dangle.x;
 	}
 	
-	// если есть движение - выровнять модель по камере
+	// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	if (mstate_rl&mcAnyMove)	{
 		r_model_yaw		= angle_normalize(r_torso.yaw);
 		mstate_real		&=~mcTurn;
@@ -599,7 +681,7 @@ bool CActor::is_jump()
 	return ((mstate_real & (mcJump|mcFall|mcLanding|mcLanding2)) != 0);
 }
 
-//максимальный переносимы вес
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
 #include "CustomOutfit.h"
 float CActor::MaxCarryWeight () const
 {

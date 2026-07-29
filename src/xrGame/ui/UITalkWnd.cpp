@@ -8,6 +8,8 @@
 #include "../trade.h"
 #include "../HUDManager.h"
 #include "../UIGameSP.h"
+
+extern bool gwr_pda_screen_active();		// UIPdaWnd.cpp
 #include "../PDA.h"
 #include "../../xrServerEntities/character_info.h"
 #include "../level.h"
@@ -231,6 +233,13 @@ void CUITalkWnd::Update()
 
 void CUITalkWnd::Draw()
 {
+	// The talk UI is full-screen, so while the 3D PDA is held up it covers the model we're supposed
+	// to be reading (the PDA tutorial runs mid-conversation). Skip it for as long as the PDA screen
+	// is up -- including the RT pass, since it belongs on neither the screen nor the model -- and it
+	// comes back on its own the moment the PDA goes away. Show/Hide state is untouched, so the
+	// conversation itself carries on underneath.
+	if (gwr_pda_screen_active())	return;
+
 	inherited::Draw				();
 }
 

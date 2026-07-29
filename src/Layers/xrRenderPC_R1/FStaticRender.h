@@ -200,6 +200,7 @@ public:
 	// Main
 	virtual void					Calculate				();
 	virtual void					Render					();
+	void							PresentBridgeLens		() {}	// 3D PiP present bridge: no-op on R1 (no scope RT)
 	virtual void					Screenshot				(ScreenshotMode mode=SM_NORMAL, LPCSTR name = 0);
 	virtual void					Screenshot				(ScreenshotMode mode, CMemoryWriter& memory_writer);
 	virtual void					ScreenshotAsyncBegin	();

@@ -15,6 +15,7 @@
 #include "../string_table.h"
 #include "../Inventory_Item.h"
 #include "UIInventoryUtilities.h"
+#include "UICellCustomItems.h"	// GWR_AttachIconLayers: layered weapon icon
 #include "../PhysicsShellHolder.h"
 #include "UIWpnParams.h"
 #include "ui_af_params.h"
@@ -363,6 +364,18 @@ void CUIItemInfo::InitItem(CUICellItem* pCellItem, CInventoryItem* pCompareItem,
 //		UIItemImage->SetHeight					(_min(v_r.height(),	UIItemImageSize.y));
 		UIItemImage->SetWidth					( v_r.width()  );
 		UIItemImage->SetHeight					( v_r.height() );
+
+		// GS layered weapon icon: a composed weapon has an EMPTY inv_grid slot (the picture is made of
+		// sprite layers), so the rect set above draws nothing on its own. This panel renders at
+		// INV_GRID_WIDTH2 px per cell while the atlas rect is in INV_GRID_WIDTH px, hence the ratio;
+		// widescreen squeezes x by the same 1.2 applied to v_r above.
+		{
+			float sx = INV_GRID_WIDTH2(GameConstants::GetUseHQ_Icons())  / INV_GRID_WIDTH(GameConstants::GetUseHQ_Icons());
+			float sy = INV_GRID_HEIGHT2(GameConstants::GetUseHQ_Icons()) / INV_GRID_HEIGHT(GameConstants::GetUseHQ_Icons());
+			if (UI()->is_widescreen())	sx /= 1.2f;
+			GWR_AttachIconLayers(UIItemImage, smart_cast<CWeapon*>(pInvItem), sx, sy,
+								 m_gwr_icon_layers, color_rgba(255, 255, 255, 255));
+		}
 	}
 }
 
@@ -470,6 +483,18 @@ void CUIItemInfo::InitItemUpgradeIcon(CInventoryItem* pInvItem)
 //		UIItemImage->SetHeight					(_min(v_r.height(),	UIItemImageSize.y));
 		UIItemImage->SetWidth					( v_r.width()  );
 		UIItemImage->SetHeight					( v_r.height() );
+
+		// GS layered weapon icon: a composed weapon has an EMPTY inv_grid slot (the picture is made of
+		// sprite layers), so the rect set above draws nothing on its own. This panel renders at
+		// INV_GRID_WIDTH2 px per cell while the atlas rect is in INV_GRID_WIDTH px, hence the ratio;
+		// widescreen squeezes x by the same 1.2 applied to v_r above.
+		{
+			float sx = INV_GRID_WIDTH2(GameConstants::GetUseHQ_Icons())  / INV_GRID_WIDTH(GameConstants::GetUseHQ_Icons());
+			float sy = INV_GRID_HEIGHT2(GameConstants::GetUseHQ_Icons()) / INV_GRID_HEIGHT(GameConstants::GetUseHQ_Icons());
+			if (UI()->is_widescreen())	sx /= 1.2f;
+			GWR_AttachIconLayers(UIItemImage, smart_cast<CWeapon*>(pInvItem), sx, sy,
+								 m_gwr_icon_layers, color_rgba(255, 255, 255, 255));
+		}
 	}
 }
 

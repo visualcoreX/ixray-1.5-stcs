@@ -13,13 +13,27 @@ player_hud* g_player_hud = NULL;
 Fvector _ancor_pos;
 Fvector _wpn_root_pos;
 
+extern int g_block_wpn_switch;	// != 0 while an animated item-use / device gesture is playing (ActorInput.cpp)
+
 float CalcMotionSpeed(const shared_str& anim_name)
 {
 
 	if(!IsGameTypeSingle() && (anim_name=="anm_show" || anim_name=="anm_hide") )
 		return 2.0f;
-	else
-		return 1.0f;
+	// Gunslinger-style: while an item is being used, the weapon holsters to free the hands for the
+	// eat/heal gesture -> speed up that holster so the item comes up quickly. The item-use raises
+	// g_block_wpn_switch before triggering the holster; only the hide is affected (the redraw runs
+	// after the block is cleared, so it stays normal speed).
+	// Match the whole anm_hide FAMILY, not the bare alias: PlayHUDMotion rewrites it to
+	// anm_hide_jammed / anm_hide_empty (and the _g / _w_gl / BM16 _0.._2 twins) before playing, so
+	// an exact compare silently missed every one of those -- a jammed or empty weapon holstered at
+	// normal speed. anm_hide_fast is deliberately NOT in: that's the detector's own quick holster,
+	// already fast, and gwr_eatable times its sound against that length (snd_delay_detector).
+	if(g_block_wpn_switch != 0 && anim_name.size() >= 8 &&
+		0 == strncmp(anim_name.c_str(), "anm_hide", 8) &&
+		NULL == strstr(anim_name.c_str(), "_fast"))
+		return 2.0f;
+	return 1.0f;
 }
 
 player_hud_motion* player_hud_motion_container::find_motion(const shared_str& name)
@@ -315,6 +329,18 @@ void attachable_hud_item::load(const shared_str& sect_name)
 
 u32 attachable_hud_item::anim_play(const shared_str& anm_name_b, BOOL bMixIn, const CMotionDef*& md, u8& rnd_idx)
 {
+	// Guard a NULL/empty animation name. An empty string becomes a NULL shared_str (the string container
+	// docks "" -> null), and the R_ASSERT's strstr(anm_name_b.c_str(),...) below then dereferences null ->
+	// silent access violation (seen "иногда при доставании ПДА": the 3D-PDA phantom occasionally plays an
+	// empty alias). Bail gracefully + log the section so the offending item is visible instead of a no-log crash.
+	if (!anm_name_b.c_str() || !anm_name_b.c_str()[0])
+	{
+		Msg("! [attachable_hud_item::anim_play] empty/NULL animation name on [%s] -- skipped", m_sect_name.c_str());
+		md = nullptr;
+		rnd_idx = 0;
+		return 0;
+	}
+
 	float speed				= CalcMotionSpeed(anm_name_b);
 
 	R_ASSERT				(strstr(anm_name_b.c_str(),"anm_")==anm_name_b.c_str());
@@ -329,7 +355,10 @@ u32 attachable_hud_item::anim_play(const shared_str& anm_name_b, BOOL bMixIn, co
 	rnd_idx					= (u8)Random.randI(anm->m_animations.size()) ;
 	const motion_descr& M	= anm->m_animations[ rnd_idx ];
 
-	u32 ret					= g_player_hud->anim_play(m_attach_place_idx, M.mid, bMixIn, md, speed);
+	// one-shot blend-in override requested by the parent CHudItem (e.g. a soft sprint enter). 0 = none.
+	float blend_accrue		= m_parent_hud_item ? m_parent_hud_item->ConsumeNextBlendAccrue() : 0.f;
+
+	u32 ret					= g_player_hud->anim_play(m_attach_place_idx, M.mid, bMixIn, md, speed, blend_accrue);
 	
 	if(m_model->dcast_PKinematicsAnimated())
 	{
@@ -361,6 +390,7 @@ u32 attachable_hud_item::anim_play(const shared_str& anm_name_b, BOOL bMixIn, co
 			CBlend* B					= ka->PlayCycle(pid, M2, bMixIn);
 			R_ASSERT					(B);
 			B->speed					*= speed;
+			if(blend_accrue > 0.f)		B->blendAccrue = blend_accrue;	// softer mix-in (e.g. sprint enter)
 		}
 
 		m_model->CalculateBones_Invalidate	();
@@ -380,6 +410,28 @@ u32 attachable_hud_item::anim_play(const shared_str& anm_name_b, BOOL bMixIn, co
 		string_path			ce_path;
 		string_path			anm_name;
 		strconcat			(sizeof(anm_name),anm_name,"camera_effects\\weapon\\", M.name.c_str(),".anm");
+
+		// BASE motion name = M.name minus any trailing digits. A looping idle picks RANDOM numbered
+		// variants each cycle (Gunslinger's burn idle alternates "fire_on_the_hand" / "fire_on_the_hand1",
+		// each with its own camera anm), so keying suppression on the exact name re-fired the camera on
+		// every switch. Comparing bases makes all variants of one gesture count as the same.
+		string_path			cam_base;
+		xr_strcpy			(cam_base, M.name.c_str());
+		{ int n = (int)xr_strlen(cam_base); while (n > 0 && cam_base[n-1] >= '0' && cam_base[n-1] <= '9') cam_base[--n] = 0; }
+
+		// Fire the weapon-action camera ONCE per gesture. A motion reused for the action AND the idle/hide
+		// of one gesture (GS burn "fire_on_the_hand" is anm_show/idle/hide, and the idle loops through
+		// RANDOM numbered variants fire_on_the_hand / fire_on_the_hand1, each with its own camera anm)
+		// must not re-lurch the camera every idle/hide cycle. Rule: a DRAW (eShowing state) ALWAYS plays
+		// and (re)seeds the tracker -- so every fresh gesture, including a REPEAT burn (a new phantom's
+		// draw), starts clean with NO reliance on object identity (freed phantom pointers get reused, so
+		// keying on the item pointer wrongly suppressed the 3rd+ burn). Any NON-draw motion whose BASE
+		// (name minus trailing digits, collapsing the variants) matches the last one we started is
+		// suppressed. A motion with no camera anm (idle/hide/settle) clears the tracker, so genuine
+		// re-triggers (reload-then-reload) still play. Shoots are exempt (recoil re-fires per shot).
+		static shared_str	s_last_action_cam;
+		bool is_show = (m_parent_hud_item->GetState() == CHUDState::eShowing);
+
 		if (FS.exist( ce_path, "$game_anims$", anm_name))
 		{
 			// if a different action's camera effector is still running (e.g. a shot's, when a
@@ -389,7 +441,11 @@ u32 attachable_hud_item::anim_play(const shared_str& anm_name_b, BOOL bMixIn, co
 			CAnimatorCamEffector* cur = smart_cast<CAnimatorCamEffector*>(ec);
 			bool same_anim	= cur && cur->AnimName()==anm_name;
 			bool both_shoot	= cur && strstr(M.name.c_str(),"shoot") && strstr(cur->AnimName().c_str(),"shoot");
-			if(!same_anim && !both_shoot)
+			bool is_shoot	= (0 != strstr(M.name.c_str(), "shoot"));				// shoots re-fire recoil every shot
+			bool replay_same= (!is_shoot) && (!is_show)								// a draw always plays; a non-draw repeat
+							&& (s_last_action_cam == cam_base);						// of the same base (idle/hide) does not
+
+			if(!same_anim && !both_shoot && !replay_same)
 			{
 				// grab the outgoing effector's current offset so the new one can ease in from it
 				Fmatrix	from_offset;
@@ -407,7 +463,12 @@ u32 attachable_hud_item::anim_play(const shared_str& anm_name_b, BOOL bMixIn, co
 				if(has_from)
 					e->SetBlendFrom			(from_offset, 0.15f);	// smooth take-over, no snap
 				current_actor->Cameras().AddCamEffector(e);
+				s_last_action_cam		= cam_base;
 			}
+		}
+		else
+		{
+			s_last_action_cam = "";			// a motion with no camera anm (idle/hide/settle) ends the current gesture's tracking
 		}
 	}
 	return ret;
@@ -575,20 +636,84 @@ const Fvector& player_hud::attach_pos() const {
 	}
 }
 
+// The dominant looping blend on a bone partition: playing, not stop-at-end (a loop, not a one-shot),
+// not fading out, biggest blend amount. During sprint that's the sprint loop for that hand.
+static CBlend* hud_dominant_loop_blend(IKinematicsAnimated* ka, u16 part_id)
+{
+	if (part_id == u16(-1))	return NULL;
+	CBlend* best = NULL;
+	u32 cnt = ka->LL_PartBlendsCount(part_id);
+	for (u32 i = 0; i < cnt; ++i)
+	{
+		CBlend* B = ka->LL_PartBlend(part_id, i);
+		if (!B || !B->playing || B->stop_at_end)	continue;	// loops only
+		if (B->blend == CBlend::eFalloff)			continue;	// fading out
+		if (!best || B->blendAmount > best->blendAmount)	best = B;
+	}
+	return best;
+}
+
+// True for a sprint LOOP motion (not the one-shot _start/_end transitions).
+static bool hud_is_sprint_loop(const shared_str& m)
+{
+	LPCSTR s = m.c_str();
+	return s && strstr(s, "sprint") && !strstr(s, "_start") && !strstr(s, "_end");
+}
+
 void player_hud::update(const Fmatrix& cam_trans)
 {
 	Fmatrix	trans					= cam_trans;
 	update_inertion					(trans);
 	update_additional				(trans);
 
-	Fvector ypr						= attach_rot();
+	// SNAP FIX (#6): attach_pos()/attach_rot() return the WEAPON[0]'s hands_attach, or the DETECTOR[1]'s when
+	// no weapon is up. The instant a weapon holsters/draws (attach source flips [0]<->[1]) the base hud jumps,
+	// which snaps the left-hand detector (its hands_position differs from the weapon's). While a detector
+	// companion is out, ease the base attach toward the target instead of snapping. No detector -> instant
+	// (the switch is masked by the show/hide anim anyway, so normal weapon feel is unchanged).
+	Fvector tgt_pos					= attach_pos();
+	Fvector tgt_ypr					= attach_rot();
+	static Fvector s_pos{}, s_ypr{};
+	static bool s_have = false;
+	if (m_attached_items[1] && s_have)
+	{
+		float k = Device.fTimeDelta / 0.2f;	clamp(k, 0.f, 1.f);	// ~0.2s ease
+		s_pos.lerp(s_pos, tgt_pos, k);
+		s_ypr.lerp(s_ypr, tgt_ypr, k);
+	}
+	else { s_pos = tgt_pos; s_ypr = tgt_ypr; }
+	s_have = true;
+
+	Fvector ypr						= s_ypr;
 	ypr.mul							(PI/180.f);
 	m_attach_offset.setHPB			(ypr.x,ypr.y,ypr.z);
-	m_attach_offset.translate_over	(attach_pos());
+	m_attach_offset.translate_over	(s_pos);
 	m_transform.mul					(trans, m_attach_offset);
 	// insert inertion here
 
 	m_model->UpdateTracks				();
+
+	// SPRINT PHASE-LOCK: hard-sync the left-hand detector's sprint loop to the weapon's (right hand),
+	// so a staggered entry (drawing/holstering or reloading while running -> the weapon reaches the
+	// sprint loop before the detector) doesn't leave the two hands bobbing out of phase. Gunslinger
+	// keeps them together by entering sprint on the same movement event; we additionally clamp the
+	// loop phase every frame so a late-joining detector snaps to the weapon's cadence and stays locked.
+	// Only touches the pure sprint loop of BOTH hands (the _start/_end transitions run free).
+	if (m_attached_items[0] && m_attached_items[1])
+	{
+		CHudItem* wi = m_attached_items[0]->m_parent_hud_item;
+		CHudItem* di = m_attached_items[1]->m_parent_hud_item;
+		if (wi && di && hud_is_sprint_loop(wi->CurrentMotion()) && hud_is_sprint_loop(di->CurrentMotion()))
+		{
+			u16 rp = m_model->partitions().part_id("right_hand");
+			u16 lp = m_model->partitions().part_id("left_hand");
+			CBlend* wB = hud_dominant_loop_blend(m_model, rp);
+			CBlend* dB = hud_dominant_loop_blend(m_model, lp);
+			if (wB && dB && wB->timeTotal > 0.001f && dB->timeTotal > 0.001f)
+				dB->timeCurrent = (wB->timeCurrent / wB->timeTotal) * dB->timeTotal;	// normalized phase lock
+		}
+	}
+
 	m_model->dcast_PKinematics()->CalculateBones_Invalidate	();
 	m_model->dcast_PKinematics()->CalculateBones				(TRUE);
 
@@ -599,7 +724,7 @@ void player_hud::update(const Fmatrix& cam_trans)
 		m_attached_items[1]->update(true);
 }
 
-u32 player_hud::anim_play(u16 part, const MotionID& M, BOOL bMixIn, const CMotionDef*& md, float speed)
+u32 player_hud::anim_play(u16 part, const MotionID& M, BOOL bMixIn, const CMotionDef*& md, float speed, float blend_accrue)
 {
 
 	u16 part_id							= u16(-1);
@@ -614,6 +739,7 @@ u32 player_hud::anim_play(u16 part, const MotionID& M, BOOL bMixIn, const CMotio
 			CBlend* B	= m_model->PlayCycle(pid, M, bMixIn);
 			R_ASSERT	(B);
 			B->speed	*= speed;
+			if(blend_accrue > 0.f)	B->blendAccrue = blend_accrue;	// softer mix-in (e.g. sprint enter)
 		}
 	}
 	m_model->dcast_PKinematics()->CalculateBones_Invalidate	();
@@ -639,7 +765,7 @@ void player_hud::update_inertion(Fmatrix& trans)
 		auto& inertion = hi->m_parent_hud_item->CurrentInertionData();
 
 		Fmatrix								xform;
-		Fvector& origin						= trans.c; 
+		Fvector& origin						= trans.c;
 		xform								= trans;
 
 		static Fvector						st_last_dir={0,0,0};
@@ -796,4 +922,228 @@ void player_hud::OnMovementChanged(ACTOR_DEFS::EMoveCommand cmd)
 		if(m_attached_items[1])
 			m_attached_items[1]->m_parent_hud_item->OnMovementChanged(cmd);
 	}
+}
+
+// ======================================================================================
+// GS hud_move hand-offset system (WeaponInertion.pas UpdateWeaponOffset port).
+// Each frame the active hud item hands attach (m_measures.m_hands_attach, re-read by
+// player_hud::update every frame) is dragged toward "base config attach + per-state offset":
+// movement directions, jump/fall/landing/landing2, timed crouch/slow-crouch transitions,
+// with a separate reduced hud_aim_move_* family while aiming. Exponential approach is
+// integrated at a fixed 8ms step (120Hz) like GS. Lookout/suicide/jitter branches are not
+// ported (CS has no lookouts; suicide/jitter are controller features).
+// Keys live in the weapon HUD section; all offsets default to zero so weapons without
+// them behave as before. NOTE like GS, in 16x9 mode ONLY the _16x9 key is read (no fallback).
+#include "Weapon.h"
+
+using namespace ACTOR_DEFS;
+
+namespace
+{
+	struct SGwrHudMove
+	{
+		u32			acc;
+		u32			to_crouch_t, from_crouch_t, to_slow_t, from_slow_t;
+		u32			to_rlook_t, from_rlook_t, to_llook_t, from_llook_t;
+		const void*	last_item;
+	};
+	SGwrHudMove s_hm = {};
+
+	Fvector gwr_read_v3(LPCSTR sect, LPCSTR base, LPCSTR kind, bool w)
+	{
+		string256 k;
+		xr_sprintf(k, "%s%s%s", base, kind, w ? "_16x9" : "");
+		if (pSettings->line_exist(sect, k))	return pSettings->r_fvector3(sect, k);
+		Fvector z;	z.set(0.f, 0.f, 0.f);	return z;
+	}
+
+	void gwr_add_offsets(LPCSTR sect, LPCSTR base, Fvector& pos, Fvector& rot, float koef, bool w)
+	{
+		Fvector t;
+		t = gwr_read_v3(sect, base, "_pos", w);	t.mul(koef);	pos.add(t);
+		t = gwr_read_v3(sect, base, "_rot", w);	t.mul(koef);	rot.add(t);
+	}
+
+	float gwr_posture_koef(LPCSTR sect, u32 mreal, LPCSTR pfx)	// pfx = "hud_move" / "hud_aim_move"
+	{
+		// CS movement semantics differ from GS/CoP: CS default WASD walk = !mcAccel, run = mcAccel.
+		// GS's actSlow is a SEPARATE careful-walk mode (not normal walking), so mapping !mcAccel to it
+		// halved every standing-walk offset (hud_move_slow_factor 0.5) -> "weaker in all directions".
+		// Correct mapping: standing walk/run = GS normal (factor 1); the slow factor only applies to the
+		// slow-crouch (creep = crouch + !accel). crouch-walk uses crouch_factor.
+		bool cr = !!(mreal & mcCrouch);
+		bool accel = !!(mreal & mcAccel);
+		string128 k;
+		if (cr && !accel)	{ xr_sprintf(k, "%s_slow_crouch_factor", pfx);	return READ_IF_EXISTS(pSettings, r_float, sect, k, 1.f); }
+		if (cr)				{ xr_sprintf(k, "%s_crouch_factor", pfx);		return READ_IF_EXISTS(pSettings, r_float, sect, k, 1.f); }
+		return 1.f;
+	}
+
+	// GS GetCurrentTargetOffset_aim: while aiming only the crouch-transition offsets apply (hud_aim_move_*)
+	void gwr_target_aim(LPCSTR sect, u32 mreal, Fvector& pos, Fvector& rot, bool w)
+	{
+		float koef = gwr_posture_koef(sect, mreal, "hud_aim_move");
+		if (s_hm.to_crouch_t)	gwr_add_offsets(sect, "hud_aim_move_to_crouch_offset", pos, rot, koef, w);
+		if (s_hm.from_crouch_t)	gwr_add_offsets(sect, "hud_aim_move_from_crouch_offset", pos, rot, koef, w);
+		if (s_hm.to_slow_t)		gwr_add_offsets(sect, "hud_aim_move_to_slow_crouch_offset", pos, rot, koef, w);
+		if (s_hm.from_slow_t)	gwr_add_offsets(sect, "hud_aim_move_from_slow_crouch_offset", pos, rot, koef, w);
+		if (s_hm.to_rlook_t)	gwr_add_offsets(sect, "hud_aim_move_to_rlookout_offset", pos, rot, koef, w);
+		if (s_hm.from_rlook_t)	gwr_add_offsets(sect, "hud_aim_move_from_rlookout_offset", pos, rot, koef, w);
+		if (s_hm.to_llook_t)	gwr_add_offsets(sect, "hud_aim_move_to_llookout_offset", pos, rot, koef, w);
+		if (s_hm.from_llook_t)	gwr_add_offsets(sect, "hud_aim_move_from_llookout_offset", pos, rot, koef, w);
+	}
+
+	// GS GetCurrentTargetOffset: the full per-state family; any active state resets factor to 1
+	void gwr_target(LPCSTR sect, u32 mreal, Fvector& pos, Fvector& rot, float& factor, bool w)
+	{
+		factor = READ_IF_EXISTS(pSettings, r_float, sect, "hud_move_stabilize_factor", 2.f);
+		float koef = gwr_posture_koef(sect, mreal, "hud_move");
+
+		if (s_hm.to_crouch_t)	{ gwr_add_offsets(sect, "hud_move_to_crouch_offset", pos, rot, koef, w);		factor = 1.f; }
+		if (s_hm.from_crouch_t)	{ gwr_add_offsets(sect, "hud_move_from_crouch_offset", pos, rot, koef, w);		factor = 1.f; }
+		if (s_hm.to_slow_t)		{ gwr_add_offsets(sect, "hud_move_to_slow_crouch_offset", pos, rot, koef, w);	factor = 1.f; }
+		if (s_hm.from_slow_t)	{ gwr_add_offsets(sect, "hud_move_from_slow_crouch_offset", pos, rot, koef, w);	factor = 1.f; }
+		if (s_hm.to_rlook_t)	{ gwr_add_offsets(sect, "hud_move_to_rlookout_offset", pos, rot, koef, w);		factor = 1.f; }
+		if (s_hm.from_rlook_t)	{ gwr_add_offsets(sect, "hud_move_from_rlookout_offset", pos, rot, koef, w);	factor = 1.f; }
+		if (s_hm.to_llook_t)	{ gwr_add_offsets(sect, "hud_move_to_llookout_offset", pos, rot, koef, w);		factor = 1.f; }
+		if (s_hm.from_llook_t)	{ gwr_add_offsets(sect, "hud_move_from_llookout_offset", pos, rot, koef, w);	factor = 1.f; }
+
+		// held lean offsets carry their own approach-speed factor (GS *_offset_speed_factor)
+		bool RL = !!(mreal & mcRLookout), LL = !!(mreal & mcLLookout);
+		if (RL && !LL)
+		{
+			gwr_add_offsets(sect, "hud_move_rlookout_offset", pos, rot, koef, w);
+			factor = READ_IF_EXISTS(pSettings, r_float, sect, "hud_move_rlookout_offset_speed_factor", 1.f);
+		}
+		if (LL && !RL)
+		{
+			gwr_add_offsets(sect, "hud_move_llookout_offset", pos, rot, koef, w);
+			factor = READ_IF_EXISTS(pSettings, r_float, sect, "hud_move_llookout_offset_speed_factor", 1.f);
+		}
+
+		bool L = !!(mreal & mcLStrafe), R = !!(mreal & mcRStrafe);
+		bool F = !!(mreal & mcFwd), B = !!(mreal & mcBack);
+		if (L && !R)	{ gwr_add_offsets(sect, "hud_move_left_offset", pos, rot, koef, w);		factor = 1.f; }
+		if (R && !L)	{ gwr_add_offsets(sect, "hud_move_right_offset", pos, rot, koef, w);	factor = 1.f; }
+		if (F && !B)	{ gwr_add_offsets(sect, "hud_move_forward_offset", pos, rot, koef, w);	factor = 1.f; }
+		if (B && !F)	{ gwr_add_offsets(sect, "hud_move_back_offset", pos, rot, koef, w);		factor = 1.f; }
+
+		bool J = !!(mreal & mcJump), FL = !!(mreal & mcFall), L1 = !!(mreal & mcLanding), L2 = !!(mreal & mcLanding2);
+		if (J && !FL && !L1 && !L2)		{ gwr_add_offsets(sect, "hud_move_jump_offset", pos, rot, koef, w);		factor = 1.f; }
+		if (FL && !J && !L1 && !L2)		{ gwr_add_offsets(sect, "hud_move_fall_offset", pos, rot, koef, w);		factor = 1.f; }
+		if (L1 && !J && !FL && !L2)		{ gwr_add_offsets(sect, "hud_move_landing_offset", pos, rot, koef, w);	factor = 1.f; }
+		if (L2 && !J && !FL && !L1)		{ gwr_add_offsets(sect, "hud_move_landing2_offset", pos, rot, koef, w);	factor = 1.f; }
+	}
+}
+
+void gwr_UpdateHudMove(u32 mreal, u32 mwish, u32 dt)
+{
+	if (!g_player_hud || !dt)	return;
+	attachable_hud_item* hi		= g_player_hud->attached_item(0);
+	attachable_hud_item* det	= g_player_hud->attached_item(1);
+	if (!hi)	{ hi = det; det = NULL; }
+	if (!hi || !hi->m_parent_hud_item)	return;
+
+	// reset the transition state when the item in hand changes
+	if (s_hm.last_item != (const void*)hi)
+	{
+		s_hm.last_item	= hi;
+		s_hm.acc		= 0;
+		s_hm.to_crouch_t = s_hm.from_crouch_t = s_hm.to_slow_t = s_hm.from_slow_t = 0;
+	}
+
+	LPCSTR sect	= hi->m_sect_name.c_str();
+	bool w		= UI()->is_widescreen();
+
+	// crouch / slow-crouch transition triggers: WISHFUL vs REAL bit edges (GS mState_WISHFUL checks)
+	bool cr_w = !!(mwish & mcCrouch), cr_r = !!(mreal & mcCrouch);
+	bool sl_w = !(mwish & mcAccel),   sl_r = !(mreal & mcAccel);
+	if (cr_w && !cr_r)
+	{
+		s_hm.to_crouch_t	= u32(READ_IF_EXISTS(pSettings, r_float, sect, "to_crouch_time", 0.f) * 1000.f);
+		s_hm.from_crouch_t	= 0;
+	}
+	else if (!cr_w && cr_r)
+	{
+		s_hm.from_crouch_t	= u32(READ_IF_EXISTS(pSettings, r_float, sect, "from_crouch_time", 0.f) * 1000.f);
+		s_hm.to_crouch_t	= 0;
+	}
+	if (cr_w && sl_w && !sl_r)
+	{
+		s_hm.to_slow_t		= u32(READ_IF_EXISTS(pSettings, r_float, sect, "to_slow_crouch_time", 0.f) * 1000.f);
+		s_hm.from_slow_t	= 0;
+	}
+	else if (cr_w && !sl_w && sl_r)
+	{
+		s_hm.from_slow_t	= u32(READ_IF_EXISTS(pSettings, r_float, sect, "from_slow_crouch_time", 0.f) * 1000.f);
+		s_hm.to_slow_t		= 0;
+	}
+
+	// lean transitions (GS skips them when both leans are somehow REAL at once)
+	if (!((mreal & mcRLookout) && (mreal & mcLLookout)))
+	{
+		bool rl_w = !!(mwish & mcRLookout), rl_r = !!(mreal & mcRLookout);
+		bool ll_w = !!(mwish & mcLLookout), ll_r = !!(mreal & mcLLookout);
+		if (rl_w && !rl_r)		{ s_hm.to_rlook_t = u32(READ_IF_EXISTS(pSettings, r_float, sect, "to_rlookout_time", 0.f) * 1000.f);   s_hm.from_rlook_t = 0; }
+		else if (!rl_w && rl_r)	{ s_hm.from_rlook_t = u32(READ_IF_EXISTS(pSettings, r_float, sect, "from_rlookout_time", 0.f) * 1000.f); s_hm.to_rlook_t = 0; }
+		if (ll_w && !ll_r)		{ s_hm.to_llook_t = u32(READ_IF_EXISTS(pSettings, r_float, sect, "to_llookout_time", 0.f) * 1000.f);   s_hm.from_llook_t = 0; }
+		else if (!ll_w && ll_r)	{ s_hm.from_llook_t = u32(READ_IF_EXISTS(pSettings, r_float, sect, "from_llookout_time", 0.f) * 1000.f); s_hm.to_llook_t = 0; }
+	}
+
+	// base attach = the CONFIG values (the live m_hands_attach is our animated state)
+	LPCSTR pk = w ? "hands_position_16x9" : "hands_position";
+	LPCSTR rk = w ? "hands_orientation_16x9" : "hands_orientation";
+	if (!pSettings->line_exist(sect, pk) || !pSettings->line_exist(sect, rk))	return;
+	Fvector base_pos = pSettings->r_fvector3(sect, pk);
+	Fvector base_rot = pSettings->r_fvector3(sect, rk);
+
+	Fvector tpos, trot;	tpos.set(0.f, 0.f, 0.f);	trot.set(0.f, 0.f, 0.f);
+	float factor = 1.f;
+
+	CHudItem* hitm	= hi->m_parent_hud_item;
+	bool hiding		= (hitm->GetState() == CHUDState::eHiding) ||
+					  (det && det->m_parent_hud_item && det->m_parent_hud_item->GetState() == CHUDState::eHiding);
+	CWeapon* wpn	= smart_cast<CWeapon*>(hitm);
+	// threshold, not >0: a zoom rotation factor stuck at a tiny residue after unzoom would otherwise
+	// keep us in the aim branch forever -- where the walk/strafe offsets never apply
+	bool aiming		= wpn && (wpn->IsZoomed() || wpn->GetZoomRotationFactor() > 0.01f);
+
+	if (hiding)
+		factor = READ_IF_EXISTS(pSettings, r_float, sect, "hud_move_weaponhide_factor", 1.f);
+	else if (aiming)
+	{
+		gwr_target_aim(sect, mreal, tpos, trot, w);
+		factor = READ_IF_EXISTS(pSettings, r_float, sect, "hud_move_unzoom_factor", 1.f);
+	}
+	else
+		gwr_target(sect, mreal, tpos, trot, factor, w);
+
+	tpos.add(base_pos);
+	trot.add(base_rot);
+
+	float sp_rot = READ_IF_EXISTS(pSettings, r_float, sect, "hud_move_speed_rot", 0.4f) * factor / 100.f;
+	float sp_pos = READ_IF_EXISTS(pSettings, r_float, sect, "hud_move_speed_pos", 0.1f) * factor / 100.f;
+
+	s_hm.acc += dt;
+	if (s_hm.acc > 200)	s_hm.acc = 200;	// pause/load safety
+	Fvector cur_pos = hi->hands_attach_pos();
+	Fvector cur_rot = hi->hands_attach_rot();
+	while (s_hm.acc > 8)
+	{
+		Fvector d;
+		d.sub(tpos, cur_pos);	if (d.magnitude() > 0.0001f) d.mul(sp_pos);	cur_pos.add(d);
+		d.sub(trot, cur_rot);	if (d.magnitude() > 0.0001f) d.mul(sp_rot);	cur_rot.add(d);
+		s_hm.acc -= 8;
+	}
+	hi->hands_attach_pos().set(cur_pos);
+	hi->hands_attach_rot().set(cur_rot);
+
+	if (s_hm.to_crouch_t > dt)		s_hm.to_crouch_t -= dt;		else s_hm.to_crouch_t = 0;
+	if (s_hm.from_crouch_t > dt)	s_hm.from_crouch_t -= dt;	else s_hm.from_crouch_t = 0;
+	if (s_hm.to_slow_t > dt)		s_hm.to_slow_t -= dt;		else s_hm.to_slow_t = 0;
+	if (s_hm.from_slow_t > dt)		s_hm.from_slow_t -= dt;		else s_hm.from_slow_t = 0;
+	if (s_hm.to_rlook_t > dt)		s_hm.to_rlook_t -= dt;		else s_hm.to_rlook_t = 0;
+	if (s_hm.from_rlook_t > dt)		s_hm.from_rlook_t -= dt;	else s_hm.from_rlook_t = 0;
+	if (s_hm.to_llook_t > dt)		s_hm.to_llook_t -= dt;		else s_hm.to_llook_t = 0;
+	if (s_hm.from_llook_t > dt)		s_hm.from_llook_t -= dt;	else s_hm.from_llook_t = 0;
 }

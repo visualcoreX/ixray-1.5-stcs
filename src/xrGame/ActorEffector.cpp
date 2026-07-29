@@ -188,8 +188,11 @@ BOOL CAnimatorCamEffector::ProcessCam(SCamEffectorInfo& info)
 	if(!inherited::ProcessCam(info))
 		return FALSE;
 
-	Fmatrix m					= m_objectAnimator->XFORM();
+	// NOTE: the original bound m as a reference and read it AFTER Update(), i.e. it used the POST-update
+	// XFORM. Keep that (Update first, then copy) — reading the pre-update value shifted every cam-anim
+	// effector by one frame and made cutscene cameras flicker.
 	m_objectAnimator->Update	(Device.fTimeDelta);
+	Fmatrix m					= m_objectAnimator->XFORM();
 
 	// ease the camera offset in from the outgoing effector's offset so a take-over doesn't snap
 	if(m_blend_time>0.f)

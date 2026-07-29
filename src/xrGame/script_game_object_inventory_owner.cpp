@@ -29,6 +29,7 @@
 #include "ui/UItalkWnd.h"
 #include "ui/UITradeWnd.h"
 #include "inventory.h"
+#include "HudItem.h"		// CHudItem::MotionEndTm (quick-kick timing)
 #include "infoportion.h"
 #include "AI/Monsters/BaseMonster/base_monster.h"
 #include "weaponmagazined.h"
@@ -367,6 +368,24 @@ void CScriptGameObject::MakeItemActive(CScriptGameObject* pItem)
 	P.w_u32							(slot);
 	CGameObject::u_EventSend		(P);
 
+}
+
+// GS quick knife kick: the Lua kick binder calls this at the stab mark (so the hit is in sync with the
+// animation regardless of how long the weapon holster took), instead of the engine guessing a delay.
+void CScriptGameObject::quick_kick_hit()
+{
+	CActor* actor = smart_cast<CActor*>(&object());
+	if (actor)	actor->QuickKickHit();
+}
+
+u32 CScriptGameObject::active_item_motion_end()
+{
+	CInventoryOwner* owner = smart_cast<CInventoryOwner*>(&object());
+	if (!owner)	return 0;
+	CInventoryItem* itm = owner->inventory().ActiveItem();
+	if (!itm)	return 0;
+	CHudItem* hud = smart_cast<CHudItem*>(itm);
+	return hud ? hud->MotionEndTm() : 0;
 }
 
 //�������� ���� �� ������ ��������� � ��������� ��������

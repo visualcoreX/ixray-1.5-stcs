@@ -11,6 +11,8 @@
 #include "GameTaskManager.h"
 #include "GameTask.h"
 
+extern bool gwr_actor_hud_busy_now();		// ActorInput.cpp
+
 #include "ui/UIActorMenu.h"
 #include "ui/UITradeWnd.h"
 #include "ui/UIPdaWnd.h"
@@ -77,6 +79,11 @@ bool CUIGameSP::IR_OnKeyboardPress(int dik)
 	{
 	case kACTIVE_JOBS:
 		{
+			// Don't start drawing the PDA on top of a reload/eat/gesture -- same rule the torch and
+			// NV toggles already follow. Only the OPEN is gated: once it's out you can always put it
+			// away (and the phantom being drawn counts as busy, so this would otherwise trap you).
+			if (!PdaMenu().IsShown() && gwr_actor_hud_busy_now())
+				break;
 			ShowPdaMenu();
 			break;
 		}

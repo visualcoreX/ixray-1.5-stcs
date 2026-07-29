@@ -231,6 +231,7 @@ void CUIActorMenu::Construct()
 	m_allowed_drops[iTrashSlot].push_back(iActorBelt);
 
 	m_allowed_drops[iActorSlot].push_back(iActorBag);
+	m_allowed_drops[iActorSlot].push_back(iActorSlot);		// weapon slot <-> weapon slot (interchangeable slots: move/swap)
 	m_allowed_drops[iActorSlot].push_back(iActorTrade);
 	m_allowed_drops[iActorSlot].push_back(iDeadBodyBag);
 

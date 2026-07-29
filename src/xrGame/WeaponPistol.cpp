@@ -49,14 +49,13 @@ void CWeaponPistol::PlayAnimBore()
 		inherited::PlayAnimBore();
 }
 
-void CWeaponPistol::PlayAnimIdleSprint()
+// empty magazine -> the empty sprint idle base; the shared CHudItem::PlayAnimIdleSprint derives the
+// enter/exit transitions (anm_idle_sprint_start_empty / _end_empty) from it, so they work when empty.
+LPCSTR CWeaponPistol::SprintLoopBase()
 {
 	if(iAmmoElapsed==0)
-	{
-		PlayHUDMotion("anm_idle_sprint_empty", TRUE, NULL, GetState());
-	}else{
-		inherited::PlayAnimIdleSprint();
-	}
+		return "anm_idle_sprint_empty";
+	return inherited::SprintLoopBase();
 }
 
 void CWeaponPistol::PlayAnimIdleMoving()
@@ -97,8 +96,8 @@ void CWeaponPistol::SelectAimIdleAnim(string_path& result)
 		{
 			xr_sprintf(result, "anm_idle_aim%s_empty", dir);
 			if(isHUDAnimationExist(result))		return;
-			if(xr_strcmp(dir, "_walk") != 0 && isHUDAnimationExist("anm_idle_aim_walk_empty"))
-				{ xr_strcpy(result, "anm_idle_aim_walk_empty"); return; }
+			if(xr_strcmp(dir, "_moving_forward") != 0 && isHUDAnimationExist("anm_idle_aim_moving_forward_empty"))
+				{ xr_strcpy(result, "anm_idle_aim_moving_forward_empty"); return; }
 		}
 		xr_strcpy(result, "anm_idle_aim_empty");
 		return;
@@ -110,18 +109,10 @@ void CWeaponPistol::PlayAnimReload()
 {
 	inherited::PlayAnimReload();
 }
-
-// empty aim in/out: slide-locked transition (anm_idle_aim_empty_start/_end) when the
-// magazine is empty, else the normal aim transition.
-void CWeaponPistol::SelectAimTransitionAnim(bool bAimIn, string_path& result)
-{
-	if (iAmmoElapsed == 0)
-	{
-		LPCSTR e = bAimIn ? "anm_idle_aim_empty_start" : "anm_idle_aim_empty_end";
-		if (isHUDAnimationExist(e)) { xr_strcpy(result, e); return; }
-	}
-	inherited::SelectAimTransitionAnim(bAimIn, result);
-}
+// NOTE: no CWeaponPistol::SelectAimTransitionAnim override. The empty-magazine slide-locked aim
+// transition is handled generically now: the base returns anm_idle_aim_start/_end and PlayHUDMotion's
+// NeedEmptyAnim() rewrite appends "_empty" (MakeStateName) -> anm_idle_aim_start_empty / _end_empty,
+// which is Gunslinger's exact key name/order (so GS pistol configs copy over directly).
 
 
 void CWeaponPistol::PlayAnimHide()
@@ -136,25 +127,9 @@ void CWeaponPistol::PlayAnimHide()
 		inherited::PlayAnimHide();
 }
 
-// Pick the pistol shoot motion. When zoomed use the ADS shot (anm_shots_aim, with an
-// _empty/last variant if present); otherwise the hip-fire shot, with anm_shot_l for the
-// last chambered round (slide locks back). Base PlayAnimShoot() plays the result.
-void CWeaponPistol::SelectShootAnim(string_path& result)
-{
-	if (IsZoomed() && isHUDAnimationExist("anm_shots_aim"))
-	{
-		if (iAmmoElapsed <= 1 && isHUDAnimationExist("anm_shots_aim_last"))
-			xr_strcpy(result, "anm_shots_aim_last");
-		else
-			xr_strcpy(result, "anm_shots_aim");
-		return;
-	}
-	if (iAmmoElapsed > 1)
-		xr_strcpy(result, "anm_shots");
-	else
-		xr_strcpy(result, "anm_shot_l");
-}
-
+// (SelectShootAnim was here: the ADS shot + the last-round slide-lock. It now lives in
+// CWeaponMagazined so every magazined weapon gets it -- e.g. the SVD/SVU, which derive from
+// CWeaponCustomPistol and so never saw this override. Same behaviour for pistols.)
 
 void CWeaponPistol::switch2_Reload()
 {

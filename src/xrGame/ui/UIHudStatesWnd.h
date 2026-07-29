@@ -32,6 +32,8 @@ private:
 
 	CUIStatic*			m_ui_weapon_sign_ammo;
 	CUIStatic*			m_ui_weapon_icon;
+	// GS layered weapon icon: sprite layers drawn over m_ui_weapon_icon
+	xr_vector<CUIStatic*>	m_gwr_icon_layers;
 	float				m_ui_weapon_icon_scale;
 	Frect				m_ui_weapon_icon_rect;
 	CUIStatic*			m_fire_mode;
@@ -77,7 +79,10 @@ public:
 			void	on_connected		();
 			void	reset_ui			();
 			void	UpdateHealth		( CActor* actor );
-			void	SetAmmoIcon			( const shared_str& sect_name );
+			// `src` is the item the icon belongs to: needed for the GS layered weapon icon, whose
+			// visible sprites depend on the installed upgrades and attached addons, not just on the
+			// section name. Optional, so non-weapon callers are unaffected.
+			void	SetAmmoIcon			( const shared_str& sect_name, CInventoryItem* src = nullptr );
 			void	UpdateActiveItemInfo( CActor* actor );
 
 			void 	UpdateZones			();

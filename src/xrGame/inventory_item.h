@@ -160,6 +160,11 @@ public:
 			void				ChangeCondition		(float fDeltaCondition);
 
 			u32					GetSlot				()  const					{return m_slot;}
+			void				SetSlot				(u32 s)						{m_slot = s;}
+			// The set of inventory slots this item may occupy. Normally just {GetSlot()}; for weapons
+			// the actor's pistol + primary slots are interchangeable, so both are listed (see Load).
+			const xr_vector<u16>&	AllowedSlots	()  const					{return m_slots_allowed;}
+			bool				CanGoInSlot			(u32 s) const;
 
 			bool				Belt				()							{return !!m_flags.test(Fbelt);}
 			void				Belt				(bool on_belt)				{m_flags.set(Fbelt,on_belt);}
@@ -175,8 +180,9 @@ public:
 
 	virtual bool 				IsNecessaryItem	    (CInventoryItem* item);
 	virtual bool				IsNecessaryItem	    (const shared_str& item_sect){return false;};
-protected:	
+protected:
 	u32							m_slot;
+	xr_vector<u16>				m_slots_allowed;	// slots this item may occupy (see Load); m_slot is the current one
 	u32							m_cost;
 	float						m_weight;
 	float						m_fCondition;
@@ -275,6 +281,8 @@ protected:
 
 public:
 	IC bool	has_any_upgrades			() { return (m_upgrades.size() != 0); }
+	// read-only view for non-derived users (the inventory cell builds one icon layer per upgrade)
+	IC const Upgrades_type&	get_upgrades	() const { return m_upgrades; }
 	bool	has_upgrade					( const shared_str& upgrade_id );
 	void	add_upgrade					( const shared_str& upgrade_id, bool loading );
 	bool	get_upgrades_str			( string2048& res ) const;

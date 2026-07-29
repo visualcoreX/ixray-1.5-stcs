@@ -22,6 +22,10 @@
 #define		r2_RT_half_depth	"$user$half_depth"		//temporary rt for ssao calculation
 
 #define		r2_RT_generic0		"$user$generic0"		// ---
+// 3D PDA: the PDA window is snapshotted here before the scene; the PDA hud model's screen
+// material samples it as "$user$ui". Same name/idea as Gunslinger's CRT.pas.
+#define		r2_RT_ui			"$user$ui"				// --- 32bit, the PDA screen content
+#define		r2_RT_scope			"$user$scope"			// --- 32bit, the magnified 3D PiP scope-lens view
 #define		r2_RT_generic0_r	"$user$generic0_r"	// ---
 #define		r2_RT_generic1		"$user$generic1"		// ---
 #define		r2_RT_generic1_r	"$user$generic1_r"	// ---

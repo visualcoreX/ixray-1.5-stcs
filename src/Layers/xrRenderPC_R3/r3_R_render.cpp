@@ -228,6 +228,10 @@ void CRender::Render		()
 	}
 //.	VERIFY					(g_pGameLevel && g_pGameLevel->pHUD);
 
+	// 3D PDA: snapshot the PDA window into $user$ui BEFORE the scene overwrites the backbuffer --
+	// the PDA hud model's screen material samples it. No-op unless the PDA window is open.
+	RenderPdaUIToRT			();
+
 	// Configure
 	RImplementation.o.distortion				= FALSE;		// disable distorion
 	Fcolor					sun_color			= ((light*)Lights.sun_adapted._get())->color;
@@ -496,6 +500,7 @@ void CRender::Render		()
 		PIX_EVENT(DEFER_LIGHT_COMBINE);
 		Target->phase_combine					();
 	}
+	// (3D PiP scope snapshot happens INSIDE phase_combine, right before render_forward -- see there.)
 
 	VERIFY	(0==mapDistort.size());
 }

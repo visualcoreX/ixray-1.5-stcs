@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "UICellCustomItems.h"
+#include "UIProgressBar.h"		// CUIProgressBar full type for the z-order re-attach (m_pConditionState)
 #include "UIInventoryUtilities.h"
 #include "../Weapon.h"
 #include "UIDragDropListEx.h"
@@ -195,6 +196,25 @@ CUIWeaponCellItem::CUIWeaponCellItem(CWeapon* itm)
 
 	if(itm->GrenadeLauncherAttachable())
 		m_addon_offset[eLauncher].set(object()->GetGrenadeLauncherX(), object()->GetGrenadeLauncherY());
+
+	// Dynamic cell grow (GS): if an installed upgrade spills a layer past the base cell (ak74 bayonet ->
+	// inv_grid_width +1), grow the grid footprint + texture rect so the composed icon isn't clipped. The
+	// cell is recreated whenever the upgrade set changes (EqualTo checks equal_upgrades), so doing it
+	// here in the ctor is enough. No-op unless an upgrade carries an inv_grid_* delta.
+	Ivector2 size_dt, lt_dt;
+	GWR_CalcGridResize(itm, size_dt, lt_dt);
+	if (size_dt.x || size_dt.y || lt_dt.x || lt_dt.y)
+	{
+		Irect gr = itm->GetInvGridRect();
+		m_grid_size.x = gr.rb.x + size_dt.x;
+		m_grid_size.y = gr.rb.y + size_dt.y;
+		const float gw = INV_GRID_WIDTHF(GameConstants::GetUseHQ_Icons());
+		const float gh = INV_GRID_HEIGHTF(GameConstants::GetUseHQ_Icons());
+		Frect rect;
+		rect.lt.set((gr.lt.x + lt_dt.x) * gw, (gr.lt.y + lt_dt.y) * gh);
+		rect.rb.set(rect.lt.x + gw * m_grid_size.x, rect.lt.y + gh * m_grid_size.y);
+		inherited::SetOriginalRect(rect);
+	}
 }
 
 #include "../xrServerEntities/object_broker.h"
@@ -254,11 +274,303 @@ void CUIWeaponCellItem::RefreshOffset() {
 	}
 }
 
-void CUIWeaponCellItem::Draw() {	
+// ---- Gunslinger layered weapon icon: shared config logic ----------------------------------------
+// Split out of the cell item so every UI that shows a weapon icon can use the same rules (the pickup
+// indicator needs them too: with GS's deliberately empty inv_grid slot, drawing only the raw rect
+// shows nothing). Pure config work -- no widgets are touched here.
+namespace
+{
+	struct gwr_raw_layer
+	{
+		shared_str	section;
+		Fvector2	offset;
+		shared_str	hide;			// sections this layer hides while it is shown
+		u8			banned_mask;	// hidden while any of these addons is on (GetAddonsState bits)
+		bool		always_front;
+		bool		enabled;
+	};
+
+	void gwr_push(xr_vector<gwr_raw_layer>& v, LPCSTR section, const Fvector2& off,
+				  LPCSTR hide, u8 mask, bool front, const Fvector2& correction)
+	{
+		if (!section || !section[0] || !pSettings->section_exist(section))	return;
+		gwr_raw_layer L;
+		L.section		= section;
+		L.offset.set	(off.x + correction.x, off.y + correction.y);
+		L.hide			= hide ? hide : "";
+		L.banned_mask	= mask;
+		L.always_front	= front;
+		L.enabled		= true;
+		v.push_back(L);
+	}
+
+	// mark every section named in `csv` as hidden
+	void gwr_apply_hide(xr_vector<gwr_raw_layer>& v, const gwr_raw_layer& src)
+	{
+		if (!src.hide.size())	return;
+		string128 name;
+		LPCSTR p = src.hide.c_str();
+		while (*p)
+		{
+			while (*p == ' ' || *p == ',')	++p;
+			LPCSTR s = p;
+			while (*p && *p != ',')			++p;
+			u32 n = (u32)(p - s);
+			while (n && s[n-1] == ' ')		--n;
+			if (n && n < sizeof(name))
+			{
+				strncpy_s(name, sizeof(name), s, n);	name[n] = 0;
+				for (gwr_raw_layer& T : v)
+					if (&T != &src && T.section == name)	T.enabled = false;
+			}
+		}
+	}
+}
+
+// GS additional_icon_element: a weapon-specific extra sprite drawn when an addon is attached (a scope
+// that swaps the handle / hides the iron sights, a GL that adds a tac foregrip). GS reads it from the
+// addon's config section, else from `additional_icon_element_<addon>` on the weapon. read_sect = where
+// to look for the bare key (scope: the per-weapon scope section; sil/GL: the item section); suffix_sect
+// = the key suffix for the weapon override. No-op unless the config defines it (only oc14/svu/sig550 do).
+static void gwr_addon_extra(xr_vector<gwr_raw_layer>& v, const shared_str& weapon_sect,
+							const shared_str& read_sect, const shared_str& suffix_sect, const Fvector2& correction)
+{
+	if (!read_sect.size())	return;
+	LPCSTR icon = nullptr;
+	Fvector2 off;	off.set(0.f, 0.f);
+
+	if (pSettings->section_exist(read_sect) && pSettings->line_exist(read_sect, "additional_icon_element"))
+	{
+		icon  = pSettings->r_string(read_sect, "additional_icon_element");
+		off.x = READ_IF_EXISTS(pSettings, r_float, read_sect, "additional_icon_element_offset_x", 0.f);
+		off.y = READ_IF_EXISTS(pSettings, r_float, read_sect, "additional_icon_element_offset_y", 0.f);
+	}
+	else if (suffix_sect.size())
+	{
+		string256 key;
+		xr_sprintf(key, "additional_icon_element_%s", suffix_sect.c_str());
+		if (pSettings->line_exist(weapon_sect, key))
+		{
+			icon = pSettings->r_string(weapon_sect, key);
+			xr_sprintf(key, "additional_icon_element_offset_x_%s", suffix_sect.c_str());	off.x = READ_IF_EXISTS(pSettings, r_float, weapon_sect, key, 0.f);
+			xr_sprintf(key, "additional_icon_element_offset_y_%s", suffix_sect.c_str());	off.y = READ_IF_EXISTS(pSettings, r_float, weapon_sect, key, 0.f);
+		}
+	}
+	if (icon && icon[0])	gwr_push(v, icon, off, nullptr, 0, false, correction);
+}
+
+void GWR_CollectIconLayers(CWeapon* wpn, xr_vector<GWR_IconLayer>& out)
+{
+	out.clear();
+	if (!wpn)	return;
+	const shared_str& sect = wpn->cNameSect();
+
+	// inv_addons_correction_* shifts every layer at once (GS uses it to re-centre a composed icon)
+	Fvector2 correction;
+	correction.set(
+		(float)READ_IF_EXISTS(pSettings, r_s32, sect, "inv_addons_correction_x", 0),
+		(float)READ_IF_EXISTS(pSettings, r_s32, sect, "inv_addons_correction_y", 0));
+
+	xr_vector<gwr_raw_layer> v;
+	string128 key;
+
+	// 1. the weapon's own parts, element_icon_<N>, scanned until the first gap
+	for (int i = 0; ; ++i)
+	{
+		xr_sprintf(key, "element_icon_%d", i);
+		if (!pSettings->line_exist(sect, key))	break;
+		LPCSTR isect = pSettings->r_string(sect, key);
+
+		Fvector2 off;
+		xr_sprintf(key, "element_icon_offset_x_%d", i);	off.x = READ_IF_EXISTS(pSettings, r_float, sect, key, 0.f);
+		xr_sprintf(key, "element_icon_offset_y_%d", i);	off.y = READ_IF_EXISTS(pSettings, r_float, sect, key, 0.f);
+		xr_sprintf(key, "element_icon_banned_addons_mask_%d", i);	u8 mask = (u8)READ_IF_EXISTS(pSettings, r_s32, sect, key, 0);
+		xr_sprintf(key, "element_icon_always_front_%d", i);			bool front = !!READ_IF_EXISTS(pSettings, r_bool, sect, key, FALSE);
+		xr_sprintf(key, "element_icon_hide_%d", i);
+		LPCSTR hide = pSettings->line_exist(sect, key) ? pSettings->r_string(sect, key) : nullptr;
+
+		gwr_push(v, isect, off, hide, mask, front, correction);
+	}
+	if (v.empty())	return;			// weapon doesn't use the layered icon -- nothing to draw
+
+	// 2. one layer per installed upgrade. GS keeps the keys in the upgrade's EFFECT section, reached
+	//    from the node through its `section` key; older CS upgrades put them on the node -- read both.
+	for (const shared_str& up : wpn->get_upgrades())
+	{
+		if (!up.size() || !pSettings->section_exist(*up))	continue;
+		LPCSTR src = *up;
+		if (pSettings->line_exist(*up, "section"))
+		{
+			LPCSTR e = pSettings->r_string(*up, "section");
+			if (e && e[0] && pSettings->section_exist(e) && pSettings->line_exist(e, "upgrade_addon_icon"))
+				src = e;
+		}
+		if (!pSettings->line_exist(src, "upgrade_addon_icon"))	continue;
+
+		Fvector2 off;
+		off.x = READ_IF_EXISTS(pSettings, r_float, src, "upgrade_addon_icon_offset_x", 0.f);
+		off.y = READ_IF_EXISTS(pSettings, r_float, src, "upgrade_addon_icon_offset_y", 0.f);
+		u8   mask  = (u8)READ_IF_EXISTS(pSettings, r_s32,  src, "upgrade_addon_icon_banned_addons_mask", 0);
+		bool front = !!READ_IF_EXISTS(pSettings, r_bool, src, "upgrade_addon_always_front", FALSE);
+		LPCSTR hide = pSettings->line_exist(src, "upgrade_addon_icons_hide")
+						? pSettings->r_string(src, "upgrade_addon_icons_hide") : nullptr;
+
+		gwr_push(v, pSettings->r_string(src, "upgrade_addon_icon"), off, hide, mask, front, correction);
+	}
+
+	// 2b. per-addon extra sprite (GS additional_icon_element): weapon-specific piece when an addon is on.
+	//     Scope reads its per-weapon scope section (GS oc14/svu); silencer/GL the item section (GS sig550
+	//     uses the GL item suffix on the weapon). No-op for weapons that don't define it (e.g. ak74).
+	if (wpn->IsScopeAttached())
+		gwr_addon_extra(v, sect, wpn->GetCurrentScopeSection(), wpn->GetAttachedScopeName(), correction);
+	if (wpn->IsSilencerAttached())
+		gwr_addon_extra(v, sect, wpn->GetSilencerName(), wpn->GetSilencerName(), correction);
+	if (wpn->IsGrenadeLauncherAttached())
+		gwr_addon_extra(v, sect, wpn->GetGrenadeLauncherName(), wpn->GetGrenadeLauncherName(), correction);
+
+	// 3. unique-weapon overlay
+	if (pSettings->line_exist(sect, "uniq_icon"))
+	{
+		Fvector2 off;
+		off.x = READ_IF_EXISTS(pSettings, r_float, sect, "uniq_icon_offset_x", 0.f);
+		off.y = READ_IF_EXISTS(pSettings, r_float, sect, "uniq_icon_offset_y", 0.f);
+		gwr_push(v, pSettings->r_string(sect, "uniq_icon"), off, nullptr, 0, false, correction);
+	}
+
+	// suppression, in GS's order: the addon mask first, then the hide lists of whatever is still up
+	const u8 flags = wpn->GetAddonsState();
+	for (gwr_raw_layer& L : v)
+		L.enabled = !(L.banned_mask & flags);
+	for (const gwr_raw_layer& L : v)
+		if (L.enabled)	gwr_apply_hide(v, L);
+
+	// emit in draw order: normal layers first, always_front last
+	for (int pass = 0; pass < 2; ++pass)
+		for (const gwr_raw_layer& L : v)
+		{
+			if (!L.enabled || (L.always_front ? 0 : 1) != pass)	continue;
+			GWR_IconLayer o;
+			o.section	= L.section;
+			o.offset	= L.offset;
+			out.push_back(o);
+		}
+}
+
+void GWR_CalcGridResize(CWeapon* wpn, Ivector2& size_dt, Ivector2& lt_dt)
+{
+	size_dt.set(0, 0);
+	lt_dt.set(0, 0);
+	if (!wpn)												return;
+	if (!pSettings->line_exist(wpn->cNameSect(), "element_icon_0"))	return;	// not a layered icon
+
+	// Same upgrade iteration as GWR_CollectIconLayers: read the keys from the upgrade's EFFECT section
+	// (node -> `section`), falling back to the node itself for older CS-style upgrades.
+	for (const shared_str& up : wpn->get_upgrades())
+	{
+		if (!up.size() || !pSettings->section_exist(*up))	continue;
+		LPCSTR src = *up;
+		if (pSettings->line_exist(*up, "section"))
+		{
+			LPCSTR e = pSettings->r_string(*up, "section");
+			if (e && e[0] && pSettings->section_exist(e))	src = e;
+		}
+		size_dt.x += READ_IF_EXISTS(pSettings, r_s32, src, "inv_grid_width",  0);
+		size_dt.y += READ_IF_EXISTS(pSettings, r_s32, src, "inv_grid_height", 0);
+		lt_dt.x   += READ_IF_EXISTS(pSettings, r_s32, src, "inv_grid_x",      0);
+		lt_dt.y   += READ_IF_EXISTS(pSettings, r_s32, src, "inv_grid_y",      0);
+	}
+}
+
+void GWR_AttachIconLayers(CUIStatic* parent, CWeapon* wpn, float sx, float sy,
+						  xr_vector<CUIStatic*>& out, u32 tex_color)
+{
+	if (parent)
+		for (CUIStatic* s : out)	parent->DetachChild(s);
+	out.clear();
+	if (!parent || !wpn)	return;
+
+	xr_vector<GWR_IconLayer> layers;
+	GWR_CollectIconLayers(wpn, layers);
+
+	const float gw = INV_GRID_WIDTHF(GameConstants::GetUseHQ_Icons());
+	const float gh = INV_GRID_HEIGHTF(GameConstants::GetUseHQ_Icons());
+	for (const GWR_IconLayer& L : layers)
+	{
+		if (!pSettings->line_exist(L.section, "inv_grid_width"))	continue;
+
+		CUIStatic* s = xr_new<CUIStatic>();
+		s->SetAutoDelete(true);
+		s->SetShader	(InventoryUtilities::GetEquipmentIconsShader());
+
+		Frect lr = {};
+		lr.lt.set(pSettings->r_u32(L.section, "inv_grid_x") * gw,
+				  pSettings->r_u32(L.section, "inv_grid_y") * gh);
+		lr.rb.set(pSettings->r_u32(L.section, "inv_grid_width")  * gw,
+				  pSettings->r_u32(L.section, "inv_grid_height") * gh);
+		lr.rb.add(lr.lt);
+
+		s->GetStaticItem()->SetOriginalRect(lr);
+		s->SetStretchTexture(true);
+		s->SetWidth	 ((lr.rb.x - lr.lt.x) * sx);
+		s->SetHeight ((lr.rb.y - lr.lt.y) * sy);
+		s->SetWndPos (Fvector2().set(L.offset.x * sx, L.offset.y * sy));
+		s->SetTextureColor(tex_color);
+		parent->AttachChild(s);
+		out.push_back(s);
+	}
+}
+
+// Per-frame entry (GS CellItemBuffer.Update): re-realise the statics only when the visible layer set
+// actually changes, so this is a cheap compare on the frames nothing happened.
+void CUIWeaponCellItem::gwr_UpdateLayers()
+{
+	if (!object())	return;
+
+	xr_vector<GWR_IconLayer> now;
+	GWR_CollectIconLayers(object(), now);
+
+	bool same = (now.size() == m_gwr_shown.size());
+	if (same)
+		for (u32 i = 0; i < now.size(); ++i)
+			if (now[i].section != m_gwr_shown[i].section ||
+				!fsimilar(now[i].offset.x, m_gwr_shown[i].offset.x) ||
+				!fsimilar(now[i].offset.y, m_gwr_shown[i].offset.y))
+				{ same = false; break; }
+	if (same && !m_gwr_icons.empty())	return;
+	if (same && now.empty())			return;
+
+	for (CUIStatic* s : m_gwr_icons)	DetachChild(s);
+	m_gwr_icons.clear();
+	m_gwr_shown = now;
+
+	for (const GWR_IconLayer& L : now)
+	{
+		CUIStatic* s = xr_new<CUIStatic>();
+		s->SetAutoDelete(true);
+		AttachChild		(s);
+		s->SetShader	(InventoryUtilities::GetEquipmentIconsShader());
+		s->SetColor		(GetColor());
+		InitAddon		(s, L.section.c_str(), L.offset, Heading());
+		m_gwr_icons.push_back(s);
+	}
+}
+
+
+void CUIWeaponCellItem::Draw() {
 	inherited::Draw();
 
 	if (m_upgrade && m_upgrade->IsShown()) {
 		m_upgrade->Draw();
+	}
+
+	// The composed GWR layers are children attached AFTER the quantity counter (m_text) and the condition
+	// bar (m_pConditionState), so inherited::Draw() painted them OVER those. Re-draw the count + bar on top
+	// here -- exactly the same "draw again after inherited" pattern m_upgrade uses above, and (unlike a
+	// DetachChild/AttachChild reorder) it never mutates the child list mid-frame, so it can't corrupt it.
+	if (!m_gwr_icons.empty())
+	{
+		if (m_pConditionState && m_pConditionState->IsShown())	m_pConditionState->Draw();
+		if (m_text && m_text->IsShown())						m_text->Draw();
 	}
 }
 
@@ -266,8 +578,14 @@ void CUIWeaponCellItem::Update()
 {
 	bool b						= Heading();
 	inherited::Update			();
-	
+
 	bool bForceReInitAddons		= (b!=Heading());
+
+	// GS layered icon (elements / upgrades / uniq). A heading flip re-lays them too, since InitAddon
+	// bakes the rotation into each sprite's size and pivot.
+	// a heading flip has to re-lay them too: InitAddon bakes the rotation into each sprite's size/pivot
+	if (bForceReInitAddons)		{ m_gwr_shown.clear(); }
+	gwr_UpdateLayers			();
 
 	if (object()->SilencerAttachable())
 	{
@@ -294,7 +612,7 @@ void CUIWeaponCellItem::Update()
 			{
 				CreateIcon	(eScope);
 				RefreshOffset();
-				InitAddon	(GetIcon(eScope), *object()->GetScopeName(), m_addon_offset[eScope], Heading());
+				InitAddon	(GetIcon(eScope), *object()->GetAttachedScopeName(), m_addon_offset[eScope], Heading());
 			}
 		}
 		else
@@ -345,7 +663,7 @@ void CUIWeaponCellItem::OnAfterChild(CUIDragDropListEx* parent_list)
 		InitAddon	(GetIcon(eSilencer), *object()->GetSilencerName(),	m_addon_offset[eSilencer], parent_list->GetVerticalPlacement());
 
 	if(is_scope() && GetIcon(eScope))
-		InitAddon	(GetIcon(eScope),	*object()->GetScopeName(),		m_addon_offset[eScope], parent_list->GetVerticalPlacement());
+		InitAddon	(GetIcon(eScope),	*object()->GetAttachedScopeName(),		m_addon_offset[eScope], parent_list->GetVerticalPlacement());
 
 	if(is_launcher() && GetIcon(eLauncher))
 		InitAddon	(GetIcon(eLauncher), *object()->GetGrenadeLauncherName(),m_addon_offset[eLauncher], parent_list->GetVerticalPlacement());
@@ -410,34 +728,49 @@ void CUIWeaponCellItem::InitAddon(CUIStatic* s, LPCSTR section, Fvector2 addon_o
 CUIDragItem* CUIWeaponCellItem::CreateDragItem()
 {
 	CUIDragItem* i		= inherited::CreateDragItem();
-	CUIStatic* s		= NULL;
 
-	if(GetIcon(eSilencer))
-	{
-		s				= xr_new<CUIStatic>(); s->SetAutoDelete(true);
-		s->SetShader	(InventoryUtilities::GetEquipmentIconsShader());
-		InitAddon		(s, *object()->GetSilencerName(), m_addon_offset[eSilencer], false);
-		s->SetColor		(i->wnd()->GetColor());
-		i->wnd			()->AttachChild	(s);
-	}
-	
-	if(GetIcon(eScope))
-	{
-		s				= xr_new<CUIStatic>(); s->SetAutoDelete(true);
-		s->SetShader	(InventoryUtilities::GetEquipmentIconsShader());
-		InitAddon		(s,	*object()->GetScopeName(),		m_addon_offset[eScope], false);
-		s->SetColor		(i->wnd()->GetColor());
-		i->wnd			()->AttachChild	(s);
-	}
+	// The drag silhouette must show the weapon HORIZONTAL (its natural orientation), even when dragged
+	// from the vertical (main-weapon) slot where the cell renders it rotated. Lay every piece FLAT and
+	// scaled to the drag window (atlas-px -> window-px), the same way GWR_AttachIconLayers does for the
+	// pickup/info/HUD icons. Going through the cell's own InitAddon either rotated the pieces (Heading)
+	// or stretched them (false -- it scales by the cell's own, rotated, width/height).
+	const float gw = INV_GRID_WIDTHF(GameConstants::GetUseHQ_Icons());
+	const float gh = INV_GRID_HEIGHTF(GameConstants::GetUseHQ_Icons());
+	const float dw = i->wnd()->GetWidth();
+	const float dh = i->wnd()->GetHeight();
+	const float sx = (m_grid_size.x > 0) ? dw / (m_grid_size.x * gw) : 1.f;
+	const float sy = (m_grid_size.y > 0) ? dh / (m_grid_size.y * gh) : 1.f;
+	const u32   col = i->wnd()->GetColor();
 
-	if(GetIcon(eLauncher))
+	// one flat, scaled sprite for an atlas section at an atlas-pixel offset (mirrors GWR_AttachIconLayers)
+	auto lay_flat = [&](LPCSTR sect, const Fvector2& off)
 	{
-		s				= xr_new<CUIStatic>(); s->SetAutoDelete(true);
-		s->SetShader	(InventoryUtilities::GetEquipmentIconsShader());
-		InitAddon		(s, *object()->GetGrenadeLauncherName(),m_addon_offset[eLauncher], false);
-		s->SetColor		(i->wnd()->GetColor());
-		i->wnd			()->AttachChild	(s);
-	}
+		if (!sect || !sect[0] || !pSettings->section_exist(sect) ||
+			!pSettings->line_exist(sect, "inv_grid_width"))	return;
+		CUIStatic* s = xr_new<CUIStatic>();	s->SetAutoDelete(true);
+		s->SetShader(InventoryUtilities::GetEquipmentIconsShader());
+		Frect lr = {};
+		lr.lt.set(pSettings->r_u32(sect, "inv_grid_x") * gw,     pSettings->r_u32(sect, "inv_grid_y") * gh);
+		lr.rb.set(pSettings->r_u32(sect, "inv_grid_width") * gw, pSettings->r_u32(sect, "inv_grid_height") * gh);
+		lr.rb.add(lr.lt);
+		s->GetStaticItem()->SetOriginalRect(lr);
+		s->SetStretchTexture(true);
+		s->SetWidth ((lr.rb.x - lr.lt.x) * sx);
+		s->SetHeight((lr.rb.y - lr.lt.y) * sy);
+		s->SetWndPos(Fvector2().set(off.x * sx, off.y * sy));
+		s->SetTextureColor(col);
+		i->wnd()->AttachChild(s);
+	};
+
+	// stock scope/silencer/GL overlays (their inv_grid icon at scope_x/y etc.)
+	if (GetIcon(eSilencer))	lay_flat(*object()->GetSilencerName(),        m_addon_offset[eSilencer]);
+	if (GetIcon(eScope))	lay_flat(*object()->GetAttachedScopeName(),   m_addon_offset[eScope]);
+	if (GetIcon(eLauncher))	lay_flat(*object()->GetGrenadeLauncherName(), m_addon_offset[eLauncher]);
+
+	// GS composed layers (body / mag / upgrade / uniq) -- the whole silhouette for a layered weapon,
+	// since its own inv_grid slot is deliberately empty.
+	xr_vector<CUIStatic*> tmp;
+	GWR_AttachIconLayers(i->wnd(), object(), sx, sy, tmp, col);
 	return				i;
 }
 

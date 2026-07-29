@@ -7,6 +7,9 @@
 #include "material_manager.h"
 #include "profiler.h"
 #include "IKLimbsController.h"
+#include "Actor.h"
+#include "CustomOutfit.h"
+#include "../xrSound/Sound.h"
 #ifdef	DEBUG
 BOOL debug_step_info = FALSE;
 BOOL debug_step_info_load = FALSE;
@@ -113,7 +116,7 @@ void CStepManager::on_animation_start(MotionID motion_id, CBlend *blend)
 
 	m_time_anim_started = Device.dwTimeGlobal; 
 	
-	// искать текущую анимацию в STEPS_MAP
+	// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ STEPS_MAP
 	STEPS_MAP_IT it = m_steps_map.find(motion_id);
 	if (it == m_steps_map.end()) {
 #ifdef	DEBUG
@@ -153,24 +156,24 @@ void CStepManager::update()
 	SGameMtlPair* mtl_pair		= m_object->material().get_current_pair();
 	if (!mtl_pair)				return;
 
-	// получить параметры шага
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 	SStepParam	&step		= m_step_info.params;
 	u32		cur_time		= Device.dwTimeGlobal;
 
-	// время одного цикла анимации
+	// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	float cycle_anim_time	= get_blend_time() / step.cycles;
 
-	// пройти по всем ногам и проверить время
+	// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	for (u32 i=0; i<m_legs_count; i++) {
 
-		// если событие уже обработано для этой ноги, то skip
+		// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅ skip
 		if (m_step_info.activity[i].handled && (m_step_info.activity[i].cycle == m_step_info.cur_cycle)) continue;
 
-		// вычислить смещённое время шага в соответствии с параметрами анимации ходьбы
+		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 		u32 offset_time = m_time_anim_started + u32(1000 * (cycle_anim_time * (m_step_info.cur_cycle-1) + cycle_anim_time * step.step[i].time));
 		if (offset_time <= cur_time){
 
-			// Играть звук
+			// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 
 			//if (!mtl_pair->StepSounds.empty() && is_on_ground() ) 
 			//{
@@ -181,21 +184,21 @@ void CStepManager::update()
 			if( is_on_ground() )
 				m_step_sound.play_next( mtl_pair, m_object, m_step_info.params.step[i].power );
 
-			// Играть партиклы
+			// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 			if (!mtl_pair->CollideParticles.empty())	{
 				LPCSTR ps_name = *mtl_pair->CollideParticles[::Random.randI(0,mtl_pair->CollideParticles.size())];
 
-				//отыграть партиклы столкновения материалов
+				//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 				CParticlesObject* ps = CParticlesObject::Create(ps_name,TRUE);
 
-				// вычислить позицию и направленность партикла
+				// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 				Fmatrix pos; 
 
-				// установить направление
+				// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 				pos.k.set(Fvector().set(0.0f,1.0f,0.0f));
 				Fvector::generate_orthonormal_basis(pos.k, pos.j, pos.i);
 
-				// установить позицию
+				// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 				pos.c.set(get_foot_position(ELegType(i)));
 
 				ps->UpdateParent(pos,Fvector().set(0.f,0.f,0.f));
@@ -205,17 +208,17 @@ void CStepManager::update()
 			// Play Camera FXs
 			event_on_step();
 
-			// обновить поле handle
+			// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ handle
 			m_step_info.activity[i].handled	= true;
 			m_step_info.activity[i].cycle	= m_step_info.cur_cycle;
 		}
 	}
 
-	// определить текущий цикл
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 	if (m_step_info.cur_cycle < step.cycles) m_step_info.cur_cycle = 1 + u8(float(cur_time - m_time_anim_started) / (1000.f * cycle_anim_time));
 
-	// если анимация циклическая...
-	u32 time_anim_end = m_time_anim_started + u32(get_blend_time() * 1000);		// время завершения работы анимации
+	// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ...
+	u32 time_anim_end = m_time_anim_started + u32(get_blend_time() * 1000);		// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if (!m_blend->stop_at_end && (time_anim_end < cur_time)) {
 		
 		m_time_anim_started		= time_anim_end;
@@ -272,7 +275,7 @@ void CStepManager::reload_foot_bones()
 		load_foot_bones(pSettings->r_section(pSettings->r_string(*m_object->cNameSect(),"foot_bones")));
 	}
 
-	// проверка на соответсвие
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	int count = 0;
 	for (u32 i = 0; i < MAX_LEGS_COUNT; i++) 
 		if (m_foot_bones[i] != BI_NONE) count++;
@@ -286,11 +289,67 @@ float CStepManager::get_blend_time()
 }
 
 
+// GS gunsl_exo.on_step_sound: while the ACTOR walks in an exoskeleton, play a random servo step sound on top
+// of the material footstep -- 2D, volume rising as the exo wears down (GS 1.0 at full cond -> 2.0 when nearly
+// broken). The outfit lists its clips in `exo_step_sounds` (CSV); no key = not an exo, nothing plays.
+static void gwr_play_exo_step( CEntityAlive* object )
+{
+	CActor* act = smart_cast<CActor*>( object );
+	if (!act)		return;						// actor only (NPC exos not handled here)
+	CCustomOutfit* o = act->GetOutfit();
+	if (!o)			return;
+	const shared_str sect = o->cNameSect();
+	if (!pSettings->line_exist( sect, "exo_step_sounds" ))	return;
+
+	// load the servo clips once, re-load if the worn outfit section changes
+	static xr_vector<ref_sound>	s_snds;
+	static shared_str			s_sect;
+	if (s_sect != sect)
+	{
+		for (ref_sound& s : s_snds)	s.destroy();
+		s_snds.clear();
+		string256 name;	LPCSTR p = pSettings->r_string( sect, "exo_step_sounds" );
+		while (*p)
+		{
+			while (*p == ' ' || *p == ',')	++p;
+			LPCSTR b = p;	while (*p && *p != ',')	++p;
+			u32 n = (u32)(p - b);	while (n && b[n-1] == ' ')	--n;
+			if (n && n < sizeof(name))
+			{
+				strncpy_s( name, sizeof(name), b, n );	name[n] = 0;
+				ref_sound s;	::Sound->create( s, name, st_Effect, SOUND_TYPE_ITEM_USING );
+				s_snds.push_back( s );
+			}
+		}
+		s_sect = sect;
+	}
+	if (s_snds.empty())	return;
+
+	const float cond = o->GetCondition();
+	const float minv = READ_IF_EXISTS( pSettings, r_float, sect, "exo_step_vol_min", 1.0f );
+	const float maxv = READ_IF_EXISTS( pSettings, r_float, sect, "exo_step_vol_max", 2.0f );
+	const float hi = 0.7f, lo = 0.1f;			// GS: full-cond .. nearly-broken
+	float vol = (cond > hi) ? minv : (cond < lo) ? maxv : (minv + (maxv - minv) * (hi - cond) / (hi - lo));
+
+	Fvector z = { 0.f, 0.f, 0.f };
+	s_snds[ Random.randI( s_snds.size() ) ].play_no_feedback( object, sm_2D, 0.f, &z, &vol );
+}
 
 void CStepManager::material_sound::play_next( SGameMtlPair* mtl_pair, CEntityAlive	*object, float volume  )
 {
-	
-	if (mtl_pair->StepSounds.empty() ) 
+	gwr_play_exo_step( object );				// exo servo step on top of the material footstep (fires every step)
+
+	// hud_step_sound_vol_k (0.21): quiet the actor's own footsteps so the exo servo (above) is audible at a
+	// fast pace -- but ONLY while an EXOSKELETON is worn (an outfit that lists exo_step_sounds). Without an
+	// exo the footsteps keep full volume. NPC footsteps are unaffected.
+	if (CActor* act = smart_cast<CActor*>( object ))
+	{
+		CCustomOutfit* o = act->GetOutfit();
+		if (o && pSettings->line_exist( o->cNameSect(), "exo_step_sounds" ))
+			volume *= READ_IF_EXISTS( pSettings, r_float, object->cNameSect(), "hud_step_sound_vol_k", 0.21f );
+	}
+
+	if (mtl_pair->StepSounds.empty() )
 		return;
 	Fvector sound_pos = object->Position();
 	sound_pos.y += 0.5;

@@ -46,6 +46,12 @@ private:
 
 private:
 	shared_str				m_id;
+	// opt-in (group section key `require_all_parent_groups`): instead of the default "any non-root parent
+	// installed" gate, require at least one installed parent from EACH distinct parent GROUP -- i.e. when
+	// several sibling branches all point their `effects` at this group, ALL of those branches must have a
+	// node chosen (one per branch, since a group's elements are mutually exclusive). Used for colt1911's
+	// vartree_systems (recoil/hit_power unlock only after barrel AND usm AND zatvor each have a pick).
+	bool					m_require_all_parent_groups;
 
 	Upgrades_type			m_parent_upgrades;
 	Upgrades_type			m_included_upgrades;

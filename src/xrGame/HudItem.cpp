@@ -11,6 +11,66 @@
 #include "player_hud.h"
 #include "../xrEngine/SkeletonMotions.h"
 
+extern bool gwr_pda_need_fastzoom();		// ui\UIPdaWnd.cpp
+
+// ---- ppe played over a slice of a hud motion (Gunslinger's NV blackout) ----
+// Keyed per ALIAS, exactly as GS does it: use_ppe_effector_<alias> / ppe_effector_<alias> /
+// ppe_start_<alias> / ppe_end_<alias>. That genericity is the whole point -- the goggles gesture
+// plays on whatever HUD is out (the empty-hands animator's anm_show, a weapon's anm_nv_on, and its
+// _empty/_jammed twins), so keying it to one hard-coded alias only ever blacked out one of them.
+// Called from PlayHUDMotion, where the alias is already resolved and the motion's length is known.
+void CHudItem::ArmPPE(const shared_str& alias)
+{
+	m_show_ppe_at = 0;
+	if (!alias.size())	return;
+
+	string256 key;
+	strconcat(sizeof(key), key, "use_ppe_effector_", alias.c_str());
+	if (!READ_IF_EXISTS(pSettings, r_bool, HudSection(), key, FALSE))	return;
+
+	strconcat(sizeof(key), key, "ppe_effector_", alias.c_str());
+	LPCSTR sect = READ_IF_EXISTS(pSettings, r_string, HudSection(), key, "");
+	if (!sect || !sect[0])	return;
+
+	u32 now = Device.dwTimeGlobal;
+	u32 end = MotionEndTm();
+	if (end <= now)			return;				// no motion running -> nothing to key off
+
+	strconcat(sizeof(key), key, "ppe_start_", alias.c_str());
+	float f0 = READ_IF_EXISTS(pSettings, r_float, HudSection(), key, 0.0f);
+	strconcat(sizeof(key), key, "ppe_end_", alias.c_str());
+	float f1 = READ_IF_EXISTS(pSettings, r_float, HudSection(), key, 1.0f);
+
+	float len			= float(end - now);
+	m_show_ppe_sect		= sect;
+	m_show_ppe_at		= now + u32(len * f0);
+	m_show_ppe_off_at	= now + u32(len * f1);
+	m_show_ppe_on		= false;
+}
+
+void CHudItem::UpdateShowPPE()
+{
+	if (!m_show_ppe_at)					return;
+	CActor* pA = smart_cast<CActor*>(object().H_Parent());
+	if (!pA)							return;
+	u32 now = Device.dwTimeGlobal;
+
+	if (!m_show_ppe_on && now >= m_show_ppe_at)
+	{
+		AddEffector		(pA, effActionAnimPPE, m_show_ppe_sect);
+		m_show_ppe_on	= true;
+	}
+	if (m_show_ppe_on && now >= m_show_ppe_off_at)
+	{
+		// Drop it, don't Stop() it: Stop(sp) fades m_factor out linearly over 1/sp seconds, so the
+		// black lingered a whole second past the gesture. Gunslinger cuts both ways -- the effector
+		// starts at m_factor 1.0 (hard in), and this makes the way out just as hard.
+		RemoveEffector	(pA, effActionAnimPPE);
+		m_show_ppe_on	= false;
+		m_show_ppe_at	= 0;					// done for this gesture
+	}
+}
+
 ENGINE_API extern float psHUD_FOV_def;
 
 CHudItem::CHudItem()
@@ -22,10 +82,31 @@ CHudItem::CHudItem()
 	m_started_rnd_anim_idx		= u8(-1);
 	m_fHudFov					= 0.f;
 	m_fHudFovAim				= 0.f;
+	m_fHudFovAimScope			= 0.f;
 	m_bStepSlow					= false;
 	m_bStepCrouch				= false;
+	m_bSprintStarted			= false;
+	m_bSprintStartRunning		= false;
+	m_bPrevSprint				= false;
+	m_fNextBlendAccrue			= 0.f;
+	m_dwSprintExitEndTm			= 0;
+	m_dwShootLockTm				= 0;
 	m_bIdleTransitionLock		= false;
+	m_bSuppressCompanion		= false;
+	m_bPdaCursorAnims			= false;
+	m_bBlowoutPlayed			= false;
+	m_dwBlowoutUntil			= 0;
+	m_show_ppe_at				= 0;
+	m_show_ppe_off_at			= 0;
+	m_show_ppe_on				= false;
 }
+
+// 3D PDA cursor direction, set by CUIPdaWnd::Update from the accumulated mouse movement.
+// 0 = centred (plain idle), 1..8 = the eight directions, 9 = click. Global because only one PDA
+// can be open at a time, and the hud item has to read it from deep inside its idle selection.
+int g_pda_cursor_dir = 0;
+// suffix per direction, indexed by g_pda_cursor_dir (must match the enum order above)
+LPCSTR g_pda_dir_suffix[] = { "", "_up", "_up_right", "_right", "_down_right", "_down", "_down_left", "_left", "_up_left", "_click" };
 
 bool CHudItem::HasMovementIdleVariant()
 {
@@ -56,15 +137,73 @@ void CHudItem::Load(LPCSTR section)
 
 	m_fHudFov = READ_IF_EXISTS(pSettings, r_float, hud_sect, "hud_fov", 0.f);
 	m_fHudFovAim = READ_IF_EXISTS(pSettings, r_float, hud_sect, "hud_fov_aim", 0.f);
+	m_fHudFovAimScope = READ_IF_EXISTS(pSettings, r_float, hud_sect, "scope_hud_fov_aim", 0.f);
 
-	m_current_inertion.PitchOffsetR = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_pitch_offset_r", PITCH_OFFSET_R);
-	m_current_inertion.PitchOffsetD = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_pitch_offset_d", PITCH_OFFSET_D);
-	m_current_inertion.PitchOffsetN = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_pitch_offset_n", PITCH_OFFSET_N);
+	// GS inertion model (WeaponInertion.pas UpdateInertion): defaults from [gunslinger_base]
+	// (GS gunslinger_params.ltx: hip -0.017/-0.012/-0.02, origin 0.09, speed 5; aim 0/0/0, 0.04, 7 --
+	// note the flipped signs vs vanilla: GS substitutes these into the same engine constant slots),
+	// per-weapon overrides via inertion_* / inertion_aim_* in the hud section.
+	LPCSTR GB = "gunslinger_base";
+	float d_r  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_default_pitch_offset_r", PITCH_OFFSET_R);
+	float d_n  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_default_pitch_offset_n", PITCH_OFFSET_N);
+	float d_d  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_default_pitch_offset_d", PITCH_OFFSET_D);
+	float d_o  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_default_origin_offset", ORIGIN_OFFSET);
+	float d_s  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_default_speed", TENDTO_SPEED);
+	m_current_inertion.PitchOffsetR = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_pitch_offset_r", d_r);
+	m_current_inertion.PitchOffsetN = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_pitch_offset_n", d_n);
+	m_current_inertion.PitchOffsetD = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_pitch_offset_d", d_d);
+	m_current_inertion.OriginOffset = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_origin_offset", d_o);
+	m_current_inertion.TendtoSpeed  = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_speed",
+									  READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_tendto_speed", d_s));
 
-	m_current_inertion.OriginOffset = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_origin_offset", ORIGIN_OFFSET);
-	m_current_inertion.TendtoSpeed = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_tendto_speed", TENDTO_SPEED);
+	float a_r  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_aim_default_pitch_offset_r", m_current_inertion.PitchOffsetR);
+	float a_n  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_aim_default_pitch_offset_n", m_current_inertion.PitchOffsetN);
+	float a_d  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_aim_default_pitch_offset_d", m_current_inertion.PitchOffsetD);
+	float a_o  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_aim_default_origin_offset", m_current_inertion.OriginOffset);
+	float a_s  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_aim_default_speed", m_current_inertion.TendtoSpeed);
+	m_aim_inertion.PitchOffsetR = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_aim_pitch_offset_r", a_r);
+	m_aim_inertion.PitchOffsetN = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_aim_pitch_offset_n", a_n);
+	m_aim_inertion.PitchOffsetD = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_aim_pitch_offset_d", a_d);
+	m_aim_inertion.OriginOffset = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_aim_origin_offset", a_o);
+	m_aim_inertion.TendtoSpeed  = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_aim_speed", a_s);
+
+	// grenade-launcher mode: inertion_gl_* keys, defaulting to the resolved aim set (GS
+	// ApplyInertionParamsWithDef(aim_inert, wpn_inert.gl, aim_inert))
+	m_gl_inertion.PitchOffsetR = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_gl_pitch_offset_r", m_aim_inertion.PitchOffsetR);
+	m_gl_inertion.PitchOffsetN = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_gl_pitch_offset_n", m_aim_inertion.PitchOffsetN);
+	m_gl_inertion.PitchOffsetD = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_gl_pitch_offset_d", m_aim_inertion.PitchOffsetD);
+	m_gl_inertion.OriginOffset = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_gl_origin_offset", m_aim_inertion.OriginOffset);
+	m_gl_inertion.TendtoSpeed  = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_gl_speed", m_aim_inertion.TendtoSpeed);
+
+	m_bHudInertion  = !!READ_IF_EXISTS(pSettings, r_bool, hud_sect, "hud_inertion", TRUE);
+	m_bZoomInertion = !!READ_IF_EXISTS(pSettings, r_bool, hud_sect, "zoom_inertion", FALSE);
+	m_bDisableBore  = !!READ_IF_EXISTS(pSettings, r_bool, hud_sect, "disable_bore", TRUE);	// GS default: no idle bore anim
+
+	m_bPdaCursorAnims = !!READ_IF_EXISTS(pSettings, r_bool, hud_sect, "pda_cursor_anims", FALSE);
 
 	m_sounds.LoadSound(section, "snd_bore", "sndBore", true);
+	m_sounds.LoadSound(section, "snd_blowout", "sndBlowout", true);	// GS emission glitch sound (PDA pda_vibros); optional
+}
+
+// GS UpdateInertion: hip params blended toward the aim set by the zoom factor; hud_inertion=false or
+// (zoom_inertion && zoomed) turns the sway off (GS AllowWeaponInertion on OnZoomIn/OnZoomOut).
+InertionData& CHudItem::CurrentInertionData()
+{
+	if (!m_bHudInertion || (m_bZoomInertion && InertionZoomedNow()))
+	{
+		// zero offsets = no visual sway. TendtoSpeed must make speed*dt == EXACTLY 1 (one-frame snap of
+		// the internal last-dir tracker): the tracker is st_last_dir.mad(diff, speed*dt), so speed*dt > 1
+		// OVERSHOOTS and diverges to NaN (was 1000 -> weapons went invisible + fps drop).
+		static InertionData s_off;
+		s_off.PitchOffsetR = s_off.PitchOffsetN = s_off.PitchOffsetD = 0.f;
+		s_off.OriginOffset = 0.f;
+		s_off.TendtoSpeed  = (Device.fTimeDelta > EPS) ? (1.f / Device.fTimeDelta) : 0.f;
+		return s_off;
+	}
+	float f = GetInertionAimFactor();
+	if (f <= 0.f)	return m_current_inertion;
+	m_blend_inertion.lerp(m_current_inertion, InertionGrenadeModeNow() ? m_gl_inertion : m_aim_inertion, f);
+	return m_blend_inertion;
 }
 
 
@@ -218,6 +357,8 @@ void CHudItem::UpdateHudAdditonal		(Fmatrix& hud_trans)
 
 void CHudItem::UpdateCL()
 {
+	UpdateShowPPE();
+
 	if(m_current_motion_def)
 	{
 		if(m_bStopAtEndAnimIsRunning)
@@ -258,6 +399,19 @@ void CHudItem::UpdateCL()
 			}
 		}
 	}
+}
+
+// GS SetShootLockTime: block firing for `ms` (0 clears). Deadline-based like our other fire timers, so it
+// self-expires -- no per-frame tick needed. The base HUD item has only this plain lock; CWeaponMagazined
+// folds its aim/sprint fire-lock deadlines into IsShootLocked() on top.
+void CHudItem::SetShootLock(u32 ms)
+{
+	m_dwShootLockTm = ms ? (Device.dwTimeGlobal + ms) : 0;
+}
+
+bool CHudItem::IsShootLocked() const
+{
+	return m_dwShootLockTm && Device.dwTimeGlobal < m_dwShootLockTm;
 }
 
 void CHudItem::OnH_A_Chield		()
@@ -302,9 +456,17 @@ void CHudItem::on_b_hud_detach()
 
 void CHudItem::on_a_hud_attach()
 {
+	m_bSprintStarted = false;	// fresh draw: no sprint transition owed (avoids a stray sprint_end on redraw)
+	m_bSprintStartRunning = false;
 	if(m_current_motion_def)
 	{
 		PlayHUDMotion_noCB(m_current_motion, FALSE);
+		// This motion was started BEFORE we were attached (a draw: switch2_Showing runs off the state
+		// machine, the attach happens later in CActor::UpdateCL), so PlayHUDMotion's companion hook bailed
+		// out back then - attached_item(0) wasn't us yet. It only becomes visible here, so mirror it now,
+		// else a weapon drawn with a detector out never plays the detector's anm_wpn_show (the holster
+		// works because the weapon is long attached by then and goes through PlayHUDMotion normally).
+		TryPlayDetectorCompanion(m_current_motion);
 #ifdef DEBUG
 		Msg("continue playing [%s][%d]",m_current_motion.c_str(), Device.dwFrame);
 #endif // #ifdef DEBUG
@@ -313,8 +475,14 @@ void CHudItem::on_a_hud_attach()
 
 void CHudItem::MakeJammedName(LPCSTR name, string_path& out)
 {
-	// "_jammed" goes before a trailing GL suffix, else at the very end. NOTE: no numeric _0.._3
-	// suffixes here — they collide with firemode tokens like anm_firemode_a_to_1 (the "_1").
+	MakeStateName	(name, "_jammed", out);
+}
+
+// Build a weapon-state alias variant ("_jammed" / "_empty"): the infix goes before a trailing GL
+// suffix, else at the very end. NOTE: no numeric _0.._3 suffixes here — they collide with firemode
+// tokens like anm_firemode_a_to_1 (the "_1").
+void CHudItem::MakeStateName(LPCSTR name, LPCSTR infix, string_path& out)
+{
 	static const LPCSTR sfx[] = { "_gl_off", "_gl_on", "_w_gl", "_g" };
 	int len = (int)xr_strlen(name);
 	for (u32 i=0; i<sizeof(sfx)/sizeof(sfx[0]); ++i)
@@ -324,24 +492,59 @@ void CHudItem::MakeJammedName(LPCSTR name, string_path& out)
 		{
 			xr_strcpy	(out, name);
 			out[len-sl]	= 0;
-			xr_strcat	(out, "_jammed");
+			xr_strcat	(out, infix);
 			xr_strcat	(out, sfx[i]);
 			return;
 		}
 	}
 	xr_strcpy	(out, name);
-	xr_strcat	(out, "_jammed");
+	xr_strcat	(out, infix);
 }
 
 u32 CHudItem::PlayHUDMotion(const shared_str& M, BOOL bMixIn, CHudItem*  W, u32 state)
 {
-	shared_str playM = M;
+	// An empty/absent alias (M == "" or null) would flow through MakeFireModeName -> a NULL shared_str
+	// (the container docks "" to null) and crash in anim_play/motion_length on the null name. Bail early.
+	if (!M.c_str() || !M.c_str()[0])
+	{
+		Msg("! [CHudItem::PlayHUDMotion] empty animation name on [%s] -- skipped", HudSection().c_str());
+		return 0;
+	}
+
+	// GS firemode selector (GetFireModeStateMark): apply the per-mode mark FIRST (GS order:
+	// base + firemode_mark + _jammed/_empty), so e.g. anm_idle -> anm_idle_auto -> anm_idle_auto_jammed.
+	// No-op unless the weapon has a mask_firemode_<N> configured and the resulting alias exists.
+	string_path fmbuf;
+	MakeFireModeName	(M.c_str(), fmbuf);
+	shared_str fmBase	= fmbuf;
+
+	shared_str playM = fmBase;
 	if (NeedJammedAnim())
 	{
 		string_path jam;
-		MakeJammedName	(M.c_str(), jam);
+		MakeJammedName	(fmBase.c_str(), jam);
 		if (isHUDAnimationExist(jam))
 			playM = jam;
+	}
+	else if (NeedEmptyAnim())
+	{
+		// Empty magazine -> the bolt/slide stays locked back, so every anim needs its _empty twin
+		// (same hands motion, 2nd token = the weapon model's idle_empty). Same existence-gated rewrite
+		// as _jammed, so weapons/aliases without an _empty variant are untouched. Jammed wins over
+		// empty (the config keeps them as separate motions).
+		string_path emp;
+		MakeStateName	(fmBase.c_str(), "_empty", emp);
+		if (isHUDAnimationExist(emp))
+			playM = emp;
+	}
+	else if (NeedFirstAnim())
+	{
+		// Just reloaded, no shot since (mag not empty) -> the "_first" family (e.g. the drum's fresh-round
+		// idle). Same existence-gated rewrite; jammed/empty win over first (GS ModifierStd order).
+		string_path first;
+		MakeStateName	(fmBase.c_str(), "_first", first);
+		if (isHUDAnimationExist(first))
+			playM = first;
 	}
 	u32 anim_time					= PlayHUDMotion_noCB(playM, bMixIn);
 	if (anim_time>0)
@@ -350,13 +553,56 @@ u32 CHudItem::PlayHUDMotion(const shared_str& M, BOOL bMixIn, CHudItem*  W, u32 
 		m_dwMotionStartTm			= Device.dwTimeGlobal;
 		m_dwMotionCurrTm			= m_dwMotionStartTm;
 		m_dwMotionEndTm				= m_dwMotionStartTm + anim_time;
+		// GS lock_time (WeaponAdditionalBuffer.pas MakeLockByConfigParam): a config `lock_time_<anim>`
+		// in the hud section ends the action state on that timer instead of the full motion length, so
+		// the dead tail is skipped and the next anim blends in early (like GS's PlayCustomAnim). Opt-in
+		// per anim -- absent key = unchanged (full length). Tries the resolved name (jammed/empty may
+		// differ) then the base alias. Shorten-only, so a stray value can't stall a state longer than
+		// the motion. This works for ANY action animation the config author keys, EXCEPT the aim/sprint
+		// transitions which own dedicated timers (m_dwAimTransitionEndTm / m_dwSprintExitEndTm read the
+		// same lock_time keys) -- shortening their state end here would race those handoffs.
+		float lt = -1.f;
+		if (0 != strncmp(M.c_str(), "anm_idle_aim", 12) && 0 != strncmp(M.c_str(), "anm_idle_sprint", 15))
+		{
+			string128 key;
+			xr_sprintf(key, "lock_time_%s", playM.c_str());
+			lt = READ_IF_EXISTS(pSettings, r_float, HudSection(), key, -1.f);
+			if (lt < 0.f && playM != M)
+			{
+				xr_sprintf(key, "lock_time_%s", M.c_str());
+				lt = READ_IF_EXISTS(pSettings, r_float, HudSection(), key, -1.f);
+			}
+		}
+		if (lt >= 0.f)
+		{
+			u32 lock_end = m_dwMotionStartTm + u32(lt * 1000.f);
+			if (lock_end < m_dwMotionEndTm)	m_dwMotionEndTm = lock_end;
+		}
 		m_startedMotionState		= state;
 	} else {
 		m_bStopAtEndAnimIsRunning = false;
 	}
+	ArmPPE					(playM);	// ppe keyed to THIS alias, if the hud section asks for one
+	TryPlayDetectorCompanion(playM);	// mirror this action on an out companion detector
 	return anim_time;
 }
 
+// If THIS is the active weapon (hud idx 0) and a detector is out (idx 1), play the detector's
+// matching companion anim (anm_wpn_<action>). action = the played motion minus the "anm_" prefix.
+void CHudItem::TryPlayDetectorCompanion(const shared_str& weaponMotion)
+{
+	if (m_bSuppressCompanion)		return;		// this item's motions must not drive the companion
+	if (!g_player_hud)	return;
+	attachable_hud_item* w = g_player_hud->attached_item(0);
+	if (!w || w->m_parent_hud_item != this)	return;	// only the right-hand weapon drives the companion
+	attachable_hud_item* d = g_player_hud->attached_item(1);
+	if (!d || !d->m_parent_hud_item)		return;
+	const char* wm = weaponMotion.c_str();
+	if (0 != strncmp(wm, "anm_", 4))		return;
+	// TRUE: this hook only runs when the weapon actually (re)started a motion, so the companion must
+	// re-sync with it -- otherwise a repeated one-shot (dry-fire spam) plays on the weapon but not here.
+	d->m_parent_hud_item->PlayCompanionAction(wm + 4, true);	// no-op unless it's a detector with anm_wpn_<action>
+}
 
 u32 CHudItem::PlayHUDMotion_noCB(const shared_str& motion_name, BOOL bMixIn)
 {
@@ -407,8 +653,72 @@ void CHudItem::PlayAnimIdle()
 	PlayHUDMotion("anm_idle", TRUE, NULL, GetState());
 }
 
+// GS blowout (ActorUtils.pas ~2339, play_blowout_anim): when an emission's electronics-problems level passes
+// this item's threshold, play the glitch animation `anm_blowout` (the PDA's pda_vibros = "выброс") ONCE. The
+// threshold is tied to the SCREEN blackout (pda_black_frac * max_level) so the hand anim and the black always
+// coincide. Called both from TryPlayAnimIdle (movement/cursor path) AND per-frame from CUIPdaWnd::Update, so it
+// fires even while standing perfectly still (TryPlayAnimIdle alone isn't re-entered without a state change).
+// Returns true if it started the anim this call. Requires eIdle && !pending so it never cuts a draw/gesture.
+bool CHudItem::TryPlayBlowoutAnim()
+{
+	if (m_bBlowoutPlayed)	return false;
+	if (GetState() != eIdle || IsPending())	return false;
+	if (!READ_IF_EXISTS(pSettings, r_bool, HudSection(), "play_blowout_anim", FALSE) || !isHUDAnimationExist("anm_blowout"))	return false;
+
+	extern float g_electronics_problems;
+	float lvl = READ_IF_EXISTS(pSettings, r_float, HudSection(), "blowout_anim_level", 1000.f);
+	const float bf = READ_IF_EXISTS(pSettings, r_float, "gwr_blowout", "pda_black_frac", -1.f);
+	if (bf > 0.f)	lvl = bf * READ_IF_EXISTS(pSettings, r_float, "gwr_blowout", "max_level", 20.f);
+	if (g_electronics_problems < lvl)	return false;
+
+	// GS plays it exactly ONCE per PDA-open session; our phantom is recreated on every open, so the
+	// constructor's m_bBlowoutPlayed=false is the re-arm (reopen the PDA to see it again).
+	m_bBlowoutPlayed = true;
+	if (m_sounds.FindSoundItem("sndBlowout", false))		// GS plays sndBlowout with the glitch anim
+		PlaySound("sndBlowout", object().Position());
+	PlayHUDMotion("anm_blowout", TRUE, this, GetState());
+	m_dwBlowoutUntil = MotionEndTm();		// hold the cursor loop off until the glitch finishes
+	return true;
+}
+
 bool CHudItem::TryPlayAnimIdle()
 {
+	if (TryPlayBlowoutAnim())	return true;
+
+	// 3D PDA: the cursor drives the idle. While it's off-centre we play anm_idle[_aim]<dir> and ignore
+	// the movement/sprint variants entirely -- Gunslinger does the same (its anm_idle_up_moving,
+	// anm_idle_up_crouch etc. all point at the very same pda_idle_up motion anyway).
+	if(m_bPdaCursorAnims)
+	{
+		bool zoomed = IsHudItemZoomed();
+		// Between the two halves of the split draw: hold the pose anm_show_fastzoom ended on
+		// (pda_aim_draw_idle) rather than dropping to the lowered idle, which would undo the lift
+		// a frame before anm_idle_aim_start_fastzoom picks it back up.
+		if(!zoomed && gwr_pda_need_fastzoom() && isHUDAnimationExist("anm_idle_fastzoom"))
+		{
+			PlayHUDMotion("anm_idle_fastzoom", TRUE, this, GetState());
+			return true;
+		}
+		if(g_pda_cursor_dir)
+		{
+			string_path nm;
+			strconcat(sizeof(nm), nm, zoomed ? "anm_idle_aim" : "anm_idle", g_pda_dir_suffix[g_pda_cursor_dir]);
+			if(isHUDAnimationExist(nm))
+			{
+				PlayHUDMotion(nm, TRUE, this, GetState());
+				return true;
+			}
+		}
+		// held to the face: the aim idle, never the walk one (and it's also the fallback when this
+		// direction has no aim variant). Centred + not zoomed falls through to the normal
+		// moving/idle selection below, so anm_idle_moving (pda_walk) still works.
+		if(zoomed && isHUDAnimationExist("anm_idle_aim"))
+		{
+			PlayHUDMotion("anm_idle_aim", TRUE, this, GetState());
+			return true;
+		}
+	}
+
 	if(MovingAnimAllowedNow())
 	{
 		CActor* pActor = smart_cast<CActor*>(object().H_Parent());
@@ -418,9 +728,40 @@ bool CHudItem::TryPlayAnimIdle()
 			pActor->g_State(st);
 			if(st.bSprint)
 			{
+				// false->true edge: sprint just began -> force the enter transition to play even if
+				// m_bSprintStarted was left set by the previous state (e.g. aiming out into a sprint).
+				if(!m_bPrevSprint)
+					m_bSprintStarted = false;
+				m_bPrevSprint = true;
 				PlayAnimIdleSprint();
 				return true;
-			}else
+			}
+			m_bPrevSprint = false;
+			// just stopped sprinting -> play the one-shot exit transition once (its OnAnimationEnd
+			// routes back here, now with the flag cleared, to the normal moving/idle)
+			if(m_bSprintStarted)
+			{
+				m_bSprintStarted = false;
+				string_path endnm;
+				MakeSprintVariant(SprintLoopBase(), "end", endnm);	// suffix-correct exit (GL / bm16 shell)
+				if(endnm[0] && isHUDAnimationExist(endnm))
+				{
+					PlayHUDMotion(endnm, TRUE, this, GetState());
+					// block fire/aim until this exit anim is almost done, then FireStart/OnZoomIn resume.
+					// Config `lock_time_anm_idle_sprint_end` (seconds from the anim start, Gunslinger-style)
+					// tunes how many end frames are cut for responsiveness; default = full length - 130ms.
+					u32 now = Device.dwTimeGlobal;
+					float lt = READ_IF_EXISTS(pSettings, r_float, HudSection(), "lock_time_anm_idle_sprint_end", -1.f);
+					if (lt >= 0.f)
+						m_dwSprintExitEndTm = now + (u32)(lt * 1000.f);
+					else
+					{
+						const u32 cut = 130;	// ms (~4 frames @30fps)
+						m_dwSprintExitEndTm = (m_dwMotionEndTm > now + cut) ? (m_dwMotionEndTm - cut) : now;
+					}
+					return true;
+				}
+			}
 			if(pActor->AnyMove())
 			{
 				// not accelerated (walk) -> slow variant; standing: walk<->walk_slow,
@@ -440,6 +781,12 @@ bool CHudItem::TryPlayAnimIdle()
 				return true;
 			}
 		}
+	}
+	else
+	{
+		m_bSprintStarted = false;	// aiming (no moving anims): drop the sprint state so no stale exit later
+		m_bSprintStartRunning = false;
+		m_bPrevSprint    = false;	// so exiting aim into a sprint reads as a fresh edge -> plays the start
 	}
 	return false;
 }
@@ -479,9 +826,48 @@ void CHudItem::PlayAnimIdleMoving()
 	PlayHUDMotion(SelectMovingAnim("anm_idle_moving"), TRUE, NULL, GetState());
 }
 
+void CHudItem::MakeSprintVariant(LPCSTR loop_base, LPCSTR which, string_path& out)
+{
+	static const size_t plen = xr_strlen("anm_idle_sprint");
+	if(loop_base && 0==strncmp(loop_base, "anm_idle_sprint", plen))
+		xr_sprintf(out, "anm_idle_sprint_%s%s", which, loop_base + plen);	// insert _start/_end after the prefix
+	else
+		out[0] = 0;
+}
+
+bool CHudItem::HasSprintExitAnim()
+{
+	string_path e;
+	MakeSprintVariant(SprintLoopBase(), "end", e);
+	return e[0] && isHUDAnimationExist(e);
+}
+
 void CHudItem::PlayAnimIdleSprint()
 {
-	PlayHUDMotion("anm_idle_sprint", TRUE, NULL,GetState());
+	LPCSTR loop = SprintLoopBase();	// class supplies the suffix (GL / bm16 shell); "" fallback = plain
+	// The sprint-START one-shot is still on screen: do NOT replace it with the loop. This happens when a
+	// second PlayAnimIdle fires the same frame right after the start began -- e.g. the aim-out transition's
+	// timed handoff landing the tick the start played -- which would otherwise snap into the loop and cut
+	// the start. Let the start finish; its OnAnimationEnd re-enters here (now past the end) and plays the loop.
+	if(m_bSprintStartRunning && m_bStopAtEndAnimIsRunning && Device.dwTimeGlobal < m_dwMotionEndTm)
+		return;
+	// entering sprint: play the one-shot enter transition first (if it exists). Its OnAnimationEnd(eIdle)
+	// routes back through PlayAnimIdle -> here with m_bSprintStarted set -> the loop.
+	if(!m_bSprintStarted)
+	{
+		string_path start;
+		MakeSprintVariant(loop, "start", start);
+		if(start[0] && isHUDAnimationExist(start))
+		{
+			m_bSprintStarted     = true;
+			m_bSprintStartRunning = true;
+			PlayHUDMotion(start, TRUE, this, GetState());
+			return;
+		}
+	}
+	m_bSprintStarted     = true;	// no enter anim -> straight to the loop, but remember we're sprinting (for the exit)
+	m_bSprintStartRunning = false;
+	PlayHUDMotion(loop, TRUE, this, GetState());
 }
 
 void CHudItem::OnMovementChanged(ACTOR_DEFS::EMoveCommand cmd)
@@ -539,9 +925,17 @@ attachable_hud_item* CHudItem::HudItemData()
 	return NULL;
 }
 
+// Live tuning knobs for the 3D PDA's "how close is it held" (console g_pda_hud_fov /
+// g_pda_hud_fov_aim). 0 = use the item's config value. A SMALLER hud fov = narrower = the model
+// looks BIGGER/closer; the engine default is psHUD_FOV_def (0.45).
+float g_pda_hud_fov		= 0.f;
+float g_pda_hud_fov_aim	= 0.f;
+
 float CHudItem::GetHudFov()
 {
 	auto base = m_fHudFov ? m_fHudFov : psHUD_FOV_def;
+	if(m_bPdaCursorAnims && g_pda_hud_fov > 0.f)
+		base = g_pda_hud_fov;
 	clamp(base, 0.1f, 1.0f);
 
 	return base;

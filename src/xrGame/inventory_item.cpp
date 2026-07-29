@@ -102,6 +102,18 @@ void CInventoryItem::Load(LPCSTR section)
 	m_cost				= pSettings->r_u32(section, "cost");
 	m_slot				= pSettings->r_u32(section,"slot");
 
+	// The actor's two weapon slots (pistol + primary) are interchangeable: any weapon that goes in
+	// one may go in the other, so both pistols and main weapons fit either slot. Only the ALLOWED set
+	// is widened -- auto-placement still prefers the configured slot (so a lone pistol/rifle lands
+	// where it always did, and NPCs are unaffected). Every other item keeps its single slot.
+	m_slots_allowed.clear();
+	if (m_slot != u32(-1))
+	{
+		m_slots_allowed.push_back((u16)m_slot);
+		if (m_slot == PISTOL_SLOT || m_slot == RIFLE_SLOT)
+			m_slots_allowed.push_back((u16)((m_slot == PISTOL_SLOT) ? RIFLE_SLOT : PISTOL_SLOT));
+	}
+
 	m_Description = CStringTable().translate( pSettings->r_string(section, "description") );
 
 	m_flags.set(Fbelt,			READ_IF_EXISTS(pSettings, r_bool, section, "belt",		FALSE));
@@ -124,6 +136,13 @@ void CInventoryItem::Load(LPCSTR section)
 	}
 	m_icon_name					= READ_IF_EXISTS(pSettings, r_string,section,"icon_name",		NULL);
 
+}
+
+bool CInventoryItem::CanGoInSlot(u32 s) const
+{
+	for (u16 a : m_slots_allowed)
+		if ((u32)a == s)	return true;
+	return false;
 }
 
 void  CInventoryItem::ChangeCondition(float fDeltaCondition)

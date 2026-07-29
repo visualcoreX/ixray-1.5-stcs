@@ -47,9 +47,15 @@ void CUICursor::InitInternal()
 
 //--------------------------------------------------------------------
 u32 last_render_frame = 0;
+extern bool g_pda_rt_pass;			// true only while the PDA window is drawn into $user$ui
+extern bool gwr_pda_screen_active();	// the 3D PDA is in hand -> the UI lives on its screen
+
 void CUICursor::OnRender	()
 {
 	if( !IsVisible() ) return;
+	// 3D PDA: the cursor is already drawn into the PDA's screen texture; drawing it again in the
+	// normal pass is what put a second cursor over the whole viewport.
+	if( !g_pda_rt_pass && gwr_pda_screen_active() ) return;
 #ifdef DEBUG
 	VERIFY(last_render_frame != Device.dwFrame);
 	last_render_frame = Device.dwFrame;

@@ -60,6 +60,31 @@ public:
 	Fvector4						hud_actor_params;
 	Fvector4						hud_affects;
 
+	// Gunslinger 3D PiP scope lens shader constants (model_scope_lense / models_zoom), filled by CActor each frame.
+	// m_hud_params:     x=aspect(h/w), y=aim_factor(0..1), z=scope_abberation, w=lens_visibility(0..1)
+	//                   lens output alpha = min(y,w) -> the lens fades in with aim and hides when not aiming
+	// m_zoom_deviation: x,y=lens image offset (sway/recoil), z=brightness, w=jitter (0 = static centred lens)
+	Fvector4						hud_scope_params;
+	Fvector4						hud_zoom_deviation;
+
+	// Gunslinger 3D PiP double-render: true on a "lens frame" -- the whole scene is rendered at the
+	// magnified scope FOV with the first-person HUD suppressed, captured into $user$scope, and NOT
+	// presented (the screen keeps the previous normal frame). Set each frame by ComputeLensFrame at
+	// camera-apply; read by the HUD gate (CActor::OnHUDDraw), the scope capture (CRender::RenderScopeToRT)
+	// and the present bridge (dxRenderDeviceRender::End).
+	bool							m_bLensFrameNow;
+
+	// True whenever the actor is aiming a lensed scope (BOTH the lens frames and the presented normal frames
+	// in between). Drives the present bridge (CRender::PresentBridgeLens): while active, each presented normal
+	// frame is saved to rt_scope_save and each lens frame presents that saved frame instead of its own zoomed
+	// image -- so Present still fires every frame (DXGI flip needs it) and the screen never flashes the zoom.
+	bool							m_bLensAimActive;
+
+	// True once at least one presented NORMAL frame has been saved to rt_scope_save this aim session. A lens
+	// frame is only taken (and its saved-frame restored) after this is set, so the FIRST aim frame is always a
+	// normal frame -> the present bridge never restores a STALE save from a previous aim (a 1-frame camera pop).
+	bool							m_bLensSaveValid;
+
 public:
 			void					destroy_particles	(const bool &all_particles);
 
@@ -124,6 +149,22 @@ public:
 	// stock xrEngine.dll stays ABI-compatible. Called from the R3 forward phase (scene depth bound)
 	// so world tracers depth-test against the HUD under MSAA. No-op outside a level.
 	virtual void					OnRenderForward		() {};
+	// 3D PDA: draw the PDA window (+cursor) into the backbuffer so the renderer can snapshot it into
+	// "$user$ui", which the PDA hud model's screen material samples. Returns true if it actually drew
+	// (= the PDA phantom is in hand and its window is open) -- the renderer's cue to take the shot.
+	// Same shape and reason as OnRenderForward: the RENDERER calls the GAME. The other direction (a
+	// new virtual on IRender_interface) does NOT work: that class is ENGINE_API, so outside xrEngine
+	// it's dllimport and an inline body becomes an unresolved import at load time
+	// ("entry point ?CaptureUIToRT@IRender_interface@@UAEXXZ not found in xrRender_R2.dll").
+	virtual bool					OnRenderPdaUI		() { return false; };
+	// 3D PiP scope: true while the actor aims through a scope whose lens needs the $user$scope snapshot.
+	// The renderer asks the game (same bridge shape as OnRenderPdaUI/OnRenderForward -- render calls game).
+	virtual bool					OnRenderScopeActive	() { return false; };
+
+	// 3D PiP double-render: decide whether THIS frame is a lens frame (aiming a lensed scope + throttle) and,
+	// if so, output the magnified scope FOV (degrees) to render the world at. Sets m_bLensFrameNow. The engine
+	// calls this at camera-apply (CCameraManager::ApplyDevice) and overrides the scene FOV with out_fov.
+	virtual bool					ComputeLensFrame	(float& out_fov) { out_fov = 0.f; return false; }
 };
 
 class IMainMenu

@@ -35,9 +35,11 @@ _action  actions[]		= {
 	{ "cam_zoom_in",		kCAM_ZOOM_IN			,_both},	
 	{ "cam_zoom_out",		kCAM_ZOOM_OUT			,_both},	
 															
-	{ "torch",				kTORCH					,_both},	
-	{ "night_vision",		kNIGHT_VISION			,_both},	
-	{ "show_detector",		kDETECTOR				,_sp},		
+	{ "torch",				kTORCH					,_both},
+	{ "night_vision",		kNIGHT_VISION			,_both},
+	{ "wpn_laser",			kWPN_LASER				,_sp},		// GS laser designator toggle
+	{ "wpn_flashlight",		kWPN_FLASHLIGHT			,_sp},		// GS weapon-mounted flashlight toggle
+	{ "show_detector",		kDETECTOR				,_sp},
 
 	{ "wpn_1",				kWPN_1					,_both},	
 	{ "wpn_2",				kWPN_2					,_both},	
@@ -97,10 +99,13 @@ _action  actions[]		= {
 	{ "use_medkit",			kUSE_MEDKIT				,_sp},		
 	{ "quick_save",			kQUICK_SAVE				,_sp},		
 	{ "quick_load",			kQUICK_LOAD				,_sp},		
-	{ "alife_command",		kALIFE_CMD				,_sp},		
-	
-																
-	{ NULL, 				kLASTACTION				,_both}		
+	{ "alife_command",		kALIFE_CMD				,_sp},
+
+	{ "scope_brightness_plus",	kSCOPE_ILLUM_INC	,_sp},		// GS scope reticle/night illumination up
+	{ "scope_brightness_minus",	kSCOPE_ILLUM_DEC	,_sp},		// GS scope reticle/night illumination down
+	{ "wpn_kick",			kWPN_KICK				,_sp},		// GS quick knife kick
+
+	{ NULL, 				kLASTACTION				,_both}
 };															
 
 _keyboard keyboards[] = {

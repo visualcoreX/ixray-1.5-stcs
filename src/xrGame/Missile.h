@@ -13,7 +13,13 @@ public:
 		eReady,
 		eThrow,
 		eThrowEnd,
+		eMissileAction,		// one-shot gesture (headlamp/NV toggle) played on the item in hand, then back to idle
 	};
+
+	// play a one-shot HUD gesture (anm_headlamp_on/off, anm_nv_on/off) on this item if it has the alias.
+	// Lets the bolt/grenade in the RIGHT hand animate on a torch/NV toggle, like Gunslinger (the left-hand
+	// headflash phantom is separate). Returns false if not idle or the item has no such gesture.
+	bool					PlayHudActionAnim			(LPCSTR base);
 							CMissile					();
 	virtual					~CMissile					();
 
@@ -58,15 +64,17 @@ protected:
 	virtual void			OnActiveItem		();
 	virtual void			OnHiddenItem		();
 
-	//для сети
+	//пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 	virtual void			net_Relcase			(CObject* O );
 protected:
 
-	//время нахождения в текущем состоянии
+	shared_str				m_missile_action_anim;	// the gesture alias currently playing in eMissileAction
+
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	u32						m_dwStateTime;
 	bool					m_throw;
 	
-	//время уничтожения
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	u32						m_dwDestroyTime;
 	u32						m_dwDestroyTimeMax;
 
@@ -75,17 +83,17 @@ protected:
 
 	CMissile				*m_fake_missile;
 
-	//параметры броска
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	
 	float m_fMinForce, m_fConstForce, m_fMaxForce, m_fForceGrowSpeed;
 //private:
 	bool					m_constpower;
 	float					m_fThrowForce;
 protected:
-	//относительная точка и направление вылета гранаты
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	Fvector					m_vThrowPoint;
 	Fvector					m_vThrowDir;
-	//для HUD
+	//пїЅпїЅпїЅ HUD
 	Fvector					m_vHudThrowPoint;
 	Fvector					m_vHudThrowDir;
 

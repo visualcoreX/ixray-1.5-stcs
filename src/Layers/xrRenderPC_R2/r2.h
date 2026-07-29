@@ -306,6 +306,16 @@ public:
 	virtual ~CRender				();
 protected:
 	virtual	void					ScreenshotImpl				(ScreenshotMode mode, LPCSTR name, CMemoryWriter* memory_writer);
+public:
+	// 3D PDA: ask the game to draw the PDA window into the backbuffer and snapshot it into $user$ui.
+	// NOT virtual and NOT on IRender_interface -- that class is ENGINE_API/dllimport outside xrEngine
+	// and an inline virtual there becomes an unresolved import at load time.
+	void							RenderPdaUIToRT				();
+	// 3D PiP scope: snapshot the scene into $user$scope, which the scope lens material (models\zoom ->
+	// models_zoom.s -> s_vp2=$user$scope + model_scope_lense.ps) samples & magnifies. Full magnified-FOV
+	// render is the next step; for now captures the frame and lets the lens shader crop-zoom it.
+	void							RenderScopeToRT				();
+	void							PresentBridgeLens			();	// 3D PiP: save/restore the backbuffer so lens frames present the last normal frame
 };
 
 extern CRender						RImplementation;

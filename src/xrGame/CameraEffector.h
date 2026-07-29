@@ -16,6 +16,7 @@
 #define effControllerAura2		(eStartEffectorID+8)
 #define effBigMonsterHit		(eStartEffectorID+9)
 #define effActorDeath			(eStartEffectorID+10)
+#define effActionAnimPPE		(eStartEffectorID+11)	// gwr: ppe played over a slice of a hud gesture
 
 #define	eCEFall					((ECamEffectorType)(cefNext+1))
 #define	eCENoise				((ECamEffectorType)(cefNext+2))
@@ -32,3 +33,19 @@
 #define	eCEDOF					((ECamEffectorType)(cefNext+16))
 #define	eCEWeaponAction			((ECamEffectorType)(cefNext+17))
 #define	eCEActorMoving			((ECamEffectorType)(cefNext+18))
+// GS per-category actor-move camera effector ids (GetActorCameraMovingAnim, ActorUtils.pas:3290):
+// separate types let e.g. a landing shake start while a strafe effect is still running
+#define	eCEActorMovingFwd		((ECamEffectorType)(cefNext+20))
+#define	eCEActorMovingBack		((ECamEffectorType)(cefNext+21))
+#define	eCEActorMovingLeft		((ECamEffectorType)(cefNext+22))
+#define	eCEActorMovingRight		((ECamEffectorType)(cefNext+23))
+#define	eCEActorMovingSprint	((ECamEffectorType)(cefNext+24))
+#define	eCEActorCrouchDown		((ECamEffectorType)(cefNext+25))
+#define	eCEActorCrouchUp		((ECamEffectorType)(cefNext+26))
+#define	eCEActorJump			((ECamEffectorType)(cefNext+27))
+#define	eCEActorFallCam			((ECamEffectorType)(cefNext+28))
+#define	eCEActorLanding			((ECamEffectorType)(cefNext+29))
+#define	eCEActorRLookoutStart	((ECamEffectorType)(cefNext+30))
+#define	eCEActorLLookoutStart	((ECamEffectorType)(cefNext+31))
+#define	eCEActorRLookoutEnd		((ECamEffectorType)(cefNext+32))
+#define	eCEActorLLookoutEnd		((ECamEffectorType)(cefNext+33))

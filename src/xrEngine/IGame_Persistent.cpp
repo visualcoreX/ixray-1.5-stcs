@@ -35,6 +35,11 @@ IGame_Persistent::IGame_Persistent	()
 
 	hud_actor_params.set			(1.f, 1.f, 1.f, 1.f);	// default "healthy" until CActor updates it
 	hud_affects.set					(0.f, 0.f, 0.f, 0.f);	// no exo electronics problems -> clean screen
+	hud_scope_params.set			(1.f, 0.f, 0.f, 0.f);	// no aim -> lens hidden (alpha 0) until CActor updates it
+	hud_zoom_deviation.set			(0.f, 0.f, 0.f, 0.f);	// centred, static lens
+	m_bLensFrameNow					= false;
+	m_bLensAimActive				= false;
+	m_bLensSaveValid				= false;
 
 #ifndef INGAME_EDITOR
 	#ifndef _EDITOR

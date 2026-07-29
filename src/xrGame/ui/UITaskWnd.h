@@ -55,6 +55,7 @@ public:
 	virtual void				Show					(bool status);
 	virtual void				Reset					();
 
+			CUIMapWnd*			MapWnd					()	{ return m_pMapWnd; }
 			void				ReloadTaskInfo			();
 			void				ShowMapLegend			(bool status);
 			void				Switch_ShowMapLegend	();

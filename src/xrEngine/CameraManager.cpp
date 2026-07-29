@@ -343,6 +343,13 @@ void CCameraManager::ApplyDevice (float _viewport_near)
 	Device.vCameraTop.set		( m_cam_info.n );
 	Device.vCameraRight.set		( m_cam_info.r );
 
+	// 3D PiP scope double-render: on a "lens frame" render the whole scene at the magnified scope FOV so the
+	// world-only capture in $user$scope is a true optical zoom (Gunslinger LensDoubleRender). The game decides
+	// (throttle + aiming a lensed scope) and returns the magnified FOV; the frame is not presented.
+	float lens_fov;
+	if (g_pGamePersistent && g_pGamePersistent->ComputeLensFrame(lens_fov))
+		m_cam_info.fFov			= lens_fov;
+
 	// projection
 	Device.fFOV					= m_cam_info.fFov;
 	Device.fASPECT				= m_cam_info.fAspect;

@@ -8,6 +8,14 @@
 #include "../xr_level_controller.h"
 #include "../../xrServerEntities/script_engine.h"
 #include "../ai_space.h"
+#include "../HUDManager.h"
+#include "../level.h"
+#include "UIGameSP.h"
+#include "UIPdaWnd.h"
+#include "../UI.h"
+
+extern bool gwr_pda_rt_pass_now();		// UIPdaWnd.cpp -- true only inside the PDA-screen RT capture
+extern bool gwr_pda_screen_active();
 
 void CUISequenceItem::Load(CUIXml* xml, int idx)
 {
@@ -112,6 +120,15 @@ void CUISequencer::Start(LPCSTR tutor_name)
 
 void CUISequencer::Destroy()
 {
+	// The tutorial is over: put the PDA away, if one of the items had opened it. Individual items no
+	// longer do this on Stop (it made the 3D PDA re-draw between every line) -- this is the one close.
+	if (g_pGameLevel)
+	{
+		CUIGameSP* ui_game_sp = smart_cast<CUIGameSP*>( HUD().GetUI()->UIGame() );
+		if (ui_game_sp && ui_game_sp->PdaMenu().IsShown())
+			HUD().GetUI()->StartStopMenu( &ui_game_sp->PdaMenu(), true );
+	}
+
 	Device.seqFrame.Remove		(this);
 	Device.seqRender.Remove		(this);
 	delete_data					(m_items);
@@ -161,7 +178,12 @@ void CUISequencer::OnFrame()
 
 void CUISequencer::OnRender	()
 {
-	if (m_UIWindow->IsShown())	
+	// While the 3D PDA is up its UI lives on the model's screen, and the tutorial's highlights/arrows
+	// point at that UI -- so they have to travel with it. Draw them only inside the RT capture, never
+	// full-screen on top of the world (which is what put them "over everything" before).
+	if (!gwr_pda_rt_pass_now() && gwr_pda_screen_active())	return;
+
+	if (m_UIWindow->IsShown())
 		m_UIWindow->Draw();
 
 	VERIFY						(m_items.size());

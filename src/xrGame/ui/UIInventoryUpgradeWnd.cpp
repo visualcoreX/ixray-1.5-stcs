@@ -343,7 +343,7 @@ void CUIInventoryUpgradeWnd::PreUpgradeItem()
 	{
 		if ( weapon->ScopeAttachable() && weapon->IsScopeAttached() )
 		{
-			weapon->Detach( weapon->GetScopeName().c_str(), true );
+			weapon->Detach( weapon->GetAttachedScopeName().c_str(), true );
 		}
 		if ( weapon->SilencerAttachable() && weapon->IsSilencerAttached() )
 		{

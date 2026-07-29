@@ -31,6 +31,46 @@ bool CWeapon::install_upgrade_impl( LPCSTR section, bool test )
 	result |= install_upgrade_disp      ( section, test );
 	result |= install_upgrade_hit       ( section, test );
 	result |= install_upgrade_addon     ( section, test );
+
+	// GS-style anim-set swap: an upgrade may repoint `hud` at an alternate HUD section (e.g. the _tac
+	// variant, which :inherits the base hud and only overrides the anm_* motions -- same item_visual/model).
+	// Set hud_sect so the next HUD draw plays the new motion set. Re-applied on save-load (upgrades restore
+	// after Load(), which set the base hud first).
+	if ( pSettings->line_exist( section, "hud" ) )
+	{
+		if ( !test )	hud_sect = pSettings->r_string( section, "hud" );
+		result = true;
+	}
+
+	// laser designator install (GS LAM): the upgrade only marks the laser INSTALLED -- it starts OFF (the
+	// player toggles it with kWPN_LASER). Do NOT force m_bLaserEnabled here: the ctor default is false, so a
+	// fresh install is off, and NOT touching it lets the saved on/off state persist across a reload (install
+	// re-runs on every net_Spawn, which would otherwise reset the toggle).
+	if ( pSettings->line_exist( section, "laser_installed" ) )
+	{
+		if ( !test )	m_bLaserInstalled = !!pSettings->r_bool( section, "laser_installed" );
+		result = true;
+	}
+
+	// GS bayonet upgrade: marks the weapon so the quick-kick key stabs with the weapon's own anm_kick
+	// (ak74_bayonet) instead of the knife phantom. Visual (the `knife` bone) comes from show_bones.
+	if ( pSettings->line_exist( section, "bayonet_installed" ) )
+	{
+		if ( !test )	m_bBayonetInstalled = !!pSettings->r_bool( section, "bayonet_installed" );
+		result = true;
+	}
+
+	// weapon-mounted flashlight (GS torch_installed): same as the laser -- INSTALLED only, starts OFF (toggle
+	// with kWPN_FLASHLIGHT). Don't force m_bFlashEnabled (ctor default false; keeps the saved toggle on reload).
+	if ( pSettings->line_exist( section, "torch_installed" ) || pSettings->line_exist( section, "flashlight_installed" ) )
+	{
+		if ( !test )
+		{
+			LPCSTR k = pSettings->line_exist(section, "torch_installed") ? "torch_installed" : "flashlight_installed";
+			m_bFlashInstalled = !!pSettings->r_bool( section, k );
+		}
+		result = true;
+	}
 	return result;
 }
 
@@ -224,6 +264,23 @@ bool CWeapon::install_upgrade_addon( LPCSTR section, bool test )
 
 	}
 	result |= result2;
+
+	// GS foregrip_rail ("крепление для прицела") upgrade: adds extra scope section(s) -- e.g. scope_rakurs_ak74m --
+	// that become mountable ONLY after this upgrade. The base weapon's scopes_sect lists every scope EXCEPT rakurs;
+	// installing the rail appends rakurs. (Do it on the real install, not the test pass; dedup so repeated
+	// installs/loads don't grow the list.)
+	if ( !test && pSettings->line_exist( section, "scopes_sect" ) )
+	{
+		LPCSTR list = pSettings->r_string( section, "scopes_sect" );
+		string256 one;
+		for ( int i = 0, n = _GetItemCount(list); i < n; ++i )
+		{
+			_GetItem( list, i, one );
+			if ( one[0] && std::find( m_scopes.begin(), m_scopes.end(), shared_str(one) ) == m_scopes.end() )
+				m_scopes.push_back( one );
+		}
+		result = true;
+	}
 
 	temp_int = (int)m_eSilencerStatus;
 	result2 = process_if_exists_set( section, "silencer_status", &CInifile::r_s32, temp_int, test );

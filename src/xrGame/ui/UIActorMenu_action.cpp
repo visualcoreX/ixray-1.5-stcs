@@ -8,6 +8,7 @@
 #include "stdafx.h"
 #include "UIActorMenu.h"
 #include "../actor.h"
+#include "../Inventory.h"
 #include "../HUDManager.h"
 #include "game_cl_base.h"
 
@@ -98,7 +99,54 @@ bool CUIActorMenu::OnItemDrop(CUICellItem* itm)
 		}break;
 		case iActorSlot:
 		{
-			if(GetSlotList(CurrentIItem()->GetSlot())==new_owner)
+			// Which slot did the player drop onto? Weapons may go in EITHER weapon slot (pistol <->
+			// primary are interchangeable), so accept the drop whenever the item is allowed in the
+			// target slot -- not only its configured one -- and point it there before ToSlot places it.
+			u32 tgt_slot = NO_ACTIVE_SLOT;
+			if      (new_owner == m_pInventoryPistolList)		tgt_slot = PISTOL_SLOT;
+			else if (new_owner == m_pInventoryAutomaticList)	tgt_slot = RIFLE_SLOT;
+			else if (new_owner == m_pInventoryOutfitList)		tgt_slot = OUTFIT_SLOT;
+			else if (new_owner == m_pInventoryDetectorList)		tgt_slot = DETECTOR_SLOT;
+
+			PIItem dropped = CurrentIItem();
+			if (tgt_slot != NO_ACTIVE_SLOT && dropped && dropped->CanGoInSlot(tgt_slot))
+			{
+				CInventory& inv = m_pActorInvOwner->inventory();
+				PIItem occupant = (tgt_slot < inv.m_slots.size()) ? inv.m_slots[tgt_slot].m_pIItem : NULL;
+				u32 src_slot = dropped->GetSlot();
+
+				// Dragging a SLOTTED weapon onto the OTHER, already-occupied weapon slot -> SWAP the two
+				// (the occupant goes to the dragged weapon's old slot). Bag-hop keeps engine + UI + net
+				// state consistent: occupant -> bag (frees the target), dragged -> target, occupant -> source.
+				if ( occupant && occupant != dropped && GetListType(old_owner) == iActorSlot
+					&& src_slot != NO_ACTIVE_SLOT && src_slot != tgt_slot && occupant->CanGoInSlot(src_slot) )
+				{
+					CUICellItem* occ_cell = new_owner->GetItemIdx(0);	// occupant's cell in the target slot
+					ToBag		(occ_cell, false);						// occupant -> bag (target slot now free)
+
+					dropped->SetSlot(tgt_slot);
+					ToSlot		(itm, false);							// dragged weapon -> target slot (frees source)
+
+					// find the occupant (now in the bag) and send it to the freed source slot
+					CUICellItem* occ_bag_cell = NULL;
+					for (u32 k = 0; k < m_pInventoryBagList->ItemsCount(); ++k)
+					{
+						CUICellItem* c = m_pInventoryBagList->GetItemIdx(k);
+						if (c && (PIItem)c->m_pData == occupant)	{ occ_bag_cell = c; break; }
+					}
+					if (occ_bag_cell)
+					{
+						occupant->SetSlot(src_slot);
+						ToSlot	(occ_bag_cell, false);
+					}
+				}
+				else
+				{
+					dropped->SetSlot(tgt_slot);			// place it in the slot the player dropped onto
+					ToSlot	(itm, true);
+				}
+			}
+			else if(GetSlotList(CurrentIItem()->GetSlot())==new_owner)
 				ToSlot	(itm, true);
 		}break;
 		case iActorBag:

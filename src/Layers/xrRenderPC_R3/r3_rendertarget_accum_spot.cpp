@@ -27,7 +27,28 @@ void CRenderTarget::accum_spot	(light* L)
 		{
 			shader		= s_accum_spot;
          shader_msaa	= s_accum_spot_msaa;
-		}	
+		}
+	}
+
+	// HUD-mode spot (weapon flashlight): the HUD hands/weapon are filled into the G-buffer with the narrower
+	// hud projection + rmNear (r_dsgraph_render_hud), so this light's volume must be rasterised in the SAME
+	// projection or its stencil mask never covers the HUD pixels -> the mounted flashlight left the hands
+	// dark on R3. R3 had NO hud-mode path at all (point or spot); this mirrors R2's accum_point/accum_spot.
+	Fmatrix Pold=Fidentity;
+	Fmatrix FTold=Fidentity;
+	if (L->flags.bHudMode)
+	{
+		extern ENGINE_API float		psHUD_FOV;
+		Pold				= Device.mProject;
+		FTold				= Device.mFullTransform;
+		Device.mProject.build_projection(
+			deg2rad(psHUD_FOV*Device.fFOV /* *Device.fASPECT*/ ),
+			Device.fASPECT, VIEWPORT_NEAR,
+			g_pGamePersistent->Environment().CurrentEnv->far_plane);
+
+		Device.mFullTransform.mul	(Device.mProject, Device.mView);
+		RCache.set_xform_project	(Device.mProject);
+		RImplementation.rmNear		();
 	}
 
 	BOOL	bIntersect			= FALSE; //enable_scissor(L);
@@ -252,6 +273,14 @@ void CRenderTarget::accum_spot	(light* L)
 	increment_light_marker();
 
 	u_DBT_disable				();
+
+	if (L->flags.bHudMode)
+	{
+		RImplementation.rmNormal				();
+		Device.mProject			= Pold;
+		Device.mFullTransform	= FTold;
+		RCache.set_xform_project(Device.mProject);
+	}
 }
 
 void CRenderTarget::accum_volumetric(light* L)

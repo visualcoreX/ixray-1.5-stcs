@@ -29,6 +29,8 @@ enum	EGameActions
 						
 	kTORCH,
 	kNIGHT_VISION,
+	kWPN_LASER,			// GS: toggle the weapon's laser designator (must stay in the SAME slot as the actions[] entry -- g_key_bindings is index==enum)
+	kWPN_FLASHLIGHT,	// GS: toggle the weapon-mounted flashlight (same index==enum rule)
 	kDETECTOR,
 	kWPN_1,
 	kWPN_2,
@@ -90,6 +92,11 @@ enum	EGameActions
 	kQUICK_SAVE,
 	kQUICK_LOAD,
 	kALIFE_CMD,
+
+	kSCOPE_ILLUM_INC,	// GS scope_brightness_plus: raise the scope reticle/night illumination (same index==enum rule as kWPN_LASER)
+	kSCOPE_ILLUM_DEC,	// GS scope_brightness_minus: lower it
+
+	kWPN_KICK,			// GS quick knife kick (быстрая атака ножом) -- same index==enum rule as kWPN_LASER
 
 	kLASTACTION,
 	kNOTBINDED,

@@ -11,7 +11,7 @@ inline u32 calc_cursor(const float& fTimeStarted, float& fTime, const float& fTi
 {
 	
 	if( fTime < fTimeStarted )
-			fTime = fTimeStarted;// Андрюха посоветовал, ассерт что ниже вылетел из за паузы как то хитро
+			fTime = fTimeStarted;// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	R_ASSERT	((fTime-fTimeStarted)>=0.0f);
 	while((fTime-fTimeStarted)>fTimeTotal) //looped
 	{
@@ -229,7 +229,7 @@ IC void	volume_lerp(float& c, float t, float s, float dt)
 #include "..\xrServerEntities\ai_sounds.h"
 BOOL CSoundRender_Emitter::update_culling(float dt)
 {
-	
+
 	if (b2D)
 	{
 		occluder_volume		= 1.f;

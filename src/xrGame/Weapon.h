@@ -8,6 +8,7 @@
 #include "hud_item_object.h"
 #include "Actor_Flags.h"
 #include "../Include/xrRender/KinematicsAnimated.h"
+#include "../xrEngine/Render.h"		// ref_light / ref_glow for the weapon flashlight
 #include "firedeps.h"
 #include "game_cl_single.h"
 #include "first_bullet_controller.h"
@@ -126,6 +127,7 @@ public:
 	EWeaponSubStates		GetReloadState		() const		{ return (EWeaponSubStates)m_sub_state;}
 protected:
 	bool					m_bTriStateReload;
+	bool					m_bZoomKeyHeld;		// aim key held (physical): set on kWPN_ZOOM CMD_START, cleared on CMD_STOP
 	u8						m_sub_state;
 	// a misfire happens, you'll need to rearm weapon
 	bool					bMisfire;
@@ -147,7 +149,31 @@ public:
 	ALife::EWeaponAddonStatus	get_ScopeStatus				() const { return m_eScopeStatus; }
 	ALife::EWeaponAddonStatus	get_SilencerStatus			() const { return m_eSilencerStatus; }
 
-	virtual bool UseScopeTexture() {return true;};
+	virtual bool UseScopeTexture();
+	virtual bool IsGrenadeMode() const { return false; }	// CWeaponMagazinedWGrenade overrides -> aiming the GL, not the weapon
+	// Gunslinger IsLensedScopeInstalled: an attached scope flagged need_lens_frame uses the 3D PiP lens
+	// (weapon stays rendered, no 2D full-screen scope texture) instead of the vanilla 2D scope zoom.
+	bool IsLensedScope() const;
+	float GetLensFOV() const;	// 3D PiP double-render: magnified world FOV (deg) for the lens frame; 0 = disabled
+	bool UseScopeAnims() const;	// Gunslinger use_scope_anims: play the "_scope" anim variants while a scope is attached
+	float ZoomMouseSenseKoef() const;	// Gunslinger zoom_mouse_sense_koef: look-sensitivity multiplier while scoped
+
+	// Gunslinger scope reticle / night-vision illumination (scope_brightness_plus/minus). Stepped 0..steps
+	// between min/max_night_brightness (config, /3 like GS). cur_value feeds the lens shader (m_zoom_deviation.z,
+	// NV scopes) and gates the illuminated-reticle bones (scope_illum_bones, day scopes like the PSO).
+	void  ChangeScopeIllum(int delta);				// +/-1 step (reloads params from the current scope, plays sound)
+	void  ResetScopeIllumToDefault();				// set the step to the scope's default_brightness_step (on attach)
+	float ScopeIllumValue() const	{ return m_scope_illum_value; }
+	float ScopeIllumJitter() const	{ return m_scope_illum_jitter; }
+private:
+	void  LoadScopeIllumParams();					// read min/max/steps/jitter from the attached scope (or weapon) section
+	float m_scope_illum_value;						// current brightness 0..max
+	float m_scope_illum_jitter;
+	int   m_scope_illum_step;						// current (active scope's) step, clamped to steps
+	int   m_scope_illum_steps;
+	int   m_scope_illum_step_by_scope[16];			// PER-SCOPE saved step (index = m_cur_scope; -1 = never set -> use default_brightness_step). Each scope keeps its own brightness.
+	float m_scope_illum_min, m_scope_illum_max;
+public:
 
 	//обновление видимости для косточек аддонов
 			void UpdateAddonsVisibility();
@@ -155,9 +181,116 @@ public:
 	//инициализация свойств присоединенных аддонов
 	virtual void InitAddons();
 
+	// ---- Gunslinger world-model bone visibility (xr_BoneUtils.pas) -------------------------------
+	// GS's SetWeaponModelBoneStatus applies EVERY bone change to the world model unconditionally, and
+	// to the hud model only while the weapon is the actor's active item -- so the same show_bones/
+	// hide_bones lists drive both. Silent on a missing bone: the world .ogf need not carry every bone
+	// the hud model has. gwr_UpdateWorldBones re-applies the static + per-upgrade lists to the world
+	// visual, so a holstered/dropped/NPC weapon still shows its upgrade meshes.
+	static	void gwr_SetWorldBone		(IKinematics* K, LPCSTR bone, BOOL show);
+			void gwr_SetWorldBonesCSV	(IKinematics* K, LPCSTR csv,  BOOL show);
+	// force=true for the event-driven calls (spawn / addon / upgrade change), which must always re-apply.
+	// force=false is the per-frame call: it early-outs unless the attachment state actually changed, so
+	// runtime toggles (scope on/off, laser, flashlight, bayonet) reach the world model without re-reading
+	// the whole config every frame for every weapon in the level.
+			void gwr_UpdateWorldBones	(IKinematics* K, bool force = true);
+	u32			 m_gwr_world_bones_sig;	// last applied attachment-state signature (u32(-1) = never)
+
+	// ---- laser designator (Gunslinger LAM port) --------------------------------------------------
+	// laser_params_section on the weapon -> a [<section>] with laserdot_attach_bone, laserdot_particle_0,
+	// laserdot_attach_offset_*. Installed via an upgrade (laser_installed=true in its property section);
+	// each frame the dot is ray-cast from the laser bone and a particle placed at the hit point.
+public:
+			bool			IsLaserInstalled	() const { return m_bLaserInstalled; }
+			bool			IsLaserEnabled		() const { return m_bLaserEnabled; }
+			void			SetLaserEnabled		(bool e) { m_bLaserEnabled = e; }
+			void			ScheduleLaserToggle	(bool e, u32 delay_ms);	// GS anm_laser_on/off: the beam flips mid-gesture (lock_time_start)
+			void			UpdateLaserDot		();		// per RENDER frame (from CActor::UpdateCL, after the HUD transform is fresh)
+			void			PlaceLaserDot		(const Fvector& dot, int idx);	// create/move the dot particle
+			void			UpdateCollimatorGlitch();			// GS: hide the active scope's collimator_sights_bones reticle during an emission (per render frame)
+protected:
+			void			LoadLaserParams		();		// from cNameSect() at Load
+			void			StopLaserDot		();
+			float			TraceLaserAsView	(const Fvector& pos, const Fvector& dir, float range, CObject* ignore);	// GS TraceAsView: ray passes vision-transparent statics (alpha)
+			bool			m_bLaserInstalled;
+			bool			m_bLaserEnabled;
+			bool			m_bBayonetInstalled;		// GS bayonet upgrade -> quick-kick stabs with the weapon's own anm_kick (ak74_bayonet)
+	public:
+			bool			IsBayonetInstalled() const	{ return m_bBayonetInstalled; }
+			// GS: a silencer or GL on the barrel removes the bayonet blade + disables its unique stab (falls
+			// back to the generic knife kick). So the bayonet is "active" only when installed AND unobstructed.
+			bool			IsBayonetActive() const		{ return m_bBayonetInstalled && !IsSilencerAttached() && !IsGrenadeLauncherAttached(); }
+	protected:
+			u32				m_dwLaserToggleAt;			// Device time to apply the pending toggle (0 = none)
+			bool			m_bLaserPendingState;
+			// GL-mode switch window (set by CWeaponMagazinedWGrenade::PlayAnimModeSwitch) so the laser dot can
+			// fade out/in relative to the raise/lower anim like GS (laser_switch_time_to_gl/from_gl), not instantly.
+			u32				m_dwGLSwitchStartTm;
+			u32				m_dwGLSwitchEndTm;
+			shared_str		m_sLaserBone;				// laserdot_attach_bone
+			shared_str		m_sLaserRayBones;			// laser_ray_bones (the visible beam bones, e.g. "line, line2")
+			xr_vector<shared_str>	m_LaserParticles;	// laserdot_particle_0..N (distance-switched dot)
+			xr_vector<float>		m_LaserSwitchDist;	// laserdot_dist_1..N: switch to particle j+1 at >= [j]
+			xr_vector<float>		m_LaserScaleDist;	// laserdot_dist_treshold_N (camera-pull remap segments)
+			xr_vector<float>		m_LaserScaleMul;	// laserdot_dist_scale_N (per-segment multiplier)
+			int				m_iLaserParticleIdx;		// currently-created particle index (-1 = none)
+			Fvector			m_vLaserOffset;				// laserdot_attach_offset_*
+			Fvector			m_vLaserWorldOffset;		// laserdot_world_attach_offset_*: origin in the WEAPON's own
+													// space, used when the dot is placed off the world model
+													// (no HUD item) instead of the hud bone -- GS WeaponUpdate.pas:200
+			float			m_fLaserCosHudTreshold;		// cos(laserdot_hud_treshold): dot hidden when the laser deviates from the view by more
+			BOOL			m_bLaserCorrection;			// laserdot_correction: on = GS camera-pull constant-size dot; off = real-depth dot + distance-switched particles
+			float			m_fLaserHudRecalcKoef;		// hud_recalc_koef (hud section): hip-mode dir widening, m = koef/psHUD_FOV (GS CorrectDirFromWorldToHud)
+			float			m_fLaserZeroDist;			// laserdot_zero_dist: >0 = boresight the hip ray so the dot hits screen center at this range (aiming); near dot still converges to the device
+			float			m_fLaserHudPointKoef;		// laserdot_hud_point_koef: strength of the world->hud POSITION reprojection so the
+													// real-depth dot converges onto the `line` bone on screen (0 = off, 1 = full cos ratio). Live-tunable.
+			CParticlesObject* m_pLaserDot;
+
+	// ---- weapon-mounted flashlight (Gunslinger LightUtils port) ----------------------------------
+	// flash_params_section on the weapon -> spot + omni + optional glow attached to the `flash` bone;
+	// installed by the same upgrade as the laser (flashlight_installed=true), toggled by kWPN_FLASHLIGHT.
+public:
+			bool			IsFlashlightInstalled	() const { return m_bFlashInstalled; }
+			bool			IsFlashlightEnabled		() const { return m_bFlashEnabled; }
+			void			SetFlashlightInstalled	(bool i) { m_bFlashInstalled = i; }
+			void			ScheduleFlashlightToggle(bool e, u32 delay_ms);	// GS anm_torch_on/off: light flips at lock_time_start
+			void			UpdateFlashlight		();		// per RENDER frame (from CActor::UpdateCL, after the HUD transform is fresh)
+protected:
+			void			LoadFlashlightParams	();		// from cNameSect() at Load
+			void			StopFlashlight			();
+			bool			m_bFlashInstalled;
+			bool			m_bFlashEnabled;
+			u32				m_dwFlashToggleAt;			// Device time to apply the pending toggle (0 = none)
+			bool			m_bFlashPendingState;
+			shared_str		m_sFlashBone;				// torch_light_bone (attach bone on the HUD model)
+			Fvector			m_vFlashOffset;				// torch_attach_offset_*
+			Fvector			m_vFlashWorldOffset;		// torch_world_attach_offset_*: spot origin in the WEAPON's
+													// own space for the world model (NPC-held / dropped / no HUD)
+			Fvector			m_vFlashOmniWorldOffset;	// torch_omni_world_attach_offset_* (defaults to the above)
+			bool			m_bFlashHudModeNow;			// which mode the lights were last created//set for
+			Fcolor			m_FlashColor;				// spot colour (r2 set)
+			float			m_fFlashRange;				// torch_r2_range
+			float			m_fFlashCone;				// torch_spot_angle (radians)
+			shared_str		m_sFlashSpotTex;			// torch_spot_texture
+			Fcolor			m_FlashOmniColor;			// torch_r2_omni_color
+			float			m_fFlashOmniRange;			// torch_r2_omni_range
+			bool			m_bFlashGlow;				// create_glow
+			shared_str		m_sFlashGlowTex;			// torch_glow_texture
+			float			m_fFlashGlowRadius;			// torch_glow_radius
+			ref_light		m_pFlashSpot;
+			ref_light		m_pFlashOmni;
+			ref_glow		m_pFlashGlowObj;
+			// draw/holster fade (task): the mounted light ramps in over the show anim and out over the hide
+			// anim instead of popping on/off. 0=dark, 1=full; scales the spot/omni/glow colour each frame.
+			float			m_fFlashFade;
+public:
+
 	//для отоброажения иконок апгрейдов в интерфейсе
-	int	GetScopeX() {return m_iScopeX;}
-	int	GetScopeY() {return m_iScopeY;}
+	// Inventory-icon offset of the mounted optic. GS keeps this in the SCOPE's own section, because each
+	// optic sits in a different place on the weapon's icon; the weapon-level scope_x/scope_y is only the
+	// fallback for the legacy single-scope path. (Used solely by CUIWeaponCellItem.)
+	int	GetScopeX();
+	int	GetScopeY();
 	int	GetSilencerX() {return m_iSilencerX;}
 	int	GetSilencerY() {return m_iSilencerY;}
 	int	GetGrenadeLauncherX() {return m_iGrenadeLauncherX;}
@@ -166,6 +299,15 @@ public:
 	const shared_str& GetGrenadeLauncherName	()		const {return m_sGrenadeLauncherName;}
 	const shared_str& GetScopeName				()		const {return m_sScopeName;}
 	const shared_str& GetSilencerName			()		const {return m_sSilencerName;}
+
+	// ---- Gunslinger multi-scope: the weapon lists compatible per-weapon scope SECTIONS via `scopes_sect`;
+	// each section's `scope_name` names the addon item that selects it. GetCurrentScopeSection() returns the
+	// section of the scope currently attached (its `bones`/offsets/zoom/lens), or the single scope_name /
+	// weapon section as a fallback for the legacy single-scope path. ----
+	shared_str		GetCurrentScopeSection		()		const;
+	shared_str		GetAttachedScopeName		()		const;	// item section of the ATTACHED scope (for detach/icon), not the default scope_name
+	int				ScopeIndexByItem			(LPCSTR item_sect)	const;	// index into m_scopes whose scope_name==item_sect, else -1
+	bool			IsScopeItem					(LPCSTR item_sect)	const	{ return ScopeIndexByItem(item_sect) >= 0; }
 
 	IC void	ForceUpdateAmmo						()		{ m_dwAmmoCurrentCalcFrame = 0; }
 
@@ -188,6 +330,11 @@ protected:
 	shared_str		m_sScopeName;
 	shared_str		m_sSilencerName;
 	shared_str		m_sGrenadeLauncherName;
+
+	// GS multi-scope: per-weapon scope sections from `scopes_sect`, and the index of the attached one
+	// (0xFF = none / fall back to m_sScopeName). Persisted in save_data/load_data.
+	xr_vector<shared_str>	m_scopes;
+	u8						m_cur_scope;
 
 	//смещение иконов апгрейдов в инвентаре
 	int	m_iScopeX, m_iScopeY;
@@ -229,10 +376,19 @@ public:
 	virtual void			OnZoomIn			();
 	virtual void			OnZoomOut			();
 	IC		bool			IsZoomed			()	const		{return m_zoom_params.m_bIsZoomModeNow;};
+	// GS inertion: blend hip->aim params by the zoom transition factor; zoom_inertion kills sway in ADS
+	virtual	float			GetInertionAimFactor() const		{ float f = GetZoomRotationFactor(); clamp(f, 0.f, 1.f); return f; }
+	virtual	bool			InertionZoomedNow	() const		{ return IsZoomed(); }
+	IC		bool			IsZoomKeyHeld		()	const		{return m_bZoomKeyHeld;}	// aim key physically held (CMD_START..CMD_STOP)
+	virtual bool			IsHudItemZoomed		()				{return IsZoomed();}	// see CHudItem
 	CUIWindow*				ZoomTexture			();	
 
 
-			bool			ZoomHideCrosshair	()				{return m_zoom_params.m_bHideCrosshairInZoom || ZoomTexture();}
+			bool			ZoomHideCrosshair	()				{
+				extern int g_dbg_zoom_hide_crosshair;	// debug console override: -1 = per-weapon config, 0 = force show, 1 = force hide (not saved)
+				if (g_dbg_zoom_hide_crosshair >= 0)		return g_dbg_zoom_hide_crosshair != 0;
+				return m_zoom_params.m_bHideCrosshairInZoom || ZoomTexture();
+			}
 
 	IC float				GetZoomFactor		() const		{return m_zoom_params.m_fCurrentZoomFactor;}
 	IC void					SetZoomFactor		(float f) 		{m_zoom_params.m_fCurrentZoomFactor = f;}
@@ -347,8 +503,16 @@ protected:
 	//вероятность осечки при максимальной изношености
 	float					misfireProbability;
 	float					misfireConditionK;
+	// Gunslinger misfire model: linear jam probability between two condition points. Above misfireStartCondition
+	// -> no jams; at start -> misfireStartProb; at (and below) misfireEndCondition -> misfireEndProb. Active only
+	// when misfireStartCondition > 0 (config has misfire_start_condition); otherwise the legacy K-model is used.
+	float					misfireStartCondition;
+	float					misfireEndCondition;
+	float					misfireStartProb;
+	float					misfireEndProb;
 	//увеличение изношености при выстреле
 	float					conditionDecreasePerShot;
+	float					conditionDecreasePerShotQueue;	// GS condition_queue_shot_dec: wear per shot while firing an auto/burst queue (0 = same as single)
 	
 	struct SPDM
 	{
@@ -386,6 +550,7 @@ public:
 	IC int					GetAmmoMagSize		()	const		{	return iMagazineSize;						}
 	int						GetSuitableAmmoTotal		(bool use_item_to_spawn = false)  const;
 	int						GetCurrentTypeAmmoTotal		()  const;
+	int						GetAmmoCountByType			(u32 type) const;	// rounds of a SPECIFIC ammo-type index available in the inventory (belt+ruck), excluding the magazine
 
 	void					SetAmmoElapsed		(int ammo_count);
 

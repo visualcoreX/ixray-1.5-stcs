@@ -2,6 +2,7 @@
 #include "dxRenderDeviceRender.h"
 
 #include "ResourceManager.h"
+#include "../../xrEngine/igame_persistent.h"	// g_pGamePersistent (3D PiP lens-frame present suppression)
 
 dxRenderDeviceRender::dxRenderDeviceRender()
 	:	Resources(0)
@@ -62,7 +63,15 @@ void  dxRenderDeviceRender::Reset( HWND hWnd, u32 &dwWidth, u32 &dwHeight, float
 
 	Resources->reset_begin	();
 	Memory.mem_compact		();
+	// REGRESSION FIX (commit c2faeb0e re-enabled DeferredUnload): on DX10+ the device SURVIVES a swap-chain
+	// resize, so game textures stay valid across a reset -- unloading + mass-recreating all ~1400 of them here
+	// is unnecessary and crashes (D3DX10CreateTextureFromMemory fails mid-storm on "Apply video settings",
+	// e.g. wpn_p220.dds). CTexture::Load() is idempotent (returns if pSurface set), so skipping the unload
+	// makes the DeferredUpload below a no-op for loaded textures -- exactly the pre-c2faeb0e behavior that never
+	// crashed. DX9 (R1) still needs it (D3DPOOL_DEFAULT resources are lost on reset), so keep it there.
+#ifndef USE_DX10
 	ResourcesDeferredUnload();
+#endif
 	HW.Reset(hWnd);
 	ResourcesDeferredUpload();
 
@@ -344,6 +353,11 @@ void dxRenderDeviceRender::End()
 	Memory.dbg_check		();
 
 	DoAsyncScreenshot();
+
+	// 3D PiP scope double-render: a "lens frame" was rendered world-only at the magnified scope FOV and
+	// captured into $user$scope. Instead of SKIPPING Present for it (a skipped Present flickers on DXGI flip),
+	// put the previous NORMAL frame back on the backbuffer so Present shows that and never flashes the zoom.
+	RImplementation.PresentBridgeLens();
 
 #ifdef	USE_DX10
 	if (psDeviceFlags.test(rsVSync)) {

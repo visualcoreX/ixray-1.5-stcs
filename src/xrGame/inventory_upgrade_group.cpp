@@ -8,6 +8,7 @@
 
 #include "pch_script.h"
 #include "inventory_upgrade_group.h"
+#include "inventory_upgrade.h"		// Upgrade (parent_group_id) for the require_all_parent_groups gate
 
 namespace inventory
 {
@@ -16,6 +17,7 @@ namespace upgrade
 
 Group::Group()
 {
+	m_require_all_parent_groups = false;
 }
 
 Group::~Group()
@@ -30,6 +32,8 @@ void Group::construct( const shared_str& group_id, UpgradeBase& parent_upgrade, 
 	VERIFY2( pSettings->section_exist( m_id ),
 		make_string( "Upgrade <%s> : group section [%s] does not exist!" , parent_upgrade.id_str(), m_id.c_str() ) );
 	
+	m_require_all_parent_groups = !!READ_IF_EXISTS( pSettings, r_bool, m_id, "require_all_parent_groups", false );
+
 	LPCSTR	upgrades_str = pSettings->r_string(m_id, "elements");
 	VERIFY2( upgrades_str, make_string( "in upgrade group <%s> elements are empty!", m_id.c_str() ) );
 
@@ -81,23 +85,55 @@ void Group::fill_root( Root* root )
 
 UpgradeStateResult Group::can_install( CInventoryItem& item, UpgradeBase& test_upgrade, bool loading )
 {
+	// Parent gate: by default a group unlocks when AT LEAST ONE of its non-root parent upgrades is installed.
+	// Stock xray required ALL parents, but GS/CS trees are DAGs where several mutually-exclusive sibling
+	// upgrades each point their `effects` at the SAME child group -- e.g. usm_accuracy/usm_rpm/usm_rpm_down
+	// all unlock vartree_ak74_body, and mag45_brown/mag45_black both unlock vartree_ak74_mag60. Under the
+	// old "all parents" rule those merges deadlock (the siblings can't coexist), so use "any parent". For a
+	// normal single-parent group this is identical to the old behaviour.
+	// OPT-IN require_all_parent_groups: require one installed non-root parent per DISTINCT parent GROUP,
+	// so every contributing branch must have a pick (colt1911 systems: barrel AND usm AND zatvor).
+	bool parents_ok;
 	Upgrades_type::iterator ib = m_parent_upgrades.begin();
 	Upgrades_type::iterator ie = m_parent_upgrades.end();
-	for ( ; ib != ie ; ++ib )
+	if ( m_require_all_parent_groups )
 	{
-		if ( (*ib)->is_root() )
+		xr_vector<shared_str>	grp_ids;
+		xr_vector<bool>			grp_has;
+		for ( ; ib != ie ; ++ib )
 		{
-			continue;
+			if ( (*ib)->is_root() )	continue;
+			shared_str gid = static_cast<Upgrade*>( *ib )->parent_group_id();
+			int idx = -1;
+			for ( u32 k = 0; k < grp_ids.size(); ++k )
+				if ( grp_ids[k] == gid ) { idx = (int)k; break; }
+			if ( idx < 0 ) { grp_ids.push_back( gid ); grp_has.push_back( false ); idx = (int)grp_ids.size() - 1; }
+			if ( item.has_upgrade( (*ib)->id() ) )	grp_has[idx] = true;
 		}
-		if ( !item.has_upgrade( (*ib)->id() ) )
+		parents_ok = true;
+		for ( u32 k = 0; k < grp_has.size(); ++k )
+			if ( !grp_has[k] ) { parents_ok = false; break; }
+	}
+	else
+	{
+		bool any_non_root_parent = false;
+		bool a_parent_installed  = false;
+		for ( ; ib != ie ; ++ib )
 		{
-			if ( loading )
-			{
-				FATAL( make_string( "Loading item: Upgrade <%s> of inventory item [%s] (id = %d) can`t be installed! Error = result_e_parents",
-					test_upgrade.id_str(), item.m_section_id.c_str(), item.object_id() ).c_str() );
-			}
-			return result_e_parents;
+			if ( (*ib)->is_root() )	continue;
+			any_non_root_parent = true;
+			if ( item.has_upgrade( (*ib)->id() ) ) { a_parent_installed = true; break; }
 		}
+		parents_ok = !any_non_root_parent || a_parent_installed;
+	}
+	if ( !parents_ok )
+	{
+		if ( loading )
+		{
+			FATAL( make_string( "Loading item: Upgrade <%s> of inventory item [%s] (id = %d) can`t be installed! Error = result_e_parents",
+				test_upgrade.id_str(), item.m_section_id.c_str(), item.object_id() ).c_str() );
+		}
+		return result_e_parents;
 	}
 	
 	ib = m_included_upgrades.begin();

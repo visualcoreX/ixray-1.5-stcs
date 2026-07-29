@@ -201,6 +201,10 @@ void CRender::Render		()
 
 	if( !(g_pGameLevel && g_pGameLevel->pHUD) || bMenu)	return;
 
+	// 3D PDA: snapshot the PDA window into $user$ui BEFORE the scene overwrites the backbuffer --
+	// the PDA hud model's screen material samples that texture. No-op unless the window is open.
+	RenderPdaUIToRT			();
+
 	if (m_bFirstFrameAfterReset) {
 		m_bFirstFrameAfterReset = false;
 		return;
@@ -427,6 +431,8 @@ void CRender::Render		()
 
 	// Postprocess
 	Target->phase_combine					();
+	// (3D PiP scope snapshot happens INSIDE phase_combine, right before render_forward -- see there.)
+
 	VERIFY	(0==mapDistort.size());
 }
 

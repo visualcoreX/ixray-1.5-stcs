@@ -8,6 +8,7 @@
 #include "ExplosiveRocket.h"
 #include "Actor.h"
 #include "xr_level_controller.h"
+#include "object_broker.h"		// READ_IF_EXISTS
 #include "level.h"
 #include "object_broker.h"
 #include "game_base_space.h"
@@ -29,6 +30,75 @@ CWeaponMagazinedWGrenade::~CWeaponMagazinedWGrenade()
 {
 }
 
+// gwr: fold the loaded-grenade state into the base's change detection so the GL bone updates when the
+// grenade is loaded/fired or its type changes. Packed: count(0/1) | ammoType<<1 | attached<<8.
+int CWeaponMagazinedWGrenade::gwr_GLBonesState()
+{
+	int attached = IsGrenadeLauncherAttached() ? 1 : 0;
+	return iAmmoElapsed2 | (int(m_ammoType2) << 1) | (attached << 8);
+}
+
+// Show the bone for the grenade currently in the launcher (like GS's ProcessAmmoGL): pick the param
+// section by GL ammo type, hide all_bones, show configuration_<grenades loaded>.
+void CWeaponMagazinedWGrenade::gwr_UpdateBonesGL()
+{
+	if (!GetHUDmode() || !HudItemData())		return;
+	if (!IsGrenadeLauncherAttached())			return;
+
+	// The loaded grenade's count/type live in the ACTIVE ammo slot while in grenade mode and in the
+	// stored "2" slot while in bullet mode -- PerformSwitchGL swaps m_ammoType<->m_ammoType2 and the
+	// magazines on every mode toggle. Reading the "2" fields unconditionally meant that in grenade mode
+	// (where GL reloads actually happen) we read the *bullet* count/type, so the grenade bone never
+	// showed during a GL reload. Pick the grenade slot by the current mode.
+	const shared_str& sect = HudSection();
+	u32 gren_count = m_bGrenadeMode ? (u32)iAmmoElapsed : (u32)iAmmoElapsed2;
+	u32 gren_type  = m_bGrenadeMode ? m_ammoType        : m_ammoType2;
+
+	// What to DISPLAY, with reload phasing. The grenade is only actually loaded at OnAnimationEnd, and on a
+	// grenade-type change m_ammoType is still the OLD type until then -- so during the reload we must drive
+	// the shown bone from the type being LOADED (m_set_next_ammoType_on_reload), not the stale current one,
+	// or the launcher shows one grenade while you chamber another. The bone seats at gl_reload_insert_mark
+	// (fraction of the reload anim, default 0.5), like the per-barrel ammo insert mark.
+	int shown     = (int)gren_count;
+	u32 show_type = gren_type;
+	if (m_bGrenadeMode && GetState() == eReload)
+	{
+		u32 s = m_dwMotionStartTm, e = m_dwMotionEndTm, now = Device.dwTimeGlobal;
+		float progress = (e > s) ? float(now - s) / float(e - s) : 1.0f;
+		clamp(progress, 0.0f, 1.0f);
+		float mark = READ_IF_EXISTS(pSettings, r_float, sect, "gl_reload_insert_mark", 0.5f);
+
+		bool have_next  = (m_set_next_ammoType_on_reload != u32(-1));
+		u32  next_type  = have_next ? m_set_next_ammoType_on_reload : gren_type;
+		bool ammochange = have_next && (next_type != gren_type) && (gren_count > 0);
+		bool seated     = (progress >= mark);
+
+		if (ammochange)
+		{
+			// swap: the OLD grenade stays until the hand pulls it (mark), then the NEW one seats
+			shown     = 1;
+			show_type = seated ? next_type : gren_type;
+		}
+		else
+		{
+			// fresh load into an empty launcher: the grenade appears at the mark, of the loaded type
+			shown     = seated ? 1 : 0;
+			show_type = next_type;
+		}
+	}
+
+	string128 key;  xr_sprintf(key, "gl_ammo_params_section_%d", show_type);
+	LPCSTR bsect = NULL;
+	if (pSettings->line_exist(sect, key))				bsect = pSettings->r_string(sect, key);
+	else if (pSettings->line_exist(sect, "gl_ammo_params_section"))	bsect = pSettings->r_string(sect, "gl_ammo_params_section");
+
+	if (!bsect)									return;
+
+	if (pSettings->line_exist(bsect, "all_bones"))	gwr_SetBones(pSettings->r_string(bsect, "all_bones"), FALSE);
+	xr_sprintf(key, "configuration_%d", shown);
+	if (pSettings->line_exist(bsect, key))			gwr_SetBones(pSettings->r_string(bsect, key), TRUE);
+}
+
 void CWeaponMagazinedWGrenade::Load	(LPCSTR section)
 {
 	inherited::Load			(section);
@@ -38,6 +108,9 @@ void CWeaponMagazinedWGrenade::Load	(LPCSTR section)
 	//// Sounds
 	m_sounds.LoadSound(section,"snd_shoot_grenade"	, "sndShotG"		, false, m_eSoundShot);
 	m_sounds.LoadSound(section,"snd_reload_grenade"	, "sndReloadG"	, true, m_eSoundReload);
+	// dedicated grenade-type-change sound (GS snd_change_grenade); falls back to sndReloadG if absent
+	if (pSettings->line_exist(section, "snd_change_grenade"))
+		m_sounds.LoadSound(section,"snd_change_grenade", "sndChangeGrenade", true, m_eSoundReload);
 	m_sounds.LoadSound(section,"snd_switch"			, "sndSwitch"		, true, m_eSoundReload);
 	
 
@@ -129,14 +202,31 @@ BOOL CWeaponMagazinedWGrenade::net_Spawn(CSE_Abstract* DC)
 void CWeaponMagazinedWGrenade::switch2_Reload()
 {
 	VERIFY(GetState()==eReload);
-	if(m_bGrenadeMode) 
+	if(m_bGrenadeMode)
 	{
-		PlaySound("sndReloadG", get_LastFP2());
+		// Grenade-type change: a grenade is loaded and a DIFFERENT type is selected to load -> play the
+		// dedicated grenade-change animation (ejects the old grenade, seats the new one) instead of the
+		// plain reload, mirroring GS's anm_reload_ammochange_g (= ak74_gl_grenadechange). In grenade mode
+		// m_magazine / m_ammoType are the grenade's (PerformSwitchGL swapped them in).
+		bool ammochange = !m_magazine.empty()
+			&& m_set_next_ammoType_on_reload != u32(-1)
+			&& m_set_next_ammoType_on_reload != m_ammoType;
 
-		PlayHUDMotion("anm_reload_g", FALSE, this, GetState());
+		LPCSTR anim = "anm_reload_g";
+		if (ammochange && isHUDAnimationExist("anm_reload_ammochange_g"))
+			anim = "anm_reload_ammochange_g";
+
+		// the grenade-change gesture has its own, longer sound (GS snd_change_grenade); the plain
+		// grenade load keeps sndReloadG. Fall back to sndReloadG if the change sound isn't configured.
+		if (ammochange && m_sounds.FindSoundItem("sndChangeGrenade", false))
+			PlaySound("sndChangeGrenade", get_LastFP2());
+		else
+			PlaySound("sndReloadG", get_LastFP2());
+
+		PlayHUDMotion(anim, TRUE, this, GetState());	// blend in, like every other reload
 		SetPending			(TRUE);
 	}
-	else 
+	else
 	     inherited::switch2_Reload();
 }
 
@@ -457,6 +547,17 @@ void CWeaponMagazinedWGrenade::OnAnimationEnd(u32 state)
 		case eSwitch:
 			SwitchState(eIdle);
 			break;
+		case eFire:
+			// The GL shot is event-driven (state_Fire is empty in grenade mode), so the shoot anim is
+			// played standalone at eFire and nothing else returns the weapon to idle -- the base
+			// OnAnimationEnd has no eFire case. Without this the last shoot frame freezes on screen
+			// (very visible while walking, since the moving-idle never resumes).
+			if (m_bGrenadeMode)
+			{
+				SwitchState(eIdle);
+				return;
+			}
+			break;
 	}
 	inherited::OnAnimationEnd(state);
 }
@@ -566,7 +667,7 @@ void CWeaponMagazinedWGrenade::InitAddons()
 bool	CWeaponMagazinedWGrenade::UseScopeTexture()
 {
 	if (IsGrenadeLauncherAttached() && m_bGrenadeMode) return false;
-	
+	if (IsLensedScope())	return false;	// 3D PiP lens scope -> skip the 2D scope texture, keep the weapon visible
 	return true;
 };
 
@@ -611,9 +712,9 @@ void CWeaponMagazinedWGrenade::PlayAnimReload()
 
 	if (IsGrenadeLauncherAttached())
 	{
-		if (isHUDAnimationExist("anm_reload_misfire_w_gl") && IsMisfire())
+		if (isHUDAnimationExist("anm_reload_jammed_w_gl") && IsMisfire())
 		{
-			PlayHUDMotion("anm_reload_misfire_w_gl", TRUE, this, GetState());
+			PlayHUDMotion("anm_reload_jammed_w_gl", TRUE, this, GetState());
 			bMisfireReload = true;
 		}
 		else if (isHUDAnimationExist("anm_reload_empty_w_gl") && iAmmoElapsed == 0)
@@ -685,17 +786,13 @@ void CWeaponMagazinedWGrenade::PlayAnimIdleMoving()
 		inherited::PlayAnimIdleMoving();
 }
 
-void CWeaponMagazinedWGrenade::PlayAnimIdleSprint()
+// GL suffix for the sprint idle base; the shared CHudItem::PlayAnimIdleSprint derives the
+// enter/exit transitions (anm_idle_sprint_start/_end + _g/_w_gl) from this.
+LPCSTR CWeaponMagazinedWGrenade::SprintLoopBase()
 {
 	if (IsGrenadeLauncherAttached())
-	{
-		if (m_bGrenadeMode)
-			PlayHUDMotion("anm_idle_sprint_g", TRUE, NULL, eIdle);
-		else
-			PlayHUDMotion("anm_idle_sprint_w_gl", TRUE, NULL, eIdle);
-	}
-	else
-		inherited::PlayAnimIdleSprint();
+		return m_bGrenadeMode ? "anm_idle_sprint_g" : "anm_idle_sprint_w_gl";
+	return inherited::SprintLoopBase();
 }
 
 void CWeaponMagazinedWGrenade::SelectDryFireAnim(string_path& result)
@@ -707,12 +804,12 @@ void CWeaponMagazinedWGrenade::SelectDryFireAnim(string_path& result)
 		string_path tmp;
 		if (IsZoomed())
 		{
-			strconcat(sizeof(tmp), tmp, empty ? "anm_dry_aim_empty" : "anm_dry_aim", gl);
+			strconcat(sizeof(tmp), tmp, empty ? "anm_fakeshoot_aim_empty" : "anm_fakeshoot_aim", gl);
 			if (isHUDAnimationExist(tmp))	{ xr_strcpy(result, tmp); return; }
-			strconcat(sizeof(tmp), tmp, "anm_dry_aim", gl);
+			strconcat(sizeof(tmp), tmp, "anm_fakeshoot_aim", gl);
 			if (isHUDAnimationExist(tmp))	{ xr_strcpy(result, tmp); return; }
 		}
-		strconcat(sizeof(tmp), tmp, empty ? "anm_dry_empty" : "anm_dry", gl);
+		strconcat(sizeof(tmp), tmp, empty ? "anm_fakeshoot_empty" : "anm_fakeshoot", gl);
 		if (isHUDAnimationExist(tmp))		{ xr_strcpy(result, tmp); return; }
 	}
 	inherited::SelectDryFireAnim(result);
@@ -724,16 +821,40 @@ void CWeaponMagazinedWGrenade::SelectAimIdleAnim(string_path& result)
 	{
 		LPCSTR glsuf = m_bGrenadeMode ? "_g" : "_w_gl";
 		LPCSTR dir   = AimWalkDirSuffix();
+		const bool scoped = UseScopeAnims();
+
+		// firemode-aware existence: PlayHUDMotion re-inserts the mask_firemode mark BEFORE the GL suffix, so the
+		// scope aim-walk (authored only as ..._auto_w_gl) must be tested with that mark, not the bare name.
+		auto exists = [&](LPCSTR nm)->bool {
+			if (isHUDAnimationExist(nm))	return true;
+			string_path marked;	MakeFireModeName(nm, marked);
+			return (0 != xr_strcmp(marked, nm)) && isHUDAnimationExist(marked);
+		};
+
+		string_path cand;
+		// 1) scope + GL aim-walk (GS order: anm_idle_aim_scope[_moving_<dir>]<glsuf>)
+		if (scoped && dir[0])
+		{
+			xr_sprintf(cand, "anm_idle_aim_scope%s%s", dir, glsuf);
+			if (exists(cand))	{ xr_strcpy(result, cand); return; }
+			xr_sprintf(cand, "anm_idle_aim_scope_moving%s", glsuf);	// forward implicit
+			if (exists(cand))	{ xr_strcpy(result, cand); return; }
+		}
+		// 2) non-scope GL aim-walk (animated fallback -- e.g. single fire mode, no scope walk authored)
 		if (dir[0])
 		{
-			// directional GL aim-walk: anm_idle_aim_walk[_dir]_g / _w_gl
-			xr_sprintf(result, "anm_idle_aim%s%s", dir, glsuf);
-			if (isHUDAnimationExist(result))	return;
-			xr_sprintf(result, "anm_idle_aim_walk%s", glsuf);	// GL forward fallback
-			if (isHUDAnimationExist(result))	return;
+			xr_sprintf(cand, "anm_idle_aim%s%s", dir, glsuf);
+			if (isHUDAnimationExist(cand))	{ xr_strcpy(result, cand); return; }
+			xr_sprintf(cand, "anm_idle_aim_moving_forward%s", glsuf);
+			if (isHUDAnimationExist(cand))	{ xr_strcpy(result, cand); return; }
 		}
-		// static GL aim (existing aliases)
-		xr_strcpy(result, m_bGrenadeMode ? "anm_idle_g_aim" : "anm_idle_w_gl_aim");
+		// 3) static scope + GL aim, else static GL aim
+		if (scoped)
+		{
+			xr_sprintf(cand, "anm_idle_aim_scope%s", glsuf);
+			if (exists(cand))	{ xr_strcpy(result, cand); return; }
+		}
+		xr_strcpy(result, m_bGrenadeMode ? "anm_idle_aim_g" : "anm_idle_aim_w_gl");
 		return;
 	}
 	inherited::SelectAimIdleAnim(result);
@@ -755,16 +876,38 @@ void CWeaponMagazinedWGrenade::SelectShootAnim(string_path& result)
 {
 	if (m_bGrenadeMode)
 	{
-		if (IsZoomed() && isHUDAnimationExist("anm_shots_aim_g"))
-			{ xr_strcpy(result, "anm_shots_aim_g"); return; }
-		xr_strcpy(result, "anm_shots_g");
+		if (IsZoomed() && isHUDAnimationExist("anm_shoot_aim_g"))
+			{ xr_strcpy(result, "anm_shoot_aim_g"); return; }
+		xr_strcpy(result, "anm_shoot_g");
 		return;
 	}
 	if (IsGrenadeLauncherAttached())
 	{
-		if (IsZoomed() && isHUDAnimationExist("anm_shots_aim_w_gl"))
-			{ xr_strcpy(result, "anm_shots_aim_w_gl"); return; }
-		xr_strcpy(result, "anm_shots_w_gl");
+		// last chambered round -> bolt-back variant, same gating as the base class (lr300 has
+		// lr300_gloff_shoot_last / _aim_shoot_last; weapons without them are unaffected)
+		bool last = (iAmmoElapsed <= 1);
+		if (IsZoomed() && isHUDAnimationExist("anm_shoot_aim_w_gl"))
+		{
+			// Firing through a use_scope_anims optic while the GL is mounted. GS keeps "_scope" right
+			// after "_aim" -- before "_last" and before the trailing "_w_gl" -- so the names are
+			// anm_shoot_aim_scope_last_w_gl / anm_shoot_aim_scope_w_gl (see GS aks74/an94 aliases).
+			// Without this the GL branch fell straight through to the non-scope ADS shot, so a scoped
+			// weapon lost its scope shooting animation as soon as a grenade launcher was attached.
+			if (UseScopeAnims())
+			{
+				if (last && isHUDAnimationExist("anm_shoot_aim_scope_last_w_gl"))
+					{ xr_strcpy(result, "anm_shoot_aim_scope_last_w_gl"); return; }
+				if (isHUDAnimationExist("anm_shoot_aim_scope_w_gl"))
+					{ xr_strcpy(result, "anm_shoot_aim_scope_w_gl"); return; }
+			}
+			if (last && isHUDAnimationExist("anm_shoot_aim_last_w_gl"))
+				{ xr_strcpy(result, "anm_shoot_aim_last_w_gl"); return; }
+			xr_strcpy(result, "anm_shoot_aim_w_gl");
+			return;
+		}
+		if (last && isHUDAnimationExist("anm_shoot_last_w_gl"))
+			{ xr_strcpy(result, "anm_shoot_last_w_gl"); return; }
+		xr_strcpy(result, "anm_shoot_w_gl");
 		return;
 	}
 	inherited::SelectShootAnim(result);
@@ -781,7 +924,7 @@ void CWeaponMagazinedWGrenade::PlayAnimFireModeSwitch()
 {
 	LPCSTR base = m_sFireModeAnim.size()
 		? m_sFireModeAnim.c_str()
-		: (IsAutoFireMode() ? "anm_firemode_1_to_a" : "anm_firemode_a_to_1");
+		: (IsAutoFireMode() ? "anm_changefiremode_from_1_to_a" : "anm_changefiremode_from_a_to_1");	// GS alias names
 	if (IsGrenadeLauncherAttached())
 	{
 		string_path a;
@@ -793,10 +936,12 @@ void CWeaponMagazinedWGrenade::PlayAnimFireModeSwitch()
 
 void CWeaponMagazinedWGrenade::PlayAnimModeSwitch()
 {
-	if(m_bGrenadeMode)
-		PlayHUDMotion("anm_switch_g", TRUE, this, eSwitch);
-	else 
-		PlayHUDMotion("anm_switch", TRUE, this, eSwitch);
+	// capture the raise/lower window so the laser dot can fade out/in with GS timing (see UpdateLaserDot)
+	u32 t = m_bGrenadeMode
+		? PlayHUDMotion("anm_switch_g", TRUE, this, eSwitch)
+		: PlayHUDMotion("anm_switch",   TRUE, this, eSwitch);
+	m_dwGLSwitchStartTm = Device.dwTimeGlobal;
+	m_dwGLSwitchEndTm   = Device.dwTimeGlobal + t;
 }
 
 void CWeaponMagazinedWGrenade::PlayAnimBore()
@@ -817,6 +962,8 @@ void CWeaponMagazinedWGrenade::UpdateSounds	()
 	Fvector P						= get_LastFP();
 	m_sounds.SetPosition("sndShotG", P);
 	m_sounds.SetPosition("sndReloadG", P);
+	if (m_sounds.FindSoundItem("sndChangeGrenade", false))
+		m_sounds.SetPosition("sndChangeGrenade", P);
 	m_sounds.SetPosition("sndSwitch", P);
 }
 

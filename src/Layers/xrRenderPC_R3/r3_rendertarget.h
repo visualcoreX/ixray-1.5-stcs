@@ -75,6 +75,12 @@ public:
 	ref_rt						rt_Accumulator;		// 64bit		(r,g,b,specular)
 	ref_rt						rt_Accumulator_temp;// only for HW which doesn't feature fp16 blend
 	ref_rt						rt_Generic_0;		// 32bit		(r,g,b,a)				// post-process, intermidiate results, etc.
+	// 3D PDA: PDA window snapshot, sampled by the model's screen material as $user$ui. Always
+	// 1-sample: it gets sampled in a shader, so it can't be an MSAA target.
+	ref_rt						rt_ui;
+	// 3D PiP scope lens (magnified scene) + last-normal-frame keep; 1-sample (sampled by the lens shader).
+	ref_rt						rt_scope;
+	ref_rt						rt_scope_save;
 	ref_rt						rt_Generic_1;		// 32bit		(r,g,b,a)				// post-process, intermidiate results, etc.
 	//	Igor: for volumetric lights
 	ref_rt						rt_Generic_2;		// 32bit		(r,g,b,a)				// post-process, intermidiate results, etc.

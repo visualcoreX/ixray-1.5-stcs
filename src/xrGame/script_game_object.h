@@ -310,6 +310,8 @@ public:
 			void				GiveMoney			(int money);
 			u32					Money				();
 			void				MakeItemActive		(CScriptGameObject* pItem);
+			void				quick_kick_hit		();	// GS quick knife kick: fire the melee hit (actor only), called from the Lua kick binder at the stab mark
+			u32					active_item_motion_end	();	// wall-clock ms when the active HUD item's current motion ends (0 = none) -- for the kick binder to time the stab
 			
 			void				SetRelation			(ALife::ERelationType relation, CScriptGameObject* pWhoToSet);
 			

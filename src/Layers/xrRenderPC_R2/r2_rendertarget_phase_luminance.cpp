@@ -17,6 +17,12 @@ struct v_filter {
 
 void	CRenderTarget::phase_luminance()
 {
+	// 3D PiP scope: FREEZE auto-exposure for the whole time a lensed scope is aimed. Not just the lens frames:
+	// on the normal frames the weapon is pulled right up to the eye (scope_hud_fov_aim) and its dark body fills
+	// much of the screen, which would drag the average luminance and re-brighten the world on aim-in / darken it
+	// on aim-out. Holding f_luminance_adapt keeps the WORLD brightness steady while scoped.
+	if (g_pGamePersistent && g_pGamePersistent->m_bLensAimActive)	return;
+
 	u32		Offset	= 0;
 	float	eps		= EPS_S;
 

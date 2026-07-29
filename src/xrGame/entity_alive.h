@@ -105,7 +105,7 @@ protected:
 	virtual void				StartFireParticles(CWound* pWound);
 	virtual void				UpdateFireParticles();
 	virtual void				LoadFireParticles(LPCSTR section);
-public:	
+public:
 	static  void				UnloadFireParticles	();
 protected:
 	static STR_VECTOR*			m_pFireParticlesVector;
@@ -125,33 +125,33 @@ protected:
 														float trace_dist, float wallmark_size,
 														IWallMarkArray *pwallmarks_vector);
 
-	//информация о кровавых отметках на стенах, общая для всех CEntityAlive
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ CEntityAlive
 	static FactoryPtr<IWallMarkArray>	*m_pBloodMarksVector;
 	static float						m_fBloodMarkSizeMax;
 	static float						m_fBloodMarkSizeMin;
 	static float						m_fBloodMarkDistance;
 	static float						m_fNominalHit;
 
-	//текстурки капель крови
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	static FactoryPtr<IWallMarkArray>	*m_pBloodDropsVector;
 
-	//список ран с которых капает кровь
+	//пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	using WOUND_VECTOR = xr_vector<CWound*>;
 	using WOUND_VECTOR_IT = WOUND_VECTOR::iterator;
 
 	WOUND_VECTOR				m_BloodWounds;
-	//размер раны, чтоб начала капать кровь
+	//пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	static float				m_fStartBloodWoundSize;
-	//размер раны, чтоб остановить кровь
+	//пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	static float				m_fStopBloodWoundSize;
 	static float				m_fBloodDropSize;
 
-	//обновление ран, и рисование отметок от капающей крови
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ, пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 	virtual void				StartBloodDrops			(CWound* pWound);
 	virtual void				UpdateBloodDrops		();
 
 
-	//отношения между существами и персонажами в зоне
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ
 public:
 	virtual	ALife::ERelationType tfGetRelationType	(const CEntityAlive *tpEntityAlive) const;
 	virtual	bool				 is_relation_enemy	(const CEntityAlive *tpEntityAlive) const;	
@@ -182,10 +182,10 @@ public:
 	virtual u32					ef_detector_type			() const;
 
 public:
-	virtual	void				OnHitHealthLoss				(float NewHealth) {};	//вызывается если entity теряет здоровье
-	virtual	void				OnCriticalHitHealthLoss		() {};	//вызывается если entity умрет от хита 
-	virtual	void				OnCriticalWoundHealthLoss	() {};	//вызывается если entity умрет от потери крови 
-	virtual void				OnCriticalRadiationHealthLoss() {};	//вызывается если entity умрет от радиации 
+	virtual	void				OnHitHealthLoss				(float NewHealth) {};	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ entity пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	virtual	void				OnCriticalHitHealthLoss		() {};	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ entity пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ 
+	virtual	void				OnCriticalWoundHealthLoss	() {};	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ entity пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ 
+	virtual void				OnCriticalRadiationHealthLoss() {};	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ entity пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 
 
 	virtual	CVisualMemoryManager*visual_memory				() const {return(0);}
 	virtual	void				net_Relcase					(CObject *O);

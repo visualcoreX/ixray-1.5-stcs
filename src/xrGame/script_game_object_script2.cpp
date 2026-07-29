@@ -247,6 +247,8 @@ class_<CScriptGameObject> &script_register_game_object1(class_<CScriptGameObject
 		.def("item_in_slot",				&CScriptGameObject::item_in_slot)
 		.def("active_slot",					&CScriptGameObject::active_slot)
 		.def("activate_slot",				&CScriptGameObject::activate_slot)
+		.def("quick_kick_hit",				&CScriptGameObject::quick_kick_hit)
+		.def("active_item_motion_end",		&CScriptGameObject::active_item_motion_end)
 		.def("detector_active",				&CScriptGameObject::detector_active)
 		.def("show_detector",				&CScriptGameObject::show_detector)
 		.def("active_item_busy",			&CScriptGameObject::active_item_busy)

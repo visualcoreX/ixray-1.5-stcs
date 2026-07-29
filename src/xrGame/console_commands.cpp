@@ -1862,6 +1862,15 @@ public:
 	}
 };
 
+// A runtime-only integer console command: same as CCC_Integer but its Save() is a no-op, so it is NEVER
+// written to user.ltx (for temporary debug toggles the player sets by hand each session).
+class CCC_DbgInteger : public CCC_Integer
+{
+public:
+	CCC_DbgInteger(LPCSTR N, int* V, int _min, int _max) : CCC_Integer(N, V, _min, _max) {}
+	virtual void Save(IWriter*) {}		// debug-only: not persisted
+};
+
 void CCC_RegisterCommands()
 {
 	// options
@@ -1953,6 +1962,31 @@ void CCC_RegisterCommands()
 	{
 		extern int g_block_wpn_switch;
 		CMD4(CCC_Integer,		"g_block_wpn_switch",	&g_block_wpn_switch,	0, 1);
+		extern int g_surge_active;
+		CMD4(CCC_Integer,		"g_surge_active",		&g_surge_active,		0, 1);
+		extern float g_surge_time;
+		CMD4(CCC_Float,			"g_surge_time",			&g_surge_time,			1.f, 600.f);
+		// 0 = don't draw the (full-screen) PDA window, so the 3D PDA hud model is visible
+		extern int g_pda_draw_ui;
+		CMD4(CCC_Integer,		"g_pda_draw_ui",		&g_pda_draw_ui,			0, 1);
+		// 3D PDA cursor "joystick": how often the mouse travel is classified into a direction, and
+		// how much travel is needed before the hand leaves the centred idle
+		extern int g_pda_cursor_period;
+		CMD4(CCC_Integer,		"g_pda_cursor_period",	&g_pda_cursor_period,	1, 500);
+		extern int g_pda_cursor_treshold;
+		CMD4(CCC_Integer,		"g_pda_cursor_treshold",&g_pda_cursor_treshold,	1, 200);
+		extern int g_pda_dbg;
+		CMD4(CCC_Integer,		"g_pda_dbg",			&g_pda_dbg,				0, 1);
+		extern int g_pda_use_clicks;
+		CMD4(CCC_Integer,		"g_pda_use_clicks",		&g_pda_use_clicks,		0, 1);
+		// how close the 3D PDA is held: lowered / at the face. 0 = use the config value.
+		// SMALLER = narrower hud fov = the PDA looks BIGGER (engine default is 0.45)
+		extern float g_pda_hud_fov;
+		CMD4(CCC_Float,			"g_pda_hud_fov",		&g_pda_hud_fov,			0.0f, 1.0f);
+		extern float g_pda_hud_fov_aim;
+		CMD4(CCC_Float,			"g_pda_hud_fov_aim",	&g_pda_hud_fov_aim,		0.0f, 1.0f);
+
+
 		extern int g_torch_switch_delay;
 		CMD4(CCC_Integer,		"g_torch_switch_delay",	&g_torch_switch_delay,	0, 5000);
 		extern int g_torch_action_time;
@@ -2257,6 +2291,10 @@ extern BOOL dbg_moving_bones_snd_player;
 	CMD4(CCC_Float,		"con_sensitive",			&g_console_sensitive,	0.01f, 1.0f );
 	CMD4(CCC_Integer,	"wpn_aim_toggle",			&b_toggle_weapon_aim, 0, 1);
 //	CMD4(CCC_Integer,	"hud_old_style",			&g_old_style_ui_hud, 0, 1);
+
+	// --- runtime-only debug toggles (not saved to user.ltx) ---
+	{	extern int g_dbg_zoom_hide_crosshair;		// -1=per-weapon config, 0=force show crosshair while aiming, 1=force hide (all weapons)
+		static CCC_DbgInteger cc_xhair("dbg_zoom_hide_crosshair", &g_dbg_zoom_hide_crosshair, -1, 1);	Console->AddCommand(&cc_xhair);	}
 
 #ifdef DEBUG
 	CMD4(CCC_Float,		"ai_smart_cover_animation_speed_factor",	&g_smart_cover_animation_speed_factor,	.1f, 10.f);

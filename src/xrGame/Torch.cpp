@@ -34,11 +34,26 @@ CTorch::CTorch(void)
 	light_render				= ::Render->light_create();
 	light_render->set_type		(IRender_Light::SPOT);
 	light_render->set_shadow	(true);
+	// hud-mode twin so the headlamp also lights the first-person hands/weapon (a world spot never reaches HUD
+	// geometry). No shadow -- avoids self-shadow artifacts on the hands and the extra smap cost.
+	light_render_hud			= ::Render->light_create();
+	light_render_hud->set_type	(IRender_Light::SPOT);
+	light_render_hud->set_shadow(false);
+	light_render_hud->set_hud_mode(true);
+	// hud-mode point light = the GS "light sphere" giving the specular blik on the hands
+	light_omni_hud				= ::Render->light_create();
+	light_omni_hud->set_type	(IRender_Light::POINT);
+	light_omni_hud->set_shadow	(false);
+	light_omni_hud->set_hud_mode(true);
+	m_fTorchHudOmniRange		= 1.0f;
 	light_omni					= ::Render->light_create();
 	light_omni->set_type		(IRender_Light::POINT);
 	light_omni->set_shadow		(false);
 
 	m_switched_on				= false;
+	m_vTorchOffset				= TORCH_OFFSET;		// config may override in net_Spawn (torch_hands_offset)
+	m_vTorchHudOffset.set		(0.0f, 0.12f, 0.0f);	// hud twin default: above the eye (headlamp) -> specular blik from above
+	m_fTorchHudCone				= -1.0f;				// <=0: mirror the world spot's cone
 	glow_render					= ::Render->glow_create();
 	lanim						= 0;
 	time2hide					= 0;
@@ -56,6 +71,8 @@ CTorch::CTorch(void)
 CTorch::~CTorch(void) 
 {
 	light_render.destroy	();
+	light_render_hud.destroy();
+	light_omni_hud.destroy	();
 	light_omni.destroy		();
 	glow_render.destroy		();
 }
@@ -86,6 +103,25 @@ void CTorch::Load(LPCSTR section)
 		m_sounds.LoadSound(section,"snd_night_vision_idle", "NightVisionIdleSnd", SOUND_TYPE_ITEM_USING);
 		m_sounds.LoadSound(section,"snd_night_vision_broken", "NightVisionBrokenSnd", SOUND_TYPE_ITEM_USING);
 	}
+}
+
+// Gunslinger's night-vision look isn't in the ppe or in a shader (pnv.h with its scanlines/vignette
+// only ever reaches the 3D scope lens): the vignette and the horizontal lines are a full-screen UI
+// overlay it adds while NV is on -- gunsl_nv_screen_mask.script doing AddCustomStatic. Same here,
+// hung off the effector so the mask can't outlive the effect. CUI::Render only draws custom statics
+// when GameIndicatorsShown(), so the mask hides itself behind menus and the raised PDA for free --
+// which is what GS's own level.is_ui_shown() check is for.
+static void gwr_nv_screen_mask(bool on)
+{
+	if (!HUD().GetUI() || !HUD().GetUI()->UIGame())	return;
+	CUIGameCustom* g = HUD().GetUI()->UIGame();
+	if (on)
+	{
+		if (!g->GetCustomStatic("gwr_nv_screen_mask"))
+			g->AddCustomStatic("gwr_nv_screen_mask", true);
+	}
+	else
+		g->RemoveCustomStatic("gwr_nv_screen_mask");
 }
 
 void CTorch::SwitchNightVision()
@@ -138,17 +174,59 @@ void CTorch::SwitchNightVision(bool vision_on)
 			if (pCO&&pCO->m_NightVisionSect.size())
 			{
 				AddEffector(pA,effNightvision, pCO->m_NightVisionSect);
+				gwr_nv_screen_mask(true);
 				m_sounds.PlaySound("NightVisionOnSnd", pA->Position(), pA, bPlaySoundFirstPerson);
 				m_sounds.PlaySound("NightVisionIdleSnd", pA->Position(), pA, bPlaySoundFirstPerson, true);
 			}
 		}
 	}else{
  		CEffectorPP* pp = pA->Cameras().GetPPEffector((EEffectorPPType)effNightvision);
-		if(pp){
+		if(pp)
 			pp->Stop			(1.0f);
-			m_sounds.PlaySound("NightVisionOffSnd", pA->Position(), pA, bPlaySoundFirstPerson);
-			m_sounds.StopSound("NightVisionIdleSnd");
-		}
+		// The mask (vignette+stripes) and off-sound must go even if pp is already null: during an emission
+		// UpdateElectronicsProblems stops the green effector (leaving the mask up), so a manual NV-off then
+		// finds no pp -- but the mask still has to come down. gwr_nv_screen_mask/RemoveCustomStatic is a no-op
+		// if it isn't showing, so this is safe when NV was already fully off.
+		gwr_nv_screen_mask	(false);
+		m_sounds.PlaySound("NightVisionOffSnd", pA->Position(), pA, bPlaySoundFirstPerson);
+		m_sounds.StopSound("NightVisionIdleSnd");
+	}
+}
+
+// --- GS blowout NV-effector glitch -------------------------------------------------------------
+// GS's CTorch__StopNvEffector kills only the NV postprocess (the green-screen effector) while the device
+// stays switched on; the surge loop re-lights and re-kills it -> a flicker. These mirror the effector
+// add/stop halves of SwitchNightVision() but leave m_bNightVisionOn untouched and play no on/off sound.
+bool CTorch::IsNightVisionEffectorActive()
+{
+	CActor* pA = smart_cast<CActor*>(H_Parent());
+	if(!pA)	return false;
+	return pA->Cameras().GetPPEffector((EEffectorPPType)effNightvision) != nullptr;
+}
+
+void CTorch::StartNightVisionEffector()
+{
+	if(!m_bNightVisionEnabled || !m_bNightVisionOn)	return;
+	CActor* pA = smart_cast<CActor*>(H_Parent());
+	if(!pA)	return;
+	if(pA->Cameras().GetPPEffector((EEffectorPPType)effNightvision))	return;	// already lit
+	CCustomOutfit* pCO = pA->GetOutfit();
+	if(pCO && pCO->m_NightVisionSect.size()){
+		AddEffector			(pA, effNightvision, pCO->m_NightVisionSect);
+		gwr_nv_screen_mask	(true);
+	}
+}
+
+void CTorch::StopNightVisionEffector(float speed)
+{
+	CActor* pA = smart_cast<CActor*>(H_Parent());
+	if(!pA)	return;
+	CEffectorPP* pp = pA->Cameras().GetPPEffector((EEffectorPPType)effNightvision);
+	if(pp){
+		// GS CTorch__StopNvEffector kills ONLY the green colour postprocess. The screen mask (the vignette +
+		// scanline-stripes overlay, gwr_nv_screen_mask) is left ON -- during an emission the green washes out
+		// but the goggle frame/stripes stay on screen. So do NOT touch the mask here.
+		pp->Stop			(speed);
 	}
 }
 
@@ -187,9 +265,12 @@ void CTorch::Switch	(bool light_on)
 	if (can_use_dynamic_lights())
 	{
 		light_render->set_active(light_on);
-		
+
 		CActor *pA = smart_cast<CActor *>(H_Parent());
 		if(!pA)light_omni->set_active(light_on);
+		// hud twin + hud sphere light the hands only in first person (actor-carried)
+		light_render_hud->set_active(pA ? light_on : false);
+		light_omni_hud->set_active(pA ? light_on : false);
 	}
 	glow_render->set_active					(light_on);
 
@@ -227,6 +308,13 @@ BOOL CTorch::net_Spawn(CSE_Abstract* DC)
 	lanim					= LALib.FindItem(pUserData->r_string("torch_definition","color_animator"));
 	guid_bone				= K->LL_BoneID	(pUserData->r_string("torch_definition","guide_bone"));	VERIFY(guid_bone!=BI_NONE);
 
+	// task: allow the headlamp's light-position offset to be tuned from the item config so it can be pushed
+	// forward to light the hands (GS-style) without a rebuild. Falls back to the hardcoded default.
+	m_vTorchOffset			= READ_IF_EXISTS(pSettings, r_fvector3, cNameSect(), "torch_hands_offset", TORCH_OFFSET);
+	m_vTorchHudOffset		= READ_IF_EXISTS(pSettings, r_fvector3, cNameSect(), "torch_hands_hud_offset", m_vTorchHudOffset);
+	m_fTorchHudCone			= READ_IF_EXISTS(pSettings, r_float,    cNameSect(), "torch_hands_hud_cone",   m_fTorchHudCone);
+	m_fTorchHudOmniRange	= READ_IF_EXISTS(pSettings, r_float,    cNameSect(), "torch_hands_hud_omni_range", m_fTorchHudOmniRange);
+
 	Fcolor clr				= pUserData->r_fcolor				("torch_definition",(b_r2)?"color_r2":"color");
 	fBrightness				= clr.intensity();
 	float range				= pUserData->r_float				("torch_definition",(b_r2)?"range_r2":"range");
@@ -238,14 +326,30 @@ BOOL CTorch::net_Spawn(CSE_Abstract* DC)
 	light_omni->set_color	(clr_o);
 	light_omni->set_range	(range_o);
 
+	// spot cone texture: the stock one (baked in the .db OGF userdata) has a HARD edge. Allow a config override
+	// so we can point at GS's soft-edged tactical texture without editing the OGF. Falls back to the userdata.
+	LPCSTR spot_tex = READ_IF_EXISTS(pSettings, r_string, cNameSect(), "torch_spot_texture",
+									 pUserData->r_string("torch_definition","spot_texture"));
+
 	light_render->set_cone	(deg2rad(pUserData->r_float			("torch_definition","spot_angle")));
-	light_render->set_texture(pUserData->r_string				("torch_definition","spot_texture"));
+	light_render->set_texture(spot_tex);
+
+	// mirror the spot's look onto the hud twin (same colour/range/texture; cone overridable so the hands can
+	// drop out of the beam when you pitch up, GS-style)
+	light_render_hud->set_color		(clr);
+	light_render_hud->set_range		(range);
+	light_render_hud->set_cone		(deg2rad(m_fTorchHudCone > 0.f ? m_fTorchHudCone : pUserData->r_float("torch_definition","spot_angle")));
+	light_render_hud->set_texture	(spot_tex);
+
+	// hud "light sphere" (point): local range for a tight specular blik on the hands
+	light_omni_hud->set_color		(clr);
+	light_omni_hud->set_range		(m_fTorchHudOmniRange);
 
 	glow_render->set_texture(pUserData->r_string				("torch_definition","glow_texture"));
 	glow_render->set_color	(clr);
 	glow_render->set_radius	(pUserData->r_float					("torch_definition","glow_radius"));
 
-	//включить/выключить фонарик
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ/пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	Switch					(torch->m_active);
 	VERIFY					(!torch->m_active || (torch->ID_Parent != 0xffff));
 	
@@ -320,11 +424,24 @@ void CTorch::UpdateCL()
 
 			if (true)
 			{
-				Fvector offset				= M.c; 
-				offset.mad					(M.i,TORCH_OFFSET.x);
-				offset.mad					(M.j,TORCH_OFFSET.y);
-				offset.mad					(M.k,TORCH_OFFSET.z);
+				Fvector offset				= M.c;
+				offset.mad					(M.i,m_vTorchOffset.x);
+				offset.mad					(M.j,m_vTorchOffset.y);
+				offset.mad					(M.k,m_vTorchOffset.z);
 				light_render->set_position	(offset);
+				// hud twin lives in CAMERA/HUD space (that's where the first-person hands are drawn), NOT at the
+				// world head bone -- otherwise it never lines up with the hands. Camera pos + camera-basis offset.
+				Fvector hud_pos = Device.vCameraPosition;
+				hud_pos.mad(Device.vCameraRight,		m_vTorchHudOffset.x);
+				hud_pos.mad(Device.vCameraTop,			m_vTorchHudOffset.y);
+				hud_pos.mad(Device.vCameraDirection,	m_vTorchHudOffset.z);
+				light_render_hud->set_position(hud_pos);
+				light_omni_hud->set_position(hud_pos);		// hud sphere co-located with the hud spot
+				// (re)activate the hud lights here, not only in Switch: on save/load net_Spawn calls Switch
+				// BEFORE the actor parent is attached (pA==null), so the hud spot+omni were left OFF after a
+				// load ("omni sphere disappears"). We're in the actor branch with m_switched_on -> force them on.
+				light_render_hud->set_active(true);
+				light_omni_hud->set_active(true);
 
 				if(false)
 				{
@@ -340,7 +457,9 @@ void CTorch::UpdateCL()
 			if (true)
 			{
 				light_render->set_rotation	(dir, right);
-				
+				// hud twin aims straight along the view (hands are always front-and-centre), from the camera
+				light_render_hud->set_rotation(Device.vCameraDirection, Device.vCameraRight);
+
 				if(false)
 				{
 					light_omni->set_rotation	(dir, right);
@@ -399,7 +518,7 @@ void CTorch::UpdateCL()
 	if (!lanim)							return;
 
 	int						frame;
-	// возвращает в формате BGR
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ BGR
 	u32 clr					= lanim->CalculateBGR(Device.fTimeGlobal,frame); 
 
 	Fcolor					fclr;

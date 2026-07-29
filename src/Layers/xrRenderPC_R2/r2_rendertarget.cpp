@@ -243,6 +243,12 @@ CRenderTarget::CRenderTarget		()
 		// generic(LDR) RTs
 		rt_Generic_0.create			(r2_RT_generic0,w,h,D3DFMT_A8R8G8B8		);
 		rt_Generic_1.create			(r2_RT_generic1,w,h,D3DFMT_A8R8G8B8		);
+		// 3D PDA screen content: the PDA window is drawn here before the scene, the PDA model's
+		// screen material samples it (see r2_RT_ui). Cheap: only written while the PDA is open.
+		rt_ui.create				(r2_RT_ui,		w,h,D3DFMT_A8R8G8B8		);
+		// 3D PiP scope lens + the last-normal-frame keep (see r2_RT_scope). Only touched while scoped.
+		rt_scope.create				(r2_RT_scope,	w,h,D3DFMT_A8R8G8B8		);
+		rt_scope_save.create		("$user$scope_save",	w,h,D3DFMT_A8R8G8B8	);
 		//	Igor: for volumetric lights
 		//rt_Generic_2.create			(r2_RT_generic2,w,h,D3DFMT_A8R8G8B8		);
 		//	temp: for higher quality blends
@@ -701,4 +707,63 @@ bool CRenderTarget::need_to_render_sunshafts()
 	}
 
 	return true;
+}
+
+// ---- 3D PDA (Gunslinger-style) --------------------------------------------------------------
+// The caller (CLevel::OnRender) has just drawn the PDA window into the backbuffer; snapshot it
+// into $user$ui and let the scene overwrite the backbuffer afterwards. The PDA hud model's screen
+// material samples that texture, which is how the UI ends up ON the model instead of over the
+// whole viewport. Gunslinger does the same thing (LensDoubleRender.pas RenderSpecific_End_R1_R2),
+// only through an ASM hook. Surface->surface copy, same idiom as the screenshot path.
+int g_pda_dbg = 0;	// R2-local PDA-RT diagnostic (xrGame has its own g_pda_dbg); off by default
+void CRender::RenderPdaUIToRT()
+{
+	if (!Target || !g_pGamePersistent)	{ if(g_pda_dbg) Msg("~ pda_rt: no Target/persistent"); return; }
+	CRT* rt = Target->rt_ui._get();
+	if (!rt || !rt->pRT)				{ if(g_pda_dbg) Msg("~ pda_rt: rt_ui not created"); return; }
+	if (!HW.pBaseRT)					{ if(g_pda_dbg) Msg("~ pda_rt: no pBaseRT"); return; }
+
+	// the game draws the PDA window into the backbuffer and tells us whether there was anything
+	if (!g_pGamePersistent->OnRenderPdaUI())	return;
+
+	HRESULT hr = D3DXLoadSurfaceFromSurface(rt->pRT, NULL, NULL, HW.pBaseRT, NULL, NULL, D3DX_DEFAULT, 0);
+	if (g_pda_dbg)	Msg("~ pda_rt: drew + blit hr=0x%08x rt=%dx%d", hr, rt->dwWidth, rt->dwHeight);
+}
+
+// 3D PiP scope: fill $user$scope with the scene so the scope lens (models\zoom) can sample+magnify it.
+// STAGE (pipeline test): snapshots the current backbuffer (the previous frame's scene) -- the lens shader
+// then crop-zooms the centre. The full Gunslinger path (re-render the scene at the magnified GetLensFOV
+// into $user$scope, present the previous normal frame) replaces this snapshot next. Only runs while the
+// actor aims through a lensed scope (the game decides via OnRenderScopeActive).
+void CRender::RenderScopeToRT()
+{
+	if (!Target || !g_pGamePersistent)					return;
+	CRT* rt = Target->rt_scope._get();
+	if (!rt || !rt->pRT)								return;
+	// Capture only on a LENS FRAME (Gunslinger double-render): that frame is rendered world-only (HUD off,
+	// no lens element) at the magnified scope FOV, so rt_Generic_0 holds a clean magnified world -> true
+	// optical zoom, no weapon, no mirror. Normal frames keep the previous capture (the lens samples it).
+	if (!g_pGamePersistent->m_bLensFrameNow)			return;
+	CRT* src = Target->rt_Generic_0._get();
+	if (!src || !src->pRT)								return;
+	D3DXLoadSurfaceFromSurface(rt->pRT, NULL, NULL, src->pRT, NULL, NULL, D3DX_DEFAULT, 0);
+}
+
+// 3D PiP present bridge: keep Present firing every frame (never skip -- a skipped Present flickers on DXGI)
+// but make LENS frames show the previous NORMAL frame instead of their own zoomed capture. On a normal frame
+// save the finished backbuffer to rt_scope_save; on a lens frame copy that back onto the backbuffer before
+// Present. No-op unless the actor is aiming a lensed scope.
+void CRender::PresentBridgeLens()
+{
+	if (!Target || !g_pGamePersistent)					return;
+	if (!g_pGamePersistent->m_bLensAimActive)			return;
+	CRT* save = Target->rt_scope_save._get();
+	if (!save || !save->pRT || !HW.pBaseRT)				return;
+	if (g_pGamePersistent->m_bLensFrameNow)
+		D3DXLoadSurfaceFromSurface(HW.pBaseRT, NULL, NULL, save->pRT, NULL, NULL, D3DX_DEFAULT, 0);	// restore last normal frame
+	else
+	{
+		D3DXLoadSurfaceFromSurface(save->pRT, NULL, NULL, HW.pBaseRT, NULL, NULL, D3DX_DEFAULT, 0);	// save this normal frame
+		g_pGamePersistent->m_bLensSaveValid = true;		// a real frame is now saved -> lens frames may present it
+	}
 }

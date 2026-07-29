@@ -269,6 +269,7 @@ void CMissile::State(u32 state)
 		} break;
 	case eIdle:
 		{
+			m_bSuppressCompanion = false;	// the post-throw re-show is over -> mirror us normally again
 			SetPending			(FALSE);
 			PlayAnimIdle		();
 		} break;
@@ -310,7 +311,17 @@ void CMissile::State(u32 state)
 		} break;
 	case eThrowEnd:
 		{
-			SwitchState			(eShowing); 
+			// putting the NEXT one in hand, not a draw the player asked for -> the detector must not
+			// answer this anm_show with its draw companion (anm_wpn_show). Held until we reach eIdle:
+			// the detector's own idle mirror would otherwise pick the show up once its throw companion
+			// ends (that show outlasts it), playing the draw a beat late.
+			m_bSuppressCompanion = true;
+			SwitchState			(eShowing);
+		} break;
+	case eMissileAction:
+		{
+			SetPending			(TRUE);
+			PlayHUDMotion		(m_missile_action_anim.c_str(), TRUE, this, GetState());
 		} break;
 /*	case eBore:
 		{
@@ -325,6 +336,10 @@ void CMissile::OnStateSwitch	(u32 S)
 {
 	m_dwStateTime				= 0;
 	inherited::OnStateSwitch	(S);
+	// a throw (bolt/grenade) interrupts the sprint idle -> forget "sprint entered" so the enter
+	// transition (anm_idle_sprint_start) replays when the throw ends and we're still sprinting
+	if (S==eThrowStart || S==eReady || S==eThrow || S==eThrowEnd)
+		m_bSprintStarted = false;
 	State						(S);
 }
 
@@ -361,9 +376,28 @@ void CMissile::OnAnimationEnd(u32 state)
 		{
 			SwitchState	(eShowing);
 		} break;
+	case eMissileAction:
+		{
+			SwitchState	(eIdle);		// gesture done -> back to idle
+		} break;
+	case eIdle:
+		{
+			// a one-shot idle-slot motion ended (sprint enter/exit transition) -> re-select the idle so
+			// it hands off to the sprint loop / walk / normal idle (grenades, bolt).
+			PlayAnimIdle	();
+		} break;
 	default:
 		inherited::OnAnimationEnd(state);
 	}
+}
+
+bool CMissile::PlayHudActionAnim(LPCSTR base)
+{
+	if (GetState() != eIdle || IsPending())		return false;	// don't interrupt show / throw / etc.
+	if (!isHUDAnimationExist(base))				return false;	// this item has no such gesture alias
+	m_missile_action_anim = base;
+	SwitchState(eMissileAction);								// -> State(eMissileAction) plays it, OnAnimationEnd -> eIdle
+	return true;
 }
 
 

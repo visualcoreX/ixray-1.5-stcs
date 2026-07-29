@@ -387,6 +387,11 @@ CRenderTarget::CRenderTarget		()
 
 		// generic(LDR) RTs
 		rt_Generic_0.create(r2_RT_generic0, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, SampleCount);
+		// 3D PDA screen content -- 1 sample: the shader samples it (see RenderPdaUIToRT)
+		rt_ui.create(r2_RT_ui, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
+		// 3D PiP scope lens + last-normal-frame keep -- 1 sample (sampled by the lens shader)
+		rt_scope.create(r2_RT_scope, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
+		rt_scope_save.create("$user$scope_save", s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
 		rt_Generic_1.create(r2_RT_generic1, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, SampleCount);
 		if (RImplementation.o.dx10_msaa)
 		{
@@ -1108,4 +1113,74 @@ bool CRenderTarget::use_minmax_sm_this_frame()
 		return false;
 	}
 
+}
+// ---- 3D PDA (Gunslinger-style) --------------------------------------------------------------
+// Ask the game to draw the PDA window into the backbuffer, then snapshot it into $user$ui BEFORE
+// the scene overwrites the backbuffer. The PDA hud model's screen material samples that texture,
+// which is how the UI ends up ON the model instead of over the whole viewport. Gunslinger does the
+// same (LensDoubleRender.pas RenderSpecific_End_R3_R4), via an ASM hook.
+// DX10: CopyResource for a plain backbuffer, ResolveSubresource when MSAA is on (rt_ui is always
+// 1-sample because a shader has to sample it).
+int g_pda_dbg_r3 = 0;
+void CRender::RenderPdaUIToRT()
+{
+	if (!Target || !g_pGamePersistent)				return;
+	CRT* rt = Target->rt_ui._get();
+	if (!rt || !rt->pSurface || !HW.pBaseRT)		return;
+
+	// the game draws the window and tells us whether there was anything to grab
+	if (!g_pGamePersistent->OnRenderPdaUI())		return;
+
+	// grab the backbuffer the same way the screenshot path does (r3_rendertarget_phase_combine)
+	ID3D10Texture2D* pBuffer = nullptr;
+	if (FAILED(HW.m_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBuffer))) || !pBuffer)	return;
+
+	if (RImplementation.o.dx10_msaa)
+		HW.pDevice->ResolveSubresource(rt->pSurface, 0, pBuffer, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
+	else
+		HW.pDevice->CopyResource(rt->pSurface, pBuffer);
+
+	if (g_pda_dbg_r3)	Msg("~ pda_rt(R3): captured %dx%d msaa=%d", rt->dwWidth, rt->dwHeight, RImplementation.o.dx10_msaa);
+	_RELEASE(pBuffer);
+}
+
+// 3D PiP scope: snapshot the scene into $user$scope (the scope lens material models\zoom samples it).
+// STAGE (pipeline test): grabs the current backbuffer; the lens shader crop-zooms the centre. The full
+// magnified-FOV render replaces this next. Only while aiming through a lensed scope (OnRenderScopeActive).
+void CRender::RenderScopeToRT()
+{
+	if (!Target || !g_pGamePersistent)				return;
+	CRT* rt = Target->rt_scope._get();
+	if (!rt || !rt->pSurface)						return;
+	// Capture only on a LENS FRAME (Gunslinger double-render): rendered world-only (HUD off) at the magnified
+	// scope FOV -> rt_Generic_0 is a clean magnified world (true zoom, no weapon, no mirror). Normal frames
+	// keep the previous capture. (Copying the swapchain here would grab the previous frame = a mirror.)
+	if (!g_pGamePersistent->m_bLensFrameNow)		return;
+	CRT* src = Target->rt_Generic_0._get();
+	if (!src || !src->pSurface)						return;
+	if (RImplementation.o.dx10_msaa)
+		HW.pDevice->ResolveSubresource(rt->pSurface, 0, src->pSurface, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
+	else
+		HW.pDevice->CopyResource(rt->pSurface, src->pSurface);
+}
+
+// 3D PiP present bridge: keep Present firing every frame (a skipped Present flickers on DXGI flip) but make
+// LENS frames show the previous NORMAL frame. Normal frame -> save the swapchain backbuffer to rt_scope_save;
+// lens frame -> copy it back onto the backbuffer before Present. No-op unless aiming a lensed scope.
+void CRender::PresentBridgeLens()
+{
+	if (!Target || !g_pGamePersistent)				return;
+	if (!g_pGamePersistent->m_bLensAimActive)		return;
+	CRT* save = Target->rt_scope_save._get();
+	if (!save || !save->pSurface)					return;
+	ID3D10Texture2D* pBuffer = nullptr;
+	if (FAILED(HW.m_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBuffer))) || !pBuffer)	return;
+	if (g_pGamePersistent->m_bLensFrameNow)
+		HW.pDevice->CopyResource(pBuffer, save->pSurface);		// restore last normal frame onto the backbuffer
+	else
+	{
+		HW.pDevice->CopyResource(save->pSurface, pBuffer);		// save this normal frame
+		g_pGamePersistent->m_bLensSaveValid = true;				// a real frame is now saved -> lens frames may present it
+	}
+	_RELEASE(pBuffer);
 }

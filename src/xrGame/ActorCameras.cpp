@@ -25,6 +25,93 @@
 extern BOOL dbg_draw_camera_collision;
 void	collide_camera( CCameraBase & camera, float _viewport_near  );
 
+// ---- GS camera-height inertia (WeaponInertion.pas CorrectActorCameraHeight port) ----
+// Smooths CameraHeight() changes (crouch/stand no longer snap) and dips the camera on landing
+// (mcLanding = soft, mcLanding2 = hard) with a timed recovery phase for the soft landing.
+// Params: [gunslinger_base] actor_camera_* keys (values ported verbatim from GS gunslinger_params.ltx);
+// code defaults below equal the GS config so a missing section still behaves.
+struct SGwrCamSmooth
+{
+	bool	loaded;
+	float	speed_def, speed_pow;
+	float	land_off, land2_off;
+	u32		land_time, land2_time, finish_time;
+	float	land_speed_k, land2_speed_k, finish_speed_k;
+	float	land_pow_k, land2_pow_k, finish_pow_k;
+
+	float	last_h;
+	u32		last_tm;
+	u32		land_t, land2_t, finish_t;
+};
+static SGwrCamSmooth s_gwr_cam = {};
+
+void gwr_ResetCamHeight()
+{
+	s_gwr_cam.last_h	= 0.f;
+	s_gwr_cam.last_tm	= 0;
+	s_gwr_cam.land_t	= s_gwr_cam.land2_t = s_gwr_cam.finish_t = 0;
+}
+
+static void gwr_LoadCamSmooth()
+{
+	if (s_gwr_cam.loaded)	return;
+	s_gwr_cam.loaded = true;
+	LPCSTR S = "gunslinger_base";
+	bool ex = !!pSettings->section_exist(S);
+	s_gwr_cam.speed_def			= ex ? READ_IF_EXISTS(pSettings, r_float, S, "default_actor_camera_speed", 18.f)					: 18.f;
+	s_gwr_cam.speed_pow			= ex ? READ_IF_EXISTS(pSettings, r_float, S, "actor_camera_speed_pow", 1.2f)					: 1.2f;
+	s_gwr_cam.land_off			= ex ? READ_IF_EXISTS(pSettings, r_float, S, "actor_camera_landing_offset", -0.2f)				: -0.2f;
+	s_gwr_cam.land2_off			= ex ? READ_IF_EXISTS(pSettings, r_float, S, "actor_camera_landing2_offset", -0.8f)				: -0.8f;
+	s_gwr_cam.land_time			= u32(1000.f * (ex ? READ_IF_EXISTS(pSettings, r_float, S, "actor_camera_landing_time", 0.125f)	: 0.125f));
+	s_gwr_cam.land2_time		= u32(1000.f * (ex ? READ_IF_EXISTS(pSettings, r_float, S, "actor_camera_landing2_time", 0.125f)	: 0.125f));
+	s_gwr_cam.finish_time		= u32(1000.f * (ex ? READ_IF_EXISTS(pSettings, r_float, S, "actor_camera_finish_landing_time", 0.3f)	: 0.3f));
+	s_gwr_cam.land_speed_k		= ex ? READ_IF_EXISTS(pSettings, r_float, S, "actor_camera_landing_speed_factor", 0.5f)			: 0.5f;
+	s_gwr_cam.land2_speed_k		= ex ? READ_IF_EXISTS(pSettings, r_float, S, "actor_camera_landing2_speed_factor", 0.5f)		: 0.5f;
+	s_gwr_cam.finish_speed_k	= ex ? READ_IF_EXISTS(pSettings, r_float, S, "actor_camera_finish_landing_speed_factor", 0.5f)	: 0.5f;
+	s_gwr_cam.land_pow_k		= ex ? READ_IF_EXISTS(pSettings, r_float, S, "actor_camera_landing_speed_pow_factor", 0.7f)		: 0.7f;
+	s_gwr_cam.land2_pow_k		= ex ? READ_IF_EXISTS(pSettings, r_float, S, "actor_camera_landing2_speed_pow_factor", 0.7f)	: 0.7f;
+	s_gwr_cam.finish_pow_k		= ex ? READ_IF_EXISTS(pSettings, r_float, S, "actor_camera_finish_landing_speed_pow_factor", 0.9f)	: 0.9f;
+}
+
+static float gwr_SmoothCameraHeight(u32 mstate, float h)
+{
+	gwr_LoadCamSmooth();
+	u32 now = Device.dwTimeGlobal;
+	if (s_gwr_cam.last_h == 0.f || !s_gwr_cam.last_tm)
+	{
+		s_gwr_cam.last_h	= h;
+		s_gwr_cam.last_tm	= now;
+		return h;
+	}
+	u32 dt = (now >= s_gwr_cam.last_tm) ? (now - s_gwr_cam.last_tm) : 0;
+	if (dt > 100)	dt = 100;	// pause/load safety
+	s_gwr_cam.last_tm = now;
+
+	// (re)arm the landing windows while the state bits are set (GS does the same each frame)
+	if (mstate & mcLanding2)		{ s_gwr_cam.land2_t = s_gwr_cam.land2_time; s_gwr_cam.land_t = 0; s_gwr_cam.finish_t = 0; }
+	else if (mstate & mcLanding)	{ s_gwr_cam.land_t = s_gwr_cam.land_time; s_gwr_cam.land2_t = 0; s_gwr_cam.finish_t = 0; }
+
+	float max_off = 0.f, speed = s_gwr_cam.speed_def, powk = s_gwr_cam.speed_pow;
+	if (s_gwr_cam.land_t)			{ max_off = s_gwr_cam.land_off;  speed *= s_gwr_cam.land_speed_k;  powk *= s_gwr_cam.land_pow_k; }
+	else if (s_gwr_cam.land2_t)		{ max_off = s_gwr_cam.land2_off; speed *= s_gwr_cam.land2_speed_k; powk *= s_gwr_cam.land2_pow_k; }
+	else if (s_gwr_cam.finish_t)	{ speed *= s_gwr_cam.finish_speed_k; powk *= s_gwr_cam.finish_pow_k; }
+
+	float target	= h + max_off;
+	float dh		= target - s_gwr_cam.last_h;
+	float delta		= _abs(powf(_abs(dh), powk) * float(dt) * speed / 1000.f);
+	if (dh < 0.f)				delta = -delta;
+	if (_abs(delta) > _abs(dh))	{ delta = dh; s_gwr_cam.finish_t = 0; }
+	float out = s_gwr_cam.last_h + delta;
+	s_gwr_cam.last_h = out;
+
+	// countdown; the soft landing transitions into the recovery (finish) phase, the hard one just expires
+	if (s_gwr_cam.land_t > dt)			s_gwr_cam.land_t -= dt;
+	else if (s_gwr_cam.land_t)			{ s_gwr_cam.finish_t = s_gwr_cam.finish_time; s_gwr_cam.land_t = 0; }
+	if (s_gwr_cam.finish_t > dt)		s_gwr_cam.finish_t -= dt;	else s_gwr_cam.finish_t = 0;
+	if (s_gwr_cam.land2_t > dt)			s_gwr_cam.land2_t -= dt;	else s_gwr_cam.land2_t = 0;
+	return out;
+}
+
 ENGINE_API extern float psHUD_FOV;
 ENGINE_API extern float psHUD_FOV_def;
 
@@ -302,7 +389,7 @@ void CActor::cam_Update(float dt, float fFOV)
 	if( (mstate_real & mcClimb) && (cam_active!=eacFreeLook) )
 		camUpdateLadder(dt);
 	on_weapon_shot_update();
-	Fvector point		= {0,CameraHeight(),0}; 
+	Fvector point		= {0,gwr_SmoothCameraHeight(mstate_real, CameraHeight()),0};
 	Fvector dangle		= {0,0,0};
 	Fmatrix				xform;
 	xform.setXYZ		(0,r_torso.yaw,0);

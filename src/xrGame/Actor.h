@@ -426,6 +426,10 @@ protected:
 	float					m_fCrouchFactor;
 	float					m_fClimbFactor;
 	float					m_fSprintFactor;
+	// smooth sprint accel: the sprint speed multiplier eases from run-speed (1x) up to m_fSprintFactor over
+	// m_fSprintAccelTime seconds instead of snapping. m_fSprintRamp is the live 0..1 progress.
+	float					m_fSprintAccelTime;
+	float					m_fSprintRamp;
 
 	float					m_fWalk_StrafeFactor;
 	float					m_fRun_StrafeFactor;
@@ -689,8 +693,13 @@ public:
 	virtual void				OnPrevWeaponSlot				();
 			void				SwitchNightVision				();
 			void				SwitchTorch						();
+			void				SwitchWeaponLaser				();	// GS: toggle the active weapon's laser designator (kWPN_LASER)
+			void				SwitchWeaponFlashlight			();	// GS: toggle the active weapon's mounted flashlight (kWPN_FLASHLIGHT)
+			void				QuickKickHit					();	// GS quick knife kick: melee hit along the actor's raw look (r_torso), fired from the Lua kick binder at the stab mark
+			u32					m_dwBayonetHitTm;					// Device time to land a scheduled ak74-bayonet stab hit (0 = none); the bayonet stab plays on the weapon's own hud, not the phantom
 			void				UpdateDelayedDeviceSwitch		();	// fires the delayed torch/NV toggle
 			void				ResetTorchActionState			();	// clears the torch/NV slot-block on spawn/load
+			void				UpdateElectronicsProblems		();	// GS blowout: fail NV/torch/laser/flashlight during a surge (g_surge_active)
 
 public:
 	

@@ -9,6 +9,11 @@ void CWeaponBM16::Load	(LPCSTR section)
 {
 	inherited::Load		(section);
 	m_sounds.LoadSound	(section, "snd_reload_1", "sndReload1", true, m_eSoundShot);
+	// dedicated ammo-change reload sounds (optional; fall back to the normal reload sound if absent)
+	if (pSettings->line_exist(section, "snd_reload_ammochange"))
+		m_sounds.LoadSound(section, "snd_reload_ammochange", "sndReloadAmmochange", true, m_eSoundShot);
+	if (pSettings->line_exist(section, "snd_reload_ammochange_1"))
+		m_sounds.LoadSound(section, "snd_reload_ammochange_1", "sndReloadAmmochange1", true, m_eSoundShot);
 }
 
 LPCSTR CWeaponBM16::ShellSuffix()
@@ -53,7 +58,7 @@ void CWeaponBM16::SelectAimIdleAnim(string_path& result)
 	{
 		xr_sprintf(tmp, "anm_idle_aim%s%s", dir, sh);
 		if (isHUDAnimationExist(tmp))	{ xr_strcpy(result, tmp); return; }
-		strconcat(sizeof(tmp), tmp, "anm_idle_aim_walk", sh);	// fwd aim-walk fallback
+		strconcat(sizeof(tmp), tmp, "anm_idle_aim_moving_forward", sh);	// fwd aim-move fallback
 		if (isHUDAnimationExist(tmp))	{ xr_strcpy(result, tmp); return; }
 	}
 	strconcat(sizeof(tmp), tmp, "anm_idle_aim", sh);			// static aim
@@ -62,10 +67,27 @@ void CWeaponBM16::SelectAimIdleAnim(string_path& result)
 
 void CWeaponBM16::PlayReloadSound()
 {
-	if(m_magazine.size()==1)	
-		PlaySound	("sndReload1",get_LastFP());
-	else						
-		PlaySound	("sndReload",get_LastFP());
+	// Mirror PlayAnimReload's single-vs-full split so the sound matches the animation. A "single-barrel"
+	// load = one shell already loaded (top-up), OR an empty gun with fewer than 2 rounds on hand (the unique
+	// anm_reload_only_0 / toz66_reload_last). Both use the short sndReload1, not the full sndReload.
+	const int  cur    = (int)m_magazine.size();
+	const bool change = (m_set_next_ammoType_on_reload != u32(-1));	// see PlayAnimReload: pending-set, not != m_ammoType
+	const u32  reload_type = change ? m_set_next_ammoType_on_reload : (u32)m_ammoType;
+	const bool only   = (GetAmmoCountByType(reload_type) < 2);
+	const bool single = (cur == 1) || (cur <= 0 && only);
+	const bool ammochange = change && cur > 0;
+
+	if (ammochange)
+	{
+		// Match PlayAnimReload: the single-barrel change sound plays only when the change anim is the single
+		// one (cur==1 with 2+ on hand -> _ammochange_1). Every other change (cur==2, or <2 on hand -> _only)
+		// plays the full both-barrel motion. (Per-weapon: bm16's _ammochange_1 is a distinct single anim;
+		// toz34 maps it to the full motion, so its snd_reload_ammochange_1 is the full sound.)
+		LPCSTR s = (cur == 1 && !only) ? "sndReloadAmmochange1" : "sndReloadAmmochange";
+		if (m_sounds.FindSoundItem(s, false)) { PlaySound(s, get_LastFP()); return; }
+		if (m_sounds.FindSoundItem("sndReloadAmmochange", false)) { PlaySound("sndReloadAmmochange", get_LastFP()); return; }
+	}
+	PlaySound(single ? "sndReload1" : "sndReload", get_LastFP());
 }
 
 void CWeaponBM16::PlayAnimShoot()
@@ -74,17 +96,18 @@ void CWeaponBM16::PlayAnimShoot()
 	bool aimed = IsZoomed();
 	switch( m_magazine.size() )
 	{
+	// GS double-barrel shoot names: anm_shoot_<shells left>, ADS = anm_shoot_aim_<n> (aim before count)
 	case 1:
-		if (aimed && isHUDAnimationExist("anm_shot_1_aim"))
-			PlayHUDMotion("anm_shot_1_aim",FALSE,this,GetState());
+		if (aimed && isHUDAnimationExist("anm_shoot_aim_1"))
+			PlayHUDMotion("anm_shoot_aim_1",FALSE,this,GetState());
 		else
-			PlayHUDMotion("anm_shot_1",FALSE,this,GetState());
+			PlayHUDMotion("anm_shoot_1",FALSE,this,GetState());
 		break;
 	case 2:
-		if (aimed && isHUDAnimationExist("anm_shot_2_aim"))
-			PlayHUDMotion("anm_shot_2_aim",FALSE,this,GetState());
+		if (aimed && isHUDAnimationExist("anm_shoot_aim_2"))
+			PlayHUDMotion("anm_shoot_aim_2",FALSE,this,GetState());
 		else
-			PlayHUDMotion("anm_shot_2",FALSE,this,GetState());
+			PlayHUDMotion("anm_shoot_2",FALSE,this,GetState());
 		break;
 	}
 }
@@ -139,13 +162,47 @@ void CWeaponBM16::PlayAnimBore()
 
 void CWeaponBM16::PlayAnimReload()
 {
-	bool b_both = HaveCartridgeInInventory(2);
-
 	VERIFY(GetState()==eReload);
-	if(m_magazine.size()==1 || !b_both)
-		PlayHUDMotion("anm_reload_1",TRUE,this,GetState());
+	// GS anm_reload_selector (WeaponAnims.pas): build "anm_reload[_only][_ammochange][_only]<count>". The
+	// count suffix (_0/_1/_2 = shells currently loaded) is ModifierBM16; the prefixes mark the special
+	// double-barrel reloads. Key case: an EMPTY gun with fewer than 2 rounds of the type to load plays the
+	// unique single-round "_only_0" (toz66_reload_last -- seats one shell in the LOWER barrel).
+	const int  cur    = (int)m_magazine.size();		// 0/1/2 shells loaded now
+	// GS GetAmmoTypeChangingStatus: an ammo change is "a new type is pending" (m_set_next set), NOT "differs
+	// from m_ammoType". When the old type is exhausted, TryReload's fallback sets m_ammoType to the new type,
+	// so a != m_ammoType test wrongly reads false and plays the plain reload. SwitchAmmoType only ever sets
+	// m_set_next to a different type, so "!= -1" alone is correct.
+	const bool change = (m_set_next_ammoType_on_reload != u32(-1));
+	const u32  reload_type = change ? m_set_next_ammoType_on_reload : (u32)m_ammoType;
+	const bool only   = (GetAmmoCountByType(reload_type) < 2);	// <2 in inventory -> only one round loads
+
+	string64 anim;	xr_strcpy(anim, "anm_reload");
+	if (cur <= 0)
+	{
+		// empty gun: only a single-round (or single-round + type change) load gets a dedicated anim;
+		// with 2+ rounds on hand it's a normal full reload (anm_reload_0), even across a type change.
+		if (only)	xr_strcat(anim, change ? "_only_ammochange" : "_only");
+		xr_strcat(anim, ShellSuffix());		// _0
+	}
+	else if (change)
+	{
+		// GS ModifierBM16: the change anim carries the CURRENT loaded count. bm16 has a dedicated single-barrel
+		// change (anm_reload_ammochange_1 = toz66_ammochange) distinct from the both-barrel _2; toz34 maps both
+		// suffixes to the full motion. <2 of the new type on hand keeps the _only variant.
+		xr_strcat(anim, "_ammochange");
+		if (only)	xr_strcat(anim, "_only");
+		xr_strcat(anim, ShellSuffix());
+	}
 	else
-		PlayHUDMotion("anm_reload_2",TRUE,this,GetState());
+		xr_strcat(anim, ShellSuffix());		// plain reload: _0/_1/_2 by current count
+
+	// graceful fallback if the specific variant isn't configured for this weapon
+	if (!isHUDAnimationExist(anim))
+	{
+		xr_strcpy(anim, "anm_reload");	xr_strcat(anim, ShellSuffix());
+		if (!isHUDAnimationExist(anim))	xr_strcpy(anim, "anm_reload_2");
+	}
+	PlayHUDMotion(anim, TRUE, this, GetState());
 }
 
 void  CWeaponBM16::PlayAnimIdleMoving()
@@ -164,19 +221,15 @@ void  CWeaponBM16::PlayAnimIdleMoving()
 	}
 }
 
-void  CWeaponBM16::PlayAnimIdleSprint()
+// shell-count suffix for the sprint idle base; the shared CHudItem::PlayAnimIdleSprint derives the
+// enter/exit transitions (anm_idle_sprint_start/_end + _0/_1/_2) from this.
+LPCSTR CWeaponBM16::SprintLoopBase()
 {
 	switch( m_magazine.size() )
 	{
-	case 0:
-		PlayHUDMotion("anm_idle_sprint_0",TRUE,this,GetState());
-		break;
-	case 1:
-		PlayHUDMotion("anm_idle_sprint_1",TRUE,this,GetState());
-		break;
-	case 2:
-		PlayHUDMotion("anm_idle_sprint_2",TRUE,this,GetState());
-		break;
+	case 0:		return "anm_idle_sprint_0";
+	case 1:		return "anm_idle_sprint_1";
+	default:	return "anm_idle_sprint_2";
 	}
 }
 

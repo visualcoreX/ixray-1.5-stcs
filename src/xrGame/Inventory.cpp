@@ -250,7 +250,7 @@ bool CInventory::DropItem(CGameObject *pObj, bool just_before_destroy)
 						Msg("---DropItem activating slot [-1], forced, Frame[%d]", Device.dwFrame);
 #endif // #ifdef DEBUG
 						Activate		(NO_ACTIVE_SLOT, true);
-					} else 
+					} else
 					{
 #ifdef DEBUG
 						Msg("---DropItem activating slot [-1], Frame[%d]", Device.dwFrame);
@@ -293,10 +293,32 @@ bool CInventory::DropItem(CGameObject *pObj, bool just_before_destroy)
 }
 
 //�������� ���� � ����
-bool CInventory::Slot(PIItem pIItem, bool bNotActivate, bool strict_placement) 
+bool CInventory::Slot(PIItem pIItem, bool bNotActivate, bool strict_placement)
 {
 	VERIFY(pIItem);
-	
+
+	// Multi-slot resolve (weapons: pistol + primary are interchangeable): pick which allowed slot to
+	// actually occupy. Prefer the current one if free -- the UI drag sets it to the drop target and
+	// auto-placement leaves it at the configured default; otherwise take the first free allowed slot
+	// (this is what fills the second weapon slot on pickup and on save-load when the default is taken).
+	// Single-slot items skip this entirely and behave exactly as before.
+	if (pIItem->AllowedSlots().size() > 1)
+	{
+		u32 cur = pIItem->GetSlot();
+		bool already = (cur < m_slots.size() && m_slots[cur].m_pIItem == pIItem);
+		if (!already)
+		{
+			u32 tgt = NO_ACTIVE_SLOT;
+			if (cur < m_slots.size() && m_slots[cur].m_pIItem == NULL)
+				tgt = cur;
+			else
+				for (u16 s : pIItem->AllowedSlots())
+					if (s < m_slots.size() && m_slots[s].m_pIItem == NULL)	{ tgt = s; break; }
+			if (tgt != NO_ACTIVE_SLOT)
+				pIItem->SetSlot(tgt);
+		}
+	}
+
 	if(m_slots[pIItem->GetSlot()].m_pIItem == pIItem)
 		return false;
 
@@ -331,6 +353,12 @@ bool CInventory::Slot(PIItem pIItem, bool bNotActivate, bool strict_placement)
 		return false;
 	}
 
+
+	// slot->slot move (interchangeable weapon slots): vacate any OTHER slot this item still occupies,
+	// otherwise the source weapon slot keeps a stale pointer to it after the move.
+	for (u16 s : pIItem->AllowedSlots())
+		if ((u32)s != pIItem->GetSlot() && s < m_slots.size() && m_slots[s].m_pIItem == pIItem)
+			m_slots[s].m_pIItem = NULL;
 
 	m_slots[pIItem->GetSlot()].m_pIItem = pIItem;
 
@@ -1192,12 +1220,17 @@ bool CInventory::CanPutInSlot(PIItem pIItem) const
 {
 	if(!m_bSlotsUseful) return false;
 
-	if( !GetOwner()->CanPutInSlot(pIItem, pIItem->GetSlot() ) ) return false;
+	// true if ANY of the item's allowed slots is free and permitted by the owner. For single-slot
+	// items this is just the one configured slot (unchanged); weapons may fall back to the other
+	// interchangeable weapon slot.
+	const xr_vector<u16>& allowed = pIItem->AllowedSlots();
+	for (u16 s : allowed)
+	{
+		if (s >= m_slots.size())						continue;
+		if (!GetOwner()->CanPutInSlot(pIItem, s))		continue;
+		if (m_slots[s].m_pIItem == NULL)				return true;
+	}
 
-	if(pIItem->GetSlot() < m_slots.size() && 
-		m_slots[pIItem->GetSlot()].m_pIItem == NULL )
-		return true;
-	
 	return false;
 }
 //��������� ����� �� ��������� ���� �� ����,
