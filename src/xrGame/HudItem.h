@@ -253,11 +253,28 @@ public:
 	// PlayHUDMotion rewrites the alias to its "_first" variant (the drum's fresh-round idle/gestures).
 	// Order in PlayHUDMotion mirrors GS ModifierStd: jammed > empty > first.
 	virtual bool				NeedFirstAnim			() { return false; }
+	// GS's INVERTED scope convention (assault/oc14 huds.ltx anm_switch family): the BARE alias is the
+	// with-a-scope-mounted animation and "<alias>_noscope" is the plain one -- the opposite of the
+	// "_scope" infix used by the aim/shoot aliases. CWeapon returns !UseScopeAnims(). PlayHUDMotion
+	// appends the token last, after the firemode mark, the state token and any GL suffix, so it matches
+	// names like anm_switch_jammed_w_gl_noscope.
+	virtual bool				NeedNoScopeAnim			() { return false; }
 	void						MakeStateName			(LPCSTR name, LPCSTR infix, string_path& out);
 	void						MakeJammedName			(LPCSTR name, string_path& out);
 	// GS firemode selector (GetFireModeStateMark): CWeaponMagazined appends the mask_firemode_<a|N>
 	// value so each fire mode plays its own baked-selector anim variant. Default: no mark (copy base).
 	virtual void				MakeFireModeName		(LPCSTR name, string_path& out) { xr_strcpy(out, name); }
+	// The bare mark for `name` ("" = none). PlayHUDMotion needs it to build base+mark+state in ONE
+	// step: gating on the intermediate base+mark (which many configs never author) loses the mark.
+	virtual LPCSTR				GetFireModeMark			(LPCSTR /*name*/) { return ""; }
+	// splits the trailing state/variant token run ("_empty", "_last", "_jammed", "_sil", GL suffixes...)
+	// off an alias so the firemode mark can be inserted where GS puts it: base + mark + tail.
+	// virtual: the double-barrels (CWeaponBM16) also carry a trailing loaded-shell count, which GS's
+	// ModifierBM16 appends LAST -- anm_reload_jammed_1, i.e. the state token goes in FRONT of it.
+	virtual bool				SplitStateSuffix		(LPCSTR name, string_path& stem, string_path& tail);
+	// Does the alias PlayHUDMotion would settle on for state token <st_tok> ("_jammed", ...) exist?
+	// Same candidate order it uses, so callers can test before deciding to (re)assign a motion.
+	bool						HasStateVariant			(LPCSTR alias, LPCSTR st_tok);
 protected:
 
 	IC		void				SetPending			(BOOL H)			{ m_huditem_flags.set(fl_pending, H);}

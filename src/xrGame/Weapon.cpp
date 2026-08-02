@@ -47,6 +47,13 @@ CWeapon::CWeapon()
 	m_scope_illum_steps		= 0;
 	m_scope_illum_min		= 0.f;
 	m_scope_illum_max		= 0.f;
+	m_lens_step				= 0;
+	m_lens_steps			= 0;
+	m_lens_min				= 0.f;
+	m_lens_max				= 0.f;
+	m_bAlterZoom			= false;
+	m_fAlterZoomFactor		= 0.f;
+	for (int i = 0; i < 16; ++i)	m_lens_step_by_scope[i] = -1;
 	SetDefaults				();
 
 	m_Offset.identity		();
@@ -56,6 +63,8 @@ CWeapon::CWeapon()
 	m_gwr_world_bones_sig	= u32(-1);
 	m_bLaserEnabled			= false;
 	m_bBayonetInstalled		= false;
+	m_bBayonetBlockedBySilencer	= true;
+	m_bBayonetBlockedByGL	= true;
 	m_pLaserDot				= NULL;
 	m_dwLaserToggleAt		= 0;
 	m_bLaserPendingState	= false;
@@ -261,6 +270,15 @@ void CWeapon::Load		(LPCSTR section)
 	
 	if(pSettings->line_exist(section, "flame_particles_2"))
 		m_sFlameParticles2 = pSettings->r_string(section, "flame_particles_2");
+
+	// Does an attached silencer / GL take the bayonet blade away (and disable its stab)? Default TRUE
+	// for both -- that is how the ak74 behaves, where the blade and the GP-25 fight for the barrel.
+	// The AN-94 mounts its knife clear of the launcher, so Gunslinger keeps it on: bayonet_blocked_by_gl = false.
+	m_bBayonetBlockedBySilencer	= !!READ_IF_EXISTS(pSettings, r_bool, section, "bayonet_blocked_by_silencer", TRUE);
+	m_bBayonetBlockedByGL		= !!READ_IF_EXISTS(pSettings, r_bool, section, "bayonet_blocked_by_gl", TRUE);
+	// Which bone IS the blade, i.e. what gets taken off the model when the above blocks it. `knife`
+	// on the AK family (ak74/ak101/abakan), but GS names it per model -- the l85's is `bayonet`.
+	m_sBayonetBone				= READ_IF_EXISTS(pSettings, r_string, section, "bayonet_bone", "knife");
 
 	// Gunslinger scope-brightness feedback: a click played when the reticle/NV illumination step
 	// changes (CWeapon::ChangeScopeIllum). Optional per weapon -- guarded so weapons without the
@@ -608,6 +626,8 @@ void CWeapon::LoadLaserParams()
 	m_fLaserHudPointKoef = READ_IF_EXISTS(pSettings, r_float, lp, "laserdot_hud_point_koef", 1.0f);
 	// boresight distance: aim the hip ray so the dot lands on screen center at this range (0 = off, use bone dir).
 	m_fLaserZeroDist = READ_IF_EXISTS(pSettings, r_float, lp, "laserdot_zero_dist", 0.f);
+	// how far up the ray the real-depth dot sits (GS 0.85 = 15% in front of the surface; 1.0 = on the object).
+	m_fLaserSurfacePull = READ_IF_EXISTS(pSettings, r_float, lp, "laserdot_surface_pull", 0.85f);
 	// GS reads laserdot_hud_treshold (degrees, default 10) from the weapon's HUD section: when the laser
 	// direction deviates from the camera by more than this, the 1st-person dot is HIDDEN (GS stops the
 	// particle instead of switching it to a HUD render -- WeaponAdditionalBuffer.pas PlayLaserdotParticle).
@@ -690,7 +710,14 @@ ICF static BOOL laser_trace_callback(collide::rq_result& result, LPVOID params)
 
 float CWeapon::TraceLaserAsView(const Fvector& pos, const Fvector& dir, float range, CObject* ignore)
 {
-	collide::ray_defs RD(pos, dir, range, CDB::OPT_CULL, collide::rqtBoth);
+	// NO OPT_CULL here (unlike CHudTarget and every other pick in the engine): with backface
+	// culling the ray ignores any triangle whose winding faces away, so on level geometry built
+	// single-sided the dot SHOOTS THROUGH the wall and lands on whatever is behind it -- visible
+	// from the other side, where the same triangles face you, it works. A laser reflects off the
+	// first surface it meets regardless of winding. Safe for the "see through glass/foliage"
+	// behaviour below: _RayQuery r_sort()s the hits, so the callback still walks them nearest
+	// first and stops at the first one that is not vision-transparent.
+	collide::ray_defs RD(pos, dir, range, 0, collide::rqtBoth);
 	if (fis_zero(RD.dir.square_magnitude()))	return range;
 	SLaserPickParam pp;
 	pp.RQ.set(NULL, range, -1);
@@ -814,41 +841,39 @@ void CWeapon::UpdateLaserDot()
 	Fvector dir;	dir.set(full.k);	dir.normalize_safe();
 	if (!_valid(pos) || !_valid(dir))											{ StopLaserDot(); return; }
 
-	// GS ProcessLaserdot 1st-person ray setup (WeaponUpdate.pas:153-177):
-	if (IsZoomed())
+	// GS ProcessLaserdot 1st-person ray setup (WeaponUpdate.pas:153-177). Note GS's condition:
+	// `if (IsAimNow or IsHolderInAimState) and (not IsGrenadeMode)` -- aiming the GRENADE LAUNCHER
+	// does NOT pull the dot to the crosshair, because the sight you are looking through is the GL's,
+	// not the weapon's; the dot keeps coming off the emitter like it does from the hip.
+	// Hip and aim used to be an if/else on IsZoomed(), so every difference between them switched in ONE
+	// frame and the dot visibly jumped as ADS began (user: "точка резко снапится"). m_fZoomRotationFactor
+	// already ramps 0..1 over zoom_rotate_time in BOTH directions, so use it as a blend weight everywhere
+	// instead of a boolean: at 0 this is exactly the old hip path, at 1 exactly the old aim path.
+	// GS keeps the hip ray while the GRENADE LAUNCHER is up (the sight in use is the GL's), so aim_k is
+	// forced to 0 there.
+	float aim_k = IsGrenadeMode() ? 0.f : GetZoomRotationFactor();
+	clamp(aim_k, 0.f, 1.f);
+	const bool aim_ray = (aim_k >= 1.f);
 	{
-		// aiming: blend the ray origin/direction from the laser bone toward the camera by the zoom factor,
-		// so the dot converges exactly onto the crosshair at full ADS (dir/pos = cam + (cam-bone)*(f-1))
-		float f1 = GetZoomRotationFactor() - 1.f;
-		Fvector t;
-		t.sub(Device.vCameraDirection, dir);	t.mul(f1);
-		dir.add(Device.vCameraDirection, t);	dir.normalize_safe();
-		t.sub(Device.vCameraPosition, pos);		t.mul(f1);
-		pos.add(Device.vCameraPosition, t);
-	}
-	else
-	{
+		Fvector cd;	cd.set(Device.vCameraDirection);
+
 		// hip: CorrectDirFromWorldToHud -- the hud model is rendered with the narrower hud projection, so
 		// the world-space ray's deviation from the camera must be widened by hud_recalc_koef*fov/hud_fov
 		// for the dot to land where the beam visually points (psHUD_FOV is the hud/world fov fraction)
-		float m = m_fLaserHudRecalcKoef / psHUD_FOV;
-		Fvector cd;	cd.set(Device.vCameraDirection);
-		dir.sub(dir, cd);	dir.mul(m);	dir.add(cd);	dir.normalize_safe();
+		const float m = m_fLaserHudRecalcKoef / psHUD_FOV;
+		Fvector dir_hip;	dir_hip.sub(dir, cd);	dir_hip.mul(m);	dir_hip.add(cd);	dir_hip.normalize_safe();
 
-		// PARALLAX ZERO (laserdot_zero_dist): the device origin sits BELOW the view axis, so a bore-parallel ray
-		// hits the wall below screen center at finite range (real parallax). Nudge the direction so the ray
-		// crosses the camera axis at zero_dist -> the dot centers for aiming. Unlike a boresight-to-a-fixed-point,
-		// this ADDS a correction derived from how far off-axis the origin is, so the gun's sway is preserved (the
-		// dot breathes around center) and up close it still runs back to the device. Correction = -perp(origin)/Z:
-		// at Z the perpendicular offset of (origin + dir*Z) cancels to zero (on-axis = center).
-		if (m_fLaserZeroDist > 0.f)
-		{
-			Fvector op;		op.sub(pos, Device.vCameraPosition);					// origin relative to camera
-			float along =	op.dotproduct(Device.vCameraDirection);
-			Fvector perp;	perp.mad(op, Device.vCameraDirection, -along);			// off-axis part of the origin
-			dir.mad(dir, perp, -1.f / m_fLaserZeroDist);							// climb back onto the axis by Z
-			dir.normalize_safe();
-		}
+		// aiming: blend the ray origin/direction from the laser bone toward the camera by the zoom factor,
+		// so the dot converges exactly onto the crosshair at full ADS (dir/pos = cam + (cam-bone)*(f-1))
+		const float f1 = aim_k - 1.f;
+		Fvector t, dir_aim;
+		t.sub(cd, dir);							t.mul(f1);
+		dir_aim.add(cd, t);						dir_aim.normalize_safe();
+		t.sub(Device.vCameraPosition, pos);		t.mul(f1);
+		pos.add(Device.vCameraPosition, t);		// continuous already: f1 = -1 at hip gives the bone position
+
+		dir.lerp(dir_hip, dir_aim, aim_k);		dir.normalize_safe();
+		// (parallax zero is applied to the DOT position below, not the dir, so the gun sway is preserved)
 	}
 
 	// GS hud_treshold (laserdot_hud_treshold, GS base.ltx sets 90 = hide only when the laser points away
@@ -859,15 +884,57 @@ void CWeapon::UpdateLaserDot()
 	// GS: dist = TraceAsView(...)*0.99 -- alpha-transparent statics don't stop the ray
 	float dist = TraceLaserAsView(pos, dir, 200.0f, ignore) * 0.99f;
 
+
 	// GS's two modes (laserdot_correction on/off). OFF = the dot is drawn at (near) its REAL distance,
 	// pulled 15% up the ray so the sprite clears the surface it lands on; real depth means the z-test
 	// handles everything physically: the rmNear-squashed HUD hands/weapon always occlude it, bush leaves
 	// occlude per-pixel (the dot shows through the gaps), glass tints it, walls cut it hard. Apparent size
 	// is kept by switching laserdot_particle_0..N at laserdot_dist_1..N.
 	const bool corr = m_bLaserCorrection && !m_LaserScaleDist.empty();
-	if (!corr)		dist *= 0.85f;
+	// GS pulls the real-depth dot 15% up the ray off the surface (dist*=0.85). Combined with our z=-0.6 origin
+	// pull-back that lands the dot noticeably in FRONT of the wall (closer to camera => the sprite looks bigger
+	// than GS, where it appears to sit ON the object). Configurable via laserdot_surface_pull (1.0 = on the
+	// surface, GS default 0.85). Tune toward 1 to seat the dot on the object and shrink the apparent size.
+	if (!corr)		dist *= m_fLaserSurfacePull;
 
 	Fvector dot;	dot.mad(pos, dir, dist);
+
+	// PARALLAX ZERO (laserdot_zero_dist), applied to the DOT (not the dir) so the gun SWAY is preserved: the dot's
+	// steady offset from screen center comes from the emitter sitting off the view axis by a ~constant vector P.
+	// Subtract t*P where t ramps 0->1 over 0..zero_dist and CLAMPS at 1 beyond it, so:
+	//  - close (t<1): only part of P removed -> the dot still runs to the device near a wall (converge, unchanged);
+	//  - at/after zero_dist (t=1): full P removed -> the RESTING dot sits at screen center and STAYS there at any
+	//    farther range (no drift), while the bone motion (which lives in dir*dist, not P) keeps it breathing.
+	// ...faded out over the SAME aim blend (aim_k): at full ADS the ray already points at the crosshair,
+	// so removing P again would double-correct -- but switching it off in one frame is exactly what made
+	// the dot jump when ADS started, so it is scaled by (1 - aim_k) instead of gated on the boolean.
+	if (m_fLaserZeroDist > 0.f && aim_k < 1.f)
+	{
+		Fvector rel;	rel.sub(pos, Device.vCameraPosition);					// emitter relative to camera
+		float apos =	rel.dotproduct(Device.vCameraDirection);
+		Fvector P;		P.mad(rel, Device.vCameraDirection, -apos);				// emitter's off-axis (perpendicular) part
+		Fvector dv;		dv.sub(dot, Device.vCameraPosition);
+		float along =	dv.dotproduct(Device.vCameraDirection);					// dot depth along the view axis
+		float t = along / m_fLaserZeroDist;	clamp(t, 0.f, 1.f);
+		t *= (1.f - aim_k);														// fade out across the ADS blend
+		dot.mad(dot, P, -t);													// dot -= t*P
+
+		// ...but that shift is a pure TRANSLATION in the screen plane, so on a wall that is not
+		// perpendicular to the view it slides the dot OFF the surface it was computed on -- toward the
+		// far side wherever the wall recedes. The dot then sits physically behind the wall (the log
+		// showed it a steady 0.16-0.22 m past the hit), our own occlusion check sees a wall between the
+		// eye and the dot, and hides it: "исчезает под определённым углом". Re-seat the shifted dot on
+		// whatever surface is actually visible in its new direction -- only ever pulling it CLOSER, so
+		// a shift into open air keeps its computed position and nothing new can appear in front.
+		Fvector cd;		cd.sub(dot, Device.vCameraPosition);
+		float cdd =		cd.magnitude();
+		if (cdd > EPS_L)
+		{
+			cd.mul(1.f / cdd);
+			const float hit = TraceLaserAsView(Device.vCameraPosition, cd, cdd, ignore) * 0.99f;
+			if (hit < cdd)	dot.mad(Device.vCameraPosition, cd, hit);
+		}
+	}
 
 	// Real-depth (correction=off) HIP dot: the trace/hit is in true world space, but the HUD weapon is drawn with
 	// the narrower psHUD_FOV projection, so the world sprite lands off the visible `line` bone and doesn't converge
@@ -875,8 +942,8 @@ void CWeapon::UpdateLaserDot()
 	// screen space (depth preserved) so it tracks the emitter like the flashlight cone. Aim (zoom) already blends
 	// to the crosshair; correction=on draws near the camera and is handled by its own camera-pull below.
 	Fvector dot_raw = dot;	// pre-reprojection (debug)
-	if (!corr && !IsZoomed())
-		LaserCorrectPointWorldToHud(dot, m_fLaserHudPointKoef);
+	if (!corr && aim_k < 1.f)
+		LaserCorrectPointWorldToHud(dot, m_fLaserHudPointKoef * (1.f - aim_k));	// faded over the ADS blend, not switched
 
 	// TEMP DEBUG (laserdot convergence): throttled dump of the geometry so we can see why the dot doesn't track
 	// the emitter. Remove once tuned. Prints only for the non-zoom real-depth path.
@@ -907,8 +974,17 @@ void CWeapon::UpdateLaserDot()
 			if (cdist > EPS_L)
 			{
 				cdir.mul(1.f / cdist);
-				float vis_range = cdist * 0.98f;	// stop 2% short of the surface the dot sits on
-				if (TraceLaserAsView(Device.vCameraPosition, cdir, vis_range, ignore) < vis_range - EPS)
+				// Stop short of the surface the dot sits on. The margin must be ABSOLUTE, not a
+				// percentage: the eye and the emitter see the same wall from different points, so at
+				// a grazing angle the camera->dot ray clips the wall a few centimetres before the dot.
+				// With the old flat 2% that slack was 2.4 cm at 1.2 m -> the dot hid itself against
+				// any angled wall up close, and only "came back" past ~5 m where 2% finally exceeded
+				// the parallax error (user: "вблизи не видно, отошёл на 5 метров - появился").
+				// 12 cm covers the eye/emitter separation; the relative term keeps long shots sane.
+				float vis_range = cdist - _max(0.12f, cdist * 0.02f);
+				const float occl = (vis_range > EPS_L)
+					? TraceLaserAsView(Device.vCameraPosition, cdir, vis_range, ignore) : vis_range;
+				if (vis_range > EPS_L && occl < vis_range - EPS)
 					{ StopLaserDot(); return; }
 			}
 		}
@@ -949,6 +1025,18 @@ void CWeapon::UpdateLaserDot()
 		for (u32 j = 0; j < m_LaserSwitchDist.size(); ++j)
 			if (dist >= m_LaserSwitchDist[j])	idx = int(j) + 1;
 		if (idx >= int(m_LaserParticles.size()))	idx = int(m_LaserParticles.size()) - 1;
+	}
+	// TEMP DEBUG (dot size): which particle + how far the dot sits from the camera (apparent size ~ 1/d2cam)
+	if (!corr && !IsZoomed())
+	{
+		static u32 s_nsz = 0;
+		if (Device.dwTimeGlobal >= s_nsz)
+		{
+			s_nsz = Device.dwTimeGlobal + 400;
+			Fvector dd;	dd.sub(dot, Device.vCameraPosition);
+			Msg("~LZRSZ idx=%d particle=%s dist=%.2f d2cam=%.3f", idx,
+				(idx>=0 && idx<int(m_LaserParticles.size())) ? m_LaserParticles[idx].c_str() : "?", dist, dd.magnitude());
+		}
 	}
 	PlaceLaserDot(dot, idx);
 }
@@ -1165,10 +1253,26 @@ void CWeapon::UpdateFlashlight()
 	m_pFlashOmni->set_active(true);
 	if (m_pFlashGlowObj)
 	{
-		m_pFlashGlowObj->set_color(spot_clr);
-		m_pFlashGlowObj->set_position(pos);
-		m_pFlashGlowObj->set_direction(dir);
-		m_pFlashGlowObj->set_active(true);
+		// The glow is a billboard sitting ON the device, so it is meant to be read from a distance.
+		// In 1st person the device is already ~0.3 m from the eye and ADS pulls it closer still --
+		// the sprite then fills the screen as a haze and lights the weapon back (user: "при включении
+		// фонаря на камере появляется свечение, в aim позе оружие подсвечивается"). Fade it out over
+		// the last GLOW_NEAR metres so it disappears exactly when it would start glaring, and keep it
+		// unchanged at any normal viewing distance (world weapon, other actors, dropped).
+		const float GLOW_NEAR = 0.6f, GLOW_FULL = 1.2f;
+		float d = Device.vCameraPosition.distance_to(pos);
+		float k = (d - GLOW_NEAR) / (GLOW_FULL - GLOW_NEAR);
+		clamp(k, 0.f, 1.f);
+		if (k <= EPS_L)
+			m_pFlashGlowObj->set_active(false);
+		else
+		{
+			Fcolor gc = spot_clr;	gc.mul_rgb(k);
+			m_pFlashGlowObj->set_color(gc);
+			m_pFlashGlowObj->set_position(pos);
+			m_pFlashGlowObj->set_direction(dir);
+			m_pFlashGlowObj->set_active(true);
+		}
 	}
 }
 
@@ -1349,6 +1453,10 @@ void CWeapon::load(IReader &input_packet)
 		if (m_scope_illum_step_by_scope[idx] >= 0)	m_scope_illum_step = m_scope_illum_step_by_scope[idx];
 		LoadScopeIllumParams();
 	}
+	// GS variable magnification is runtime-only (deliberately NOT in the save stream, so loading an old save
+	// stays compatible) -- re-derive it from the attached scope's section.
+	ResetLensStepToDefault();
+	m_bAlterZoom = false;
 
 	if (m_zoom_params.m_bIsZoomModeNow)
 			OnZoomIn();
@@ -1438,6 +1546,14 @@ void CWeapon::OnH_A_Chield		()
 {
 	inherited::OnH_A_Chield		();
 	UpdateAddonsVisibility		();
+	// Picked up into an inventory. A dropped weapon keeps its mounted flashlight lit (see
+	// OnH_B_Independent), and that light is driven by the UpdateCL WORLD branch -- which is gated on
+	// `H_Parent() != Level().CurrentEntity()`. The moment the ACTOR takes it, that branch stops running
+	// and CActor::UpdateCL only ticks the ACTIVE item, so nothing ever calls UpdateFlashlight again and
+	// the ref_lights stay set_active(true) frozen where the weapon was lying. Kill them here; if the
+	// weapon is (or becomes) the active one, UpdateFlashlight re-creates and re-activates them on its
+	// next tick. An NPC picking it up still has the world branch, so it just relights next frame.
+	StopFlashlight				();
 };
 
 void CWeapon::OnActiveItem ()
@@ -1508,6 +1624,7 @@ void CWeapon::UpdateCL		()
 {
 	inherited::UpdateCL		();
 	UpdateHUDAddonsVisibility();
+	UpdateAlterZoomBlend	(Device.fTimeDelta);	// GS alter zoom: eased ramp between the two aim poses
 	// world-model attachment bones (scope / reticle illum / laser ray / bayonet / flashlight lens): these
 	// toggle at runtime and UpdateAddonsVisibility only fires on addon+upgrade events, so track them here.
 	// Guarded by the state signature, so it's a no-op on the frames nothing changed.
@@ -1700,6 +1817,9 @@ bool CWeapon::Action(s32 cmd, u32 flags)
 		case kWPN_ZOOM_DEC:
 			if(IsZoomEnabled() && IsZoomed())
 			{
+				// GS variable magnification first: a dual/variable-power optic (ELCAN) steps its LENS power
+				// with the wheel. Returns false for fixed-power scopes so the stock dynamic zoom still runs.
+				if (ChangeLensStep(cmd==kWPN_ZOOM_INC ? +1 : -1))	return true;
 				if(cmd==kWPN_ZOOM_INC)  ZoomInc();
 				else					ZoomDec();
 				return true;
@@ -2127,6 +2247,29 @@ void CWeapon::gwr_SetWorldBonesCSV(IKinematics* K, LPCSTR csv, BOOL show)
 // path (CWeaponMagazined::gwr_UpdateBones): def_hide_bones then def_show_bones, then each installed
 // upgrade in install order, reading BOTH its effect section (the `section` key, where GS keeps them)
 // and the node itself (older CS style); hide first, then show, so show wins on overlap.
+// Split a comma-separated bone list into `out` (appends, de-duplicated). Same parsing rules as
+// gwr_SetBones, kept separate so callers can reason about a list without touching the models.
+void CWeapon::gwr_CollectBoneNames(LPCSTR csv, xr_vector<shared_str>& out)
+{
+	if (!csv || !csv[0])	return;
+	string256 name;
+	LPCSTR p = csv;
+	while (*p)
+	{
+		while (*p == ' ' || *p == ',')	++p;
+		LPCSTR s = p;
+		while (*p && *p != ',')			++p;
+		u32 n = (u32)(p - s);
+		while (n && s[n-1] == ' ')		--n;
+		if (n && n < sizeof(name))
+		{
+			strncpy_s(name, sizeof(name), s, n);  name[n] = 0;
+			shared_str b = name;
+			if (std::find(out.begin(), out.end(), b) == out.end())	out.push_back(b);
+		}
+	}
+}
+
 void CWeapon::gwr_UpdateWorldBones(IKinematics* K, bool force)
 {
 	if (!K)	return;
@@ -2139,7 +2282,8 @@ void CWeapon::gwr_UpdateWorldBones(IKinematics* K, bool force)
 			| ((m_bLaserInstalled && m_bLaserEnabled)	? 4u : 0u)
 			| ((m_bFlashInstalled && m_bFlashEnabled)	? 8u : 0u)
 			| (IsBayonetActive()						? 16u : 0u)
-			| (u32(cur_scope.size() ? cur_scope._get()->dwCRC : 0) << 5);
+			| (IsGrenadeLauncherAttached()				? 32u : 0u)		// def_hide_bones_override_when_gl_attached
+			| (u32(cur_scope.size() ? cur_scope._get()->dwCRC : 0) << 6);
 	if (!force && sig == m_gwr_world_bones_sig)	return;
 	m_gwr_world_bones_sig = sig;
 
@@ -2147,6 +2291,11 @@ void CWeapon::gwr_UpdateWorldBones(IKinematics* K, bool force)
 	if (pSettings->line_exist(wsect, "def_hide_bones"))	gwr_SetWorldBonesCSV(K, pSettings->r_string(wsect, "def_hide_bones"), FALSE);
 	if (pSettings->line_exist(wsect, "def_show_bones"))	gwr_SetWorldBonesCSV(K, pSettings->r_string(wsect, "def_show_bones"), TRUE);
 
+	// Mirrors the hud path: remember which bones an upgrade NAMED, so the recursive show_bones collateral
+	// can be undone below (set_bone_visible recurses, so revealing a parent reveals its whole subtree).
+	xr_vector<shared_str> shown;
+	if (pSettings->line_exist(wsect, "def_show_bones"))
+		gwr_CollectBoneNames(pSettings->r_string(wsect, "def_show_bones"), shown);
 	for (const shared_str& up : m_upgrades)
 	{
 		if (!up.size())	continue;
@@ -2157,18 +2306,77 @@ void CWeapon::gwr_UpdateWorldBones(IKinematics* K, bool force)
 			if (!s.size())	continue;
 			if (pSettings->line_exist(s, "hide_bones"))				gwr_SetWorldBonesCSV(K, pSettings->r_string(s, "hide_bones"), FALSE);
 			if (pSettings->line_exist(s, "hide_bones_override"))	gwr_SetWorldBonesCSV(K, pSettings->r_string(s, "hide_bones_override"), FALSE);
-			if (pSettings->line_exist(s, "show_bones"))				gwr_SetWorldBonesCSV(K, pSettings->r_string(s, "show_bones"), TRUE);
+			if (pSettings->line_exist(s, "show_bones"))
+			{
+				LPCSTR csv = pSettings->r_string(s, "show_bones");
+				gwr_SetWorldBonesCSV(K, csv, TRUE);
+				gwr_CollectBoneNames(csv, shown);
+			}
 		}
 	}
 
+	// addon-conditional OVERRIDES, a separate pass AFTER the loop like the hud path and like GS
+	// (inline they would be undone by the same upgrade's show_bones)
+	for (const shared_str& up : m_upgrades)
+	{
+		if (!up.size())	continue;
+		shared_str esect = pSettings->line_exist(up, "section") ? (shared_str)pSettings->r_string(up, "section") : up;
+		const shared_str srcs[2] = { esect, up };
+		for (const shared_str& s : srcs)
+		{
+			if (!s.size())	continue;
+			if (IsSilencerAttached() && pSettings->line_exist(s, "hide_bones_override_when_silencer_attached"))
+				gwr_SetWorldBonesCSV(K, pSettings->r_string(s, "hide_bones_override_when_silencer_attached"), FALSE);
+			if (IsScopeAttached() && pSettings->line_exist(s, "hide_bones_override_when_scope_attached"))
+				gwr_SetWorldBonesCSV(K, pSettings->r_string(s, "hide_bones_override_when_scope_attached"), FALSE);
+			if ((m_eGrenadeLauncherStatus == ALife::eAddonPermanent || IsGrenadeLauncherAttached())
+				&& pSettings->line_exist(s, "hide_bones_override_when_gl_attached"))
+				gwr_SetWorldBonesCSV(K, pSettings->r_string(s, "hide_bones_override_when_gl_attached"), FALSE);
+		}
+	}
+
+	// re-hide every def_hide_bones entry nobody named (undo the recursive collateral)
+	if (pSettings->line_exist(wsect, "def_hide_bones"))
+	{
+		xr_vector<shared_str> hide_list;
+		gwr_CollectBoneNames(pSettings->r_string(wsect, "def_hide_bones"), hide_list);
+		for (const shared_str& b : hide_list)
+			if (std::find(shown.begin(), shown.end(), b) == shown.end())
+				gwr_SetWorldBonesCSV(K, *b, FALSE);
+	}
+
 	// ---- attachment state, same passes the hud path runs after the upgrade loop ----
+	// parts the launcher replaces -- same pass as the hud path (GS def_hide_bones_override_when_gl_attached)
+	if ((m_eGrenadeLauncherStatus == ALife::eAddonPermanent || IsGrenadeLauncherAttached())
+		&& pSettings->line_exist(wsect, "def_hide_bones_override_when_gl_attached"))
+		gwr_SetWorldBonesCSV(K, pSettings->r_string(wsect, "def_hide_bones_override_when_gl_attached"), FALSE);
+
 	// def_hide_bones above hides EVERY optional scope bone, so without this the world model never shows the
 	// mounted optic: re-show the ATTACHED scope's own `bones` (per-scope section, weapon scope_bones fallback).
+	// Hide EVERY other listed scope's bones first: a rail upgrade that names the mounts in its own show_bones
+	// (winchester/protecta: `show_bones = rail, scope1..4`) would otherwise leave all four optics on the model.
+	for (const shared_str& sc : m_scopes)
+		if (sc.size() && sc != cur_scope && pSettings->line_exist(*sc, "bones"))
+			gwr_SetWorldBonesCSV(K, pSettings->r_string(*sc, "bones"), FALSE);
+
 	LPCSTR scope_bones = (cur_scope.size() && pSettings->line_exist(*cur_scope, "bones"))
 							? pSettings->r_string(*cur_scope, "bones")
 							: (pSettings->line_exist(wsect, "scope_bones") ? pSettings->r_string(wsect, "scope_bones") : nullptr);
 	if (scope_bones)
 		gwr_SetWorldBonesCSV(K, scope_bones, IsScopeAttached() ? TRUE : FALSE);
+	else if (cur_scope.size() && !IsScopeAttached() && pSettings->line_exist(*cur_scope, "bones"))
+		gwr_SetWorldBonesCSV(K, pSettings->r_string(*cur_scope, "bones"), FALSE);
+
+
+	// what the mount does to the rest of the weapon while this optic is on (GS per-scope keys) --
+	// same pass as the hud path in CWeaponMagazined::gwr_UpdateBones
+	if (cur_scope.size() && IsScopeAttached())
+	{
+		if (pSettings->line_exist(*cur_scope, "overriding_hide_bones"))
+			gwr_SetWorldBonesCSV(K, pSettings->r_string(*cur_scope, "overriding_hide_bones"), FALSE);
+		if (pSettings->line_exist(*cur_scope, "overriding_show_bones"))
+			gwr_SetWorldBonesCSV(K, pSettings->r_string(*cur_scope, "overriding_show_bones"), TRUE);
+	}
 
 	// reticle illumination bones: only while a scope is on AND brightness > 0
 	LPCSTR illum_bones = (cur_scope.size() && pSettings->line_exist(*cur_scope, "scope_illum_bones"))
@@ -2183,7 +2391,7 @@ void CWeapon::gwr_UpdateWorldBones(IKinematics* K, bool force)
 
 	// bayonet blade removed when a silencer/GL occupies the barrel
 	if (m_bBayonetInstalled && !IsBayonetActive())
-		gwr_SetWorldBonesCSV(K, "knife", FALSE);
+		gwr_SetWorldBonesCSV(K, m_sBayonetBone.size() ? m_sBayonetBone.c_str() : "knife", FALSE);
 
 	// flashlight glow lens follows the on/off toggle (the device itself stays shown by show_bones)
 	if (m_bFlashInstalled)
@@ -2310,6 +2518,7 @@ void CWeapon::OnZoomOut()
 {
 	m_zoom_params.m_bIsZoomModeNow		= false;
 	m_zoom_params.m_fCurrentZoomFactor	= g_fov;
+	m_bAlterZoom						= false;	// GS: the second aim pose ends with the aim itself
 	// leaving aim: forget any "sprint already entered" state (it can be stale-true through the aim-out
 	// transition, which owns the idle slot). So sprinting straight out of aim always plays the enter anim
 	// (anm_idle_sprint_start) instead of snapping into the loop. Pairs with the m_bPrevSprint edge check.
@@ -2331,9 +2540,10 @@ CUIWindow* CWeapon::ZoomTexture()
 // A lensed (3D PiP) scope must NOT use the vanilla 2D scope texture -- returning false here cascades:
 // ZoomTexture()->NULL, so need_renderable() keeps the weapon visible, RenderHud stays on, and
 // render_item_ui_query() stops drawing the full-screen 2D scope. The 3D lens ($user$scope) takes over.
+// A collimator rides the same cascade to stay visible, but without any lens (see IsCollimatorScope).
 bool CWeapon::UseScopeTexture()
 {
-	return !IsLensedScope();
+	return !IsLensedScope() && !IsCollimatorScope();
 }
 
 // GS IsLensedScopeInstalled: the currently-attached scope (its addon section) is flagged need_lens_frame.
@@ -2348,6 +2558,19 @@ bool CWeapon::IsLensedScope() const
 	return READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "need_lens_frame", FALSE);
 }
 
+// GS `collimator`: a red-dot sight. Its reticle is part of the weapon MODEL, so the vanilla 2D scope path
+// (which hides the weapon behind a full-screen picture) is wrong, and so is the PiP lens (nothing to
+// magnify at 1x). This is the third mode: weapon + HUD stay visible, no lens, no world zoom.
+bool CWeapon::IsCollimatorScope() const
+{
+	if (!IsScopeAttached())	return false;
+	if (IsGrenadeMode())	return false;	// aiming the GL ladder sight -- the scope must not apply
+	shared_str sc = GetCurrentScopeSection();
+	if (sc.size() && pSettings->line_exist(*sc, "collimator"))
+		return !!pSettings->r_bool(*sc, "collimator");
+	return READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "collimator", FALSE);
+}
+
 // GS GetLensFOV: the FOV (degrees) to render the world at for the scope lens frame -- the base world FOV
 // narrowed by the scope magnification (scope_lens_factor). fov_lens = 2*atan(tan(base/2)/factor). Read the
 // factor from the attached scope's addon section first, else the weapon section (default 2.0). 0 = disabled.
@@ -2356,13 +2579,140 @@ float CWeapon::GetLensFOV() const
 	extern float g_fov;
 	float factor = 2.0f;
 	shared_str sc = GetCurrentScopeSection();
-	if (sc.size() && pSettings->line_exist(*sc, "scope_lens_factor"))
+	// GS variable magnification: a scope with lens_factor_levels_count steps between min_lens_factor and
+	// max_lens_factor (ELCAN 1.8x <-> 10x, switched with the wheel). Fixed scope_lens_factor otherwise.
+	if (m_lens_steps > 0)
+	{
+		int step = m_lens_step;
+		clamp(step, 0, m_lens_steps);
+		factor = m_lens_min + (m_lens_max - m_lens_min) * (float(step) / float(m_lens_steps));
+	}
+	else if (sc.size() && pSettings->line_exist(*sc, "scope_lens_factor"))
 		factor = pSettings->r_float(*sc, "scope_lens_factor");
 	else
 		factor = READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_lens_factor", 2.0f);
 	if (factor < 1.01f)		factor = 1.01f;
 	float half = deg2rad(g_fov) * 0.5f;
 	return rad2deg(2.0f * atanf(tanf(half) / factor));
+}
+
+// GS variable magnification (min_lens_factor / max_lens_factor / lens_factor_levels_count on the active
+// scope section). levels_count is the number of steps ABOVE the base, so `1` = a two-position optic.
+// A scope that only sets the fixed scope_lens_factor gets m_lens_steps = 0 and behaves as before.
+void CWeapon::LoadLensFactorParams()
+{
+	m_lens_steps = 0;
+	m_lens_min = m_lens_max = 0.f;
+	shared_str sc = GetCurrentScopeSection();
+	// A PERMANENT optic (scope_status = 1, e.g. the gauss) has no scope section of its own; GS keeps its whole
+	// lens block on the weapon section, so fall back there -- same order IsLensedScope/GetLensFOV already use.
+	LPCSTR lsect = NULL;
+	if (sc.size() && pSettings->line_exist(*sc, "lens_factor_levels_count"))			lsect = *sc;
+	else if (pSettings->line_exist(cNameSect(), "lens_factor_levels_count"))			lsect = *cNameSect();
+	if (!lsect)	return;
+
+	m_lens_steps = (int)pSettings->r_u32(lsect, "lens_factor_levels_count");
+	if (m_lens_steps < 1)	{ m_lens_steps = 0; return; }
+	m_lens_min = READ_IF_EXISTS(pSettings, r_float, lsect, "min_lens_factor", 2.0f);
+	m_lens_max = READ_IF_EXISTS(pSettings, r_float, lsect, "max_lens_factor", m_lens_min);
+	if (m_lens_max < m_lens_min)	std::swap(m_lens_min, m_lens_max);
+	clamp(m_lens_step, 0, m_lens_steps);
+}
+
+void CWeapon::ResetLensStepToDefault()
+{
+	const int idx = (m_cur_scope < 16) ? (int)m_cur_scope : 0;
+	if (m_lens_step_by_scope[idx] >= 0)
+		m_lens_step = m_lens_step_by_scope[idx];
+	else
+	{
+		shared_str sc = GetCurrentScopeSection();
+		m_lens_step = sc.size() ? (int)READ_IF_EXISTS(pSettings, r_u32, *sc, "default_lens_factor_step", 0) : 0;
+	}
+	LoadLensFactorParams();
+}
+
+bool CWeapon::ChangeLensStep(int delta)
+{
+	if (!IsScopeAttached() || !IsLensedScope())	return false;
+	LoadLensFactorParams();						// the scope may have changed since the last call
+	if (m_lens_steps <= 0)						return false;	// fixed-power optic -> not ours to handle
+
+	const int prev = m_lens_step;
+	m_lens_step += delta;
+	clamp(m_lens_step, 0, m_lens_steps);
+	const int idx = (m_cur_scope < 16) ? (int)m_cur_scope : 0;
+	m_lens_step_by_scope[idx] = m_lens_step;
+	// GS gates the detent on `lens_params.factor_min <> lens_params.factor_max` (WeaponEvents.pas:1679):
+	// a scope whose min and max magnification are the SAME cannot actually zoom, so turning the wheel on
+	// it must be silent even though it still declares lens_factor_levels_count. The PO 4x34 is exactly
+	// that (min = max = 6 with 5 levels).
+	if (m_lens_step != prev && !fsimilar(m_lens_min, m_lens_max))
+	{
+		// reuse the scope-brightness click: GS plays a mechanical detent for the magnifier lever too
+		if (m_sounds.FindSoundItem("sndScopeBrightPlus", false) && delta > 0)
+			PlaySound("sndScopeBrightPlus", get_LastFP());
+		else if (m_sounds.FindSoundItem("sndScopeBrightMinus", false) && delta < 0)
+			PlaySound("sndScopeBrightMinus", get_LastFP());
+	}
+	return true;								// consumed, even at the end of the range
+}
+
+// GS CanStartAimNow's grenade-mode clause (WeaponAdditionalBuffer.pas:919): while the launcher is raised,
+// `prohibit_aim_for_grenade_mode` forbids aiming. GS reads it from the CURRENT SCOPE section when a scope
+// is attached and from the hud section otherwise -- so a weapon can allow iron-sight GL aiming and still
+// refuse it through a mounted optic (the Groza's 5 optics all set it).
+bool CWeapon::AimProhibitedByGrenadeMode() const
+{
+	if (!IsGrenadeMode())	return false;
+	shared_str sect = IsScopeAttached() ? GetCurrentScopeSection() : HudSection();
+	if (!sect.size() || !pSettings->section_exist(*sect))	return false;
+	return !!READ_IF_EXISTS(pSettings, r_bool, *sect, "prohibit_aim_for_grenade_mode", FALSE);
+}
+
+// GS alter_zoom_allowed: the active scope offers a SECOND aim pose (the ELCAN magnifier -- the eye moves
+// to the other optic), toggled while aiming. Its own aim offset / hud fov are read where those are applied.
+bool CWeapon::IsAlterZoomAllowed() const
+{
+	if (!IsScopeAttached())	return false;
+	shared_str sc = GetCurrentScopeSection();
+	return sc.size() && !!READ_IF_EXISTS(pSettings, r_bool, *sc, "alter_zoom_allowed", FALSE);
+}
+
+void CWeapon::ToggleAlterZoom()
+{
+	if (!IsAlterZoomAllowed() || !IsZoomed())	{ m_bAlterZoom = false; return; }
+	m_bAlterZoom = !m_bAlterZoom;
+}
+
+// Ramp m_fAlterZoomFactor toward the target over `alter_zoom_time` seconds (scope section, else the
+// weapon's zoom_rotate_time, else 0.25). GS eases this transition instead of snapping between the two
+// eye positions.
+void CWeapon::UpdateAlterZoomBlend(float dt)
+{
+	const float target = (m_bAlterZoom && IsZoomed()) ? 1.f : 0.f;
+	if (fsimilar(m_fAlterZoomFactor, target))	{ m_fAlterZoomFactor = target; return; }
+
+	shared_str sc = GetCurrentScopeSection();
+	float t = sc.size() ? READ_IF_EXISTS(pSettings, r_float, *sc, "alter_zoom_time", 0.f) : 0.f;
+	if (t <= EPS)	t = m_zoom_params.m_fZoomRotateTime;
+	if (t <= EPS)	t = 0.25f;
+
+	const float step = dt / t;
+	if (target > m_fAlterZoomFactor)	m_fAlterZoomFactor = _min(1.f, m_fAlterZoomFactor + step);
+	else								m_fAlterZoomFactor = _max(0.f, m_fAlterZoomFactor - step);
+}
+
+// Cubic ease-in-out == cubic-bezier(0.42, 0, 0.58, 1): slow at both ends, fastest in the middle.
+float CWeapon::AlterZoomBlend() const
+{
+	float t = m_fAlterZoomFactor;
+	clamp(t, 0.f, 1.f);
+	if (t <= 0.f)	return 0.f;
+	if (t >= 1.f)	return 1.f;
+	return (t < 0.5f)
+			? (4.f * t * t * t)
+			: (1.f - powf(-2.f * t + 2.f, 3.f) * 0.5f);
 }
 
 // Gunslinger use_scope_anims: while a scope is attached the weapon plays the "_scope" animation variants
@@ -2387,10 +2737,47 @@ bool CWeapon::UseScopeAnims() const
 // f_fov/g_fov reduction doesn't kick in); 2D-scope weapons already slow down via the FOV.
 float CWeapon::ZoomMouseSenseKoef() const
 {
+	// GS (ActorUtils.pas CActor__IR_OnMouseMove_CorrectMouseSense): the SCOPE's koef only applies while
+	// looking through the scope itself -- `and not IsAlterZoom(wpn)`. In the alter pose the eye is on the
+	// backup 1x sight, so the slowdown that matches the magnification must not apply; fall back to the
+	// weapon's own value (1.0 by default).
 	shared_str sc = GetCurrentScopeSection();
-	if (sc.size() && pSettings->line_exist(*sc, "zoom_mouse_sense_koef"))
-		return pSettings->r_float(*sc, "zoom_mouse_sense_koef");
-	return READ_IF_EXISTS(pSettings, r_float, cNameSect(), "zoom_mouse_sense_koef", 1.0f);
+	if (!IsAlterZoom() && sc.size() && pSettings->line_exist(*sc, "zoom_mouse_sense_koef"))
+		return ScaleSenseByLensStep(pSettings->r_float(*sc, "zoom_mouse_sense_koef"));
+	return ScaleSenseByLensStep(READ_IF_EXISTS(pSettings, r_float, cNameSect(), "zoom_mouse_sense_koef", 1.0f));
+}
+
+// A VARIABLE-magnification optic (min_lens_factor != max_lens_factor with lens_factor_levels_count steps --
+// the ELCAN 1.8x <-> 10x) must slow the look down FURTHER as the magnifier steps up: the configured
+// zoom_mouse_sense_koef belongs to the scope's BASE power, and sensitivity scales as 1/magnification, so the
+// koef is multiplied by min/current. Fixed-power scopes (m_lens_steps == 0, or min == max like the PO 4x34)
+// and the alter pose are untouched. `zoom_mouse_sense_lens_power` on the scope section softens the curve:
+// 1.0 = fully proportional (default), 0 = the old behaviour.
+float CWeapon::ScaleSenseByLensStep(float k) const
+{
+	if (m_lens_steps <= 0 || fsimilar(m_lens_min, m_lens_max) || m_lens_min <= 0.f)	return k;
+	if (IsAlterZoom())																return k;
+	int step = m_lens_step;
+	clamp(step, 0, m_lens_steps);
+	const float cur = m_lens_min + (m_lens_max - m_lens_min) * (float(step) / float(m_lens_steps));
+	if (cur <= m_lens_min)															return k;
+	shared_str sc = GetCurrentScopeSection();
+	float p = 1.0f;
+	if (sc.size() && pSettings->line_exist(*sc, "zoom_mouse_sense_lens_power"))
+		p = pSettings->r_float(*sc, "zoom_mouse_sense_lens_power");
+	if (p <= 0.f)																	return k;
+	return k * powf(m_lens_min / cur, p);
+}
+
+// GS collimator.pas GetZoomLensVisibilityFactor + LensConditions: with a lensed scope installed the PiP
+// lens is rendered only while the eye is BEHIND it -- switching to the alter pose (the ELCAN's backup 1x
+// sight) turns the lens off, and the direct switch cross-fades it instead of cutting. Our alter-pose ramp
+// (AlterZoomBlend, 0 = scope, 1 = alter) is exactly GS's mixup factor, so the visibility is its inverse.
+// 0 => the lens quad is discarded (shader alpha = min(aim, this)) and the $user$scope capture is skipped.
+float CWeapon::LensVisibility() const
+{
+	if (!IsLensedScope())	return 0.f;
+	return 1.f - AlterZoomBlend();
 }
 
 // Gunslinger scope illumination (LoadNightBrightnessParamsFromSection): read the stepped brightness params
@@ -2423,6 +2810,37 @@ void CWeapon::ResetScopeIllumToDefault()
 		m_scope_illum_step = sc.size() ? (int)READ_IF_EXISTS(pSettings, r_u32, *sc, "default_brightness_step", 0) : 0;
 	}
 	LoadScopeIllumParams();
+	ApplyScopeIllumUI();
+}
+
+// GS `switchable_zoom_wnd` (ui\scopes_16.xml): a scope's crosshair window stacks one static per
+// BRIGHTNESS LEVEL at the same rect -- level 0 = <tex>_off, then the intermediate levels, last = _on --
+// followed by the side fillers at their own rects. Show exactly the static matching the current step, so
+// the 2D reticle lights up with the brightness keys (the PGO-7V/PSO reticle is drawn by the crosshair
+// texture, not by model geometry). A window with a single level is left alone = unchanged behaviour.
+void CWeapon::ApplyScopeIllumUI()
+{
+	if (!m_UIScope)	return;
+	auto& lst = m_UIScope->GetChildWndList();
+	if (lst.empty())	return;
+
+	// the leading run of children sharing the first one's rect are the levels
+	const Frect first = (*lst.begin())->GetWndRect();
+	int levels = 0;
+	for (auto it = lst.begin(); it != lst.end(); ++it)
+	{
+		Frect r = (*it)->GetWndRect();
+		if (!fsimilar(r.x1, first.x1) || !fsimilar(r.y1, first.y1)
+			|| !fsimilar(r.x2, first.x2) || !fsimilar(r.y2, first.y2))	break;
+		++levels;
+	}
+	if (levels < 2)	return;			// nothing to switch
+
+	int step = m_scope_illum_step;
+	clamp(step, 0, levels - 1);
+	int i = 0;
+	for (auto it = lst.begin(); it != lst.end() && i < levels; ++it, ++i)
+		(*it)->Show(i == step);
 }
 
 void CWeapon::ChangeScopeIllum(int delta)
@@ -2445,6 +2863,7 @@ void CWeapon::ChangeScopeIllum(int delta)
 	// remember this brightness for THIS scope specifically
 	const int idx = (m_cur_scope < 16) ? (int)m_cur_scope : 0;
 	m_scope_illum_step_by_scope[idx] = m_scope_illum_step;
+	ApplyScopeIllumUI();
 }
 
 void CWeapon::SwitchState(u32 S)
@@ -2657,8 +3076,17 @@ float CWeapon::GetHudFov()
 		shared_str sc = GetCurrentScopeSection();
 		if (IsScopeAttached() && sc.size() && pSettings->line_exist(*sc, "scope_hud_fov_aim"))
 			scope_fov = pSettings->r_float(*sc, "scope_hud_fov_aim");
+		// GS alter zoom: the second aim pose has its own hud fov -- eased in/out with the same blend as
+		// the offset, so the view glides between the two optics instead of jumping.
+		const float ab = AlterZoomBlend();
+		if (ab > 0.f && sc.size() && pSettings->line_exist(*sc, "scope_hud_fov_alter_aim"))
+		{
+			const float alt = pSettings->r_float(*sc, "scope_hud_fov_alter_aim");
+			scope_fov = scope_fov + (alt - scope_fov) * ab;
+		}
 	}
-	float aim_cfg = (IsLensedScope() && scope_fov > 0.f) ? scope_fov : m_fHudFovAim;
+	// a collimator has no lens but still aims through the optic, so it uses the per-scope aim FOV too
+	float aim_cfg = ((IsLensedScope() || IsCollimatorScope()) && scope_fov > 0.f) ? scope_fov : m_fHudFovAim;
 	if(m_bPdaCursorAnims && g_pda_hud_fov_aim > 0.f)
 		aim_cfg = g_pda_hud_fov_aim;
 	if(aim_cfg <= 0.f)
@@ -2678,10 +3106,31 @@ float CWeapon::GetHudFov()
 // aim_hud_offset -- it sits higher/further back than the iron sights, so aiming with it must not reuse
 // the weapon's iron-sight aim offset. Reads scope_aim_hud_offset_pos/rot (+_16x9) from the weapon HUD
 // section; the _16x9 variant falls back to the base key, a missing key leaves the normal aim offset intact.
-static bool read_scope_aim_offset(LPCSTR scope_sect, LPCSTR hud_sect, bool wide, Fvector& pos, Fvector& rot)
+static bool read_scope_aim_offset(LPCSTR scope_sect, LPCSTR hud_sect, bool wide, Fvector& pos, Fvector& rot,
+								  bool alter = false)
 {
 	// GS multi-scope: the attached scope's OWN aim_hud_offset_pos/rot ([+_16x9]) wins -- each optic sits at a
 	// different height/depth. Falls back to the weapon HUD section's scope_aim_hud_offset_* (single-scope path).
+	// GS alter zoom: while the second aim pose is active, its alter_aim_hud_offset_* replace those (the eye
+	// moves to the ELCAN's other optic). Falls through to the normal offsets if the scope defines none.
+	if (alter && scope_sect && scope_sect[0])
+	{
+		if (wide
+			&& pSettings->line_exist(scope_sect, "alter_aim_hud_offset_pos_16x9")
+			&& pSettings->line_exist(scope_sect, "alter_aim_hud_offset_rot_16x9"))
+		{
+			pos = pSettings->r_fvector3(scope_sect, "alter_aim_hud_offset_pos_16x9");
+			rot = pSettings->r_fvector3(scope_sect, "alter_aim_hud_offset_rot_16x9");
+			return true;
+		}
+		if (pSettings->line_exist(scope_sect, "alter_aim_hud_offset_pos")
+			&& pSettings->line_exist(scope_sect, "alter_aim_hud_offset_rot"))
+		{
+			pos = pSettings->r_fvector3(scope_sect, "alter_aim_hud_offset_pos");
+			rot = pSettings->r_fvector3(scope_sect, "alter_aim_hud_offset_rot");
+			return true;
+		}
+	}
 	if (scope_sect && scope_sect[0])
 	{
 		if (wide
@@ -2749,6 +3198,17 @@ void CWeapon::UpdateHudAdditonal		(Fmatrix& trans)
 			{
 				curr_offs	= spos;
 				curr_rot	= srot;
+				// GS alter zoom: blend smoothly toward the second aim pose (eased), never snap.
+				const float ab = AlterZoomBlend();
+				if (ab > 0.f)
+				{
+					Fvector apos, arot;
+					if (read_scope_aim_offset(sc.size() ? *sc : nullptr, *hi->m_sect_name, wide, apos, arot, true))
+					{
+						curr_offs.lerp(spos, apos, ab);
+						curr_rot.lerp (srot, arot, ab);
+					}
+				}
 			}
 		}
 
@@ -2920,6 +3380,13 @@ bool CWeapon::show_crosshair()
 
 bool CWeapon::show_indicators()
 {
+	// GS drawingame_conditions (ActorUtils.pas:3262) opens with `if IsLensFrameNow() then result := false`:
+	// the ingame HUD is not drawn while the PiP lens is up -- looking through the scope shows the scope,
+	// not the indicators. The vanilla rule below only covers the 2D full-screen scope picture, which a
+	// lensed scope deliberately does not use (UseScopeTexture -> ZoomTexture() == NULL), so it never fired
+	// for a PiP optic. Includes the alter pose (backup 1x sight, lens faded out): the user wants the HUD
+	// gone for the whole aim on such a scope, not just while the eye is behind the lens.
+	if (IsZoomed() && IsLensedScope())	return false;
 	return ! ( IsZoomed() && ZoomTexture() );
 }
 

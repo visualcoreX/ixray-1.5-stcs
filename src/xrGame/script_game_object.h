@@ -312,6 +312,7 @@ public:
 			void				MakeItemActive		(CScriptGameObject* pItem);
 			void				quick_kick_hit		();	// GS quick knife kick: fire the melee hit (actor only), called from the Lua kick binder at the stab mark
 			u32					active_item_motion_end	();	// wall-clock ms when the active HUD item's current motion ends (0 = none) -- for the kick binder to time the stab
+			bool				active_item_replay_show	();	// replay the active HUD item's show anim (GS repeat quick-kick)
 			
 			void				SetRelation			(ALife::ERelationType relation, CScriptGameObject* pWhoToSet);
 			

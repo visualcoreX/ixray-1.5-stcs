@@ -249,6 +249,7 @@ CRenderTarget::CRenderTarget		()
 		// 3D PiP scope lens + the last-normal-frame keep (see r2_RT_scope). Only touched while scoped.
 		rt_scope.create				(r2_RT_scope,	w,h,D3DFMT_A8R8G8B8		);
 		rt_scope_save.create		("$user$scope_save",	w,h,D3DFMT_A8R8G8B8	);
+		rt_scope_ui.create			(r2_RT_scope_ui,w,h,D3DFMT_A8R8G8B8		);
 		//	Igor: for volumetric lights
 		//rt_Generic_2.create			(r2_RT_generic2,w,h,D3DFMT_A8R8G8B8		);
 		//	temp: for higher quality blends
@@ -747,6 +748,12 @@ void CRender::RenderScopeToRT()
 	CRT* src = Target->rt_Generic_0._get();
 	if (!src || !src->pRT)								return;
 	D3DXLoadSurfaceFromSurface(rt->pRT, NULL, NULL, src->pRT, NULL, NULL, D3DX_DEFAULT, 0);
+	// $user$scopeui gets the same image. GS captures it one pass later (after the UI draw) so its electronic
+	// optics show the HUD inside the lens; we only need the lens to carry the magnified world, and this keeps
+	// both scope shader families (models_zoom / models_zoom_gauss) fed from one capture.
+	CRT* rt_ui = Target->rt_scope_ui._get();
+	if (rt_ui && rt_ui->pRT)
+		D3DXLoadSurfaceFromSurface(rt_ui->pRT, NULL, NULL, src->pRT, NULL, NULL, D3DX_DEFAULT, 0);
 }
 
 // 3D PiP present bridge: keep Present firing every frame (never skip -- a skipped Present flickers on DXGI)

@@ -75,11 +75,22 @@ CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 
 	m_bFireSingleShot			= false;
 	m_iShotNum					= 0;
+	m_iBaseDispersionedBulletsCount		= 0;
+	m_fBaseDispersionedBulletsSpeed		= 0.0f;
+	m_fBaseDispersionedBulletsTimeDelta	= 0.0f;
+	m_fSingleShootsTimeDelta			= 0.0f;
 	m_iQueueSize				= WEAPON_ININITE_QUEUE;
 	m_bLockType					= false;
 	m_bAmmoInChamber			= false;
+	m_bNoJamFire				= false;
+	m_dwReloadInsertTm			= 0;
+	m_bReloadInsertDone			= false;
+	m_bLastEmptyAnim			= false;
+	m_iMaxQueueSize				= 0;
+	m_fRechargeTime				= 0.f;
 	m_bSaveCartridgeInAmmoChange = true;
 	bMisfireReload				= false;
+	m_bAmmoChangeReload			= false;
 
 	m_fire_mode_bone_id			= BI_NONE;
 	m_fire_selector_hold		= false;
@@ -125,10 +136,18 @@ void CWeaponMagazined::Load	(LPCSTR section)
 	// fire-selector bone to hold across anims (HUD section, optional; "" disables the feature)
 	m_fire_mode_bone	= READ_IF_EXISTS(pSettings, r_string, HudSection(), "fire_mode_bone", "");
 
+	// GS no_jam_fire (bm16 / toz34 / rg6 hud sections): on a break-action the failure is a DUD, not a
+	// stuck action -- the roll happens BEFORE the shot, so the round isn't spent, the hammer just falls
+	// on nothing (anm_shoot_jammed_<n> = *_dry_empty). The weapon still counts as jammed and needs its
+	// revival; it simply never eats the shot. See state_Fire.
+	m_bNoJamFire		= READ_IF_EXISTS(pSettings, r_bool, HudSection(), "no_jam_fire", FALSE);
+
 	// Gunslinger ammo_in_chamber (+1): the config ammo_mag_size counts the mag PLUS the chambered round, so a
 	// reload from empty loads mag_size-1 (nothing chambered), and a reload with a round still chambered (weapon
 	// not empty) keeps it and takes a full mag on top = mag_size. See ReloadMagazine wrap in OnAnimationEnd.
 	m_bAmmoInChamber	= READ_IF_EXISTS(pSettings, r_bool, section, "ammo_in_chamber", FALSE);
+	m_iMaxQueueSize		= (int)READ_IF_EXISTS(pSettings, r_u32, section, "max_queue_size", 0);
+	m_fRechargeTime		= READ_IF_EXISTS(pSettings, r_float, section, "recharge_time", 0.0f);
 	m_bSaveCartridgeInAmmoChange = READ_IF_EXISTS(pSettings, r_bool, section, "save_cartridge_in_ammochange", TRUE);
 
 	// Sounds
@@ -140,13 +159,33 @@ void CWeaponMagazined::Load	(LPCSTR section)
 	// if a weapon doesn't define it, a jam stays silent (GS pistols do exactly this), never the empty click.
 	if (WeaponSoundExist(section, "snd_jammed_click"))
 		m_sounds.LoadSound(section, "snd_jammed_click", "sndJammedClick", false, m_eSoundEmptyClick);
+	// GS PlaySoundByAnimName: load every `snd_anm_*` the HUD section defines, keyed by the config name
+	// itself, so CHudItem::PlayHUDMotion can look the sound up by the alias it just resolved. Covers the
+	// gauss MUI toggle (snd_anm_changefiremode_from_1_to_a/_from_a_to_1) and anything else a config keys.
+	LoadAnmSounds();
+
+	// GS snd_jam: the sound of the shot that JAMS (played with anm_shoot_jammed, in place of the
+	// breechblock rack). Different from snd_jammed_click, which is the pull on an already-jammed gun.
+	if (WeaponSoundExist(section, "snd_jam"))
+		m_sounds.LoadSound(section, "snd_jam", "sndJam", false, m_eSoundEmptyClick);
 	m_sounds.LoadSound(section,"snd_reload", "sndReload"	, true, m_eSoundReload		);
 
 	if (WeaponSoundExist(section, "snd_reload_empty") && isHUDAnimationExist("anm_reload_empty"))
 		m_sounds.LoadSound(section,"snd_reload_empty", "sndReloadEmpty"	, true, m_eSoundReload);
 	
-	if (WeaponSoundExist(section, "snd_reload_jammed") && isHUDAnimationExist("anm_reload_jammed"))
+	if (WeaponSoundExist(section, "snd_reload_jammed") && HasJammedReloadAnim())
 		m_sounds.LoadSound(section, "snd_reload_jammed", "sndReloadMis", true, m_eSoundReload);
+	// GS snd_changecartridgetype: the ammo-TYPE change reload (anm_reload_ammochange) sounds different
+	if (WeaponSoundExist(section, "snd_changecartridgetype") && isHUDAnimationExist("anm_reload_ammochange"))
+		m_sounds.LoadSound(section, "snd_changecartridgetype", "sndChangeCartridge", true, m_eSoundReload);
+	// GS snd_reload_jammed_last: the revival when the gun is also empty (shotguns clear a jam through their
+	// own anm_reload_jammed_last -- see CWeaponShotgun::PlayAnimUnjamWeapon)
+	if (WeaponSoundExist(section, "snd_reload_jammed_last") && isHUDAnimationExist("anm_reload_jammed_last"))
+		m_sounds.LoadSound(section, "snd_reload_jammed_last", "sndReloadMisLast", true, m_eSoundReload);
+	// ...and its detector companion (GS snd_reload_jammed_last_detector -> sndReloadJammedLastDetector):
+	// same reason as the plain jam-clear below, the one-handed motion has its own length
+	if (WeaponSoundExist(section, "snd_reload_jammed_last_detector") && isHUDAnimationExist("anm_reload_jammed_last_detector"))
+		m_sounds.LoadSound(section, "snd_reload_jammed_last_detector", "sndReloadMisLastDet", true, m_eSoundReload);
 	// the jam-clear with a detector is a whole different motion (anm_reload_misfire_detector), so it
 	// needs its own sound - the plain one is cut for the normal revival and runs ahead of this one
 	if (WeaponSoundExist(section, "snd_reload_jammed_detector") && isHUDAnimationExist("anm_reload_jammed_detector"))
@@ -158,6 +197,12 @@ void CWeaponMagazined::Load	(LPCSTR section)
 	// GS light misfire (use_light_misfire): the "click, no bang" light-strike sound. Optional.
 	if (WeaponSoundExist(section, "snd_light_misfire"))
 		m_sounds.LoadSound(section, "snd_light_misfire", "sndLightMisfire", false, m_eSoundEmptyClick);
+
+	// GS snd_kick: the bayonet stab's own sound. GS reaches it through its generic snd_<anim> lookup for
+	// anm_kick; we play it explicitly at the stab (CWeaponMagazined::PlayKickSound). Mechanical type, like
+	// the other gesture sounds -- it is not a gunshot and should not alert AI as one.
+	if (WeaponSoundExist(section, "snd_kick"))
+		m_sounds.LoadSound(section, "snd_kick", "sndKick", false, m_eSoundReload);
 
 	// pump/bolt rack (GS snd_breechblock): layered on each shot for weapons that define it (pump shotguns,
 	// bolt-actions). Optional -- absent = no-op. Loaded as a mechanical (reload-type) sound so it doesn't
@@ -197,6 +242,17 @@ void CWeaponMagazined::Load	(LPCSTR section)
 		m_iShootEffectorStart = pSettings->r_u8(section, "dispersion_start");
 	else
 		m_iShootEffectorStart = 0;
+
+	// AN-94 hyperburst. count/speed are the vanilla SoC keys (dropped in CS), time_delta is what
+	// Gunslinger's AN94Patch.pas adds on top -- it is the whole point of the feature: the interval
+	// to the next round inside the fast part of the queue, in seconds (= 1/rpm of the hyperburst).
+	// All optional: no key -> count stays 0 -> nothing below ever triggers.
+	m_iBaseDispersionedBulletsCount		= READ_IF_EXISTS(pSettings, r_u8,	 section, "base_dispersioned_bullets_count",		0);
+	m_fBaseDispersionedBulletsSpeed		= READ_IF_EXISTS(pSettings, r_float, section, "base_dispersioned_bullets_speed",		0.0f);
+	m_fBaseDispersionedBulletsTimeDelta	= READ_IF_EXISTS(pSettings, r_float, section, "base_dispersioned_bullets_time_delta",	0.0f);
+	// GS gives some weapons their own rate in single-shot mode (glock17, gsh18, sr1m, stechkin,
+	// p90, vintorez, svu_uniq); same patch, so it lives here.
+	m_fSingleShootsTimeDelta			= READ_IF_EXISTS(pSettings, r_float, section, "singleshoots_time_delta",				0.0f);
 
 	if (pSettings->line_exist(section, "fire_modes"))
 	{
@@ -303,10 +359,8 @@ void CWeaponMagazined::FireStart		()
 				switch2_Empty();
 		}
 	}else
-	{//misfire
-		if(smart_cast<CActor*>(this->H_Parent()) && (Level().CurrentViewEntity()==H_Parent()) )
-			HUD().GetUI()->AddInfoMessage("gun_jammed");
-
+	{//misfire -- the "weapon jammed" message is raised with the dry-fire gesture (PlayAnimDryFire),
+	 // like GS's OnEmptyClick, not here: a pull that cannot even play the gesture says nothing.
 		if (GetState()==eIdle)
 		{
 			m_bDryFirePending = true;
@@ -518,7 +572,13 @@ void CWeaponMagazined::ReloadMagazine()
 	// GS save_cartridge_in_ammochange: keep ONE round of the OLD ammo type as the chamber (next-to-fire) across
 	// a type swap. Swap first<->last so the chambered round (back) moves to front, keep it through the unload,
 	// refill with the new type, then swap back at the end so the old round returns to the back (fires first).
-	const bool save_chamber = typechange && m_bAmmoInChamber && m_bSaveCartridgeInAmmoChange && iAmmoElapsed > 0;
+	// ...but NOT in grenade-launcher mode: the GL holds exactly iMagazineSize (1) grenades and has no
+	// chamber, so "keep one round of the old type" kept the ONLY grenade -- the refill loop below then
+	// found iAmmoElapsed already == iMagazineSize and loaded nothing, so changing the grenade type
+	// silently did nothing and the launcher still held (and showed) the previous grenade. Same
+	// !IsGrenadeMode() guard the ammo_in_chamber capacity tweak in OnAnimationEnd already carries.
+	const bool save_chamber = typechange && m_bAmmoInChamber && m_bSaveCartridgeInAmmoChange
+		&& !IsGrenadeMode() && iAmmoElapsed > 0;
 	if (save_chamber)
 	{
 		std::swap(m_magazine.front(), m_magazine.back());
@@ -588,10 +648,16 @@ void CWeaponMagazined::OnStateSwitch	(u32 S)
 		switch2_Fire	();
 		break;
 	case eMisfire:
-		if(smart_cast<CActor*>(this->H_Parent()) && (Level().CurrentViewEntity()==H_Parent()) )
-			HUD().GetUI()->AddInfoMessage("gun_jammed");
+		// GS patches the stock jam hint OUT (WeaponEvents.pas OnJammedHintShow is an empty stub): nothing
+		// is announced at the MOMENT of the jam -- the failed shot animation is the feedback. The message
+		// comes later, when the player pulls the trigger on the jammed weapon (see PlayAnimDryFire).
 		break;
 	case eReload:
+		// Reset the once-per-reload guard HERE, not in switch2_Reload: CWeaponMagazinedWGrenade's
+		// grenade-mode switch2_Reload never chains to the parent, so a GL reload used to keep the flag
+		// from the previous magazine reload -- the animation played and DoReloadInsert did nothing.
+		m_bReloadInsertDone	= false;
+		m_dwReloadInsertTm	= 0;
 		switch2_Reload	();
 		break;
 	case eActionAnim:
@@ -848,6 +914,18 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 	// straight on the node itself -- so read BOTH. Applied AFTER the def_* pass (installed upgrade overrides
 	// the base set) in install order, so a child (mag60) can hide the bone its parent (mag45) showed. Within
 	// each source: hide_bones + hide_bones_override first, then show_bones, so show wins on overlap.
+	// `shown` records every bone an upgrade NAMED in show_bones. set_bone_visible ultimately calls
+	// LL_SetBoneVisible(..., bRecursive = TRUE), so revealing a parent also reveals its whole subtree --
+	// e.g. the winchester tactical handle shows `bolt_foregrip_rail` and drags the `flash`/`laser` device
+	// bones (its children) out with it, even though those belong to the LATER flashlaser upgrade. So after
+	// this pass any def_hide_bones entry that nobody named explicitly is hidden again (see below).
+	// Seeded with def_show_bones: a config may list the same bone in BOTH def lists (the winchester has
+	// `handler` in each) and rely on show winning, so those count as explicitly shown too -- otherwise the
+	// re-hide pass below would undo def_show_bones (it hid the pistol grip). An upgrade's hide_bones still
+	// wins, because that pass runs before and this one only ever hides.
+	xr_vector<shared_str> shown;
+	if (pSettings->line_exist(wsect, "def_show_bones"))
+		gwr_CollectBoneNames(pSettings->r_string(wsect, "def_show_bones"), shown);
 	for (const shared_str& up : m_upgrades)
 	{
 		if (!up.size())	continue;
@@ -858,20 +936,92 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 			if (!s.size())	continue;
 			if (pSettings->line_exist(s, "hide_bones"))				gwr_SetBones(pSettings->r_string(s, "hide_bones"), FALSE);
 			if (pSettings->line_exist(s, "hide_bones_override"))	gwr_SetBones(pSettings->r_string(s, "hide_bones_override"), FALSE);
-			if (pSettings->line_exist(s, "show_bones"))				gwr_SetBones(pSettings->r_string(s, "show_bones"), TRUE);
+			if (pSettings->line_exist(s, "show_bones"))
+			{
+				LPCSTR csv = pSettings->r_string(s, "show_bones");
+				gwr_SetBones(csv, TRUE);
+				gwr_CollectBoneNames(csv, shown);
+			}
 		}
 	}
+
+	// Addon-conditional OVERRIDES (GS WeaponUpdate.pas:598-608). A SEPARATE PASS AFTER the loop above,
+	// exactly like GS: these hide a part the upgrade itself shows -- the groza's `grip` under its
+	// silencer, the l85/sig550 bayonet under theirs -- so running them inline would just be undone by
+	// that same upgrade's `show_bones` two lines later (which is precisely what happened: grip stayed on).
+	for (const shared_str& up : m_upgrades)
+	{
+		if (!up.size())	continue;
+		shared_str esect = pSettings->line_exist(up, "section") ? (shared_str)pSettings->r_string(up, "section") : up;
+		const shared_str srcs[2] = { esect, up };
+		for (const shared_str& s : srcs)
+		{
+			if (!s.size())	continue;
+			if (IsSilencerAttached() && pSettings->line_exist(s, "hide_bones_override_when_silencer_attached"))
+				gwr_SetBones(pSettings->r_string(s, "hide_bones_override_when_silencer_attached"), FALSE);
+			if (IsScopeAttached() && pSettings->line_exist(s, "hide_bones_override_when_scope_attached"))
+				gwr_SetBones(pSettings->r_string(s, "hide_bones_override_when_scope_attached"), FALSE);
+			if ((m_eGrenadeLauncherStatus == ALife::eAddonPermanent || IsGrenadeLauncherAttached())
+				&& pSettings->line_exist(s, "hide_bones_override_when_gl_attached"))
+				gwr_SetBones(pSettings->r_string(s, "hide_bones_override_when_gl_attached"), FALSE);
+		}
+	}
+
+	// Undo the recursive collateral: re-hide every def_hide_bones entry that no installed upgrade actually
+	// asked for. def_hide_bones is the baseline "this variant does not carry that attachment", so a bone
+	// must be NAMED by an upgrade (or by the scope/device passes below) to stay visible.
+	if (pSettings->line_exist(wsect, "def_hide_bones"))
+	{
+		xr_vector<shared_str> hide_list;
+		gwr_CollectBoneNames(pSettings->r_string(wsect, "def_hide_bones"), hide_list);
+		for (const shared_str& b : hide_list)
+			if (std::find(shown.begin(), shown.end(), b) == shown.end())
+			{
+				if (HudItemData())	HudItemData()->set_bone_visible(b, FALSE, TRUE);
+				gwr_SetWorldBone(smart_cast<IKinematics*>(Visual()), *b, FALSE);
+			}
+	}
+
+	// GS `def_hide_bones_override_when_gl_attached` (WeaponUpdate.pas:617): parts the launcher takes the
+	// place of -- the l85's handguard/handguard_rail/tac_handler. Applied after the upgrade pass, so it
+	// wins over an upgrade that shows them, and only while the GL is really on (or welded on permanently).
+	if ((m_eGrenadeLauncherStatus == ALife::eAddonPermanent || IsGrenadeLauncherAttached())
+		&& pSettings->line_exist(wsect, "def_hide_bones_override_when_gl_attached"))
+		gwr_SetBones(pSettings->r_string(wsect, "def_hide_bones_override_when_gl_attached"), FALSE);
 
 	// ---- scope bones (Gunslinger ProcessScope): reveal the ATTACHED scope's own model bone. Every scope bone
 	// starts hidden via def_hide_bones (applied above each frame), so we only SHOW the active scope's `bones`
 	// (from its per-weapon section) while a scope is on -- on detach def_hide_bones re-hides it. Falls back to
 	// the weapon's single scope_bones key for the legacy single-scope path.
 	shared_str cur_scope = GetCurrentScopeSection();
+	// Hide EVERY listed scope's bones first, then reveal only the attached one's. Relying on def_hide_bones
+	// alone is not enough: it runs before the upgrade pass, and a rail upgrade that lists the scope mounts in
+	// its own show_bones (winchester: `show_bones = rail, scope1, scope2, scope3, scope4`) would otherwise
+	// leave every optic on the model at once.
+	for (const shared_str& sc : m_scopes)
+		if (sc.size() && sc != cur_scope && pSettings->line_exist(*sc, "bones"))
+			gwr_SetBones(pSettings->r_string(*sc, "bones"), FALSE);
+
 	LPCSTR scope_bones = (cur_scope.size() && pSettings->line_exist(*cur_scope, "bones"))
 							? pSettings->r_string(*cur_scope, "bones")
 							: (pSettings->line_exist(wsect, "scope_bones") ? pSettings->r_string(wsect, "scope_bones") : nullptr);
 	if (scope_bones)
 		gwr_SetBones(scope_bones, IsScopeAttached() ? TRUE : FALSE);
+	else if (cur_scope.size() && !IsScopeAttached() && pSettings->line_exist(*cur_scope, "bones"))
+		gwr_SetBones(pSettings->r_string(*cur_scope, "bones"), FALSE);
+
+
+	// GS overriding_hide_bones / overriding_show_bones (per scope section): what the MOUNT does to the
+	// rest of the weapon while this optic is on -- e.g. the l85's optics hide the carry handle + iron
+	// sights and reveal the rail they sit on. Only while the scope is actually attached; on detach the
+	// def_show_bones/def_hide_bones pass above restores the stock configuration.
+	if (cur_scope.size() && IsScopeAttached())
+	{
+		if (pSettings->line_exist(*cur_scope, "overriding_hide_bones"))
+			gwr_SetBones(pSettings->r_string(*cur_scope, "overriding_hide_bones"), FALSE);
+		if (pSettings->line_exist(*cur_scope, "overriding_show_bones"))
+			gwr_SetBones(pSettings->r_string(*cur_scope, "overriding_show_bones"), TRUE);
+	}
 
 	// GS scope reticle illumination: show the glowing-reticle bones only while the scope is attached AND the
 	// illumination is on (brightness > 0), toggled by scope_brightness_plus/minus. These bones must be listed
@@ -897,10 +1047,11 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 			gwr_SetBones(rb, FALSE);
 	}
 
-	// GS bayonet: the blade (`knife`, shown by the bayonet upgrade's show_bones) is REMOVED when a silencer
-	// or GL is on the barrel -- and the unique stab is disabled with it (ActorInput falls back to the knife kick).
+	// GS bayonet: the blade (shown by the bayonet upgrade's show_bones) is REMOVED when a silencer or GL is
+	// on the barrel -- and the unique stab is disabled with it (ActorInput falls back to the knife kick).
+	// The blade's bone name is per weapon (`bayonet_bone`): the AK family calls it `knife`, the l85 `bayonet`.
 	if (m_bBayonetInstalled && !IsBayonetActive())
-		gwr_SetBones("knife", FALSE);
+		gwr_SetBones(m_sBayonetBone.size() ? m_sBayonetBone.c_str() : "knife", FALSE);
 
 	// flashlight glow bone: the physical `flash` DEVICE stays visible (shown by the upgrade's show_bones);
 	// the glowing lens toggles WITH the on/off state -- shown when on, hidden when off. flashlight_bone picks
@@ -923,11 +1074,22 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 		if (!epre)	epre = "shell_";
 		int types = (int)m_ammoTypes.size();
 		string128 tname[8], bsuf[16];
+		// Colour per CURRENT ammo type. Prefer the NAME-keyed ammo_bone_type_<ammo_section>, same rule as
+		// ammo_params_section_<ammo_section> below: the colour then tracks the CARTRIDGE, not its position
+		// in ammo_class. An upgrade that drops a cartridge (bm16 rifled barrel removes buckshot) shifts the
+		// positional indices, which would otherwise recolour the survivors. Positional is the fallback.
 		for (int t = 0; t < types && t < 8; ++t)
 		{
-			string64 k; xr_sprintf(k, "ammo_bone_type_%d", t);
-			// an empty ltx value ("key =") reads back as NULL, so guard it -- xr_strcpy(NULL) is the crash
-			LPCSTR v = READ_IF_EXISTS(pSettings, r_string, sect, k, "");
+			LPCSTR v = NULL;
+			string128 k;
+			strconcat(sizeof(k), k, "ammo_bone_type_", *m_ammoTypes[t]);
+			if (pSettings->line_exist(sect, k))		v = pSettings->r_string(sect, k);
+			if (!v)
+			{
+				string64 kp; xr_sprintf(kp, "ammo_bone_type_%d", t);
+				// an empty ltx value ("key =") reads back as NULL, so guard it -- xr_strcpy(NULL) is the crash
+				v = READ_IF_EXISTS(pSettings, r_string, sect, kp, "");
+			}
 			xr_strcpy(tname[t], v ? v : "");
 		}
 		for (int b = 0; b < bcount; ++b)
@@ -936,14 +1098,36 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 			LPCSTR v = READ_IF_EXISTS(pSettings, r_string, sect, k, "");	// "" for the no-suffix first barrel
 			xr_strcpy(bsuf[b], v ? v : "");
 		}
-		// hide every loaded+empty bone of every type in every barrel, then show the one each slot wants
+		// The hide pass must cover EVERY colour the config declares, not just the ones this weapon currently
+		// accepts: when an upgrade drops a cartridge, the bones of the dropped one would never be hidden and
+		// every colour would show at once. So collect the declared set -- all positional slots (scanned
+		// unconditionally, NOT bounded by `types`) plus the colours resolved for the current types.
+		string128 hname[24];
+		int hcount = 0;
+		for (int pass = 0; pass < 2; ++pass)
+			for (int t = 0; t < 8; ++t)
+			{
+				LPCSTR v;
+				if (pass == 0)
+				{
+					string64 kp; xr_sprintf(kp, "ammo_bone_type_%d", t);
+					v = READ_IF_EXISTS(pSettings, r_string, sect, kp, "");
+				}
+				else
+					v = (t < types) ? tname[t] : "";
+				if (!v || !v[0] || hcount >= 24)	continue;
+				bool dup = false;
+				for (int i = 0; i < hcount; ++i)
+					if (0 == xr_strcmp(hname[i], v))	{ dup = true; break; }
+				if (!dup)	xr_strcpy(hname[hcount++], v);
+			}
+		// hide every loaded+empty bone of every declared colour in every barrel, then show what each slot wants
 		string256 nm;
 		for (int b = 0; b < bcount; ++b)
-			for (int t = 0; t < types && t < 8; ++t)
+			for (int i = 0; i < hcount; ++i)
 			{
-				if (!tname[t][0])	continue;
-				xr_sprintf(nm, "%s%s%s", lpre, tname[t], bsuf[b]);	HudItemData()->set_bone_visible(nm, FALSE, TRUE);
-				xr_sprintf(nm, "%s%s%s", epre, tname[t], bsuf[b]);	HudItemData()->set_bone_visible(nm, FALSE, TRUE);
+				xr_sprintf(nm, "%s%s%s", lpre, hname[i], bsuf[b]);	HudItemData()->set_bone_visible(nm, FALSE, TRUE);
+				xr_sprintf(nm, "%s%s%s", epre, hname[i], bsuf[b]);	HudItemData()->set_bone_visible(nm, FALSE, TRUE);
 			}
 		for (int b = 0; b < bcount; ++b)
 		{
@@ -1041,6 +1225,21 @@ void CWeaponMagazined::UpdateCL			()
 	gwr_UpdateBones();		// show/hide HUD-model bones for ammo count / type / firemode (on change)
 	gwr_UpdateWorldAnims();	// GS ReassignWorldAnims: drive the world model from wpn_*_animation.omf (opt-in)
 
+	// The idle animation is chosen ONCE, when the idle starts, so a magazine emptied from the outside
+	// (unloaded at a technician / in the inventory / an upgrade that unloads) kept the loaded idle on
+	// screen until whatever was playing ran out. Re-pick it the moment the loaded/empty state flips,
+	// while the weapon is genuinely idle and owns no action -- the same test switch2_Idle would make.
+	{
+		const bool empty_now = NeedEmptyAnim();
+		if (empty_now != m_bLastEmptyAnim)
+		{
+			m_bLastEmptyAnim = empty_now;
+			if (GetState() == eIdle && GetNextState() == eIdle && !IsPending()
+				&& !m_bDryFirePending && !m_bDryFirePlaying && !m_bLightMisfirePlaying)
+				PlayAnimIdle();
+		}
+	}
+
 	// aim-lock auto-shoot: the fire lock just ended and the player pressed fire DURING it with autoshoot
 	// enabled -> fire now, so a shot queued inside the transition comes out on its own. Opt-in per weapon
 	// (m_bAimLockAutoShoot). Keyed off m_bAimLockFirePressed (a fresh press captured in FireStart during
@@ -1078,11 +1277,28 @@ void CWeaponMagazined::UpdateCL			()
 		m_bIdleTransitionLock	= false;
 		m_dwAimTransitionEndTm	= 0;
 		if(GetState()==eIdle)
-			PlayAnimIdle();
+			// switch2_Idle, NOT PlayAnimIdle: switch2_Idle's own head early-returns while this
+			// transition is running, so anything it defers (m_bDryFirePending / m_bAimIn|OutPending /
+			// the shoot-anim tail) is still queued here. Going straight to the idle dropped those on
+			// the floor -- a jam taken WHILE the aim-out transition played left m_bDryFirePending set
+			// forever, and FireStart (the `(m_bDryFirePending || m_bDryFirePlaying) && IsMisfire()`
+			// gate) then ignored every trigger pull until the weapon was re-drawn (the show anim's
+			// switch2_Idle finally consumed it). The timer is already cleared above, so the re-entry
+			// cannot hit that guard again, and switch2_Idle ends in PlayAnimIdle anyway.
+			switch2_Idle();
 			// NOTE: no auto-resume of fire here. A trigger held through the aim transition must
 			// NEVER make the weapon fire by itself (user requirement, all weapons) - the player
 			// has to release and press fire again. (Previously resumed continuous-auto here, which
 			// caused a stray shot after aim in/out, esp. right after clearing a jam.)
+	}
+
+	// GS lock_time_start_<reload alias>: seat the rounds mid-animation (see ArmReloadLockTimes) so the
+	// ammo bones show the loaded round exactly when the hands put it in, not a second later at the end.
+	if (m_dwReloadInsertTm && Device.dwTimeGlobal >= m_dwReloadInsertTm)
+	{
+		m_dwReloadInsertTm = 0;
+		if (GetState() == eReload)
+			DoReloadInsert();
 	}
 
 	// shoot-anim -> idle handoff: switch2_Idle deferred the idle so a longer shoot variant (de_shoot2)
@@ -1191,6 +1407,10 @@ void CWeaponMagazined::UpdateSounds	()
 		m_sounds.SetPosition("sndReloadMis", P);
 	if (m_sounds.FindSoundItem("sndReloadMisDet", false))
 		m_sounds.SetPosition("sndReloadMisDet", P);
+	if (m_sounds.FindSoundItem("sndReloadMisLast", false))
+		m_sounds.SetPosition("sndReloadMisLast", P);
+	if (m_sounds.FindSoundItem("sndReloadMisLastDet", false))
+		m_sounds.SetPosition("sndReloadMisLastDet", P);
 }
 
 // One question for "is firing locked right now?" (GS SetShootLockTime). Folds the base plain shoot-lock
@@ -1276,6 +1496,49 @@ bool CWeaponMagazined::gwr_TryLightMisfire()
 	return true;
 }
 
+// GS snd_kick -- the bayonet stab's sound, played when the stab anim starts (ActorInput's quick-kick
+// branch). Silent no-op for a weapon without the key, so nothing else changes.
+void CWeaponMagazined::PlayKickSound()
+{
+	if (m_sounds.FindSoundItem("sndKick", false))
+		PlaySound("sndKick", get_LastFP());
+}
+
+// Interval to the next round -- Gunslinger's AN94_RPM_Patch (AN94Patch.pas), which hooks the
+// engine right where it loads fOneShotTime and can substitute two config values:
+//   * single-shot mode      -> singleshoots_time_delta (that weapon's own single-fire rate)
+//   * inside a queue        -> base_dispersioned_bullets_time_delta, but only while fewer than
+//                              (count - 1) rounds have been fired, i.e. with count = 2 only the
+//                              very first shot -> exactly ONE hyper-fast interval, then rpm again.
+// GS compares the queue size UNSIGNED, so auto (-1) takes the queue branch too: the first rounds
+// of any burst are hyper-fast, exactly like the real AN-94.
+float CWeaponMagazined::CurrentShotTimeDelta() const
+{
+	if (m_iQueueSize >= 0 && m_iQueueSize <= 1)
+		return (m_fSingleShootsTimeDelta > 0.0f) ? m_fSingleShootsTimeDelta : fOneShotTime;
+
+	if (m_iBaseDispersionedBulletsCount > 0 && m_fBaseDispersionedBulletsTimeDelta > 0.0f &&
+		m_iShotNum < m_iBaseDispersionedBulletsCount - 1)
+		return m_fBaseDispersionedBulletsTimeDelta;
+
+	return fOneShotTime;
+}
+
+void CWeaponMagazined::FireBullet(const Fvector& pos, const Fvector& dir, float fire_disp,
+								  const CCartridge& cartridge, u16 parent_id, u16 weapon_id, bool send_hit)
+{
+	// The hyperburst rounds get their own muzzle velocity (base_dispersioned_bullets_speed).
+	// Swap-and-restore around the single call instead of vanilla's save/restore pair, which never
+	// restored when the queue ended exactly on the last fast round (2-round cut-off with count=2).
+	const float saved_speed = m_fStartBulletSpeed;
+	if (InBaseDispersionedBurst() && m_fBaseDispersionedBulletsSpeed > 0.0f)
+		m_fStartBulletSpeed = m_fBaseDispersionedBulletsSpeed;
+
+	inherited::FireBullet(pos, dir, fire_disp, cartridge, parent_id, weapon_id, send_hit);
+
+	m_fStartBulletSpeed = saved_speed;
+}
+
 void CWeaponMagazined::state_Fire(float dt)
 {
 	if(iAmmoElapsed > 0)
@@ -1319,12 +1582,25 @@ void CWeaponMagazined::state_Fire(float dt)
 		while (	!m_magazine.empty() &&
 				fShotTimeCounter<0 &&
 				(IsWorking() || m_bFireSingleShot) &&
-				(m_iQueueSize<0 || m_iShotNum<m_iQueueSize)
+				(m_iQueueSize<0 || m_iShotNum<m_iQueueSize) &&
+				// GS max_queue_size: a hard cap on rounds per trigger pull, independent of the fire
+				// mode. The gauss's second "mode" is really the MUI toggle (fire_modes = 1, -1), and
+				// GS keeps it from firing full auto with max_queue_size = 1. 0/absent = no cap.
+				(m_iMaxQueueSize<=0 || m_iShotNum<m_iMaxQueueSize)
 			   )
 		{
 			m_bFireSingleShot		= false;
 
-			fShotTimeCounter		+=	fOneShotTime;
+			// GS AN94_RPM_Patch: the delay to the NEXT round is not always 60/rpm -- see
+			// CurrentShotTimeDelta. m_iShotNum is still the count of rounds already fired here,
+			// which is exactly what the GS patch compares against.
+			fShotTimeCounter		+=	CurrentShotTimeDelta();
+
+			// GS recharge_time: the capacitor charge the gauss needs between shots (base.ltx: 3 s, cut
+			// by the fast_conders / ionistori upgrades). It is a floor on the gap to the next round, so
+			// a weapon with an rpm-derived delta shorter than the charge waits for the charge instead.
+			if (m_fRechargeTime > 0.f && fShotTimeCounter < m_fRechargeTime)
+				fShotTimeCounter	=	m_fRechargeTime;
 
 			++m_iShotNum;
 
@@ -1337,6 +1613,25 @@ void CWeaponMagazined::state_Fire(float dt)
 				return;
 			}
 
+			// GS no_jam_fire: the jam is rolled BEFORE the shot on these weapons, so the round is NOT
+			// spent -- the trigger falls on a dud. Same probability model (CheckForMisfire), same eMisfire
+			// -> jammed idle flow; only the timing differs, and the post-shot roll below is skipped so the
+			// chance isn't doubled. GS additionally skips FireEnd here (CheckForMisfire calls it), which
+			// on a break-action is invisible: one pull = one hammer fall either way.
+			if (m_bNoJamFire && CheckForMisfire())
+			{
+				if (PlayJammedShootAnim())
+				{
+					m_dwShootAnimEndTm	= m_dwMotionEndTm;
+					if (m_sounds.FindSoundItem("sndJam", false))
+						PlaySound("sndJam", get_LastFP());
+				}
+				else
+					m_dwShootAnimEndTm	= 0;
+				StopShooting			();
+				return;
+			}
+
 			OnShot					();
 			// remember when this shot's anim ends so switch2_Idle won't clip it (GS: let anm_shoot*
 			// finish). Set HERE, not in OnShot -- CWeaponPistol/etc. override OnShot without calling
@@ -1344,7 +1639,10 @@ void CWeaponMagazined::state_Fire(float dt)
 			// just set m_dwMotionEndTm to the (randomly picked) shot variant's end.
 			m_dwShootAnimEndTm		= m_dwMotionEndTm;
 
-			if (m_iShotNum>m_iShootEffectorStart)
+			// The hyperburst rounds all fly from the aim point captured when the queue started
+			// (vanilla SoC gated this on base_dispersioned_bullets_count, CS on dispersion_start --
+			// take whichever covers more rounds, so neither behaviour is lost).
+			if (m_iShotNum > _max(m_iShootEffectorStart, m_iBaseDispersionedBulletsCount))
 				FireTrace		(p1,d);
 			else
 				FireTrace		(m_vStartPos, m_vStartDir);
@@ -1360,12 +1658,22 @@ void CWeaponMagazined::state_Fire(float dt)
 			// failure-to-eject). Rolled here (post-shot) instead of before the shot so
 			// a fresh trigger pull never jams in place of firing. Skip the roll when the
 			// shot emptied the magazine (nothing left to chamber -> just empty, not jammed).
-			if( !m_magazine.empty() && CheckForMisfire() )
+			if( !m_bNoJamFire && !m_magazine.empty() && CheckForMisfire() )
 			{
-				// jam: the just-fired shot's anim-end defer (set above) would otherwise hold the shoot
-				// animation and delay the jammed idle until it finishes. Clear it here, at the moment the
-				// jam is detected, so switch2_Idle plays the jammed idle at once (blended over the tail).
-				m_dwShootAnimEndTm = 0;
+				// GS OnWeaponJam + anm_shots_selector's "_jammed" modifier: the shot that jams has its OWN
+				// animation (the case caught in the ejection port) and it plays to the END -- the jammed
+				// idle only takes over afterwards. CheckForMisfire already set bMisfire, so re-assigning
+				// the shoot motion now resolves to the _jammed variant (GS does the same through
+				// SetAnimForceReassignStatus). Weapons with no jammed shot variant keep the old behaviour:
+				// drop the deadline so switch2_Idle shows the jammed idle at once.
+				if (PlayJammedShootAnim())
+				{
+					m_dwShootAnimEndTm	= m_dwMotionEndTm;
+					if (m_sounds.FindSoundItem("sndJam", false))
+						PlaySound("sndJam", get_LastFP());
+				}
+				else
+					m_dwShootAnimEndTm = 0;
 				StopShooting();
 				return;
 			}
@@ -1403,13 +1711,17 @@ void CWeaponMagazined::state_Fire(float dt)
 
 void CWeaponMagazined::state_Misfire	(float dt)
 {
-	OnEmptyClick			();
-	// a jam must show at once: the previous shot's anim-end defer (m_dwShootAnimEndTm) would otherwise
-	// hold the shoot animation and only play the jammed idle after it finishes. Clear it so switch2_Idle
-	// commits to the (now jammed) idle immediately, blending over the shot anim's tail. Set bMisfire
-	// BEFORE the state switch so switch2_Idle/PlayAnimIdle already sees the jam and picks the jammed idle.
+	// The jam itself is announced by the jamming shot (snd_jam + anm_shoot_jammed, armed in state_Fire).
+	// The jammed CLICK belongs to a trigger pull on an already-jammed gun (GS OnWeaponJam), so only fall
+	// back to it when the weapon has no snd_jam.
+	if (!m_sounds.FindSoundItem("sndJam", false))
+		OnEmptyClick		();
+	// bMisfire BEFORE the state switch so switch2_Idle/PlayAnimIdle already sees the jam and picks the
+	// jammed idle. m_dwShootAnimEndTm is deliberately NOT cleared here: the jamming shot's own animation
+	// (anm_shoot_jammed) has to play to its end first, exactly like GS -- switch2_Idle waits for that
+	// deadline and only then commits to the jammed idle. state_Fire already zeroes it for weapons that
+	// have no jammed shoot variant, so those still show the jam at once.
 	bMisfire				= true;
-	m_dwShootAnimEndTm		= 0;
 	SwitchState				(eIdle);
 
 	UpdateSounds			();
@@ -1475,9 +1787,14 @@ void CWeaponMagazined::OnEmptyClick	()
 
 // dry-fire gesture on an empty/jammed trigger pull. aim: anm_dry_aim[_empty]; hip:
 // anm_dry_empty (empty) / anm_dry (jammed). GL subclass overrides for _w_gl/_g.
+// JAMMED WINS OVER EMPTY (GS OnEmptyClick, WeaponEvents.pas:957-971): GS hands the selector the BARE
+// anm_fakeshoot[_aim] in both cases -- the two branches differ only in the sound/message -- and lets
+// ModifierStd pick the state token, where jammed outranks empty. Picking "_empty" here ourselves broke
+// that: with a jammed AND empty gun the candidate anm_fakeshoot_jammed_empty does not exist, so
+// PlayHUDMotion fell back to the _empty alias and the jam pose snapped to the empty (slide-locked) one.
 void CWeaponMagazined::SelectDryFireAnim(string_path& result)
 {
-	bool empty = (iAmmoElapsed == 0);
+	bool empty = (iAmmoElapsed == 0) && !NeedJammedAnim();
 	if (IsZoomed())
 	{
 		if (empty && isHUDAnimationExist("anm_fakeshoot_aim_empty"))	{ xr_strcpy(result, "anm_fakeshoot_aim_empty"); return; }
@@ -1503,7 +1820,20 @@ void CWeaponMagazined::PlayAnimDryFire()
 		// stays spammable -> no pending.)
 		if (IsMisfire())
 			SetPending(TRUE);
-		PlayHUDMotion(anim, TRUE, this, eIdle);
+		// ...but if the motion doesn't actually run (0 length), no OnAnimationEnd will ever arrive to
+		// clear the flag+pending -> the weapon would be frozen with no way to even reload out of the jam.
+		if (0 == PlayHUDMotion(anim, TRUE, this, eIdle))
+		{
+			m_bDryFirePlaying = false;
+			SetPending(FALSE);
+			PlayAnimIdle();
+		}
+		// GS OnEmptyClick (WeaponEvents.pas:945): the "weapon jammed" line is sent ONLY once the click
+		// gesture actually started, and only for the actor's own weapon -- Messenger.SendMessage
+		// ('gunsl_msg_weapon_jammed', gd_novice), which is GS's small message line, not the stock
+		// centred hint the engine used to throw at the moment of the jam.
+		else if (IsMisfire() && smart_cast<CActor*>(H_Parent()) && Level().CurrentViewEntity() == H_Parent())
+			HUD().GetUI()->AddInfoMessage("gun_jammed");
 	}
 	else
 		PlayAnimIdle();
@@ -1534,24 +1864,7 @@ void CWeaponMagazined::OnAnimationEnd(u32 state)
 				bAmmotypeKeyPressed = false;
 			}
 
-			if (bMisfireReload)
-			{
-				bMisfire = false;
-				bMisfireReload = false;
-			}
-			else
-			{
-				// Gunslinger ammo_in_chamber: reloading an EMPTY weapon (nothing chambered) fills to mag_size-1;
-				// a non-empty one keeps its chambered round so a full mag on top makes mag_size. iAmmoElapsed here
-				// is still the pre-reload count. Temporarily lower the capacity for the empty case (GS SetMagCapacity).
-				// ...but NOT in grenade-launcher mode: the GL holds exactly iMagazineSize (1) grenades with no
-				// chamber concept, so the -1 here would make it reload to 0 (anim plays, nothing loads).
-				const int saved_mag = iMagazineSize;
-				if (m_bAmmoInChamber && !IsGrenadeMode() && iAmmoElapsed == 0 && iMagazineSize > 0)
-					iMagazineSize -= 1;
-				ReloadMagazine();
-				iMagazineSize = saved_mag;
-			}
+			DoReloadInsert();		// no-op when the lock_time_start timer already did it
 			SwitchState(eIdle);
 		}break;	// End of reload animation
 		case eHiding:	SwitchState(eHidden);   break;	// End of Hide
@@ -1695,11 +2008,27 @@ void CWeaponMagazined::switch2_Empty()
 
 void CWeaponMagazined::PlayReloadSound()
 {
-	if (m_sounds.FindSoundItem("sndReloadMis", false) && isHUDAnimationExist("anm_reload_jammed") && IsMisfire() && bMisfireReload)
+	// an ammo-TYPE change has its own sound (GS snd_changecartridgetype); the flag is set by PlayAnimReload
+	if (m_bAmmoChangeReload && m_sounds.FindSoundItem("sndChangeCartridge", false))
+	{
+		PlaySound("sndChangeCartridge", get_LastFP());
+		return;
+	}
+	if (m_sounds.FindSoundItem("sndReloadMis", false) && HasJammedReloadAnim() && IsMisfire() && bMisfireReload)
 	{
 		// mirror PlayAnimReload's choice: with a detector out the jam-clear plays its own (differently
-		// timed) motion, so it gets its own sound - otherwise the plain one runs ahead of the animation
-		if (DetectorCompanionOut() && isHUDAnimationExist("anm_reload_jammed_detector")
+		// timed) motion, so it gets its own sound - otherwise the plain one runs ahead of the animation.
+		// Same for the empty-magazine "_last" revival (GS MagazinedWeaponReloadSoundSelector,
+		// WeaponSoundSelector.pas:27-37 -- it picks sndReloadJammedLast on GetAmmoInMagCount<=0).
+		const bool det	= DetectorCompanionOut();
+		const bool last	= (0 == iAmmoElapsed);
+		if (last && det && isHUDAnimationExist("anm_reload_jammed_last_detector")
+			&& m_sounds.FindSoundItem("sndReloadMisLastDet", false))
+			PlaySound("sndReloadMisLastDet", get_LastFP());
+		else if (last && isHUDAnimationExist("anm_reload_jammed_last")
+			&& m_sounds.FindSoundItem("sndReloadMisLast", false))
+			PlaySound("sndReloadMisLast", get_LastFP());
+		else if (det && isHUDAnimationExist("anm_reload_jammed_detector")
 			&& m_sounds.FindSoundItem("sndReloadMisDet", false))
 			PlaySound("sndReloadMisDet", get_LastFP());
 		else
@@ -1711,11 +2040,77 @@ void CWeaponMagazined::PlayReloadSound()
 		PlaySound("sndReload", get_LastFP());
 }
 
+// The magazine fill at the end of a reload -- or, when the config gives the animation a GS
+// `lock_time_start_<alias>`, at that point INSIDE the animation (see ArmReloadLockTimes).
+// Runs exactly once per reload.
+void CWeaponMagazined::DoReloadInsert()
+{
+	if (m_bReloadInsertDone)	return;
+	m_bReloadInsertDone = true;
+	m_bAmmoChangeReload = false;	// consumed with the reload it belonged to
+
+	// GS CWeaponMagazined__OnAnimationEnd_DoReload (WeaponAmmoCounter.pas:71): while the weapon is
+	// JAMMED the reload runs with the magazine capacity clamped to what is already loaded -- i.e.
+	// the revival clears the jam and loads NOTHING, and a pending ammo-type change is dropped
+	// (SetAmmoTypeChangingStatus $FF). Keyed on IsMisfire() itself, not on bMisfireReload: the
+	// double-barrels build their reload alias in CWeaponBM16::PlayAnimReload, which never sets that
+	// flag, so a jam cleared on their SECOND barrel handed the player a free extra shell.
+	if (bMisfireReload || IsMisfire())
+	{
+		bMisfire = false;
+		bMisfireReload = false;
+		m_set_next_ammoType_on_reload = u32(-1);
+		return;
+	}
+
+	// Gunslinger ammo_in_chamber: reloading an EMPTY weapon (nothing chambered) fills to mag_size-1;
+	// a non-empty one keeps its chambered round so a full mag on top makes mag_size. iAmmoElapsed here
+	// is still the pre-reload count. Temporarily lower the capacity for the empty case (GS SetMagCapacity).
+	// ...but NOT in grenade-launcher mode: the GL holds exactly iMagazineSize (1) grenades with no
+	// chamber concept, so the -1 here would make it reload to 0 (anim plays, nothing loads).
+	const int saved_mag = iMagazineSize;
+	if (m_bAmmoInChamber && !IsGrenadeMode() && iAmmoElapsed == 0 && iMagazineSize > 0)
+		iMagazineSize -= 1;
+	ReloadMagazine();
+	iMagazineSize = saved_mag;
+}
+
+// GS MakeLockByConfigParam for the reload: `lock_time_start_<alias>` = when the rounds actually go in
+// (the ammo bones follow, so you SEE the round seated mid-animation instead of at the very end), and
+// `lock_time_end_<alias>` = how long after that the state still runs before the idle takes over (the
+// dead tail is cut). Absent keys = the old behaviour, everything happens at the animation's end.
+// Tri-state shotguns are untouched: their phases have their own timers (CWeaponShotgun).
+void CWeaponMagazined::ArmReloadLockTimes()
+{
+	m_dwReloadInsertTm	= 0;
+	m_bReloadInsertDone	= false;
+	if (IsTriStateReload())					return;
+
+	LPCSTR anim = CurrentMotion().c_str();	// the alias PlayHUDMotion actually settled on
+	if (!anim || !anim[0])					return;
+
+	string128 key;
+	xr_sprintf(key, "lock_time_start_%s", anim);
+	float ls = READ_IF_EXISTS(pSettings, r_float, HudSection(), key, -1.0f);
+	if (ls < 0.0f)							return;
+
+	m_dwReloadInsertTm = Device.dwTimeGlobal + u32(ls * 1000.0f);
+
+	xr_sprintf(key, "lock_time_end_%s", anim);
+	float le = READ_IF_EXISTS(pSettings, r_float, HudSection(), key, -1.0f);
+	if (le >= 0.0f)
+	{
+		u32 end = m_dwMotionStartTm + u32((ls + le) * 1000.0f);
+		if (end < m_dwMotionEndTm)	m_dwMotionEndTm = end;		// shorten only, like the plain lock_time
+	}
+}
+
 void CWeaponMagazined::switch2_Reload()
 {
 	CWeapon::FireEnd	();
 
 	PlayAnimReload		();
+	ArmReloadLockTimes	();		// must follow PlayAnimReload: it reads the alias that was played
 	PlayReloadSound		();
 	SetPending			(TRUE);
 }
@@ -1809,10 +2204,51 @@ void CWeaponMagazined::MakeFireModeName(LPCSTR name, string_path& out)
 	if (!pSettings->line_exist(HudSection(), key))	return;
 	LPCSTR mark = pSettings->r_string(HudSection(), key);
 	if (!mark || !mark[0])	return;			// empty mark (e.g. single mode) = no suffix
+
+	// GS name order is  base + firemode mark + every trailing state token
+	// (anm_reload_auto_empty, anm_fakeshoot_auto_empty, anm_shoot_triple_last,
+	// anm_shoot_aim_triple_last_sil, anm_reload_auto_jammed_last, anm_idle_auto_jammed_w_gl).
+	// Plenty of call sites hand us an alias that ALREADY carries those tokens -- anm_reload_empty
+	// (empty reload), anm_fakeshoot_empty (empty click / dry fire), anm_shoot_last / anm_shoot_aim_last
+	// (the shot that empties the mag), anm_reload_empty_w_gl, anm_reload_empty_detector, CWeaponPistol's
+	// anm_*_empty family. Appending the mark to those builds anm_reload_empty_auto / anm_shoot_last_auto,
+	// which no config defines, so we fell back to the UNMARKED motion -- i.e. the single-fire variant --
+	// and the weapon model's fire-selector flag visibly snapped to "1" on the last shot, the empty
+	// click and the empty/jam reload while in burst or auto. So try the GS position first: strip the
+	// whole trailing token run and insert the mark ahead of it. Both attempts stay existence-gated,
+	// and the plain append remains as the fallback.
+	string_path stem;
+	string_path tail;
+	if (SplitStateSuffix(name, stem, tail))
+	{
+		string_path tmp;
+		strconcat(sizeof(tmp), tmp, stem, mark, tail);
+		if (isHUDAnimationExist(tmp))
+		{
+			xr_strcpy(out, tmp);
+			return;
+		}
+	}
+
 	string_path marked;
 	MakeStateName(name, mark, marked);
 	if (isHUDAnimationExist(marked))
 		xr_strcpy(out, marked);
+}
+
+// The bare mask_firemode_<a|N> mark for this alias, "" when the weapon/mode has none. PlayHUDMotion
+// composes base + mark + state itself (see the comment there).
+LPCSTR CWeaponMagazined::GetFireModeMark(LPCSTR name)
+{
+	// GS ModifierStd (L303): the firemode-switch transition itself never gets the mark -- it IS what
+	// moves the selector, so it must not be suffixed.
+	if (name && 0 == strncmp(name, "anm_changefiremode", 18))	return "";
+	string64 key;
+	if (m_iQueueSize == WEAPON_ININITE_QUEUE)	xr_strcpy(key, "mask_firemode_a");
+	else										xr_sprintf(key, "mask_firemode_%d", m_iQueueSize);
+	if (!pSettings->line_exist(HudSection(), key))	return "";
+	LPCSTR mark = pSettings->r_string(HudSection(), key);
+	return (mark && mark[0]) ? mark : "";
 }
 
 void CWeaponMagazined::FireSelectorBoneCallback(CBoneInstance* B)
@@ -1945,9 +2381,29 @@ void CWeaponMagazined::TriggerFireModeSwitchAnim(int oldMode, int newMode)
 	bool nowAuto = IsAutoFireMode();
 	if (!isHUDAnimationExist(anim))
 		xr_sprintf(anim, "anm_changefiremode_from_%s", nowAuto ? "1_to_a" : "a_to_1");
+	// With the detector in the left hand GS plays a DIFFERENT, one-handed switch motion -- the same
+	// `_detector` variant convention the reload already uses (anm_reload_detector). The glock authors
+	// all four (anm_changefiremode_from_1_to_a_empty_detector and friends). Existence-gated, so a
+	// weapon without them keeps the normal motion. The state token is appended after this by
+	// PlayHUDMotion, and SplitStateSuffix moves it in FRONT of the trailing `_detector`.
+	// "will this alias actually resolve to something right now?" -- it is NOT enough that SOME variant
+	// is authored: PlayHUDMotion appends only the token matching the CURRENT state, so accepting an
+	// alias that exists solely as ..._empty_detector and then firing it on a loaded weapon asks
+	// anim_play for the bare name and hard-fails (fatal: "has no motion alias defined").
+	auto authored = [&](LPCSTR a) {
+		if (isHUDAnimationExist(a))						return true;
+		if (NeedJammedAnim() && HasStateVariant(a, "_jammed"))	return true;
+		if (NeedEmptyAnim()  && HasStateVariant(a, "_empty"))	return true;
+		return false;
+	};
+	if (DetectorCompanionOut())
+	{
+		string64 det;	strconcat(sizeof(det), det, anim, "_detector");
+		if (authored(det))	xr_strcpy(anim, det);
+	}
 	m_sFireModeAnim = anim;
 
-	if (GetState()==eIdle && !IsPending() && isHUDAnimationExist(anim))
+	if (GetState()==eIdle && !IsPending() && authored(anim))
 		SwitchState(eFireModeSwitch);
 	else
 		m_fire_selector_hold = (newMode != 1);	// hold the selector for any non-single mode
@@ -2067,6 +2523,24 @@ bool CWeaponMagazined::CanDetach(const char* item_section_name)
 		return inherited::CanDetach(item_section_name);
 }
 
+// GS restricted_gl_and_sil (WeaponEvents.pas:329 / 351): the launcher and the silencer are mutually
+// exclusive on this weapon, and GS does NOT merely refuse the attach -- it detaches the other one
+// (need_detach_gl / need_detach_sil). The removed addon comes back as an inventory item.
+void CWeaponMagazined::GwrEnforceGLSilExclusion(bool silencer_is_the_new_one)
+{
+	if (!GwrRestrictedGLandSil())	return;
+	if (silencer_is_the_new_one)
+	{
+		if (IsGrenadeLauncherAttached() && m_sGrenadeLauncherName.size())
+			Detach(*m_sGrenadeLauncherName, true);
+	}
+	else
+	{
+		if (IsSilencerAttached() && m_sSilencerName.size())
+			Detach(*m_sSilencerName, true);
+	}
+}
+
 bool CWeaponMagazined::Attach(PIItem pIItem, bool b_send_event)
 {
 	bool result = false;
@@ -2088,6 +2562,8 @@ bool CWeaponMagazined::Attach(PIItem pIItem, bool b_send_event)
 		// GS default_brightness_step: start the reticle/NV illumination at the scope's default level (night
 		// scopes start bright, not at the dim step 0).
 		ResetScopeIllumToDefault();
+		// GS variable magnification: pick up this scope's lens steps (ELCAN 1.8x<->10x) and its start step.
+		ResetLensStepToDefault();
 		result = true;
 	}
 	else if(pSilencer &&
@@ -2096,6 +2572,7 @@ bool CWeaponMagazined::Attach(PIItem pIItem, bool b_send_event)
 	   (m_sSilencerName == pIItem->object().cNameSect()))
 	{
 		m_flagsAddOnState |= CSE_ALifeItemWeapon::eWeaponAddonSilencer;
+		GwrEnforceGLSilExclusion(true);
 		result = true;
 	}
 	else if(pGrenadeLauncher &&
@@ -2104,6 +2581,7 @@ bool CWeaponMagazined::Attach(PIItem pIItem, bool b_send_event)
 	   (m_sGrenadeLauncherName == pIItem->object().cNameSect()))
 	{
 		m_flagsAddOnState |= CSE_ALifeItemWeapon::eWeaponAddonGrenadeLauncher;
+		GwrEnforceGLSilExclusion(false);
 		result = true;
 	}
 
@@ -2170,8 +2648,94 @@ void CWeaponMagazined::LoadAddons()
 
 }
 */
+// GS ReassignHudSection: the HUD section -- i.e. the whole animation set -- is recomputed from the
+// weapon's `hud` baseline plus what is currently installed/attached. Two GS sites, both reproduced:
+//   * WeaponUpdate.pas:518 -- per INSTALLED UPGRADE: an upgrade may carry its own `hud`, and its own
+//     `hud_when_silencer_is_attached` + `hud_silencer` for the combination. That is how the groza's LAM
+//     node reaches wpn_groza_lam_silencer_hud (laser installed AND silencer on). GS's `skip_reassign`
+//     sentinel means "keep whatever we have", NOT a section name.
+//   * WeaponUpdate.pas:803 -- weapon-level `hud_when_silencer_is_attached` + `hud_silencer`, used only
+//     when no upgrade claimed the section (GS's hud_overriden flag).
+// Recomputed from scratch every time rather than saved/restored, so attach, detach and upgrade installs
+// all converge on the same answer in any order.
+// GS PlaySoundByAnimName: load every `snd_anm_*` the CURRENT HUD section defines, keyed by the config name
+// itself, so CHudItem::PlayHUDMotion can look the sound up by the alias it just resolved. Covers the gauss
+// MUI toggle (snd_anm_changefiremode_from_1_to_a/_from_a_to_1) and anything else a config keys.
+// Re-run whenever hud_sect changes: an upgrade may repoint `hud` at a section with its OWN sounds (the
+// gauss's fast-rpm node -> [wpn_gauss_hud_fastrpm], whose shot sounds are the gauss_shoot_fast set).
+void CWeaponMagazined::LoadAnmSounds()
+{
+	const shared_str& hs = HudSection();
+	if (!hs.size() || !pSettings->section_exist(hs))	return;
+	if (m_anm_snd_sect == hs)						return;	// already loaded from this section
+
+	m_anm_snd_sect = hs;
+	m_sounds.RemoveSounds("snd_anm_");
+	CInifile::Sect& S = pSettings->r_section(hs);
+	for (const auto& it : S.Data)
+	{
+		LPCSTR key = it.first.c_str();
+		if (0 != strncmp(key, "snd_anm_", 8))	continue;
+		if (m_sounds.FindSoundItem(key, false))	continue;	// already loaded (shotgun phases)
+		m_sounds.LoadSound(*hs, key, key, false, m_eSoundReload);
+	}
+}
+
+void CWeaponMagazined::UpdateHudSectionForAddons(LPCSTR extra_upgrade_sect)
+{
+	const shared_str& wsect = cNameSect();
+	if (!pSettings->line_exist(wsect, "hud"))	return;
+
+	shared_str target		= pSettings->r_string(wsect, "hud");	// baseline
+	bool upgrade_overrode	= false;
+
+	// installed upgrades, newest last so it wins
+	xr_vector<shared_str> srcs;
+	for (const shared_str& up : m_upgrades)
+	{
+		if (!up.size())	continue;
+		srcs.push_back(pSettings->line_exist(up, "section") ? (shared_str)pSettings->r_string(up, "section") : up);
+	}
+	if (extra_upgrade_sect && extra_upgrade_sect[0])	srcs.push_back(extra_upgrade_sect);
+
+	for (const shared_str& s : srcs)
+	{
+		if (!s.size() || !pSettings->section_exist(*s))	continue;
+
+		if (IsSilencerAttached()
+			&& !!READ_IF_EXISTS(pSettings, r_bool, *s, "hud_when_silencer_is_attached", FALSE)
+			&& pSettings->line_exist(*s, "hud_silencer"))
+		{
+			target = pSettings->r_string(*s, "hud_silencer");
+			upgrade_overrode = true;
+		}
+		else if (pSettings->line_exist(*s, "hud"))
+		{
+			LPCSTR h = pSettings->r_string(*s, "hud");
+			if (h && h[0] && 0 != xr_strcmp(h, "skip_reassign"))	// sentinel: leave the section alone
+			{
+				target = h;
+				upgrade_overrode = true;
+			}
+		}
+	}
+
+	if (!upgrade_overrode && IsSilencerAttached()
+		&& !!READ_IF_EXISTS(pSettings, r_bool, wsect, "hud_when_silencer_is_attached", FALSE)
+		&& pSettings->line_exist(wsect, "hud_silencer"))
+		target = pSettings->r_string(wsect, "hud_silencer");
+
+	if (target.size() && pSettings->section_exist(*target) && hud_sect != target)
+		hud_sect = target;
+
+	// unconditional: the base install_upgrade_impl may already have set hud_sect straight off the upgrade's
+	// `hud`, so the compare above sees no change even though the sound set must follow the new section.
+	LoadAnmSounds();
+}
+
 void CWeaponMagazined::InitAddons()
 {
+	UpdateHudSectionForAddons();
 	m_zoom_params.m_fIronSightZoomFactor = READ_IF_EXISTS( pSettings, r_float, cNameSect(), "ironsight_zoom_factor", 50.0f );
 	if ( IsScopeAttached() )
 	{
@@ -2204,6 +2768,7 @@ void CWeaponMagazined::InitAddons()
 			m_UIScope				= xr_new<CUIWindow>();
 			createWpnScopeXML		();
 			CUIXmlInit::InitWindow	(*pWpnScopeXml, scope_tex_name.c_str(), 0, m_UIScope);
+			ApplyScopeIllumUI		();		// pick the reticle level for the current brightness step
 		}
 	}
 	else
@@ -2369,11 +2934,34 @@ void CWeaponMagazined::PlayAnimReload()
 
 	if (isHUDAnimationExist("anm_reload_jammed") && IsMisfire())
 	{
-		if (det && isHUDAnimationExist("anm_reload_jammed_detector"))
+		// GS anm_reload selector (WeaponAnims.pas:771-774): the jam clear takes a "_last" variant when the
+		// magazine is ALSO empty -- the revival ends with the bolt held back instead of chambering a round.
+		// GS token order is _jammed then _last, with _detector outermost (anm_reload_jammed_last_detector).
+		// The firemode mark and _noscope are layered on by PlayHUDMotion (_last is already in its suffix
+		// table), so anm_reload_auto_jammed_last / _last_noscope resolve on their own.
+		const bool last = (0 == iAmmoElapsed);
+		if (last && det && isHUDAnimationExist("anm_reload_jammed_last_detector"))
+			PlayHUDMotion("anm_reload_jammed_last_detector", TRUE, this, GetState());
+		else if (last && isHUDAnimationExist("anm_reload_jammed_last"))
+			PlayHUDMotion("anm_reload_jammed_last", TRUE, this, GetState());
+		else if (det && isHUDAnimationExist("anm_reload_jammed_detector"))
 			PlayHUDMotion("anm_reload_jammed_detector", TRUE, this, GetState());
 		else
 			PlayHUDMotion("anm_reload_jammed", TRUE, this, GetState());
 		bMisfireReload = true;
+	}
+	// GS anm_reload selector (WeaponAnims.pas:1035): with rounds still loaded and an ammo-type change
+	// pending, the reload is a CHANGE -- its own motion (pull the old round out, put the new one in).
+	// Precedence is GS's: jammed > empty > ammochange, so an empty gun just reloads normally.
+	else if (iAmmoElapsed > 0 && m_set_next_ammoType_on_reload != u32(-1)
+		&& (isHUDAnimationExist("anm_reload_ammochange")
+			|| (det && isHUDAnimationExist("anm_reload_ammochange_detector"))))
+	{
+		if (det && isHUDAnimationExist("anm_reload_ammochange_detector"))
+			PlayHUDMotion("anm_reload_ammochange_detector", TRUE, this, GetState());
+		else
+			PlayHUDMotion("anm_reload_ammochange", TRUE, this, GetState());
+		m_bAmmoChangeReload = true;		// PlayReloadSound: snd_changecartridgetype, not the reload sound
 	}
 	else if (iAmmoElapsed == 0)
 	{
@@ -2506,6 +3094,42 @@ void CWeaponMagazined::PlayAnimShoot()
 	string_path anim;
 	SelectShootAnim(anim);
 	PlayHUDMotion(anim, FALSE, this, GetState());
+}
+
+// Base alias for the shot that jams. "_last" is deliberately NOT applied: GS's modifier precedence is
+// jammed > last, so the jammed variant replaces it. Overridden by the double-barrels (shell count).
+void CWeaponMagazined::SelectJammedShootBase(string_path& out)
+{
+	if (IsZoomed() && isHUDAnimationExist("anm_shoot_aim"))
+	{
+		if (UseScopeAnims() && isHUDAnimationExist("anm_shoot_aim_scope"))
+			xr_strcpy(out, "anm_shoot_aim_scope");
+		else
+			xr_strcpy(out, "anm_shoot_aim");
+		return;
+	}
+	xr_strcpy(out, "anm_shoot");
+}
+
+// The shot that JAMS re-assigns the shoot motion to its "_jammed" variant, so the failure is shown by the
+// firing animation itself (GS anm_shots_selector).
+// Returns false when the weapon authors no jammed shot variant -- then the running shoot anim is kept.
+bool CWeaponMagazined::PlayJammedShootAnim()
+{
+	if (GetState() != eFire)	return false;
+
+	// OPT-IN per weapon (`use_jammed_shoot_anim`). GS re-assigns the shot animation on every gun, but our
+	// configs carry the `_jammed` shot variants EVERYWHERE (they came with the bulk GS alias transfer), so
+	// the "does this weapon author one?" gate below turned the feature on for the whole arsenal instead of
+	// the shotgun it was ported for -- and on a GL rifle it also pulled the hands out of the launcher pose.
+	// Weapons that want it say so in their config; everyone else keeps the plain shot + jammed idle.
+	if (!READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "use_jammed_shoot_anim", FALSE))	return false;
+
+	string_path base;	SelectJammedShootBase(base);
+	if (!base[0] || !HasStateVariant(base, "_jammed"))	return false;
+
+	// NeedJammedAnim() is true now (bMisfire), so PlayHUDMotion picks the _jammed variant itself
+	return (0 != PlayHUDMotion(base, FALSE, this, GetState()));
 }
 
 // ---- aim-in / aim-out (ADS) transition, Gunslinger-style ----
@@ -2832,6 +3456,10 @@ void CWeaponMagazined::GetBriefInfo(xr_string& str_name, xr_string& icon_sect_na
 bool CWeaponMagazined::install_upgrade_impl( LPCSTR section, bool test )
 {
 	bool result = inherited::install_upgrade_impl( section, test );
+	// the base class may have set hud_sect straight off the upgrade's `hud`; re-derive it so an
+	// upgrade's silencer-specific variant (and the skip_reassign sentinel) get their say. `section`
+	// is the effect section being installed and is NOT in m_upgrades yet -- pass it explicitly.
+	if ( !test )	UpdateHudSectionForAddons( section );
 	
 	LPCSTR str;
 	// fire_modes = 1, 2, -1
@@ -2847,10 +3475,27 @@ bool CWeaponMagazined::install_upgrade_impl( LPCSTR section, bool test )
 			m_aFireModes.push_back( (s8)atoi(sItem) );
 		}
 		m_iCurFireMode = ModesCount - 1;
+		// ...and the LIVE queue must follow, or the weapon keeps firing in whatever mode it was in
+		// before the upgrade while m_iCurFireMode already points at the new one. The first press of
+		// the selector then plays its animation and "does nothing" (it only moves the index back to
+		// the mode the gun was really in) -- the glock's autofire/3-round upgrades showed exactly
+		// that. Non-actor holders keep the AI's infinite queue, same rule as OnH_A_Chield.
+		m_bHasDifferentFireModes = (ModesCount > 1);
+		if (smart_cast<CActor*>(H_Parent()))	SetQueueSize(GetCurrentFireMode());
+		else if (m_bHasDifferentFireModes)		SetQueueSize(WEAPON_ININITE_QUEUE);
 	}
 	result |= result2;
 
 	result |= process_if_exists( section, "dispersion_start", &CInifile::r_s32, m_iShootEffectorStart, test );
+
+	// GS recharge_time -- the gauss's fast_conders / ionistori nodes shorten the charge (-1.0 / -0.3)
+	result |= process_if_exists( section, "recharge_time", &CInifile::r_float, m_fRechargeTime, test );
+
+	// AN-94 hyperburst keys are upgradeable like any other ballistic value
+	result |= process_if_exists( section, "base_dispersioned_bullets_count",      &CInifile::r_s32,   m_iBaseDispersionedBulletsCount,     test );
+	result |= process_if_exists( section, "base_dispersioned_bullets_speed",      &CInifile::r_float, m_fBaseDispersionedBulletsSpeed,     test );
+	result |= process_if_exists( section, "base_dispersioned_bullets_time_delta", &CInifile::r_float, m_fBaseDispersionedBulletsTimeDelta, test );
+	result |= process_if_exists( section, "singleshoots_time_delta",              &CInifile::r_float, m_fSingleShootsTimeDelta,            test );
 
 	// sounds (name of the sound, volume (0.0 - 1.0), delay (sec))
 	result2 = process_if_exists_set( section, "snd_draw", &CInifile::r_string, str, test );

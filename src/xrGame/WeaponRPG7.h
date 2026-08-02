@@ -17,6 +17,10 @@ public:
 	virtual void OnStateSwitch	(u32 S);
 	virtual void OnEvent		(NET_Packet& P, u16 type);
 	virtual void ReloadMagazine	();
+	// GS RPG7ReactiveHit: the backblast out of the tube (reactive_hit_* config family)
+	void		 ReactiveHit	();
+	// GS: a worn launcher can detonate its rocket in the tube (rocket_misfunc_* family)
+	bool		 RocketMisfunction();
 	virtual void Load			(LPCSTR section);
 	virtual void switch2_Fire	();
 	virtual	void FireTrace		(const Fvector& P, const Fvector& D);

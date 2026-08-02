@@ -392,6 +392,7 @@ CRenderTarget::CRenderTarget		()
 		// 3D PiP scope lens + last-normal-frame keep -- 1 sample (sampled by the lens shader)
 		rt_scope.create(r2_RT_scope, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
 		rt_scope_save.create("$user$scope_save", s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
+		rt_scope_ui.create(r2_RT_scope_ui, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
 		rt_Generic_1.create(r2_RT_generic1, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, SampleCount);
 		if (RImplementation.o.dx10_msaa)
 		{
@@ -1162,6 +1163,18 @@ void CRender::RenderScopeToRT()
 		HW.pDevice->ResolveSubresource(rt->pSurface, 0, src->pSurface, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
 	else
 		HW.pDevice->CopyResource(rt->pSurface, src->pSurface);
+
+	// Same image into $user$scopeui -- GS grabs that one after the UI pass so its electronic optics show the
+	// HUD inside the lens; we only need the magnified world there, and this feeds both scope shader families
+	// (models_zoom -> $user$scope, models_zoom_gauss -> $user$scopeui) from a single capture.
+	CRT* rt_ui = Target->rt_scope_ui._get();
+	if (rt_ui && rt_ui->pSurface)
+	{
+		if (RImplementation.o.dx10_msaa)
+			HW.pDevice->ResolveSubresource(rt_ui->pSurface, 0, src->pSurface, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
+		else
+			HW.pDevice->CopyResource(rt_ui->pSurface, src->pSurface);
+	}
 }
 
 // 3D PiP present bridge: keep Present firing every frame (a skipped Present flickers on DXGI flip) but make

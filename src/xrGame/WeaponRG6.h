@@ -18,6 +18,10 @@ public:
 protected:
 	virtual void	FireStart				();
 	virtual u8		AddCartridge			(u8 cnt);
+	// GS: the launchable "fake grenade" is created once per loaded round, not per AddCartridge call
+	bool			SpawnRocketIfNeeded		();
+	virtual void	ReloadMagazine			();
+	u32				m_dwRocketSpawnFrame = 0;	// last frame one was spawned (one per frame, like GS)
 
 	DECLARE_SCRIPT_REGISTER_FUNCTION
 };

@@ -330,6 +330,9 @@ public:
     shared_str				GetWeather			()					{ return CurrentWeatherName;}
 	void ChangeGameTime(float game_time);
 	void					SetGameTime			(float game_time, float time_factor);
+	// Game day time in seconds. Used to exist only in editor builds; the render layer needs it too for the
+	// Gunslinger m_digiclock constant (the clock on the gauss MUI screens).
+	float					GetGameTime			() const {return fGameTime;}
 
 	void					OnDeviceCreate		();
 	void					OnDeviceDestroy		();
@@ -341,12 +344,7 @@ public:
 	float					ed_to_time			;
 public:
     void					ED_Reload			();
-    float					GetGameTime			(){return fGameTime;}
 #else // #ifdef _EDITOR
-#	ifdef INGAME_EDITOR
-		float				GetGameTime			(){return fGameTime;}
-#	endif // #ifdef INGAME_EDITOR
-
 	bool					m_paused;
 #endif // #ifdef _EDITOR
 

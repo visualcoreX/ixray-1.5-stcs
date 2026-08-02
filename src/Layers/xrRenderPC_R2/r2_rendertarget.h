@@ -60,6 +60,10 @@ public:
 	// renders the zoomed view) can present the previous un-zoomed frame instead of flashing the zoom.
 	ref_rt						rt_scope;			// 32bit		(r,g,b,a)
 	ref_rt						rt_scope_save;		// 32bit		(r,g,b,a)
+	// Gunslinger keeps a SECOND lens capture, $user$scopeui ("scope render with UI"): the same lens frame
+	// grabbed after the UI pass. Electronic optics sample that one instead of $user$scope -- the gauss's
+	// models_zoom_gauss.s binds s_vp2 to it, so without this RT its lens samples nothing and reads black.
+	ref_rt						rt_scope_ui;		// 32bit		(r,g,b,a)
 	ref_rt						rt_Bloom_1;			// 32bit, dim/4	(r,g,b,?)
 	ref_rt						rt_Bloom_2;			// 32bit, dim/4	(r,g,b,?)
 	ref_rt						rt_LUM_64;			// 64bit, 64x64,	log-average in all components

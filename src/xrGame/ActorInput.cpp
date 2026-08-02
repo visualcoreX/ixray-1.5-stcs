@@ -128,6 +128,16 @@ void CActor::IR_OnKeyboardPress(int cmd)
 		return;
 	}
 
+	// GS alter zoom (wpn_alter_zoom, GS binds the middle mouse button): toggle the active scope's SECOND aim
+	// pose -- only meaningful while already aiming through a scope that declares alter_zoom_allowed.
+	if (cmd==kWPN_ALTER_ZOOM)
+	{
+		CWeapon* w = smart_cast<CWeapon*>(inventory().ActiveItem());
+		if (w && w->IsZoomed() && w->IsAlterZoomAllowed())
+			w->ToggleAlterZoom();
+		return;
+	}
+
 	if(m_holder && kUSE != cmd)
 	{
 		m_holder->OnKeyboardPress			(cmd);
@@ -200,6 +210,7 @@ void CActor::IR_OnKeyboardPress(int cmd)
 				// Schedule the melee hit at the stab mark (weapon is already out, so a fixed delay from now).
 				u32 ht = READ_IF_EXISTS(pSettings, r_u32, wmk->cNameSect().c_str(), "bayonet_hit_time", 250);
 				m_dwBayonetHitTm = Device.dwTimeGlobal + ht;
+				wmk->PlayKickSound();	// GS snd_kick (its own snd_<anim> lookup for anm_kick)
 			}
 			else
 			{

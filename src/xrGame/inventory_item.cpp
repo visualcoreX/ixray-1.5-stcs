@@ -399,7 +399,15 @@ void CInventoryItem::net_Destroy		()
 
 void CInventoryItem::save(NET_Packet &packet)
 {
-	packet.w_u8				((u8)m_eItemCurrPlace);
+	// Interchangeable weapon slots: m_slot is a RUNTIME value now (a pistol may live in the primary
+	// slot and vice versa), so it has to survive a save -- otherwise every item falls back to its
+	// config slot on load and the two weapons swap back. Packed into the free high nibble of the
+	// place byte rather than appended as a new field, so the save format is unchanged: EItemPlace
+	// only uses 0..3, and an old save has zeros up there = "no stored slot" = the previous behaviour.
+	u8 place = (u8)m_eItemCurrPlace & 0x0F;
+	if (m_eItemCurrPlace == eItemPlaceSlot && m_slot != NO_ACTIVE_SLOT && m_slot < 15)
+		place |= (u8)((m_slot + 1) << 4);
+	packet.w_u8				(place);
 	packet.w_float			(m_fCondition);
 //--	save_data				(m_upgrades, packet);
 
@@ -782,7 +790,13 @@ void CInventoryItem::net_Export			(NET_Packet& P)
 
 void CInventoryItem::load(IReader &packet)
 {
-	m_eItemCurrPlace		= (EItemPlace)packet.r_u8();
+	const u8 place			= packet.r_u8();
+	m_eItemCurrPlace		= (EItemPlace)(place & 0x0F);
+	// restore the runtime slot stored in the high nibble (0 = old save / not slotted -> keep the
+	// config slot). CInventory::Slot() then re-occupies exactly the slot the item was saved in.
+	const u8 saved_slot		= (u8)(place >> 4);
+	if (saved_slot && CanGoInSlot(u32(saved_slot - 1)))
+		SetSlot				(u32(saved_slot - 1));
 	m_fCondition			= packet.r_float();
 
 //--	load_data( m_upgrades, packet );

@@ -856,7 +856,8 @@ float CActor::currentFOV()
 
 	// 3D PiP lensed scope: keep the WORLD FOV at base -- all magnification lives in the scope lens itself
 	// (the double-rendered $user$scope). Zooming the main view too would double-zoom and defeat the PiP.
-	if (pWeapon->IsLensedScope())
+	// A collimator is 1x by definition, so it must not zoom the world either (scope_zoom_factor is moot).
+	if (pWeapon->IsLensedScope() || pWeapon->IsCollimatorScope())
 		return g_fov;
 
 	// Gunslinger: aiming the GL (grenade mode) never zooms the WORLD -- it uses its own HUD fov
@@ -929,7 +930,10 @@ void CActor::UpdateCL	()
 			float	abber	= (asc.size() && pSettings->line_exist(*asc, "scope_abberation"))
 							? pSettings->r_float(*asc, "scope_abberation")
 							: READ_IF_EXISTS(pSettings, r_float, wpn->cNameSect(), "scope_abberation", 0.f);
-			g_pGamePersistent->hud_scope_params.set(aspect, aim, abber, 1.f);
+			// .w = GS lens visibility (collimator.pas GetZoomLensVisibilityFactor): 0 in the alter pose,
+			// cross-fading with the switch, so the ELCAN's lens goes dark when the eye moves to its
+			// backup 1x sight. Shader alpha = min(aim, this) -> 0 discards the lens quad entirely.
+			g_pGamePersistent->hud_scope_params.set(aspect, aim, abber, wpn->LensVisibility());
 			// GS scope illumination -> m_zoom_deviation.z = brightness, .w = jitter (used by the NV lens shader
 			// model_scope_lense_night). Day scopes ignore .z/.w and use the reticle-glow bones instead.
 			g_pGamePersistent->hud_zoom_deviation.set(0.f, 0.f, wpn->ScopeIllumValue(), wpn->ScopeIllumJitter());

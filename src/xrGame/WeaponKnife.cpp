@@ -34,6 +34,14 @@ void CWeaponKnife::Load	(LPCSTR section)
 
 	fWallmarkSize = pSettings->r_float(section,"wm_size");
 	m_sounds.LoadSound(section,"snd_shoot"		, "sndShot"		, false, SOUND_TYPE_WEAPON_SHOOTING		);
+	// GS gives the knife its own draw/holster sounds (snd_draw = knife_draw, snd_holster = knife_hide).
+	// The keys were in w_knife.ltx all along, but nothing loaded them here -- CWeaponKnife does not go
+	// through CWeaponMagazined::LoadSounds -- so the knife came out and went away silently. Optional
+	// (guarded), mechanical type like every other gesture sound.
+	if (pSettings->line_exist(section, "snd_draw"))
+		m_sounds.LoadSound(section, "snd_draw"   , "sndShow", false, SOUND_TYPE_ITEM_TAKING);
+	if (pSettings->line_exist(section, "snd_holster"))
+		m_sounds.LoadSound(section, "snd_holster", "sndHide", false, SOUND_TYPE_ITEM_HIDING);
 	
 	knife_material_idx =  GMLib.GetMaterialIdx(KNIFE_MATERIAL_NAME);
 }
@@ -213,6 +221,8 @@ void CWeaponKnife::switch2_Hiding	()
 {
 	FireEnd					();
 	VERIFY(GetState()==eHiding);
+	if (m_sounds.FindSoundItem("sndHide", false))
+		PlaySound			("sndHide", get_LastFP());
 	PlayHUDMotion("anm_hide", TRUE, this, GetState());
 }
 
@@ -225,6 +235,8 @@ void CWeaponKnife::switch2_Hidden()
 void CWeaponKnife::switch2_Showing	()
 {
 	VERIFY(GetState()==eShowing);
+	if (m_sounds.FindSoundItem("sndShow", false))
+		PlaySound			("sndShow", get_LastFP());
 	PlayHUDMotion("anm_show", FALSE, this, GetState());
 }
 

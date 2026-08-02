@@ -19,6 +19,7 @@ CWeaponShotgun::CWeaponShotgun()
 	m_bAddCartridgeInOpen	= false;
 	m_bEmptyPreloadMode		= false;
 	m_bChamberFirstRound	= false;
+	m_bTriUnjamming			= false;
 	m_bTriInsertDone		= false;
 	m_dwTriInsertTm			= 0;
 	m_dwTriPhaseTm			= 0;
@@ -164,6 +165,12 @@ bool CWeaponShotgun::Action(s32 cmd, u32 flags)
 	if (inherited::Action(cmd, flags))
 		return true;
 
+	// GS CWeaponShotgun__Action_OnStopReload (WeaponAmmoCounter.pas:351): the fire key cuts a tri-state
+	// reload short -- but NOT while the gun is jammed. The jam-clear gesture must play out, otherwise the
+	// trigger pull (which on a jammed gun only produces the dry click) would abort the only way to unjam.
+	if (m_bTriStateReload && cmd == kWPN_FIRE && flags & CMD_START && GetState() == eReload && IsMisfire())
+		return true;
+
 	if (m_bTriStateReload && cmd == kWPN_FIRE && flags & CMD_START && GetState() == eReload && (m_sub_state == eSubstateReloadInProcess || m_sub_state == eSubstateReloadBegin))//���������� �����������
 	{
 		bStopReloadSignal = true;
@@ -194,6 +201,28 @@ void CWeaponShotgun::OnAnimationEnd(u32 state)
 // the insert timer never fired (no lock_time_start), matching the legacy add-at-anim-end behaviour.
 void CWeaponShotgun::AdvanceTriReload()
 {
+	// GS CWeaponMagazined__OnAnimationEnd_anm_open, jammed branch (WeaponAmmoCounter.pas:372): the jam-clear
+	// gesture ENDS the cycle -- clear the misfire, reset the substate and go straight back to idle. It does
+	// NOT continue into add_cartridge/close: topping the tube up is a separate reload the player asks for.
+	if (m_bTriUnjamming)
+	{
+		m_bTriUnjamming		= false;
+		bMisfire			= false;
+		bStopReloadSignal	= false;
+		bReloadKeyPressed	= false;
+		bAmmotypeKeyPressed	= false;
+		m_dwTriInsertTm		= 0;
+		m_dwTriPhaseTm		= 0;
+		m_sub_state			= eSubstateReloadBegin;
+		// GS first_state_after_jammed (default true): after the revival the gun is "just handled" again, so
+		// the next anims use the _first family exactly like after a reload.
+		if (READ_IF_EXISTS(pSettings, r_bool, HudSection(), "first_state_after_jammed", TRUE))
+			m_bJustAfterReload = true;
+		SetPending			(FALSE);
+		SwitchState			(eIdle);
+		return;
+	}
+
 	switch(m_sub_state)
 	{
 		case eSubstateReloadBegin:
@@ -271,13 +300,17 @@ void CWeaponShotgun::Reload()
 
 void CWeaponShotgun::TriStateReload()
 {
-	if( !HaveCartridgeInInventory(1) )return;
+	// GS CWeaponShotgun_Needreload (WeaponAmmoCounter.pas:407): `jammed OR have cartridges`. Clearing a jam
+	// needs no spare shells and no room in the tube -- without this a jammed shotgun with an empty backpack
+	// (or a full magazine) could not be touched at all: reload did nothing and the gun stayed jammed forever.
+	if( !IsMisfire() && !HaveCartridgeInInventory(1) )return;
 	CWeapon::Reload		();
 	// GS tri-state options live in the HUD section (valid now that the weapon is in hand)
 	m_bAddCartridgeInOpen	= READ_IF_EXISTS(pSettings, r_bool, HudSection(), "add_cartridge_in_open", FALSE);
 	m_bEmptyPreloadMode		= READ_IF_EXISTS(pSettings, r_bool, HudSection(), "empty_preload_mode", FALSE);
 	m_bReloadEmpty		= (iAmmoElapsed == 0);	// remember for the whole reload (the _empty family)
 	m_bPreloaded		= false;
+	m_bTriUnjamming		= false;
 	m_dwTriInsertTm		= 0;
 	m_dwTriPhaseTm		= 0;
 	m_sub_state			= eSubstateReloadBegin;
@@ -294,6 +327,16 @@ void CWeaponShotgun::OnStateSwitch	(u32 S)
 	}
 
 	CWeapon::OnStateSwitch(S);
+
+	// JAM CLEAR (GS): the open phase of a jammed gun is the revival gesture, so it must be reached whatever
+	// the magazine/inventory look like -- the "nothing to load" shortcut below would otherwise drop straight
+	// to switch2_EndReload (close only) and the misfire would never be cleared.
+	if (IsMisfire() && !m_bTriUnjamming)
+	{
+		m_sub_state = eSubstateReloadBegin;		// whatever the cycle was doing, the jam comes first
+		switch2_StartReload();
+		return;
+	}
 
 	if( m_magazine.size() == (u32)iMagazineSize || !HaveCartridgeInInventory(1) ){
 			switch2_EndReload		();
@@ -319,6 +362,24 @@ void CWeaponShotgun::OnStateSwitch	(u32 S)
 
 void CWeaponShotgun::switch2_StartReload()
 {
+	// GS anm_open_selector (WeaponAnims.pas:765): while jammed the open phase plays the revival instead --
+	// anm_reload_jammed[_last] with its own sound; AdvanceTriReload then ends the cycle (no add/close).
+	if (IsMisfire())
+	{
+		m_bTriUnjamming		= true;
+		m_bTriInsertDone	= true;					// no shell is seated by the revival
+		m_dwTriInsertTm		= 0;
+		// no phase timer: like GS the revival runs to its own end (a config lock_time_anm_reload_jammed is
+		// already honoured by PlayHUDMotion, which shortens the motion end -> OnAnimationEnd).
+		m_dwTriPhaseTm		= 0;
+		// ...unless the weapon has no revival motion at all: then there is no anim end to wait for, so
+		// advance on the next frame instead of leaving the gun stuck in eReload (jammed forever again).
+		if (0 == PlayAnimUnjamWeapon())				// selects the variant -> m_sTriCurAnim
+			m_dwTriPhaseTm	= Device.dwTimeGlobal + 1;
+		SetPending			(TRUE);
+		return;
+	}
+
 	PlayAnimOpenWeapon	();							// selects the variant -> m_sTriCurAnim
 	PlayReloadPhaseSound(m_sTriCurAnim.c_str(), "sndOpen");
 	// empty + preload mode: anm_open_empty seats one round into the chamber -> the follow-up phases use
@@ -360,6 +421,33 @@ void CWeaponShotgun::PlayAnimAddOneCartridgeWeapon()
 	m_sTriCurAnim = anim;
 	m_bPreloaded = false;	// GS SetPreloadedStatus(false): only the first insert after an empty open is "_preloaded"
 }
+// The jam-clear gesture, GS anm_open_selector's jammed branch: anm_reload_jammed, or anm_reload_jammed_last
+// when the gun is also empty (the last round is what jammed). Sound: snd_reload_jammed[_last] (labels
+// sndReloadMis/sndReloadMisLast), or the per-anim snd_<alias> when the config defines one.
+u32 CWeaponShotgun::PlayAnimUnjamWeapon()
+{
+	VERIFY(GetState()==eReload);
+	string_path anim;	xr_strcpy(anim, "anm_reload_jammed");
+	LPCSTR snd = "sndReloadMis";
+	if (iAmmoElapsed == 0 && isHUDAnimationExist("anm_reload_jammed_last"))
+	{
+		xr_strcpy(anim, "anm_reload_jammed_last");
+		if (m_sounds.FindSoundItem("sndReloadMisLast", false))	snd = "sndReloadMisLast";
+	}
+	if (!isHUDAnimationExist(anim))	xr_strcpy(anim, "anm_reload");	// GS ModifierStd fallback
+	if (!isHUDAnimationExist(anim))	return 0;						// nothing to play at all
+
+	u32 t = PlayHUDMotion(anim, TRUE, this, GetState());
+	m_sTriCurAnim = anim;
+
+	// per-anim sound first (snd_anm_reload_jammed...), else the fixed jam-clear label; a weapon that defines
+	// neither stays silent rather than borrowing sndOpen (which is the pump/drum sound, wrong for a revival).
+	string_path key;	strconcat(sizeof(key), key, "snd_", anim);
+	if (m_sounds.FindSoundItem(key, false))			PlaySound(key, get_LastFP());
+	else if (m_sounds.FindSoundItem(snd, false))	PlaySound(snd, get_LastFP());
+	return t;
+}
+
 void CWeaponShotgun::PlayAnimCloseWeapon()
 {
 	VERIFY(GetState()==eReload);

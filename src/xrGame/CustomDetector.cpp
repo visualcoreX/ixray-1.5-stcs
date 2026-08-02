@@ -10,6 +10,7 @@
 #include "ui/UIWindow.h"
 #include "player_hud.h"
 #include "weapon.h"
+#include "WeaponMagazined.h"
 #include "../xrEngine/motion.h"		// ESMFlags (esmStopAtEnd) - one-shot vs looping companion
 #include "WeaponMagazined.h"
 #include "WeaponPistol.h"		// CWeaponPistol -- "one-handed" test for detector coexistence (slots are interchangeable now)
@@ -26,6 +27,21 @@ ITEM_INFO::~ITEM_INFO()
 		CParticlesObject::Destroy(pParticle);
 }
 
+// GS CanShowDetector (DetectorUtils.pas:208): a weapon may forbid the detector for the DURATION of
+// one specific animation, via `disable_detector_<alias>` in its hud section -- the glock uses it so the
+// hand puts the detector away while the fire-mode selector is switched. Keyed on the motion actually
+// playing, so it releases by itself when that animation ends. Consulted from BOTH the compatibility
+// test (item switches) and the per-frame UpdateVisibility, since a fire-mode switch changes neither
+// the active item nor the weapon state and would otherwise never be re-evaluated.
+bool  CCustomDetector::AnimForbidsDetector(CHudItem* itm)
+{
+	if (!itm)	return false;
+	const shared_str& cm = itm->CurrentMotion();
+	if (!cm.size())	return false;
+	string_path key;	strconcat(sizeof(key), key, "disable_detector_", cm.c_str());
+	return pSettings->line_exist(itm->HudSection(), key) && !!pSettings->r_bool(itm->HudSection(), key);
+}
+
 bool  CCustomDetector::CheckCompatibilityInt(CHudItem* itm, u32* slot_to_activate)
 {
 	if(itm==NULL)
@@ -37,7 +53,31 @@ bool  CCustomDetector::CheckCompatibilityInt(CHudItem* itm, u32* slot_to_activat
 	// slots so the slot test is fine, but the weapon slots are INTERCHANGEABLE now -- a rifle can sit in
 	// the former pistol slot -- so gate weapons on the actual TYPE (CWeaponPistol), not on the slot,
 	// otherwise a rifle-in-slot-1 wrongly let the detector stay out.
-	bool bres = (slot==KNIFE_SLOT || slot==BOLT_SLOT) || (smart_cast<CWeaponPistol*>(itm) != NULL);
+	// GS CanUseDetectorWithItem (DetectorUtils.pas:98) does not look at the item's class at all --
+	// it reads a config bool off the item's own section and lets an installed UPGRADE override it:
+	//   result := game_ini_r_bool_def(sect,'supports_detector', false);
+	//   result := FindBoolValueInUpgradesDef(wpn,'supports_detector', result, true);
+	// Ported verbatim, with our old class/slot test kept as the fallback for every weapon whose
+	// config predates the key (all the pistols ported before it existed still just work).
+	bool bres;
+	const shared_str& isect = iitm.object().cNameSect();
+	if (pSettings->line_exist(isect, "supports_detector"))
+		bres = !!pSettings->r_bool(isect, "supports_detector");
+	else
+		bres = (slot==KNIFE_SLOT || slot==BOLT_SLOT) || (smart_cast<CWeaponPistol*>(itm) != NULL);
+	for (const shared_str& up : iitm.get_upgrades())
+	{
+		if (!up.size() || !pSettings->section_exist(*up))	continue;
+		LPCSTR src = *up;
+		if (pSettings->line_exist(*up, "section"))
+		{
+			LPCSTR e = pSettings->r_string(*up, "section");
+			if (e && e[0] && pSettings->section_exist(e) && pSettings->line_exist(e, "supports_detector"))
+				src = e;
+		}
+		if (pSettings->line_exist(src, "supports_detector"))
+			bres = !!pSettings->r_bool(src, "supports_detector");
+	}
 
 	// The active item can't be held together with the detector (e.g. a rifle in the main slot). Instead
 	// of doing nothing, report a slot the detector CAN share so the caller switches to it first and then
@@ -58,7 +98,14 @@ bool  CCustomDetector::CheckCompatibilityInt(CHudItem* itm, u32* slot_to_activat
 			bres = true;
 	}
 
-	if(itm->GetState()!=CHUDState::eShowing)
+	if (bres && AnimForbidsDetector(itm))	bres = false;
+
+	// An item still coming UP owns both hands: taking the detector out during its draw sent the left
+	// hand off-screen mid-motion. Block it for the duration -- ToggleDetector turns a keypress in that
+	// window into a DEFERRED draw instead, and UpdateVisibility releases it once the draw ends.
+	if(itm->GetState()==CHUDState::eShowing)
+		bres = false;
+	else
 		bres = bres && !itm->IsPending();
 
 	if(bres)
@@ -125,6 +172,13 @@ void CCustomDetector::ToggleDetector(bool bFastMode)
 		PIItem iitem = m_pInventory->ActiveItem();
 		CHudItem* itm = (iitem)?iitem->cast_hud_item():NULL;
 		u32 slot_to_activate = NO_ACTIVE_SLOT;
+		// pressed while the item in hand is still being drawn -> remember it: UpdateVisibility draws
+		// the detector as soon as that item is out, so the press is honoured instead of lost
+		if(itm && itm->GetState()==CHUDState::eShowing)
+		{
+			m_bNeedActivation = true;
+			return;
+		}
 		if(CheckCompatibilityInt(itm, &slot_to_activate))
 		{
 			if(slot_to_activate != NO_ACTIVE_SLOT)
@@ -328,6 +382,18 @@ bool CCustomDetector::PlayCompanionAction(LPCSTR action, bool bRestart)
 		xr_strcpy(clean, action);
 		companion_strip(clean, "_empty");
 		companion_strip(clean, "_jammed");
+		// ...and the FIRE MODE mark. The weapon's alias carries mask_firemode_<a|N> (anm_shoot ->
+		// anm_shoot_auto), but a detector mirrors an ACTION, not a fire mode, and no detector defines a
+		// per-mode companion -- so in auto every companion silently failed to resolve. The mark is per
+		// weapon, so ask the weapon itself instead of hardcoding "_auto"/"_triple".
+		attachable_hud_item* wh = g_player_hud ? g_player_hud->attached_item(0) : NULL;
+		CWeaponMagazined* wm = wh ? smart_cast<CWeaponMagazined*>(wh->m_parent_hud_item) : NULL;
+		if (wm)
+		{
+			string64 marked;	xr_sprintf(marked, "anm_%s", action);
+			LPCSTR mark = wm->GetFireModeMark(marked);
+			if (mark && mark[0])	companion_strip(clean, mark);
+		}
 		xr_sprintf(alias, "anm_wpn_%s", clean);
 		if (!isHUDAnimationExist(alias))	return false;
 	}
@@ -453,7 +519,8 @@ void CCustomDetector::UpdateVisibility()
 			// _detector reload (which shows the detector in-hand), so the real detector must be hidden.
 			bool companion		= isHUDAnimationExist("anm_wpn_idle_aim");
 			bool zoom_hides		= wpn->IsZoomed() && !companion;
-			if(bClimb || zoom_hides || state==CWeapon::eReload || state==CWeapon::eSwitch)
+			if(bClimb || zoom_hides || state==CWeapon::eReload || state==CWeapon::eSwitch
+				|| AnimForbidsDetector(i0->m_parent_hud_item))
 			{
 				HideDetector		(true);
 				m_bNeedActivation	= true;

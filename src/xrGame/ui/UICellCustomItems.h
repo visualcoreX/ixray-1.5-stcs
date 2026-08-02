@@ -48,14 +48,22 @@ struct GWR_IconLayer
 // (always_front entries last). Empty for a weapon that doesn't use the layered icon at all.
 void GWR_CollectIconLayers(CWeapon* wpn, xr_vector<GWR_IconLayer>& out);
 
+// Icon-wide pixel shift for a weapon: inv_addons_correction_x/y from the weapon section PLUS every
+// installed upgrade's. Applies to the composed layers AND to the stock scope/silencer/launcher sprites,
+// so an upgrade that moves the picture moves the addon icons with it.
+void GWR_AddonsCorrection(CWeapon* wpn, Fvector2& out);
+
 // Realise those layers as child statics of `parent`, for the UIs that draw a weapon icon as one plain
 // CUIStatic (pickup indicator, item info, HUD weapon icon) rather than as a cell item. sx/sy convert
 // ATLAS PIXELS to that widget's screen units -- the same factor the caller used for the base rect,
 // including any widescreen/kx correction on x. Detaches whatever was in `out` first, so it can just be
 // called again on refresh. No-op for a weapon that doesn't use the layered icon.
 class CUIStatic;
+// with_addons: also draw the ATTACHED silencer/scope/launcher at the weapon's silencer_x/scope_x/
+// grenade_launcher_x offsets, as the inventory cell does -- for panels that show a weapon "as carried"
+// (the upgrade menu). Off by default: a cell item draws those itself.
 void GWR_AttachIconLayers(CUIStatic* parent, CWeapon* wpn, float sx, float sy,
-						  xr_vector<CUIStatic*>& out, u32 tex_color);
+						  xr_vector<CUIStatic*>& out, u32 tex_color, bool with_addons = false);
 
 // Dynamic cell resize (GS UIUtils.pas _grid_size_dt/_grid_lt_dt): sum of the installed upgrades'
 // inv_grid_width/height deltas (-> size_dt) and their inv_grid_x/y shifts (-> lt_dt), so the composed

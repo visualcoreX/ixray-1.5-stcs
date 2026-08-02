@@ -1,4 +1,4 @@
-// WeaponDispersion.cpp: разбос при стрельбе
+// WeaponDispersion.cpp: пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 // 
 //////////////////////////////////////////////////////////////////////
 
@@ -14,7 +14,7 @@
 #include "EffectorShotX.h"
 
 
-//возвращает 1, если оружие в отличном состоянии и >1 если повреждено
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 1, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ >1 пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 float CWeapon::GetConditionDispersionFactor() const
 {
 	return (1.f + fireDispersionConditionFactor*(1.f-GetCondition()));
@@ -27,13 +27,13 @@ float CWeapon::GetFireDispersion	(bool with_cartridge)
 	return GetFireDispersion	(m_fCurrentCartirdgeDisp);
 }
 
-//текущая дисперсия (в радианах) оружия с учетом используемого патрона
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 float CWeapon::GetFireDispersion	(float cartridge_k) 
 {
-	//учет базовой дисперсии, состояние оружия и влияение патрона
-	float fire_disp = fireDispersionBase * cur_silencer_koef.fire_dispersion * cartridge_k * GetConditionDispersionFactor();
+	//пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	float fire_disp = GetBaseDispersion(cartridge_k);
 	
-	//вычислить дисперсию, вносимую самим стрелком
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	const CInventoryOwner* pOwner	=	smart_cast<const CInventoryOwner*>(H_Parent());
 	VERIFY (pOwner);
 
@@ -43,9 +43,17 @@ float CWeapon::GetFireDispersion	(float cartridge_k)
 	return fire_disp;
 }
 
+// Dispersion of the weapon itself: cone of the barrel with the cartridge / silencer / condition
+// factors, but WITHOUT the shooter's accuracy term. This is vanilla SoC's GetBaseDispersion; the
+// AN-94 hyperburst uses it so its first rounds are not spread by the shooter's own dispersion.
+float CWeapon::GetBaseDispersion	(float cartridge_k)
+{
+	return fireDispersionBase * cur_silencer_koef.fire_dispersion * cartridge_k * GetConditionDispersionFactor();
+}
+
 
 //////////////////////////////////////////////////////////////////////////
-// Для эффекта отдачи оружия
+// пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 void CWeapon::AddShotEffector		()
 {
 	inventory_owner().on_weapon_shot_start	(this);

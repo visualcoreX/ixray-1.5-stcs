@@ -741,8 +741,11 @@ bool CGamePersistent::OnRenderScopeActive()
 	if (!a)											return false;
 	CWeapon* w = smart_cast<CWeapon*>(a->inventory().ActiveItem());
 	if (!w)											return false;
-	// Fill $user$scope only while aiming a lensed scope (matches the lens being drawn only then).
-	return w->IsLensedScope() && (w->IsZoomed() || w->GetZoomRotationFactor() > 0.01f);
+	// Fill $user$scope only while aiming a lensed scope (matches the lens being drawn only then), and
+	// only while the lens is actually visible -- GS LensConditions drops the lens frames in the alter
+	// pose (the ELCAN's backup 1x sight), keeping them through the cross-fade.
+	return w->IsLensedScope() && w->LensVisibility() > 0.001f
+		&& (w->IsZoomed() || w->GetZoomRotationFactor() > 0.01f);
 }
 
 // 3D PiP double-render (Gunslinger LensDoubleRender). On a throttled "lens frame" while aiming a lensed
@@ -773,7 +776,10 @@ bool CGamePersistent::ComputeLensFrame(float& out_fov)
 	// A lens frame is only allowed once a valid normal frame has been saved this session (m_bLensSaveValid, set
 	// by PresentBridgeLens after a save). So the FIRST aim frame(s) render normally and populate rt_scope_save
 	// first -> the present bridge never restores a STALE save from a previous aim (the 1-frame camera pop).
-	if (aiming && m_bLensSaveValid && (Device.dwFrame & 1) == 0)		// even + aiming + valid save = lens frame
+	// GS LensConditions: with the alter pose engaged the lens is off, so stop paying for (and stop
+	// showing) the magnified double-render -- the main view stays on the base FOV like any 1x sight.
+	const bool lens_on = (w->LensVisibility() > 0.001f);
+	if (aiming && lens_on && m_bLensSaveValid && (Device.dwFrame & 1) == 0)	// even + aiming + valid save = lens frame
 	{
 		out_fov = w->GetLensFOV();
 		if (out_fov <= 0.f)							{ out_fov = g_fov; return true; }

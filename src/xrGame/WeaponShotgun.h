@@ -25,6 +25,9 @@ public:
 	virtual void	PlayAnimOpenWeapon	();
 	virtual void	PlayAnimAddOneCartridgeWeapon();
 	void			PlayAnimCloseWeapon	();
+	// GS anm_open_selector jammed branch: the jam-clear gesture that REPLACES the open phase.
+	// Returns the motion length (0 = the weapon has no revival motion configured).
+	u32				PlayAnimUnjamWeapon	();
 
 	virtual bool	Action(s32 cmd, u32 flags);
 	virtual bool	SwitchAmmoType(u32 flags);
@@ -65,6 +68,8 @@ protected:
 	bool			m_bChamberFirstRound;	// config chamber_first_round: on an empty-start reload the round
 											// seated into the chamber (first loaded) fires FIRST, then the tube
 											// feeds LIFO (last-loaded next). Off = plain LIFO. Pump-shotgun only.
+	bool			m_bTriUnjamming;		// the current "open" phase is the jam-clear gesture (anm_reload_jammed):
+											// it ends the reload instead of going on to add/close (GS)
 	bool			m_bTriInsertDone;		// the shell for the current phase has been added
 	u32				m_dwTriInsertTm;		// wall-clock to add the shell (lock_time_start); 0 = none
 	u32				m_dwTriPhaseTm;			// wall-clock to advance to the next phase; 0 = fall back to OnAnimationEnd

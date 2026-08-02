@@ -26,6 +26,7 @@
 // material samples it as "$user$ui". Same name/idea as Gunslinger's CRT.pas.
 #define		r2_RT_ui			"$user$ui"				// --- 32bit, the PDA screen content
 #define		r2_RT_scope			"$user$scope"			// --- 32bit, the magnified 3D PiP scope-lens view
+#define		r2_RT_scope_ui		"$user$scopeui"			// --- same view for electronic optics (GS models_zoom_gauss)
 #define		r2_RT_generic0_r	"$user$generic0_r"	// ---
 #define		r2_RT_generic1		"$user$generic1"		// ---
 #define		r2_RT_generic1_r	"$user$generic1_r"	// ---

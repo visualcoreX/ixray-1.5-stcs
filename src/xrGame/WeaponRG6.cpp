@@ -49,10 +49,31 @@ void CWeaponRG6::Load(LPCSTR section)
 }
 #include "inventory.h"
 #include "inventoryOwner.h"
+// GS RL_SpawnRocket (WeaponEvents.pas:2164) + its CWeaponRG6::AddCartridge replacement: the launcher
+// no longer spawns its "fake grenade" when a round is LOADED (that only ever worked through the
+// shell-by-shell tri-state reload -- a plain magazined reload fills m_magazine via ReloadMagazine and
+// never touches AddCartridge, so the gun had ammo but nothing to launch). Instead the rocket is created
+// lazily, right before the shot, from the round that is about to be fired. Once per frame, like GS.
+// Returns true when it had to spawn one -- GS skips that trigger pull and fires on the next one.
+bool CWeaponRG6::SpawnRocketIfNeeded()
+{
+	if (getRocketCount() > 0 || m_magazine.empty())			return false;
+	if (m_dwRocketSpawnFrame == Device.dwFrame)				return false;
+	m_dwRocketSpawnFrame = Device.dwFrame;
+
+	const CCartridge& c = m_magazine.back();				// the round that fires next
+	LPCSTR sect = (c.m_LocalAmmoType < m_ammoTypes.size())
+				? *m_ammoTypes[c.m_LocalAmmoType] : *m_ammoTypes[m_ammoType];
+	if (!pSettings->line_exist(sect, "fake_grenade_name"))	return false;
+	inheritedRL::SpawnRocket(pSettings->r_string(sect, "fake_grenade_name"), this);
+	return true;
+}
+
 void CWeaponRG6::FireStart ()
 {
+	if (GetState() == eIdle && SpawnRocketIfNeeded())	return;	// grenade created this frame -> pull again
 
-	if(GetState() == eIdle	&& getRocketCount() ) 
+	if(GetState() == eIdle	&& getRocketCount() )
 	{
 		inheritedSG::FireStart ();
 	
@@ -136,16 +157,24 @@ void CWeaponRG6::FireStart ()
 	}
 }
 
+// GS CWeaponRG6__AddCartridge_Replace_Patch (WeaponEvents.pas:2156 / installed at :3157): GS replaces
+// this override with the plain CWeaponShotgun::AddCartridge -- loading a round must NOT spawn a rocket,
+// because the shell-by-shell path is only one of the two ways rounds get in (see SpawnRocketIfNeeded).
 u8 CWeaponRG6::AddCartridge		(u8 cnt)
 {
-	u8 t = inheritedSG::AddCartridge(cnt);
-	u8 k = cnt-t;
-	shared_str fake_grenade_name = pSettings->r_string(*m_ammoTypes[m_ammoType], "fake_grenade_name");
-	while(k){
-		--k;
-		inheritedRL::SpawnRocket(*fake_grenade_name, this);
-	}
-	return k;
+	u8 res = inheritedSG::AddCartridge(cnt);
+	SpawnRocketIfNeeded();		// at most ONE, unlike the vanilla per-round spawn this replaced
+	return res;
+}
+
+// The magazined reload path fills m_magazine directly (no AddCartridge), so hook the grenade spawn here
+// too. GS creates it at the first trigger pull and swallows that pull; doing it as soon as the round is
+// loaded means the shot after a reload fires immediately -- the spawn is a net event, so it has to happen
+// at least one frame before the shot either way.
+void CWeaponRG6::ReloadMagazine()
+{
+	inheritedSG::ReloadMagazine();
+	SpawnRocketIfNeeded();
 }
 
 void CWeaponRG6::OnEvent(NET_Packet& P, u16 type) 

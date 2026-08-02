@@ -81,6 +81,9 @@ public:
 	// 3D PiP scope lens (magnified scene) + last-normal-frame keep; 1-sample (sampled by the lens shader).
 	ref_rt						rt_scope;
 	ref_rt						rt_scope_save;
+	// GS's second lens capture $user$scopeui ("scope render with UI"). Electronic optics sample it instead
+	// of $user$scope (the gauss's models_zoom_gauss.s binds s_vp2 to it) -- absent, that lens reads black.
+	ref_rt						rt_scope_ui;
 	ref_rt						rt_Generic_1;		// 32bit		(r,g,b,a)				// post-process, intermidiate results, etc.
 	//	Igor: for volumetric lights
 	ref_rt						rt_Generic_2;		// 32bit		(r,g,b,a)				// post-process, intermidiate results, etc.

@@ -378,6 +378,21 @@ void CScriptGameObject::quick_kick_hit()
 	if (actor)	actor->QuickKickHit();
 }
 
+// GS lets you keep stabbing on the kick key without waiting for the weapon to come back: while the kick
+// animator is the item in hand, a fresh press restarts its show anim instead of being dropped
+// (WeaponEvents.pas:1732 -- SwitchState(eShowing) + re-arm the hit callback). This is the engine half:
+// replay the active HUD item's draw. Returns false if there is nothing to replay.
+bool CScriptGameObject::active_item_replay_show()
+{
+	CInventoryOwner* owner = smart_cast<CInventoryOwner*>(&object());
+	if (!owner)	return false;
+	CInventoryItem* itm = owner->inventory().ActiveItem();
+	CHudItem* hud = itm ? smart_cast<CHudItem*>(itm) : nullptr;
+	if (!hud)	return false;
+	hud->SwitchState(CHUDState::eShowing);
+	return true;
+}
+
 u32 CScriptGameObject::active_item_motion_end()
 {
 	CInventoryOwner* owner = smart_cast<CInventoryOwner*>(&object());

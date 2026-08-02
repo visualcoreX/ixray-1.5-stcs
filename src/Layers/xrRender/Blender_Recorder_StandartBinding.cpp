@@ -241,6 +241,24 @@ class cl_zoom_deviation : public R_constant_setup {
 };
 static cl_zoom_deviation	binder_zoom_deviation;
 
+// Gunslinger m_digiclock (r_constants.pas binder_digiclock_setup): the in-game clock drawn on electronic
+// weapon displays -- the gauss MUI's digit screens (models_digiclock_{hh,hl,mh,ml}_screen). Each channel is
+// one digit as an atlas offset 0.0..0.9; the digit shader samples s_base at digit + tc.x*0.1.
+class cl_digiclock : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		int h = 0, m = 0;
+		if (g_pGamePersistent)
+		{
+			const float t	= g_pGamePersistent->Environment().GetGameTime();	// seconds of the game day
+			h				= int(t / 3600.f) % 24;
+			m				= int(t / 60.f) % 60;
+		}
+		RCache.set_c	(C, float(h/10)/10.f, float(h%10)/10.f, float(m/10)/10.f, float(m%10)/10.f);
+	}
+};
+static cl_digiclock		binder_digiclock;
+
 // eye-params
 class cl_eye_P		: public R_constant_setup {
 	virtual void setup(R_constant* C)
@@ -390,6 +408,7 @@ void	CBlender_Compile::SetMapping	()
 	// Gunslinger 3D PiP scope lens shader constants
 	r_Constant				("m_hud_params",	&binder_hud_params);
 	r_Constant				("m_zoom_deviation",&binder_zoom_deviation);
+	r_Constant				("m_digiclock",		&binder_digiclock);
 
 	// eye-params
 	r_Constant				("eye_position",	&binder_eye_P);

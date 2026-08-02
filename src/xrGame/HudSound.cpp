@@ -174,6 +174,22 @@ void HUD_SOUND_COLLECTION::SetPosition(LPCSTR alias, const Fvector& pos)
 		snd_item->set_position		(pos);
 }
 
+void HUD_SOUND_COLLECTION::RemoveSounds(LPCSTR alias_prefix)
+{
+	if (!alias_prefix || !alias_prefix[0])	return;
+	const size_t len = xr_strlen(alias_prefix);
+	for (xr_vector<HUD_SOUND_ITEM>::iterator it = m_sound_items.begin(); it != m_sound_items.end(); )
+	{
+		if (it->m_alias.size() && 0 == strncmp(it->m_alias.c_str(), alias_prefix, len))
+		{
+			HUD_SOUND_ITEM::StopSound	(*it);
+			it = m_sound_items.erase	(it);
+		}
+		else
+			++it;
+	}
+}
+
 void HUD_SOUND_COLLECTION::StopAllSounds()
 {
 	xr_vector<HUD_SOUND_ITEM>::iterator it		= m_sound_items.begin();

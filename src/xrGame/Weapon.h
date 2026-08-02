@@ -154,14 +154,20 @@ public:
 	// Gunslinger IsLensedScopeInstalled: an attached scope flagged need_lens_frame uses the 3D PiP lens
 	// (weapon stays rendered, no 2D full-screen scope texture) instead of the vanilla 2D scope zoom.
 	bool IsLensedScope() const;
+	// Gunslinger `collimator`: the THIRD scope mode. A red-dot/collimator has its reticle on the MODEL, so
+	// it must neither hide the weapon behind a 2D scope texture nor spin up the PiP lens -- and being 1x it
+	// must not zoom the world either. Keeps the weapon and the HUD visible, aim FOV from scope_hud_fov_aim.
+	bool IsCollimatorScope() const;
 	float GetLensFOV() const;	// 3D PiP double-render: magnified world FOV (deg) for the lens frame; 0 = disabled
 	bool UseScopeAnims() const;	// Gunslinger use_scope_anims: play the "_scope" anim variants while a scope is attached
 	float ZoomMouseSenseKoef() const;	// Gunslinger zoom_mouse_sense_koef: look-sensitivity multiplier while scoped
+	float ScaleSenseByLensStep(float k) const;	// ...scaled by the current magnification on a variable-power optic
 
 	// Gunslinger scope reticle / night-vision illumination (scope_brightness_plus/minus). Stepped 0..steps
 	// between min/max_night_brightness (config, /3 like GS). cur_value feeds the lens shader (m_zoom_deviation.z,
 	// NV scopes) and gates the illuminated-reticle bones (scope_illum_bones, day scopes like the PSO).
 	void  ChangeScopeIllum(int delta);				// +/-1 step (reloads params from the current scope, plays sound)
+	void  ApplyScopeIllumUI();						// GS switchable_zoom_wnd: pick the crosshair level static
 	void  ResetScopeIllumToDefault();				// set the step to the scope's default_brightness_step (on attach)
 	float ScopeIllumValue() const	{ return m_scope_illum_value; }
 	float ScopeIllumJitter() const	{ return m_scope_illum_jitter; }
@@ -173,7 +179,49 @@ private:
 	int   m_scope_illum_steps;
 	int   m_scope_illum_step_by_scope[16];			// PER-SCOPE saved step (index = m_cur_scope; -1 = never set -> use default_brightness_step). Each scope keeps its own brightness.
 	float m_scope_illum_min, m_scope_illum_max;
+
+	// ---- GS variable magnification (min_lens_factor / max_lens_factor / lens_factor_levels_count) ----
+	// A dual/variable-power optic (ELCAN 1.8x<->10x) steps its LENS magnification with the mouse wheel
+	// while aiming. Runtime only (not saved): re-derived from the scope section on attach.
+	int   m_lens_step;								// current step, 0..m_lens_steps
+	int   m_lens_steps;								// lens_factor_levels_count (0 = fixed scope_lens_factor)
+	float m_lens_min, m_lens_max;
+	int   m_lens_step_by_scope[16];					// per-scope remembered step (-1 = not set yet)
+	// GS lens_speed: the step is a TARGET, the lens travels to it (position units per second, 0 = instant)
+	// and ticks snd_scope_zoom_gyro every lens_gyro_sound_period while it moves (WeaponAdditionalBuffer.pas:747).
+	float m_fLensSpeed;
+	float m_fLensPos;								// smoothed position 0..1 (m_lens_step/m_lens_steps is the target)
+	float m_fLensGyroPeriod;
+	u32   m_dwLensGyroSndTm;
+
+	// ---- GS scope electronics (the gauss's nv / detector upgrade nodes) ----
+	shared_str m_sScopeNV;							// scope_nightvision -> a PPE section ([scope_nightvision_gauss])
+	shared_str m_sScopeDetector;					// scope_alive_detector -> a params section ([scope_detector])
+	float m_fScopeNVMinFactor;						// scope_nightvision_min_factor: PPE strength at brightness step 0
+	bool  m_bScopeNVActive;
+
+	// ---- GS alter zoom (alter_zoom_allowed): a SECOND aim pose toggled by a key while aiming -------
+	// The ELCAN's magnifier: the eye moves to the other optic, so the aim offset (and hud fov) swap.
+	bool  m_bAlterZoom;
+	float m_fAlterZoomFactor;						// 0 = normal pose, 1 = alter pose; ramps over alter_zoom_time
 public:
+	// GS variable magnification: step the lens power; true if this scope actually has steps (so the
+	// caller can consume the mouse wheel instead of letting it switch weapons).
+	bool			ChangeLensStep		(int delta);
+	void			LoadLensFactorParams();
+	void			ResetLensStepToDefault();
+	bool			HasLensSteps		() const { return m_lens_steps > 0; }
+	// GS alter zoom
+	bool			IsAlterZoomAllowed	() const;
+	bool			IsAlterZoom			() const { return m_bAlterZoom; }
+	void			ToggleAlterZoom		();
+	// eased 0..1 blend toward the alter pose (cubic ease-in-out, i.e. cubic-bezier(.42,0,.58,1)); the
+	// aim offset and hud fov interpolate with it instead of snapping.
+	float			AlterZoomBlend		() const;
+	// GS GetZoomLensVisibilityFactor: 1 = PiP lens fully visible, 0 = off (alter pose / no lensed scope);
+	// cross-fades with the alter-pose ramp. Drives the lens shader alpha and the $user$scope capture.
+	float			LensVisibility		() const;
+	void			UpdateAlterZoomBlend(float dt);
 
 	//обновление видимости для косточек аддонов
 			void UpdateAddonsVisibility();
@@ -194,6 +242,9 @@ public:
 	// runtime toggles (scope on/off, laser, flashlight, bayonet) reach the world model without re-reading
 	// the whole config every frame for every weapon in the level.
 			void gwr_UpdateWorldBones	(IKinematics* K, bool force = true);
+			// parse a comma-separated bone list without touching any model (so callers can tell which bones
+			// an upgrade explicitly named and undo the recursive show_bones collateral)
+	static	void gwr_CollectBoneNames	(LPCSTR csv, xr_vector<shared_str>& out);
 	u32			 m_gwr_world_bones_sig;	// last applied attachment-state signature (u32(-1) = never)
 
 	// ---- laser designator (Gunslinger LAM port) --------------------------------------------------
@@ -215,11 +266,23 @@ protected:
 			bool			m_bLaserInstalled;
 			bool			m_bLaserEnabled;
 			bool			m_bBayonetInstalled;		// GS bayonet upgrade -> quick-kick stabs with the weapon's own anm_kick (ak74_bayonet)
+			// Whether an attached silencer / GL takes the blade away. Per weapon, because it is a
+			// question of geometry, not a rule: on the AK the bayonet and the GP-25 share the barrel,
+			// but the AN-94's knife sits clear of the launcher and Gunslinger keeps it mounted.
+			// Config (weapon section), both default TRUE = the old hardcoded behaviour.
+			bool			m_bBayonetBlockedBySilencer;
+			bool			m_bBayonetBlockedByGL;
+			shared_str		m_sBayonetBone;		// `bayonet_bone`, default "knife" (the AK family's blade)
 	public:
 			bool			IsBayonetInstalled() const	{ return m_bBayonetInstalled; }
-			// GS: a silencer or GL on the barrel removes the bayonet blade + disables its unique stab (falls
+			// A silencer or GL on the barrel removes the bayonet blade + disables its unique stab (falls
 			// back to the generic knife kick). So the bayonet is "active" only when installed AND unobstructed.
-			bool			IsBayonetActive() const		{ return m_bBayonetInstalled && !IsSilencerAttached() && !IsGrenadeLauncherAttached(); }
+			bool			IsBayonetActive() const
+			{
+				return m_bBayonetInstalled
+					&& !(m_bBayonetBlockedBySilencer && IsSilencerAttached())
+					&& !(m_bBayonetBlockedByGL       && IsGrenadeLauncherAttached());
+			}
 	protected:
 			u32				m_dwLaserToggleAt;			// Device time to apply the pending toggle (0 = none)
 			bool			m_bLaserPendingState;
@@ -244,6 +307,7 @@ protected:
 			float			m_fLaserZeroDist;			// laserdot_zero_dist: >0 = boresight the hip ray so the dot hits screen center at this range (aiming); near dot still converges to the device
 			float			m_fLaserHudPointKoef;		// laserdot_hud_point_koef: strength of the world->hud POSITION reprojection so the
 													// real-depth dot converges onto the `line` bone on screen (0 = off, 1 = full cos ratio). Live-tunable.
+			float			m_fLaserSurfacePull;		// laserdot_surface_pull: real-depth dot distance factor off the surface (GS 0.85; 1.0 = on the object)
 			CParticlesObject* m_pLaserDot;
 
 	// ---- weapon-mounted flashlight (Gunslinger LightUtils port) ----------------------------------
@@ -370,7 +434,12 @@ protected:
 
 public:
 
-	IC bool					IsZoomEnabled		()	const		{return m_zoom_params.m_bZoomEnabled;}
+	// GS CanStartAimNow (WeaponAdditionalBuffer.pas:919): with the LAUNCHER RAISED, aiming is refused when
+	// `prohibit_aim_for_grenade_mode` is set -- read from the ATTACHED SCOPE's section when there is one,
+	// else from the hud section. That is how the Groza stops you sighting a mounted optic through a
+	// raised GP-25. Opt-in per scope/weapon, so nothing else changes.
+			bool			AimProhibitedByGrenadeMode	()	const;
+	IC bool					IsZoomEnabled		()	const		{return m_zoom_params.m_bZoomEnabled && !AimProhibitedByGrenadeMode();}
 	virtual	void			ZoomInc				(){};
 	virtual	void			ZoomDec				(){};
 	virtual void			OnZoomIn			();
@@ -484,6 +553,12 @@ protected:
 public:
 	float					GetFireDispersion	(bool with_cartridge)			;
 	float					GetFireDispersion	(float cartridge_k)				;
+	// dispersion of the weapon ITSELF, without the shooter's accuracy term -- vanilla SoC's
+	// GetBaseDispersion, used by the AN-94 hyperburst for the rounds it fires "into one hole"
+	float					GetBaseDispersion	(float cartridge_k)				;
+	// while true, FireTrace uses GetBaseDispersion instead of the shooter's accumulated
+	// dispersion (see CWeaponMagazined's base_dispersioned_bullets_* block)
+	virtual bool			UseBaseFireDispersion() const						{ return false; }
 	virtual	int				ShotsFired			() { return 0; }
 	virtual	int				GetCurrentFireMode	() { return 1; }
 

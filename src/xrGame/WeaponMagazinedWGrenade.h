@@ -71,6 +71,7 @@ public:
 	virtual void	PlayAnimIdle		();
 	virtual void	PlayAnimShoot		();
 	virtual void	SelectShootAnim		(string_path& result);
+	virtual void	SelectJammedShootBase(string_path& out);	// same, for the shot that JAMS
 	virtual void	PlayAnimFireModeSwitch	();
 	virtual void	PlayAnimModeSwitch	();
 	virtual void	PlayAnimBore		();
@@ -103,4 +104,11 @@ public:
 
 	virtual void UpdateGrenadeVisibility(bool visibility);
 	virtual bool IsGrenadeMode	() const { return m_bGrenadeMode; }
+
+	// The "_empty" animation token follows the RIFLE's magazine, never the launcher (GS ModifierStd uses
+	// GetAmmoInMagCount, which is the main magazine in either mode). PerformSwitchGL swaps m_magazine with
+	// m_magazine2 and rewrites iAmmoElapsed from it, so in grenade mode the base implementation was reading
+	// the GRENADE count: firing the last grenade made a loaded rifle play its empty anims, and loading a
+	// grenade made an empty rifle stop playing them.
+	virtual bool NeedEmptyAnim	() { return 0 == (m_bGrenadeMode ? m_magazine2.size() : m_magazine.size()); }
 };

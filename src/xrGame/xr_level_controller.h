@@ -96,6 +96,8 @@ enum	EGameActions
 	kSCOPE_ILLUM_INC,	// GS scope_brightness_plus: raise the scope reticle/night illumination (same index==enum rule as kWPN_LASER)
 	kSCOPE_ILLUM_DEC,	// GS scope_brightness_minus: lower it
 
+	kWPN_ALTER_ZOOM,	// GS alter_zoom_allowed: toggle the scope's SECOND aim pose while aiming (ELCAN magnifier) -- same index==enum rule as kWPN_LASER
+
 	kWPN_KICK,			// GS quick knife kick (быстрая атака ножом) -- same index==enum rule as kWPN_LASER
 
 	kLASTACTION,

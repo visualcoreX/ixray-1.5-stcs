@@ -90,6 +90,111 @@ void CWeaponRPG7::FireStart()
 
 #include "inventory.h"
 #include "inventoryOwner.h"
+#include "level_bullet_manager.h"
+#include "actor.h"
+#include "../xrEngine/GameMtlLib.h"
+extern void random_dir(Fvector& tgt_dir, const Fvector& src_dir, float dispersion);
+
+// GS RPG7ReactiveHit (WeaponEvents.pas:2258): the BACKBLAST. Firing sprays `reactive_hit_buck` pellets
+// straight out the BACK of the tube (that is why you must not shoot with a wall behind you); then, for
+// each of them, a ray goes back and if it meets something inside reactive_hit_dist the blast bounces --
+// `reactive_hit_reverse_buck` more pellets fly from that wall towards the shooter, their damage and reach
+// scaled by how close the wall is. Actor-only, exactly like GS.
+void CWeaponRPG7::ReactiveHit()
+{
+	if (H_Parent() && !ParentIsActor())	return;
+
+	LPCSTR sect		= cNameSect().c_str();
+	const float dist	= READ_IF_EXISTS(pSettings, r_float, sect, "reactive_hit_dist",    0.f);
+	const float hit		= READ_IF_EXISTS(pSettings, r_float, sect, "reactive_hit_power",   0.f);
+	const float impulse	= READ_IF_EXISTS(pSettings, r_float, sect, "reactive_hit_impulse", 0.f);
+	const int   buck	= (int)READ_IF_EXISTS(pSettings, r_u32, sect, "reactive_hit_buck",  1);
+	if (dist <= 0.f || hit <= 0.f || impulse <= 0.f || buck <= 0)	return;
+
+	const int   rbuck	= (int)READ_IF_EXISTS(pSettings, r_u32,   sect, "reactive_hit_reverse_buck",  1);
+	const float bdisp	= READ_IF_EXISTS(pSettings, r_float, sect, "reactive_hit_buck_disp",      1.f);
+	const float rdisp	= READ_IF_EXISTS(pSettings, r_float, sect, "reactive_hit_reverse_disp",   0.1f);
+	const float rdisp2	= READ_IF_EXISTS(pSettings, r_float, sect, "reactive_hit_reverse_disp2",  0.1f);
+	const float rhit	= READ_IF_EXISTS(pSettings, r_float, sect, "reactive_hit_reverse_power",  hit);
+	const float revk	= READ_IF_EXISTS(pSettings, r_float, sect, "reactive_hit_reverse_k",      1.f);
+	const ALife::EHitType htype = (ALife::EHitType)READ_IF_EXISTS(pSettings, r_u32, sect, "reactive_hit_type",
+																  (u32)ALife::eHitTypeExplosion);
+	LPCSTR mtl			= READ_IF_EXISTS(pSettings, r_string, sect, "reactive_hit_bullet_material", "default");
+
+	Fvector pos = get_LastFP();
+	Fvector dir = get_LastFD();
+	dir.mul		(-1.f);					// out the back of the tube
+
+	CCartridge c;
+	c.param_s.kDist = c.param_s.kHit = c.param_s.kCritical = c.param_s.kImpulse = c.param_s.kAP = 1.f;
+	c.bullet_material_idx = GMLib.GetMaterialIdx(mtl);
+	c.m_flags.set(CCartridge::cfTracer, FALSE);
+
+	const u16 parent_id = H_Parent() ? H_Parent()->ID() : ID();
+
+	for (int i = 0; i < buck; ++i)
+	{
+		Fvector tgt;
+		random_dir(tgt, dir, bdisp);
+		Level().BulletManager().AddBullet(pos, tgt, 330.f, hit, 0.f, impulse, parent_id, ID(),
+										  htype, dist, c, true);
+
+		// the reverse wave: what does the blast hit behind us, and how close is it?
+		random_dir(tgt, dir, rdisp);
+		collide::rq_result RQ;
+		if (!Level().ObjectSpace.RayPick(pos, tgt, dist, collide::rqtStatic, RQ, H_Parent()))
+			continue;
+
+		for (int j = 0; j < rbuck; ++j)
+		{
+			Fvector point = pos, d2 = tgt;
+			d2.mul		(RQ.range * 0.9f);
+			point.add	(d2);				// just in front of the wall
+			d2.sub		(pos, point);
+			d2.normalize_safe();
+			Fvector tgt2;
+			random_dir	(tgt2, d2, rdisp2);
+
+			float rest = dist - RQ.range;	// the closer the wall, the more comes back
+			if (rest < 0.f)	rest = 0.f;
+			const float rhit_cur = rhit * rest / dist;
+			const float rdist    = dist * revk * (rest / dist) * (0.9f + ::Random.randF(0.15f));
+			Level().BulletManager().AddBullet(point, tgt2, 330.f, rhit_cur, 0.f, impulse, ID(), ID(),
+											  htype, rdist, c, true);
+		}
+	}
+}
+
+// GS CheckRLHasActiveRocket (WeaponUpdate.pas:748): a worn launcher can set the rocket off IN THE TUBE.
+// Probability ramps between rocket_misfunc_start/end_condition; on a hit the rocket detonates at the
+// weapon instead of flying, and the tube is emptied. Actor-only, like GS.
+bool CWeaponRPG7::RocketMisfunction()
+{
+	if (!ParentIsActor())	return false;
+
+	LPCSTR sect		 = cNameSect().c_str();
+	const float st_c = READ_IF_EXISTS(pSettings, r_float, sect, "rocket_misfunc_start_condition",   0.f);
+	const float en_c = READ_IF_EXISTS(pSettings, r_float, sect, "rocket_misfunc_end_condition",     0.f);
+	const float st_p = READ_IF_EXISTS(pSettings, r_float, sect, "rocket_misfunc_start_probability", 0.f);
+	const float en_p = READ_IF_EXISTS(pSettings, r_float, sect, "rocket_misfunc_end_probability",   0.f);
+	const float cond = GetCondition();
+	if (cond > st_c || fsimilar(st_c, en_c))	return false;
+
+	const float prob = (cond < en_c) ? en_p : st_p + (en_p - st_p) * (st_c - cond) / (st_c - en_c);
+	if (prob <= 0.f || ::Random.randF(1.f) >= prob)	return false;
+
+	CExplosiveRocket* r = smart_cast<CExplosiveRocket*>(getCurrentRocket());
+	if (!r)	return false;
+
+	Fvector p = Position(), n;
+	n.set(0.f, 1.f, 0.f);
+	r->SetInitiator		(H_Parent()->ID());
+	DetachRocket		(r->ID(), true);
+	r->Contact			(p, n);
+	UnloadMagazine		(false);
+	return true;
+}
+
 void CWeaponRPG7::switch2_Fire()
 {
 	m_iShotNum			= 0;
@@ -104,22 +209,26 @@ void CWeaponRPG7::switch2_Fire()
 		d1.set								(get_LastFD());
 		p = p1;
 		d = d1;
+		// The muzzle point is only trustworthy while the HUD model drives it: with no HUD frame
+		// UpdateFireDependencies falls back to the weapon's WORLD transform, which for a weapon in hand
+		// can be stale (a rocket then departs from wherever that transform last was). Sanity-check it
+		// against the holder before trusting it, and fall back to the camera params otherwise.
+		Fvector ref = H_Parent() ? H_Parent()->Position() : Position();
+		const bool muzzle_ok = GetHUDmode() && HudItemData() && p1.distance_to(ref) < 3.0f;
+
 		CEntity* E = smart_cast<CEntity*>	(H_Parent());
 		if(E)
 		{
-			E->g_fireParams				(this, p2,d2);
-			p = p2;
-			d = d2;
-
-			if(IsHudModeNow() && !IsZoomed())
+			// GS CWeaponRPG7__FireStart_need_skip_g_fireParams (WeaponEvents.pas:2211): for the ACTOR the
+			// launch params come from the camera ONLY while aiming. From the hip the rocket leaves the tube
+			// and flies where the tube POINTS -- GS skips g_fireParams entirely there, so there is no
+			// convergence onto the crosshair. NPCs keep the engine params: their aim comes from the AI.
+			const bool actor_hip = ParentIsActor() && !IsZoomed() && !IsRotatingToZoom() && muzzle_ok;
+			if (!actor_hip)
 			{
-				Fvector		p0;
-				float dist	= HUD().GetCurrentRayQuery().range;
-				p0.mul		(d2,dist);
-				p0.add		(p1);
-				p			= p1;
-				d.sub		(p0,p1);
-				d.normalize_safe();
+				E->g_fireParams				(this, p2,d2);
+				d = d2;						// aiming: fly along the sight line...
+				p = (ParentIsActor() && muzzle_ok) ? p1 : p2;	// ...but out of the tube when it is sane
 			}
 		}
 
@@ -132,6 +241,16 @@ void CWeaponRPG7::switch2_Fire()
 
 		d.normalize							();
 		d.mul								(m_fLaunchSpeed);
+
+		ReactiveHit							();		// GS: the backblast goes off with the shot
+
+		if (RocketMisfunction())			// a worn launcher may detonate the rocket in the tube instead
+		{
+			m_bFireSingleShot	= false;
+			bWorking			= false;
+			SwitchState			(eIdle);
+			return;
+		}
 
 		CRocketLauncher::LaunchRocket		(launch_matrix, d, zero_vel);
 

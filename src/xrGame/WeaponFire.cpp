@@ -63,7 +63,7 @@ void CWeapon::FireTrace		(const Fvector& P, const Fvector& D)
 	if (m_u8TracerColorID != u8(-1))
 		l_cartridge.param_s.u8ColorID	= m_u8TracerColorID;
 	//-------------------------------------------------------------
-	//повысить изношенность оружия с учетом влияния конкретного патрона
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 //	float Deterioration = GetWeaponDeterioration();
 //	Msg("Deterioration = %f", Deterioration);
 	ChangeCondition(-GetWeaponDeterioration()*l_cartridge.param_s.impair);
@@ -88,6 +88,13 @@ void CWeapon::FireTrace		(const Fvector& P, const Fvector& D)
 	if (fsimilar(fire_disp, 0.f))
 	{
 		//CActor* tmp_actor = smart_cast<CActor*>(Level().CurrentControlEntity());
+		if (UseBaseFireDispersion())
+		{
+			// AN-94 hyperburst: the rounds fired inside the fast part of the queue ignore the
+			// shooter's accumulated (recoil) dispersion and use the barrel's own cone, so they
+			// land in one hole. Vanilla SoC did this through CWeaponMagazined::GetFireDispersion.
+			fire_disp = GetBaseDispersion(l_cartridge.param_s.kDisp);
+		} else
 		if (H_Parent() && (H_Parent() == tmp_actor))
 		{
 			fire_disp = tmp_actor->GetFireDispertion();
@@ -99,7 +106,7 @@ void CWeapon::FireTrace		(const Fvector& P, const Fvector& D)
 	
 
 	bool SendHit = SendHitAllowed(H_Parent());
-	//выстерлить пулю (с учетом возможной стрельбы дробью)
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
 	for(int i = 0; i < l_cartridge.param_s.buckShot; ++i) 
 	{
 		FireBullet(P, D, fire_disp, l_cartridge, H_Parent()->ID(), ID(), SendHit);
@@ -122,7 +129,7 @@ void CWeapon::StopShooting()
 {
 //	SetPending			(TRUE);
 
-	//принудительно останавливать зацикленные партиклы
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if(m_pFlameParticles && m_pFlameParticles->IsLooped())
 		StopFlameParticles	();	
 

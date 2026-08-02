@@ -71,7 +71,14 @@ void CWeaponMagazinedWGrenade::gwr_UpdateBonesGL()
 		bool have_next  = (m_set_next_ammoType_on_reload != u32(-1));
 		u32  next_type  = have_next ? m_set_next_ammoType_on_reload : gren_type;
 		bool ammochange = have_next && (next_type != gren_type) && (gren_count > 0);
-		bool seated     = (progress >= mark);
+
+		// When the animation has a GS lock_time_start (the grenade-change one does), the round really goes
+		// in at that instant -- show the bone exactly THEN, so the visual and the load can't drift apart.
+		// Without one (the plain GL reload, which GS also leaves unlocked and loads at the animation's
+		// end) fall back to the configured fraction, which is what gl_reload_insert_mark was tuned for.
+		bool seated     = m_bReloadInsertDone ? true
+						: (m_dwReloadInsertTm ? (Device.dwTimeGlobal >= m_dwReloadInsertTm)
+											  : (progress >= mark));
 
 		if (ammochange)
 		{
@@ -112,6 +119,30 @@ void CWeaponMagazinedWGrenade::Load	(LPCSTR section)
 	if (pSettings->line_exist(section, "snd_change_grenade"))
 		m_sounds.LoadSound(section,"snd_change_grenade", "sndChangeGrenade", true, m_eSoundReload);
 	m_sounds.LoadSound(section,"snd_switch"			, "sndSwitch"		, true, m_eSoundReload);
+	// raising the launcher has its own sound in GS (gl_activate vs gl_deactivate); optional, the
+	// weapons that do not define it keep playing snd_switch both ways
+	if (pSettings->line_exist(section, "snd_switch_g"))
+		m_sounds.LoadSound(section,"snd_switch_g"	, "sndSwitchG"		, true, m_eSoundReload);
+
+	// GS per-anim switch sounds (assault/oc14 huds.ltx `snd_anm_switch*`): raising/lowering the launcher
+	// sounds different with an optic mounted, so the sound is keyed to the ANIMATION that plays rather
+	// than to the direction. Key = "snd_" + the alias, i.e. exactly GS's own `snd_anm_<x>` spelling, and
+	// they live in the HUD section like the aliases themselves. Same contract as the shotgun's
+	// per-phase reload sounds; switch2_SwitchMode falls back to sndSwitch/sndSwitchG when absent.
+	{
+		static const char* s_base[] = { "anm_switch", "anm_switch_w_gl", "anm_switch_empty_w_gl",
+			"anm_switch_jammed_w_gl", "anm_switch_g", "anm_switch_empty_g", "anm_switch_jammed_g" };
+		const shared_str& hs = HudSection();
+		if (hs.size() && pSettings->section_exist(hs))
+			for (auto b : s_base)
+				for (int ns = 0; ns < 2; ++ns)
+				{
+					string_path key;
+					strconcat(sizeof(key), key, "snd_", b, ns ? "_noscope" : "");
+					if (pSettings->line_exist(hs, key))
+						m_sounds.LoadSound(*hs, key, key, true, m_eSoundReload);
+				}
+	}
 	
 
 	m_sFlameParticles2 = pSettings->r_string(section, "grenade_flame_particles");
@@ -224,6 +255,7 @@ void CWeaponMagazinedWGrenade::switch2_Reload()
 			PlaySound("sndReloadG", get_LastFP2());
 
 		PlayHUDMotion(anim, TRUE, this, GetState());	// blend in, like every other reload
+		ArmReloadLockTimes	();		// honour lock_time_start_/end_<alias> on GL reloads too
 		SetPending			(TRUE);
 	}
 	else
@@ -263,9 +295,28 @@ bool CWeaponMagazinedWGrenade::SwitchMode()
 void CWeaponMagazinedWGrenade::switch2_SwitchMode()
 {
 	SetPending(TRUE);
-	PlaySound("sndSwitch", get_LastFP());
 	PerformSwitchGL();
+	// Raising the launcher while already aiming: IsZoomEnabled only gates ENTERING the aim, so drop the
+	// current one too when this weapon/scope forbids aiming in grenade mode (GS CanLeaveAimNow's side of
+	// the same rule). PerformSwitchGL has already flipped the mode.
+	if (IsZoomed() && AimProhibitedByGrenadeMode())
+		OnZoomOut();
+	// The animation goes FIRST so the sound can be chosen from the alias PlayHUDMotion actually
+	// resolved (m_current_motion) -- that name already carries the state token, the GL suffix and the
+	// _noscope token, which is how GS makes the scope and no-scope switch sound different.
 	PlayAnimModeSwitch();
+
+	string_path key;	strconcat(sizeof(key), key, "snd_", m_current_motion.c_str());
+	if (m_sounds.FindSoundItem(key, false))
+		PlaySound(key, get_LastFP());
+	// GS also gives the two DIRECTIONS their own sounds (anm_switch_g -> gl_activate,
+	// anm_switch_w_gl -> gl_deactivate). PerformSwitchGL already flipped the mode, so m_bGrenadeMode
+	// now says which way we went: raising the launcher plays snd_switch_g when the weapon defines it,
+	// everything else keeps the single snd_switch.
+	else if (m_bGrenadeMode && m_sounds.FindSoundItem("sndSwitchG", false))
+		PlaySound("sndSwitchG", get_LastFP());
+	else
+		PlaySound("sndSwitch", get_LastFP());
 }
 
 void CWeaponMagazinedWGrenade::PerformSwitchGL()
@@ -519,7 +570,7 @@ void CWeaponMagazinedWGrenade::ReloadMagazine()
 	if(m_bGrenadeMode)
 	{
 		bMisfire = last_bMisfire;
-		if(iAmmoElapsed && !getRocketCount()) 
+		if(iAmmoElapsed && !getRocketCount())
 		{
 			shared_str fake_grenade_name = pSettings->r_string(m_ammoTypes[m_ammoType].c_str(), "fake_grenade_name");
 			CRocketLauncher::SpawnRocket(*fake_grenade_name, this);
@@ -606,6 +657,10 @@ bool CWeaponMagazinedWGrenade::Attach(PIItem pIItem, bool b_send_event)
 	   !xr_strcmp(*m_sGrenadeLauncherName, pIItem->object().cNameSect()))
 	{
 		m_flagsAddOnState |= CSE_ALifeItemWeapon::eWeaponAddonGrenadeLauncher;
+		// restricted_gl_and_sil -- this override handles the launcher itself and never reaches the base
+		// class's launcher branch, so the rule has to be applied here too or mounting the GL would leave
+		// a silencer in place (while the silencer direction worked).
+		GwrEnforceGLSilExclusion(false);
 
 		CRocketLauncher::m_fLaunchSpeed = pGrenadeLauncher->GetGrenadeVel();
 
@@ -668,6 +723,7 @@ bool	CWeaponMagazinedWGrenade::UseScopeTexture()
 {
 	if (IsGrenadeLauncherAttached() && m_bGrenadeMode) return false;
 	if (IsLensedScope())	return false;	// 3D PiP lens scope -> skip the 2D scope texture, keep the weapon visible
+	if (IsCollimatorScope())	return false;	// collimator: reticle is on the model -> same, but with no lens
 	return true;
 };
 
@@ -714,10 +770,14 @@ void CWeaponMagazinedWGrenade::PlayAnimReload()
 	{
 		if (isHUDAnimationExist("anm_reload_jammed_w_gl") && IsMisfire())
 		{
-			PlayHUDMotion("anm_reload_jammed_w_gl", TRUE, this, GetState());
+			// the GL variant of GS's "_last" jam clear (empty magazine), see CWeaponMagazined::PlayAnimReload
+			if (0 == iAmmoElapsed && isHUDAnimationExist("anm_reload_jammed_last_w_gl"))
+				PlayHUDMotion("anm_reload_jammed_last_w_gl", TRUE, this, GetState());
+			else
+				PlayHUDMotion("anm_reload_jammed_w_gl", TRUE, this, GetState());
 			bMisfireReload = true;
 		}
-		else if (isHUDAnimationExist("anm_reload_empty_w_gl") && iAmmoElapsed == 0)
+		else if (isHUDAnimationExist("anm_reload_empty_w_gl") && NeedEmptyAnim())
 			PlayHUDMotion("anm_reload_empty_w_gl", TRUE, this, GetState());
 		else
 			PlayHUDMotion("anm_reload_w_gl", TRUE, this, GetState());
@@ -741,7 +801,7 @@ void CWeaponMagazinedWGrenade::SelectActionAnim(LPCSTR base, string_path& result
 			strconcat(sizeof(tmp), tmp, base, "_jammed_w_gl");
 			if (isHUDAnimationExist(tmp)) { xr_strcpy(result, tmp); return; }
 		}
-		if (iAmmoElapsed == 0)
+		if (NeedEmptyAnim())
 		{
 			strconcat(sizeof(tmp), tmp, base, "_empty_w_gl");
 			if (isHUDAnimationExist(tmp)) { xr_strcpy(result, tmp); return; }
@@ -795,12 +855,30 @@ LPCSTR CWeaponMagazinedWGrenade::SprintLoopBase()
 	return inherited::SprintLoopBase();
 }
 
+// The shot that JAMS re-assigns the shoot motion to its _jammed variant (CWeaponMagazined::
+// PlayJammedShootAnim). The base picker returns the bare anm_shoot / anm_shoot_aim[_scope], which
+// carries no launcher token -- so on a weapon with the GL mounted the jamming shot played the
+// NO-LAUNCHER animation and the hands snapped out of the GL pose (user report 2026-08-01, after the
+// jamming shot started firing on every weapon and not just the shotguns). Add the same suffix the
+// normal shot uses; if the weapon doesn't author that GL variant we leave the base alone and
+// PlayJammedShootAnim's own HasStateVariant gate then simply keeps the running shoot anim.
+void CWeaponMagazinedWGrenade::SelectJammedShootBase(string_path& out)
+{
+	inherited::SelectJammedShootBase(out);
+	if (!IsGrenadeLauncherAttached() || !out[0])	return;
+	string_path tmp;
+	strconcat(sizeof(tmp), tmp, out, m_bGrenadeMode ? "_g" : "_w_gl");
+	if (HasStateVariant(tmp, "_jammed"))	xr_strcpy(out, tmp);
+}
+
 void CWeaponMagazinedWGrenade::SelectDryFireAnim(string_path& result)
 {
 	if (IsGrenadeLauncherAttached())
 	{
 		LPCSTR gl = m_bGrenadeMode ? "_g" : "_w_gl";
-		bool empty = (iAmmoElapsed == 0);
+		// the RIFLE magazine, not the launcher (see the header). Jammed outranks empty, exactly as in
+		// CWeaponMagazined::SelectDryFireAnim -- leave the token to PlayHUDMotion when the gun is jammed.
+		bool empty = NeedEmptyAnim() && !NeedJammedAnim();
 		string_path tmp;
 		if (IsZoomed())
 		{
@@ -936,10 +1014,17 @@ void CWeaponMagazinedWGrenade::PlayAnimFireModeSwitch()
 
 void CWeaponMagazinedWGrenade::PlayAnimModeSwitch()
 {
+	// Lowering the launcher: GS calls that anim anm_switch_w_gl (launcher attached, normal mode), and
+	// only that name lets PlayHUDMotion's state rewrite reach anm_switch_jammed_w_gl / _empty_w_gl --
+	// off the plain anm_switch it would look for anm_switch_jammed, which no config has, so a jammed
+	// weapon lowered the launcher with the clean animation. Existence-gated: a weapon that only
+	// defines anm_switch is unaffected.
+	LPCSTR down = (IsGrenadeLauncherAttached() && isHUDAnimationExist("anm_switch_w_gl"))
+					? "anm_switch_w_gl" : "anm_switch";
 	// capture the raise/lower window so the laser dot can fade out/in with GS timing (see UpdateLaserDot)
 	u32 t = m_bGrenadeMode
 		? PlayHUDMotion("anm_switch_g", TRUE, this, eSwitch)
-		: PlayHUDMotion("anm_switch",   TRUE, this, eSwitch);
+		: PlayHUDMotion(down,           TRUE, this, eSwitch);
 	m_dwGLSwitchStartTm = Device.dwTimeGlobal;
 	m_dwGLSwitchEndTm   = Device.dwTimeGlobal + t;
 }

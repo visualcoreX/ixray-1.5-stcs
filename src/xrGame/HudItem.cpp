@@ -501,6 +501,86 @@ void CHudItem::MakeStateName(LPCSTR name, LPCSTR infix, string_path& out)
 	xr_strcat	(out, infix);
 }
 
+// Split an alias into "<stem><tail>", where tail is the run of trailing state/variant tokens the
+// firemode mark has to be inserted IN FRONT of: anm_reload_empty_w_gl -> ("anm_reload", "_empty_w_gl"),
+// anm_shoot_aim_last -> ("anm_shoot_aim", "_last"). The tail keeps the config's own token order, so
+// re-joining it around the mark reproduces GS's naming exactly. Tokens that belong to the BASE
+// (_aim, _scope, _moving_<dir>, ...) are deliberately not in the table. Returns false when there is
+// no tail (nothing to move the mark past).
+bool CHudItem::SplitStateSuffix(LPCSTR name, string_path& stem, string_path& tail)
+{
+	static const LPCSTR tok[] = {
+		"_gl_off", "_gl_on", "_w_gl", "_g", "_detector",	// GL / companion suffixes (outermost)
+		"_sil", "_ammochange", "_preloaded", "_suicide",	// variant tokens
+		"_empty", "_jammed", "_first", "_last"				// weapon-state tokens
+	};
+
+	xr_strcpy(stem, name);
+	tail[0] = 0;
+	int len = (int)xr_strlen(stem);
+
+	for (;;)
+	{
+		bool hit = false;
+		for (u32 i = 0; i < sizeof(tok) / sizeof(tok[0]); ++i)
+		{
+			int sl = (int)xr_strlen(tok[i]);
+			if (len > sl && 0 == xr_strcmp(stem + len - sl, tok[i]))
+			{
+				// "_detector" is movable only where GS puts it LAST, as the "while the detector is
+				// out" variant of a weapon action (anm_reload_auto_empty_detector). In the detector
+				// GESTURE aliases it is part of the NAME and the state follows it instead
+				// (anm_draw_detector_empty, anm_holster_detector_auto_empty) -- peeling it there built
+				// anm_draw_auto_empty_detector, which nothing authors, so the gesture silently fell
+				// back to the bare alias and ignored empty/jammed and the fire-mode mark.
+				if (0 == xr_strcmp(tok[i], "_detector"))
+				{
+					static const LPCSTR gesture[] = { "_draw", "_prepare", "_holster", "_finish" };
+					bool is_gesture = false;
+					for (u32 g = 0; g < sizeof(gesture) / sizeof(gesture[0]); ++g)
+					{
+						int gl = (int)xr_strlen(gesture[g]);
+						// PREFIX compare: what follows is the "_detector" we are testing, so a full
+						// string compare (xr_strcmp) can never match here.
+						if (len - sl > gl && 0 == strncmp(stem + len - sl - gl, gesture[g], gl))
+							{ is_gesture = true; break; }
+					}
+					if (is_gesture)	continue;
+				}
+				string_path t;
+				strconcat(sizeof(t), t, tok[i], tail);		// prepend: keeps the original order
+				xr_strcpy(tail, t);
+				stem[len - sl] = 0;
+				len -= sl;
+				hit = true;
+				break;
+			}
+		}
+		if (!hit)	break;
+	}
+	return (0 != tail[0]);
+}
+
+// See the header: mirrors PlayHUDMotion's candidate order (base + mark + token + tail, then without
+// the mark), so a caller can ask "does this weapon author a _jammed variant of that motion?".
+bool CHudItem::HasStateVariant(LPCSTR alias, LPCSTR st_tok)
+{
+	if (!alias || !alias[0] || !st_tok || !st_tok[0])	return false;
+
+	string_path stem, tail, cand;
+	SplitStateSuffix(alias, stem, tail);
+	if (strstr(tail, st_tok))	return false;			// the alias already carries the token
+
+	LPCSTR mark = GetFireModeMark(alias);
+	if (mark[0])
+	{
+		strconcat(sizeof(cand), cand, stem, mark, st_tok, tail);
+		if (isHUDAnimationExist(cand))	return true;
+	}
+	strconcat(sizeof(cand), cand, stem, st_tok, tail);
+	return !!isHUDAnimationExist(cand);
+}
+
 u32 CHudItem::PlayHUDMotion(const shared_str& M, BOOL bMixIn, CHudItem*  W, u32 state)
 {
 	// An empty/absent alias (M == "" or null) would flow through MakeFireModeName -> a NULL shared_str
@@ -511,41 +591,60 @@ u32 CHudItem::PlayHUDMotion(const shared_str& M, BOOL bMixIn, CHudItem*  W, u32 
 		return 0;
 	}
 
-	// GS firemode selector (GetFireModeStateMark): apply the per-mode mark FIRST (GS order:
-	// base + firemode_mark + _jammed/_empty), so e.g. anm_idle -> anm_idle_auto -> anm_idle_auto_jammed.
-	// No-op unless the weapon has a mask_firemode_<N> configured and the resulting alias exists.
-	string_path fmbuf;
-	MakeFireModeName	(M.c_str(), fmbuf);
-	shared_str fmBase	= fmbuf;
+	// GS name order (ModifierStd): base + firemode mark + weapon-state token, e.g.
+	// anm_idle -> anm_idle_auto -> anm_idle_auto_jammed, anm_fakeshoot -> anm_fakeshoot_auto_jammed.
+	// Resolve BOTH in one pass over a candidate list. Doing it in two existence-gated steps (mark,
+	// then state) silently lost the mark whenever the INTERMEDIATE name isn't authored: e.g. the mp5
+	// has anm_fakeshoot_auto_jammed but no anm_fakeshoot_auto, so the jammed dry-fire fell back to the
+	// unmarked anm_fakeshoot_jammed -- the single-fire motion, which snaps the model's selector to "1".
+	// Precedence of the state token is GS's: jammed > empty > first.
+	LPCSTR st_tok = nullptr;
+	if		(NeedJammedAnim())	st_tok = "_jammed";
+	else if	(NeedEmptyAnim())	st_tok = "_empty";
+	else if	(NeedFirstAnim())	st_tok = "_first";
 
-	shared_str playM = fmBase;
-	if (NeedJammedAnim())
+	string_path stem, tail;
+	SplitStateSuffix	(M.c_str(), stem, tail);			// the caller may already have passed tokens
+	LPCSTR mark			= GetFireModeMark(M.c_str());		// "" when the weapon/mode has no mark
+	// don't duplicate a state token the alias already carries (anm_reload_empty + "_empty")
+	if (st_tok && strstr(tail, st_tok))	st_tok = nullptr;
+
+	string_path cand;
+	shared_str playM	= M;								// fallback: exactly what the caller asked for
+	bool got			= false;
+	if (mark[0] && st_tok)									// base + mark + state + tail
 	{
-		string_path jam;
-		MakeJammedName	(fmBase.c_str(), jam);
-		if (isHUDAnimationExist(jam))
-			playM = jam;
+		strconcat(sizeof(cand), cand, stem, mark, st_tok, tail);
+		if (isHUDAnimationExist(cand))	{ playM = cand; got = true; }
 	}
-	else if (NeedEmptyAnim())
+	if (!got && mark[0])									// base + mark + tail
 	{
-		// Empty magazine -> the bolt/slide stays locked back, so every anim needs its _empty twin
-		// (same hands motion, 2nd token = the weapon model's idle_empty). Same existence-gated rewrite
-		// as _jammed, so weapons/aliases without an _empty variant are untouched. Jammed wins over
-		// empty (the config keeps them as separate motions).
-		string_path emp;
-		MakeStateName	(fmBase.c_str(), "_empty", emp);
-		if (isHUDAnimationExist(emp))
-			playM = emp;
+		strconcat(sizeof(cand), cand, stem, mark, tail);
+		if (isHUDAnimationExist(cand))	{ playM = cand; got = true; }
 	}
-	else if (NeedFirstAnim())
+	if (!got && st_tok)										// base + state + tail (no firemode variants)
 	{
-		// Just reloaded, no shot since (mag not empty) -> the "_first" family (e.g. the drum's fresh-round
-		// idle). Same existence-gated rewrite; jammed/empty win over first (GS ModifierStd order).
-		string_path first;
-		MakeStateName	(fmBase.c_str(), "_first", first);
-		if (isHUDAnimationExist(first))
-			playM = first;
+		strconcat(sizeof(cand), cand, stem, st_tok, tail);
+		if (isHUDAnimationExist(cand))	{ playM = cand; got = true; }
 	}
+	// ...and finally GS's outermost "_noscope" token, applied to whatever the above settled on: with no
+	// scope mounted, <alias>_noscope wins when the config authors it (see NeedNoScopeAnim). Existence-
+	// gated, so a weapon with no _noscope variants is untouched.
+	if (NeedNoScopeAnim())
+	{
+		strconcat(sizeof(cand), cand, playM.c_str(), "_noscope");
+		if (isHUDAnimationExist(cand))	playM = cand;
+	}
+	// GS PlaySoundByAnimName: a hud section may give ANY animation its own sound under the key
+	// `snd_<alias>` (e.g. snd_anm_changefiremode_from_1_to_a = the gauss MUI powering up). The sounds are
+	// pre-loaded by name in CWeaponMagazined::Load, so this is just a lookup; weapons without such keys
+	// are untouched. The shotgun's per-reload-phase sounds use the same spelling.
+	{
+		string_path skey;	strconcat(sizeof(skey), skey, "snd_", playM.c_str());
+		if (m_sounds.FindSoundItem(skey, false))
+			PlaySound(skey, object().Position());
+	}
+
 	u32 anim_time					= PlayHUDMotion_noCB(playM, bMixIn);
 	if (anim_time>0)
 	{

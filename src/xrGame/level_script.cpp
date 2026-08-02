@@ -523,6 +523,14 @@ CEnvDescriptor *current_environment(CEnvironment *self_)
 	return		(self_->CurrentEnv);
 }
 extern bool g_bDisableAllInput;
+// Script-side logging. This build exports NO way for Lua to write to the log (`printf` in
+// _g.script is an empty stub), which makes every script-level diagnostic a guess. level.log("...")
+// now goes straight to the engine log like any Msg.
+void script_log(LPCSTR s)
+{
+	Msg("[lua] %s", s ? s : "");
+}
+
 void disable_input()
 {
 	g_bDisableAllInput = true;
@@ -809,6 +817,7 @@ void CLevel::script_register(lua_State *L)
 		def("remove_call",						((void (*) (const luabind::object &, LPCSTR, LPCSTR)) &remove_call)),
 		def("remove_calls_for_object",			remove_calls_for_object),
 		def("present",							is_level_present),
+		def("log",								script_log),
 		def("disable_input",					disable_input),
 		def("enable_input",						enable_input),
 		def("spawn_phantom",					spawn_phantom),

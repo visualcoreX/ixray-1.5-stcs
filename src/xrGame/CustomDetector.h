@@ -182,6 +182,7 @@ protected:
 	shared_str		m_action_anim;			// the chosen gesture motion alias
 
 			bool	CheckCompatibilityInt		(CHudItem*, u32* slot_to_activate = NULL);
+			bool	AnimForbidsDetector			(CHudItem*);	// GS disable_detector_<alias>
 			void 	TurnDetectorInternal		(bool b);
 	void 			UpdateNightVisionMode		(bool b_off);
 	void			UpdateVisibility			();

@@ -115,7 +115,15 @@ protected:
 	virtual void	OnStateSwitch	(u32 S);
 	virtual bool	NeedJammedAnim	() { return !!IsMisfire(); }	// jammed -> play "_jammed" HUD gestures
 	virtual bool	NeedEmptyAnim	() { return iAmmoElapsed == 0; }	// empty mag -> "_empty" (bolt held back)
+	// no optic in use -> "_noscope". Keyed on UseScopeAnims (not just IsScopeAttached) so a scope whose
+	// section turns scope anims off keeps the plain gestures too, same rule the _scope aliases follow.
+	virtual bool	NeedNoScopeAnim	() { return !UseScopeAnims(); }
 	virtual void	MakeFireModeName(LPCSTR name, string_path& out);	// GS mask_firemode_<a|N> suffix per fire mode
+public:
+	// public: CCustomDetector strips this mark off the weapon's alias before mirroring it as a
+	// companion (a detector has no per-fire-mode animations)
+	virtual LPCSTR	GetFireModeMark	(LPCSTR name);					// the bare mark ("" = none)
+protected:
 	virtual bool	IsGrenadeMode	() const { return false; }			// GL grenade mode (WGrenade overrides)
 
 	virtual void	UpdateSounds	();
@@ -129,7 +137,11 @@ protected:
 
 	virtual void	state_Fire		(float dt);
 	virtual void	state_Misfire	(float dt);
+	// hyperburst: swap in base_dispersioned_bullets_speed for the fast rounds
+	virtual void	FireBullet		(const Fvector& pos, const Fvector& dir, float fire_disp,
+									 const CCartridge& cartridge, u16 parent_id, u16 weapon_id, bool send_hit);
 public:
+	virtual bool	UseBaseFireDispersion() const { return InBaseDispersionedBurst(); }
 					CWeaponMagazined	(ESoundTypes eSoundType=SOUND_TYPE_WEAPON_SUBMACHINEGUN);
 	virtual			~CWeaponMagazined	();
 
@@ -153,6 +165,7 @@ public:
 	// anm_shoot_lightmisfire + sndLightMisfire, does NOT fire the round or jam the weapon, and returns true
 	// (state_Fire then stops the shot -- the player just pulls again). Opt-in via use_light_misfire in cfg.
 			bool	gwr_TryLightMisfire		();
+			void	PlayKickSound			();	// GS snd_kick, at the bayonet stab
 			void	gwr_UpdateBones			(bool force = false);
 	void			gwr_SetBones			(LPCSTR csv, BOOL show);
 	// true if the magazine keeps the round that fires next (the "chamber") at the BACK rather than the
@@ -193,6 +206,28 @@ public:
 	virtual bool	CanDetach(const char* item_section_name);
 
 	virtual void	InitAddons();
+	// GS hud_when_silencer_is_attached / hud_silencer (WeaponUpdate.pas:803): mounting a silencer swaps the
+	// whole HUD section, i.e. the animation set, to the weapon's silencer variant (the groza's is a full
+	// 148-alias groza_* -> groza_sil_* set). m_hud_sect_presilencer remembers what was in use so detaching
+	// restores it -- including a section an UPGRADE had swapped in.
+	// DELIBERATELY UNCONDITIONAL: GS gates the same block on `GetInstalledUpgradesCount(wpn) > 0` merely
+	// because it lives inside its upgrade-processing routine, so an un-upgraded weapon keeps the normal
+	// set. That reads as a structural artifact rather than a rule, and the user chose not to copy it.
+	// `extra_upgrade_sect` is an upgrade EFFECT section to treat as installed on top of m_upgrades:
+	// the manager calls install_upgrade() BEFORE add_upgrade(), so during an install the new node is
+	// not in m_upgrades yet and a plain recompute would wipe the section that install just chose.
+	void			UpdateHudSectionForAddons(LPCSTR extra_upgrade_sect = nullptr);
+	// GS PlaySoundByAnimName set, (re)loaded from the CURRENT hud section -- an upgrade that repoints `hud`
+	// brings its own snd_anm_* values (the gauss's fast-rpm node -> the gauss_shoot_fast shot sounds).
+	void			LoadAnmSounds			();
+	shared_str		m_anm_snd_sect;			// hud section the snd_anm_* set was loaded from
+	// GS restricted_gl_and_sil: this weapon cannot wear the launcher and the silencer at once
+	IC bool			GwrRestrictedGLandSil() const
+					{ return !!READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "restricted_gl_and_sil", FALSE); }
+	// Attaching one of the pair DETACHES the other (GS need_detach_gl / need_detach_sil). Shared, because
+	// CWeaponMagazinedWGrenade::Attach handles the launcher itself and never reaches the base class's
+	// launcher branch -- putting the rule in only one of them left that direction doing nothing.
+	void			GwrEnforceGLSilExclusion(bool silencer_is_the_new_one);
 
 	virtual bool	Action			(s32 cmd, u32 flags);
 	bool			IsAmmoAvailable	();
@@ -201,6 +236,9 @@ public:
 	virtual void	GetBriefInfo				(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count, string16& fire_mode);
 
 	bool			bMisfireReload;
+	// the reload currently playing is an ammo-TYPE change (anm_reload_ammochange) -> it gets
+	// snd_changecartridgetype instead of the reload sound (GS sndChangeCartridgeType)
+	bool			m_bAmmoChangeReload;
 
 public:
 	virtual bool	SwitchMode				();
@@ -218,6 +256,24 @@ protected:
 	//после какого патрона, при непрерывной стрельбе, начинается отдача (сделано из-зи Абакана)
 	int				m_iShootEffectorStart;
 	Fvector			m_vStartPos, m_vStartDir;
+
+	// --- AN-94 hyperburst (Gunslinger AN94Patch.pas + the vanilla SoC base_dispersioned_* keys) ---
+	// The first <count> rounds of a queue leave the barrel at their own (much higher) rate, at their
+	// own muzzle speed, from the aim point captured when the queue started and with the barrel's own
+	// dispersion. count = 0 (key absent) turns the whole thing off, so other weapons are untouched.
+	int				m_iBaseDispersionedBulletsCount;
+	float			m_fBaseDispersionedBulletsSpeed;
+	float			m_fBaseDispersionedBulletsTimeDelta;	// sec between those rounds (= 1/rpm)
+	// GS singleshoots_time_delta: own rate for the single-shot fire mode
+	float			m_fSingleShootsTimeDelta;
+	// true while the shot being fired belongs to the fast part of the queue (m_iShotNum is already
+	// incremented by then, so the first round is 1)
+	IC bool			InBaseDispersionedBurst() const
+	{
+		return m_iBaseDispersionedBulletsCount > 0 && m_iShotNum > 0 && m_iShotNum <= m_iBaseDispersionedBulletsCount;
+	}
+	// delay until the NEXT round, GS AN94_RPM_Patch
+	float			CurrentShotTimeDelta	() const;
 	//флаг того, что мы остановились после того как выстреляли
 	//ровно столько патронов, сколько было задано в m_iQueueSize
 	bool			m_bStopedAfterQueueFired;
@@ -234,6 +290,10 @@ protected:
 	//только разных типов патронов
 	bool m_bLockType;
 	bool m_bAmmoInChamber;	// Gunslinger ammo_in_chamber: cfg mag_size = real mag + 1 (chambered round)
+	int  m_iMaxQueueSize;	// GS max_queue_size: hard cap of rounds per trigger pull (0 = none)
+	float m_fRechargeTime;	// GS recharge_time (sec): minimum gap between shots on top of rpm (gauss capacitor); upgradeable
+	bool m_bNoJamFire;		// GS no_jam_fire (hud section): the jam is a DUD rolled BEFORE the shot -- the
+							// round is not spent and the fire cycle isn't a stuck action (bm16/toz34/rg6)
 	bool m_bSaveCartridgeInAmmoChange;	// GS save_cartridge_in_ammochange (default true): keep the OLD-type chambered round when swapping ammo type
 
 public:
@@ -262,9 +322,22 @@ protected:
 	virtual void	PlayAnimReload		();
 	virtual void	PlayAnimIdle		();
 	virtual void	PlayAnimShoot		();
+	// GS: re-assign the shoot motion to its "_jammed" variant on the shot that jams (false = no such alias)
+	bool			PlayJammedShootAnim	();
+	// the magazine fill of a reload, once per reload: at the animation's end, or at the config's
+	// lock_time_start_<alias> when it has one (GS) so the loaded round shows up mid-animation
+	void			DoReloadInsert		();
+	void			ArmReloadLockTimes	();	// read lock_time_start_/lock_time_end_ for the played alias
+	u32				m_dwReloadInsertTm;		// wall clock of that fill; 0 = none pending
+	bool			m_bReloadInsertDone;	// guard so the timer and OnAnimationEnd can't both fill
+	bool			m_bLastEmptyAnim;		// last NeedEmptyAnim(): flips -> re-pick the idle at once
+	virtual void	SelectJammedShootBase(string_path& out);	// base alias that gets the "_jammed" token
 	virtual void	SelectShootAnim		(string_path& result);	// hip / ADS / scope shoot motion
 	// dry-fire ("pull the trigger, nothing happens") on empty/jammed. GL subclass overrides.
 	virtual void	SelectDryFireAnim	(string_path& result);
+	// does this weapon have a jam-clear reload motion? (the double-barrels name theirs
+	// anm_reload_jammed_<shells>, so the plain alias test misses them)
+	virtual bool	HasJammedReloadAnim	() { return !!isHUDAnimationExist("anm_reload_jammed"); }
 			void	PlayAnimDryFire		();
 	bool			m_bDryFirePending;	// switch2_Idle should play the dry-fire, not the idle
 	bool			m_bDryFirePlaying;	// a dry-fire gesture is in progress -> FireStart ignored

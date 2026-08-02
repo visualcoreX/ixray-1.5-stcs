@@ -27,6 +27,7 @@
 // 3D PiP scope (Gunslinger-style): on a "lens frame" the scene is re-rendered at the scope's magnified
 // FOV into this RT; the scope model's lens material samples it. Same $user$-RT idea as the PDA's $user$ui.
 #define		r2_RT_scope			"$user$scope"			// --- 32bit (r,g,b,a) the magnified scope-lens view
+#define		r2_RT_scope_ui		"$user$scopeui"			// --- same view for electronic optics (GS models_zoom_gauss)
 
 #define		r2_RT_ssao_temp		"$user$ssao_temp"		//temporary rt for ssao calculation
 #define		r2_RT_half_depth	"$user$half_depth"		//temporary rt for hbao calculation

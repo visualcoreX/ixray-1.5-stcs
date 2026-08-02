@@ -492,8 +492,10 @@ void CUIItemInfo::InitItemUpgradeIcon(CInventoryItem* pInvItem)
 			float sx = INV_GRID_WIDTH2(GameConstants::GetUseHQ_Icons())  / INV_GRID_WIDTH(GameConstants::GetUseHQ_Icons());
 			float sy = INV_GRID_HEIGHT2(GameConstants::GetUseHQ_Icons()) / INV_GRID_HEIGHT(GameConstants::GetUseHQ_Icons());
 			if (UI()->is_widescreen())	sx /= 1.2f;
+			// with_addons: the upgrade menu shows the weapon as it is carried, so the attached
+			// silencer / scope / launcher belong on the picture too (the inventory cell draws them)
 			GWR_AttachIconLayers(UIItemImage, smart_cast<CWeapon*>(pInvItem), sx, sy,
-								 m_gwr_icon_layers, color_rgba(255, 255, 255, 255));
+								 m_gwr_icon_layers, color_rgba(255, 255, 255, 255), true);
 		}
 	}
 }

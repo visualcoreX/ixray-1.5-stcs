@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "player_hud.h"
 #include "HudItem.h"
+#include "Weapon.h"		// GetCurrentFireMode() for the per-motion camera anm rule (single vs auto fire)
 #include "ui_base.h"
 #include "actor.h"
 #include "physic_item.h"
@@ -440,10 +441,25 @@ u32 attachable_hud_item::anim_play(const shared_str& anm_name_b, BOOL bMixIn, co
 			// fire doesn't restart the recoil effector every shot -> stutter).
 			CAnimatorCamEffector* cur = smart_cast<CAnimatorCamEffector*>(ec);
 			bool same_anim	= cur && cur->AnimName()==anm_name;
-			bool both_shoot	= cur && strstr(M.name.c_str(),"shoot") && strstr(cur->AnimName().c_str(),"shoot");
 			bool is_shoot	= (0 != strstr(M.name.c_str(), "shoot"));				// shoots re-fire recoil every shot
-			bool replay_same= (!is_shoot) && (!is_show)								// a draw always plays; a non-draw repeat
-							&& (s_last_action_cam == cam_base);						// of the same base (idle/hide) does not
+
+			// The anti-stutter rule for shots must apply to CONTINUOUS AUTO fire only. A single-shot
+			// weapon (pump/semi -- the protecta at 155 rpm) fires slower than its own camera anm, so
+			// suppressing while the previous one still runs made the camera visibly play on every OTHER
+			// shot. Each trigger pull of a single-fire weapon is its own gesture -> always restart.
+			bool auto_fire	= false;
+			if (CWeapon* pw = smart_cast<CWeapon*>(m_parent_hud_item))
+				auto_fire = (pw->GetCurrentFireMode() != 1);
+			bool both_shoot	= cur && auto_fire && strstr(M.name.c_str(),"shoot") && strstr(cur->AnimName().c_str(),"shoot");
+
+			// Suppressing a repeat of the same gesture is meant for a PASSIVE state that re-plays one
+			// motion forever (the GS burn idle/hide reuse the draw's motion). An ACTION that legitimately
+			// LOOPS -- the shotgun tri-state reload replays its add-cartridge motion once per shell --
+			// must re-fire the camera anm every iteration, so only idle/hide keep the suppression.
+			const u32 hud_state = m_parent_hud_item->GetState();
+			const bool passive_state = (hud_state == CHUDState::eIdle) || (hud_state == CHUDState::eHiding);
+			bool replay_same= (!is_shoot) && (!is_show) && passive_state					// a draw always plays; an idle/hide
+							&& (s_last_action_cam == cam_base);							// repeat of the same base does not
 
 			if(!same_anim && !both_shoot && !replay_same)
 			{

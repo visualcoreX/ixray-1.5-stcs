@@ -78,4 +78,7 @@ public:
 
 	void						SetPosition		(	LPCSTR alias, 	const Fvector& pos);
 	void						StopAllSounds	();
+	// Drop every item whose alias starts with the prefix, so it can be re-loaded from another section
+	// (an upgrade that repoints `hud` brings its own snd_anm_* set -- LoadSound asserts on a duplicate alias).
+	void						RemoveSounds	(	LPCSTR alias_prefix);
 };
