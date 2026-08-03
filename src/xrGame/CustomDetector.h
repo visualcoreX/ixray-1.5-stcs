@@ -124,6 +124,10 @@ protected:
 	bool			m_bFastAnimMode;
 	bool			m_bEmergencyShow;	// next show plays anm_show_emergency (drawn together with a weapon)
 	bool			m_bNeedActivation;
+	bool			m_bNeedActivationManual;	// that deferred draw came from a KEYPRESS, so when it finally
+										// fires it must take the manual path (the weapon plays its
+										// anm_prepare_detector / anm_draw_detector hand gesture).
+										// ShowDetector() is the engine path and deliberately plays none.
 	bool			m_bAutoToggle;		// this show/hide is an auto hide/re-show (reload/aim), NOT a manual toggle
 										// -> don't play the weapon's draw/prepare-detector gesture
 	bool			m_bCompanionOneShot;	// the companion now playing is a one-shot (CMotionDef::StopAtEnd):
@@ -181,8 +185,12 @@ protected:
 	enum { eDetActionAnim = eBore + 1 };	// one-shot torch/NV gesture state
 	shared_str		m_action_anim;			// the chosen gesture motion alias
 
-			bool	CheckCompatibilityInt		(CHudItem*, u32* slot_to_activate = NULL);
+	// for_draw: the caller is asking "may the detector come OUT right now" (a keypress, a deferred
+	// draw). Only then does an item still rising block it -- an item coming up is never a reason to
+	// put an ALREADY drawn detector away, which is what the hide path (CheckCompatibility) asks.
+			bool	CheckCompatibilityInt		(CHudItem*, u32* slot_to_activate = NULL, bool for_draw = false);
 			bool	AnimForbidsDetector			(CHudItem*);	// GS disable_detector_<alias>
+			bool	HasDetectorDrawGesture		(CHudItem*);	// plays anm_prepare_detector on the draw?
 			void 	TurnDetectorInternal		(bool b);
 	void 			UpdateNightVisionMode		(bool b_off);
 	void			UpdateVisibility			();

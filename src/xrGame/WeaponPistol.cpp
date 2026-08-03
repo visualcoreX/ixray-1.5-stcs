@@ -35,7 +35,7 @@ void CWeaponPistol::PlayAnimShow	()
 {
 	VERIFY(GetState()==eShowing);
 
-	if(iAmmoElapsed==0)
+	if(UseEmptyAnimOnly())
 		PlayHUDMotion("anm_show_empty", FALSE, this, GetState());
 	else
 		inherited::PlayAnimShow();
@@ -43,7 +43,7 @@ void CWeaponPistol::PlayAnimShow	()
 
 void CWeaponPistol::PlayAnimBore()
 {
-	if(iAmmoElapsed==0)
+	if(UseEmptyAnimOnly())
 		PlayHUDMotion	("anm_bore_empty", TRUE, this, GetState());
 	else
 		inherited::PlayAnimBore();
@@ -53,14 +53,14 @@ void CWeaponPistol::PlayAnimBore()
 // enter/exit transitions (anm_idle_sprint_start_empty / _end_empty) from it, so they work when empty.
 LPCSTR CWeaponPistol::SprintLoopBase()
 {
-	if(iAmmoElapsed==0)
+	if(UseEmptyAnimOnly())
 		return "anm_idle_sprint_empty";
 	return inherited::SprintLoopBase();
 }
 
 void CWeaponPistol::PlayAnimIdleMoving()
 {
-	if(iAmmoElapsed==0)
+	if(UseEmptyAnimOnly())
 	{
 		PlayHUDMotion(SelectMovingAnim("anm_idle_moving_empty"), TRUE, NULL, GetState());
 	}else{
@@ -79,7 +79,7 @@ void CWeaponPistol::PlayAnimIdle()
 		PlayAnimAim();	// ADS idle -> anm_idle_aim_empty (empty) / directional aim-walk
 		return;
 	}
-	if(iAmmoElapsed==0)
+	if(UseEmptyAnimOnly())
 		PlayHUDMotion("anm_idle_empty", TRUE, NULL, GetState());
 	else
 		inherited::PlayAnimIdle		();
@@ -89,7 +89,7 @@ void CWeaponPistol::PlayAnimIdle()
 // moving, else the static empty aim (anm_idle_aim_empty). Loaded -> base directional.
 void CWeaponPistol::SelectAimIdleAnim(string_path& result)
 {
-	if(iAmmoElapsed==0)
+	if(UseEmptyAnimOnly())
 	{
 		LPCSTR dir = AimWalkDirSuffix();
 		if(dir[0])
@@ -118,7 +118,7 @@ void CWeaponPistol::PlayAnimReload()
 void CWeaponPistol::PlayAnimHide()
 {
 	VERIFY(GetState()==eHiding);
-	if(iAmmoElapsed==0) 
+	if(UseEmptyAnimOnly()) 
 	{
 		PlaySound			("sndClose", get_LastFP());
 		PlayHUDMotion		("anm_hide_empty" , TRUE, this, GetState());

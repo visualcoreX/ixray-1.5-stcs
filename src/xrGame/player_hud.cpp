@@ -691,13 +691,24 @@ void player_hud::update(const Fmatrix& cam_trans)
 	Fvector tgt_ypr					= attach_rot();
 	static Fvector s_pos{}, s_ypr{};
 	static bool s_have = false;
-	if (m_attached_items[1] && s_have)
+	// Only the SWITCH needs easing. Running it for as long as a detector is out left the whole hud base
+	// permanently lagging its target, which reads as sluggish hands on jumps/leans (user 2026-08-03).
+	// Arm a short window when the attach source actually changes, and go instant outside it.
+	static const void* s_src = nullptr;
+	static u32 s_ease_until = 0;
+	const void* src = m_attached_items[0] ? (const void*)m_attached_items[0] : (const void*)m_attached_items[1];
+	if (src != s_src)
+	{
+		if (s_src && m_attached_items[1])	s_ease_until = Device.dwTimeGlobal + 200;	// ~0.2s, detector out only
+		s_src = src;
+	}
+	if (s_have && s_ease_until && Device.dwTimeGlobal < s_ease_until)
 	{
 		float k = Device.fTimeDelta / 0.2f;	clamp(k, 0.f, 1.f);	// ~0.2s ease
 		s_pos.lerp(s_pos, tgt_pos, k);
 		s_ypr.lerp(s_ypr, tgt_ypr, k);
 	}
-	else { s_pos = tgt_pos; s_ypr = tgt_ypr; }
+	else { s_pos = tgt_pos; s_ypr = tgt_ypr; s_ease_until = 0; }
 	s_have = true;
 
 	Fvector ypr						= s_ypr;

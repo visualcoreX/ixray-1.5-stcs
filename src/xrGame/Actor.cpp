@@ -1401,9 +1401,11 @@ void CActor::renderable_Render	()
 {
 	VERIFY(_valid(XFORM()));
 	inherited::renderable_Render			();
-	if (!HUDview()){
-		CInventoryOwner::renderable_Render	();
-	}
+	// The held weapon is part of the silhouette, so draw it unconditionally (GunsXRay does the same).
+	// The old `if (!HUDview())` guard cost nothing in first person -- the actor is setVisible(FALSE)
+	// there, so the normal pass never calls this at all -- but it DID strip the weapon out of the
+	// actor self-shadow, which the SMAP pass renders by calling this directly (r__dsgraph_render.cpp).
+	CInventoryOwner::renderable_Render		();
 	VERIFY(_valid(XFORM()));
 }
 

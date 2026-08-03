@@ -203,6 +203,9 @@ private:
 	// ---- GS alter zoom (alter_zoom_allowed): a SECOND aim pose toggled by a key while aiming -------
 	// The ELCAN's magnifier: the eye moves to the other optic, so the aim offset (and hud fov) swap.
 	bool  m_bAlterZoom;
+	// GS _is_alter_zoom_last: which of the two aim poses the last aim ENDED in, so the next aim resumes
+	// it (GS IsLastZoomAlter). Runtime only, like the lens step -- not in the save stream.
+	bool  m_bAlterZoomLast;
 	float m_fAlterZoomFactor;						// 0 = normal pose, 1 = alter pose; ramps over alter_zoom_time
 public:
 	// GS variable magnification: step the lens power; true if this scope actually has steps (so the

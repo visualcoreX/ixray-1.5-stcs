@@ -685,6 +685,27 @@ void CWeaponMagazined::OnStateSwitch	(u32 S)
 // actor's active item, and the world model unconditionally -- so the third-person/dropped visual
 // tracks the same dynamic state (ammo, scope, laser, flash, bayonet) the hud does. Silent on both, so
 // a bone a given model lacks is skipped, not an assert (one config lists bones across variants).
+// Same as gwr_SetBones, but only for the entries whose name does (want) / does not (!want) start with
+// `pfx`. Used to colour the chamber's CASE from one ammo-bone section and the magazine's rounds from
+// another, which the single-section form cannot express.
+void CWeaponMagazined::gwr_SetBonesFiltered(LPCSTR csv, BOOL show, LPCSTR pfx, bool want)
+{
+	if (!csv || !csv[0] || !pfx || !pfx[0])	return;
+	xr_vector<shared_str> names;
+	gwr_CollectBoneNames(csv, names);
+	const size_t pl = xr_strlen(pfx);
+	string4096 out;	out[0] = 0;
+	for (const shared_str& n : names)
+	{
+		if (!n.size())	continue;
+		const bool hit = (0 == strncmp(n.c_str(), pfx, pl));
+		if (hit != want)	continue;
+		if (out[0])		xr_strcat(out, sizeof(out), ",");
+		xr_strcat(out, sizeof(out), n.c_str());
+	}
+	if (out[0])		gwr_SetBones(out, show);
+}
+
 void CWeaponMagazined::gwr_SetBones(LPCSTR csv, BOOL show)
 {
 	attachable_hud_item* hi = HudItemData();
@@ -829,13 +850,29 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 	//    it at the back). Otherwise the display freezes on the chamber's colour while you load a different type.
 	//  - IDLE / FIRING: show the round that fires NEXT = the chamber = back(). So the shell that ejects on
 	//    each shot matches the round actually fired (chamber first, then the tube LIFO).
-	u32 last_type;
-	if (m_gwr_fired_until && Device.dwTimeGlobal < m_gwr_fired_until && GetState() != eReload)
-																			last_type = (u32)m_gwr_last_fired_type;					// eject window: the shell just FIRED (pop happens before the eject anim, so back() is already the next round). Any per-type-shell weapon.
-	else if (m_magazine.empty())											last_type = m_ammoType;
+	//  - JAMMED: the case that failed to eject is STILL in the chamber, so it keeps the colour of the round
+	//    that was fired -- not of whatever now sits at the back of the magazine. The eject window below is
+	//    only 600 ms, so without this the stuck case changed colour a moment after the jam (user 2026-08-02:
+	//    green chambered over red magazine -> jam on the green shot -> a RED case in the ejection port).
+	//    This is GS's `ammo_params_use_previous_shot_type` -> GetLastShotAmmoType() (WeaponUpdate.pas:216-224),
+	//    applied while the jam lasts. Skipped for no_jam_fire weapons (break actions): there the jam is a dud
+	//    rolled BEFORE the shot, so the round is unspent and still in the magazine, where back() is right.
+	//    It also holds THROUGH the unjam: clearing a jam is a reload (the revival), and the stuck case is
+	//    what the hands are pulling out -- so unlike a normal reload it must keep the fired round's colour
+	//    for the whole animation, not switch to the type being loaded. IsMisfire() is cleared at the end of
+	//    that reload, which is exactly when the display should go back to the magazine.
+	const bool jam_holds_case = IsMisfire() && !m_bNoJamFire;
+	// mag_type = what the MAGAZINE currently holds; last_type = what the CASE in the chamber shows. They
+	// are the same most of the time, and differ exactly while the chamber holds a case of another type:
+	// a jam, or the brief eject window after a shot.
+	u32 mag_type;
+	if (m_magazine.empty())													mag_type = m_ammoType;
 	else if (GwrChamberAtBack() && m_magazine.size() >= 2 && GetState() == eReload)
-																			last_type = (u32)m_magazine[m_magazine.size()-2].m_LocalAmmoType;	// chamber-first reload: chamber pinned at back, so the round being loaded is one before it
-	else																	last_type = (u32)m_magazine.back().m_LocalAmmoType;		// idle: back() = fires-next (winchester chamber / spas12 last-loaded LIFO)
+																			mag_type = (u32)m_magazine[m_magazine.size()-2].m_LocalAmmoType;	// chamber-first reload: chamber pinned at back, so the round being loaded is one before it
+	else																	mag_type = (u32)m_magazine.back().m_LocalAmmoType;		// idle: back() = fires-next (winchester chamber / spas12 last-loaded LIFO)
+	const bool case_overrides = (m_gwr_fired_until != 0) &&
+		(jam_holds_case || (Device.dwTimeGlobal < m_gwr_fired_until && GetState() != eReload));	// eject window: the shell just FIRED (pop happens before the eject anim, so back() is already the next round). Any per-type-shell weapon.
+	u32 last_type = case_overrides ? (u32)m_gwr_last_fired_type : mag_type;
 
 	// Per-barrel weapons (toz34/bm16): the blanket "fill every barrel with the loaded type" over-shows when
 	// FEWER rounds than capacity actually load -- a single-round reload (empty gun, one shell on hand) or a
@@ -892,7 +929,20 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 
 	// Also the flat count/type (for the single-type advanced & count modes).
 	int eff_count = mag_visible((reloading && inserted) ? iMagazineSize : iAmmoElapsed);
-	u32 eff_type  = (reloading && inserted) ? reload_type : last_type;
+	// ...and the unjam must not adopt the loaded type mid-animation either (see jam_holds_case above):
+	// the revival loads nothing, it only clears the stuck case.
+	u32 eff_type  = (reloading && inserted && !jam_holds_case) ? reload_type : last_type;
+	// Only the CASE follows the chamber. The rounds still in the magazine keep their own type, so a green
+	// case stuck over a red magazine shows a green shell and red bullets (user 2026-08-02: "заменялись не
+	// все кости, а только shell"). Identical to eff_type whenever the chamber and the magazine agree.
+	// With ammo_in_chamber the round at the BACK is the chamber, and a type swap deliberately parks the
+	// OLD-type round there (save_cartridge_in_ammochange: swap front<->back, unload keeping one, refill,
+	// swap back -- see ReloadMagazine). So the magazine's own type is the round UNDER the chamber; reading
+	// back() made a green chambered round colour the whole fresh blue magazine green until it was fired.
+	u32 bullet_mag_type = mag_type;
+	if (m_bAmmoInChamber && m_magazine.size() >= 2)
+		bullet_mag_type = (u32)m_magazine[m_magazine.size()-2].m_LocalAmmoType;
+	u32 bullet_type = (reloading && inserted && !jam_holds_case) ? reload_type : bullet_mag_type;
 
 	(void)force;
 	// NOTE: apply EVERY frame, not on-change. The HUD model's bone visibility is reset by the
@@ -1145,22 +1195,25 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 	else if (READ_IF_EXISTS(pSettings, r_bool, sect, "use_advanced_ammo_bones", FALSE))
 	{
 		int cnt = eff_count;					// reload-phased (see the effective-state block above)
-		LPCSTR bsect = NULL;
 		string128 key;
 		// Prefer a NAME-keyed section (ammo_params_section_<ammo_section>) so the shell colour tracks the
 		// ammo TYPE, not its position in ammo_class -- an upgrade that drops a cartridge (e.g. barrel-mod
 		// removes buckshot) shifts the positional indices and would otherwise recolour the survivors.
-		if (eff_type < (u32)m_ammoTypes.size())
+		auto resolve_sect = [&](u32 type) -> LPCSTR
 		{
-			strconcat(sizeof(key), key, "ammo_params_section_", *m_ammoTypes[eff_type]);
-			if (pSettings->line_exist(sect, key))			bsect = pSettings->r_string(sect, key);
-		}
-		if (!bsect)
-		{
-			xr_sprintf(key, "ammo_params_section_%d", eff_type);		// positional fallback (legacy)
-			if (pSettings->line_exist(sect, key))			bsect = pSettings->r_string(sect, key);
-			else if (pSettings->line_exist(sect, "ammo_params_section"))	bsect = pSettings->r_string(sect, "ammo_params_section");
-		}
+			string128 k;
+			if (type < (u32)m_ammoTypes.size())
+			{
+				strconcat(sizeof(k), k, "ammo_params_section_", *m_ammoTypes[type]);
+				if (pSettings->line_exist(sect, k))				return pSettings->r_string(sect, k);
+			}
+			xr_sprintf(k, "ammo_params_section_%d", type);		// positional fallback (legacy)
+			if (pSettings->line_exist(sect, k))					return pSettings->r_string(sect, k);
+			if (pSettings->line_exist(sect, "ammo_params_section"))	return pSettings->r_string(sect, "ammo_params_section");
+			return NULL;
+		};
+
+		LPCSTR bsect = resolve_sect(eff_type);					// the CASE's colour (chamber)
 		if (bsect)
 		{
 			if (IsMisfire() && READ_IF_EXISTS(pSettings, r_bool, bsect, "additional_ammo_bone_when_jammed", FALSE))	++cnt;
@@ -1168,13 +1221,27 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 			// Drum/tube "closing round": visible ONLY when the mag is completely full. The full count
 			// varies with the mag-capacity upgrade, so a dedicated configuration_full covers any size
 			// instead of hard-coding configuration_<N>. Falls back to configuration_<count> otherwise.
-			if (eff_count >= iMagazineSize && pSettings->line_exist(bsect, "configuration_full"))
-				gwr_SetBones(pSettings->r_string(bsect, "configuration_full"), TRUE);
-			else
+			auto config_of = [&](LPCSTR s) -> LPCSTR
 			{
-				xr_sprintf(key, "configuration_%d", cnt);
-				if (pSettings->line_exist(bsect, key))		gwr_SetBones(pSettings->r_string(bsect, key), TRUE);
+				if (!s)	return NULL;
+				string128 k;
+				if (eff_count >= iMagazineSize && pSettings->line_exist(s, "configuration_full"))
+					return pSettings->r_string(s, "configuration_full");
+				xr_sprintf(k, "configuration_%d", cnt);
+				return pSettings->line_exist(s, k) ? pSettings->r_string(s, k) : NULL;
+			};
+
+			LPCSTR msect = (bullet_type != eff_type) ? resolve_sect(bullet_type) : NULL;
+			if (msect && 0 != xr_strcmp(msect, bsect))
+			{
+				// Chamber and magazine hold different types: take ONLY the shell bone from the case's
+				// section and everything else (bullets, fix, ...) from the magazine's, so the stuck case
+				// keeps its colour without recolouring the rounds behind it.
+				gwr_SetBonesFiltered(config_of(bsect), TRUE, "shell", true);
+				gwr_SetBonesFiltered(config_of(msect), TRUE, "shell", false);
 			}
+			else
+				gwr_SetBones(config_of(bsect), TRUE);
 		}
 	}
 	// ---- ammo COUNT bones: one bone per round in the mag ----
@@ -1656,9 +1723,13 @@ void CWeaponMagazined::state_Fire(float dt)
 			// jam (misfire) can only occur AFTER a shot has actually been fired -
 			// the fired round leaves the barrel, then the action jams (stovepipe /
 			// failure-to-eject). Rolled here (post-shot) instead of before the shot so
-			// a fresh trigger pull never jams in place of firing. Skip the roll when the
-			// shot emptied the magazine (nothing left to chamber -> just empty, not jammed).
-			if( !m_bNoJamFire && !m_magazine.empty() && CheckForMisfire() )
+			// a fresh trigger pull never jams in place of firing.
+			// THE LAST ROUND CAN JAM TOO (GS parity: its OnWeaponJam hooks the stock CheckForMisfire and
+			// never tests the magazine). This used to carry a `!m_magazine.empty()` guard, added when
+			// "jammed AND empty" was a dead end -- it no longer is: that state has its own revival
+			// (anm_reload_jammed_last + snd_reload_jammed_last), the stuck case keeps the fired round's
+			// colour, and a reload while jammed clears the jam without loading anything.
+			if( !m_bNoJamFire && CheckForMisfire() )
 			{
 				// GS OnWeaponJam + anm_shots_selector's "_jammed" modifier: the shot that jams has its OWN
 				// animation (the case caught in the ejection port) and it plays to the END -- the jammed

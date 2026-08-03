@@ -168,6 +168,9 @@ public:
 			void	PlayKickSound			();	// GS snd_kick, at the bayonet stab
 			void	gwr_UpdateBones			(bool force = false);
 	void			gwr_SetBones			(LPCSTR csv, BOOL show);
+	// ...restricted to the entries whose name does (want) / does not (!want) start with pfx -- lets the
+	// chamber's case and the magazine's rounds be coloured from two different ammo-bone sections.
+	void			gwr_SetBonesFiltered	(LPCSTR csv, BOOL show, LPCSTR pfx, bool want);
 	// true if the magazine keeps the round that fires next (the "chamber") at the BACK rather than the
 	// last-loaded round -- chamber-first pump shotguns. Lets the ammo-type display read the newest round
 	// (index size-2) instead of the pinned chamber. Base: normal push_back order, so false.

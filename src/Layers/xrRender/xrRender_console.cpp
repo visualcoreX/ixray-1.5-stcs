@@ -141,7 +141,10 @@ Flags32		ps_r2_ls_flags_ext			= {
 		/*R2FLAGEXT_SSAO_OPT_DATA |*/ R2FLAGEXT_SSAO_HALF_DATA
 	};
 
-Flags32 ps_r__common_flags = { R2FLAG_USE_BUMP };
+// RFLAG_ACTOR_SHADOW on by default: the first-person actor is invisible in the normal pass, so the
+// SMAP pass renders it explicitly (r__dsgraph_render.cpp) to get a self shadow. Toggle: the
+// "actor shadow" checkbox in the advanced video options, or `r__actor_shadow` in the console.
+Flags32 ps_r__common_flags = { R2FLAG_USE_BUMP | RFLAG_ACTOR_SHADOW };
 
 float		ps_r2_df_parallax_h			= 0.02f;
 float		ps_r2_df_parallax_range		= 75.f;

@@ -249,6 +249,11 @@ public:
 	// NeedEmptyAnim() is overridden by CWeaponMagazined to return iAmmoElapsed==0 -> PlayHUDMotion
 	// rewrites the alias to its "_empty" variant (bolt/slide held back) when the weapon has one.
 	virtual bool				NeedEmptyAnim			() { return false; }
+	// "_empty" applies ONLY when the weapon is not also jammed: GS precedence is jammed > empty, and the
+	// two tokens do not combine (no anm_x_jammed_empty exists anywhere). Any selector that hands
+	// PlayHUDMotion a ready-made "_empty" alias must gate on THIS, not on the ammo count -- otherwise it
+	// defeats the rewrite, which can only add a token, never replace the one already in the name.
+	bool						UseEmptyAnimOnly		() { return NeedEmptyAnim() && !NeedJammedAnim(); }
 	// NeedFirstAnim() is overridden by CWeaponShotgun (just reloaded, no shot since, mag not empty) ->
 	// PlayHUDMotion rewrites the alias to its "_first" variant (the drum's fresh-round idle/gestures).
 	// Order in PlayHUDMotion mirrors GS ModifierStd: jammed > empty > first.

@@ -52,6 +52,7 @@ CWeapon::CWeapon()
 	m_lens_min				= 0.f;
 	m_lens_max				= 0.f;
 	m_bAlterZoom			= false;
+	m_bAlterZoomLast		= false;
 	m_fAlterZoomFactor		= 0.f;
 	for (int i = 0; i < 16; ++i)	m_lens_step_by_scope[i] = -1;
 	SetDefaults				();
@@ -2509,7 +2510,16 @@ void CWeapon::OnZoomIn()
 {
 	m_zoom_params.m_bIsZoomModeNow		= true;
 	m_zoom_params.m_fCurrentZoomFactor	= CurrentZoomFactor();
-	
+	// GS IsLastZoomAlter (collimator.pas:132): if the previous aim ENDED in the alter pose, come back
+	// straight into it instead of the normal one. The blend factor is set to 1 rather than ramped --
+	// this is a continuation of the pose the player left, not a fresh toggle, so it must not play the
+	// switch transition on every re-aim.
+	if (m_bAlterZoomLast && IsAlterZoomAllowed())
+	{
+		m_bAlterZoom		= true;
+		m_fAlterZoomFactor	= 1.f;
+	}
+
 	if(m_zoom_params.m_bZoomDofEnabled && !IsScopeAttached())
 		GamePersistent().SetEffectorDOF	(m_zoom_params.m_ZoomDof);
 }
@@ -2518,6 +2528,9 @@ void CWeapon::OnZoomOut()
 {
 	m_zoom_params.m_bIsZoomModeNow		= false;
 	m_zoom_params.m_fCurrentZoomFactor	= g_fov;
+	// GS SetLastZoomAlter: remember which of the two aim poses the player left, so the next aim returns
+	// to it (only while the scope still offers one -- see OnZoomIn).
+	if (IsAlterZoomAllowed())			m_bAlterZoomLast = m_bAlterZoom;
 	m_bAlterZoom						= false;	// GS: the second aim pose ends with the aim itself
 	// leaving aim: forget any "sprint already entered" state (it can be stale-true through the aim-out
 	// transition, which owns the idle slot). So sprinting straight out of aim always plays the enter anim

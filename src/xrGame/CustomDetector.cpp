@@ -42,7 +42,18 @@ bool  CCustomDetector::AnimForbidsDetector(CHudItem* itm)
 	return pSettings->line_exist(itm->HudSection(), key) && !!pSettings->r_bool(itm->HudSection(), key);
 }
 
-bool  CCustomDetector::CheckCompatibilityInt(CHudItem* itm, u32* slot_to_activate)
+// Is it worth waiting for this item to finish coming up before the detector appears? Only when the
+// item actually performs the hand-over (anm_prepare_detector -> anm_draw_detector, CWeaponMagazined::
+// BeginDetectorDraw). The KNIFE and the BOLT have no such motion -- they are not even CWeaponMagazined
+// -- so waiting would buy nothing and just delay the draw; for them the detector comes out in parallel,
+// exactly as it did before the deferral existed.
+bool  CCustomDetector::HasDetectorDrawGesture(CHudItem* itm)
+{
+	if (!itm || !smart_cast<CWeaponMagazined*>(itm))	return false;
+	return !!pSettings->line_exist(itm->HudSection(), "anm_prepare_detector");
+}
+
+bool  CCustomDetector::CheckCompatibilityInt(CHudItem* itm, u32* slot_to_activate, bool for_draw)
 {
 	if(itm==NULL)
 		return true;
@@ -100,12 +111,21 @@ bool  CCustomDetector::CheckCompatibilityInt(CHudItem* itm, u32* slot_to_activat
 
 	if (bres && AnimForbidsDetector(itm))	bres = false;
 
-	// An item still coming UP owns both hands: taking the detector out during its draw sent the left
-	// hand off-screen mid-motion. Block it for the duration -- ToggleDetector turns a keypress in that
-	// window into a DEFERRED draw instead, and UpdateVisibility releases it once the draw ends.
+	// An item still coming UP owns both hands, so the detector must not come out in the middle of that
+	// draw -- but ONLY for a draw (for_draw). Failing the test unconditionally made every item report
+	// itself incompatible while it rose, and the hide path acted on that: drawing a KNIFE, which the
+	// detector is perfectly happy to share hands with, put the detector away. An item on its way up
+	// never justifies holstering an already-drawn detector, so leave that path exactly as it was.
 	if(itm->GetState()==CHUDState::eShowing)
-		bres = false;
-	else
+	{
+		// ...and only for an item that has the gesture to wait FOR (knife/bolt draw in parallel)
+		if (for_draw && HasDetectorDrawGesture(itm))	bres = false;
+	}
+	else if (for_draw)
+		// "busy right now" is a reason not to TAKE THE DETECTOR OUT, never a reason to put it away:
+		// picking a pistol up holsters the current weapon, so the compatible weapon in hand reported
+		// eHiding+pending and the detector was holstered with it (user 2026-08-03, [DETHIDE] log
+		// showed state=2 pending=1 supports=true).
 		bres = bres && !itm->IsPending();
 
 	if(bres)
@@ -173,13 +193,17 @@ void CCustomDetector::ToggleDetector(bool bFastMode)
 		CHudItem* itm = (iitem)?iitem->cast_hud_item():NULL;
 		u32 slot_to_activate = NO_ACTIVE_SLOT;
 		// pressed while the item in hand is still being drawn -> remember it: UpdateVisibility draws
-		// the detector as soon as that item is out, so the press is honoured instead of lost
-		if(itm && itm->GetState()==CHUDState::eShowing)
+		// the detector as soon as that item is out, so the press is honoured instead of lost.
+		// Remember HOW it was requested too: a keypress must still get the weapon's hand gesture when
+		// it finally fires, otherwise the detector just appears with the right hand never moving.
+		// (knife/bolt play no hand-over gesture -> nothing to wait for, fall through and draw now)
+		if(itm && itm->GetState()==CHUDState::eShowing && HasDetectorDrawGesture(itm))
 		{
-			m_bNeedActivation = true;
+			m_bNeedActivation		= true;
+			m_bNeedActivationManual	= !m_bAutoToggle;
 			return;
 		}
-		if(CheckCompatibilityInt(itm, &slot_to_activate))
+		if(CheckCompatibilityInt(itm, &slot_to_activate, true))
 		{
 			if(slot_to_activate != NO_ACTIVE_SLOT)
 			{
@@ -187,7 +211,8 @@ void CCustomDetector::ToggleDetector(bool bFastMode)
 				// compatible slot first; UpdateVisibility shows the detector once that item is out
 				// (m_bNeedActivation), so one keypress does "holster rifle -> draw bolt + detector".
 				m_pInventory->Activate(slot_to_activate);
-				m_bNeedActivation = true;
+				m_bNeedActivation		= true;
+				m_bNeedActivationManual	= !m_bAutoToggle;
 				return;
 			}
 			// manual draw + the in-hand weapon has anm_prepare_detector -> phase 1: the hand goes
@@ -217,7 +242,8 @@ void CCustomDetector::ToggleDetector(bool bFastMode)
 		SwitchState					(eHiding);
 	}
 
-	m_bNeedActivation = false;
+	m_bNeedActivation		= false;
+	m_bNeedActivationManual	= false;
 }
 
 void CCustomDetector::ShowAfterPrepare()
@@ -225,7 +251,8 @@ void CCustomDetector::ShowAfterPrepare()
 	if(GetState()!=eHidden)	return;
 	SwitchState				(eShowing);		// OnStateSwitch plays the detector's own draw + anm_draw_detector
 	TurnDetectorInternal	(true);
-	m_bNeedActivation = false;
+	m_bNeedActivation		= false;
+	m_bNeedActivationManual	= false;
 }
 
 void CCustomDetector::OnStateSwitch(u32 S)
@@ -445,6 +472,7 @@ CCustomDetector::CCustomDetector()
 	m_ui				= NULL;
 	m_bFastAnimMode		= false;
 	m_bNeedActivation	= false;
+	m_bNeedActivationManual	= false;
 	m_bAutoToggle		= false;
 	m_bCompanionOneShot	= false;
 }
@@ -524,6 +552,10 @@ void CCustomDetector::UpdateVisibility()
 			{
 				HideDetector		(true);
 				m_bNeedActivation	= true;
+				// engine-driven hide (aim/reload/climb) -> the matching re-show is engine-driven too,
+				// so drop any pending manual request: the right hand is busy with that action, not
+				// with handing the detector over.
+				m_bNeedActivationManual	= false;
 			}
 		}
 	}else
@@ -538,11 +570,32 @@ void CCustomDetector::UpdateVisibility()
 			// still HOLSTERING (eHiding) -> ShowDetector fired too early, CheckCompatibilityInt(pending
 			// weapon) returned false, and ToggleDetector's tail reset m_bNeedActivation, so the deferred
 			// draw was lost (the substitute item came out but the detector never did).
+			// for_draw: this IS the draw decision, so an item still rising holds the detector back
+			// until its motion ends -- that is the whole point of the deferral.
 			CHudItem* huditem		= (i0_)?i0_->m_parent_hud_item : NULL;
-			bool bChecked			= !huditem || CheckCompatibilityInt(huditem, 0);
-			if(bChecked)
+			bool bChecked			= !huditem || CheckCompatibilityInt(huditem, 0, true);
+			// A pending request only makes sense while the detector is actually away. ShowDetector()
+			// is a no-op when it isn't, but ToggleDetector() is NOT -- called with the detector already
+			// out it would TOGGLE, i.e. put it away by itself. Consume the stale request instead.
+			if(bChecked && GetState()!=eHidden)
 			{
-				ShowDetector		(true);
+				m_bNeedActivation		= false;
+				m_bNeedActivationManual	= false;
+			}
+			else if(bChecked)
+			{
+				if (m_bNeedActivationManual)
+				{
+					// the press was deferred: replay it as a MANUAL toggle now that the right hand is
+					// free, so ToggleDetector takes the !m_bAutoToggle path -> the weapon plays
+					// anm_prepare_detector and the detector appears from ShowAfterPrepare with
+					// anm_draw_detector. ShowDetector() would set m_bAutoToggle and skip both.
+					m_bNeedActivationManual	= false;
+					m_bAutoToggle			= false;
+					ToggleDetector			(true);		// fast anims: something is in the other hand
+				}
+				else
+					ShowDetector		(true);
 			}
 		}
 	}
