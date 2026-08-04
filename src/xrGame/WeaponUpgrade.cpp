@@ -42,6 +42,20 @@ bool CWeapon::install_upgrade_impl( LPCSTR section, bool test )
 		result = true;
 	}
 
+	// ...and the WORLD model with it. The same node usually swaps both (the sig550 tactical foregrip
+	// sets `hud` and `visual` together), but only `hud` was ever applied -- so an upgraded weapon wore
+	// its tactical hands in first person and its stock model on the ground, in NPC hands and in the
+	// third-person view. Re-applied on every net_Spawn like the rest, so it survives save-load.
+	if ( pSettings->line_exist( section, "visual" ) )
+	{
+		if ( !test )
+		{
+			shared_str v = pSettings->r_string( section, "visual" );
+			if ( v.size() && v != cNameVisual() )	cNameVisual_set( v );
+		}
+		result = true;
+	}
+
 	// laser designator install (GS LAM): the upgrade only marks the laser INSTALLED -- it starts OFF (the
 	// player toggles it with kWPN_LASER). Do NOT force m_bLaserEnabled here: the ctor default is false, so a
 	// fresh install is off, and NOT touching it lets the saved on/off state persist across a reload (install

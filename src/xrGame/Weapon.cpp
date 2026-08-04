@@ -567,10 +567,14 @@ void CWeapon::Load		(LPCSTR section)
 	LoadFlashlightParams();
 }
 
-// Read the laser designator params from the weapon's laser_params_section (if any). Does NOT install it --
-// that's the upgrade's job (m_bLaserInstalled). Stage 1: the attach bone, one dot particle, the offset.
+// Read the laser designator params from the weapon's laser_params_section (if any). Installing it is
+// normally the upgrade's job (laser_installed on the upgrade section, WeaponUpgrade.cpp) -- but a weapon
+// can carry the designator PERMANENTLY, with no node to install: GS does that by giving the weapon
+// section the [red_laser] parent (the P90). So `laser_installed` is honoured on the weapon section too;
+// without this the module is on the model, the bone is visible, and the toggle key does nothing.
 void CWeapon::LoadLaserParams()
 {
+	m_bLaserInstalled	= !!READ_IF_EXISTS(pSettings, r_bool, cNameSect().c_str(), "laser_installed", FALSE);
 	m_sLaserBone		= NULL;
 	m_LaserParticles.clear	();
 	m_LaserSwitchDist.clear	();
@@ -652,8 +656,9 @@ void CWeapon::StopLaserDot()
 // down. The reticle stays lit normally otherwise. Only the active scope's reticle is touched.
 void CWeapon::UpdateCollimatorGlitch()
 {
-	if (!IsScopeAttached())	return;
-	shared_str scope = GetCurrentScopeSection();
+	// A weapon can carry the collimator BUILT IN (the P90: no scope item, `collimator_sights_bones` on the
+	// weapon section) -- so gate on the bones key, not on an attached scope.
+	shared_str scope = IsScopeAttached() ? GetCurrentScopeSection() : shared_str();
 	LPCSTR bones = (scope.size() && pSettings->line_exist(*scope, "collimator_sights_bones"))
 					? pSettings->r_string(*scope, "collimator_sights_bones")
 					: (pSettings->line_exist(cNameSect(), "collimator_sights_bones")
@@ -673,6 +678,11 @@ void CWeapon::UpdateCollimatorGlitch()
 		const float prob = (g_electronics_problems >= lvl) ? 1.f : (g_electronics_problems / lvl);
 		if (::Random.randF() < prob)	show = FALSE;
 	}
+	// GS hide_collimator_sights_in_alter_zoom: the alter pose looks over/through the BACKUP sights, so the
+	// red-dot housing's reticle is taken off the model for as long as that pose is held.
+	if (show && AlterZoomBlend() > 0.5f
+		&& READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "hide_collimator_sights_in_alter_zoom", FALSE))
+		show = FALSE;
 	gwr_SetWorldBonesCSV(hi->m_model, bones, show);
 }
 
@@ -2057,6 +2067,17 @@ BOOL CWeapon::CheckForMisfire	()
 {
 	if (OnClient()) return FALSE;
 
+	// GS (WeaponEvents.pas:824): during a controller suicide the weapon is force-UNjammed and never
+	// rolls a misfire -- the scene must not be rescued by a dud round.
+	{
+		CActor* act = smart_cast<CActor*>(H_Parent());
+		if (act && act == Actor() && act->IsSuicideInProgress())
+		{
+			bMisfire = false;
+			return FALSE;
+		}
+	}
+
 	// the shot right after clearing a jam never jams again -> no back-to-back jams (min 1 clean shot)
 	if (m_bMisfireCooldown)
 	{
@@ -2386,9 +2407,11 @@ void CWeapon::gwr_UpdateWorldBones(IKinematics* K, bool force)
 	if (illum_bones)
 		gwr_SetWorldBonesCSV(K, illum_bones, (IsScopeAttached() && ScopeIllumValue() > 0.f) ? TRUE : FALSE);
 
-	// laser ray bone hidden while the laser is installed but switched off
-	if (m_bLaserInstalled && !m_bLaserEnabled && m_sLaserBone.size())
-		gwr_SetWorldBonesCSV(K, m_sLaserBone.c_str(), FALSE);
+	// laser ray bone follows the toggle (symmetric -- a PERMANENT designator has no upgrade show_bones to
+	// bring it back, see the matching block in CWeaponMagazined::UpdateHUDAddonsVisibility)
+	if (m_bLaserInstalled && m_sLaserBone.size())
+		gwr_SetWorldBonesCSV(K, m_sLaserRayBones.size() ? m_sLaserRayBones.c_str() : m_sLaserBone.c_str(),
+							 m_bLaserEnabled ? TRUE : FALSE);
 
 	// bayonet blade removed when a silencer/GL occupies the barrel
 	if (m_bBayonetInstalled && !IsBayonetActive())
@@ -2508,6 +2531,10 @@ float CWeapon::CurrentZoomFactor()
 
 void CWeapon::OnZoomIn()
 {
+	// GS CanAimNow (WeaponAdditionalBuffer.pas:900): aiming is refused outright for the whole scene.
+	// We used to only force an unzoom on the next frame, so the sight still flicked up on every press.
+	if (SuicideBlocksAim())				return;
+
 	m_zoom_params.m_bIsZoomModeNow		= true;
 	m_zoom_params.m_fCurrentZoomFactor	= CurrentZoomFactor();
 	// GS IsLastZoomAlter (collimator.pas:132): if the previous aim ENDED in the alter pose, come back
@@ -2685,11 +2712,21 @@ bool CWeapon::AimProhibitedByGrenadeMode() const
 
 // GS alter_zoom_allowed: the active scope offers a SECOND aim pose (the ELCAN magnifier -- the eye moves
 // to the other optic), toggled while aiming. Its own aim offset / hud fov are read where those are applied.
+shared_str CWeapon::AlterZoomSection() const
+{
+	if (IsScopeAttached())
+	{
+		shared_str sc = GetCurrentScopeSection();
+		if (sc.size())	return sc;
+	}
+	return HudSection();
+}
+
 bool CWeapon::IsAlterZoomAllowed() const
 {
-	if (!IsScopeAttached())	return false;
-	shared_str sc = GetCurrentScopeSection();
-	return sc.size() && !!READ_IF_EXISTS(pSettings, r_bool, *sc, "alter_zoom_allowed", FALSE);
+	shared_str sc = AlterZoomSection();
+	return sc.size() && pSettings->section_exist(*sc)
+		&& !!READ_IF_EXISTS(pSettings, r_bool, *sc, "alter_zoom_allowed", FALSE);
 }
 
 void CWeapon::ToggleAlterZoom()
@@ -2706,8 +2743,9 @@ void CWeapon::UpdateAlterZoomBlend(float dt)
 	const float target = (m_bAlterZoom && IsZoomed()) ? 1.f : 0.f;
 	if (fsimilar(m_fAlterZoomFactor, target))	{ m_fAlterZoomFactor = target; return; }
 
-	shared_str sc = GetCurrentScopeSection();
-	float t = sc.size() ? READ_IF_EXISTS(pSettings, r_float, *sc, "alter_zoom_time", 0.f) : 0.f;
+	shared_str sc = AlterZoomSection();
+	float t = (sc.size() && pSettings->section_exist(*sc))
+			? READ_IF_EXISTS(pSettings, r_float, *sc, "alter_zoom_time", 0.f) : 0.f;
 	if (t <= EPS)	t = m_zoom_params.m_fZoomRotateTime;
 	if (t <= EPS)	t = 0.25f;
 
@@ -3089,17 +3127,22 @@ float CWeapon::GetHudFov()
 		shared_str sc = GetCurrentScopeSection();
 		if (IsScopeAttached() && sc.size() && pSettings->line_exist(*sc, "scope_hud_fov_aim"))
 			scope_fov = pSettings->r_float(*sc, "scope_hud_fov_aim");
-		// GS alter zoom: the second aim pose has its own hud fov -- eased in/out with the same blend as
-		// the offset, so the view glides between the two optics instead of jumping.
-		const float ab = AlterZoomBlend();
-		if (ab > 0.f && sc.size() && pSettings->line_exist(*sc, "scope_hud_fov_alter_aim"))
-		{
-			const float alt = pSettings->r_float(*sc, "scope_hud_fov_alter_aim");
-			scope_fov = scope_fov + (alt - scope_fov) * ab;
-		}
 	}
 	// a collimator has no lens but still aims through the optic, so it uses the per-scope aim FOV too
 	float aim_cfg = ((IsLensedScope() || IsCollimatorScope()) && scope_fov > 0.f) ? scope_fov : m_fHudFovAim;
+	// GS alter zoom: the second aim pose has its own hud fov -- eased in/out with the same blend as the
+	// offset, so the view glides between the two poses instead of jumping. Applied AFTER the pose above is
+	// picked, so it works for a built-in optic too (no scope item -> the keys live in the HUD section).
+	{
+		const float ab = AlterZoomBlend();
+		shared_str az = AlterZoomSection();
+		if (ab > 0.f && aim_cfg > 0.f && az.size() && pSettings->section_exist(*az)
+			&& pSettings->line_exist(*az, "scope_hud_fov_alter_aim"))
+		{
+			const float alt = pSettings->r_float(*az, "scope_hud_fov_alter_aim");
+			aim_cfg = aim_cfg + (alt - aim_cfg) * ab;
+		}
+	}
 	if(m_bPdaCursorAnims && g_pda_hud_fov_aim > 0.f)
 		aim_cfg = g_pda_hud_fov_aim;
 	if(aim_cfg <= 0.f)

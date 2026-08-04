@@ -283,6 +283,9 @@ void CActor::g_cl_CheckControls(u32 mstate_wf, Fvector &vControlAccel, float &Ju
 						scale *= m_fWalk_StrafeFactor;
 				}
 
+				// GS GetCurrentSuicideWalkKoef: a controlled victim walks at controlled_actor_speed_koef
+				scale						*= ControlledSpeedKoef();
+
 				vControlAccel.mul			(scale);
 				cam_eff_factor				= scale;
 			}//scale>EPS

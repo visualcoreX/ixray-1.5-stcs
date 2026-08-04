@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "HudItem.h"
+#include "Weapon.h"
 #include "physic_item.h"
 #include "actor.h"
 #include "actoreffector.h"
@@ -240,8 +241,20 @@ void CHudItem::renderable_Render()
 
 void CHudItem::SwitchState(u32 S)
 {
-	if (OnClient()) 
+	if (OnClient())
 		return;
+
+	// GS IsActionProcessing (WeaponAdditionalBuffer.pas:591) reports the weapon busy for the whole
+	// controller-suicide scene, so nothing can put an idle over the gesture. Ours had no such rule and
+	// the idle came back the moment the gesture's motion ended -- on a launcher-equipped rifle through
+	// CWeaponMagazinedWGrenade's own PlayAnimIdle, which bypassed the guard in the base class. The
+	// block belongs on the TRANSITION, where no subclass can route around it: the scene owns the pose
+	// until it resolves, and the shot leaves from the victim's own head rather than from the hip.
+	if (S == eIdle)
+	{
+		CWeapon* w = smart_cast<CWeapon*>(this);
+		if (w && w->SuicideHoldsPose())	return;
+	}
 
 	SetNextState( S );
 
@@ -591,6 +604,15 @@ u32 CHudItem::PlayHUDMotion(const shared_str& M, BOOL bMixIn, CHudItem*  W, u32 
 		return 0;
 	}
 
+	// every motion swap while a controller scene is running: this is what says WHO replaces the
+	// suicide gesture on screen
+	{
+		extern int g_ctrl_dbg;
+		CActor* dbg_a = smart_cast<CActor*>(Level().CurrentControlEntity());
+		if (g_ctrl_dbg && dbg_a && dbg_a->IsSuicideInProgress())
+			Msg("~ctrl MOTION: %s (state=%d) on %s", M.c_str(), (int)state, HudSection().c_str());
+	}
+
 	// GS name order (ModifierStd): base + firemode mark + weapon-state token, e.g.
 	// anm_idle -> anm_idle_auto -> anm_idle_auto_jammed, anm_fakeshoot -> anm_fakeshoot_auto_jammed.
 	// Resolve BOTH in one pass over a candidate list. Doing it in two existence-gated steps (mark,
@@ -747,6 +769,15 @@ BOOL CHudItem::GetHUDmode()
 
 void CHudItem::PlayAnimIdle()
 {
+	// GS IsActionProcessing: no idle may start while a controller-suicide scene owns the pose. The
+	// guard has to sit in EVERY PlayAnimIdle -- walking changes the movement anim through this call
+	// directly, without a state switch, so the SwitchState(eIdle) block never sees it. That is why the
+	// shot survived a standing victim and vanished for a walking one.
+	{
+		CWeapon* sw = smart_cast<CWeapon*>(this);
+		if (sw && sw->SuicideHoldsPose())	return;
+	}
+
 	if (TryPlayAnimIdle()) return;
 
 	PlayHUDMotion("anm_idle", TRUE, NULL, GetState());
@@ -922,6 +953,11 @@ LPCSTR CHudItem::SelectMovingAnim(LPCSTR base)
 
 void CHudItem::PlayAnimIdleMoving()
 {
+	{
+		CWeapon* sw = smart_cast<CWeapon*>(this);
+		if (sw && sw->SuicideHoldsPose())	return;
+	}
+
 	PlayHUDMotion(SelectMovingAnim("anm_idle_moving"), TRUE, NULL, GetState());
 }
 
@@ -943,6 +979,11 @@ bool CHudItem::HasSprintExitAnim()
 
 void CHudItem::PlayAnimIdleSprint()
 {
+	{
+		CWeapon* sw = smart_cast<CWeapon*>(this);
+		if (sw && sw->SuicideHoldsPose())	return;
+	}
+
 	LPCSTR loop = SprintLoopBase();	// class supplies the suffix (GL / bm16 shell); "" fallback = plain
 	// The sprint-START one-shot is still on screen: do NOT replace it with the loop. This happens when a
 	// second PlayAnimIdle fires the same frame right after the start began -- e.g. the aim-out transition's

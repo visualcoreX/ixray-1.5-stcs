@@ -6,6 +6,12 @@
 #include "EffectorShot.h"
 #include "Weapon.h"
 
+// Diagnostic for "which way does the camera actually kick" reports (console: g_recoil_dbg 1).
+// Prints the recoil block in force and every angle change, in DEGREES, so a log can settle
+// whether a complaint is the camera or the hud animation. Off by default, costs nothing then.
+int g_recoil_dbg = 0;
+#define RDBG(...)	do { if (g_recoil_dbg) Msg(__VA_ARGS__); } while (0)
+
 //-----------------------------------------------------------------------------
 // Weapon shot effector
 //-----------------------------------------------------------------------------
@@ -52,7 +58,13 @@ void CWeaponShotEffector::Shot( CWeapon* weapon )
 
 	float angle	= m_cam_recoil.Dispersion    * weapon->cur_silencer_koef.cam_dispersion;
 	angle      += m_cam_recoil.DispersionInc * weapon->cur_silencer_koef.cam_disper_inc * (float)m_shot_numer;
+	RDBG("~recoil SHOT n=%d single=%d mode=%d | disp=%.3f inc=%.3f frac=%.2f maxV=%.1f relax=%.1f ret=%d | add=%.3f deg",
+		 m_shot_numer, m_single_shot ? 1 : 0, weapon->GetCurrentFireMode(),
+		 rad2deg(m_cam_recoil.Dispersion), rad2deg(m_cam_recoil.DispersionInc), m_cam_recoil.DispersionFrac,
+		 rad2deg(m_cam_recoil.MaxAngleVert), rad2deg(m_cam_recoil.RelaxSpeed), m_cam_recoil.ReturnMode ? 1 : 0,
+		 rad2deg(angle));
 	Shot2( angle );
+	RDBG("~recoil  after shot: vert=%.3f deg", rad2deg(m_angle_vert));
 }
 
 void CWeaponShotEffector::Shot2( float angle )
@@ -117,9 +129,15 @@ void CWeaponShotEffector::Update()
 
 	m_delta_vert = m_angle_vert - m_prev_angle_vert;
 	m_delta_horz = m_angle_horz - m_prev_angle_horz;
-	
-	m_prev_angle_vert = m_angle_vert; 
+
+	m_prev_angle_vert = m_angle_vert;
 	m_prev_angle_horz = m_angle_horz;
+
+	// negative delta = the camera is being pulled back DOWN this frame
+	if (!fis_zero(m_delta_vert))
+		RDBG("~recoil  frame: d_vert=%+.4f deg vert=%.3f | actived=%d shot_end=%d single=%d",
+			 rad2deg(m_delta_vert), rad2deg(m_angle_vert), m_actived ? 1 : 0, m_shot_end ? 1 : 0,
+			 m_single_shot ? 1 : 0);
 
 //	Msg( " <<[%d]  v=%.4f  dv=%.4f   a=%d s=%d  fr=%d", m_shot_numer, m_angle_vert, m_delta_vert, m_actived, m_first_shot, Device.dwFrame );
 }

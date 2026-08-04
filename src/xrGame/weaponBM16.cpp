@@ -198,9 +198,21 @@ void CWeaponBM16::PlayAnimShoot()
 	const u32 shells = m_magazine.size();
 	if (shells != 1 && shells != 2)	return;
 
+	string_path nm;
+
+	// GS controller suicide: the shot into one's own head keeps its own take, per loaded shell
+	// (anm_shoot_suicide_1 / _2 -- shotguns/bm16/huds.ltx). This override never goes through
+	// SelectShootAnim, where the base class holds the suicide branch, so without this the double
+	// barrels fired their ordinary shot and the weapon left the victim's head for the hip.
+	if (m_bSuicideShot)
+	{
+		xr_sprintf(nm, "anm_shoot_suicide_%d", shells);
+		if (isHUDAnimationExist(nm))				{ PlayHUDMotion(nm, FALSE, this, GetState()); return; }
+		if (isHUDAnimationExist("anm_shoot_suicide"))	{ PlayHUDMotion("anm_shoot_suicide", FALSE, this, GetState()); return; }
+	}
+
 	// GS double-barrel shoot names: anm_shoot_<shells left>, ADS = anm_shoot_aim_<n> (aim before count),
 	// and firing through a use_scope_anims scope inserts "_scope" after "_aim": anm_shoot_aim_scope_<n>.
-	string_path nm;
 	if (aimed && UseScopeAnims())
 	{
 		xr_sprintf(nm, "anm_shoot_aim_scope_%d", shells);
@@ -310,6 +322,8 @@ void CWeaponBM16::PlayAnimReload()
 
 void  CWeaponBM16::PlayAnimIdleMoving()
 {
+	if (SuicideHoldsPose())		return;		// see CHudItem::PlayAnimIdle
+
 	switch( m_magazine.size() )
 	{
 	case 0:
@@ -338,6 +352,8 @@ LPCSTR CWeaponBM16::SprintLoopBase()
 
 void CWeaponBM16::PlayAnimIdle()
 {
+	if (SuicideHoldsPose())		return;		// see CHudItem::PlayAnimIdle
+
 	if(TryPlayAnimIdle())	return;
 
 	if(IsZoomed())

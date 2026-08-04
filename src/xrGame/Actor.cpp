@@ -33,6 +33,7 @@
 #include "../xrEngine/xr_input.h"
 //
 #include "Actor.h"
+#include "PDA.h"					// CPda -- the device must not be droppable
 #include "ActorAnimation.h"
 #include "actor_anim_defs.h"
 #include "HudItem.h"
@@ -98,6 +99,26 @@ Flags32			psActorFlags={/*AF_DYNAMIC_MUSIC|*/AF_GODMODE_RT};
 CActor::CActor() : CEntityAlive()
 {
 	m_dwBayonetHitTm		= 0;
+	m_eSuicideState			= eSuicideNone;
+	m_dwSuicideNextTm		= 0;
+	m_bSuicideBroken		= false;
+	m_bSuicideKillPending	= false;
+	m_bControllerSees		= true;
+	m_dwControlledUntil		= 0;
+	m_dwJitterUntil			= 0;
+	m_fCtrlRotAngle			= 0.f;
+	m_fCtrlSenseX			= 1.f;
+	m_fCtrlSenseY			= 1.f;
+	m_bCtrlInvertY			= false;
+	m_bSuicideDropped		= false;
+	m_bSuicideNoAnimPose	= false;
+	m_dwShadowSuppressUntil	= 0;
+	m_bSuicidePrepPlayed	= false;
+	m_bWasControlled		= false;
+	m_dwCtrlPrepareStart	= 0;
+	m_dwSuicideRepickTm		= 0;
+	m_bPsiBlockFailed		= false;
+	m_fCtrlDist				= 1000.f;
 	encyclopedia_registry	= xr_new<CEncyclopediaRegistryWrapper	>();
 	game_news_registry		= xr_new<CGameNewsRegistryWrapper		>();
 	// Cameras
@@ -892,6 +913,29 @@ float CActor::currentFOV()
 void CActor::UpdateCL	()
 {
 	UpdateInventoryOwner			(Device.dwTimeDelta);
+
+	// Actor self-shadow suppression, decided in ONE place and read by the renderer through
+	// IGame_Persistent (it cannot see game state itself). Two cases, both of them "the actor is not a
+	// man standing there right now": a cutscene owns the camera and poses him by script
+	// (level.disable_input, which every xr_effects cutscene goes through), and a conversation -- the
+	// intro's "osoznanie" talk window is one, and it does NOT disable input, which is why keying on
+	// that alone still left the shadow in frame there.
+	{
+		extern bool g_bDisableAllInput;
+		// A cutscene (input disabled by xr_effects) and the intro's "osoznanie" conversation -- NOT
+		// ordinary dialogue, where the shadow is wanted. The osoznanie flag lives on the PARTNER, the
+		// same test UITalkWnd uses to switch the window into that mode.
+		CInventoryOwner* partner = GetTalkPartner();
+		const bool osoznanie = IsTalking() && partner && partner->NeedOsoznanieMode();
+
+		// ...and hold it a little past the end. The osoznanie window closes a few frames BEFORE the
+		// script disables input for what follows, and the shadow popped into view in that gap.
+		if (g_bDisableAllInput || osoznanie)
+			m_dwShadowSuppressUntil = Device.dwTimeGlobal + 500;
+
+		if (g_pGamePersistent)
+			g_pGamePersistent->m_bSuppressActorShadow = (Device.dwTimeGlobal < m_dwShadowSuppressUntil);
+	}
 	gwr_update_burning				(this);		// burn wound drains: fast while beating it out, slow otherwise
 
 	// GS bayonet stab: land the melee hit at the scheduled mark (the ak74_bayonet plays on the weapon's own hud)
@@ -900,6 +944,8 @@ void CActor::UpdateCL	()
 		m_dwBayonetHitTm = 0;
 		QuickKickHit();
 	}
+
+	UpdateControllerSuicide();
 
 	// Feed the exo HUD-screen shader constants (m_actor_params) consumed by the render binder
 	// (model_exohealth / model_exoscreen). .y = outfit condition drives the screen color.
@@ -1401,11 +1447,15 @@ void CActor::renderable_Render	()
 {
 	VERIFY(_valid(XFORM()));
 	inherited::renderable_Render			();
-	// The held weapon is part of the silhouette, so draw it unconditionally (GunsXRay does the same).
-	// The old `if (!HUDview())` guard cost nothing in first person -- the actor is setVisible(FALSE)
-	// there, so the normal pass never calls this at all -- but it DID strip the weapon out of the
-	// actor self-shadow, which the SMAP pass renders by calling this directly (r__dsgraph_render.cpp).
-	CInventoryOwner::renderable_Render		();
+	// CInventoryOwner::renderable_Render() draws two different things -- the ACTIVE ITEM and the
+	// ATTACHMENTS -- and the self-shadow wants only the first, so they are split here.
+	// In first person this whole function is reached ONLY from the SMAP pass (the actor is
+	// setVisible(FALSE), so the normal pass never renders him), which makes HUDview() a reliable
+	// "this is the shadow" test without plumbing the render phase into the game DLL.
+	if (inventory().ActiveItem())
+		inventory().ActiveItem()->renderable_Render();		// the held weapon belongs in the silhouette
+	if (!HUDview())
+		CAttachmentOwner::renderable_Render();				// ...the headlamp does not (user request)
 	VERIFY(_valid(XFORM()));
 }
 
@@ -1428,9 +1478,67 @@ void CActor::g_PerformDrop	( )
 
 	if(pItem->IsQuestItem()) return;
 
+	// The hud-only phantoms our item-use animations put in the hands (medkit/eat animator,
+	// pda_show_animator, the quick-kick knife) are not inventory items -- dropping one leaves a
+	// section on the ground that get_rank cannot resolve ("cannot find rank for medkit_hud_model").
+	// The engine already refuses undroppable things (quest items, persistent slots); this is the
+	// same idea for the gesture phantoms: while such an animation runs, DROP does nothing.
+	{
+		extern int g_block_wpn_switch;
+		CHudItem* hi = pItem->cast_hud_item();
+		if (g_block_wpn_switch || (hi && hi->UsesPdaCursorAnims()))	return;
+		// ...and the PDA itself: it is the map/tasks/contacts device, losing it on a stray key is a
+		// dead end, and the 3D-PDA phantom is spawned FROM it.
+		if (smart_cast<CPda*>(pItem))	return;
+	}
+
 	u32 s					= inventory().GetActiveSlot();
 	if(inventory().m_slots[s].m_bPersistent)	return;
 
+	pItem->SetDropManual	(TRUE);
+}
+
+// GS PerformDrop called from PsiEffects: the controller makes the victim THROW the weapon away, and
+// that must not be stopped by g_block_wpn_switch -- which the suicide scene itself raises to keep the
+// weapon in hand. Going through g_PerformDrop meant the launcher was merely holstered by the knife
+// activation that follows. Every other refusal (quest item, gesture phantom, PDA, persistent slot)
+// still stands: those exist so a drop cannot leave an unresolvable section on the ground.
+bool CActor::IsGesturePhantom(PIItem pItem)
+{
+	if (!pItem)		return false;
+	LPCSTR s = pItem->object().cNameSect().c_str();
+	// Every item-use animator (medkit/eat, pda_show, quick_kick, the bolt gesture...) inherits
+	// gwr_base_usable: it spawns from weapons\gwr_animation and wears the fake visual. Testing
+	// `ammo_class` instead -- which is what the drop used to do -- is worthless here, because that base
+	// section CARRIES ammo_class, so every phantom read as a real firearm.
+	return pSettings->line_exist(s, "visual") &&
+		   0 == xr_strcmp(pSettings->r_string(s, "visual"), "gwr\\main\\fake_object");
+}
+
+void CActor::PerformDropForced()
+{
+	PIItem pItem			= inventory().ActiveItem();
+	if (0==pItem)			return;
+	if (pItem->IsQuestItem())	return;
+
+	CHudItem* hi			= pItem->cast_hud_item();
+	if (hi && hi->UsesPdaCursorAnims())			return;
+	if (smart_cast<CPda*>(pItem))				return;
+	// ...and no gesture phantom, whatever its config claims. Throwing one on the ground leaves a
+	// section on the floor that get_rank cannot resolve ("cannot find rank for quick_kick_animator"):
+	// it substring-matches against mp_ranks and asserts. g_PerformDrop is protected from this by the
+	// g_block_wpn_switch test the gestures raise -- which this forced version deliberately ignores.
+	if (IsGesturePhantom(pItem))				return;
+	// ...and never out from under a running HUD gesture. A bayonet stab (or any anm_kick / action anim)
+	// is driven by the very hud item we would be destroying, and tearing it down mid-callback is an
+	// access violation with no log at all -- the same reason the knife's kill is deferred a frame
+	// instead of being dealt from inside its animation callback. The caller retries on the next pulse.
+	if (hi && hi->IsPending())					return;
+
+	u32 s					= inventory().GetActiveSlot();
+	if (s == NO_ACTIVE_SLOT || inventory().m_slots[s].m_bPersistent)	return;
+
+	b_DropActivated			= FALSE;
 	pItem->SetDropManual	(TRUE);
 }
 

@@ -422,13 +422,39 @@ bool CCustomDetector::PlayCompanionAction(LPCSTR action, bool bRestart)
 			if (mark && mark[0])	companion_strip(clean, mark);
 		}
 		xr_sprintf(alias, "anm_wpn_%s", clean);
-		if (!isHUDAnimationExist(alias))	return false;
+		if (!isHUDAnimationExist(alias))
+		{
+			// FIRE-MODE TRANSITIONS: the detector has ONE "the selector is being worked" hand motion,
+			// and every detector authors it only as the canonical pair (anm_wpn_changefiremode_from_1_to_a
+			// / _from_a_to_1). A weapon with a THIRD mode asks for a pair nobody defines -- the APS with
+			// its burst upgrade goes 1->3 and 3->1 -- so the left hand simply froze. Any transition maps
+			// to the same motion here, so fall back to the canonical one.
+			if (!strstr(clean, "changefiremode_from_"))						return false;
+			xr_strcpy(alias, "anm_wpn_changefiremode_from_1_to_a");
+			if (!isHUDAnimationExist(alias))								return false;
+		}
 	}
 	// A one-shot companion that JUST ended must not be re-picked by the idle mirror: the weapon can
 	// still be playing its own one-shot (dry), so we'd re-select the motion we already finished and
 	// freeze on its last frame. Fall through -> our own idle/moving plays instead.
 	if (!bRestart && m_companion_done.size() && 0 == xr_strcmp(m_companion_done.c_str(), alias))
-		return false;
+	{
+		// ...but an ENTER transition is different: our mirror of anm_idle_aim_start ends before the
+		// weapon's own (longer) motion does, so the weapon is still reporting it and falling through to
+		// our own idle dropped the left hand out of the aim pose for a frame -- until the weapon's
+		// aim-state refresh put it back (user 2026-08-03, detector + TT-33). Hold the pose it LEADS
+		// INTO instead: anm_wpn_idle_aim_start -> anm_wpn_idle_aim.
+		// ONLY "_start". An "_end" transition leads OUT of the aim, into our own plain idle -- trimming
+		// it the same way put the hand back into the aim pose after lowering the weapon.
+		string256 base;	xr_strcpy(base, alias);
+		const int bl = (int)xr_strlen(base);
+		const int sl = (int)xr_strlen("_start");
+		if (bl <= sl || 0 != xr_strcmp(base + bl - sl, "_start"))	return false;
+		base[bl - sl] = 0;
+		if (!isHUDAnimationExist(base) || 0 == xr_strcmp(m_companion_done.c_str(), base))
+			return false;
+		xr_strcpy(alias, base);
+	}
 	// Already playing this exact companion -> don't restart it, UNLESS the weapon itself just
 	// (re)started the motion (bRestart, set only by the PlayHUDMotion hook). Without the guard, the
 	// PlayAnimIdle mirror restarted it on every movement change and double-played the draw / jerked the

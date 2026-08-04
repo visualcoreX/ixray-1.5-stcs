@@ -71,6 +71,8 @@ CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 	m_bZoomPendingMisfireIn		= false;
 	m_bFirePendingSprint		= false;
 	m_bDetectorDrawPending		= false;
+	m_bSuicideShot				= false;
+	m_bActionAnimNoCB			= false;
 	m_dwDetectorShowTm			= 0;
 
 	m_bFireSingleShot			= false;
@@ -210,6 +212,13 @@ void CWeaponMagazined::Load	(LPCSTR section)
 	if (WeaponSoundExist(section, "snd_breechblock"))
 		m_sounds.LoadSound(section, "snd_breechblock", "sndBreechblock", false, m_eSoundReload);
 
+	// GS controller suicide: the weapon-to-the-head gesture and the "grab broke, lower it" one have
+	// their own sounds (weapons\suicide_start / suicide_end). Optional -- CActor plays them guarded.
+	if (WeaponSoundExist(section, "snd_suicide"))
+		m_sounds.LoadSound(section, "snd_suicide", "sndSuicide", false, m_eSoundReload);
+	if (WeaponSoundExist(section, "snd_stop_suicide"))
+		m_sounds.LoadSound(section, "snd_stop_suicide", "sndStopSuicide", false, m_eSoundReload);
+
 	// GS laser designator toggle sounds (optional; mechanical/reload-type so they don't alert AI)
 	if (WeaponSoundExist(section, "snd_laser_on"))
 		m_sounds.LoadSound(section, "snd_laser_on", "sndLaserOn", false, m_eSoundReload);
@@ -287,19 +296,29 @@ bool CWeaponMagazined::IsActorSprinting()
 	return !!st.bSprint;
 }
 
+// one-line "why did the suicide shot not go out" trace; silent unless g_ctrl_dbg is on and the round
+// being asked for is the scene's own
+#define SUIDBG(reason)	do { extern int g_ctrl_dbg; if (g_ctrl_dbg && m_bSuicideShot) \
+							Msg("~ctrl FireStart REFUSED: %s (state=%d)", reason, (int)GetState()); } while(0)
+
 void CWeaponMagazined::FireStart		()
 {
+	// GS OnShoot_CanShootNow: the victim's own trigger is dead for the whole controller scene; only
+	// the scene's own shot (which flags itself irreversible first) gets through. The check lives here
+	// as well as in CWeapon because this override never reaches the base one.
+	if (SuicideBlocksFire())	{ SUIDBG("blocked by SuicideBlocksFire"); return; }
+
 	m_bTriggerHeld = true;	// trigger pressed (held until FireEnd); used to resume fire after a transition
 
 	// A light-misfire strike owns the trigger for its whole gesture: the plain shoot-lock deadline set in
 	// gwr_TryLightMisfire (survives the StopShooting/switch2_Idle that clears pending). No round, no queued
 	// shot -- the player just pulls again once it ends. Base (CHudItem) query only, so the aim/sprint
 	// fire-locks folded into the CWeaponMagazined override still hit their own defer blocks below.
-	if (CHudItem::IsShootLocked())	return;
+	if (CHudItem::IsShootLocked())	{ SUIDBG("shoot lock"); return; }
 
 	// let the jam (misfire) dry-fire gesture finish before another trigger pull; the empty
 	// dry-fire stays spammable (each click re-triggers it)
-	if ((m_bDryFirePending || m_bDryFirePlaying) && IsMisfire())	return;
+	if ((m_bDryFirePending || m_bDryFirePlaying) && IsMisfire())	{ SUIDBG("dry-fire"); return; }
 
 	// Aim in/out: block firing only for the short lock_time, not the whole transition animation
 	// (Gunslinger-style). After the lock a shot is allowed even mid-transition and cuts it.
@@ -309,6 +328,7 @@ void CWeaponMagazined::FireStart		()
 		// the moment the lock ends (autoshoot). This is a FRESH press inside the lock, NOT the sticky
 		// m_bTriggerHeld (which lingers true on pistols/shotguns/SVD and caused a self-shot on aim in/out).
 		m_bAimLockFirePressed = true;
+		SUIDBG("aim lock");
 		return;
 	}
 
@@ -320,6 +340,7 @@ void CWeaponMagazined::FireStart		()
 		|| (IsActorSprinting() && HasSprintExitAnim()))
 	{
 		m_bFirePendingSprint = true;
+		SUIDBG("sprint exit");
 		return;
 	}
 
@@ -330,6 +351,14 @@ void CWeaponMagazined::FireStart		()
 	// the new anim. Matches Gunslinger: once fire is processed the transition anim is replaced at once.
 	m_dwAimTransitionEndTm	= 0;
 	m_bIdleTransitionLock	= false;
+
+	{
+		extern int g_ctrl_dbg;
+		if (g_ctrl_dbg && m_bSuicideShot)
+			Msg("~ctrl FireStart: state=%d pending=%d misfire=%d valid=%d working=%d allowW=%d ammo=%d",
+				(int)GetState(), IsPending()?1:0, IsMisfire()?1:0, IsValid()?1:0,
+				IsWorking()?1:0, AllowFireWhileWorking()?1:0, iAmmoElapsed);
+	}
 
 	if(!IsMisfire())
 	{
@@ -350,6 +379,12 @@ void CWeaponMagazined::FireStart		()
 				{
 					R_ASSERT(H_Parent());
 					SwitchState(eFire);
+					{
+						extern int g_ctrl_dbg;
+						if (g_ctrl_dbg && m_bSuicideShot)
+							Msg("~ctrl FireStart -> eFire: state=%d next=%d working=%d",
+								(int)GetState(), (int)GetNextState(), IsWorking()?1:0);
+					}
 				}
 			}
 		}
@@ -386,6 +421,11 @@ void CWeaponMagazined::FireEnd()
 
 void CWeaponMagazined::Reload()
 {
+	// GS IsActionProcessing (WeaponAdditionalBuffer.pas:591) reports the weapon BUSY for the whole
+	// controller scene, which is what stops the victim reloading, aiming or switching his way out of
+	// it. Reload is the one that would actually rescue him -- an empty weapon ends the scene.
+	if (SuicideBlocksFire())	return;
+
 	// the jam (misfire) inspect gesture must play out fully before the jam can be cleared:
 	// block reload while it's on screen. The empty-mag dry-fire (not a misfire) stays reloadable.
 	if (m_bDryFirePlaying && IsMisfire())
@@ -627,6 +667,11 @@ void CWeaponMagazined::ReloadMagazine()
 
 void CWeaponMagazined::OnStateSwitch	(u32 S)
 {
+	{
+		extern int g_ctrl_dbg;
+		if (g_ctrl_dbg && Actor() && Actor()->IsSuicideInProgress())
+			Msg("~ctrl OnStateSwitch: S=%d (was %d)", (int)S, (int)GetState());
+	}
 	inherited::OnStateSwitch(S);
 	// an animated action (reload / med-gesture / firemode switch) interrupts the sprint idle -> forget
 	// that sprint was "entered" so, when the action ends and we return to sprinting, the enter
@@ -1093,8 +1138,11 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 		const float laser_lvl = READ_IF_EXISTS(pSettings, r_float, "gwr_blowout", "laser_disabling_level", 8.f);
 		const bool  surge_off = m_bLaserEnabled && (laser_lvl > 0.f) && (g_electronics_problems >= laser_lvl);
 		LPCSTR rb = m_sLaserRayBones.size() ? m_sLaserRayBones.c_str() : (m_sLaserBone.size() ? m_sLaserBone.c_str() : nullptr);
-		if (rb && (!m_bLaserEnabled || surge_off))
-			gwr_SetBones(rb, FALSE);
+		// Symmetric: SHOW them when the laser is on. An upgrade-installed laser gets that for free from the
+		// node's show_bones, but a weapon whose designator is PERMANENT (the P90 -- laser_installed on the
+		// weapon section, no node) has nothing to re-show the beam, so it stayed hidden forever.
+		if (rb)
+			gwr_SetBones(rb, (m_bLaserEnabled && !surge_off) ? TRUE : FALSE);
 	}
 
 	// GS bayonet: the blade (shown by the bayonet upgrade's show_bones) is REMOVED when a silencer or GL is
@@ -1608,6 +1656,14 @@ void CWeaponMagazined::FireBullet(const Fvector& pos, const Fvector& dir, float 
 
 void CWeaponMagazined::state_Fire(float dt)
 {
+	{
+		extern int g_ctrl_dbg;
+		if (g_ctrl_dbg && Actor() && Actor()->IsSuicideInProgress())
+			Msg("~ctrl state_Fire: ammo=%d mag=%d state=%d working=%d single=%d shotnum=%d "
+				"shotTime=%.3f queue=%d maxqueue=%d",
+				iAmmoElapsed, (int)m_magazine.size(), (int)GetState(), IsWorking()?1:0,
+				m_bFireSingleShot?1:0, m_iShotNum, fShotTimeCounter, m_iQueueSize, m_iMaxQueueSize);
+	}
 	if(iAmmoElapsed > 0)
 	{
 		VERIFY(fOneShotTime>0.f);
@@ -1633,7 +1689,12 @@ void CWeaponMagazined::state_Fire(float dt)
 		}
 
 		CEntity* E = smart_cast<CEntity*>(H_Parent());
-		E->g_fireParams	(this, p1,d);
+		// GS need_skip_g_fireParams (WeaponEvents.pas:2211), the same rule the RPG and the launcher
+		// already use: while the controller scene owns the pose the round leaves along the BARREL --
+		// p1/d are already the hud model's fire point and direction (setup_firedeps) -- instead of
+		// being redirected onto the crosshair by the camera params.
+		if (!SuicideHoldsPose())
+			E->g_fireParams	(this, p1,d);
 
 		if( !E->g_stateFire() )
 			StopShooting();
@@ -1699,6 +1760,11 @@ void CWeaponMagazined::state_Fire(float dt)
 				return;
 			}
 
+			{
+				extern int g_ctrl_dbg;
+				if (g_ctrl_dbg && Actor() && Actor()->IsSuicideInProgress())
+					Msg("~ctrl LOOP: firing round, shotnum=%d suicideflag=%d", m_iShotNum, m_bSuicideShot?1:0);
+			}
 			OnShot					();
 			// remember when this shot's anim ends so switch2_Idle won't clip it (GS: let anm_shoot*
 			// finish). Set HERE, not in OnShot -- CWeaponPistol/etc. override OnShot without calling
@@ -1750,6 +1816,12 @@ void CWeaponMagazined::state_Fire(float dt)
 			}
 		}
 	
+		{
+			extern int g_ctrl_dbg;
+			if (g_ctrl_dbg && Actor() && Actor()->IsSuicideInProgress())
+				Msg("~ctrl LOOP done: shotnum=%d ammo=%d shotTime=%.3f working=%d single=%d",
+					m_iShotNum, iAmmoElapsed, fShotTimeCounter, IsWorking()?1:0, m_bFireSingleShot?1:0);
+		}
 		if(m_iShotNum == m_iQueueSize)
 			m_bStopedAfterQueueFired = true;
 
@@ -2015,6 +2087,10 @@ void CWeaponMagazined::switch2_Idle	()
 #endif
 void CWeaponMagazined::switch2_Fire	()
 {
+	{
+		extern int g_ctrl_dbg;
+		if (g_ctrl_dbg && Actor() && Actor()->IsSuicideInProgress())	Msg("~ctrl switch2_Fire entered");
+	}
 	CInventoryOwner* io		= smart_cast<CInventoryOwner*>(H_Parent());
 	CInventoryItem* ii		= smart_cast<CInventoryItem*>(this);
 #ifdef DEBUG
@@ -2126,7 +2202,10 @@ void CWeaponMagazined::DoReloadInsert()
 	// (SetAmmoTypeChangingStatus $FF). Keyed on IsMisfire() itself, not on bMisfireReload: the
 	// double-barrels build their reload alias in CWeaponBM16::PlayAnimReload, which never sets that
 	// flag, so a jam cleared on their SECOND barrel handed the player a free extra shell.
-	if (bMisfireReload || IsMisfire())
+	// ...but a GRENADE-LAUNCHER reload is a different weapon entirely: loading a VOG into the GP-25
+	// must not un-jam the rifle it is bolted to (CWeaponMagazinedWGrenade::ReloadMagazine already
+	// preserves the flag for the same reason -- this insert was clearing it right after).
+	if ((bMisfireReload || IsMisfire()) && !IsGrenadeMode())
 	{
 		bMisfire = false;
 		bMisfireReload = false;
@@ -2198,6 +2277,157 @@ void CWeaponMagazined::SelectActionAnim(LPCSTR base, string_path& result)
 	xr_strcpy(result, isHUDAnimationExist(base) ? base : "");
 }
 
+// GS CanUseItemForSuicide (the firearm branch), 1:1. Note what is NOT here: `suicide_by_animation`.
+// GS asks only whether the weapon can fire a round right now -- a weapon with no suicide animation
+// (RPG-7, RG-6, a rifle in GL mode) is still used, it is just aimed at the head by the HUD offset
+// instead of by a motion (see SuicideByAnimation / CActor::eSuicideNoAnim). Requiring the animation
+// here is what made every such weapon fail the check and get thrown on the ground at any distance.
+bool CWeaponMagazined::CanSuicide() const
+{
+	LPCSTR hs = HudSection().c_str();
+	if (!hs || !hs[0])												return false;
+	if (READ_IF_EXISTS(pSettings, r_bool, hs, "prohibit_suicide", FALSE))		return false;
+
+	// GL mode: a loaded launcher needs permission to be shot OR to be switched off; with only the
+	// rifle loaded, permission to switch off is the only way out. Nothing loaded -> useless.
+	if (IsGrenadeMode())
+	{
+		const bool can_switch_gl = !!READ_IF_EXISTS(pSettings, r_bool, hs, "controller_can_switch_gl", FALSE);
+		const bool can_shoot_gl  = !!READ_IF_EXISTS(pSettings, r_bool, hs, "controller_can_shoot_gl", FALSE);
+		if (iAmmoElapsed > 0)			return can_switch_gl || can_shoot_gl;	// iAmmoElapsed = grenades here
+		if (SuicideRifleAmmo() > 0)		return can_switch_gl;
+		return false;
+	}
+
+	if (IsMisfire() || GetState() == eReload)						return false;
+	return iAmmoElapsed > 0;
+}
+
+// The no-animation scene is ONLY possible with a real `hud_move_suicide_offset` to travel to: with a
+// zero (or absent) offset the target pose IS the current one, the arrival test passes on the first
+// frame and the victim shoots himself instantly. GS cannot hit that -- its [hud_base] gives every
+// weapon a non-zero default -- but a config here that misses it must fall back to the knife, not to
+// an instant kill.
+bool CWeaponMagazined::HasSuicideHudOffset() const
+{
+	LPCSTR hs = HudSection().c_str();
+	if (!hs || !hs[0])								return false;
+	static const LPCSTR keys[] = { "hud_move_suicide_offset_pos",	"hud_move_suicide_offset_rot",
+								   "hud_move_suicide_offset_pos_16x9","hud_move_suicide_offset_rot_16x9" };
+	for (int i = 0; i < 4; ++i)
+		if (pSettings->line_exist(hs, keys[i]) && !fis_zero(pSettings->r_fvector3(hs, keys[i]).magnitude()))
+			return true;
+	return false;
+}
+
+// GS `suicide_by_animation`: this weapon plays anm_suicide instead of being walked to the head by
+// the HUD offset. Off (or unauthored) = GS's else-branch in PsiEffects.
+bool CWeaponMagazined::SuicideByAnimation() const
+{
+	LPCSTR hs = HudSection().c_str();
+	if (!hs || !hs[0])												return false;
+	if (!READ_IF_EXISTS(pSettings, r_bool, hs, "suicide_by_animation", FALSE))	return false;
+	// Ask the SELECTOR, not the literal alias: the double-barrels author their gesture per loaded
+	// shell (anm_suicide_1 / _2 and no plain anm_suicide at all), so a name test said "no animation"
+	// and sent the bm16 and the toz34 down the hud-offset path meant for launchers.
+	string_path anim;
+	const_cast<CWeaponMagazined*>(this)->SelectActionAnim("anm_suicide", anim);
+	return !!anim[0];
+}
+
+// The suicide gesture ran with SetPending(TRUE) (that is what keeps the idle from cutting it); drop
+// the lock and fire exactly one round, which SelectShootAnim renders as anm_shoot_suicide.
+// GS WpnBuf.PlayCustomAnim: play the gesture, play its sound, and schedule the "animation end" from
+// the CONFIG -- `lock_time_<resolved alias>` in the hud section (that is why every weapon carries
+// lock_time_anm_suicide and its _auto/_w_gl/... variants). Returns that time in ms, 0 = cannot play.
+u32 CWeaponMagazined::SuicideStart()
+{
+	string_path anim;
+	SelectActionAnim	("anm_suicide", anim);
+	if (!anim[0])					return 0;
+	m_bActionAnimNoCB = true;					// GS: this one plays without a state callback
+	if (!PlayHudActionAnim("anm_suicide"))	{ m_bActionAnimNoCB = false; return 0; }
+
+	if (m_sounds.FindSoundItem("sndSuicide", false))
+		PlaySound		("sndSuicide", Position());
+
+	string128 key;
+	strconcat			(sizeof(key), key, "lock_time_", anim);
+	float lock = READ_IF_EXISTS(pSettings, r_float, HudSection().c_str(), key, 0.f);
+	if (lock <= 0.f)	lock = READ_IF_EXISTS(pSettings, r_float, HudSection().c_str(),
+											 "lock_time_anm_suicide", 3.f);
+	return u32(lock * 1000.f);
+}
+
+// the gesture ran as eActionAnim with SetPending: ask for idle so the shot can go out
+void CWeaponMagazined::SuicideForceIdle()
+{
+	SetPending			(FALSE);
+	SwitchState			(eIdle);
+}
+
+void CWeaponMagazined::SuicideShoot()
+{
+	m_bSuicideShot	= true;
+	// NO SwitchState(eIdle) first. FireStart refuses only eReload/eShowing/eHiding/eMisfire and goes
+	// straight to eFire from eActionAnim, so going through idle just put the weapon back at the hip
+	// for a frame and the round left forwards instead of into the victim's own head. What idle DID do
+	// on the way, and has to be done explicitly now, is clear the locks the gesture set: PlayHudActionAnim
+	// blocks firing for the length of the animation, so without this FireStart returns doing nothing.
+	m_bActionAnimNoCB	= false;
+	// state_Fire only lets a round out while `fShotTimeCounter < 0` -- strictly less. On a weapon that
+	// has been idle through the whole gesture the counter sits at exactly 0.000, so the first (and, as
+	// the log showed, only) frame spent in eFire fired nothing and the scene ended with a full
+	// magazine. A trigger pull the player makes gets its extra frames from holding the button; the
+	// scene's single pull has to be ready on the frame it happens.
+	fShotTimeCounter	= -1.f;
+	SetPending		(FALSE);
+	SetShootLock	(0);
+	m_dwAimFireLockTm	= 0;
+	m_dwSprintExitEndTm	= 0;
+	// FireStart ONLY: the round leaves in state_Fire on a later update, so calling FireEnd here (as I
+	// first did) cancelled the shot before it ever happened and the actor just dropped dead silently.
+	// GS does the same -- virtual_CShootingObject_FireStart and nothing else; the trigger is released
+	// when the actor dies (SuicideStopFire below).
+	FireStart		();
+}
+
+void CWeaponMagazined::SuicideStopFire()
+{
+	m_bSuicideShot	= false;
+	FireEnd			();
+}
+
+void CWeaponMagazined::PlaySuicideSound()
+{
+	if (m_sounds.FindSoundItem("sndSuicide", false))
+		PlaySound	("sndSuicide", Position());
+}
+
+void CWeaponMagazined::SuicideAbort()
+{
+	m_bSuicideShot		= false;
+	m_bActionAnimNoCB	= false;	// the stop gesture keeps its callback: it must return to idle
+	SetPending		(FALSE);
+
+	// Play the lowering gesture DIRECTLY instead of through PlayHudActionAnim. That helper starts with
+	// `if (GetState() != eIdle || IsPending()) return false;`, and the SwitchState(eIdle) that used to
+	// sit here cannot satisfy it: SwitchState is asynchronous (SetNextState + a queued state event), so
+	// on this line the weapon is still in eActionAnim from the suicide gesture itself. The call simply
+	// returned false and anm_stop_suicide never played on any firearm -- the gesture snapped off.
+	string_path anim;
+	SelectActionAnim	("anm_stop_suicide", anim);
+	if (anim[0])
+	{
+		m_action_anim	= anim;
+		SwitchState		(eActionAnim);	// re-enters switch2_ActionAnim, which plays it with its callback
+	}
+	else
+		SwitchState		(eIdle);		// no such gesture on this weapon -> just come back to idle
+	if (m_sounds.FindSoundItem("sndStopSuicide", false))	// optional per weapon
+		PlaySound	("sndStopSuicide", Position());
+}
+
 bool CWeaponMagazined::PlayHudActionAnim(LPCSTR base)
 {
 	if (GetState() != eIdle || IsPending())	return false;	// don't interrupt reload/fire/switch
@@ -2212,8 +2442,13 @@ bool CWeaponMagazined::PlayHudActionAnim(LPCSTR base)
 void CWeaponMagazined::switch2_ActionAnim()
 {
 	CWeapon::FireEnd	();
+	// GS PlayCustomAnim plays a gesture through the LOW-LEVEL anim_play -- no state callback at all --
+	// because the handoff is the config lock and nothing else. The controller-suicide gesture needs
+	// exactly that: with a callback, OnAnimationEnd(eActionAnim) switches the weapon back to idle at
+	// the end of the motion, which is the same moment the lock expires and the shot is queued, and the
+	// shot was cancelled by the state change. Every other gesture keeps its callback.
 	if (m_action_anim.size())
-		PlayHUDMotion	(m_action_anim, TRUE, this, GetState());
+		PlayHUDMotion	(m_action_anim, TRUE, m_bActionAnimNoCB ? NULL : this, GetState());
 	SetPending			(TRUE);								// fire/reload locked until the gesture ends
 
 	// Only HERE has anm_prepare_detector actually started, so only now is m_dwMotionEndTm valid. (It
@@ -3121,6 +3356,13 @@ bool CWeaponMagazined::HasMovementIdleVariant()
 void CWeaponMagazined::PlayAnimIdle()
 {
 	VERIFY(GetState()==eIdle);
+	// GS IsActionProcessing (WeaponAdditionalBuffer.pas:591) reports the weapon BUSY for the whole
+	// controller scene, which is what keeps the idle from ever coming back while the victim holds the
+	// muzzle to his own head. We had no such rule: the gesture's motion ended, UpdateCL dropped the
+	// weapon into its idle, and the shot went off from the hip -- earlier or later per weapon,
+	// depending on how its motion length compared to lock_time_anm_suicide. Hold the last frame of the
+	// gesture instead, which is what GS's lock-driven design shows on screen.
+	if (SuicideHoldsPose())			return;
 	// the 3D PDA picks its own idle from the cursor direction, aim variants included, so it must
 	// reach CHudItem::TryPlayAnimIdle instead of being sent straight to the plain aim idle here
 	if(IsZoomed() && !m_bPdaCursorAnims)
@@ -3136,6 +3378,10 @@ void CWeaponMagazined::PlayAnimIdle()
 // suffix goes right after "_aim" (before "_last") while firing through an attached use_scope_anims scope.
 void CWeaponMagazined::SelectShootAnim(string_path& result)
 {
+	// GS controller suicide: the shot into one's own head has its own take (anm_shoot_suicide), so the
+	// weapon does not snap back to the hip pose for one frame. Set while CActor drives the sequence.
+	if (m_bSuicideShot && isHUDAnimationExist("anm_shoot_suicide"))
+		{ xr_strcpy(result, "anm_shoot_suicide"); return; }
 	// Last chambered round -> the dedicated shot that leaves the bolt/slide locked back
 	// (anm_shot_l hip / anm_shots_aim_last ADS). Lives here rather than in CWeaponPistol so every
 	// magazined weapon gets it; existence-gated, so anything without those aliases is unchanged.
@@ -3164,6 +3410,13 @@ void CWeaponMagazined::PlayAnimShoot()
 	VERIFY(GetState()==eFire);
 	string_path anim;
 	SelectShootAnim(anim);
+	{
+		extern int g_ctrl_dbg;
+		if (g_ctrl_dbg && Actor() && Actor()->IsSuicideInProgress())
+			Msg("~ctrl PlayAnimShoot: anim=%s exists=%d running=%s",
+				anim[0] ? anim : "<none>", anim[0] ? (isHUDAnimationExist(anim)?1:0) : -1,
+				CurrentMotion().size() ? CurrentMotion().c_str() : "-");
+	}
 	PlayHUDMotion(anim, FALSE, this, GetState());
 }
 

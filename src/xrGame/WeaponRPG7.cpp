@@ -85,6 +85,7 @@ void CWeaponRPG7::SwitchState(u32 S)
 
 void CWeaponRPG7::FireStart()
 {
+	if (SuicideBlocksFire())	return;		// GS OnShoot_CanShootNow, see CWeapon
 	inherited::FireStart();
 }
 
@@ -223,13 +224,30 @@ void CWeaponRPG7::switch2_Fire()
 			// launch params come from the camera ONLY while aiming. From the hip the rocket leaves the tube
 			// and flies where the tube POINTS -- GS skips g_fireParams entirely there, so there is no
 			// convergence onto the crosshair. NPCs keep the engine params: their aim comes from the AI.
-			const bool actor_hip = ParentIsActor() && !IsZoomed() && !IsRotatingToZoom() && muzzle_ok;
+			// A controller suicide is ALWAYS a hip shot in this sense: the rocket has to leave where the
+			// tube points, which is what the hud suicide offset has just spent seconds arranging. The
+			// plain hip test is not enough -- the scene starts with OnZoomOut, so IsRotatingToZoom is
+			// still true and the launch fell back to the camera (log: hip=0 muzzle_ok=1 zoom=0, the
+			// rocket flew along the look direction instead of the tube).
+			const bool suicide_shot = ParentIsActor() && Actor() && Actor()->IsSuicideInProgress() && muzzle_ok;
+			const bool actor_hip = suicide_shot ||
+								   (ParentIsActor() && !IsZoomed() && !IsRotatingToZoom() && muzzle_ok);
 			if (!actor_hip)
 			{
 				E->g_fireParams				(this, p2,d2);
 				d = d2;						// aiming: fly along the sight line...
 				p = (ParentIsActor() && muzzle_ok) ? p1 : p2;	// ...but out of the tube when it is sane
 			}
+		}
+
+		{
+			extern int g_ctrl_dbg;
+			if (g_ctrl_dbg)	Msg("~ctrl RPG launch: hip=%d muzzle_ok=%d hud=%d zoom=%d suicide=%d "
+							   "hudD=(%.2f %.2f %.2f) useD=(%.2f %.2f %.2f)",
+							   (ParentIsActor() && !IsZoomed() && !IsRotatingToZoom() && muzzle_ok)?1:0,
+							   muzzle_ok?1:0, GetHUDmode()?1:0, IsZoomed()?1:0,
+							   (Actor() && Actor()->IsSuicideInProgress())?1:0,
+							   d1.x,d1.y,d1.z, d.x,d.y,d.z);
 		}
 
 		Fmatrix								launch_matrix;

@@ -27,7 +27,10 @@
 #include "game_cl_base.h"
 #include "xr_level_controller.h"
 #include "ActorEffector.h"				// CActorCameraManager (Cameras().Position()/Direction() for the kick aim)
-#include "WeaponKnife.h"					// knife-in-hand quick kick -> normal attack
+#include "WeaponKnife.h"
+#include "WeaponRG6.h"
+#include "WeaponRPG7.h"
+#include "Grenade.h"					// knife-in-hand quick kick -> normal attack
 #include "WeaponAmmo.h"					// CCartridge (quick-kick melee)
 #include "level_bullet_manager.h"		// Level().BulletManager() (quick-kick melee)
 #include "../xrEngine/gamemtllib.h"		// GMLib (quick-kick melee material)
@@ -47,6 +50,7 @@
 #include "HUDManager.h"
 #include "UIGameCustom.h"
 #include "UI.h"
+#include "game_cl_single.h"			// g_SingleGameDifficulty (GS suicide visibility rule)
 
 static bool gwr_actor_hud_busy(CActor* actor);	// defined below; true while a weapon/eat/torch animation runs
 static bool gwr_try_burn_use(CActor* actor);	// defined below; USE beats out a fire instead of using the world
@@ -56,6 +60,12 @@ extern u32 hud_adj_mode;
 
 // Block weapon/slot switching while an item-use animation plays (toggled from Lua via console var).
 int g_block_wpn_switch = 0;
+
+// Controller-grab diagnostic (console: g_ctrl_dbg 1). Prints every decision of the GS suicide
+// state machine -- which branch was taken, what the knife selector handed out, when the pulse
+// fires -- so a report like "the prepare animation does not play" can be read off the log.
+int g_ctrl_dbg = 0;
+#define CDBG(...)	do { if (g_ctrl_dbg) Msg(__VA_ARGS__); } while (0)
 
 // != 0 while an emission/surge is in progress. Set from Lua (xr_surge_hide) via the g_surge_active
 // console var; drives the GS-style "electronics problems" device failure in UpdateElectronicsProblems.
@@ -136,6 +146,23 @@ void CActor::IR_OnKeyboardPress(int cmd)
 		if (w && w->IsZoomed() && w->IsAlterZoomAllowed())
 			w->ToggleAlterZoom();
 		return;
+	}
+
+	// GS blocks these keys outright for the duration of a grab / suicide scene (ActorUtils.pas:2568
+	// kJUMP, :2570 the quick-use slots, :2629 the quick grenade). CS has no kQUICK_USE_1..4 /
+	// kQUICK_GRENADE -- the equivalents here are the bandage/medkit keys and the artefact slot. The
+	// victim is not allowed to heal his way out; weapon slots are handled by g_block_wpn_switch.
+	if (IsActorControlled() || IsSuicideInProgress() || IsControllerPreparing())
+	{
+		switch (cmd)
+		{
+		case kJUMP:
+		case kUSE_BANDAGE:
+		case kUSE_MEDKIT:
+		case kARTEFACT:
+			return;
+		default: break;
+		}
 	}
 
 	if(m_holder && kUSE != cmd)
@@ -401,11 +428,13 @@ void CActor::IR_OnMouseMove(int dx, int dy)
 
 	if (Remote())		return;
 
-	if(m_holder) 
+	if(m_holder)
 	{
 		m_holder->OnMouseMove(dx,dy);
 		return;
 	}
+
+	ApplyControlledMouse(dx, dy);	// GS: a controller twists the victim's own aim
 
 	float LookFactor = GetLookFactor();
 
@@ -1252,4 +1281,703 @@ void CActor::QuickKickHit()
 		dist,					// only reaches kick_distance
 		cartridge,
 		true);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// GS controller suicide (wpnpatch ControllerMonster.pas)
+//
+// The controller's psi grab (CControllerPsyHit) hands over to this: the actor raises his own weapon
+// (anm_suicide), and when that animation ends he pulls the trigger (anm_shoot_suicide) and dies
+// `suicide_delay` seconds later. Breaking the grab before the shot lowers the weapon (anm_stop_suicide)
+// and the actor lives -- GS's IsSuicideInreversible() is our eSuicideShot.
+//
+// Ported: the firearm branch, which is the one every weapon config here is set up for
+// (`suicide_by_animation`, `prohibit_suicide`, `anm_suicide` / `anm_shoot_suicide` / `anm_stop_suicide`,
+// `snd_suicide`, `suicide_delay`). NOT ported: the knife self-kill, the grenade suicide throw and the
+// GL/RPG branches -- those need their own animations and none of our configs carry them.
+//////////////////////////////////////////////////////////////////////////
+bool CActor::StartControllerSuicide()
+{
+	// GS re-runs PsiEffects on every psi pulse, so the branch follows the situation: step closer to
+	// the controller with an RPG and it gets dropped, a GL gets switched off, and so on. Only a scene
+	// that is already PLAYING is left alone.
+	// GS re-runs PsiEffects on every pulse. eSuicideNoAnim is re-entered too (nothing is playing, the
+	// hands are just travelling), which is what lets an RPG or a launcher be dropped when the victim
+	// walks INTO controller_shoot_expl_min_dist mid-scene. Only a running ANIMATION is left alone.
+	if (m_eSuicideState != eSuicideNone && m_eSuicideState != eSuicidePlanning &&
+		m_eSuicideState != eSuicideNoAnim && m_eSuicideState != eSuicideAnim)	return true;
+	if (!g_Alive())							return false;
+
+	// GS PsiEffects picks the branch by what is in hand. Returning TRUE means "the grab took over" --
+	// the vanilla psi attack is then skipped, exactly like GS's PsiStart result.
+	CInventoryItem*   it = inventory().ActiveItem();
+	CWeaponKnife*     kn = smart_cast<CWeaponKnife*>(it);
+	CWeaponMagazined* wm = smart_cast<CWeaponMagazined*>(it);
+
+	{
+		CWeapon* dbg_w = smart_cast<CWeapon*>(it);
+		CDBG("~ctrl PICK: sect=%s state=%d dist=%.1f can=%d byanim=%d hudoff=%d glmode=%d ammo=%d rpg=%d rg6=%d",
+			 dbg_w ? dbg_w->cNameSect().c_str() : (it ? "<non-weapon>" : "<none>"),
+			 (int)m_eSuicideState, m_fCtrlDist,
+			 wm ? (wm->CanSuicide() ? 1 : 0) : -1,
+			 wm ? (wm->SuicideByAnimation() ? 1 : 0) : -1,
+			 wm ? (wm->HasSuicideHudOffset() ? 1 : 0) : -1,
+			 dbg_w ? (dbg_w->IsGrenadeMode() ? 1 : 0) : -1,
+			 wm ? wm->GetAmmoElapsed() : -1,
+			 smart_cast<CWeaponRPG7*>(it) ? 1 : 0, smart_cast<CWeaponRG6*>(it) ? 1 : 0);
+	}
+
+	// PDA in hand: put it away and go for the KNIFE (GS parks the scene here; we want the scene, so
+	// this takes the same road as an unusable weapon -- MINUS the drop: throwing the
+	// pda_show_animator phantom on the ground asserts in get_rank as soon as an NPC looks at it).
+	if (wm && wm->UsesPdaCursorAnims())
+	{
+		if (!inventory().ItemFromSlot(KNIFE_SLOT))	return false;
+		m_eSuicideState		= eSuicidePlanning;
+		m_dwSuicideNextTm	= 0;
+		m_bSuicideBroken	= false;
+		m_bControllerSees	= true;
+		m_bSuicideDropped	= true;				// nothing to drop here, ever
+		return true;
+	}
+
+	// GRENADE in hand: GS makes the victim pull the pin and let go at minimal force -- it lands at his
+	// own feet (PrepareGrenadeForSuicideThrow + SetImmediateThrowStatus). Only when the controller is
+	// farther than controller_g_attack_min_dist, so it does not blow the controller up as well.
+	{
+		CGrenade* gr = smart_cast<CGrenade*>(it);
+		if (gr && !READ_IF_EXISTS(pSettings, r_bool, gr->HudSection().c_str(), "prohibit_suicide", FALSE))
+		{
+			const float mind = READ_IF_EXISTS(pSettings, r_float, gr->HudSection().c_str(),
+											  "controller_g_attack_min_dist", 10.f);
+			if (m_fCtrlDist > mind)
+			{
+				gr->Action(kWPN_FIRE, CMD_START);		// pin out
+				gr->Action(kWPN_FIRE, CMD_STOP);		// released instantly -> minimum force
+				return true;							// the explosion finishes the job
+			}
+		}
+	}
+
+	// GRENADE-LAUNCHER mode: GS turns the launcher off first (controller_can_switch_gl), and drops the
+	// weapon when it cannot. RPG/RG6 too close to the controller are dropped as well
+	// (controller_shoot_expl_min_dist) -- an explosive shot at that range is the controller's problem.
+	if (wm && smart_cast<CWeapon*>(it) && smart_cast<CWeapon*>(it)->IsGrenadeMode())
+	{
+		LPCSTR hs = wm->HudSection().c_str();
+		CDBG("~ctrl BRANCH: GL mode, hud=%s", hs);
+		const bool can_shoot_gl  = !!READ_IF_EXISTS(pSettings, r_bool, hs, "controller_can_shoot_gl", FALSE);
+		const bool can_switch_gl = !!READ_IF_EXISTS(pSettings, r_bool, hs, "controller_can_switch_gl", FALSE);
+		const float gl_min_dist  =   READ_IF_EXISTS(pSettings, r_float, hs, "controller_shoot_gl_min_dist", 10.f);
+		// GS GetAmmoInGLCount: in grenade mode iAmmoElapsed IS the launcher's grenades (PerformSwitchGL
+		// swaps the magazines), so this is the loaded-grenade test, not the rifle's rounds.
+		if (can_shoot_gl && wm->GetAmmoElapsed() > 0 && m_fCtrlDist > gl_min_dist)
+		{
+			// far enough to eat the grenade himself -- fall through to the normal firearm scene
+		}
+		else if (can_switch_gl && wm->SuicideRifleAmmo() > 0 && !wm->IsMisfire())
+		{
+			wm->SwitchState(CWeapon::eSwitch);		// put the launcher away, then the rifle scene
+			m_eSuicideState		= eSuicidePlanning;
+			m_dwSuicideNextTm	= Device.dwTimeGlobal + 500;
+			m_bSuicideBroken	= false;
+			m_bControllerSees	= true;
+			return true;
+		}
+		else
+		{
+			// GS PerformDrop: neither shooting nor switching is allowed -> the weapon goes on the ground
+			CDBG("~ctrl BRANCH: GL unusable -> drop + knife");
+			return SuicideDropAndTakeKnife();
+		}
+	}
+
+	if (wm && (smart_cast<CWeaponRPG7*>(it) || smart_cast<CWeaponRG6*>(it)) &&
+		m_fCtrlDist < READ_IF_EXISTS(pSettings, r_float, wm->HudSection().c_str(),
+									  "controller_shoot_expl_min_dist", 10.f))
+	{
+		CDBG("~ctrl BRANCH: explosive too close (dist=%.1f) -> drop + knife", m_fCtrlDist);
+		return SuicideDropAndTakeKnife();
+	}
+
+	// knife in hand: GS only raises the flags -- the knife's own attack selector then plays
+	// anm_prepare_suicide / anm_selfkill instead of a stab, and the psi pulse re-triggers the
+	// attack (PsiEffects: SwitchState(eFire) whenever no suicide animation is running).
+	if (kn)
+	{
+		CDBG("~ctrl START knife: has_prepare=%d", kn->HasSuicideAnim("anm_prepare_suicide") ? 1 : 0);
+		if (!kn->HasSuicideAnim("anm_prepare_suicide"))	return false;
+		m_eSuicideState		= eSuicideKnifePrep;
+		m_dwSuicideNextTm	= 0;
+		m_bSuicideBroken	= false;
+		m_bControllerSees	= true;
+		return true;
+	}
+
+	// firearm that can fire right now but has NO suicide animation (RPG-7, RG-6, and anything with
+	// `suicide_by_animation` off): GS's else-branch in PsiEffects -- no motion at all, the weapon is
+	// walked to the head by the `hud_move_suicide_offset` HUD offset (WeaponInertion.AddSuicideOffset)
+	// and the shot goes off when the hands have converged on that pose.
+	if (wm && wm->CanSuicide() && !wm->SuicideByAnimation() && wm->HasSuicideHudOffset())
+	{
+		CDBG("~ctrl BRANCH: no-anim (hud offset)");
+		if (m_eSuicideState != eSuicideNoAnim)		// already travelling -> do not restart the timer
+		{
+			wm->FireEnd();							// GS controller_queue_stop_prob cuts a held burst
+			m_eSuicideState		= eSuicideNoAnim;
+			m_bSuicideNoAnimPose= true;
+			// floor on the travel: the hands start from wherever the last frame left them, so a pose
+			// that happens to be close to the target must still not fire on the frame the scene opens
+			m_dwSuicideNextTm	= Device.dwTimeGlobal + 250;
+			m_bSuicideBroken	= false;
+			m_bControllerSees	= true;
+		}
+		return true;
+	}
+
+	// firearm that can fire right now: the gesture + the shot
+	if (wm && wm->CanSuicide())
+	{
+		if (m_eSuicideState == eSuicideAnim)	return true;	// already playing -- never restart it
+		const u32 lock	= wm->SuicideStart();		// GS times it from `lock_time_<alias>`
+		if (!lock)
+		{
+			// busy this instant (firing / another gesture): GS does not fall back to the stock
+			// attack, it holds the victim and retries -- PsiEffects even cuts the burst first.
+			wm->FireEnd();
+			m_eSuicideState		= eSuicidePlanning;
+			m_dwSuicideNextTm	= Device.dwTimeGlobal + 200;
+			m_bSuicideBroken	= false;
+			m_bControllerSees	= true;
+			return true;
+		}
+		m_eSuicideState		= eSuicideAnim;
+		m_dwSuicideNextTm	= Device.dwTimeGlobal + lock;
+		m_bSuicideBroken	= false;
+		m_bControllerSees	= true;
+		return true;
+	}
+
+	// Empty / jammed / unusable weapon, or empty hands: GS does NOT fall back to the vanilla attack --
+	// it drops the useless weapon and makes the victim draw his KNIFE (Update: PerformDrop +
+	// ActivateActorSlot(KNIFE_SLOT)). Only a victim with no knife at all gets the stock psi hit.
+	if (!inventory().ItemFromSlot(KNIFE_SLOT))	return false;
+	m_eSuicideState		= eSuicidePlanning;
+	m_dwSuicideNextTm	= 0;
+	m_bSuicideBroken	= false;
+	m_bControllerSees	= true;
+	return true;
+}
+
+// GS PsiEffects does the drop RIGHT IN THE BRANCH (`PerformDrop(act); exit;`) -- it never leaves the
+// weapon in hand for a later state to deal with. Deferring it to eSuicidePlanning meant a weapon that
+// still passed CanSuicide (a loaded launcher does, and so does a rifle in GL mode) took the "it was
+// only busy, retry the gesture" road instead and was never thrown away.
+bool CActor::SuicideDropAndTakeKnife()
+{
+	if (!inventory().ItemFromSlot(KNIFE_SLOT))			return false;
+
+	CWeaponMagazined* wm = smart_cast<CWeaponMagazined*>(inventory().ActiveItem());
+	// `ammo_class` is NOT the test for "a real firearm": gwr_base_usable, the parent of every gesture
+	// phantom, carries it too -- which is how the quick-kick animator ended up on the ground.
+	const bool real_gun	 = wm && !IsGesturePhantom(inventory().ActiveItem());
+
+	// A weapon in the middle of its own gesture -- a bayonet stab, a torch toggle -- must be left alone
+	// until it finishes: dropping it destroys the hud item whose animation is running, which crashes
+	// with no log. Hold the scene in planning; the pulse comes back every 300 ms.
+	if (real_gun && wm->IsPending())
+	{
+		m_eSuicideState		= eSuicidePlanning;
+		m_dwSuicideNextTm	= Device.dwTimeGlobal + 300;
+		m_bSuicideBroken	= false;
+		m_bControllerSees	= true;
+		return true;
+	}
+
+	if (real_gun && !m_bSuicideDropped)
+	{
+		m_bSuicideDropped = true;
+		PerformDropForced();
+	}
+	inventory().Activate(KNIFE_SLOT);
+
+	m_eSuicideState		= eSuicidePlanning;		// the knife takes over as soon as it is out
+	m_dwSuicideNextTm	= 0;
+	m_bSuicideBroken	= false;
+	m_bControllerSees	= true;
+	return true;
+}
+
+// GS DoSuicideShot, called from the hud_move update once the hands have reached the suicide pose
+// (WeaponInertion.pas: the remaining distance is below the jitter amplitude). Same tail as the
+// animated branch -- one round, then death after `suicide_delay`.
+void CActor::SuicideHudOffsetArrived()
+{
+	if (m_eSuicideState != eSuicideNoAnim)		return;
+	if (Device.dwTimeGlobal < m_dwSuicideNextTm)	return;
+	if (!m_bControllerSees)						return;		// GS gates the shot itself on visibility
+	CWeaponMagazined* wm = smart_cast<CWeaponMagazined*>(inventory().ActiveItem());
+	if (!wm)	{ m_eSuicideState = eSuicideNone; return; }
+
+	CDBG("~ctrl SHOT (no-anim): sect=%s state=%d", wm->cNameSect().c_str(), (int)wm->GetState());
+	// same order as the animated branch: the scene must be irreversible before the trigger, or its own
+	// shot is refused by the block that keeps the VICTIM from firing
+	const float delay	= READ_IF_EXISTS(pSettings, r_float, wm->HudSection().c_str(), "suicide_delay", 0.1f);
+	m_eSuicideState		= eSuicideShot;
+	m_dwSuicideNextTm	= Device.dwTimeGlobal + u32(delay * 1000.f);
+	wm->SuicideShoot	();
+}
+
+// GS OnSuicideAnimEnd takes the decision when the gesture ENDS; the animation itself is never cut.
+void CActor::StopControllerSuicide()
+{
+	if (m_eSuicideState == eSuicideShot || m_eSuicideState == eSuicideKnifeKill)	return;	// no way back
+	m_bSuicideBroken	= true;
+}
+
+// GS CheckActorVisibilityForController: on veteran+ the visibility requirement is DROPPED unless the
+// controller's own section asks for it (`mandatory_suicide_visibility_check`), so hiding behind a tree
+// does not save you on the higher difficulties -- that is GS behaviour, not a bug.
+void CActor::NotifyControllerSees(bool sees, bool mandatory_check)
+{
+	if (!mandatory_check && g_SingleGameDifficulty >= egdVeteran)	sees = true;
+	m_bControllerSees	= sees;
+}
+
+void CActor::UpdateControllerSuicide()
+{
+	// the knife's cut has landed (requested from its animation callback, performed here where
+	// destroying the actor cannot pull the rug from under the hud item)
+	if (m_bSuicideKillPending)
+	{
+		m_bSuicideKillPending	= false;
+		m_eSuicideState			= eSuicideNone;
+		m_dwSuicideNextTm		= 0;
+		m_dwControlledUntil		= 0;
+		if (g_Alive())
+		{
+			Fvector dir; dir.set(0.f, -1.f, 0.f);
+			SHit HDS = SHit(1000.f, 1000.f, dir, this, u16(0), Fvector().set(0.f, 0.f, 0.f),
+							0.f, ALife::eHitTypeWound, 0.f, false);
+			Hit(&HDS);
+		}
+		return;
+	}
+	// the head-aim pose belongs to the no-animation scene and to the frames right after its shot; any
+	// other state (aborted, re-picked into planning, over) drops it
+	if (m_eSuicideState != eSuicideNoAnim && m_eSuicideState != eSuicideShot)
+		m_bSuicideNoAnimPose = false;
+
+	// GS Update:378 -- the moment the control timer expires with no shot fired, the victim is let go
+	// and his hands shake for `actor_shock_time`. We only did this on one knife path, so simply
+	// surviving a grab left the hands perfectly steady.
+	if (m_bWasControlled && !IsActorControlled())
+	{
+		m_bWasControlled = false;
+		if (!IsSuicideIrreversible())
+		{
+			SetHandsJitterTime(u32(1000.f * READ_IF_EXISTS(pSettings, r_float, "gunslinger_base",
+															"actor_shock_time", 10.f)));
+			// GS ResetActorControl on the same edge: the hold is over, so the scene is dropped. It
+			// CLEARS FLAGS AND PLAYS NOTHING -- a running gesture is never cut. GS's decision always
+			// belongs to the end of the animation (OnSuicideAnimEnd:537), which then finds the flags
+			// down and plays anm_stop_suicide by itself. Calling SuicideAbort here instead cut the
+			// animation dead, and with controller_time 5 s against a 7.4 s gesture that was every time.
+			// Anything with a MOTION on screen is left alone -- the knife scene included. GS's chain
+			// (Update:372 vs :381) skips the reset entirely once `_death_action_started`, and its knife
+			// selector is what plays anm_stop_suicide when the grab turns out to be gone. Clearing the
+			// state from here instead pulled the selector out from under a running animation, which is
+			// why the knife suddenly ended early.
+			if (m_eSuicideState == eSuicideAnim ||
+				m_eSuicideState == eSuicideKnifePrep || m_eSuicideState == eSuicideKnifeKill)
+				m_bSuicideBroken	= true;		// let it play out; the end decides
+			else if (m_eSuicideState != eSuicideNone)
+			{
+				m_eSuicideState		= eSuicideNone;
+				m_dwSuicideNextTm	= 0;
+				m_bSuicideNoAnimPose= false;
+			}
+		}
+	}
+	else if (IsActorControlled())
+		m_bWasControlled = true;
+
+	if (m_eSuicideState == eSuicideNone)					return;
+
+	// GS keeps the victim rooted and takes his finger off the trigger / out of the sight while it
+	// holds him (Update: movement actions forced off, kfUNZOOM, SetWorkingState(false)).
+	mstate_wishful &= ~(mcSprint | mcAccel | mcJump);
+	// GS Update:389 -- after the shot ALL movement is forced off, not just the sprint/jump suppressed
+	// during the grab: the victim stands where he is for the moment it takes him to fall.
+	if (IsSuicideIrreversible())
+		mstate_wishful &= ~(mcFwd | mcBack | mcLStrafe | mcRStrafe);
+
+	// GS Update: a detector in the left hand is forced away for the duration of the grab
+	{
+		CCustomDetector* det = smart_cast<CCustomDetector*>(inventory().ItemFromSlot(DETECTOR_SLOT));
+		if (det && det->IsWorking())	det->HideDetector(true);
+	}
+
+	CInventoryItem*   it = inventory().ActiveItem();
+	CWeaponKnife*     kn = smart_cast<CWeaponKnife*>(it);
+	CWeaponMagazined* wm = smart_cast<CWeaponMagazined*>(it);
+	if (wm && wm->IsZoomed())							wm->OnZoomOut();
+
+	// GS Update:411 -- a victim who was holding the trigger when the grab landed is allowed to keep
+	// firing, but the burst is cut once he is down to his last few rounds: the scene needs a loaded
+	// weapon, and an emptied magazine turns the whole thing into the drop-and-take-the-knife path.
+	if (wm && IsActorControlled() && !IsSuicideIrreversible() &&
+		wm->GetState() == CWeapon::eFire && wm->GetAmmoElapsed() <= 3)
+		wm->FireEnd();
+
+	// ---- planning: get a knife into the hands (GS Update, the "cannot use this item" branch)
+	if (m_eSuicideState == eSuicidePlanning)
+	{
+		if (m_bSuicideBroken)	{ m_eSuicideState = eSuicideNone; return; }
+		// GS: the branch is re-picked every pulse (distance to the controller may have changed)
+		if (IsActorControlled() && Device.dwTimeGlobal >= m_dwSuicideNextTm)	StartControllerSuicide();
+		if (m_eSuicideState != eSuicidePlanning)	return;
+		if (kn)					// the knife is out -> its selector takes over from here
+		{
+			if (kn->HasSuicideAnim("anm_prepare_suicide"))
+				m_eSuicideState = eSuicideKnifePrep;
+			return;
+		}
+		if (Device.dwTimeGlobal < m_dwSuicideNextTm)	return;
+		m_dwSuicideNextTm = Device.dwTimeGlobal + 300;
+		// "it was only busy" -- retry the GESTURE. Only ever true for a weapon that HAS one: an RPG
+		// parked here because it is too close to the controller also passes CanSuicide(), and it used
+		// to land in this branch, fail SuicideStart (no anm_suicide) and return -- so the drop below
+		// was never reached and the launcher stayed in hand however close the victim walked. GS drops
+		// it inside PsiEffects itself and never gets near this path.
+		if (wm && wm->CanSuicide() && wm->SuicideByAnimation())
+		{
+			wm->FireEnd();
+			const u32 lock = wm->SuicideStart();
+			if (lock)
+			{
+				m_eSuicideState		= eSuicideAnim;
+				m_dwSuicideNextTm	= Device.dwTimeGlobal + lock;
+			}
+			return;
+		}
+		// Only a REAL firearm is thrown away. The hud-only phantoms our item-use animations put in the
+		// hands (medkit_hud_model, pda_show_animator, the kick animator) are not inventory weapons --
+		// dropping one asserts in get_rank ("cannot find rank for medkit_hud_model"). NOTE the test is
+		// the fake visual, NOT `ammo_class`: gwr_base_usable, which every phantom inherits, has one.
+		const bool real_gun = wm && !IsGesturePhantom(inventory().ActiveItem());
+		if (real_gun && wm->IsPending())	return;			// mid-gesture (bayonet stab): retry next pulse
+		if (real_gun && !m_bSuicideDropped)					// GS PerformDrop
+		{
+			m_bSuicideDropped = true;
+			PerformDropForced();		// g_PerformDrop refuses while g_block_wpn_switch is up -- and
+										// the scene raises that flag itself, so the weapon was only
+										// holstered by the knife activation below instead of thrown
+		}
+		inventory().Activate(KNIFE_SLOT);
+		return;
+	}
+
+	// GS's whole design rests on `lock_time_<alias>` being SHORTER than the motion: the shot cuts the
+	// gesture's dead tail while it is still on screen. Our lock values are copied from GS but our omf
+	// motions are not always as long, and once the motion ends the weapon has nothing to play -- the
+	// engine falls back to the idle, which takes the pose and swallows the queued shot. Whether that
+	// lands in the same frame as the lock is pure timing, which is why the shot was there one run and
+	// gone the next. Never let the timer outlive the motion it is supposed to cut.
+	if (m_eSuicideState == eSuicideAnim && wm)
+	{
+		const u32 mend = wm->MotionEndTm();
+		if (mend && mend < m_dwSuicideNextTm)	m_dwSuicideNextTm = mend;
+
+		// GS runs the WHOLE of PsiEffects on every pulse, a playing gesture included -- only the KNIFE
+		// branch checks "is a suicide animation already running". So walking into
+		// controller_shoot_expl_min_dist with a launcher mounted must throw it away mid-gesture, the
+		// same as it does before the gesture starts. We left the animated scene alone entirely, so the
+		// distance stopped mattering the moment the animation began.
+		if (IsActorControlled() && !m_bSuicideBroken && Device.dwTimeGlobal >= m_dwSuicideRepickTm)
+		{
+			m_dwSuicideRepickTm = Device.dwTimeGlobal + 300;
+			StartControllerSuicide();
+			if (m_eSuicideState != eSuicideAnim)	return;		// re-picked into a drop / another branch
+		}
+	}
+
+	if (Device.dwTimeGlobal < m_dwSuicideNextTm)			return;
+
+	// ---- knife: prepare -> cut (the kill happens when anm_selfkill ends, in CWeaponKnife)
+	if (m_eSuicideState == eSuicideKnifePrep || m_eSuicideState == eSuicideKnifeKill)
+	{
+		if (!kn)	{ m_eSuicideState = eSuicideNone; return; }
+		// GS PsiEffects: pulse an attack whenever no suicide animation is running -- the knife's
+		// selector (CActor::KnifeSuicideAnim) decides which one that attack becomes.
+		CDBG("~ctrl knife frame: scene=%d kn_state=%d pending=%d hud=%s motion=%s",
+			 (int)m_eSuicideState, (int)kn->GetState(), kn->IsPendingPublic()?1:0,
+			 kn->HudItemData() ? "yes" : "NO",
+			 kn->CurrentMotion().size() ? kn->CurrentMotion().c_str() : "-");
+		if (kn->GetState() == CHUDState::eIdle && !kn->IsPendingPublic())
+		{
+			CDBG("~ctrl pulse: state=%d", (int)m_eSuicideState);
+			kn->SwitchState(CWeapon::eFire);
+		}
+		return;
+	}
+
+	if (!wm)	{ m_eSuicideState = eSuicideNone; m_dwSuicideNextTm = 0; return; }
+
+	// ---- no suicide animation (RPG-7 / RG-6 / GL): the HUD offset does the aiming, player_hud fires
+	// the shot when it arrives. There is nothing to abort here -- with no motion running the offset
+	// simply relaxes back to the normal pose, which is GS's behaviour too.
+	if (m_eSuicideState == eSuicideNoAnim)
+	{
+		// GS Update (ControllerMonster.pas:583) drops the scene on a lost line of sight ONLY while no
+		// suicide is running yet (`and not IsActorSuicideNow()`). Cancelling a running one on a single
+		// unseen frame restarted the whole thing: the pose target snapped back to normal and the hands
+		// flew there at the ordinary hud_move speed, which is the jerk right after the grab lands.
+		// A BROKEN grab (dead controller) does not end it here either: GS keeps `_suicide_now` up until
+		// the control timer runs out, so the aim offset is dropped -- SuicideHudAimActive -- while the
+		// slow suicide pace stays, and the weapon LOWERS smoothly instead of snapping back.
+
+		// GS runs the WHOLE of PsiEffects on every pulse, so the branch is re-chosen from the CURRENT
+		// distance for as long as the scene lasts. Nothing re-entered it here, so a launcher that was
+		// legal at 18 m stayed legal after walking right up to the controller -- and the shot then
+		// killed them both. Now closing inside controller_shoot_expl_min_dist swaps it for the knife
+		// mid-scene, exactly as stepping back out of range starts the scene in the first place.
+		if (IsActorControlled() && !m_bSuicideBroken && Device.dwTimeGlobal >= m_dwSuicideRepickTm)
+		{
+			m_dwSuicideRepickTm = Device.dwTimeGlobal + 300;
+			StartControllerSuicide();
+		}
+		return;
+	}
+
+	if (m_eSuicideState == eSuicideAnim)
+	{
+		// Firing straight out of the gesture is fine -- CWeaponMagazined::FireStart accepts eActionAnim
+		// and switches to eFire itself; only the PENDING lock had to go, which SuicideShoot drops.
+		// Routing through idle first (what this used to do) returned the weapon to the hip for a frame
+		// and the round left forwards instead of into his own head.
+
+		// GS OnSuicideAnimEnd: shoot only if the grab still holds AND a controller still sees us;
+		// otherwise lower the weapon (anm_stop_suicide) and live.
+		if (m_bSuicideBroken || !m_bControllerSees)
+		{
+			// Release the pose BEFORE playing the abort gesture, not after. SuicideAbort reaches
+			// anm_stop_suicide through PlayHudActionAnim, which demands GetState()==eIdle and gets
+			// there with a SwitchState(eIdle) -- the very transition the pose hold blocks. Aborting
+			// with the hold still up made PlayHudActionAnim return false, so the lowering animation
+			// never played on ANY weapon and the gesture just snapped off. The scene is over at this
+			// point, so there is nothing left for the hold to protect.
+			m_eSuicideState		= eSuicideNone;
+			m_dwSuicideNextTm	= 0;
+			wm->SuicideAbort();
+			return;
+		}
+
+		// irreversible FIRST, then fire: the trigger block above (CWeapon::SuicideBlocksFire) lets a
+		// shot through only once the scene is irreversible -- GS's DoSuicideShot sets its flags before
+		// it pulls the trigger for exactly this reason.
+		const float delay	= READ_IF_EXISTS(pSettings, r_float, wm->HudSection().c_str(), "suicide_delay", 0.1f);
+		m_eSuicideState		= eSuicideShot;
+		m_dwSuicideNextTm	= Device.dwTimeGlobal + u32(delay * 1000.f);
+		wm->SuicideShoot	();
+		return;
+	}
+
+	// eSuicideShot: GS KillActor(act, act) `suicide_delay` after the shot
+	wm->SuicideStopFire	();
+	m_eSuicideState		= eSuicideNone;
+	m_dwSuicideNextTm	= 0;
+	if (g_Alive())
+	{
+		Fvector dir; dir.set(0.f, -1.f, 0.f);
+		SHit HDS			= SHit(1000.f, 1000.f, dir, this, u16(0), Fvector().set(0.f, 0.f, 0.f),
+								   0.f, ALife::eHitTypeWound, 0.f, false);
+		Hit					(&HDS);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// GS controller GRAB: everything the victim suffers while a controller holds him, ported from
+// ControllerMonster.pas (PsiEffects / Update / GetCurrentControllerInputCorrectionParams /
+// GetControllerInputRandomOffset / GetCurrentSuicideWalkKoef). All params live in the
+// [gunslinger_base] section of gunslinger_params.ltx, GS's own names and values.
+//////////////////////////////////////////////////////////////////////////
+static float gwr_ctrl_f(LPCSTR key, float def)
+{
+	return READ_IF_EXISTS(pSettings, r_float, "gunslinger_base", key, def);
+}
+
+bool CActor::IsActorControlled() const
+{
+	return Device.dwTimeGlobal < m_dwControlledUntil;
+}
+
+void CActor::SetHandsJitterTime(u32 ms)
+{
+	m_dwJitterUntil = Device.dwTimeGlobal + ms;
+}
+
+// GS PsiEffects:591 -- `_controlled_time_remains := GetControllerTime()` on every pulse. The weapon's
+// hud section may set its own controller_time (GS reads it there first).
+void CActor::RefreshControlTime()
+{
+	float t = gwr_ctrl_f("controller_time", 3.f);
+	CHudItem* hi = smart_cast<CHudItem*>(inventory().ActiveItem());
+	if (hi)	t = READ_IF_EXISTS(pSettings, r_float, hi->HudSection().c_str(), "controller_time", t);
+	m_dwControlledUntil = Device.dwTimeGlobal + u32(t * 1000.f);
+}
+
+// GS IsPsiBlocked (ControllerMonster.pas:119) asks the actor's conditions for an active telepathic-
+// protection booster. CS has no such booster, so the equivalent here is the one thing that already
+// dulls the mind: being drunk. Vodka raises the actor's alcohol level (eat_alcohol) and it decays on
+// its own, so "the vodka is still working" is exactly `alcohol > 0`.
+bool CActor::IsPsiBlocked() const
+{
+	return const_cast<CActor*>(this)->conditions().GetAlcohol() > 0.f;
+}
+
+// GS UpdatePsiBlockFailedState (:93): the protection is not absolute -- it FAILS with a probability
+// that grows as the controller gets closer (controller_psi_unblock_* in [gunslinger_base]). Rolled
+// once per grab, at the psi attack's activate, exactly like GS.
+void CActor::RollPsiBlock(float dist)
+{
+	const float dmin  = gwr_ctrl_f("controller_psi_unblock_mindist", 5.f);
+	const float dmax  = gwr_ctrl_f("controller_psi_unblock_maxdist", 19.f);
+	const float pmin  = gwr_ctrl_f("controller_psi_unblock_mindist_prob", 0.75f);
+	const float pmax  = gwr_ctrl_f("controller_psi_unblock_maxdist_prob", 0.05f);
+
+	float prob;
+	if (dist <= dmin)		prob = pmin;
+	else if (dist >= dmax)	prob = pmax;
+	else
+	{
+		prob = 1.f - (dist - dmin) / (dmax - dmin);
+		prob = prob * (pmin - pmax) + pmax;
+	}
+	m_bPsiBlockFailed = (::Random.randF(0.f, 1.f) < prob);
+}
+
+// GS's own shorthand: `IsPsiBlocked(act) and not IsPsiBlockFailed()`
+bool CActor::ControllerPsiBlocked() const
+{
+	return IsPsiBlocked() && !m_bPsiBlockFailed;
+}
+
+// GS OnPsyHitActivate (ControllerMonster.pas:863) -- the psi attack's WINDUP, before the grab lands.
+// IsControllerPreparing() stays true for `controller_prepare_time + 1s` from here, and most of the
+// blocks the grab applies (aim, sprint, jump, quick keys, mouse nudge, walk speed) already hold.
+void CActor::StartControllerPrepare(float dist)
+{
+	if (!IsActorControlled())	RollPsiBlock(dist);		// GS rolls it once per grab
+	m_dwCtrlPrepareStart = Device.dwTimeGlobal;
+}
+
+bool CActor::IsControllerPreparing() const
+{
+	if (!m_dwCtrlPrepareStart)		return false;
+	if (ControllerPsiBlocked())		return false;	// GS :888 -- a protected victim feels no windup
+	const u32 win = u32(1000.f * gwr_ctrl_f("controller_prepare_time", 3.f)) + 1000;
+	return (Device.dwTimeGlobal - m_dwCtrlPrepareStart) < win;
+}
+
+// GS GetHandJitterScale (ActorUtils.pas:3656)
+float CActor::HandsJitterScale(float stop_time_ms) const
+{
+	if ((IsActorControlled() || IsSuicideInProgress()) && !IsSuicideIrreversible())	return 1.f;
+	if (Device.dwTimeGlobal >= m_dwJitterUntil)										return 0.f;
+	const float rem = float(m_dwJitterUntil - Device.dwTimeGlobal);
+	if (stop_time_ms <= 0.f || rem > stop_time_ms)									return 1.f;
+	return rem / stop_time_ms;
+}
+
+// GS ChangeInputRotateAngle + the controlled-time reset: called by the psy hit when the grab lands.
+void CActor::StartControllerGrab(float dist_to_controller)
+{
+	// GS rolls the distortion once per grab, not per frame
+	if (!IsActorControlled())
+	{
+		const float MIN_ANGLE = deg2rad(70.f), MAX_ANGLE = deg2rad(290.f);
+		const float smin = gwr_ctrl_f("controller_mouse_sense_min", 0.1f);
+		const float smax = gwr_ctrl_f("controller_mouse_sense_max", 0.5f);
+		m_fCtrlRotAngle	= ::Random.randF(MIN_ANGLE, MAX_ANGLE);
+		m_fCtrlSenseX	= ::Random.randF(smin, smax);
+		m_fCtrlSenseY	= ::Random.randF(smin, smax);
+		m_bCtrlInvertY	= ::Random.randF() < 0.5f;
+		m_bSuicideDropped = false;
+	}
+
+	RefreshControlTime();
+
+	// GS controller_queue_stop_prob: a burst the victim was firing is usually cut
+	CWeaponMagazined* wm = smart_cast<CWeaponMagazined*>(inventory().ActiveItem());
+	if (wm && wm->GetState() == CWeapon::eFire &&
+		::Random.randF() < gwr_ctrl_f("controller_queue_stop_prob", 0.95f))
+		wm->FireEnd();
+
+	m_fCtrlDist = dist_to_controller;	// GS gates the grenade/RPG branches on it
+}
+
+// GS GetCurrentSuicideWalkKoef
+float CActor::ControlledSpeedKoef() const
+{
+	if (!IsActorControlled() && m_eSuicideState == eSuicideNone)	return 1.f;
+	return gwr_ctrl_f("controlled_actor_speed_koef", 1.f);
+}
+
+// GS GetCurrentControllerInputCorrectionParams + GetControllerInputRandomOffset: while the victim is
+// controlled the mouse is rotated by a fixed random angle, scaled down per axis, sometimes inverted,
+// and every frame gets a random nudge -- you fight your own aim.
+void CActor::ApplyControlledMouse(int& dx, int& dy)
+{
+	if (!IsActorControlled() && m_eSuicideState == eSuicideNone)	return;
+
+	const float c = _cos(m_fCtrlRotAngle), s = _sin(m_fCtrlRotAngle);
+	const float x = float(dx), y = float(dy);
+	float nx = (x * c - y * s) * m_fCtrlSenseX;
+	float ny = (x * s + y * c) * m_fCtrlSenseY;
+	if (m_bCtrlInvertY)	ny = -ny;
+
+	const int omin = (int)gwr_ctrl_f("controller_mouse_offset_min", -5.f);
+	const int omax = (int)gwr_ctrl_f("controller_mouse_offset_max",  5.f);
+	if (omax > omin)
+	{
+		nx += float(::Random.randI(omin, omax + 1));
+		ny += float(::Random.randI(omin, omax + 1));
+	}
+	dx = iFloor(nx);
+	dy = iFloor(ny);
+}
+
+// GS knife selector (WeaponEvents): planning + seen -> blade to the throat, then the cut;
+// grab broken while a suicide animation was running -> lower it again. NULL = normal attack.
+LPCSTR CActor::KnifeSuicideAnim()
+{
+	CDBG("~ctrl selector: state=%d broken=%d sees=%d", (int)m_eSuicideState, m_bSuicideBroken?1:0, m_bControllerSees?1:0);
+	if (m_eSuicideState != eSuicideKnifePrep && m_eSuicideState != eSuicideKnifeKill)	return NULL;
+
+	// grab broken / lost sight: GS lowers the blade AND calls ResetActorControl right here, so the
+	// scene ends with this one animation instead of looping forever.
+	// ...but anm_stop_suicide is the END of a gesture, and GS only hands it out when a suicide
+	// animation WAS playing. Losing sight during the knife's own draw, before anm_prepare_suicide has
+	// ever run, ended the scene by lowering the blade from a pose it never took -- on screen the draw
+	// was followed straight by the stop, with the preparation apparently skipped.
+	if (m_bSuicideBroken || !m_bControllerSees)
+	{
+		const bool played	= m_bSuicidePrepPlayed;
+		m_eSuicideState		= eSuicideNone;
+		m_bSuicidePrepPlayed= false;
+		m_dwControlledUntil	= 0;
+		SetHandsJitterTime	(u32(1000.f * READ_IF_EXISTS(pSettings, r_float, "gunslinger_base",
+														   "actor_shock_time", 10.f)));
+		return played ? "anm_stop_suicide" : NULL;	// nothing started -> nothing to lower
+	}
+
+	// GS sets _suicide_now while anm_prepare_suicide plays, so the NEXT attack is the cut.
+	if (m_eSuicideState == eSuicideKnifePrep)
+	{
+		m_eSuicideState			= eSuicideKnifeKill;
+		m_bSuicidePrepPlayed	= true;		// from here on there IS something to lower
+		return "anm_prepare_suicide";
+	}
+	return "anm_selfkill";
 }

@@ -1298,6 +1298,16 @@ bool CInventory::CanTakeItem(CInventoryItem *inventory_item) const
 
 	if(!inventory_item->CanTake()) return false;
 
+	// GS CanTakeItem (ActorUtils.pas:4140): a victim under a controller cannot pick things up, unless
+	// the section opts out with `can_take_when_controlled`.
+	{
+		CActor* act = smart_cast<CActor*>(m_pOwner);
+		if (act && act == Actor() && (act->IsActorControlled() || act->IsSuicideInProgress()) &&
+			!READ_IF_EXISTS(pSettings, r_bool, inventory_item->object().cNameSect().c_str(),
+							"can_take_when_controlled", FALSE))
+			return false;
+	}
+
 	TIItemContainer::const_iterator it = m_all.begin();
 	for(; it != m_all.end(); it++)
 		if((*it)->object().ID() == inventory_item->object().ID()) break;

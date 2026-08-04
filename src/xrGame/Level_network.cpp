@@ -104,6 +104,7 @@ void CLevel::net_Stop		()
 {
 	Msg							("- Disconnect");
 
+
 	if(HUD().GetUI())
 		HUD().GetUI()->UIGame()->HideShownDialogs();
 

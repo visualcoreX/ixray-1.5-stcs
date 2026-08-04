@@ -165,6 +165,12 @@ public:
 	// if so, output the magnified scope FOV (degrees) to render the world at. Sets m_bLensFrameNow. The engine
 	// calls this at camera-apply (CCameraManager::ApplyDevice) and overrides the scene FOV with out_fov.
 	virtual bool					ComputeLensFrame	(float& out_fov) { out_fov = 0.f; return false; }
+
+	// Actor self-shadow suppression. The shadow is cast by drawing the view entity into the shadow map
+	// (r__dsgraph_render), and the renderer has no way to ask the GAME whether a cutscene is running --
+	// g_bDisableAllInput lives in xrGame. So the game parks the answer here and the renderer reads it.
+	// Appended at the END of the class, same ABI rule as OnRenderForward above.
+	bool							m_bSuppressActorShadow = false;
 };
 
 class IMainMenu

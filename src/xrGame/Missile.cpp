@@ -54,6 +54,7 @@ void CMissile::reinit		()
 	inherited::reinit	();
 	m_throw				= false;
 	m_constpower = false;
+	m_bSuicideThrow = false;
 	m_fThrowForce		= 0;
 	m_dwDestroyTime		= 0xffffffff;
 	SetPending			(FALSE);
@@ -297,6 +298,19 @@ void CMissile::State(u32 state)
 		{
 			SetPending			(TRUE);
 			m_fThrowForce		= m_fMinForce;
+			// GS CMissile__State_anm_selector ($76B4): under a controller's grab the pin-pull becomes the
+			// SUICIDE gesture -- the grenade is prepared to be dropped on oneself (const power, throw at
+			// the animation end) instead of being wound up for a throw. Opt-in per grenade: allow_suicide.
+			if (SuicideAllowed())
+			{
+				m_bSuicideThrow	= true;
+				m_constpower	= true;				// GS SetConstPowerStatus
+				m_throw			= true;				// GS SetImmediateThrowStatus: throw when the anim ends
+				SuicidePrepareForce("suicide_ready_force", 8.f);
+				if (m_sounds.FindSoundItem("sndSuicideBegin", false))	PlaySound("sndSuicideBegin", Position());
+				PlayHUDMotion	("anm_suicide_begin", TRUE, this, GetState());
+				break;
+			}
 			PlayHUDMotion		("anm_throw_begin", TRUE, this, GetState());
 		} break;
 	case eReady:
@@ -307,6 +321,21 @@ void CMissile::State(u32 state)
 		{
 			SetPending			(TRUE);
 			m_throw				= false;
+			// GS ($7740): the throw that ENDS a suicide gesture is either the fatal one (still grabbed ->
+			// suicide_success_force + a short suicide_success_destroy_time, it goes off at your feet) or
+			// the escape (grab broken -> suicide_fail_force / _destroy_time, it is hurled away in time).
+			if (m_bSuicideThrow)
+			{
+				m_bSuicideThrow	= false;
+				const bool held = SuicideStillGrabbed();
+				SuicidePrepareForce(held ? "suicide_success_force" : "suicide_fail_force", 20.f);
+				m_dwDestroyTimeMax = (u32)READ_IF_EXISTS(pSettings, r_u32, cNameSect().c_str(),
+								held ? "suicide_success_destroy_time" : "suicide_fail_destroy_time", m_dwDestroyTimeMax);
+				LPCSTR snd = held ? "sndSuicideThrow" : "sndSuicideStop";
+				if (m_sounds.FindSoundItem(snd, false))	PlaySound(snd, Position());
+				PlayHUDMotion	(held ? "anm_suicide_throw" : "anm_suicide_stop", TRUE, this, GetState());
+				break;
+			}
 			PlayHUDMotion		("anm_throw", TRUE, this, GetState());
 		} break;
 	case eThrowEnd:
@@ -781,3 +810,26 @@ void CMissile::GetBriefInfo(xr_string& str_name, xr_string& icon_sect_name, xr_s
 	icon_sect_name	= "";
 }
 
+// GS `allow_suicide` (hud section): this grenade has the suicide animation set.
+bool CMissile::SuicideAllowed()
+{
+	if (!SuicideStillGrabbed())									return false;
+	if (!READ_IF_EXISTS(pSettings, r_bool, HudSection().c_str(), "allow_suicide", FALSE))	return false;
+	return !!isHUDAnimationExist("anm_suicide_begin");
+}
+
+// GS IsActorControlled(): the grab is still on
+bool CMissile::SuicideStillGrabbed()
+{
+	CActor* act = smart_cast<CActor*>(H_Parent());
+	return act && (act->IsActorControlled() || act->IsSuicideInProgress());
+}
+
+// GS PrepareGrenadeForSuicideThrow: min force 0, throw/const force = the named config value
+void CMissile::SuicidePrepareForce(LPCSTR key, float def)
+{
+	const float f = READ_IF_EXISTS(pSettings, r_float, cNameSect().c_str(), key, def);
+	m_fMinForce		= 0.f;
+	m_fThrowForce	= f;
+	m_fConstForce	= f;
+}

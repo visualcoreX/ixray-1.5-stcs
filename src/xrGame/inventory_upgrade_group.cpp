@@ -32,7 +32,10 @@ void Group::construct( const shared_str& group_id, UpgradeBase& parent_upgrade, 
 	VERIFY2( pSettings->section_exist( m_id ),
 		make_string( "Upgrade <%s> : group section [%s] does not exist!" , parent_upgrade.id_str(), m_id.c_str() ) );
 	
-	m_require_all_parent_groups = !!READ_IF_EXISTS( pSettings, r_bool, m_id, "require_all_parent_groups", false );
+	// DEFAULT since 2026-08-03 (user: a node fed by two branches must wait for BOTH, "и так для всех
+	// апгрейдов"). Still per-GROUP, never per-parent: mutually-exclusive siblings inside one group
+	// would deadlock under a literal "all parents" rule. A tree can opt out with = false.
+	m_require_all_parent_groups = !!READ_IF_EXISTS( pSettings, r_bool, m_id, "require_all_parent_groups", true );
 
 	LPCSTR	upgrades_str = pSettings->r_string(m_id, "elements");
 	VERIFY2( upgrades_str, make_string( "in upgrade group <%s> elements are empty!", m_id.c_str() ) );
@@ -85,7 +88,9 @@ void Group::fill_root( Root* root )
 
 UpgradeStateResult Group::can_install( CInventoryItem& item, UpgradeBase& test_upgrade, bool loading )
 {
-	// Parent gate: by default a group unlocks when AT LEAST ONE of its non-root parent upgrades is installed.
+	// Parent gate. DEFAULT (since 2026-08-03): one installed non-root parent per DISTINCT parent GROUP --
+	// a node fed by two branches waits for both. `require_all_parent_groups = false` restores the old
+	// "any parent is enough".
 	// Stock xray required ALL parents, but GS/CS trees are DAGs where several mutually-exclusive sibling
 	// upgrades each point their `effects` at the SAME child group -- e.g. usm_accuracy/usm_rpm/usm_rpm_down
 	// all unlock vartree_ak74_body, and mag45_brown/mag45_black both unlock vartree_ak74_mag60. Under the

@@ -148,9 +148,14 @@ class CControllerPsyHitCamEffector :public CEffectorCam {
 	Fvector				m_position_source;
 	Fvector				m_direction;
 	float				m_distance;
+	// GS cuts the FLIGHT out of the vanilla tube (its Init() jumps over the setup block in
+	// death_glide_start and nops five more places; the comment there blames NaNs from this effector for
+	// a CLensFlare assert) and keeps only the small random angular wobble -- the "camera turns aside a
+	// little" you see there. With this on, the effector leaves position, aim and FOV alone.
+	bool				m_wobble_only;
 
 public:
-						CControllerPsyHitCamEffector	(ECamEffectorType type, const Fvector &src_pos, const Fvector &target_pos, float time);
+						CControllerPsyHitCamEffector	(ECamEffectorType type, const Fvector &src_pos, const Fvector &target_pos, float time, bool wobble_only = false);
 	virtual BOOL		ProcessCam						(SCamEffectorInfo& info);
 };
 //////////////////////////////////////////////////////////////////////////

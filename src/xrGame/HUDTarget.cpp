@@ -12,6 +12,7 @@
 
 
 #include "InventoryOwner.h"
+#include "actor.h"
 #include "relation_registry.h"
 #include "character_info.h"
 
@@ -89,7 +90,7 @@ ICF static BOOL pick_trace_callback(collide::rq_result& result, LPVOID params)
 		return FALSE;
 	}else
 	{
-		//получить треугольник и узнать его материал
+		//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		CDB::TRI* T		= Level().ObjectSpace.GetStaticTris()+result.element;
 		
 		SGameMtl* mtl = GMLib.GetMaterialByIdx(T->material);
@@ -269,7 +270,14 @@ void CHUDTarget::Render()
 		F->OutNext		("%4.1f - %4.2f - %d",PP.RQ.range, PP.power, PP.pass);
 	}
 
-	//отрендерить кружочек или крестик
+	// GS CanDrawCrosshairNow (WeaponUpdate.pas:1097): no crosshair while a controller holds you or a
+	// suicide scene is running -- you are not the one aiming any more.
+	{
+		CActor* c_act = smart_cast<CActor*>(Level().CurrentControlEntity());
+		if (c_act && (c_act->IsActorControlled() || c_act->IsSuicideInProgress()))	return;
+	}
+
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if(!m_bShowCrosshair)
 	{
 		
@@ -304,7 +312,7 @@ void CHUDTarget::Render()
 		UIRender->FlushPrimitive();
 
 	}else{
-		//отрендерить прицел
+		//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 		HUDCrosshair.cross_color	= C;
 		HUDCrosshair.OnRender		();
 	}

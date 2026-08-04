@@ -534,6 +534,7 @@ void script_log(LPCSTR s)
 void disable_input()
 {
 	g_bDisableAllInput = true;
+
 #ifdef DEBUG
 	Msg("input disabled");
 #endif // #ifdef DEBUG
@@ -541,6 +542,7 @@ void disable_input()
 void enable_input()
 {
 	g_bDisableAllInput = false;
+
 #ifdef DEBUG
 	Msg("input enabled");
 #endif // #ifdef DEBUG

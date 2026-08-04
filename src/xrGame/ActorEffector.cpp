@@ -370,9 +370,10 @@ void SndShockEffector::Update()
 #define DELTA_ANGLE_Z	0.5f * PI / 180
 #define ANGLE_SPEED		1.5f	
 
-CControllerPsyHitCamEffector::CControllerPsyHitCamEffector(ECamEffectorType type, const Fvector &src_pos, const Fvector &target_pos, float time)
+CControllerPsyHitCamEffector::CControllerPsyHitCamEffector(ECamEffectorType type, const Fvector &src_pos, const Fvector &target_pos, float time, bool wobble_only)
 	:inherited(eCEControllerPsyHit, flt_max)
 {
+	m_wobble_only			= wobble_only;
 	m_time_total			= time;
 	m_time_current			= 0;
 	m_dangle_target.set		(angle_normalize(Random.randFs(DELTA_ANGLE_X)),angle_normalize(Random.randFs(DELTA_ANGLE_Y)),angle_normalize(Random.randFs(DELTA_ANGLE_Z)));
@@ -389,11 +390,15 @@ const float	_max_fov_add	= 160.f;
 
 BOOL CControllerPsyHitCamEffector::ProcessCam(SCamEffectorInfo& info)
 {
+	// wobble-only (GS): build the basis from where the player is ACTUALLY looking, so the effector adds
+	// the shake and nothing else -- no snap onto the monster, no travel, no FOV warp.
+	const Fvector& base_k = m_wobble_only ? info.d : m_direction;
+
 	Fmatrix	Mdef;
 	Mdef.identity		();
 	Mdef.j.set			(info.n);
-	Mdef.k.set			(m_direction);
-	Mdef.i.crossproduct	(info.n,m_direction);
+	Mdef.k.set			(base_k);
+	Mdef.i.crossproduct	(info.n,base_k);
 	Mdef.c.set			(info.p);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -417,8 +422,11 @@ BOOL CControllerPsyHitCamEffector::ProcessCam(SCamEffectorInfo& info)
 	float perc_past	= m_time_current / m_time_total;
 	float cur_dist	= m_distance * perc_past;
 
-	Mdef.c.mad	(m_position_source, m_direction, cur_dist);
-	info.fFov = _base_fov - _max_fov_add*perc_past;
+	if (!m_wobble_only)
+	{
+		Mdef.c.mad	(m_position_source, m_direction, cur_dist);
+		info.fFov = _base_fov - _max_fov_add*perc_past;
+	}
 
 	m_time_current	+= Device.fTimeDelta;
 	

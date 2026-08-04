@@ -88,6 +88,12 @@ protected:
 	float m_fMinForce, m_fConstForce, m_fMaxForce, m_fForceGrowSpeed;
 //private:
 	bool					m_constpower;
+	bool					m_bSuicideThrow;	// GS: this throw is the controller-suicide one
+public:
+	bool			SuicideAllowed		();		// hud `allow_suicide` + the animation exists + grabbed
+	bool			SuicideStillGrabbed	();
+	void			SuicidePrepareForce	(LPCSTR key, float def);
+protected:
 	float					m_fThrowForce;
 protected:
 	//������������� ����� � ����������� ������ �������

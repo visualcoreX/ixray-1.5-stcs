@@ -215,6 +215,11 @@ public:
 	void			ResetLensStepToDefault();
 	bool			HasLensSteps		() const { return m_lens_steps > 0; }
 	// GS alter zoom
+	// Section the alter-pose keys (alter_zoom_allowed / alter_aim_hud_offset_* / scope_hud_fov_alter_aim /
+	// alter_zoom_time) are read from: the ACTIVE scope when one is attached, else the HUD section -- a
+	// weapon with a BUILT-IN optic (the P90's collimator) has no scope item, and GS keeps its alter keys
+	// in huds.ltx for exactly that case.
+	shared_str		AlterZoomSection	() const;
 	bool			IsAlterZoomAllowed	() const;
 	bool			IsAlterZoom			() const { return m_bAlterZoom; }
 	void			ToggleAlterZoom		();
@@ -539,7 +544,16 @@ protected:
 	virtual	void			FireTrace			(const Fvector& P, const Fvector& D);
 	virtual float			GetWeaponDeterioration	();
 
-	virtual void			FireStart			() {CShootingObject::FireStart();}
+	// GS OnShoot_CanShootNow (WeaponAdditionalBuffer.pas:1006): while a controller has the actor in a
+	// suicide scene the trigger is dead for HIM -- `result := IsSuicideInreversible()`, i.e. the only
+	// shot that gets through is the scene's own, which marks itself irreversible before firing.
+public:
+			bool			SuicideHoldsPose	() const;	// the scene owns the pose: no idle over it
+protected:
+	virtual void			FireStart			() { if (SuicideBlocksFire()) return; CShootingObject::FireStart(); }
+			bool			SuicideBlocksFire	() const;
+			bool			SuicideBlocksAim	() const;	// + the psi-attack windup (GS CanAimNow)
+
 	virtual void			FireEnd				();
 
 	virtual void			Reload				();

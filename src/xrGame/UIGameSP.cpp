@@ -84,12 +84,21 @@ bool CUIGameSP::IR_OnKeyboardPress(int dik)
 			// away (and the phantom being drawn counts as busy, so this would otherwise trap you).
 			if (!PdaMenu().IsShown() && gwr_actor_hud_busy_now())
 				break;
+			{
+				CActor* act = smart_cast<CActor*>(Level().CurrentControlEntity());
+				if (act && (act->IsActorControlled() || act->IsSuicideInProgress()))	break;	// GS: not while grabbed
+			}
 			ShowPdaMenu();
 			break;
 		}
 
 	case kINVENTORY:
 		{
+			// GS PsiStart: a controller holding you disables the inventory (CActor__set_inventory_disabled)
+			{
+				CActor* act = smart_cast<CActor*>(Level().CurrentControlEntity());
+				if (act && (act->IsActorControlled() || act->IsSuicideInProgress()))	break;
+			}
 			ShowActorMenu();
 			break;
 		}

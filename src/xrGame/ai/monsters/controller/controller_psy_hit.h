@@ -14,6 +14,11 @@ class CControllerPsyHit : public CControl_ComCustom<> {
 	CPsyHitEffectorCam	*m_effector_cam;
 	CPsyHitEffectorPP	*m_effector_pp;
 
+	// GS's camera reaction: one of three .anm files, chosen by phase (gunsl_controller.script's
+	// TryStartControllerCamAnim). 0 = nothing playing, 1 = prepare, 2 = suicide, 3 = std attack.
+	int					m_cam_anim_mode;
+	void				PlayCamAnim			(int mode);
+
 	enum ESoundState{
 		ePrepare,
 		eStart,
@@ -27,6 +32,8 @@ class CControllerPsyHit : public CControl_ComCustom<> {
 
 	// internal flag if weapon was hidden
 	bool				m_blocked;
+	bool				m_suicide_started;	// GS: the grab handed over to CActor's suicide sequence
+	bool				m_switch_blocked;	// we raised g_block_wpn_switch for the suicide scene
 
 public:
 	virtual void	load					(LPCSTR section);

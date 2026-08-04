@@ -17,6 +17,7 @@
 
 CWeaponKnife::CWeaponKnife()
 {
+	m_bSelfkill			= false;
 	SetState				( eHidden );
 	SetNextState			( eHidden );
 	knife_material_idx		= (u16)-1;
@@ -34,6 +35,16 @@ void CWeaponKnife::Load	(LPCSTR section)
 
 	fWallmarkSize = pSettings->r_float(section,"wm_size");
 	m_sounds.LoadSound(section,"snd_shoot"		, "sndShot"		, false, SOUND_TYPE_WEAPON_SHOOTING		);
+	// GS controller-suicide sounds (optional per config)
+	// GS names this one snd_start_suicide (weapons\suicide_start); accept both spellings
+	if (pSettings->line_exist(section, "snd_start_suicide"))
+		m_sounds.LoadSound(section, "snd_start_suicide", "sndPrepareSuicide", false, SOUND_TYPE_ITEM_USING);
+	else if (pSettings->line_exist(section, "snd_prepare_suicide"))
+		m_sounds.LoadSound(section, "snd_prepare_suicide", "sndPrepareSuicide", false, SOUND_TYPE_ITEM_USING);
+	if (pSettings->line_exist(section, "snd_selfkill"))
+		m_sounds.LoadSound(section, "snd_selfkill", "sndSelfKill", false, SOUND_TYPE_ITEM_USING);
+	if (pSettings->line_exist(section, "snd_stop_suicide"))
+		m_sounds.LoadSound(section, "snd_stop_suicide", "sndStopSuicide", false, SOUND_TYPE_ITEM_USING);
 	// GS gives the knife its own draw/holster sounds (snd_draw = knife_draw, snd_holster = knife_hide).
 	// The keys were in w_knife.ltx all along, but nothing loaded them here -- CWeaponKnife does not go
 	// through CWeaponMagazined::LoadSounds -- so the knife came out and went away silently. Optional
@@ -48,6 +59,7 @@ void CWeaponKnife::Load	(LPCSTR section)
 
 void CWeaponKnife::OnStateSwitch	(u32 S)
 {
+	{ extern int g_ctrl_dbg; if (g_ctrl_dbg) Msg("~ctrl knife state -> %d (was %d) suicide_anm=%s", (int)S, (int)GetState(), m_suicide_anim.size()?m_suicide_anim.c_str():"-"); }
 	inherited::OnStateSwitch(S);
 	// a strike interrupts the sprint idle -> forget "sprint entered" so the enter transition
 	// (anm_idle_sprint_start) replays when the strike ends and we return to sprinting
@@ -179,6 +191,21 @@ void CWeaponKnife::OnMotionMark(u32 state, const motion_marks& M)
 
 void CWeaponKnife::OnAnimationEnd(u32 state)
 {
+	// GS CWeaponKnife__OnAnimationEnd: the cut is lethal the moment its animation ends
+	if (m_bSelfkill)
+	{
+		extern int g_ctrl_dbg;
+		if (g_ctrl_dbg)	Msg("~ctrl knife selfkill anim ended -> kill requested");
+		m_bSelfkill		= false;
+		m_suicide_anim	= NULL;
+		SetPending		(FALSE);
+		// NOT the hit itself: we are inside the HUD animation callback, and killing the actor from
+		// here tears down the inventory/hud item that is being iterated -> access violation with no
+		// log. Ask the actor to do it on its next update instead.
+		CActor* act = smart_cast<CActor*>(H_Parent());
+		if (act)	act->RequestSuicideKill();
+		return;
+	}
 	switch (state)
 	{
 	case eHiding:	SwitchState(eHidden);	break;
@@ -200,6 +227,28 @@ void CWeaponKnife::state_Attacking	(float)
 void CWeaponKnife::switch2_Attacking	(u32 state)
 {
 	if(IsPending())	return;
+
+	// GS knife selector (WeaponEvents): while a controller holds the actor the ATTACK animation is
+	// replaced by the suicide one -- blade to the throat first, the cut once that has played,
+	// anm_stop_suicide if the grab broke. The actor owns the flags, exactly like GS.
+	CActor* act = smart_cast<CActor*>(H_Parent());
+	if (act)
+	{
+		LPCSTR anm = act->KnifeSuicideAnim();		// NULL = no scene, play a normal attack
+		extern int g_ctrl_dbg;
+		if (g_ctrl_dbg)	Msg("~ctrl knife attack: selector=%s state=%d", anm ? anm : "<none>", (int)GetState());
+		if (anm)
+		{
+			m_bSelfkill		= (0 == xr_strcmp(anm, "anm_selfkill"));
+			m_suicide_anim	= anm;
+			PlayHUDMotion	(anm, FALSE, this, state);
+			SetPending		(TRUE);
+			LPCSTR snd = m_bSelfkill ? "sndSelfKill"
+					: (0 == xr_strcmp(anm, "anm_prepare_suicide") ? "sndPrepareSuicide" : "sndStopSuicide");
+			if (m_sounds.FindSoundItem(snd, false))	PlaySound(snd, Position());
+			return;
+		}
+	}
 
 	if(state==eFire)
 		PlayHUDMotion("anm_attack",		FALSE, this, state);
@@ -237,6 +286,18 @@ void CWeaponKnife::switch2_Showing	()
 	VERIFY(GetState()==eShowing);
 	if (m_sounds.FindSoundItem("sndShow", false))
 		PlaySound			("sndShow", get_LastFP());
+
+	// GS `enable_anm_show_suicide`: a knife drawn because a CONTROLLER made you draw it comes out
+	// with its own animation (knife_suicide_draw), not the normal one.
+	CActor* act = smart_cast<CActor*>(H_Parent());
+	if (act && act->IsSuicideInProgress() &&
+		READ_IF_EXISTS(pSettings, r_bool, HudSection().c_str(), "enable_anm_show_suicide", FALSE) &&
+		isHUDAnimationExist("anm_show_suicide"))
+	{
+		PlayHUDMotion("anm_show_suicide", FALSE, this, GetState());
+		return;
+	}
+
 	PlayHUDMotion("anm_show", FALSE, this, GetState());
 }
 
@@ -329,3 +390,19 @@ void CWeaponKnife::GetBriefInfo(xr_string& str_name, xr_string& icon_sect_name, 
 	str_count		= "";
 	icon_sect_name	= *cNameSect();
 }
+
+// GS plays these through PlayCustomAnim as well: hud motion + its sound + a lock taken
+// from `lock_time_<alias>` in the hud section.
+bool CWeaponKnife::HasSuicideAnim(LPCSTR alias)
+{
+	return !!isHUDAnimationExist(alias);
+}
+
+// the config alias -> the motion name actually played (GS compares the running motion by name)
+LPCSTR CWeaponKnife::SuicideMotion(LPCSTR alias)
+{
+	if (!isHUDAnimationExist(alias))	return "";
+	return pSettings->r_string(HudSection(), alias);
+}
+
+

@@ -139,7 +139,15 @@ void CWeaponMagazinedWGrenade::Load	(LPCSTR section)
 				{
 					string_path key;
 					strconcat(sizeof(key), key, "snd_", b, ns ? "_noscope" : "");
-					if (pSettings->line_exist(hs, key))
+					if (!pSettings->line_exist(hs, key))	continue;
+					// CWeaponMagazined::LoadSounds (run from inherited::Load above) already loads
+					// EVERY snd_anm_* key of this hud section through LoadAnmSounds, keyed by the same
+					// name -- loading it again asserts (NULL==FindSoundItem). The only thing this loop
+					// still adds is the exclusive flag, so set it on the existing item instead.
+					// (Trigger: the groza, the one weapon whose hud defines snd_anm_switch*.)
+					if (HUD_SOUND_ITEM* si = m_sounds.FindSoundItem(key, false))
+						si->m_b_exclusive = true;
+					else
 						m_sounds.LoadSound(*hs, key, key, true, m_eSoundReload);
 				}
 	}
@@ -457,8 +465,40 @@ void CWeaponMagazinedWGrenade::LaunchGrenade_Correct(Fvector3* v)
 	*v = camdir;
 }
 
+// GS DoSuicideShot calls TryShootGLFix (WeaponEvents.pas:2118) instead of a plain FireStart when the
+// victim is in grenade mode, and this is why: LaunchGrenade bails out on !getRocketCount(), and the
+// rocket OBJECT is only spawned on the state transitions the suicide scene bypasses. Without it the
+// trigger was pulled, nothing left the launcher, and the actor just died with no explosion.
+void CWeaponMagazinedWGrenade::SuicideShoot()
+{
+	if (!m_bGrenadeMode)	{ inherited::SuicideShoot(); return; }
+
+	// GS TryShootGLFix: make sure the rocket OBJECT exists, LaunchGrenade bails without one
+	if (!getRocketCount() && !m_magazine.empty() &&
+		pSettings->line_exist(m_magazine.back().m_ammoSect, "fake_grenade_name"))
+	{
+		shared_str fake_grenade_name = pSettings->r_string(m_magazine.back().m_ammoSect, "fake_grenade_name");
+		CRocketLauncher::SpawnRocket(*fake_grenade_name, this);
+	}
+
+	// A launcher does NOT fire through FireStart: state_Fire is empty in grenade mode and the launch is
+	// driven by Action(kWPN_FIRE) -> LaunchGrenade. Calling FireStart only walked the state machine into
+	// eFire and straight back out (OnAnimationEnd's grenade-mode case), and the grenade never left the
+	// tube. GS hooks its own GL fix into that same Action path for the same reason.
+	m_bSuicideShot	= true;
+	SetPending		(FALSE);
+	SetShootLock	(0);
+	if (iAmmoElapsed)
+		LaunchGrenade();
+}
+
 void  CWeaponMagazinedWGrenade::LaunchGrenade()
 {
+	{
+		extern int g_ctrl_dbg;
+		if (g_ctrl_dbg)	Msg("~ctrl GL LaunchGrenade: rockets=%d suicide=%d hud=%d", getRocketCount(),
+						   (Actor() && Actor()->IsSuicideInProgress()) ? 1 : 0, GetHUDmode() ? 1 : 0);
+	}
 	if(!getRocketCount())	return;
 	R_ASSERT				(m_bGrenadeMode);
 	{
@@ -467,7 +507,15 @@ void  CWeaponMagazinedWGrenade::LaunchGrenade()
 		d.set						(get_LastFD());
 		CEntity*					E = smart_cast<CEntity*>(H_Parent());
 
-		if (E){
+		// GS skips g_fireParams for the actor's own launcher (the same patch we already carry in
+		// CWeaponRPG7::switch2_Fire, WeaponEvents.pas:2211) whenever the shot must follow the WEAPON
+		// instead of the crosshair. Under a controller that is the whole point: the suicide animation /
+		// hud offset has the muzzle against the victim's own head, and get_LastFD is taken from the HUD
+		// model's fire bone -- so leaving the camera out of it is what puts the grenade INTO him. With
+		// the camera params the round flew off along the aim line and there was no explosion at all.
+		const bool suicide_muzzle = Actor() && H_Parent() == Actor() && Actor()->IsSuicideInProgress() &&
+									GetHUDmode() && HudItemData();
+		if (E && !suicide_muzzle){
 			CInventoryOwner* io		= smart_cast<CInventoryOwner*>(H_Parent());
 			if(NULL == io->inventory().ActiveItem())
 			{
@@ -527,8 +575,19 @@ void  CWeaponMagazinedWGrenade::LaunchGrenade()
 			}
 		};
 		
+		{
+			extern int g_ctrl_dbg;
+			if (g_ctrl_dbg)	Msg("~ctrl GL launch: skip_cam=%d p=(%.2f %.2f %.2f) d=(%.2f %.2f %.2f)",
+							   suicide_muzzle?1:0, p1.x,p1.y,p1.z, d.x,d.y,d.z);
+		}
 		d.normalize						();
 		d.mul							(CRocketLauncher::m_fLaunchSpeed);
+
+		// GS LaunchGrenade_controller_Correct (WeaponEvents.pas:2091): under a controller the launch
+		// VELOCITY is replaced outright with (0,-2,0) -- straight down, barely moving, so the round
+		// lands at the victim's own feet and the blast does the killing. Muzzle direction is not
+		// enough on its own: the grenade has to go DOWN whatever the animation left the barrel doing.
+		if (suicide_muzzle)				d.set(0.f, -2.f, 0.f);
 		VERIFY2							(_valid(launch_matrix),"CWeaponMagazinedWGrenade::SwitchState. Invalid launch_matrix!");
 		CRocketLauncher::LaunchRocket	(launch_matrix, d, zero_vel);
 
@@ -952,6 +1011,20 @@ void CWeaponMagazinedWGrenade::SelectAimTransitionAnim(bool bAimIn, string_path&
 
 void CWeaponMagazinedWGrenade::SelectShootAnim(string_path& result)
 {
+	// GS builds the shot name as a MODIFIER CHAIN (WeaponAnims.pas:926): `_suicide` goes on before
+	// ModifierGL appends the launcher token, giving anm_shoot_suicide_w_gl / _g. Our suicide variant
+	// was a special case at the top of the BASE selector, which this override never reaches -- so a
+	// rifle with a launcher mounted fired its ordinary anm_shoot_w_gl and the weapon left the victim's
+	// head. The configs already carry the full set (GS assault/*/huds.ltx).
+	if (m_bSuicideShot)
+	{
+		LPCSTR suicide = m_bGrenadeMode			? "anm_shoot_suicide_g"
+					   : IsGrenadeLauncherAttached()	? "anm_shoot_suicide_w_gl"
+					   : "anm_shoot_suicide";
+		if (isHUDAnimationExist(suicide))		{ xr_strcpy(result, suicide); return; }
+		if (isHUDAnimationExist("anm_shoot_suicide"))	{ xr_strcpy(result, "anm_shoot_suicide"); return; }
+	}
+
 	if (m_bGrenadeMode)
 	{
 		if (IsZoomed() && isHUDAnimationExist("anm_shoot_aim_g"))

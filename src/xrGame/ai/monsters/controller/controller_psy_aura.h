@@ -26,6 +26,7 @@ class CPPEffectorControllerAura : public CPPEffectorCustom {
 public:
 					CPPEffectorControllerAura	(const SPPInfo &ppi, u32 time_to_fade, const ref_sound &snd_left, const ref_sound &snd_right);
 	virtual BOOL	update						();
+	virtual			~CPPEffectorControllerAura();
 	void			switch_off					();
 };
 

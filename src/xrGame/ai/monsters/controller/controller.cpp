@@ -3,6 +3,7 @@
 #include "controller_state_manager.h"
 #include "../controlled_entity.h"
 #include "../../../actor.h"
+#include "../../../inventory.h"		// CInventory::ActiveItem (GS psi-hit distance override)
 #include "../../../ActorEffector.h"
 #include "../ai_monster_effector.h"
 #include "../../../hudmanager.h"
@@ -311,12 +312,12 @@ BOOL CController::net_Spawn(CSE_Abstract *DC)
 
 void CController::UpdateControlled()
 {
-	// если есть враг, проверить может ли быть враг взят под контроль
+	// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if (EnemyMan.get_enemy()) {
 		CControlledEntityBase *entity = smart_cast<CControlledEntityBase *>(const_cast<CEntityAlive *>(EnemyMan.get_enemy()));
 		if (entity) {
 			if (!entity->is_under_control() && (m_controlled_objects.size() < m_max_controlled_number)) {
-				// взять под контроль
+				// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 				entity->set_under_control	(this);
 				entity->set_task_follow		(this);
 				m_controlled_objects.push_back(const_cast<CEntityAlive *>(EnemyMan.get_enemy()));
@@ -531,7 +532,7 @@ void CController::draw_fire_particles()
 	CEntityAlive *enemy	= const_cast<CEntityAlive*>(EnemyMan.get_enemy());
 	if (!EnemyMan.see_enemy_now()) return;
 
-	// вычислить позицию и направленность партикла
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	Fvector my_head_pos;
 	my_head_pos.set	(get_head_position(this));
 	
@@ -656,7 +657,14 @@ bool CController::can_tube_fire()
 		return false;
 	}
 
-	if ( EnemyMan.get_enemy()->Position().distance_to(Position()) < m_tube_condition_min_distance ) 
+	// GS IsNeedPsiHitOverride (ControllerMonster.pas: it patches exactly this distance check, in both
+	// check_start_conditions and check_conditions_final): the "enemy must be at least
+	// tube_condition_min_distance away" floor is DROPPED when the victim has something in his hands.
+	// The grab is then the suicide scenario rather than the tube, and that one works at any range --
+	// without this the controller simply stops attacking up close and the scene never plays.
+	const bool actor_armed = Actor() && Actor()->inventory().ActiveItem();
+	if ( !actor_armed &&
+		 EnemyMan.get_enemy()->Position().distance_to(Position()) < m_tube_condition_min_distance )
 	{
 		return false;
 	}

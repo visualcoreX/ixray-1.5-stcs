@@ -138,10 +138,40 @@ void CWeapon::StopShooting()
 	bWorking = false;
 }
 
-void CWeapon::FireEnd() 
+void CWeapon::FireEnd()
 {
 	CShootingObject::FireEnd();
 	StopShotEffector();
+}
+
+// GS OnShoot_CanShootNow (WeaponAdditionalBuffer.pas:1006): once a controller has the actor in a
+// suicide scene, his own trigger does nothing -- GS returns IsSuicideInreversible() there, so the
+// only shot allowed through is the scene's own, which flags itself irreversible before it fires.
+// Everyone else (NPCs, and the actor outside a scene) is untouched.
+bool CWeapon::SuicideBlocksFire() const
+{
+	CActor* act = smart_cast<CActor*>(const_cast<CWeapon*>(this)->H_Parent());
+	if (!act || act != Actor())							return false;
+	if (act->IsSuicideIrreversible())					return false;	// the scene's own shot
+	return act->IsSuicideInProgress();
+}
+
+// The victim is holding the weapon to his own head: the pose belongs to the scene until it resolves,
+// so nothing may replace it with an idle. GS gets this for free -- IsActionProcessing is true for the
+// whole scene, so no idle can be started.
+bool CWeapon::SuicideHoldsPose() const
+{
+	CActor* act = smart_cast<CActor*>(const_cast<CWeapon*>(this)->H_Parent());
+	return act && act == Actor() && act->SuicideHoldsWeaponPose();
+}
+
+// GS CanAimNow (WeaponAdditionalBuffer.pas:900) is wider than OnShoot_CanShootNow: it also refuses
+// while the psi attack is merely WINDING UP (IsControllerPreparing), before the grab lands.
+bool CWeapon::SuicideBlocksAim() const
+{
+	if (SuicideBlocksFire())							return true;
+	CActor* act = smart_cast<CActor*>(const_cast<CWeapon*>(this)->H_Parent());
+	return act && act == Actor() && act->IsControllerPreparing();
 }
 
 

@@ -1964,6 +1964,11 @@ void CCC_RegisterCommands()
 		CMD4(CCC_Integer,		"g_block_wpn_switch",	&g_block_wpn_switch,	0, 1);
 		extern int g_surge_active;
 		CMD4(CCC_Integer,		"g_surge_active",		&g_surge_active,		0, 1);
+		// camera-recoil diagnostic: logs the recoil block and every per-frame pitch delta (degrees)
+		extern int g_ctrl_dbg;
+		CMD4(CCC_Integer,		"g_ctrl_dbg",			&g_ctrl_dbg,			0, 1);
+		extern int g_recoil_dbg;
+		CMD4(CCC_Integer,		"g_recoil_dbg",			&g_recoil_dbg,			0, 1);
 		extern float g_surge_time;
 		CMD4(CCC_Float,			"g_surge_time",			&g_surge_time,			1.f, 600.f);
 		// 0 = don't draw the (full-screen) PDA window, so the 3D PDA hud model is visible

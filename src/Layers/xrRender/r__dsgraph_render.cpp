@@ -697,7 +697,8 @@ void	R_dsgraph_structure::r_dsgraph_render_subspace	(IRender_Sector* _sector, CF
 			}
 		}
 #if RENDER != R_R1
-		if (phase == RImplementation.PHASE_SMAP && ps_r__common_flags.test(RFLAG_ACTOR_SHADOW)) {
+		if (phase == RImplementation.PHASE_SMAP && ps_r__common_flags.test(RFLAG_ACTOR_SHADOW)
+			&& !(g_pGamePersistent && g_pGamePersistent->m_bSuppressActorShadow)) {
 			if (g_pGameLevel && g_pGameLevel->CurrentViewEntity()) {
 				g_pGameLevel->CurrentViewEntity()->renderable_Render();
 			}

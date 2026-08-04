@@ -553,6 +553,28 @@ void player_hud::load(const shared_str& player_hud_sect)
 	}
 	m_model->dcast_PKinematics()->CalculateBones_Invalidate	();
 	m_model->dcast_PKinematics()->CalculateBones(TRUE);
+
+	// Warm the hud visuals of the item-use PHANTOMS. They are created the first time the gesture runs
+	// (attachable_hud_item::load -> model_Create), which for the 3D PDA means loading its model and
+	// motions at the exact moment the player opens it -- a visible hitch on the first open, and the
+	// same cause as the freeze at the start of the controller's psi attack. Creating and dropping the
+	// model here leaves it in the render model pool, so the real load is instant. Data-driven: any
+	// section listed in [gunslinger_base] preload_hud_visuals is warmed.
+	{
+		LPCSTR list = READ_IF_EXISTS(pSettings, r_string, "gunslinger_base", "preload_hud_visuals", (LPCSTR)0);
+		string256 sect;
+		// count FIRST: _GetItem hands back its buffer whatever the index, so using it as the loop
+		// condition never terminates -- that hung the game solid on level load.
+		const u32 cnt = list ? _GetItemCount(list) : 0;
+		for (u32 i = 0; i < cnt; ++i)
+		{
+			_GetItem(list, i, sect);
+			if (!pSettings->section_exist(sect) || !pSettings->line_exist(sect, "item_visual"))	continue;
+			LPCSTR vis = pSettings->r_string(sect, "item_visual");
+			IRenderVisual* v = ::Render->model_Create(vis);
+			if (v)	::Render->model_Delete(v);
+		}
+	}
 }
 
 bool player_hud::render_item_ui_query()
@@ -1145,11 +1167,38 @@ void gwr_UpdateHudMove(u32 mreal, u32 mwish, u32 dt)
 	else
 		gwr_target(sect, mreal, tpos, trot, factor, w);
 
+	// GS AddSuicideOffset (WeaponInertion.pas): a controller-suicide weapon with NO suicide animation
+	// (RPG-7, RG-6, a launcher in GL mode) is aimed at the head by this offset alone. `no_other_hud_
+	// moving_while_suicide` throws the walk/lean offsets away first, so only the suicide pose remains.
+	CActor* c_act = smart_cast<CActor*>(Level().CurrentControlEntity());
+	// scene running -> travel at the suicide pace (GS :635); seen by a controller -> actually aim at
+	// the head (GS :623). Splitting the two is what makes "hide from it and the launcher comes back
+	// down" work without a snap.
+	const bool suicide_scene = c_act && c_act->SuicideHudOffsetActive() &&
+							   !READ_IF_EXISTS(pSettings, r_bool, sect, "prohibit_suicide", FALSE);
+	const bool suicide_hud   = suicide_scene && c_act->SuicideHudAimActive();
+	if (suicide_hud)
+	{
+		if (READ_IF_EXISTS(pSettings, r_bool, sect, "no_other_hud_moving_while_suicide", FALSE))
+			{ tpos.set(0.f, 0.f, 0.f);	trot.set(0.f, 0.f, 0.f); }
+		LPCSTR spk = w ? "hud_move_suicide_offset_pos_16x9" : "hud_move_suicide_offset_pos";
+		LPCSTR srk = w ? "hud_move_suicide_offset_rot_16x9" : "hud_move_suicide_offset_rot";
+		// hands_attach_rot is kept in DEGREES here (attachable_hud_item::update multiplies by PI/180 at
+		// use), so the offset goes in raw, exactly like every other hud_move offset -- converting it to
+		// radians shrank GS's 130 degrees to 2 and left only the position part visible.
+		if (pSettings->line_exist(sect, spk))	tpos.add(pSettings->r_fvector3(sect, spk));
+		if (pSettings->line_exist(sect, srk))	trot.add(pSettings->r_fvector3(sect, srk));
+	}
+
 	tpos.add(base_pos);
 	trot.add(base_rot);
 
 	float sp_rot = READ_IF_EXISTS(pSettings, r_float, sect, "hud_move_speed_rot", 0.4f) * factor / 100.f;
 	float sp_pos = READ_IF_EXISTS(pSettings, r_float, sect, "hud_move_speed_pos", 0.1f) * factor / 100.f;
+	// GS uses its own speeds for the suicide move, and they are a CONSTANT step per tick (v_setlength),
+	// not the usual proportional easing -- the weapon travels to the head at a steady pace.
+	const float su_rot = READ_IF_EXISTS(pSettings, r_float, sect, "suicide_speed_rot", 0.0901f);
+	const float su_pos = READ_IF_EXISTS(pSettings, r_float, sect, "suicide_speed_pos", 0.00205f);
 
 	s_hm.acc += dt;
 	if (s_hm.acc > 200)	s_hm.acc = 200;	// pause/load safety
@@ -1158,12 +1207,69 @@ void gwr_UpdateHudMove(u32 mreal, u32 mwish, u32 dt)
 	while (s_hm.acc > 8)
 	{
 		Fvector d;
-		d.sub(tpos, cur_pos);	if (d.magnitude() > 0.0001f) d.mul(sp_pos);	cur_pos.add(d);
-		d.sub(trot, cur_rot);	if (d.magnitude() > 0.0001f) d.mul(sp_rot);	cur_rot.add(d);
+		if (suicide_scene)			// pace follows the SCENE, not the line of sight
+		{
+			d.sub(tpos, cur_pos);	if (d.magnitude() > su_pos) d.set_length(su_pos);	cur_pos.add(d);
+			d.sub(trot, cur_rot);	if (d.magnitude() > su_rot) d.set_length(su_rot);	cur_rot.add(d);
+		}
+		else
+		{
+			d.sub(tpos, cur_pos);	if (d.magnitude() > 0.0001f) d.mul(sp_pos);	cur_pos.add(d);
+			d.sub(trot, cur_rot);	if (d.magnitude() > 0.0001f) d.mul(sp_rot);	cur_rot.add(d);
+		}
 		s_hm.acc -= 8;
 	}
+	// GS hands jitter (SetHandsJitterTime): while the shock timer runs, the hands shake -- a
+	// per-frame random offset on top of everything else. Amplitudes come from the weapon hud
+	// (jitter_pos_amplitude / jitter_rot_amplitude), falling back to [gunslinger_base]'s
+	// base_jitter_*. Used after a controller lets go and while a psi block holds it off.
+	{
+		CActor* act = smart_cast<CActor*>(Level().CurrentControlEntity());
+		if (act && act->HandsJitterActive())
+		{
+			// GS GetHandJitterScale: full while the controller holds you, then fading over jitter_stop_time
+			const float stop_ms = READ_IF_EXISTS(pSettings, r_float, sect, "jitter_stop_time", 3.f) * 1000.f;
+			const float k  = act->HandsJitterScale(stop_ms);
+			const float ap = READ_IF_EXISTS(pSettings, r_float, sect, "jitter_pos_amplitude",
+					READ_IF_EXISTS(pSettings, r_float, "gunslinger_base", "base_jitter_pos_amplitude", 0.001f)) * k;
+			const float ar = READ_IF_EXISTS(pSettings, r_float, sect, "jitter_rot_amplitude",
+					READ_IF_EXISTS(pSettings, r_float, "gunslinger_base", "base_jitter_rot_amplitude", 0.1f)) * k;
+			// same unit rule as the offsets above: this vector is degrees, add the amplitude raw
+			cur_pos.x += ::Random.randF(-ap, ap);	cur_pos.y += ::Random.randF(-ap, ap);	cur_pos.z += ::Random.randF(-ap, ap);
+			cur_rot.x += ::Random.randF(-ar, ar);
+			cur_rot.y += ::Random.randF(-ar, ar);
+			cur_rot.z += ::Random.randF(-ar, ar);
+		}
+	}
+
 	hi->hands_attach_pos().set(cur_pos);
 	hi->hands_attach_rot().set(cur_rot);
+
+	// GS: the shot goes off when the hands have ARRIVED at the suicide pose -- what is left of the
+	// distance has to fit inside twice the jitter amplitude, i.e. the hands are only shaking now.
+	if (suicide_hud)
+	{
+		const float ap = READ_IF_EXISTS(pSettings, r_float, sect, "jitter_pos_amplitude",
+				READ_IF_EXISTS(pSettings, r_float, "gunslinger_base", "base_jitter_pos_amplitude", 0.002f));
+		const float ar = READ_IF_EXISTS(pSettings, r_float, sect, "jitter_rot_amplitude",
+				READ_IF_EXISTS(pSettings, r_float, "gunslinger_base", "base_jitter_rot_amplitude", 0.09f));
+		Fvector dp, dr;
+		dp.sub(cur_pos, tpos);
+		dr.sub(cur_rot, trot);
+		{
+			extern int g_ctrl_dbg;
+			static u32 s_last = 0;
+			if (g_ctrl_dbg && Device.dwTimeGlobal - s_last > 500)
+			{
+				s_last = Device.dwTimeGlobal;
+				Msg("~ctrl POSE: sect=%s cur=(%.2f %.2f %.2f) tgt=(%.2f %.2f %.2f) dr=%.3f dp=%.4f thr_r=%.3f",
+					sect, cur_rot.x, cur_rot.y, cur_rot.z, trot.x, trot.y, trot.z,
+					dr.magnitude(), dp.magnitude(), ar * 2.f);
+			}
+		}
+		if (dp.magnitude() < ap * 2.f && dr.magnitude() < ar * 2.f)
+			c_act->SuicideHudOffsetArrived();
+	}
 
 	if (s_hm.to_crouch_t > dt)		s_hm.to_crouch_t -= dt;		else s_hm.to_crouch_t = 0;
 	if (s_hm.from_crouch_t > dt)	s_hm.from_crouch_t -= dt;	else s_hm.from_crouch_t = 0;

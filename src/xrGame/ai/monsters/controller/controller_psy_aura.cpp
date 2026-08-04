@@ -21,6 +21,18 @@ CPPEffectorControllerAura::CPPEffectorControllerAura(const SPPInfo &ppi, u32 tim
 
 }
 
+// VANILLA BUG (the "controller sound keeps playing after a save load / alt-tab / menu"): this
+// effector owns CLONED looped 2D sounds and RESTARTS them from update() whenever the feedback is
+// gone -- which is exactly what a pause, a focus loss or Sound->stop_emitters() causes. Nothing
+// stopped them when the effector itself went away, so the hum outlived the level.
+CPPEffectorControllerAura::~CPPEffectorControllerAura()
+{
+	if (m_snd_left._feedback())		m_snd_left.stop();
+	if (m_snd_right._feedback())	m_snd_right.stop();
+	m_snd_left.destroy	();
+	m_snd_right.destroy	();
+}
+
 void CPPEffectorControllerAura::switch_off()
 {
 	m_effector_state		= eStateFadeOut;		
@@ -48,8 +60,16 @@ BOOL CPPEffectorControllerAura::update()
 		}
 	}
 
-	// start new or play again?
-	if (!m_snd_left._feedback() && !m_snd_right._feedback()) {
+	// no actor left (level being torn down) -> die instead of playing on
+	if (!Actor())
+	{
+		if (m_snd_left._feedback())		m_snd_left.stop();
+		if (m_snd_right._feedback())	m_snd_right.stop();
+		return FALSE;
+	}
+
+	// start new or play again? (never while fading out -- that is what made a stopped sound come back)
+	if (m_effector_state != eStateFadeOut && !m_snd_left._feedback() && !m_snd_right._feedback()) {
 		m_snd_left.play_at_pos	(Actor(), Fvector().set(-1.f, 0.f, 1.f), sm_Looped | sm_2D);
 		m_snd_right.play_at_pos	(Actor(), Fvector().set(-1.f, 0.f, 1.f), sm_Looped | sm_2D);
 	} 

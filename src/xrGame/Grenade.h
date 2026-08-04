@@ -58,6 +58,30 @@ protected:
 private:
 	float					m_grenade_detonation_threshold_hit;
 	bool					m_thrown;
+
+	// ---- GS impact grenades, ported from wpnpatch Throwable.pas (RGN / RGO use all of this).
+	// CONTACT fuse (CMissile__ExitContactCallback): a thrown grenade that touches something has its
+	// destroy time rewritten -- detonate now, keep burning, or go dud -- instead of always running
+	// the timer down. Nothing happens for a section that does not opt in, so F1/RGD5 are untouched.
+	bool					m_bExplosionOnKick;			// explosion_on_kick
+	float					m_fMinExplosionSpeed;		// min_explosion_speed (m/s, 0 = any)
+	bool					m_bDeactivateOnMinSpeed;	// deactivate_on_minimal_speed_contact
+	u32						m_dwSafeTime;				// safe_time  (ms after the throw: contact = dud)
+	u32						m_dwDelayTime;				// delay_time (ms after the throw: contact ignored)
+	// HIT fuse (CheckGrenadeExplosionByHit): detonate when damaged, by hit type
+	bool					m_bExplosionOnHit;			// explosion_on_hit
+	bool					m_bExplosiveWhileNotActivated;	// explosive_while_not_activated
+	bool					m_bHasExplosiveWhileKey;
+	xr_vector<u32>			m_ExplosionHitTypes;		// explosion_hit_types (empty = explosion only)
+	static void				ImpactContactCallback	(bool& do_colide, bool bo1, dContact& c,
+													 SGameMtl* material_1, SGameMtl* material_2);
+			bool			CheckExplosionByHit		(const SHit* pHDS) const;
+public:
+	virtual void			activate_physic_shell	();
+private:
+	// ---- GS grenade type switch: put the current grenade AWAY first (anm_hide), swap on the
+	// animation end, so the next type is drawn instead of appearing in the hand instantly.
+	u16						m_pending_next_id;
 protected:
 	virtual	void			UpdateXForm							()		{ CMissile::UpdateXForm(); };
 public:

@@ -111,4 +111,10 @@ public:
 	// the GRENADE count: firing the last grenade made a loaded rifle play its empty anims, and loading a
 	// grenade made an empty rifle stop playing them.
 	virtual bool NeedEmptyAnim	() { return 0 == (m_bGrenadeMode ? m_magazine2.size() : m_magazine.size()); }
+
+	// same swap for the controller-suicide checks: in GL mode the rifle rounds live in m_magazine2
+	virtual int  SuicideRifleAmmo	() const { return int(m_bGrenadeMode ? m_magazine2.size() : m_magazine.size()); }
+
+	// GS TryShootGLFix (WeaponEvents.pas:2118) -- the launcher needs a rocket OBJECT before it can fire
+	virtual void SuicideShoot		();
 };

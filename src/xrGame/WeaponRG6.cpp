@@ -71,6 +71,7 @@ bool CWeaponRG6::SpawnRocketIfNeeded()
 
 void CWeaponRG6::FireStart ()
 {
+	if (SuicideBlocksFire())							return;	// GS OnShoot_CanShootNow, see CWeapon
 	if (GetState() == eIdle && SpawnRocketIfNeeded())	return;	// grenade created this frame -> pull again
 
 	if(GetState() == eIdle	&& getRocketCount() )
@@ -82,7 +83,12 @@ void CWeaponRG6::FireStart ()
 		d.set(get_LastFD());
 
 		CEntity* E = smart_cast<CEntity*>(H_Parent());
-		if (E){
+		// same rule as the RPG and the GL: during a controller suicide the grenade follows the MUZZLE
+		// (get_LastFD, taken from the hud model's fire bone), not the crosshair -- GS's
+		// need_skip_g_fireParams patch, WeaponEvents.pas:2211
+		const bool suicide_muzzle = Actor() && H_Parent() == Actor() && Actor()->IsSuicideInProgress() &&
+									GetHUDmode() && HudItemData();
+		if (E && !suicide_muzzle){
 			CInventoryOwner* io		= smart_cast<CInventoryOwner*>(H_Parent());
 			if(NULL == io->inventory().ActiveItem())
 			{

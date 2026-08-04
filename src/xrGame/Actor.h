@@ -186,6 +186,8 @@ public:
 	virtual float						GetMass				() ;
 	virtual float						Radius				() const;
 	virtual void						g_PerformDrop		();
+			void						PerformDropForced	();	// GS PerformDrop: the controller's own
+	static	bool						IsGesturePhantom	(PIItem pItem);	// item-use animator, never droppable
 	
 	virtual	bool						use_default_throw_force	();
 	virtual	float						missile_throw_force		(); 
@@ -695,6 +697,92 @@ public:
 			void				SwitchTorch						();
 			void				SwitchWeaponLaser				();	// GS: toggle the active weapon's laser designator (kWPN_LASER)
 			void				SwitchWeaponFlashlight			();	// GS: toggle the active weapon's mounted flashlight (kWPN_FLASHLIGHT)
+
+	// ---- GS controller suicide (wpnpatch ControllerMonster.pas). The controller's psi grab makes the
+	// actor put his own weapon to his head (anm_suicide), fire (anm_shoot_suicide) and die
+	// `suicide_delay` seconds later. Breaking the grab before the shot plays anm_stop_suicide instead.
+	enum ESuicideState { eSuicideNone = 0, eSuicidePlanning, eSuicideAnim, eSuicideShot,
+						 eSuicideKnifePrep, eSuicideKnifeKill, eSuicideNoAnim };
+			bool				StartControllerSuicide			();	// false = this weapon cannot be used
+			void				StopControllerSuicide			();	// grab broken (flag only -- GS decides at the END of the gesture)
+			void				UpdateControllerSuicide			();
+			LPCSTR				KnifeSuicideAnim				();
+			void				RequestSuicideKill				() { m_bSuicideKillPending = true; }	// GS knife selector: which anim the attack plays
+			// the controller reports every frame whether it still sees the victim (GS
+			// CheckActorVisibilityForController, incl. its difficulty rule)
+			void				NotifyControllerSees			(bool sees, bool mandatory_check);
+			bool				IsSuicideInProgress				() const { return m_eSuicideState != eSuicideNone; }
+			bool				IsSuicideIrreversible			() const { return m_eSuicideState == eSuicideShot; }
+			// GS AddSuicideOffset / the DoSuicideShot check at the end of the hud_move update: a weapon
+			// with no suicide animation is aimed at the head by the HUD offset alone, and fires when the
+			// hands have arrived. player_hud drives both through these two.
+			// stays on through eSuicideShot: the projectile does not leave on the frame the trigger is
+			// pulled, and dropping the pose right there sent it along the normal muzzle line instead
+			// The SCENE is running: drives the slow suicide travel speed. GS keys its speed choice on
+			// this alone (WeaponInertion.pas:635) -- NOT on visibility and NOT on the grab being intact.
+			// That is why a weapon always comes back down SLOWLY: the target reverts, the pace does not.
+			// It stays true until the control timer expires (GS ResetActorControl), which is what makes
+			// a controller dying mid-scene a smooth lowering instead of a snap.
+			bool				SuicideHudOffsetActive			() const { return m_bSuicideNoAnimPose; }
+			// ...and the head-aim pose itself only holds while a controller is alive and can see you
+			// (GS :623 CheckActorVisibilityForController, which reports false once the active-controller
+			// list is cleared), so a broken grab lowers the weapon again.
+			bool				SuicideHudAimActive				() const { return m_bSuicideNoAnimPose && m_bControllerSees && !m_bSuicideBroken; }
+			bool				ControllerSeesMe				() const { return m_bControllerSees; }
+			// the weapon is at the victim's own head and stays there until the scene resolves -- the
+			// gesture, the shot and the moment of death. Planning (dropping it, drawing the knife) is
+			// deliberately NOT included: there the weapon must behave normally.
+			bool				SuicideHoldsWeaponPose			() const
+								{ return m_eSuicideState == eSuicideAnim || m_eSuicideState == eSuicideShot
+										 || m_eSuicideState == eSuicideNoAnim; }
+			void				SuicideHudOffsetArrived			();
+			bool				SuicideDropAndTakeKnife			();	// GS PerformDrop, right in the branch
+			void				SetControllerDist				(float d) { m_fCtrlDist = d; }	// GS re-reads it per pulse
+private:
+			ESuicideState		m_eSuicideState;
+			u32					m_dwSuicideNextTm;	// gesture end, then the kill moment
+			bool				m_bSuicideBroken;
+			bool				m_bSuicideKillPending;	// the knife cut landed -> kill on the next update	// grab lost -> lower the weapon when the gesture ends
+			bool				m_bControllerSees;	// last report from the controller
+			u32					m_dwControlledUntil;	// GS _controlled_time_remains (absolute tick)
+			u32					m_dwJitterUntil;	// GS SetHandsJitterTime: hud shakes until this tick
+			float				m_fCtrlRotAngle;	// mouse-control distortion (GS ChangeInputRotateAngle)
+			float				m_fCtrlSenseX;
+			float				m_fCtrlSenseY;
+			bool				m_bCtrlInvertY;
+			float				m_fCtrlDist;		// distance to the grabbing controller (GS branch gates)
+			bool				m_bSuicideDropped;	// the useless weapon has already been thrown away
+			bool				m_bSuicideNoAnimPose;	// the hud offset is aiming the weapon at the head
+			bool				m_bSuicidePrepPlayed;	// the knife's prepare gesture actually ran
+			u32					m_dwShadowSuppressUntil;	// self-shadow off until this tick (cutscene / osoznanie)
+			bool				m_bWasControlled;		// edge detector for "the controller let go"
+			u32					m_dwCtrlPrepareStart;	// GS _controller_preparing_starttime
+			u32					m_dwSuicideRepickTm;	// next re-run of the branch choice (GS: every pulse)
+			bool				m_bPsiBlockFailed;		// GS _psi_block_failed: the protection gave way
+public:
+			bool				IsActorControlled	() const;	// GS IsActorControlled
+			void				StartControllerGrab	(float dist_to_controller);	// GS PsiEffects entry
+			void				SetHandsJitterTime	(u32 ms);
+			void				RefreshControlTime	();	// GS: re-armed on every psi pulse, not once
+			void				StartControllerPrepare	(float dist);	// GS OnPsyHitActivate: the attack's windup
+			bool				IsControllerPreparing	() const;	// GS IsControllerPreparing
+			// GS IsPsiBlocked: telepathic protection. CS has no such booster -- ours is being drunk.
+			bool				IsPsiBlocked			() const;
+			void				RollPsiBlock			(float dist);	// GS UpdatePsiBlockFailedState
+			bool				ControllerPsiBlocked	() const;	// blocked AND the roll did not fail
+			// GS IsHandJitter (ActorUtils.pas:3651): the hands shake for the WHOLE grab and through the
+			// suicide scene, not just after the release -- and stop the moment the shot makes it
+			// irreversible. The trailing timer is the after-release / psi-blocked shock.
+			bool				HandsJitterActive	() const
+								{ return ((IsActorControlled() || IsSuicideInProgress() || IsControllerPreparing())
+										  && !IsSuicideIrreversible())
+										 || Device.dwTimeGlobal < m_dwJitterUntil; }
+			// GS GetHandJitterScale: full amplitude while held, then a ramp down over `jitter_stop_time`
+			float				HandsJitterScale	(float stop_time_ms) const;
+			void				ApplyControlledMouse(int& dx, int& dy);	// GS input correction
+			float				ControlledSpeedKoef	() const;
+private:
+public:
 			void				QuickKickHit					();	// GS quick knife kick: melee hit along the actor's raw look (r_torso), fired from the Lua kick binder at the stab mark
 			u32					m_dwBayonetHitTm;					// Device time to land a scheduled ak74-bayonet stab hit (0 = none); the bayonet stab plays on the weapon's own hud, not the phantom
 			void				UpdateDelayedDeviceSwitch		();	// fires the delayed torch/NV toggle

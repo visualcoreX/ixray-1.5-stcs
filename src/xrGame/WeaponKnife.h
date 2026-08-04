@@ -16,6 +16,19 @@ protected:
 			void		switch2_Attacking			(u32 state);
 
 	virtual void		OnAnimationEnd				(u32 state);
+public:
+	// --- GS controller suicide, knife branch (ControllerMonster + WeaponEvents CWeaponKnife hooks):
+	// anm_prepare_suicide (blade to the throat) -> anm_selfkill (cut) -> the actor dies when THAT
+	// animation ends. anm_stop_suicide lowers it again when the grab breaks. Returns the gesture's
+	// lock_time in ms (GS times these from the config too), 0 = the knife has no such animation.
+			bool		HasSuicideAnim				(LPCSTR alias);
+			LPCSTR		SuicideMotion				(LPCSTR alias);	// the motion the alias resolves to
+			bool		IsPendingPublic				() const { return !!IsPending(); }
+			bool		IsSelfkillPlaying			() const { return m_bSelfkill; }
+private:
+			shared_str	m_suicide_anim;				// overrides the attack animation while the scene runs
+			bool		m_bSelfkill;				// anm_selfkill is running -> kill at its end
+protected:
 	virtual void		OnMotionMark				(u32 state, const motion_marks&);
 	virtual void		OnStateSwitch				(u32 S);
 

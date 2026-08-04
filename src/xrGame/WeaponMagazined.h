@@ -49,6 +49,23 @@ public:
 	// false (so the caller can fall back to the generic left-hand animator) if the weapon is
 	// busy or the config has no matching anm_* alias.
 	virtual bool	PlayHudActionAnim	(LPCSTR base);
+
+	// --- GS controller suicide (wpnpatch ControllerMonster.pas). The actor drives the sequence
+	// (CActor::StartControllerSuicide); the weapon only says whether it can be used for it and
+	// swaps the shot animation while it runs.
+	bool			CanSuicide			() const;
+	bool			SuicideByAnimation	() const;	// GS `suicide_by_animation`: anm_suicide, else the hud offset
+	bool			HasSuicideHudOffset	() const;	// a non-zero hud_move_suicide_offset to travel to
+	// GS GetAmmoInMagCount: the RIFLE magazine in either mode (in GL mode iAmmoElapsed is the grenades)
+	virtual int		SuicideRifleAmmo	() const { return iAmmoElapsed; }
+	u32				SuicideStart		();	// play anm_suicide, return its lock_time in ms (0 = cannot)
+	void			SuicideForceIdle	();	// leave the gesture state so the shot can go out
+	virtual void	SuicideShoot		();	// end the gesture and fire the round into one's own head
+	void			PlaySuicideSound	();	// snd_suicide, if this weapon has one
+	void			SuicideStopFire		();	// release the trigger (the actor is dead now)
+	void			SuicideAbort		();	// grab broken -> lower the weapon (anm_stop_suicide)
+	bool			m_bSuicideShot;		// the next shot is the one into one's own head
+	bool			m_bActionAnimNoCB;	// play the action gesture without a state callback (GS PlayCustomAnim)
 protected:
 	shared_str		m_action_anim;
 

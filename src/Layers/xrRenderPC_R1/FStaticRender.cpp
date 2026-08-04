@@ -429,7 +429,8 @@ void CRender::Calculate				()
 			// Determine visibility for dynamic part of scene
 			set_Object							(0);
 
-			if (ps_r__common_flags.test(RFLAG_ACTOR_SHADOW)) {
+			if (ps_r__common_flags.test(RFLAG_ACTOR_SHADOW)
+				&& !(g_pGamePersistent && g_pGamePersistent->m_bSuppressActorShadow)) {
 				g_pGameLevel->pHUD->Render_First();
 			}
 

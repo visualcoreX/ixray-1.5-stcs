@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "grenade.h"
 #include "PhysicsShell.h"
+#include "ExtendedGeom.h"		// dxGeomUserData / retrieveGeomUserData for the contact fuse
 //.#include "WeaponHUD.h"
 #include "entity.h"
 #include "ParticlesObject.h"
@@ -14,10 +15,19 @@
 
 #define GRENADE_REMOVE_TIME		30000
 const float default_grenade_detonation_threshold_hit=100;
-CGrenade::CGrenade(void) 
+CGrenade::CGrenade(void)
 {
 
 	m_eSoundCheckout = ESoundTypes(SOUND_TYPE_WEAPON_RECHARGING);
+	m_bExplosionOnKick			= false;
+	m_fMinExplosionSpeed		= 0.f;
+	m_bDeactivateOnMinSpeed		= false;
+	m_dwSafeTime				= 0;
+	m_dwDelayTime				= 0;
+	m_bExplosionOnHit			= false;
+	m_bExplosiveWhileNotActivated = false;
+	m_bHasExplosiveWhileKey		= false;
+	m_pending_next_id			= u16(-1);
 }
 
 CGrenade::~CGrenade(void) 
@@ -31,18 +41,120 @@ void CGrenade::Load(LPCSTR section)
 
 	m_sounds.LoadSound(section,"snd_checkout","sndCheckout",m_eSoundCheckout);
 
+	// GS controller-suicide grenade sounds (optional per section; the scene plays them through
+	// CMissile's suicide branches). Without these the aliases exist nowhere and the scene is silent.
+	if (pSettings->line_exist(section, "snd_suicide_begin"))
+		m_sounds.LoadSound(section, "snd_suicide_begin", "sndSuicideBegin", m_eSoundCheckout);
+	if (pSettings->line_exist(section, "snd_suicide_throw"))
+		m_sounds.LoadSound(section, "snd_suicide_throw", "sndSuicideThrow", m_eSoundCheckout);
+	if (pSettings->line_exist(section, "snd_suicide_stop"))
+		m_sounds.LoadSound(section, "snd_suicide_stop", "sndSuicideStop", m_eSoundCheckout);
+
 	//////////////////////////////////////
-	//время убирания оружия с уровня
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	if(pSettings->line_exist(section,"grenade_remove_time"))
 		m_dwGrenadeRemoveTime = pSettings->r_u32(section,"grenade_remove_time");
 	else
 		m_dwGrenadeRemoveTime = GRENADE_REMOVE_TIME;
 	m_grenade_detonation_threshold_hit=READ_IF_EXISTS(pSettings,r_float,section,"detonation_threshold_hit",default_grenade_detonation_threshold_hit);
+	// ---- GS impact grenades (wpnpatch Throwable.pas). All opt-in: a section without these keys
+	// behaves exactly as before, which is why F1/RGD5 are unaffected.
+	m_bExplosionOnKick		= !!READ_IF_EXISTS(pSettings, r_bool,  section, "explosion_on_kick", FALSE);
+	m_fMinExplosionSpeed	=   READ_IF_EXISTS(pSettings, r_float, section, "min_explosion_speed", 0.f);
+	m_bDeactivateOnMinSpeed	= !!READ_IF_EXISTS(pSettings, r_bool,  section, "deactivate_on_minimal_speed_contact", FALSE);
+	m_dwSafeTime			=   READ_IF_EXISTS(pSettings, r_u32,   section, "safe_time",  0);
+	m_dwDelayTime			=   READ_IF_EXISTS(pSettings, r_u32,   section, "delay_time", 0);
+
+	m_bExplosionOnHit		= !!READ_IF_EXISTS(pSettings, r_bool,  section, "explosion_on_hit", FALSE);
+	m_bHasExplosiveWhileKey	= !!pSettings->line_exist(section, "explosive_while_not_activated");
+	m_bExplosiveWhileNotActivated = m_bHasExplosiveWhileKey
+								&& !!pSettings->r_bool(section, "explosive_while_not_activated");
+	m_ExplosionHitTypes.clear();
+	if (pSettings->line_exist(section, "explosion_hit_types"))
+	{
+		LPCSTR s = pSettings->r_string(section, "explosion_hit_types");
+		string64 tmp;
+		for (int i = 0, n = _GetItemCount(s); i < n; ++i)
+			m_ExplosionHitTypes.push_back(u32(atoi(_GetItem(s, i, tmp))));
+	}
+}
+
+// The object that actually flies is the spawned copy (CMissile::spawn_fake_missile) and CMissile
+// activates its shell here; hook the contact on top of the inherited setup.
+void CGrenade::activate_physic_shell()
+{
+	inherited::activate_physic_shell();
+	if (m_bExplosionOnKick && m_pPhysicsShell && m_pPhysicsShell->isActive())
+		m_pPhysicsShell->add_ObjectContactCallback(ImpactContactCallback);
+}
+
+// GS CMissile__ExitContactCallback: rewrite the fuse on contact.
+//   * still inside safe_time  -> the grenade is a DUD (destroy time cleared, it never goes off)
+//   * still inside delay_time -> ignore the contact, keep the normal fuse
+//   * otherwise, with explosion_on_kick -> detonate NOW, unless it is crawling slower than
+//     min_explosion_speed (then either dud it or let the fuse run, per the config)
+// Runs inside the physics step, so it only moves the destroy TIME -- CMissile::shedule_Update does
+// the actual Destroy() a tick later, exactly like the timed path.
+void CGrenade::ImpactContactCallback(bool& /*do_colide*/, bool /*bo1*/, dContact& c,
+									 SGameMtl* /*material_1*/, SGameMtl* /*material_2*/)
+{
+	dxGeomUserData* ud1 = retrieveGeomUserData(c.geom.g1);
+	dxGeomUserData* ud2 = retrieveGeomUserData(c.geom.g2);
+	CGrenade* g = ud1 ? smart_cast<CGrenade*>(ud1->ph_ref_object) : NULL;
+	if (!g)	g = ud2 ? smart_cast<CGrenade*>(ud2->ph_ref_object) : NULL;
+	if (!g || !g->m_bExplosionOnKick)	return;
+
+	// SAME CLOCK as the one the fuse was armed with: CMissile::set_destroy_time() stamps
+	// Device.dwTimeGlobal, so measuring `time from throw` against Level().timeServer() gave a
+	// nonsense age -- safe_time/delay_time never applied and an RGN/RGO blew up on the first bounce
+	// even when the victim had thrown it away.
+	const u32 now = Device.dwTimeGlobal;
+	const u32 dt  = g->destroy_time();
+	if (dt == 0xffffffff || dt <= now)	return;			// not armed, or already due to go off
+
+	const u32 time_from_throw = g->m_dwDestroyTimeMax - (dt - now);
+
+	if (g->m_dwSafeTime && g->m_dwSafeTime > time_from_throw)
+	{
+		g->m_dwDestroyTime = 0xffffffff;				// hit too early -> dud
+		return;
+	}
+	if (g->m_dwDelayTime && g->m_dwDelayTime > time_from_throw)
+		return;											// inside the arming delay -> keep the fuse
+
+	u32 new_destroy_time = now;
+	if (g->m_fMinExplosionSpeed > 0.f)
+	{
+		Fvector vel;
+		g->PHGetLinearVell(vel);
+		if (vel.magnitude() < g->m_fMinExplosionSpeed)
+			new_destroy_time = g->m_bDeactivateOnMinSpeed ? 0xffffffff : dt;
+	}
+	g->m_dwDestroyTime = new_destroy_time;
+}
+
+// GS CheckGrenadeExplosionByHit: a damaged grenade cooks off, by hit TYPE rather than only by the
+// explosion type the stock check hardcodes.
+bool CGrenade::CheckExplosionByHit(const SHit* pHDS) const
+{
+	if (!m_bExplosionOnHit)								return false;
+	if (m_grenade_detonation_threshold_hit >= pHDS->damage())	return false;
+	// an armed (thrown) grenade always cooks off; one still lying around only if the config says so
+	if (Useful() && m_bHasExplosiveWhileKey && !m_bExplosiveWhileNotActivated)	return false;
+	if (m_ExplosionHitTypes.empty())
+		return ALife::eHitTypeExplosion == pHDS->hit_type;
+	for (u32 t : m_ExplosionHitTypes)
+		if (t == u32(pHDS->hit_type))	return true;
+	return false;
 }
 
 void CGrenade::Hit					(SHit* pHDS)
 {
-	if( ALife::eHitTypeExplosion==pHDS->hit_type && m_grenade_detonation_threshold_hit<pHDS->damage()&&CExplosive::Initiator()==u16(-1)) 
+	// stock rule (explosion hit over the threshold) OR the GS one, which widens it to the hit types
+	// listed in `explosion_hit_types` -- that is what makes an RGN/RGO cook off when shot
+	if( CExplosive::Initiator()==u16(-1) &&
+		(( ALife::eHitTypeExplosion==pHDS->hit_type && m_grenade_detonation_threshold_hit<pHDS->damage())
+		 || CheckExplosionByHit(pHDS)) )
 	{
 		CExplosive::SetCurrentParentID(pHDS->who->ID());
 		Destroy();
@@ -164,8 +276,14 @@ void CGrenade::Throw()
 	
 	if (pGrenade) 
 	{
+		// The FAKE missile is the object that flies and that the contact fuse runs on, so it needs the
+		// same destroy_time_MAX as the one we just armed it with. Without this it kept its own config
+		// value (2500) while the fuse was set to e.g. the 700 ms suicide_fail_destroy_time, so
+		// `time from throw` came out ~1800 ms -- past delay_time -- and an RGN/RGO thrown clear of a
+		// broken controller grab still detonated on its first bounce.
+		pGrenade->m_dwDestroyTimeMax = m_dwDestroyTimeMax;
 		pGrenade->set_destroy_time(m_dwDestroyTimeMax);
-//установить ID того кто кинул гранату
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ ID пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 		pGrenade->SetInitiator( H_Parent()->ID() );
 	}
 	inherited::Throw			();
@@ -204,7 +322,7 @@ void CGrenade::PutNextToSlot()
 	if (OnClient()) return;
 //	Msg ("* PutNextToSlot : %d", ID());	
 	VERIFY									(!getDestroy());
-	//выкинуть гранату из инвентаря
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	NET_Packet						P;
 	if (m_pInventory)
 	{
@@ -238,17 +356,42 @@ void CGrenade::PutNextToSlot()
 	}
 }
 
-void CGrenade::OnAnimationEnd(u32 state) 
+void CGrenade::OnAnimationEnd(u32 state)
 {
 	switch(state)
 	{
 	case eThrowEnd: SwitchState(eHidden);	break;
+	case eHiding:
+		{
+			// the holster half of a GS type switch has finished -- now do the inventory move, which
+			// puts the next grenade in the slot and makes it play its own draw
+			if (m_pending_next_id != u16(-1) && m_pInventory)
+			{
+				CGrenade* next = NULL;
+				for (TIItemContainer::iterator it = m_pInventory->m_ruck.begin();
+					 it != m_pInventory->m_ruck.end(); ++it)
+				{
+					CGrenade* g = smart_cast<CGrenade*>(*it);
+					if (g && g->ID() == m_pending_next_id)	{ next = g; break; }
+				}
+				m_pending_next_id = u16(-1);
+				inherited::OnAnimationEnd(state);		// setVisible(FALSE) + eHidden, as usual
+				if (next)
+				{
+					m_pInventory->Ruck				(this);
+					m_pInventory->SetActiveSlot		(NO_ACTIVE_SLOT);
+					m_pInventory->Slot				(next);
+				}
+				return;
+			}
+			inherited::OnAnimationEnd(state);
+		} break;
 	default : inherited::OnAnimationEnd(state);
 	}
 }
 
 
-void CGrenade::UpdateCL() 
+void CGrenade::UpdateCL()
 {
 	inherited::UpdateCL			();
 	CExplosive::UpdateCL		();
@@ -263,23 +406,28 @@ bool CGrenade::Action(s32 cmd, u32 flags)
 
 	switch(cmd) 
 	{
-	//переключение типа гранаты
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	case kWPN_NEXT:
 		{
-            if(flags&CMD_START) 
+            if(flags&CMD_START)
 			{
 				if(m_pInventory)
 				{
 					TIItemContainer::iterator it = m_pInventory->m_ruck.begin();
 					TIItemContainer::iterator it_e = m_pInventory->m_ruck.end();
-					for(;it!=it_e;++it) 
+					for(;it!=it_e;++it)
 					{
 						CGrenade *pGrenade = smart_cast<CGrenade*>(*it);
-						if(pGrenade && xr_strcmp(pGrenade->cNameSect(), cNameSect())) 
+						if(pGrenade && xr_strcmp(pGrenade->cNameSect(), cNameSect()))
 						{
-							m_pInventory->Ruck(this);
-							m_pInventory->SetActiveSlot(NO_ACTIVE_SLOT);
-							m_pInventory->Slot(pGrenade);
+							// GS: the switch is a HOLSTER followed by a DRAW -- the current grenade
+							// goes away with its own animation and the next type is then taken out,
+							// instead of swapping in the hand instantly (vanilla did the inventory
+							// move right here, so only the draw was ever seen). The swap itself
+							// happens in OnAnimationEnd(eHiding).
+							if (GetState() != eIdle)	return true;	// mid gesture -- ignore
+							m_pending_next_id = pGrenade->ID();
+							SwitchState(eHiding);
 							return true;
 						}
 					}

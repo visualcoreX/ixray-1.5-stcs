@@ -1,4 +1,4 @@
-// Actor_Weapon.cpp:	 для работы с оружием
+// Actor_Weapon.cpp:	 пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 //////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
@@ -22,7 +22,7 @@ static const float VEL_A_MAX	= 10.f;
 
 #define GetWeaponParam(pWeapon, func_name, def_value)	((pWeapon) ? (pWeapon->func_name) : def_value)
 
-//возвращает текуший разброс стрельбы (в радианах)с учетом движения
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 float CActor::GetWeaponAccuracy() const
 {
 	CWeapon* W	= smart_cast<CWeapon*>(inventory().ActiveItem());
@@ -210,6 +210,10 @@ void CActor::on_weapon_shot_start		(CWeapon *weapon)
 	CameraRecoil const& camera_recoil = ( IsZoomAimingMode() )? weapon->zoom_cam_recoil : weapon->cam_recoil;
 		
 	CCameraShotEffector* effector = smart_cast<CCameraShotEffector*>( Cameras().GetCamEffector(eCEShot) );
+	extern int g_recoil_dbg;
+	if ( g_recoil_dbg )
+		Msg("~recoil START zoom=%d block=%s effector=%s", IsZoomAimingMode() ? 1 : 0,
+			IsZoomAimingMode() ? "ZOOM" : "hip", effector ? "kept" : "NEW");
 	if ( !effector )
 	{
 		effector = (CCameraShotEffector*)Cameras().AddCamEffector( xr_new<CCameraShotEffector>( camera_recoil ) );
@@ -306,9 +310,9 @@ void	CActor::RemoveAmmoForWeapon	(CInventoryItem *pIItem)
 
 	CWeaponAmmo* pAmmo = smart_cast<CWeaponAmmo*>(inventory().GetAny(*(pWM->m_ammoTypes[0]) ));
 	if (!pAmmo) return;
-	//--- мы нашли патроны к текущему оружию	
+	//--- пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ	
 	/*
-	//--- проверяем не подходят ли они к чему-то еще
+	//--- пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅ
 	bool CanRemove = true;
 	TIItemContainer::const_iterator I = inventory().m_all.begin();//, B = I;
 	TIItemContainer::const_iterator E = inventory().m_all.end();
