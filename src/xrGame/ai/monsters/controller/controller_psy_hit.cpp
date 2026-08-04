@@ -417,12 +417,6 @@ void CControllerPsyHit::update_frame()
 		// grab time meant an RPG or a launcher never got dropped no matter how close the victim came.
 		const float cd = m_object->Position().distance_to(Actor()->Position());
 		Actor()->SetControllerDist(cd);
-		{
-			extern int g_ctrl_dbg;
-			static u32 s_last = 0;
-			if (g_ctrl_dbg && Device.dwTimeGlobal - s_last > 500)
-				{ s_last = Device.dwTimeGlobal; Msg("~ctrl DIST: %.1f", cd); }
-		}
 		if (!m_object->g_Alive())
 			Actor()->StopControllerSuicide();		// dead controller = broken grab
 	}

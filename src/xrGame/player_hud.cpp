@@ -1256,17 +1256,6 @@ void gwr_UpdateHudMove(u32 mreal, u32 mwish, u32 dt)
 		Fvector dp, dr;
 		dp.sub(cur_pos, tpos);
 		dr.sub(cur_rot, trot);
-		{
-			extern int g_ctrl_dbg;
-			static u32 s_last = 0;
-			if (g_ctrl_dbg && Device.dwTimeGlobal - s_last > 500)
-			{
-				s_last = Device.dwTimeGlobal;
-				Msg("~ctrl POSE: sect=%s cur=(%.2f %.2f %.2f) tgt=(%.2f %.2f %.2f) dr=%.3f dp=%.4f thr_r=%.3f",
-					sect, cur_rot.x, cur_rot.y, cur_rot.z, trot.x, trot.y, trot.z,
-					dr.magnitude(), dp.magnitude(), ar * 2.f);
-			}
-		}
 		if (dp.magnitude() < ap * 2.f && dr.magnitude() < ar * 2.f)
 			c_act->SuicideHudOffsetArrived();
 	}

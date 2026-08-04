@@ -240,16 +240,6 @@ void CWeaponRPG7::switch2_Fire()
 			}
 		}
 
-		{
-			extern int g_ctrl_dbg;
-			if (g_ctrl_dbg)	Msg("~ctrl RPG launch: hip=%d muzzle_ok=%d hud=%d zoom=%d suicide=%d "
-							   "hudD=(%.2f %.2f %.2f) useD=(%.2f %.2f %.2f)",
-							   (ParentIsActor() && !IsZoomed() && !IsRotatingToZoom() && muzzle_ok)?1:0,
-							   muzzle_ok?1:0, GetHUDmode()?1:0, IsZoomed()?1:0,
-							   (Actor() && Actor()->IsSuicideInProgress())?1:0,
-							   d1.x,d1.y,d1.z, d.x,d.y,d.z);
-		}
-
 		Fmatrix								launch_matrix;
 		launch_matrix.identity				();
 		launch_matrix.k.set					(d);

@@ -296,17 +296,12 @@ bool CWeaponMagazined::IsActorSprinting()
 	return !!st.bSprint;
 }
 
-// one-line "why did the suicide shot not go out" trace; silent unless g_ctrl_dbg is on and the round
-// being asked for is the scene's own
-#define SUIDBG(reason)	do { extern int g_ctrl_dbg; if (g_ctrl_dbg && m_bSuicideShot) \
-							Msg("~ctrl FireStart REFUSED: %s (state=%d)", reason, (int)GetState()); } while(0)
-
 void CWeaponMagazined::FireStart		()
 {
 	// GS OnShoot_CanShootNow: the victim's own trigger is dead for the whole controller scene; only
 	// the scene's own shot (which flags itself irreversible first) gets through. The check lives here
 	// as well as in CWeapon because this override never reaches the base one.
-	if (SuicideBlocksFire())	{ SUIDBG("blocked by SuicideBlocksFire"); return; }
+	if (SuicideBlocksFire())	return;
 
 	m_bTriggerHeld = true;	// trigger pressed (held until FireEnd); used to resume fire after a transition
 
@@ -314,11 +309,11 @@ void CWeaponMagazined::FireStart		()
 	// gwr_TryLightMisfire (survives the StopShooting/switch2_Idle that clears pending). No round, no queued
 	// shot -- the player just pulls again once it ends. Base (CHudItem) query only, so the aim/sprint
 	// fire-locks folded into the CWeaponMagazined override still hit their own defer blocks below.
-	if (CHudItem::IsShootLocked())	{ SUIDBG("shoot lock"); return; }
+	if (CHudItem::IsShootLocked())	return;
 
 	// let the jam (misfire) dry-fire gesture finish before another trigger pull; the empty
 	// dry-fire stays spammable (each click re-triggers it)
-	if ((m_bDryFirePending || m_bDryFirePlaying) && IsMisfire())	{ SUIDBG("dry-fire"); return; }
+	if ((m_bDryFirePending || m_bDryFirePlaying) && IsMisfire())	return;
 
 	// Aim in/out: block firing only for the short lock_time, not the whole transition animation
 	// (Gunslinger-style). After the lock a shot is allowed even mid-transition and cuts it.
@@ -328,7 +323,6 @@ void CWeaponMagazined::FireStart		()
 		// the moment the lock ends (autoshoot). This is a FRESH press inside the lock, NOT the sticky
 		// m_bTriggerHeld (which lingers true on pistols/shotguns/SVD and caused a self-shot on aim in/out).
 		m_bAimLockFirePressed = true;
-		SUIDBG("aim lock");
 		return;
 	}
 
@@ -340,7 +334,6 @@ void CWeaponMagazined::FireStart		()
 		|| (IsActorSprinting() && HasSprintExitAnim()))
 	{
 		m_bFirePendingSprint = true;
-		SUIDBG("sprint exit");
 		return;
 	}
 
@@ -351,14 +344,6 @@ void CWeaponMagazined::FireStart		()
 	// the new anim. Matches Gunslinger: once fire is processed the transition anim is replaced at once.
 	m_dwAimTransitionEndTm	= 0;
 	m_bIdleTransitionLock	= false;
-
-	{
-		extern int g_ctrl_dbg;
-		if (g_ctrl_dbg && m_bSuicideShot)
-			Msg("~ctrl FireStart: state=%d pending=%d misfire=%d valid=%d working=%d allowW=%d ammo=%d",
-				(int)GetState(), IsPending()?1:0, IsMisfire()?1:0, IsValid()?1:0,
-				IsWorking()?1:0, AllowFireWhileWorking()?1:0, iAmmoElapsed);
-	}
 
 	if(!IsMisfire())
 	{
@@ -379,12 +364,6 @@ void CWeaponMagazined::FireStart		()
 				{
 					R_ASSERT(H_Parent());
 					SwitchState(eFire);
-					{
-						extern int g_ctrl_dbg;
-						if (g_ctrl_dbg && m_bSuicideShot)
-							Msg("~ctrl FireStart -> eFire: state=%d next=%d working=%d",
-								(int)GetState(), (int)GetNextState(), IsWorking()?1:0);
-					}
 				}
 			}
 		}
@@ -667,11 +646,6 @@ void CWeaponMagazined::ReloadMagazine()
 
 void CWeaponMagazined::OnStateSwitch	(u32 S)
 {
-	{
-		extern int g_ctrl_dbg;
-		if (g_ctrl_dbg && Actor() && Actor()->IsSuicideInProgress())
-			Msg("~ctrl OnStateSwitch: S=%d (was %d)", (int)S, (int)GetState());
-	}
 	inherited::OnStateSwitch(S);
 	// an animated action (reload / med-gesture / firemode switch) interrupts the sprint idle -> forget
 	// that sprint was "entered" so, when the action ends and we return to sprinting, the enter
@@ -1656,14 +1630,6 @@ void CWeaponMagazined::FireBullet(const Fvector& pos, const Fvector& dir, float 
 
 void CWeaponMagazined::state_Fire(float dt)
 {
-	{
-		extern int g_ctrl_dbg;
-		if (g_ctrl_dbg && Actor() && Actor()->IsSuicideInProgress())
-			Msg("~ctrl state_Fire: ammo=%d mag=%d state=%d working=%d single=%d shotnum=%d "
-				"shotTime=%.3f queue=%d maxqueue=%d",
-				iAmmoElapsed, (int)m_magazine.size(), (int)GetState(), IsWorking()?1:0,
-				m_bFireSingleShot?1:0, m_iShotNum, fShotTimeCounter, m_iQueueSize, m_iMaxQueueSize);
-	}
 	if(iAmmoElapsed > 0)
 	{
 		VERIFY(fOneShotTime>0.f);
@@ -1760,11 +1726,6 @@ void CWeaponMagazined::state_Fire(float dt)
 				return;
 			}
 
-			{
-				extern int g_ctrl_dbg;
-				if (g_ctrl_dbg && Actor() && Actor()->IsSuicideInProgress())
-					Msg("~ctrl LOOP: firing round, shotnum=%d suicideflag=%d", m_iShotNum, m_bSuicideShot?1:0);
-			}
 			OnShot					();
 			// remember when this shot's anim ends so switch2_Idle won't clip it (GS: let anm_shoot*
 			// finish). Set HERE, not in OnShot -- CWeaponPistol/etc. override OnShot without calling
@@ -1816,12 +1777,6 @@ void CWeaponMagazined::state_Fire(float dt)
 			}
 		}
 	
-		{
-			extern int g_ctrl_dbg;
-			if (g_ctrl_dbg && Actor() && Actor()->IsSuicideInProgress())
-				Msg("~ctrl LOOP done: shotnum=%d ammo=%d shotTime=%.3f working=%d single=%d",
-					m_iShotNum, iAmmoElapsed, fShotTimeCounter, IsWorking()?1:0, m_bFireSingleShot?1:0);
-		}
 		if(m_iShotNum == m_iQueueSize)
 			m_bStopedAfterQueueFired = true;
 
@@ -2087,10 +2042,6 @@ void CWeaponMagazined::switch2_Idle	()
 #endif
 void CWeaponMagazined::switch2_Fire	()
 {
-	{
-		extern int g_ctrl_dbg;
-		if (g_ctrl_dbg && Actor() && Actor()->IsSuicideInProgress())	Msg("~ctrl switch2_Fire entered");
-	}
 	CInventoryOwner* io		= smart_cast<CInventoryOwner*>(H_Parent());
 	CInventoryItem* ii		= smart_cast<CInventoryItem*>(this);
 #ifdef DEBUG
@@ -3410,13 +3361,6 @@ void CWeaponMagazined::PlayAnimShoot()
 	VERIFY(GetState()==eFire);
 	string_path anim;
 	SelectShootAnim(anim);
-	{
-		extern int g_ctrl_dbg;
-		if (g_ctrl_dbg && Actor() && Actor()->IsSuicideInProgress())
-			Msg("~ctrl PlayAnimShoot: anim=%s exists=%d running=%s",
-				anim[0] ? anim : "<none>", anim[0] ? (isHUDAnimationExist(anim)?1:0) : -1,
-				CurrentMotion().size() ? CurrentMotion().c_str() : "-");
-	}
 	PlayHUDMotion(anim, FALSE, this, GetState());
 }
 

@@ -494,11 +494,6 @@ void CWeaponMagazinedWGrenade::SuicideShoot()
 
 void  CWeaponMagazinedWGrenade::LaunchGrenade()
 {
-	{
-		extern int g_ctrl_dbg;
-		if (g_ctrl_dbg)	Msg("~ctrl GL LaunchGrenade: rockets=%d suicide=%d hud=%d", getRocketCount(),
-						   (Actor() && Actor()->IsSuicideInProgress()) ? 1 : 0, GetHUDmode() ? 1 : 0);
-	}
 	if(!getRocketCount())	return;
 	R_ASSERT				(m_bGrenadeMode);
 	{
@@ -575,11 +570,6 @@ void  CWeaponMagazinedWGrenade::LaunchGrenade()
 			}
 		};
 		
-		{
-			extern int g_ctrl_dbg;
-			if (g_ctrl_dbg)	Msg("~ctrl GL launch: skip_cam=%d p=(%.2f %.2f %.2f) d=(%.2f %.2f %.2f)",
-							   suicide_muzzle?1:0, p1.x,p1.y,p1.z, d.x,d.y,d.z);
-		}
 		d.normalize						();
 		d.mul							(CRocketLauncher::m_fLaunchSpeed);
 

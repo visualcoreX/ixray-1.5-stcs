@@ -1710,10 +1710,6 @@ void CActor::UpdateControllerSuicide()
 		if (!kn)	{ m_eSuicideState = eSuicideNone; return; }
 		// GS PsiEffects: pulse an attack whenever no suicide animation is running -- the knife's
 		// selector (CActor::KnifeSuicideAnim) decides which one that attack becomes.
-		CDBG("~ctrl knife frame: scene=%d kn_state=%d pending=%d hud=%s motion=%s",
-			 (int)m_eSuicideState, (int)kn->GetState(), kn->IsPendingPublic()?1:0,
-			 kn->HudItemData() ? "yes" : "NO",
-			 kn->CurrentMotion().size() ? kn->CurrentMotion().c_str() : "-");
 		if (kn->GetState() == CHUDState::eIdle && !kn->IsPendingPublic())
 		{
 			CDBG("~ctrl pulse: state=%d", (int)m_eSuicideState);

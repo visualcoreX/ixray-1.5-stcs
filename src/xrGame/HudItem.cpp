@@ -604,15 +604,6 @@ u32 CHudItem::PlayHUDMotion(const shared_str& M, BOOL bMixIn, CHudItem*  W, u32 
 		return 0;
 	}
 
-	// every motion swap while a controller scene is running: this is what says WHO replaces the
-	// suicide gesture on screen
-	{
-		extern int g_ctrl_dbg;
-		CActor* dbg_a = smart_cast<CActor*>(Level().CurrentControlEntity());
-		if (g_ctrl_dbg && dbg_a && dbg_a->IsSuicideInProgress())
-			Msg("~ctrl MOTION: %s (state=%d) on %s", M.c_str(), (int)state, HudSection().c_str());
-	}
-
 	// GS name order (ModifierStd): base + firemode mark + weapon-state token, e.g.
 	// anm_idle -> anm_idle_auto -> anm_idle_auto_jammed, anm_fakeshoot -> anm_fakeshoot_auto_jammed.
 	// Resolve BOTH in one pass over a candidate list. Doing it in two existence-gated steps (mark,
