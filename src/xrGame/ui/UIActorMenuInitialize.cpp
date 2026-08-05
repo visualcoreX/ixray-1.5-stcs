@@ -19,6 +19,7 @@
 #include "object_broker.h"
 #include "UIWndCallback.h"
 #include "UIHelper.h"
+#include "UIDragDropReferenceList.h"
 #include "UIProgressBar.h"
 
 
@@ -113,6 +114,30 @@ void CUIActorMenu::Construct()
 	m_pTradeActorList			= UIHelper::CreateDragDropListEx(uiXml, "dragdrop_actor_trade", this);
 	m_pTradePartnerBagList		= UIHelper::CreateDragDropListEx(uiXml, "dragdrop_partner_bag", this);
 	m_pTradePartnerList			= UIHelper::CreateDragDropListEx(uiXml, "dragdrop_partner_trade", this);
+
+	// CoP quick-use slots. Optional: no `dragdrop_quick_slots` node in the xml = no slots at all,
+	// and the four keys simply find nothing.
+	m_pQuickSlot = NULL;
+	if (uiXml.NavigateToNode("dragdrop_quick_slots", 0))
+	{
+		m_pQuickSlot = xr_new<CUIDragDropReferenceList>();
+		m_pQuickSlot->SetAutoDelete(true);
+		AttachChild(m_pQuickSlot);
+		CUIXmlInit::InitDragDropListEx(uiXml, "dragdrop_quick_slots", 0, m_pQuickSlot);
+		// one offset per slot, each falling back to the shared label_dx/dy
+		const float ldx = uiXml.ReadAttribFlt("dragdrop_quick_slots", 0, "label_dx", 0.f);
+		const float ldy = uiXml.ReadAttribFlt("dragdrop_quick_slots", 0, "label_dy", 0.f);
+		Fvector2 ofs[4];
+		for (int q = 0; q < 4; ++q)
+		{
+			string32 kx, ky;
+			xr_sprintf(kx, "label%d_dx", q);
+			xr_sprintf(ky, "label%d_dy", q);
+			ofs[q].set(uiXml.ReadAttribFlt("dragdrop_quick_slots", 0, kx, ldx),
+					   uiXml.ReadAttribFlt("dragdrop_quick_slots", 0, ky, ldy));
+		}
+		m_pQuickSlot->Initialize(ofs);
+	}
 
 	// GSC's slot condition indicators (Call of Pripyat): a condition bar per equipment slot, drawn
 	// under the slot frame. It belongs to the MENU, not to the cell inside the slot -- the cell's own
@@ -244,11 +269,18 @@ void CUIActorMenu::Construct()
 	BindDragDropListEvents				(m_pTradeActorList);
 	BindDragDropListEvents				(m_pTradePartnerBagList);
 	BindDragDropListEvents				(m_pTradePartnerList);
+	// Without this the quick slots have no drop callback at all, so the base machinery treats a drag
+	// out of them as an ordinary item transfer -- which is what crashed on the drop area.
+	if (m_pQuickSlot)	BindDragDropListEvents((CUIDragDropListEx*)m_pQuickSlot);
 	BindDragDropListEvents				(m_pDeadBodyBagList);
 
 	m_allowed_drops[iTrashSlot].push_back(iActorBag);
 	m_allowed_drops[iTrashSlot].push_back(iActorSlot);
 	m_allowed_drops[iTrashSlot].push_back(iActorBelt);
+
+	// only out of the bag, and a quick slot may be rearranged into another quick slot
+	m_allowed_drops[iQuickSlot].push_back(iActorBag);
+	m_allowed_drops[iQuickSlot].push_back(iQuickSlot);
 
 	m_allowed_drops[iActorSlot].push_back(iActorBag);
 	m_allowed_drops[iActorSlot].push_back(iActorSlot);		// weapon slot <-> weapon slot (interchangeable slots: move/swap)

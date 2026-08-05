@@ -773,7 +773,11 @@ public:
 			// (psi_blockade_time on its eatable section) and this timer is the effect: telepathic
 			// damage is cut while it runs, and a controller cannot take hold. Saved as the
 			// REMAINING time (CActor::save), so it survives a save/load and a level change.
-			void				StartPsiBlockade		(u32 ms) { m_dwPsiBlockUntil = Device.dwTimeGlobal + ms; }
+			// Clamped: a remainder can never legitimately exceed the item's own duration, and saves
+			// have been seen carrying nonsense here (822 000 s -- a permanently psi-immune actor).
+			// Where the bad value came from I could not reproduce, so the ceiling is enforced at the
+			// one place that can set the timer at all. See psi_blockade_max_time.
+			void				StartPsiBlockade		(u32 ms);
 			bool				PsiBlockadeActive		() const { return Device.dwTimeGlobal < m_dwPsiBlockUntil; }
 			void				RollPsiBlock			(float dist);	// GS UpdatePsiBlockFailedState
 			bool				ControllerPsiBlocked	() const;	// blocked AND the roll did not fail

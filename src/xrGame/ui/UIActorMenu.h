@@ -7,6 +7,7 @@
 
 class CUICharacterInfo;
 class CUIDragDropListEx;
+class CUIDragDropReferenceList;
 class CUICellItem;
 class CUIDragItem;
 class ui_actor_state_wnd;
@@ -37,6 +38,7 @@ enum EDDListType{
 		iPartnerTrade,
 		iDeadBodyBag,
 		iTrashSlot,
+		iQuickSlot,			// CoP quick-use slots: holds a section reference, not the item
 		iListTypeMax
 };
 
@@ -96,6 +98,7 @@ protected:
 	CUIDragDropListEx*			m_pTradePartnerList;
 	CUIDragDropListEx*			m_pDeadBodyBagList;
 	CUIDragDropListEx*			m_pTrashList;
+	CUIDragDropReferenceList*	m_pQuickSlot;	// CoP quick-use slots (four assignable sections)
 	enum						{e_af_count = 5};
 	CUIStatic*					m_belt_list_over[e_af_count];
 
@@ -203,6 +206,10 @@ protected:
 	bool		xr_stdcall		OnItemFocusedUpdate			(CUICellItem* itm);
 	void		xr_stdcall		OnDragItemOnTrash			(CUIDragItem* item, bool b_receive);
 	bool						OnItemDropped				(PIItem itm, CUIDragDropListEx* new_owner, CUIDragDropListEx* old_owner);
+	bool						ToQuickSlot					(CUICellItem* itm);
+public:
+	void						ReloadQuickSlots			();
+private:
 
 	void						ResetMode					();
 	void						InitInventoryMode			();

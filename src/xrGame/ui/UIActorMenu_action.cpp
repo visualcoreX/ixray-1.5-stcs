@@ -7,6 +7,7 @@
 
 #include "stdafx.h"
 #include "UIActorMenu.h"
+#include "UIDragDropReferenceList.h"
 #include "../actor.h"
 #include "../Inventory.h"
 #include "../HUDManager.h"
@@ -74,6 +75,22 @@ bool CUIActorMenu::OnItemDrop(CUICellItem* itm)
 	InfoCurItem( NULL );
 	CUIDragDropListEx*	old_owner		= itm->OwnerList();
 	CUIDragDropListEx*	new_owner		= CUIDragDropListEx::m_drag_item->BackList();
+
+	// Dragging OUT of a quick slot never moves the real item -- the slot only holds a section name.
+	// Onto another slot: swap the two. Into the bag or the drop area: unbind. Anywhere else: ignore.
+	// This has to come BEFORE the same-owner early return below: slot-to-slot has one owner on both
+	// ends, so that return handed it to the base machinery, which REPLACES the target instead.
+	if (m_pQuickSlot && old_owner == (CUIDragDropListEx*)m_pQuickSlot)
+	{
+		if (new_owner == (CUIDragDropListEx*)m_pQuickSlot)
+			m_pQuickSlot->SwapCellWithCursor(itm);
+		else if (new_owner == m_pInventoryBagList || new_owner == m_pTrashList)
+			m_pQuickSlot->UnbindCell(itm);
+		// ReloadReferences kills the drag item itself before rebuilding, so this is safe here
+		ReloadQuickSlots();
+		return true;
+	}
+
 	if ( old_owner==new_owner || !old_owner || !new_owner )
 	{
 		return false;
@@ -96,6 +113,13 @@ bool CUIActorMenu::OnItemDrop(CUICellItem* itm)
 
 			SendEvent_Item_Drop		(CurrentIItem(), m_pActorInvOwner->object_id());
 			SetCurrentItem			(NULL);
+		}break;
+		case iQuickSlot:
+		{
+			// Always consume the drop. Returning false means "not handled", and the drag machinery
+			// then falls back to placing the item itself -- which is how an artefact ended up in a
+			// quick slot despite ToQuickSlot refusing it. Refused items simply go back where they were.
+			ToQuickSlot(itm);
 		}break;
 		case iActorSlot:
 		{

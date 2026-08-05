@@ -97,6 +97,10 @@ _action  actions[]		= {
 																
 	{ "use_bandage",		kUSE_BANDAGE			,_sp},		
 	{ "use_medkit",			kUSE_MEDKIT				,_sp},		
+	{ "quick_use_1",		kQUICK_USE_1			,_sp},
+	{ "quick_use_2",		kQUICK_USE_2			,_sp},
+	{ "quick_use_3",		kQUICK_USE_3			,_sp},
+	{ "quick_use_4",		kQUICK_USE_4			,_sp},
 	{ "quick_save",			kQUICK_SAVE				,_sp},		
 	{ "quick_load",			kQUICK_LOAD				,_sp},		
 	{ "alife_command",		kALIFE_CMD				,_sp},

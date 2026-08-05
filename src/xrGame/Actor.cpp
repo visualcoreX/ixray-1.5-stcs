@@ -1,4 +1,5 @@
 #include "pch_script.h"
+#include "xr_level_controller.h"	// quick_use_key_name: the binding behind each quick slot
 #include "Actor_Flags.h"
 #include "hudmanager.h"
 #ifdef DEBUG
@@ -95,6 +96,28 @@ static Fvector	vFootExt;
 Flags32			psActorFlags={/*AF_DYNAMIC_MUSIC|*/AF_GODMODE_RT};
 
 
+
+string32 ACTOR_DEFS::g_quick_use_slots[4] = { "", "", "", "" };
+
+void CActor::StartPsiBlockade(u32 ms)
+{
+	const u32 cap = u32(1000.f * READ_IF_EXISTS(pSettings, r_float, "gunslinger_base",
+												"psi_blockade_max_time", 600.f));
+	if (ms > cap)	ms = cap;
+	m_dwPsiBlockUntil = Device.dwTimeGlobal + ms;
+}
+
+LPCSTR ACTOR_DEFS::quick_use_key_name(int idx)
+{
+	static string64	buff;
+	string32		action;
+	xr_sprintf		(action, "quick_use_%d", idx + 1);
+	buff[0] = 0;
+	GetActionAllBinding(action, buff, sizeof(buff));
+	// GetActionAllBinding may hand back a comma-separated pair (primary,secondary): keep the first
+	if (char* comma = strchr(buff, ','))	*comma = 0;
+	return buff;
+}
 
 CActor::CActor() : CEntityAlive()
 {

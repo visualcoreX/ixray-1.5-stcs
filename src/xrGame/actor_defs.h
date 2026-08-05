@@ -9,6 +9,13 @@
 
 namespace ACTOR_DEFS 
 {
+// CoP quick-use slots: the SECTION assigned to each of the four slots, empty = unassigned.
+// Global rather than per-actor, exactly as in CoP; saved with the actor.
+extern string32	g_quick_use_slots[4];
+// Short name of the key bound to quick slot `idx` ("F1"), for the labels on the slots and on
+// the hud. Empty when the action is unbound.
+LPCSTR			quick_use_key_name(int idx);
+
 
 enum ESoundCcount {
 //	SND_HIT_COUNT=8,

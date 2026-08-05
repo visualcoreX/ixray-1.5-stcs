@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "UIActorMenu.h"
+#include "UIDragDropReferenceList.h"
 #include "../inventory.h"
+#include "../actor.h"	// IsGesturePhantom: keep the item-use phantoms out of the quick slots
 #include "../inventoryOwner.h"
 #include "UIInventoryUtilities.h"
 #include "UIItemInfo.h"
@@ -42,11 +44,15 @@ void CUIActorMenu::InitInventoryMode()
 	m_pInventoryPistolList->Show		(true);
 	m_pInventoryAutomaticList->Show		(true);
 	m_pTrashList->Show					(true);
+	if (m_pQuickSlot)	m_pQuickSlot->Show(true);
 	
 	m_RightDelimiter->Show				(false);
 	m_clock_value->Show					(true);
 
 	InitInventoryContents				(m_pInventoryBagList);
+	// The slots hold SECTION names, not cell items: after a load (or any inventory refresh) their
+	// cells have to be rebuilt from g_quick_use_slots, otherwise they just look empty.
+	ReloadQuickSlots					();
 
 	VERIFY( HUD().GetUI() && HUD().GetUI()->UIMainIngameWnd );
 	HUD().GetUI()->UIMainIngameWnd->ShowZoneMap(true);
@@ -55,6 +61,7 @@ void CUIActorMenu::InitInventoryMode()
 void CUIActorMenu::DeInitInventoryMode()
 {
 	m_pTrashList->Show					(false);
+	if (m_pQuickSlot)	m_pQuickSlot->Show(false);
 	m_clock_value->Show					(false);
 }
 
@@ -325,6 +332,8 @@ void CUIActorMenu::OnInventoryAction(PIItem pItem, u16 action_type)
 				}
 			}break;
 	}
+	// picking something up or losing it can fill or empty a quick slot's reference
+	ReloadQuickSlots();
 	UpdateItemsPlace();
 }
 void CUIActorMenu::AttachAddon(PIItem item_to_upgrade)
@@ -661,6 +670,45 @@ bool CUIActorMenu::TryUseItem( CUICellItem* cell_itm )
 	PlaySnd					( eItemUse );
 	SetCurrentItem			( NULL );
 	return true;
+}
+
+// CoP: park an EATABLE item's section in the quick slot under the cursor. The slot keeps only the
+// section name, so the binding survives using the item up and picking another one later.
+bool CUIActorMenu::ToQuickSlot(CUICellItem* itm)
+{
+	if (!m_pQuickSlot)					return false;
+
+	PIItem iitem = (PIItem)itm->m_pData;
+
+	// Usable things only -- food and medicine. CEatableItem is exactly that family (rations, drinks,
+	// medkits, bandages, antirad, the drugs); weapons, ammo, artefacts and outfits are not eatable and
+	// fall out here. The hud phantoms our item-use animations put in the inventory for a moment ARE
+	// eatable, so they are excluded by their fake visual -- parking one would bind a slot to an object
+	// that ceases to exist the moment the animation ends.
+	if (!smart_cast<CEatableItem*>(iitem))		return false;
+	if (CActor::IsGesturePhantom(iitem))		return false;
+
+	// a 1x1 icon only: a wider one would not fit the slot grid and recurses in the placer
+	const Ivector2 grid = itm->GetGridSize();
+	if (grid.x > 1 || grid.y > 1)		return false;
+
+	const Ivector2 cell = m_pQuickSlot->PickCell(GetUICursor()->GetCursorPosition());
+	if (cell.x < 0 || cell.y < 0)		return false;
+
+	const int idx = m_pQuickSlot->SlotsCapacity().x * cell.y + cell.x;
+	m_pQuickSlot->SetItem(create_cell_item(iitem), GetUICursor()->GetCursorPosition());
+	xr_strcpy(ACTOR_DEFS::g_quick_use_slots[idx], iitem->object().cNameSect().c_str());
+	return true;
+}
+
+void CUIActorMenu::ReloadQuickSlots()
+{
+	// NOTE for callers OUTSIDE the menu (the quick-use key): only call this while the menu is on
+	// screen. Rebuilding cell items in a closed menu touches widgets whose owner is already torn
+	// down. There is no IsShown() test here on purpose -- InitInventoryMode runs BEFORE the window
+	// is shown, and guarding here left the slots empty after every load.
+	if (m_pQuickSlot && m_pActorInvOwner)
+		m_pQuickSlot->ReloadReferences(m_pActorInvOwner);
 }
 
 bool CUIActorMenu::OnItemDropped(PIItem itm, CUIDragDropListEx* new_owner, CUIDragDropListEx* old_owner)

@@ -151,6 +151,7 @@ public:
 class CUICellContainer :public CUIWindow
 {
 	friend class CUIDragDropListEx;
+	friend class CUIDragDropReferenceList;		// the quick slots drive the grid directly
 
 private:
 	typedef CUIWindow inherited;

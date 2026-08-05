@@ -1333,6 +1333,7 @@ ACTOR_DEFS::SMemoryPos*				CActor::FindMemoryPos (u32 Time)
 
 // tag for the appended psi-blockade field, see CActor::load
 static const u32 kPsiBlockadeMark = 0x50534249;	// 'PSBI'
+static const u32 kQuickSlotsMark  = 0x51534c54;	// 'QSLT' -- the four quick-use slot sections
 
 void CActor::save(NET_Packet &output_packet)
 {
@@ -1345,7 +1346,18 @@ void CActor::save(NET_Packet &output_packet)
 	// cannot be detected by "is there anything left"; it is tagged instead, and a save written
 	// before this field simply fails the tag and gives the binder its bytes back untouched.
 	output_packet.w_u32(kPsiBlockadeMark);
-	output_packet.w_u32(PsiBlockadeActive() ? (m_dwPsiBlockUntil - Device.dwTimeGlobal) : 0);
+	// clamped the same way as on the way in, so a bad timer cannot outlive the session that made it
+	{
+		u32 left = PsiBlockadeActive() ? (m_dwPsiBlockUntil - Device.dwTimeGlobal) : 0;
+		const u32 cap = u32(1000.f * READ_IF_EXISTS(pSettings, r_float, "gunslinger_base",
+													"psi_blockade_max_time", 600.f));
+		if (left > cap)	left = cap;
+		output_packet.w_u32(left);
+	}
+
+	// CoP quick-use slots, tagged for the same reason as the field above.
+	output_packet.w_u32(kQuickSlotsMark);
+	for (int i = 0; i < 4; ++i)	output_packet.w_stringZ(ACTOR_DEFS::g_quick_use_slots[i]);
 }
 
 void CActor::load(IReader &input_packet)
@@ -1361,6 +1373,19 @@ void CActor::load(IReader &input_packet)
 		{
 			const u32 left = input_packet.r_u32();
 			if (left)	StartPsiBlockade(left);
+		}
+		else
+			input_packet.seek(mark_pos);
+	}
+
+	for (int i = 0; i < 4; ++i)	ACTOR_DEFS::g_quick_use_slots[i][0] = 0;
+	if (input_packet.elapsed() >= 4)
+	{
+		const int mark_pos = input_packet.tell();
+		if (input_packet.r_u32() == kQuickSlotsMark)
+		{
+			for (int i = 0; i < 4; ++i)
+				input_packet.r_stringZ(ACTOR_DEFS::g_quick_use_slots[i], sizeof(ACTOR_DEFS::g_quick_use_slots[i]));
 		}
 		else
 			input_packet.seek(mark_pos);

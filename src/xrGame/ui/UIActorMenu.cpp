@@ -314,6 +314,7 @@ EDDListType CUIActorMenu::GetListType(CUIDragDropListEx* l)
 	if(l==m_pTradePartnerList)			return iPartnerTrade;
 	if(l==m_pDeadBodyBagList)			return iDeadBodyBag;
 	if(l==m_pTrashList)					return iTrashSlot;
+	if(l==(CUIDragDropListEx*)m_pQuickSlot)	return iQuickSlot;
 
 	R_ASSERT(0);
 	

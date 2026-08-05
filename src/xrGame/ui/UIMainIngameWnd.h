@@ -19,6 +19,7 @@ class	CActor;
 class	CWeapon;
 class	CMissile;
 class	CInventoryItem;
+class CUIXml;
 class CUIHudStatesWnd;
 
 class CUIMainIngameWnd: public CUIWindow  
@@ -141,6 +142,14 @@ protected:
 
 	// ����������� ��������� ��� ��������� ������� �� ������
 	void				RenderQuickInfos();
+	// CoP quick-use slots on the hud: the icon of whatever section each slot holds, how many are
+	// left, and the key that fires it. Built only if the xml declares quick_slot0..3.
+	xr_vector<CUIStatic*>	m_quick_icons;
+	xr_vector<CUIStatic*>	m_quick_counts;
+	xr_vector<CUIStatic*>	m_quick_keys;
+	void				InitQuickSlots	(CUIXml& uiXml);
+	void				UpdateQuickSlots();
+
 
 public:
 //	CUICarPanel&		CarPanel							(){return UICarPanel;};

@@ -48,6 +48,7 @@
 #include "clsid_game.h"
 #include "ShootingObject.h"
 #include "HUDManager.h"
+#include "ui/UIActorMenu.h"	// quick-use slots redraw after a key use
 #include "UIGameCustom.h"
 #include "UI.h"
 #include "game_cl_single.h"			// g_SingleGameDifficulty (GS suicide visibility rule)
@@ -300,12 +301,26 @@ void CActor::IR_OnKeyboardPress(int cmd)
 			OnPrevWeaponSlot();
 		}break;
 
+	case kQUICK_USE_1:
+	case kQUICK_USE_2:
+	case kQUICK_USE_3:
+	case kQUICK_USE_4:
 	case kUSE_BANDAGE:
 	case kUSE_MEDKIT:
 		{
 			if(IsGameTypeSingle())
 			{
-				PIItem itm = inventory().item((cmd==kUSE_BANDAGE)?  CLSID_IITEM_BANDAGE:CLSID_IITEM_MEDKIT );
+				// CoP quick-use slots: the key names a SECTION the player parked in that slot, and any
+				// item of it in the inventory is used. The two legacy keys keep their "first medkit /
+				// first bandage by class" behaviour so an existing binding still works.
+				PIItem itm = NULL;
+				if (cmd >= kQUICK_USE_1 && cmd <= kQUICK_USE_4)
+				{
+					LPCSTR sect = ACTOR_DEFS::g_quick_use_slots[cmd - kQUICK_USE_1];
+					if (sect && sect[0])	itm = inventory().GetAny(sect);
+				}
+				else
+					itm = inventory().item((cmd==kUSE_BANDAGE)?  CLSID_IITEM_BANDAGE:CLSID_IITEM_MEDKIT );
 				// don't quick-use (and don't print "used: ...") while a weapon/eat animation is playing --
 				// the item wouldn't actually be applied (the gwr script hands it back). And never while
 				// dead or dying: the use spawns a hud phantom whose binder then keeps working on a
@@ -319,6 +334,10 @@ void CActor::IR_OnKeyboardPress(int cmd)
 					string1024					str;
 					strconcat					(sizeof(str),str,*CStringTable().translate("st_item_used"),": ", itm->NameItem());
 					_s->wnd()->SetText			(str);
+					// the slot may have just run dry -- let the inventory redraw its reference, but only
+					// if it is actually open (see CUIActorMenu::ReloadQuickSlots)
+					if (HUD().GetUI() && HUD().GetUI()->UIGame() && HUD().GetUI()->UIGame()->ActorMenu().IsShown())
+						HUD().GetUI()->UIGame()->ActorMenu().ReloadQuickSlots();
 				}
 			}
 		}break;
@@ -786,6 +805,17 @@ static bool gwr_actor_hud_busy(CActor* actor)
 	// not the "active item" -- otherwise a spammed toggle would fire with no animation
 	CCustomDetector* det = gwr_active_detector();
 	if (det && (det->GetState() != CHUDState::eIdle || det->IsPending()))	return true;
+
+	// An item-use / PDA gesture that has already dropped the block but whose phantom is still in the
+	// inventory: the Lua binder releases the object a frame or two before it actually goes away, and
+	// starting a second use in that window put two phantoms in slot 10 and clobbered the binder's
+	// (module-wide) saved slot bookkeeping. Crash with no log, reproducible by using a quick slot
+	// right after closing the PDA.
+	{
+		const TIItemContainer& all = actor->inventory().m_all;
+		for (TIItemContainer::const_iterator it = all.begin(); it != all.end(); ++it)
+			if (CActor::IsGesturePhantom(*it))	return true;
+	}
 	return false;
 }
 

@@ -34,6 +34,8 @@
 
 
 #include "UIXmlInit.h"
+#include "../Inventory.h"
+#include "../actor_defs.h"
 #include "UIPdaMsgListItem.h"
 #include "../alife_registry_wrappers.h"
 #include "../actorcondition.h"
@@ -110,6 +112,7 @@ void CUIMainIngameWnd::Init()
 	
 	CUIXmlInit					xml_init;
 	xml_init.InitWindow			(uiXml,"main",0,this);
+	InitQuickSlots				(uiXml);
 
 	Enable(false);
 
@@ -265,6 +268,8 @@ void CUIMainIngameWnd::Draw()
 	if ( !m_pActor || !m_pActor->g_Alive() ) return;
 
 	UIMotionIcon.SetNoise((s16)(0xffff&iFloor(m_pActor->m_snd_noise*100.0f)));
+
+	UpdateQuickSlots();
 
 	CUIWindow::Draw();
 
@@ -490,6 +495,101 @@ bool CUIMainIngameWnd::OnKeyboardPress(int dik)
 	return false;
 }
 
+
+// CoP quick-use slots on the hud. Every widget is optional: the loop stops at the first
+// quick_slot<N> the xml does not declare, so leaving them out of maingame.xml disables the whole
+// display without touching code.
+void CUIMainIngameWnd::InitQuickSlots(CUIXml& uiXml)
+{
+	CUIXmlInit	xml_init;
+	for (int i = 0; i < 4; ++i)
+	{
+		string64 path;
+		xr_sprintf(path, "quick_slot%d", i);
+		if (!uiXml.NavigateToNode(path, 0))	break;
+
+		CUIStatic* icon = xr_new<CUIStatic>();
+		icon->SetAutoDelete	(true);
+		AttachChild			(icon);
+		xml_init.InitStatic	(uiXml, path, 0, icon);
+		m_quick_icons.push_back(icon);
+
+		// "xN" counter, a child of the icon so it moves with it
+		string64 sub;
+		xr_sprintf(sub, "quick_slot%d:counter", i);
+		CUIStatic* cnt = NULL;
+		if (uiXml.NavigateToNode(sub, 0))
+		{
+			cnt = xr_new<CUIStatic>();
+			cnt->SetAutoDelete	(true);
+			icon->AttachChild	(cnt);
+			xml_init.InitStatic	(uiXml, sub, 0, cnt);
+		}
+		m_quick_counts.push_back(cnt);
+
+		xr_sprintf(sub, "quick_slot%d_text", i);
+		CUIStatic* key = NULL;
+		if (uiXml.NavigateToNode(sub, 0))
+		{
+			key = xr_new<CUIStatic>();
+			key->SetAutoDelete	(true);
+			AttachChild			(key);
+			xml_init.InitStatic	(uiXml, sub, 0, key);
+			key->SetText		(ACTOR_DEFS::quick_use_key_name(i));
+		}
+		m_quick_keys.push_back(key);
+	}
+}
+
+void CUIMainIngameWnd::UpdateQuickSlots()
+{
+	if (m_quick_icons.empty())	return;
+
+	CActor* actor = smart_cast<CActor*>(Level().CurrentViewEntity());
+	if (!actor)					return;
+
+	const float gw = INV_GRID_WIDTH(false);
+	const float gh = INV_GRID_HEIGHT(false);
+
+	for (u32 i = 0; i < m_quick_icons.size(); ++i)
+	{
+		CUIStatic*	icon	= m_quick_icons[i];
+		CUIStatic*	cnt		= m_quick_counts[i];
+		LPCSTR		sect	= ACTOR_DEFS::g_quick_use_slots[i];
+
+		if (!sect || !sect[0] || !pSettings->section_exist(sect))
+		{
+			icon->SetTextureColor(color_rgba(255, 255, 255, 0));
+			if (cnt)	cnt->Show(false);
+			continue;
+		}
+
+		icon->SetShader(InventoryUtilities::GetEquipmentIconsShader());
+		Frect r;
+		r.x1 = pSettings->r_float(sect, "inv_grid_x")		* gw;
+		r.y1 = pSettings->r_float(sect, "inv_grid_y")		* gh;
+		r.x2 = pSettings->r_float(sect, "inv_grid_width")	* gw;
+		r.y2 = pSettings->r_float(sect, "inv_grid_height")	* gh;
+		r.rb.add(r.lt);
+		icon->SetOriginalRect	(r);
+		icon->TextureOn			();
+		icon->SetStretchTexture	(true);
+
+		// nothing of that section left: keep the icon as a dim reminder and drop the counter
+		const u32 count = actor->inventory().dwfGetSameItemCount(sect, true);
+		icon->SetTextureColor(color_rgba(255, 255, 255, count ? 255 : 100));
+		if (cnt)
+		{
+			cnt->Show(!!count);
+			if (count)
+			{
+				string32 str;
+				xr_sprintf(str, "x%d", count);
+				cnt->SetText(str);
+			}
+		}
+	}
+}
 
 void CUIMainIngameWnd::RenderQuickInfos()
 {
