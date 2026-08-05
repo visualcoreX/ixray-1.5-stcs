@@ -34,6 +34,12 @@ BOOL	b_toggle_weapon_aim		= FALSE;
 // 0 = force show crosshair while aiming, 1 = force hide. Runtime-only, NOT saved to user.ltx.
 int		g_dbg_zoom_hide_crosshair	= -1;
 
+// GS `npc_lasers` console flag (gunsl_config.pas:1173). 1 = a weapon in an NPC's hands keeps its laser
+// BEAM lit (the dot is actor-only anyway), 0 = the laser is switched off the moment somebody else picks
+// the weapon up. GS default: on in rspec_default/high/extreme, off in rspec_low/minimum -- so ON here.
+// The mounted FLASHLIGHT has no such option in GS: it is always killed for NPCs (see CWeapon::UpdateCL).
+int		g_npc_lasers				= 1;
+
 CWeapon::CWeapon()
 {
 	SetState				(eHidden);
@@ -41,6 +47,7 @@ CWeapon::CWeapon()
 	m_sub_state				= eSubstateReloadBegin;
 	m_bTriStateReload		= false;
 	m_bZoomKeyHeld			= false;
+	m_bZoomToggleWanted		= false;
 	m_scope_illum_value		= 0.f;
 	m_scope_illum_jitter	= 0.f;
 	m_scope_illum_step		= 0;
@@ -425,6 +432,9 @@ void CWeapon::Load		(LPCSTR section)
 	m_first_bullet_controller.load	(section);
 
 	fireDispersionConditionFactor = pSettings->r_float(section,"fire_dispersion_condition_factor");
+	// GS detector_disp_factor: how much wider the cone gets while a detector is out in the other hand.
+	// Absent key = 1 = untouched, so only the sections that opt in are affected (GS ships it on pistols).
+	m_fDetectorDispFactor		= READ_IF_EXISTS(pSettings,r_float,section,"detector_disp_factor",1.f);
 	misfireProbability			  = pSettings->r_float(section,"misfire_probability");
 	misfireConditionK			  = READ_IF_EXISTS(pSettings, r_float, section, "misfire_condition_k",	1.0f);
 	// Gunslinger condition-range misfire model (opt-in via misfire_start_condition)
@@ -547,7 +557,35 @@ void CWeapon::Load		(LPCSTR section)
 	m_zoom_params.m_ZoomDof		= READ_IF_EXISTS(pSettings, r_fvector3, section, "zoom_dof", Fvector().set(-1,-1,-1));
 	m_zoom_params.m_bZoomDofEnabled	= !def_dof.similar(m_zoom_params.m_ZoomDof);
 
-	m_zoom_params.m_ReloadDof	= READ_IF_EXISTS(pSettings, r_fvector4, section, "reload_dof", Fvector4().set(-1,-1,-1,-1));
+	// GS ReadZoomDOFVector (ActorDOF.pas:320) keeps the aim DOF in the HUD section as three separate
+	// keys over the [gunslinger_base] defaults, not as one vector in the weapon section. Every weapon
+	// ported from GS already carries them -- they were simply never read here. They win over
+	// `zoom_dof` where present, and their presence alone is enough to turn the aim DOF on.
+	const CGamePersistent::SDofDefaults& DD = CGamePersistent::DofDefaults();
+	if (pSettings->line_exist(hud_sect,"zoom_dof_near")  ||
+		pSettings->line_exist(hud_sect,"zoom_dof_focus") ||
+		pSettings->line_exist(hud_sect,"zoom_dof_far"))
+	{
+		if (!m_zoom_params.m_bZoomDofEnabled)	m_zoom_params.m_ZoomDof = DD.zoom;
+		m_zoom_params.m_ZoomDof.x = READ_IF_EXISTS(pSettings,r_float,hud_sect,"zoom_dof_near", m_zoom_params.m_ZoomDof.x);
+		m_zoom_params.m_ZoomDof.y = READ_IF_EXISTS(pSettings,r_float,hud_sect,"zoom_dof_focus",m_zoom_params.m_ZoomDof.y);
+		m_zoom_params.m_ZoomDof.z = READ_IF_EXISTS(pSettings,r_float,hud_sect,"zoom_dof_far",  m_zoom_params.m_ZoomDof.z);
+		m_zoom_params.m_bZoomDofEnabled = true;
+	}
+	// GS `disable_zoom_dof` (RefreshZoomDOF) -- an explicit opt-out for a weapon that must not blur.
+	if (READ_IF_EXISTS(pSettings, r_bool, section, "disable_zoom_dof", FALSE))
+		m_zoom_params.m_bZoomDofEnabled = false;
+	// ...and the two speeds that make aiming in snappy and coming out slow (3 / 1 by default).
+	m_zoom_params.m_fZoomInDofSpeed  = READ_IF_EXISTS(pSettings,r_float,hud_sect,"zoom_in_dof_speed", DD.speed_in);
+	m_zoom_params.m_fZoomOutDofSpeed = READ_IF_EXISTS(pSettings,r_float,hud_sect,"zoom_out_dof_speed",DD.speed_out);
+
+	// GS ReadLensDOFVector: the DOF used when aiming through a 3D PiP scope. GS's shipped values put
+	// the focus at ~1m with the far plane at 2m, so the world around the scope body blurs while the
+	// magnified image inside the lens (drawn at HUD depth) stays sharp.
+	m_zoom_params.m_LensDof		= DD.zoom;
+	m_zoom_params.m_LensDof.x	= READ_IF_EXISTS(pSettings,r_float,hud_sect,"lens_dof_near", m_zoom_params.m_LensDof.x);
+	m_zoom_params.m_LensDof.y	= READ_IF_EXISTS(pSettings,r_float,hud_sect,"lens_dof_focus",m_zoom_params.m_LensDof.y);
+	m_zoom_params.m_LensDof.z	= READ_IF_EXISTS(pSettings,r_float,hud_sect,"lens_dof_far",  m_zoom_params.m_LensDof.z);
 
 
 	m_bHasTracers			= READ_IF_EXISTS(pSettings, r_bool, section, "tracers", true);
@@ -1195,6 +1233,9 @@ void CWeapon::UpdateFlashlight()
 		// scene ahead -- never the HUD hands (hud_mode would light only the hands and nothing else). The main
 		// character headlamp (CTorch) is the one that lights the hands.
 		m_pFlashSpot->set_hud_mode(false);
+		// ...but keep the ACTOR's own body out of its shadow map: the light sits on his weapon, so the
+		// silhouette it would cast of him comes from inside him. Only matters with r__actor_shadow on.
+		m_pFlashSpot->set_actor_shadow(false);
 		m_pFlashOmni = ::Render->light_create();
 		m_pFlashOmni->set_type(IRender_Light::POINT);
 		m_pFlashOmni->set_shadow(false);
@@ -1641,6 +1682,37 @@ void CWeapon::UpdateCL		()
 	// Guarded by the state signature, so it's a no-op on the frames nothing changed.
 	if (IKinematics* wk = smart_cast<IKinematics*>(Visual()))
 		gwr_UpdateWorldBones(wk, false);
+	// SOMEBODY ELSE picked this weapon up (an NPC): GS kills the mounted light and the laser on it.
+	//  - torch (WeaponAdditionalBuffer.pas:1457): `if (GetOwner<>nil) and (GetOwner<>GetActor()) then
+	//    SwitchTorch(false)` -- unconditional, and unlike the "in the actor's inventory but not in hands"
+	//    case (:1490, which re-sets enabled=true so the light returns when you draw it) the ENABLED FLAG
+	//    is really cleared: take the gun back off a corpse and the flashlight is off until you press the key.
+	//  - laser (WeaponUpdate.pas:83): same owner test, but gated on the `npc_lasers` console flag (GS ships
+	//    it ON in rspec_default/high/extreme, off in low/minimum). With it on the BEAM stays visible on the
+	//    NPC's weapon; the projected DOT is actor-active-weapon-only in both engines anyway.
+	// A DROPPED weapon (H_Parent()==nullptr) is deliberately not covered -- it keeps shining on the ground.
+	{
+		// GS tests GetOwner(wpn) against GetActor(), NOT against the current VIEW entity -- and so do we:
+		// the flags cleared below are persistent (saved), so a frame where Level().CurrentEntity() happens
+		// to be something else must not wipe the player's own laser/flashlight state.
+		CObject* wowner = H_Parent();
+		CActor*  wactor = Actor();
+		if (wowner && wactor && wowner != (CObject*)wactor)
+		{
+			if (m_bFlashInstalled && (m_bFlashEnabled || m_dwFlashToggleAt))
+			{
+				m_bFlashEnabled		= false;
+				m_dwFlashToggleAt	= 0;
+			}
+			extern int g_npc_lasers;
+			if (!g_npc_lasers && m_bLaserInstalled && (m_bLaserEnabled || m_dwLaserToggleAt))
+			{
+				m_bLaserEnabled		= false;
+				m_dwLaserToggleAt	= 0;
+				StopLaserDot		();
+			}
+		}
+	}
 	// World-model flashlight. For the ACTOR's own weapon this is driven from CActor::UpdateCL instead (there
 	// it runs after g_player_hud->update(), so the hud bone transform is fresh) -- so only handle the weapons
 	// the actor isn't holding: dropped ones and the ones in NPC hands, which otherwise never got updated at
@@ -1799,10 +1871,19 @@ bool CWeapon::Action(s32 cmd, u32 flags)
 								// aim-in transition (deferred to switch2_Idle when mid-fire)
 								if(GetState()!=eIdle)
 									SwitchState(eIdle);
+								m_bZoomToggleWanted = false;
 								OnZoomIn	();
 							}
+							else
+								// busy (mid-shot on a slow gun, reloading...) -- the press would
+								// otherwise be lost, and in toggle mode there is no held key to fall
+								// back on. Remember it; CWeaponMagazined::UpdateCL aims when we settle.
+								m_bZoomToggleWanted = true;
 						}else
+						{
+							m_bZoomToggleWanted = false;
 							OnZoomOut	();
+						}
 					}
 				}else
 				{
@@ -2547,14 +2628,55 @@ void CWeapon::OnZoomIn()
 		m_fAlterZoomFactor	= 1.f;
 	}
 
-	if(m_zoom_params.m_bZoomDofEnabled && !IsScopeAttached())
-		GamePersistent().SetEffectorDOF	(m_zoom_params.m_ZoomDof);
+	RefreshZoomDOF						();
+}
+
+// GS ReadLensDOFVector (ActorDOF.pas:353): the hud section carries the weapon's lens DOF, and the
+// section of the scope ACTUALLY ATTACHED gets the last word -- different optics focus differently,
+// and the scope can be swapped between aims, so this is resolved here rather than at Load.
+Fvector CWeapon::LensDof() const
+{
+	Fvector v = m_zoom_params.m_LensDof;
+	shared_str sc = GetCurrentScopeSection();
+	if (sc.size() && pSettings->section_exist(sc))
+	{
+		v.x = READ_IF_EXISTS(pSettings, r_float, *sc, "lens_dof_near",  v.x);
+		v.y = READ_IF_EXISTS(pSettings, r_float, *sc, "lens_dof_focus", v.y);
+		v.z = READ_IF_EXISTS(pSettings, r_float, *sc, "lens_dof_far",   v.z);
+	}
+	return v;
+}
+
+// GS RefreshZoomDOF (ActorDOF.pas:96). Which DOF an aim applies depends on what you are looking
+// through, and the LENS branch comes first, exactly as in GS:
+//   * PiP scope, normal pose  -> lens_dof_*: the lens image stays sharp, the world around it blurs
+//   * no scope (iron sights)  -> the ordinary zoom_dof_*
+//   * plain 2D scope / alter pose (lens faded out) -> nothing, so whatever is applied eases back out
+// Called on aim-in and whenever the answer can change mid-aim (the alter-pose toggle turns the lens
+// off and on, see [alter zoom]).
+void CWeapon::RefreshZoomDOF()
+{
+	if (!IsZoomed())	return;
+
+	if (IsLensedScope() && !m_bAlterZoom)
+	{
+		GamePersistent().SetEffectorDOF	(LensDof(), m_zoom_params.m_fZoomInDofSpeed);
+		return;
+	}
+	if (m_zoom_params.m_bZoomDofEnabled && !IsScopeAttached())
+	{
+		GamePersistent().SetEffectorDOF	(m_zoom_params.m_ZoomDof, m_zoom_params.m_fZoomInDofSpeed);
+		return;
+	}
+	// no-op when nothing was applied (RestoreEffectorDOF checks m_dof_changed)
+	GamePersistent().RestoreEffectorDOF	(m_zoom_params.m_fZoomOutDofSpeed);
 }
 
 void CWeapon::OnZoomOut()
 {
 	m_zoom_params.m_bIsZoomModeNow		= false;
 	m_zoom_params.m_fCurrentZoomFactor	= g_fov;
+	m_bZoomToggleWanted					= false;	// leaving aim cancels any queued toggle aim-in
 	// GS SetLastZoomAlter: remember which of the two aim poses the player left, so the next aim returns
 	// to it (only while the scope still offers one -- see OnZoomIn).
 	if (IsAlterZoomAllowed())			m_bAlterZoomLast = m_bAlterZoom;
@@ -2565,7 +2687,9 @@ void CWeapon::OnZoomOut()
 	m_bSprintStarted					= false;
 	m_bPrevSprint						= false;
 
- 	GamePersistent().RestoreEffectorDOF	();
+	// GS WeaponEvents.pas:1895 -- leaving aim eases the DOF back out over its OWN (slower) speed,
+	// which is most of what made vanilla's flat 0.2s in/out feel wrong next to GS.
+	GamePersistent().RestoreEffectorDOF	(m_zoom_params.m_fZoomOutDofSpeed);
 	ResetSubStateTime					();
 }
 
@@ -2733,6 +2857,8 @@ void CWeapon::ToggleAlterZoom()
 {
 	if (!IsAlterZoomAllowed() || !IsZoomed())	{ m_bAlterZoom = false; return; }
 	m_bAlterZoom = !m_bAlterZoom;
+	// the alter pose cross-fades the PiP lens away, so the lens DOF has to go with it (and come back)
+	RefreshZoomDOF();
 }
 
 // Ramp m_fAlterZoomFactor toward the target over `alter_zoom_time` seconds (scope section, else the
@@ -3510,15 +3636,10 @@ void CWeapon::OnStateSwitch	(u32 S)
 		StopLaserDot	();
 	}
 
-	if(GetState()==eReload)
-	{
-		if(H_Parent()==Level().CurrentEntity() && !fsimilar(m_zoom_params.m_ReloadDof.w,-1.0f))
-		{
-			CActor* current_actor	= smart_cast<CActor*>(H_Parent());
-			if (current_actor)
-				current_actor->Cameras().AddCamEffector(xr_new<CEffectorDOF>(m_zoom_params.m_ReloadDof) );
-		}
-	}
+	// The vanilla reload DOF lived here: a CEffectorDOF armed on entering eReload that undid itself
+	// after a FIXED `reload_dof.w` seconds, so it drifted out of step with the animation it was
+	// supposed to follow. GS instead arms the DOF from the animation itself and releases it a set
+	// time before that animation ENDS -- see CHudItem::PlayHUDMotion / UpdateCL.
 }
 
 void CWeapon::OnAnimationEnd(u32 state) 

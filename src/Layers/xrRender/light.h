@@ -9,6 +9,12 @@
 #	include "light_GI.h"
 #endif //(RENDER==R_R2) || (RENDER==R_R3)
 
+class light;
+// The light whose shadow map is being rendered RIGHT NOW, or NULL when the SMAP pass belongs to
+// something else (the sun). Set around the per-light subspace render; read by the shared dsgraph
+// code, which is what injects the actor's third-person body into shadow maps.
+extern light* g_smap_light;
+
 class	light		:	public IRender_Light, public ISpatial
 {
 public:
@@ -19,6 +25,7 @@ public:
 		u32			bShadow	:	1;
 		u32			bVolumetric:1;
 		u32			bHudMode:	1;
+		u32			bNoActorShadow:1;	// the actor's own body is left OUT of this light's shadow map
 
 	}				flags;
 	Fvector			position	;
@@ -121,6 +128,8 @@ public:
 	virtual void	set_texture				(LPCSTR name);
 	virtual void	set_hud_mode			(bool b)						{flags.bHudMode=b;}
 	virtual bool	get_hud_mode			()								{return flags.bHudMode;};
+	virtual void	set_actor_shadow		(bool b)						{flags.bNoActorShadow=b?0:1;}
+	virtual bool	get_actor_shadow		()								{return !flags.bNoActorShadow;}
 
 	virtual	void	spatial_move			();
 	virtual	Fvector	spatial_sector_point	();

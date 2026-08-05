@@ -106,6 +106,8 @@ enum	EGameActions
 
 	kWPN_KICK,			// GS quick knife kick (быстрая атака ножом) -- same index==enum rule as kWPN_LASER
 
+	kQUICK_GRENADE,		// GS quick grenade throw (быстрый бросок гранаты) -- same index==enum rule as kWPN_LASER
+
 	kLASTACTION,
 	kNOTBINDED,
 	kFORCEDWORD		= u32(-1)

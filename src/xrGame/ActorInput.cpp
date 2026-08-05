@@ -55,6 +55,14 @@
 
 static bool gwr_actor_hud_busy(CActor* actor);	// defined below; true while a weapon/eat/torch animation runs
 static bool gwr_try_burn_use(CActor* actor);	// defined below; USE beats out a fire instead of using the world
+// torch/NV gesture bookkeeping. Defined up here (rather than beside gwr_begin_torch_action, where
+// they used to live) because the quick grenade drops the block to interrupt the gesture, and that
+// runs earlier in the file.
+static u32  s_action_busy_until		= 0;	// ignore new torch/NV presses while Device.dwTimeGlobal < this
+static bool s_block_set_by_action	= false;// we raised g_block_wpn_switch and must lower it again
+// A quick grenade that had to cancel an item-use gesture first: retry the slot activation until this
+// deadline, because the cancelled phantom is released asynchronously (see kQUICK_GRENADE).
+static u32  s_quick_grenade_until	= 0;
 
 bool g_bAutoClearCrouch = true;
 extern u32 hud_adj_mode;
@@ -150,9 +158,8 @@ void CActor::IR_OnKeyboardPress(int cmd)
 	}
 
 	// GS blocks these keys outright for the duration of a grab / suicide scene (ActorUtils.pas:2568
-	// kJUMP, :2570 the quick-use slots, :2629 the quick grenade). CS has no kQUICK_USE_1..4 /
-	// kQUICK_GRENADE -- the equivalents here are the bandage/medkit keys and the artefact slot. The
-	// victim is not allowed to heal his way out; weapon slots are handled by g_block_wpn_switch.
+	// kJUMP, :2570 the quick-use slots, :2629 the quick grenade). The victim is not allowed to heal
+	// his way out, nor to lob a grenade clear; weapon slots are handled by g_block_wpn_switch.
 	if (IsActorControlled() || IsSuicideInProgress() || IsControllerPreparing())
 	{
 		switch (cmd)
@@ -161,6 +168,11 @@ void CActor::IR_OnKeyboardPress(int cmd)
 		case kUSE_BANDAGE:
 		case kUSE_MEDKIT:
 		case kARTEFACT:
+		case kQUICK_USE_1:
+		case kQUICK_USE_2:
+		case kQUICK_USE_3:
+		case kQUICK_USE_4:
+		case kQUICK_GRENADE:
 			return;
 		default: break;
 		}
@@ -299,6 +311,88 @@ void CActor::IR_OnKeyboardPress(int cmd)
 	case kPREV_SLOT:
 		{
 			OnPrevWeaponSlot();
+		}break;
+
+	case kQUICK_GRENADE:
+		{
+			// GS quick grenade throw (ActorUtils.pas kQUICK_GRENADE): from any weapon, arm the throw and
+			// switch to the grenade slot -- the grenade is then pulled and lobbed in a single animation
+			// (anm_throw_quick, force_const) and the weapon we came from is drawn back afterwards.
+			// Opt-in per grenade: `supports_quick_throw`.
+			if (!IsGameTypeSingle())							break;
+			if (inventory().GetActiveSlot() == (u32)GRENADE_SLOT)	break;	// it is already in hand
+			if (!g_Alive())										break;
+
+			PIItem gr = inventory().ItemFromSlot(GRENADE_SLOT);
+			if (!gr)
+			{
+				// nothing slotted (the last one was thrown and the slot was emptied) -- put one in first,
+				// exactly like CInventory::Activate does for the grenade slot
+				gr = inventory().SameSlot(GRENADE_SLOT, NULL, true);
+				if (gr && !inventory().Slot(gr))		gr = NULL;
+			}
+			if (!smart_cast<CMissile*>(gr))						break;
+			if (!READ_IF_EXISTS(pSettings, r_bool, gr->object().cNameSect().c_str(), "supports_quick_throw", FALSE))
+				break;
+
+			// GS lets the quick grenade INTERRUPT anything. ActorUtils.pas:2629 checks only the
+			// grenade slot, the grab and the suicide -- unlike the weapon-slot keys right above it,
+			// which do bail out on an item-use animator. So no hud-busy test here.
+			// A reload or a draw is cut by the holster on its own; an item-use gesture is not,
+			// because it holds g_block_wpn_switch, which CInventory::Activate refuses to cross --
+			// so cancel it (the script drops the phantom, hands the item back and lowers the block),
+			// and clear the shorter torch/NV gesture block, which is engine-side and separate.
+			bool cancelled = false;
+			{
+				luabind::functor<bool> fn;
+				if (ai().script_engine().functor("gwr_eatable.abandon_now", fn))	cancelled = fn();
+			}
+			if (s_block_set_by_action)
+			{
+				g_block_wpn_switch		= 0;
+				s_block_set_by_action	= false;
+				s_action_busy_until		= 0;
+				cancelled				= true;
+			}
+
+			// The slot to come back to. While a gesture phantom is out THAT is the active slot, and
+			// returning to it would be meaningless -- the script's own saved slot is the one the
+			// gesture interrupted, so ask for it.
+			u32 ret_slot = inventory().GetActiveSlot();
+			if (ret_slot == (u32)ARTEFACT_SLOT)
+			{
+				luabind::functor<int> fs;
+				ret_slot = NO_ACTIVE_SLOT;
+				if (ai().script_engine().functor("gwr_eatable.interrupted_slot", fs))
+				{
+					const int s = fs();
+					if (s >= 0)	ret_slot = (u32)s;
+				}
+			}
+
+			// Remember whether the detector was out: the grenade is incompatible with it, so it gets
+			// holstered on the way in and PutNextToSlot has to ask for it back afterwards.
+			// NeedActivation() counts as "out" -- interrupting a RELOAD is the common case here, and a
+			// reload has already put the detector away with a pending re-show, so IsWorking() alone
+			// would lose it.
+			// That pending re-show also has to be CANCELLED, or it fires in the one frame between the
+			// old weapon detaching and the grenade attaching (nothing in hand -> the deferred draw
+			// thinks it may go) and ToggleDetector then switches the actor to a detector-compatible
+			// slot -- the bolt. On screen: the grenade appears, is yanked away, and you end up holding
+			// the bolt and the detector.
+			CCustomDetector* qdet = smart_cast<CCustomDetector*>(inventory().ItemFromSlot(DETECTOR_SLOT));
+			const bool det_out = qdet && (qdet->IsWorking() || qdet->NeedActivation());
+			if (qdet)	qdet->CancelRestore();
+			CMissile::ArmQuickThrow	(ret_slot, det_out);
+
+			// A cancelled gesture releases its phantom through alife, which lands over the next few
+			// frames -- activating the grenade slot in the same frame raced that teardown and the
+			// grenade never came out (the gesture just stopped). Defer instead: s_quick_grenade_until
+			// makes CActor::UpdateCL retry until the hands are genuinely free.
+			if (cancelled)
+				s_quick_grenade_until = Device.dwTimeGlobal + 1500;
+			else
+				inventory().Activate	(GRENADE_SLOT);
 		}break;
 
 	case kQUICK_USE_1:
@@ -744,8 +838,6 @@ int g_torch_action_time  = 1200;
 // Pending deferred toggles + the shared anti-spam / slot-block window (single local actor).
 static u32  s_torch_switch_at		= 0;
 static u32  s_nv_switch_at			= 0;
-static u32  s_action_busy_until		= 0;	// ignore new torch/NV presses while Device.dwTimeGlobal < this
-static bool s_block_set_by_action	= false;// we raised g_block_wpn_switch and must lower it again
 
 // Night-vision screen blackout (Gunslinger's goggles-over-the-eyes effect). Driven ENGINE-SIDE from
 // the actor, NOT from the gesture animation, so it fires for EVERY weapon (a weapon playing its own
@@ -796,10 +888,15 @@ static CCustomDetector* gwr_active_detector()
 static bool gwr_actor_hud_busy(CActor* actor)
 {
 	if (g_block_wpn_switch != 0)	return true;
-	CWeapon* w = smart_cast<CWeapon*>(actor->inventory().ActiveItem());
-	if (w && (w->GetState() != CHUDState::eIdle || w->IsPending()))	return true;
+	// ANY hud item in hand that is not sitting idle owns the hands, not just a weapon. This used to
+	// cast to CWeapon, which let a grenade through: a CMissile is not a CWeapon, so a throw looked
+	// like empty hands, and a quick-use key mid-throw printed "item used" for an item the eat script
+	// then handed straight back.
+	PIItem ai_ = actor->inventory().ActiveItem();
+	CHudItem* h = ai_ ? ai_->cast_hud_item() : NULL;
+	if (h && (h->GetState() != CHUDState::eIdle || h->IsPending()))	return true;
 	// the jam-inspect gesture plays in eIdle without pending -> catch it explicitly
-	CWeaponMagazined* wm = smart_cast<CWeaponMagazined*>(w);
+	CWeaponMagazined* wm = smart_cast<CWeaponMagazined*>(ai_);
 	if (wm && wm->IsJamInspectPlaying())	return true;
 	// a detector in the left hand mid-gesture (or showing/hiding) is busy too, even though it's
 	// not the "active item" -- otherwise a spammed toggle would fire with no animation
@@ -1096,6 +1193,29 @@ void CActor::SwitchWeaponFlashlight()
 // Called every frame from CActor::UpdateCL: fire pending deferred toggles and end the block window.
 void CActor::UpdateDelayedDeviceSwitch()
 {
+	// A quick grenade that interrupted an item-use gesture: the cancelled phantom is released through
+	// alife, so it is still the active item for a frame or two and activating the grenade slot right
+	// away simply lost the request. Retry until the phantom is gone and the block is down.
+	if (s_quick_grenade_until)
+	{
+		const bool timed_out = Device.dwTimeGlobal >= s_quick_grenade_until;
+		bool phantom_out = false;
+		const TIItemContainer& all = inventory().m_all;
+		for (TIItemContainer::const_iterator it = all.begin(); it != all.end(); ++it)
+			if (CActor::IsGesturePhantom(*it))	{ phantom_out = true; break; }
+
+		if (!phantom_out && g_block_wpn_switch == 0)
+		{
+			s_quick_grenade_until = 0;
+			inventory().Activate(GRENADE_SLOT);
+		}
+		else if (timed_out)
+		{
+			s_quick_grenade_until = 0;
+			CMissile::ResetQuickThrow();	// never fired -- don't leave the arming for the next draw
+		}
+	}
+
 	if (s_block_set_by_action && Device.dwTimeGlobal >= s_action_busy_until)
 	{
 		g_block_wpn_switch		= 0;

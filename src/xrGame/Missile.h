@@ -90,6 +90,20 @@ protected:
 //private:
 	bool					m_constpower;
 	bool					m_bSuicideThrow;	// GS: this throw is the controller-suicide one
+	bool					m_bQuickThrow;		// GS: this draw IS the throw (anm_throw_quick), no idle in between
+	u32						m_quick_throw_ret_slot;	// slot the throw was fired from -> go back to it afterwards
+	bool					m_quick_throw_had_det;	// a detector was out when the throw was armed -> bring it back
+public:
+	// GS quick grenade throw (kQUICK_GRENADE / `_quick_throw_forced` in Throwable.pas). The key arms
+	// this before activating the grenade slot; the missile picks it up in OnActiveItem, and the slot
+	// it was armed from is the one we return to once the grenade has left the hand.
+	static	void			ArmQuickThrow		(u32 return_slot, bool had_detector);
+	static	bool			QuickThrowArmed		();
+	static	void			ResetQuickThrow		();
+	static	u32				QuickThrowReturnSlot();
+	static	bool			QuickThrowHadDetector();
+			bool			IsQuickThrow		() const { return m_bQuickThrow; }
+			u32				QuickThrowRetSlot	() const { return m_quick_throw_ret_slot; }
 public:
 	bool			SuicideAllowed		();		// hud `allow_suicide` + the animation exists + grabbed
 	bool			SuicideStillGrabbed	();

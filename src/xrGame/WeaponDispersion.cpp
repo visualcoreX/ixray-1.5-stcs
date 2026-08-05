@@ -12,12 +12,28 @@
 #include "actoreffector.h"
 #include "effectorshot.h"
 #include "EffectorShotX.h"
+#include "CustomDetector.h"
+#include "inventory.h"
 
 
 //���������� 1, ���� ������ � �������� ��������� � >1 ���� ����������
 float CWeapon::GetConditionDispersionFactor() const
 {
 	return (1.f + fireDispersionConditionFactor*(1.f-GetCondition()));
+}
+
+// GS DetectorUtils.pas ReadDispersionMultiplier, hooked there onto the base-dispersion multiply.
+// Three conditions, all of them GS's: the section opts in, the weapon is the ACTOR's active item
+// (an NPC firing the same pistol is unaffected -- it has no detector in hand), and a detector is
+// actually deployed. IsWorking() is the "out in the left hand" test, not "owned".
+float CWeapon::DetectorDispersionFactor() const
+{
+	if (fsimilar(m_fDetectorDispFactor, 1.f))				return 1.f;
+	if (!smart_cast<const CActor*>(H_Parent()))				return 1.f;
+	if (!m_pInventory || m_pInventory->ActiveItem() != this)	return 1.f;
+
+	CCustomDetector* det = smart_cast<CCustomDetector*>(m_pInventory->ItemFromSlot(DETECTOR_SLOT));
+	return (det && det->IsWorking()) ? m_fDetectorDispFactor : 1.f;
 }
 
 float CWeapon::GetFireDispersion	(bool with_cartridge) 
@@ -48,7 +64,8 @@ float CWeapon::GetFireDispersion	(float cartridge_k)
 // AN-94 hyperburst uses it so its first rounds are not spread by the shooter's own dispersion.
 float CWeapon::GetBaseDispersion	(float cartridge_k)
 {
-	return fireDispersionBase * cur_silencer_koef.fire_dispersion * cartridge_k * GetConditionDispersionFactor();
+	return fireDispersionBase * cur_silencer_koef.fire_dispersion * cartridge_k
+		 * GetConditionDispersionFactor() * DetectorDispersionFactor();
 }
 
 

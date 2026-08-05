@@ -65,6 +65,10 @@ CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 	m_bLightMisfirePlaying		= false;
 	m_bAimInPending				= false;
 	m_bAimOutPending			= false;
+	m_bReloadAfterAimOut		= false;
+	m_dwReloadAfterAimAt		= 0;
+	m_dwReloadAfterShotAt		= 0;
+	m_dwLastShotTm				= 0;
 	m_bTriggerHeld				= false;
 	m_bZoomPendingSprint		= false;
 	m_bZoomPendingMisfire		= false;
@@ -402,31 +406,119 @@ void CWeaponMagazined::FireEnd()
 	}
 }
 
-void CWeaponMagazined::Reload()
+// Everything that has to happen BEFORE a reload may start: the blocks (controller scene, jam inspect,
+// light-misfire strike, a detector mid draw/holster) and the "come off the sights first" hand-over.
+// Returns false when the reload must not start now -- either refused outright, or queued behind the
+// aim-out (m_bReloadAfterAimOut), in which case UpdateCL calls Reload() again at the right moment.
+// SEPARATE from Reload() because CWeaponShotgun's tri-state path does not go through CWeaponMagazined::
+// Reload at all: without this the whole aim-out blend was simply missing on every pump shotgun, which is
+// exactly how it went unnoticed (user 2026-08-05: "не работает на дробовики").
+bool CWeaponMagazined::ReloadGate()
 {
 	// GS IsActionProcessing (WeaponAdditionalBuffer.pas:591) reports the weapon BUSY for the whole
 	// controller scene, which is what stops the victim reloading, aiming or switching his way out of
 	// it. Reload is the one that would actually rescue him -- an empty weapon ends the scene.
-	if (SuicideBlocksFire())	return;
+	if (SuicideBlocksFire())	return false;
 
 	// the jam (misfire) inspect gesture must play out fully before the jam can be cleared:
 	// block reload while it's on screen. The empty-mag dry-fire (not a misfire) stays reloadable.
 	if (m_bDryFirePlaying && IsMisfire())
-		return;
+		return false;
 
 	// same for the light-misfire strike (m_bLightMisfirePlaying): block reload while the click gesture
 	// plays, exactly like the normal-misfire inspect above. Light misfire keeps the round chambered so no
 	// reload is needed anyway -- this just stops a reload from cutting the strike short.
 	if (m_bLightMisfirePlaying)
-		return;
+		return false;
 
 	auto i1 = g_player_hud->attached_item(1);
 	if (i1 && HudItemData())
 	{
 		auto det = smart_cast<CCustomDetector*>(i1->m_parent_hud_item);
 		if (det && det->GetState() != CCustomDetector::eIdle)
-			return;
+			return false;
 	}
+
+	// GS CanReloadNow (WeaponAnims.pas:1242): a reload may NOT start until the shot's own cycle has
+	// played out -- `GetLastShotTimeDelta() < GetLastRechargeTime()*1000` refuses it, where the recharge
+	// time is `max(recharge_time, one-shot time)` (WeaponAdditionalBuffer.pas:836). On a pump gun that
+	// window IS the pump animation, which is the visible point: the hands must work the action before
+	// they may go for a shell. We add the running shoot animation's own deadline to the same test, since
+	// unlike GS we can ask the animation directly (m_dwShootAnimEndTm) -- that also covers the JAMMING
+	// shot, whose anm_shoot_jammed is longer than the fire interval. THE BUG THIS FIXES: the auto-reload
+	// (AF_AUTORELOAD) is triggered from CWeaponMagazined::FireEnd, which CWeapon::CheckForMisfire calls
+	// the instant it rolls a jam -- so a jam on the LAST round started the reload in the same frame and
+	// the jammed shot animation was replaced before a single frame of it was seen ("клин на последнем
+	// выстреле выглядит как просто айдл"; on any other round iAmmoElapsed>0, no auto-reload, and it
+	// played fine). Unlike GS, which simply drops the press, we QUEUE it: UpdateCL retries at the
+	// deadline, so an auto-reload is not lost and a key press is not swallowed.
+	{
+		u32 cycle_end = 0;
+		if (m_dwLastShotTm)
+		{
+			const float cyc = _max(m_fRechargeTime, fOneShotTime);
+			cycle_end = m_dwLastShotTm + u32(cyc * 1000.f);
+		}
+		if (m_dwShootAnimEndTm > cycle_end)	cycle_end = m_dwShootAnimEndTm;
+		if (cycle_end > Device.dwTimeGlobal)
+		{
+			m_dwReloadAfterShotAt = cycle_end;
+			return false;
+		}
+	}
+	m_dwReloadAfterShotAt = 0;
+
+	// A reload is already queued behind the aim-out -- further presses are the player mashing the key
+	// and must be swallowed. They used to fall straight through (by then IsZoomed() is false, the
+	// sights are already dropping) and start a reload on the spot; the queued one then fired AGAIN the
+	// moment that first reload ended, i.e. the magazine was changed twice off one key spam.
+	// UpdateCL clears the flag before it calls us, so the queued reload itself is not caught here.
+	if (m_bReloadAfterAimOut)	return false;
+
+	// Reload pressed while aiming: come off the sights first. GS forbids the reload outright while
+	// aimed (CanReloadNow); this does the friendlier thing instead.
+	// The reload does not wait for the aim-out to FINISH, but it must not start on top of it either --
+	// it is blended into the last `reload_aim_out_blend` of anm_idle_aim_end, so the sights are
+	// visibly down before the hands go for the magazine and the two still read as one movement.
+	if (IsZoomed())
+	{
+		OnZoomOut();
+		if (IsZoomed())
+		{
+			// the aim-out was itself deferred (mid-fire / jam inspect) -- wait for it to happen,
+			// UpdateCL picks this up once the sights are actually down
+			m_bReloadAfterAimOut = true;
+			m_dwReloadAfterAimAt = 0;
+			return false;
+		}
+	}
+
+	// The aim-out transition may be on screen for two reasons: WE just started it (above), or the player
+	// released the aim key a moment ago and anm_idle_aim_end is still running when reload is pressed.
+	// Both hand over the same way -- start the reload inside the last `reload_aim_out_blend` of what is
+	// LEFT of the transition, so it grows out of the aim-out instead of cutting it dead. (The second case
+	// used to fall straight through here: IsZoomed() is already false while the sights are still coming
+	// down, so the reload snapped in mid-transition.) A weapon with no aim-out transition has nothing to
+	// blend into and reloads right away.
+	if (m_dwAimTransitionEndTm > Device.dwTimeGlobal)
+	{
+		const u32   len  = m_dwAimTransitionEndTm - Device.dwTimeGlobal;
+		const float frac = READ_IF_EXISTS(pSettings, r_float, HudSection(), "reload_aim_out_blend", 0.5f);
+		m_bReloadAfterAimOut = true;
+		m_dwReloadAfterAimAt = m_dwAimTransitionEndTm - u32(len * clampr(frac, 0.f, 1.f));
+		return false;
+	}
+
+	// a reload is starting for real -- nothing may stay queued behind it (belt and braces: any other
+	// path that armed the flag must not fire a second reload after this one ends)
+	m_bReloadAfterAimOut = false;
+	m_dwReloadAfterAimAt = 0;
+	return true;
+}
+
+void CWeaponMagazined::Reload()
+{
+	if (!ReloadGate())	return;
 
 	inherited::Reload();
 	TryReload();
@@ -1327,7 +1419,14 @@ void CWeaponMagazined::UpdateCL			()
 		if (empty_now != m_bLastEmptyAnim)
 		{
 			m_bLastEmptyAnim = empty_now;
-			if (GetState() == eIdle && GetNextState() == eIdle && !IsPending()
+			// ...but NOT over a shoot animation that is still on screen. Firing the LAST round flips this
+			// flag on the very frame the shot goes off, and a jam on that round then had its
+			// anm_shoot_jammed replaced by the idle before a single frame of it was drawn (user 2026-08-05:
+			// "клин на последнем выстреле выглядит как просто айдл"; any other round doesn't flip, which is
+			// why it looked fine there). Nothing is lost by skipping: the deadline handoff below re-runs
+			// switch2_Idle when the shot anim ends, and that picks the empty/jammed idle anyway.
+			const bool shoot_anim_running = (m_dwShootAnimEndTm && Device.dwTimeGlobal < m_dwShootAnimEndTm);
+			if (GetState() == eIdle && GetNextState() == eIdle && !IsPending() && !shoot_anim_running
 				&& !m_bDryFirePending && !m_bDryFirePlaying && !m_bLightMisfirePlaying)
 				PlayAnimIdle();
 		}
@@ -1354,12 +1453,56 @@ void CWeaponMagazined::UpdateCL			()
 
 	// Held-aim resume: a shot on a slow-firing gun blocks aim-in (Weapon.cpp kWPN_ZOOM needs !IsPending),
 	// so pressing aim mid-shot was dropped and you had to release + re-press after the shot. Instead, if
-	// the aim key is STILL physically held and the weapon is idle again, enter ADS now. Not auto-aim --
-	// gated on the physical key (m_bZoomKeyHeld, cleared on release).
-	if (m_bZoomKeyHeld && IsZoomEnabled() && !IsZoomed() && !IsPending()
+	// the player still WANTS to aim and the weapon is idle again, enter ADS now. Not auto-aim.
+	//
+	// What "still wants to aim" means differs per mode, and conflating the two made toggle aim
+	// impossible to LEAVE: with wpn_aim_toggle 1 the second press ran OnZoomOut correctly, but the aim
+	// key was physically down at that moment, so this resume saw m_bZoomKeyHeld && !IsZoomed() on the
+	// very next frame and aimed straight back in -- which looks exactly like the aim-IN animation
+	// playing on the press that should have ended the aim.
+	// Hold mode: the physical key. Toggle mode: the key means nothing (it is released immediately),
+	// so use the explicit intent flag set when a press had to be dropped.
+	//
+	// ...and it must NOT run while a reload is waiting to blend into the aim-out. In hold mode the
+	// aim key is still down when reload lowers the sights, so this resume fired in the gap between
+	// the aim-out starting and the reload beginning: it re-aimed, and OnZoomIn dropped the pending
+	// reload -- the reload never happened and the weapon simply went back to the sights. Once the
+	// reload IS running the ordinary !IsPending() / eIdle guards cover it, and holding aim through it
+	// re-aims at the end, which is what you want.
+	extern BOOL b_toggle_weapon_aim;
+	const bool wants_aim = b_toggle_weapon_aim ? m_bZoomToggleWanted : m_bZoomKeyHeld;
+	if (wants_aim && !m_bReloadAfterAimOut && IsZoomEnabled() && !IsZoomed() && !IsPending()
 		&& GetState()==eIdle && !IsJamInspectPlaying())
 	{
+		m_bZoomToggleWanted = false;
 		OnZoomIn();
+	}
+
+	// A reload that had to wait for the shot cycle / pump animation (GS CanReloadNow, see ReloadGate):
+	// retry it now. Reload() re-runs the gate, so if the player is still aiming it hands over to the
+	// aim-out blend from there. Self-clearing, so a reload can never be queued twice.
+	if (m_dwReloadAfterShotAt && Device.dwTimeGlobal >= m_dwReloadAfterShotAt
+		&& GetState()==eIdle && !IsPending())
+	{
+		m_dwReloadAfterShotAt = 0;
+		Reload();
+	}
+
+	// ...and the other half of "reload while aiming": start the reload at the point in the aim-out
+	// we picked (or as soon as the sights are down, for an aim-out that had to be deferred first).
+	if (m_bReloadAfterAimOut && !IsZoomed() && !IsPending() && GetState()==eIdle
+		&& (m_dwReloadAfterAimAt == 0 || Device.dwTimeGlobal >= m_dwReloadAfterAimAt))
+	{
+		m_bReloadAfterAimOut = false;
+		m_dwReloadAfterAimAt = 0;
+		// The reload STARTS here, at the point picked in Reload() -- but starting it is not the same
+		// as seeing it. Mixed in with the animation's own baked blendAccrue its ramp is about as long
+		// as the rest of the aim-out, so the aim-out visually plays almost to its end before the
+		// reload takes over, whatever start point we choose. Ask for a faster mix-in for this one
+		// motion so the handover happens where we asked for it.
+		// blendAccrue is a RATE (higher = quicker); 0 keeps the animation's own.
+		m_fNextBlendAccrue = READ_IF_EXISTS(pSettings, r_float, HudSection(), "reload_aim_out_accrue", 8.f);
+		Reload();
 	}
 
 	// aim in/out transition handoff fallback: when its OnAnimationEnd didn't fire on time
@@ -1718,7 +1861,12 @@ void CWeaponMagazined::state_Fire(float dt)
 			// on a break-action is invisible: one pull = one hammer fall either way.
 			if (m_bNoJamFire && CheckForMisfire())
 			{
-				if (PlayJammedShootAnim())
+				// GS OnWeaponJam's no_jam_fire branch (WeaponEvents.pas:889): `PlayHUDAnim(wpn,
+				// anm_shots_selector(wpn, true), true)` -- the shot animation is played even though nothing
+				// fired, so the hammer falls on the dud; the selector's `play_breech_snd` then rings sndJam
+				// because the weapon is already flagged jammed. Force it: these weapons don't opt into
+				// use_jammed_shoot_anim and the plain shot anim is the right fallback.
+				if (PlayJammedShootAnim(true))
 				{
 					m_dwShootAnimEndTm	= m_dwMotionEndTm;
 					if (m_sounds.FindSoundItem("sndJam", false))
@@ -1726,6 +1874,7 @@ void CWeaponMagazined::state_Fire(float dt)
 				}
 				else
 					m_dwShootAnimEndTm	= 0;
+				m_dwLastShotTm			= Device.dwTimeGlobal;	// the hammer fell -- same cycle as a real shot
 				StopShooting			();
 				return;
 			}
@@ -1736,6 +1885,7 @@ void CWeaponMagazined::state_Fire(float dt)
 			// inherited, but state_Fire is the shared fire loop. OnShot -> PlayAnimShoot -> PlayHUDMotion
 			// just set m_dwMotionEndTm to the (randomly picked) shot variant's end.
 			m_dwShootAnimEndTm		= m_dwMotionEndTm;
+			m_dwLastShotTm			= Device.dwTimeGlobal;	// GS RegisterShot -- feeds the reload gate
 
 			// The hyperburst rounds all fly from the aim point captured when the queue started
 			// (vanilla SoC gated this on base_dispersioned_bullets_count, CS on dispersion_start --
@@ -1766,16 +1916,19 @@ void CWeaponMagazined::state_Fire(float dt)
 				// animation (the case caught in the ejection port) and it plays to the END -- the jammed
 				// idle only takes over afterwards. CheckForMisfire already set bMisfire, so re-assigning
 				// the shoot motion now resolves to the _jammed variant (GS does the same through
-				// SetAnimForceReassignStatus). Weapons with no jammed shot variant keep the old behaviour:
-				// drop the deadline so switch2_Idle shows the jammed idle at once.
+				// SetAnimForceReassignStatus).
+				// WEAPONS WITHOUT A JAMMED SHOT VARIANT KEEP THE ANIMATION THEY ARE ALREADY PLAYING -- the
+				// deadline set right after OnShot stands, so anm_shoot runs to its end and only then does the
+				// jammed idle take over. That is exactly GS: OnWeaponJam (WeaponEvents.pas:807) sets the
+				// misfire flag, calls FireEnd and NOTHING else -- "никаких других действий - типа
+				// переключения анимаций, звуков... не выполняем" (:897) -- so the shot animation started by
+				// anm_shots_selector always plays out. Zeroing the deadline here cut it dead mid-swing.
 				if (PlayJammedShootAnim())
 				{
 					m_dwShootAnimEndTm	= m_dwMotionEndTm;
 					if (m_sounds.FindSoundItem("sndJam", false))
 						PlaySound("sndJam", get_LastFP());
 				}
-				else
-					m_dwShootAnimEndTm = 0;
 				StopShooting();
 				return;
 			}
@@ -2672,6 +2825,7 @@ void CWeaponMagazined::TriggerFireModeSwitchAnim(int oldMode, int newMode)
 
 void CWeaponMagazined::switch2_Hiding()
 {
+	m_dwReloadAfterShotAt	= 0;	// a reload waiting on the shot cycle dies with the holster
 	OnZoomOut();
 	CWeapon::FireEnd();
 	
@@ -3420,19 +3574,29 @@ void CWeaponMagazined::SelectJammedShootBase(string_path& out)
 // The shot that JAMS re-assigns the shoot motion to its "_jammed" variant, so the failure is shown by the
 // firing animation itself (GS anm_shots_selector).
 // Returns false when the weapon authors no jammed shot variant -- then the running shoot anim is kept.
-bool CWeaponMagazined::PlayJammedShootAnim()
+bool CWeaponMagazined::PlayJammedShootAnim(bool force)
 {
 	if (GetState() != eFire)	return false;
 
-	// OPT-IN per weapon (`use_jammed_shoot_anim`). GS re-assigns the shot animation on every gun, but our
-	// configs carry the `_jammed` shot variants EVERYWHERE (they came with the bulk GS alias transfer), so
-	// the "does this weapon author one?" gate below turned the feature on for the whole arsenal instead of
-	// the shotgun it was ported for -- and on a GL rifle it also pulled the hands out of the launcher pose.
-	// Weapons that want it say so in their config; everyone else keeps the plain shot + jammed idle.
-	if (!READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "use_jammed_shoot_anim", FALSE))	return false;
+	// ON BY DEFAULT -- this is what GS's `_jammed` shot variants are FOR. Look at what they actually change
+	// (glock17 huds.ltx, ours is 1:1 with GS):
+	//     anm_shoot        = glock17_shoot
+	//     anm_shoot_jammed = glock17_shoot, idle_jammed
+	// The HANDS motion is the same one; only the second token -- the WEAPON MODEL's own motion -- differs,
+	// and it puts the gun into the jammed pose (slide back / case in the port). So re-assigning here does not
+	// restart anything visible: it swaps the gun's pose to "jammed" the instant the jam happens while the
+	// hands keep playing the shot, which is exactly what GS looks like. (It runs in the SAME frame as OnShot,
+	// so even a differing hands motion starts from frame 0 either way.) A weapon can still opt OUT with
+	// `use_jammed_shoot_anim = false`; one with no `_jammed` shot variant is handled by the caller, which
+	// simply lets the shot animation it is already playing run to its end.
+	// `force` is the no_jam_fire path: there NO shot animation is running yet (the jam is rolled before the
+	// shot), and GS still plays one -- OnWeaponJam does PlayHUDAnim(anm_shots_selector(wpn, true)) -- so the
+	// hammer visibly falls on the dud. Take whatever variant exists, opt-out flag or not.
+	if (!force && !READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "use_jammed_shoot_anim", TRUE))	return false;
 
 	string_path base;	SelectJammedShootBase(base);
-	if (!base[0] || !HasStateVariant(base, "_jammed"))	return false;
+	if (!base[0])										return false;
+	if (!force && !HasStateVariant(base, "_jammed"))	return false;
 
 	// NeedJammedAnim() is true now (bMisfire), so PlayHUDMotion picks the _jammed variant itself
 	return (0 != PlayHUDMotion(base, FALSE, this, GetState()));
@@ -3521,6 +3685,8 @@ void CWeaponMagazined::OnZoomIn			()
 
 	inherited::OnZoomIn();
 	m_bAimOutPending = false;	// re-aiming cancels a deferred aim-out
+	m_bReloadAfterAimOut = false;	// ...and cancels a reload that was waiting for the sights to drop
+	m_dwReloadAfterAimAt = 0;
 
 	if(GetState() == eIdle)
 	{

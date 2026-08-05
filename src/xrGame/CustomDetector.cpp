@@ -119,7 +119,7 @@ bool  CCustomDetector::CheckCompatibilityInt(CHudItem* itm, u32* slot_to_activat
 	if(itm->GetState()==CHUDState::eShowing)
 	{
 		// ...and only for an item that has the gesture to wait FOR (knife/bolt draw in parallel)
-		if (for_draw && HasDetectorDrawGesture(itm))	bres = false;
+		if (for_draw && WaitForDrawGesture(itm))	bres = false;
 	}
 	else if (for_draw)
 		// "busy right now" is a reason not to TAKE THE DETECTOR OUT, never a reason to put it away:
@@ -174,6 +174,19 @@ void CCustomDetector::ShowDetector(bool bFastMode)
 	}
 }
 
+void CCustomDetector::RequestRestore()
+{
+	if(GetState()!=eHidden)		return;		// already out (or on its way) -- nothing to restore
+	m_bNeedActivation		= true;
+	m_bNeedActivationManual	= false;		// engine-driven: no anm_prepare_detector hand-over
+	// ...and do not wait for that hand-over either. anm_prepare_detector is the "weapon already in
+	// hand, take one hand off the grip" gesture; here the weapon is being DRAWN, so both hands come
+	// up at once and the detector must rise with it -- which is what already happens with a knife or
+	// bolt, since those have no such gesture to wait for. GS gets there with actShowDetectorNow,
+	// which force-unhides and skips the prepare phase outright.
+	m_bRestoreWithWeapon	= true;
+}
+
 void CCustomDetector::ShowDetectorEmergency()
 {
 	if(GetState()==eHidden)
@@ -197,7 +210,7 @@ void CCustomDetector::ToggleDetector(bool bFastMode)
 		// Remember HOW it was requested too: a keypress must still get the weapon's hand gesture when
 		// it finally fires, otherwise the detector just appears with the right hand never moving.
 		// (knife/bolt play no hand-over gesture -> nothing to wait for, fall through and draw now)
-		if(itm && itm->GetState()==CHUDState::eShowing && HasDetectorDrawGesture(itm))
+		if(itm && itm->GetState()==CHUDState::eShowing && WaitForDrawGesture(itm))
 		{
 			m_bNeedActivation		= true;
 			m_bNeedActivationManual	= !m_bAutoToggle;
@@ -244,6 +257,7 @@ void CCustomDetector::ToggleDetector(bool bFastMode)
 
 	m_bNeedActivation		= false;
 	m_bNeedActivationManual	= false;
+	m_bRestoreWithWeapon	= false;
 }
 
 void CCustomDetector::ShowAfterPrepare()
@@ -253,6 +267,7 @@ void CCustomDetector::ShowAfterPrepare()
 	TurnDetectorInternal	(true);
 	m_bNeedActivation		= false;
 	m_bNeedActivationManual	= false;
+	m_bRestoreWithWeapon	= false;
 }
 
 void CCustomDetector::OnStateSwitch(u32 S)
@@ -269,6 +284,7 @@ void CCustomDetector::OnStateSwitch(u32 S)
 			if (m_bEmergencyShow && isHUDAnimationExist("anm_show_emergency"))
 				show_anm = "anm_show_emergency";		// drawn together with a weapon
 			PlayHUDMotion				(show_anm, FALSE, this, GetState());
+			ScheduleTorch				(show_anm);	// GS: the light comes on part-way into the draw
 			// the weapon's draw/prepare gestures are driven from the weapon (BeginDetectorDraw ->
 			// anm_prepare_detector -> ShowAfterPrepare -> anm_draw_detector), not from here.
 			m_bAutoToggle = false;
@@ -277,7 +293,9 @@ void CCustomDetector::OnStateSwitch(u32 S)
 	case eHiding:
 		{
 			m_sounds.PlaySound			("sndHide", Fvector().set(0,0,0), this, true, false);
-			PlayHUDMotion				(m_bFastAnimMode?"anm_hide_fast":"anm_hide", TRUE, this, GetState());
+			LPCSTR hide_anm = m_bFastAnimMode ? "anm_hide_fast" : "anm_hide";
+			PlayHUDMotion				(hide_anm, TRUE, this, GetState());
+			ScheduleTorch				(hide_anm);	// ...and off part-way into the holster
 			m_bAutoToggle = false;
 			SetPending					(TRUE);
 		}break;
@@ -499,14 +517,20 @@ CCustomDetector::CCustomDetector()
 	m_bFastAnimMode		= false;
 	m_bNeedActivation	= false;
 	m_bNeedActivationManual	= false;
+	m_bRestoreWithWeapon	= false;
 	m_bAutoToggle		= false;
 	m_bCompanionOneShot	= false;
+	m_bTorchInstalled	= false;
+	m_bTorchOn			= false;
+	m_dwTorchSwitchAt	= 0;
+	m_bTorchPending		= false;
 }
 
 CCustomDetector::~CCustomDetector() 
 {
 	m_artefacts.destroy		();
 	TurnDetectorInternal	(false);
+	StopTorch				();
 	xr_delete				(m_ui);
 }
 
@@ -527,6 +551,193 @@ void CCustomDetector::Load(LPCSTR section)
 
 	m_sounds.LoadSound( section, "snd_draw", "sndShow");
 	m_sounds.LoadSound( section, "snd_holster", "sndHide");
+
+	LoadTorchParams			(section);
+}
+
+// GS keeps the whole torch_* family in the DETECTOR's own section (weapons/detectors/torch/base.ltx),
+// not behind a params-section indirection like our weapon-mounted light does. Same key names though,
+// so the values transfer verbatim.
+void CCustomDetector::LoadTorchParams(LPCSTR section)
+{
+	m_bTorchInstalled = !!READ_IF_EXISTS(pSettings, r_bool, section, "torch_installed", FALSE);
+	if (!m_bTorchInstalled)		return;
+
+	m_sTorchBone		= READ_IF_EXISTS(pSettings, r_string, section, "torch_light_bone", "light");
+	m_sTorchConeBones	= READ_IF_EXISTS(pSettings, r_string, section, "torch_cone_bones", "");
+	m_iTorchBonesShown	= -1;
+	m_vTorchOffset.set(
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_attach_offset_x", 0.f),
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_attach_offset_y", 0.f),
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_attach_offset_z", 0.f));
+	m_vTorchOmniOffset.set(
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_omni_attach_offset_x", m_vTorchOffset.x),
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_omni_attach_offset_y", m_vTorchOffset.y),
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_omni_attach_offset_z", m_vTorchOffset.z));
+	// GS: while the weapon is aimed the hand holding the torch is pulled in, so the emitter moves too
+	m_vTorchAimOffset.set(
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_aim_attach_offset_x", 0.f),
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_aim_attach_offset_y", 0.f),
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_aim_attach_offset_z", 0.f));
+
+	m_TorchColor.set(
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_r2_color_r", 0.6f),
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_r2_color_g", 0.55f),
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_r2_color_b", 0.55f),
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_r2_color_a", 1.0f));
+	m_fTorchRange		= READ_IF_EXISTS(pSettings, r_float, section, "torch_r2_range", 50.f);
+	m_fTorchCone		= deg2rad(READ_IF_EXISTS(pSettings, r_float, section, "torch_spot_angle", 60.f));
+	m_sTorchSpotTex		= READ_IF_EXISTS(pSettings, r_string, section, "torch_spot_texture", "internal\\internal_light_torch_r2");
+	m_TorchOmniColor.set(
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_r2_omni_color_r", 1.0f),
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_r2_omni_color_g", 1.0f),
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_r2_omni_color_b", 1.0f),
+		READ_IF_EXISTS(pSettings, r_float, section, "torch_r2_omni_color_a", 0.0f));
+	m_fTorchOmniRange	= READ_IF_EXISTS(pSettings, r_float, section, "torch_r2_omni_range", 0.25f);
+	m_bTorchGlow		= !!READ_IF_EXISTS(pSettings, r_bool,  section, "create_glow", TRUE);
+	m_sTorchGlowTex		= READ_IF_EXISTS(pSettings, r_string, section, "torch_glow_texture", "glow\\glow_torch_r2");
+	m_fTorchGlowRadius	= READ_IF_EXISTS(pSettings, r_float,  section, "torch_glow_radius", 0.3f);
+}
+
+// GS torch_enable_time_<alias> / torch_disable_time_<alias> (hud section, SECONDS from the start of
+// that motion): the light comes on part-way through the draw and dies part-way through the holster,
+// so it never pops on with the hand still off screen. An alias with neither key changes nothing.
+void CCustomDetector::ScheduleTorch(LPCSTR anim_alias)
+{
+	if (!m_bTorchInstalled || !anim_alias || !anim_alias[0])	return;
+	LPCSTR hs = HudSection().c_str();
+	if (!hs || !pSettings->section_exist(hs))				return;
+
+	string_path key;
+	strconcat(sizeof(key), key, "torch_enable_time_", anim_alias);
+	if (pSettings->line_exist(hs, key))
+	{
+		m_bTorchPending		= true;
+		m_dwTorchSwitchAt	= Device.dwTimeGlobal + u32(1000.f * pSettings->r_float(hs, key));
+		return;
+	}
+	strconcat(sizeof(key), key, "torch_disable_time_", anim_alias);
+	if (pSettings->line_exist(hs, key))
+	{
+		m_bTorchPending		= false;
+		m_dwTorchSwitchAt	= Device.dwTimeGlobal + u32(1000.f * pSettings->r_float(hs, key));
+	}
+}
+
+void CCustomDetector::StopTorch()
+{
+	if (m_pTorchSpot)	m_pTorchSpot->set_active(false);
+	if (m_pTorchOmni)	m_pTorchOmni->set_active(false);
+	if (m_pTorchGlow)	m_pTorchGlow->set_active(false);
+}
+
+// GS SwitchLefthandedTorch (ActorUtils.pas:3157): the beam/cone geometry on the model is switched
+// WITH the light -- `SetWeaponMultipleBonesStatus(det, light_cone_bones, status)` -- and it starts
+// hidden. Only `torch_cone_bones` is touched; `torch_light_bone` is the emitter ANCHOR, GS never
+// changes its visibility (and hiding it would be pointless anyway -- bone transforms are computed
+// regardless, which is what the light position is read from).
+// Cached, and reset to "unknown" whenever the hud model is not ours: the attachable_hud_item is
+// POOLED PER SECTION, so its bone state survives between draws.
+void CCustomDetector::UpdateTorchBones(bool on)
+{
+	if (!m_bTorchInstalled || !m_sTorchConeBones.size())	return;
+	attachable_hud_item* hi = HudItemData();
+	if (!hi || !hi->m_model)				{ m_iTorchBonesShown = -1; return; }
+	if (m_iTorchBonesShown == (on ? 1 : 0))	return;
+
+	string128 nm;
+	for (int i = 0, n = _GetItemCount(m_sTorchConeBones.c_str()); i < n; ++i)
+		hi->set_bone_visible(_GetItem(m_sTorchConeBones.c_str(), i, nm), on, TRUE);
+	m_iTorchBonesShown = on ? 1 : 0;
+}
+
+void CCustomDetector::UpdateTorch()
+{
+	if (!m_bTorchInstalled)		return;
+
+	if (m_dwTorchSwitchAt && Device.dwTimeGlobal >= m_dwTorchSwitchAt)
+	{
+		m_bTorchOn			= m_bTorchPending;
+		m_dwTorchSwitchAt	= 0;
+	}
+	// away (or on its way away) -> dark. IsWorking() is the "out in the left hand" test.
+	const bool lit = m_bTorchOn && IsWorking() && GetState()!=eHidden;
+	UpdateTorchBones(lit);		// the lens/cone geometry follows the light, not the draw
+	if (!lit)													{ StopTorch(); return; }
+
+	attachable_hud_item* hi = HudItemData();
+	if (!hi || !hi->m_model)									{ StopTorch(); return; }
+	u16 bid = hi->m_model->LL_BoneID(m_sTorchBone);
+	if (bid == BI_NONE)											{ StopTorch(); return; }
+
+	// The aim offset RAMPS with the aim transition instead of switching on IsZoomed() -- keyed off the
+	// weapon's zoom rotation factor (0 at the hip, 1 at full ADS, and it eases both ways), which is the
+	// same 0..1 the laser dot blends its origin with. Switching on the boolean snapped the emitter
+	// across the whole offset in one frame the moment aiming began.
+	Fvector off = m_vTorchOffset, omni_off = m_vTorchOmniOffset;
+	{
+		attachable_hud_item* w0 = g_player_hud ? g_player_hud->attached_item(0) : NULL;
+		CWeapon* w = w0 ? smart_cast<CWeapon*>(w0->m_parent_hud_item) : NULL;
+		float aim_k = w ? w->GetZoomRotationFactor() : 0.f;
+		clamp(aim_k, 0.f, 1.f);
+		if (aim_k > EPS)
+		{
+			Fvector d = m_vTorchAimOffset;	d.mul(aim_k);
+			off.add(d);						omni_off.add(d);
+		}
+	}
+
+	Fmatrix full;	full.mul_43(hi->m_item_transform, hi->m_model->LL_GetTransform(bid));
+	Fvector pos, omnipos, dir, right;
+	full.transform_tiny(pos,     off);
+	full.transform_tiny(omnipos, omni_off);
+	dir.set(full.k);	dir.normalize_safe();
+	right.set(full.i);	right.normalize_safe();
+	if (!_valid(pos) || !_valid(dir) || !_valid(omnipos))		{ StopTorch(); return; }
+
+	if (!m_pTorchSpot)
+	{
+		m_pTorchSpot = ::Render->light_create();
+		m_pTorchSpot->set_type		(IRender_Light::SPOT);
+		m_pTorchSpot->set_shadow	(true);
+		m_pTorchSpot->set_cone		(m_fTorchCone);
+		m_pTorchSpot->set_range		(m_fTorchRange);
+		m_pTorchSpot->set_color		(m_TorchColor);
+		m_pTorchSpot->set_texture	(m_sTorchSpotTex.c_str());
+		// WORLD light, not hud: it has to light the scene ahead, not the hands (same call the
+		// weapon-mounted flashlight makes, and for the same reason)
+		m_pTorchSpot->set_hud_mode	(false);
+		// ...and the actor's own body stays out of its shadow map -- it is held in his hand
+		m_pTorchSpot->set_actor_shadow(false);
+
+		m_pTorchOmni = ::Render->light_create();
+		m_pTorchOmni->set_type		(IRender_Light::POINT);
+		m_pTorchOmni->set_shadow	(false);
+		m_pTorchOmni->set_range		(m_fTorchOmniRange);
+		m_pTorchOmni->set_color		(m_TorchOmniColor);
+		m_pTorchOmni->set_hud_mode	(false);
+
+		if (m_bTorchGlow)
+		{
+			m_pTorchGlow = ::Render->glow_create();
+			m_pTorchGlow->set_texture(m_sTorchGlowTex.c_str());
+			m_pTorchGlow->set_color	(m_TorchColor);
+			m_pTorchGlow->set_radius(m_fTorchGlowRadius);
+		}
+	}
+
+	m_pTorchSpot->set_position	(pos);
+	m_pTorchSpot->set_rotation	(dir, right);
+	m_pTorchSpot->set_active	(true);
+	m_pTorchOmni->set_position	(omnipos);
+	m_pTorchOmni->set_rotation	(dir, right);
+	m_pTorchOmni->set_active	(true);
+	if (m_pTorchGlow)
+	{
+		m_pTorchGlow->set_position	(pos);
+		m_pTorchGlow->set_direction	(dir);
+		m_pTorchGlow->set_active	(true);
+	}
 }
 
 
@@ -582,6 +793,9 @@ void CCustomDetector::UpdateVisibility()
 				// so drop any pending manual request: the right hand is busy with that action, not
 				// with handing the detector over.
 				m_bNeedActivationManual	= false;
+				// this weapon is already OUT, so its re-show is the ordinary one -- the "come up with
+				// the weapon" exception belongs to a draw, not to an aim/reload that just ended.
+				m_bRestoreWithWeapon	= false;
 			}
 		}
 	}else
@@ -607,6 +821,7 @@ void CCustomDetector::UpdateVisibility()
 			{
 				m_bNeedActivation		= false;
 				m_bNeedActivationManual	= false;
+				m_bRestoreWithWeapon	= false;
 			}
 			else if(bChecked)
 			{
@@ -627,11 +842,12 @@ void CCustomDetector::UpdateVisibility()
 	}
 }
 
-void CCustomDetector::UpdateCL() 
+void CCustomDetector::UpdateCL()
 {
 	inherited::UpdateCL();
 
 	UpdateVisibility		();
+	UpdateTorch				();	// GS handheld torch: no-op unless the item declares torch_installed
 
 	if( !IsWorking() )		return;
 	UpfateWork				();

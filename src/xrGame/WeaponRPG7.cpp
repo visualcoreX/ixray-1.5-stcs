@@ -9,6 +9,7 @@
 
 CWeaponRPG7::CWeaponRPG7()
 {
+	m_hud_missile_vis = -1;
 }
 
 CWeaponRPG7::~CWeaponRPG7() 
@@ -40,11 +41,36 @@ void CWeaponRPG7::UpdateMissileVisibility()
 	if(GetHUDmode())
 	{
 		HudItemData()->set_bone_visible("grenade",vis_hud,TRUE);
+		m_hud_missile_vis = vis_hud ? 1 : 0;
 	}
+	else
+		m_hud_missile_vis = -1;		// our HUD model is not the attached one, so nothing was applied
 
-	IKinematics* pWeaponVisual	= smart_cast<IKinematics*>(Visual()); 
+	IKinematics* pWeaponVisual	= smart_cast<IKinematics*>(Visual());
 	VERIFY						(pWeaponVisual);
 	pWeaponVisual->LL_SetBoneVisible(pWeaponVisual->LL_BoneID("grenade"),vis_weap,TRUE);
+}
+
+// The rocket bone was only ever set from discrete events (OnStateSwitch, net_Import, fire, reload),
+// and every one of them can run while GetHUDmode() is still FALSE -- it requires the HUD model to be
+// attached, and the actor does that later, in its OWN UpdateCL. So the visibility set when the draw
+// starts never reached the model.
+// That alone was invisible, because the next event fixed it. What made it show is that
+// `attachable_hud_item` is cached PER HUD SECTION: two RPG-7s share one HUD model. Fire one, holster
+// it without reloading, draw a LOADED one -- the shared model still carried the empty tube from the
+// first, and the draw animation played a loaded launcher with no rocket in it until eIdle came round.
+// So re-assert it once the model really is ours. Cached, so this is a compare on all other frames.
+void CWeaponRPG7::UpdateCL()
+{
+	inherited::UpdateCL();
+
+	if(!GetHUDmode())		{ m_hud_missile_vis = -1; return; }
+	const int want = (!!iAmmoElapsed || GetState()==eReload) ? 1 : 0;
+	if(want != m_hud_missile_vis)
+	{
+		HudItemData()->set_bone_visible("grenade", !!want, TRUE);
+		m_hud_missile_vis = want;
+	}
 }
 
 BOOL CWeaponRPG7::net_Spawn(CSE_Abstract* DC) 

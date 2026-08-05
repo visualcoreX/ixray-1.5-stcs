@@ -49,6 +49,8 @@ extern bool g_pda_rt_pass;
 CGamePersistent::CGamePersistent(void)
 {
 	m_bPickableDOF				= false;
+	m_dof_speed					= 5.f;		// = the vanilla 0.2s until the first transition sets its own
+	m_dof_changed				= false;
 	m_game_params.m_e_game_type	= eGameIDNoGame;
 	ambient_effect_next_time	= 0;
 	ambient_effect_stop_time	= 0;
@@ -828,16 +830,55 @@ void CGamePersistent::SetBaseDof(const Fvector3& dof)
 	m_dof[0]=m_dof[1]=m_dof[2]=m_dof[3]	= dof;
 }
 
-void CGamePersistent::SetEffectorDOF(const Fvector& needed_dof)
+// GS gunsl_config.pas:1206..1217 -- same key names, same fallbacks.
+const CGamePersistent::SDofDefaults& CGamePersistent::DofDefaults()
+{
+	static SDofDefaults	D;
+	static bool			loaded = false;
+	if (!loaded)
+	{
+		loaded = true;
+		LPCSTR S = "gunslinger_base";
+		D.zoom.set	(READ_IF_EXISTS(pSettings, r_float, S, "default_zoom_dof_near",   0.5f),
+					 READ_IF_EXISTS(pSettings, r_float, S, "default_zoom_dof_focus",  0.8f),
+					 READ_IF_EXISTS(pSettings, r_float, S, "default_zoom_dof_far",    10000.f));
+		D.action.set(READ_IF_EXISTS(pSettings, r_float, S, "default_action_dof_near", 0.f),
+					 READ_IF_EXISTS(pSettings, r_float, S, "default_action_dof_focus",0.5f),
+					 READ_IF_EXISTS(pSettings, r_float, S, "default_action_dof_far",  5.f));
+		D.speed		  = READ_IF_EXISTS(pSettings, r_float, S, "default_dof_speed",       5.f);
+		D.speed_in	  = READ_IF_EXISTS(pSettings, r_float, S, "default_dof_speed_in",    3.f);
+		D.speed_out	  = READ_IF_EXISTS(pSettings, r_float, S, "default_dof_speed_out",   1.f);
+		D.time_offset = READ_IF_EXISTS(pSettings, r_float, S, "default_dof_time_offset",-0.5f);
+	}
+	return D;
+}
+
+void CGamePersistent::SetEffectorDOF(const Fvector& needed_dof, float speed)
 {
 	if(m_bPickableDOF)	return;
+	m_dof_speed	= speed;
 	m_dof[0]	= needed_dof;
 	m_dof[2]	= m_dof[1]; //current
+	m_dof_changed = true;
+}
+
+void CGamePersistent::RestoreEffectorDOF(float speed)
+{
+	// GS ResetDOF opens with `cmp _dof_changed, 0 / je @finish` -- restoring when nothing was ever
+	// applied would re-arm the interpolation (and its speed) for no reason.
+	if(!m_dof_changed)	return;
+	SetEffectorDOF	(m_dof[3], speed);
+	m_dof_changed	= false;
+}
+
+void CGamePersistent::SetEffectorDOF(const Fvector& needed_dof)
+{
+	SetEffectorDOF	(needed_dof, DofDefaults().speed);
 }
 
 void CGamePersistent::RestoreEffectorDOF()
 {
-	SetEffectorDOF			(m_dof[3]);
+	RestoreEffectorDOF	(DofDefaults().speed_out);
 }
 #include "hudmanager.h"
 
@@ -860,9 +901,12 @@ void CGamePersistent::UpdateDof()
 						return;
 
 	float td			= Device.fTimeDelta;
+	// GS DOFLoadSpeed_Patch: vanilla's fixed `td/0.2f` becomes `td * <speed of THIS transition>`,
+	// and GS RecalcDofSpeed snaps the DOF outright while there is no actor (menu / level load).
+	const float speed	= (g_pGameLevel && Level().CurrentEntity()) ? m_dof_speed : 1000.f;
 	Fvector				diff;
 	diff.sub			(m_dof[0], m_dof[2]);
-	diff.mul			(td/0.2f); //0.2 sec
+	diff.mul			(td*speed);
 	m_dof[1].add		(diff);
 	(m_dof[0].x<m_dof[2].x)?clamp(m_dof[1].x,m_dof[0].x,m_dof[2].x):clamp(m_dof[1].x,m_dof[2].x,m_dof[0].x);
 	(m_dof[0].y<m_dof[2].y)?clamp(m_dof[1].y,m_dof[0].y,m_dof[2].y):clamp(m_dof[1].y,m_dof[2].y,m_dof[0].y);

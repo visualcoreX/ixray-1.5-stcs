@@ -11,7 +11,11 @@ public:
 	virtual			~CWeaponShotgun		();
 
 	virtual void	Load				(LPCSTR section);
-	
+	// per-reload-phase snd_anm_* (WEAPON section). Re-registered on every hud-section change, because
+	// CWeaponMagazined::LoadAnmSounds wipes the whole snd_anm_ family and only re-reads the hud section.
+	virtual void	LoadAnmSounds		();
+	void			LoadPhaseAnmSounds	(LPCSTR section);
+
 	virtual void	net_Destroy			();
 	virtual void	net_Export			(NET_Packet& P);
 	virtual void	net_Import			(NET_Packet& P);

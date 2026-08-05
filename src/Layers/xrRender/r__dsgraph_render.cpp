@@ -8,6 +8,7 @@
 #include "../../xrEngine/xr_object.h"
 
 #include "FBasicVisual.h"
+#include "light.h"		// g_smap_light: which light's shadow map is being rendered (actor-shadow opt-out)
 
 using namespace		R_dsgraph;
 
@@ -697,7 +698,11 @@ void	R_dsgraph_structure::r_dsgraph_render_subspace	(IRender_Sector* _sector, CF
 			}
 		}
 #if RENDER != R_R1
+		// ...but not for a light that asked to be left out of it: the first-person flashlight / torch /
+		// headlamp sit ON the player, so the body shadow they would throw is nonsense (a huge silhouette
+		// cast from inside the actor). g_smap_light is NULL for the sun's cascades, which keep the shadow.
 		if (phase == RImplementation.PHASE_SMAP && ps_r__common_flags.test(RFLAG_ACTOR_SHADOW)
+			&& !(g_smap_light && !g_smap_light->get_actor_shadow())
 			&& !(g_pGamePersistent && g_pGamePersistent->m_bSuppressActorShadow)) {
 			if (g_pGameLevel && g_pGameLevel->CurrentViewEntity()) {
 				g_pGameLevel->CurrentViewEntity()->renderable_Render();

@@ -109,6 +109,7 @@ _action  actions[]		= {
 	{ "scope_brightness_minus",	kSCOPE_ILLUM_DEC	,_sp},		// GS scope reticle/night illumination down
 	{ "wpn_alter_zoom",			kWPN_ALTER_ZOOM		,_sp},		// GS alter zoom: the scope's second aim pose (ELCAN magnifier)
 	{ "wpn_kick",			kWPN_KICK				,_sp},		// GS quick knife kick
+	{ "quick_grenade",		kQUICK_GRENADE			,_sp},		// GS quick grenade throw
 
 	{ NULL, 				kLASTACTION				,_both}
 };															

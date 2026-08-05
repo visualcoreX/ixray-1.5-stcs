@@ -4,6 +4,8 @@
 static const float	SQRT2		=	1.4142135623730950488016887242097f;
 static const float	RSQRTDIV2	=	0.70710678118654752440084436210485f;
 
+light* g_smap_light = nullptr;
+
 light::light		(void)	: ISpatial(g_SpatialSpace)
 {
 	spatial.type	= STYPE_LIGHTSOURCE;
@@ -13,6 +15,7 @@ light::light		(void)	: ISpatial(g_SpatialSpace)
 	flags.bShadow	= false;
 	flags.bVolumetric = false;
 	flags.bHudMode	= false;
+	flags.bNoActorShadow = false;	// every light casts the actor's shadow unless told otherwise
 	position.set	(0,-1000,0);
 	direction.set	(0,-1,0);
 	right.set		(0,0,0);

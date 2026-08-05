@@ -11,6 +11,7 @@
 #include "../xrEngine/CameraBase.h"
 #include "player_hud.h"
 #include "../xrEngine/SkeletonMotions.h"
+#include "GamePersistent.h"				// GS action DOF (SetEffectorDOF + the [gunslinger_base] defaults)
 
 extern bool gwr_pda_need_fastzoom();		// ui\UIPdaWnd.cpp
 
@@ -81,6 +82,9 @@ CHudItem::CHudItem()
 	m_bStopAtEndAnimIsRunning = false;
 	m_current_motion_def		= NULL;
 	m_bAttachedNoMotion			= false;
+	m_bActionDofActive			= false;
+	m_fActionDofOutSpeed		= 1.f;
+	m_iActionDofTimeOffsetMs	= -500;
 	m_started_rnd_anim_idx		= u8(-1);
 	m_fHudFov					= 0.f;
 	m_fHudFovAim				= 0.f;
@@ -286,8 +290,14 @@ void CHudItem::OnEvent(NET_Packet& P, u16 type)
 void CHudItem::OnStateSwitch(u32 S)
 {
 	SetState			(S);
-	
-	if(object().Remote()) 
+
+	// putting the item away ends whatever action was running on it, so the action DOF goes with it.
+	// Matters most when the item is holstered by something OTHER than the animation finishing --
+	// a quick grenade cutting an item-use gesture, for one.
+	if(S==eHiding || S==eHidden)
+		StopActionDof	();
+
+	if(object().Remote())
 		SetNextState	(S);
 
 	switch (S)
@@ -401,6 +411,23 @@ void CHudItem::UpdateCL()
 			
 			}
 
+			// GS WeaponUpdate.pas:928 -- the action DOF is released relative to the ANIMATION, not on
+			// a timer of its own: dof_time_offset_<alias> is negative by default (-0.5 s), meaning
+			// "start easing out half a second before this animation ends", so the focus is already
+			// back by the time the hands settle. A positive value counts from the start instead.
+			// Skipped while aiming, because there the aim DOF is the one in charge.
+			if(m_bActionDofActive && !DofHeldByAim() && GamePersistent().DofChanged())
+			{
+				const u32 now = Device.dwTimeGlobal;
+				const int off = m_iActionDofTimeOffsetMs;
+				bool due = false;
+				if(off < 0)
+					due = (m_dwMotionEndTm <= now) || ((m_dwMotionEndTm - now) < u32(-off));
+				else if(off > 0)
+					due = (now - m_dwMotionStartTm) > u32(off);
+				if(due)		StopActionDof();
+			}
+
 			m_dwMotionCurrTm					= Device.dwTimeGlobal;
 			if(m_dwMotionCurrTm > m_dwMotionEndTm)
 			{
@@ -409,6 +436,7 @@ void CHudItem::UpdateCL()
 				m_dwMotionEndTm						= 0;
 				m_dwMotionCurrTm					= 0;
 				m_bStopAtEndAnimIsRunning = false;
+				StopActionDof						();	// nothing released it early -> release it now
 				OnAnimationEnd						(m_startedMotionState);
 			}
 		}
@@ -702,12 +730,61 @@ u32 CHudItem::PlayHUDMotion(const shared_str& M, BOOL bMixIn, CHudItem*  W, u32 
 			if (lock_end < m_dwMotionEndTm)	m_dwMotionEndTm = lock_end;
 		}
 		m_startedMotionState		= state;
+		StartActionDof			(playM.c_str());	// needs the timings above, so it goes last
 	} else {
 		m_bStopAtEndAnimIsRunning = false;
 	}
 	ArmPPE					(playM);	// ppe keyed to THIS alias, if the hud section asks for one
 	TryPlayDetectorCompanion(playM);	// mirror this action on an out companion detector
 	return anim_time;
+}
+
+// GS ReadActionDOFVector / ReadActionDOFSpeed_In. The animation that just started pulls the focus
+// onto the hands. GS turns this on BY DEFAULT only for the aliases its reload-family selectors
+// produce -- anm_reload, anm_reload_g, anm_open, anm_close, anm_add_cartridge (the `def=true` call
+// sites in WeaponAnims.pas). Draw, holster, idle, shooting and the knife pass `def=false`, i.e. they
+// blur only if the config explicitly asks with use_dof_<alias>. Values come from
+// [gunslinger_base] default_action_dof_* and may be overridden per alias.
+void CHudItem::StartActionDof(LPCSTR alias)
+{
+	m_bActionDofActive = false;
+	if (!alias || !alias[0])			return;
+	if (!GetHUDmode())					return;		// only the item the player is actually looking at
+
+	static const char* dof_on_by_default[] = { "anm_reload", "anm_open", "anm_close", "anm_add_cartridge" };
+	bool def = false;
+	for (const char* p : dof_on_by_default)
+		if (0 == strncmp(alias, p, xr_strlen(p)))	{ def = true; break; }
+
+	LPCSTR hs = HudSection().c_str();
+	if (!hs || !pSettings->section_exist(hs))	return;
+	string_path key;
+	strconcat(sizeof(key), key, "use_dof_", alias);
+	if (!READ_IF_EXISTS(pSettings, r_bool, hs, key, def ? TRUE : FALSE))		return;
+
+	const CGamePersistent::SDofDefaults& DD = CGamePersistent::DofDefaults();
+	Fvector v = DD.action;
+	strconcat(sizeof(key), key, "dof_", alias, "_near");	v.x = READ_IF_EXISTS(pSettings,r_float,hs,key,v.x);
+	strconcat(sizeof(key), key, "dof_", alias, "_focus");	v.y = READ_IF_EXISTS(pSettings,r_float,hs,key,v.y);
+	strconcat(sizeof(key), key, "dof_", alias, "_far");		v.z = READ_IF_EXISTS(pSettings,r_float,hs,key,v.z);
+
+	strconcat(sizeof(key), key, "dof_speed_in_", alias);
+	const float in_speed	= READ_IF_EXISTS(pSettings,r_float,hs,key,DD.speed_in);
+	strconcat(sizeof(key), key, "dof_speed_out_", alias);
+	m_fActionDofOutSpeed	= READ_IF_EXISTS(pSettings,r_float,hs,key,DD.speed_out);
+	strconcat(sizeof(key), key, "dof_time_offset_", alias);
+	m_iActionDofTimeOffsetMs = iFloor(READ_IF_EXISTS(pSettings,r_float,hs,key,DD.time_offset) * 1000.f);
+
+	GamePersistent().SetEffectorDOF	(v, in_speed);
+	m_bActionDofActive = true;
+}
+
+void CHudItem::StopActionDof()
+{
+	if (!m_bActionDofActive)		return;
+	m_bActionDofActive = false;
+	if (DofHeldByAim())				return;		// the aim owns the effector; leaving aim restores it
+	GamePersistent().RestoreEffectorDOF	(m_fActionDofOutSpeed);
 }
 
 // If THIS is the active weapon (hud idx 0) and a detector is out (idx 1), play the detector's

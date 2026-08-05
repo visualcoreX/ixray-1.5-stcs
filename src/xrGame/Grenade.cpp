@@ -7,6 +7,7 @@
 #include "ParticlesObject.h"
 #include "actor.h"
 #include "inventory.h"
+#include "CustomDetector.h"		// GS RestoreLastActorDetector after a quick throw
 #include "level.h"
 #include "xrmessages.h"
 #include "xr_level_controller.h"
@@ -27,6 +28,7 @@ CGrenade::CGrenade(void)
 	m_bExplosionOnHit			= false;
 	m_bExplosiveWhileNotActivated = false;
 	m_bHasExplosiveWhileKey		= false;
+	m_bHelpExplosiveInfo		= false;
 	m_pending_next_id			= u16(-1);
 }
 
@@ -69,6 +71,7 @@ void CGrenade::Load(LPCSTR section)
 	m_bHasExplosiveWhileKey	= !!pSettings->line_exist(section, "explosive_while_not_activated");
 	m_bExplosiveWhileNotActivated = m_bHasExplosiveWhileKey
 								&& !!pSettings->r_bool(section, "explosive_while_not_activated");
+	m_bHelpExplosiveInfo	= !!READ_IF_EXISTS(pSettings, r_bool,  section, "help_explosive_info", FALSE);
 	m_ExplosionHitTypes.clear();
 	if (pSettings->line_exist(section, "explosion_hit_types"))
 	{
@@ -137,6 +140,13 @@ void CGrenade::ImpactContactCallback(bool& /*do_colide*/, bool /*bo1*/, dContact
 // explosion type the stock check hardcodes.
 bool CGrenade::CheckExplosionByHit(const SHit* pHDS) const
 {
+	// GS `help_explosive_info`: opt-in per section, off everywhere unless you are tuning the
+	// threshold -- it only fires when the grenade is actually hit, so it is not a hot path.
+	if (m_bHelpExplosiveInfo)
+		Msg("~ [grenade %s] hit type %d, power %f, impulse %f, threshold %f",
+			cNameSect().c_str(), int(pHDS->hit_type), pHDS->damage(), pHDS->phys_impulse(),
+			m_grenade_detonation_threshold_hit);
+
 	if (!m_bExplosionOnHit)								return false;
 	if (m_grenade_detonation_threshold_hit >= pHDS->damage())	return false;
 	// an armed (thrown) grenade always cooks off; one still lying around only if the config says so
@@ -150,11 +160,16 @@ bool CGrenade::CheckExplosionByHit(const SHit* pHDS) const
 
 void CGrenade::Hit					(SHit* pHDS)
 {
-	// stock rule (explosion hit over the threshold) OR the GS one, which widens it to the hit types
-	// listed in `explosion_hit_types` -- that is what makes an RGN/RGO cook off when shot
-	if( CExplosive::Initiator()==u16(-1) &&
-		(( ALife::eHitTypeExplosion==pHDS->hit_type && m_grenade_detonation_threshold_hit<pHDS->damage())
-		 || CheckExplosionByHit(pHDS)) )
+	// GS CGrenade__OnHit_CanExplode_Patch REPLACES the stock condition rather than extending it, and
+	// that turns out to be the whole point: the stock gate `CExplosive::Initiator()==u16(-1)` can
+	// never be true, because Initiator() substitutes the grenade's OWN id whenever the parent id is
+	// unset (Explosive.cpp). So the branch was dead code -- a grenade lying in the world took bullets
+	// without ever cooking off, no matter what the config asked for. What is left is the config-driven
+	// test, plus GS's null check on the hit source (`cmp edi, 0`) and a guard so a second hit landing
+	// in the same frame cannot queue the explode event twice (GenExplodeEvent asserts on that).
+	// Note the stock "explosion hit over the threshold" rule is intentionally gone: GS lists only
+	// `6, 8` (chemical_burn + fire_wound) in explosion_hit_types, so grenades do NOT chain-detonate.
+	if( CExplosive::Useful() && pHDS->who && CheckExplosionByHit(pHDS) )
 	{
 		CExplosive::SetCurrentParentID(pHDS->who->ID());
 		Destroy();
@@ -348,8 +363,30 @@ void CGrenade::PutNextToSlot()
 			pNext->u_EventGen				(P, GEG_PLAYER_ITEM2SLOT, pNext->H_Parent()->ID());
 			P.w_u16							(pNext->ID());
 			pNext->u_EventSend				(P);
-//			if(IsGameTypeSingle())			
+//			if(IsGameTypeSingle())
 				m_pInventory->SetActiveSlot			(pNext->GetSlot());
+		}
+
+		// GS CMissile__PutNextToSlot: a QUICK throw goes back to whatever was in your hands, it does
+		// not leave you standing there holding the next grenade. The next one is still slotted above
+		// (so the following quick throw has something to pull), it just never gets drawn.
+		if (m_quick_throw_ret_slot != NO_ACTIVE_SLOT)
+		{
+			const u32 ret			= m_quick_throw_ret_slot;
+			m_quick_throw_ret_slot	= NO_ACTIVE_SLOT;
+			if (m_pInventory->ItemFromSlot(ret))		// the slot was active when the key was pressed
+				m_pInventory->Activate	(ret);
+		}
+		// GS RestoreLastActorDetector, called from the same place: drawing the grenade made the
+		// detector incompatible and CheckCompatibility holstered it, which clears m_bNeedActivation --
+		// so nothing remembered to bring it back. A quick throw is not a deliberate switch away from
+		// the detector, so it comes back (GS forgets the auto-hide only on a NORMAL grenade draw,
+		// Throwable.pas:304).
+		if (m_quick_throw_had_det)
+		{
+			m_quick_throw_had_det	= false;
+			CCustomDetector* det	= smart_cast<CCustomDetector*>(m_pInventory->ItemFromSlot(DETECTOR_SLOT));
+			if (det)	det->RequestRestore();
 		}
 
 		m_thrown				= false;

@@ -128,6 +128,10 @@ public:
 protected:
 	bool					m_bTriStateReload;
 	bool					m_bZoomKeyHeld;		// aim key held (physical): set on kWPN_ZOOM CMD_START, cleared on CMD_STOP
+	// TOGGLE aim (wpn_aim_toggle 1) only: the player asked to aim but the weapon was busy, so the
+	// press was dropped. Replaces the physical key as the "resume aiming" signal there -- in toggle
+	// mode the key is released immediately and holding it means nothing.
+	bool					m_bZoomToggleWanted;
 	u8						m_sub_state;
 	// a misfire happens, you'll need to rearm weapon
 	bool					bMisfire;
@@ -223,6 +227,10 @@ public:
 	bool			IsAlterZoomAllowed	() const;
 	bool			IsAlterZoom			() const { return m_bAlterZoom; }
 	void			ToggleAlterZoom		();
+	// GS RefreshZoomDOF: pick the DOF that matches WHAT is being aimed through (PiP lens / iron
+	// sights / plain 2D scope) and apply it. Re-run whenever that answer can change mid-aim.
+	void			RefreshZoomDOF		();
+	Fvector			LensDof				() const;	// hud lens_dof_*, overridden by the ATTACHED scope's section
 	// eased 0..1 blend toward the alter pose (cubic ease-in-out, i.e. cubic-bezier(.42,0,.58,1)); the
 	// aim offset and hud fov interpolate with it instead of snapping.
 	float			AlterZoomBlend		() const;
@@ -431,6 +439,9 @@ protected:
 		float			m_fZoomRotationFactor;
 		
 		Fvector			m_ZoomDof;
+		Fvector			m_LensDof;				// GS lens_dof_*: aiming through a PiP scope (hud section)
+		float			m_fZoomInDofSpeed;		// GS zoom_in_dof_speed  (default 3 -> ~0.33s)
+		float			m_fZoomOutDofSpeed;		// GS zoom_out_dof_speed (default 1 -> ~1.0s)
 		Fvector4		m_ReloadDof;
 
 	} m_zoom_params;
@@ -579,6 +590,11 @@ public:
 	virtual	int				ShotsFired			() { return 0; }
 	virtual	int				GetCurrentFireMode	() { return 1; }
 
+	// GS `detector_disp_factor` (DetectorUtils.pas ReadDispersionMultiplier): shooting one-handed
+	// with a detector in the other hand widens the weapon's own cone by this much. 1 = no effect,
+	// which is what every section without the key gets.
+	float					DetectorDispersionFactor		() const;
+
 	//параметы оружия в зависимоти от его состояния исправности
 	float					GetConditionDispersionFactor	() const;
 	float					GetConditionMisfireProbability	() const;
@@ -589,9 +605,10 @@ public:
 	CameraRecoil			zoom_cam_recoil;	// using zoom =(ironsight or scope)
 
 protected:
-	//фактор увеличения дисперсии при максимальной изношености 
+	//фактор увеличения дисперсии при максимальной изношености
 	//(на сколько процентов увеличится дисперсия)
 	float					fireDispersionConditionFactor;
+	float					m_fDetectorDispFactor;		// GS detector_disp_factor (1 = key absent)
 	//вероятность осечки при максимальной изношености
 	float					misfireProbability;
 	float					misfireConditionK;

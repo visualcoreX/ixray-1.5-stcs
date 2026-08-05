@@ -6,6 +6,7 @@
 #include "artefact.h"
 #include "ai_sounds.h"
 #include "ui/ArtefactDetectorUI.h"
+#include "../xrEngine/Render.h"		// ref_light / ref_glow for the GS handheld torch
 
 class CCustomZone;
 class CInventoryOwner;
@@ -130,6 +131,9 @@ protected:
 										// ShowDetector() is the engine path and deliberately plays none.
 	bool			m_bAutoToggle;		// this show/hide is an auto hide/re-show (reload/aim), NOT a manual toggle
 										// -> don't play the weapon's draw/prepare-detector gesture
+	bool			m_bRestoreWithWeapon;	// this deferred draw must go up TOGETHER with the weapon that is
+										// being drawn, not after it (GS actShowDetectorNow force-unhide).
+										// Only meaningful while m_bNeedActivation is set.
 	bool			m_bCompanionOneShot;	// the companion now playing is a one-shot (CMotionDef::StopAtEnd):
 											// it freezes on its last frame when done, a loop (aim idle) doesn't
 	shared_str		m_companion_done;		// a one-shot companion that just ended; the idle mirror must not
@@ -166,10 +170,60 @@ public:
 	// re-select the detector's (companion) idle NOW — called by the weapon when its aim state changes
 	void			RefreshCompanionIdle();
 
+	// ---- GS handheld torch (configs/weapons/detectors/torch) --------------------------------------
+	// GS builds its flashlight as a DETECTOR: same slot, same companion machinery, plus a light off
+	// one of its bones. There is no toggle key -- the light comes on partway through the DRAW
+	// animation and goes off partway through the HIDE, per `torch_enable_time_<alias>` /
+	// `torch_disable_time_<alias>` in the hud section. Opt-in: `torch_installed` in the item section.
+public:
+			bool	HasTorch			() const	{ return m_bTorchInstalled; }
+protected:
+			void	LoadTorchParams		(LPCSTR section);
+			void	UpdateTorch			();	// per frame from UpdateCL
+			void	StopTorch			();
+			void	ScheduleTorch		(LPCSTR anim_alias);	// arm the on/off moment for this motion
+			// the emitter/cone geometry on the model is shown and hidden WITH the light, so a drawn
+			// but not yet lit torch has a dark lens
+			void	UpdateTorchBones	(bool on);
+
+			bool			m_bTorchInstalled;
+			bool			m_bTorchOn;
+			u32				m_dwTorchSwitchAt;		// Device time to apply m_bTorchPending (0 = nothing armed)
+			bool			m_bTorchPending;
+			shared_str		m_sTorchBone;			// torch_light_bone on the HUD model
+			shared_str		m_sTorchConeBones;		// torch_cone_bones: comma-separated beam/cone geometry
+			int				m_iTorchBonesShown;		// last applied visibility: 1 shown, 0 hidden, -1 unknown
+			Fvector			m_vTorchOffset;			// torch_attach_offset_*
+			Fvector			m_vTorchOmniOffset;		// torch_omni_attach_offset_* (defaults to the above)
+			Fvector			m_vTorchAimOffset;		// torch_aim_attach_offset_*: added while the weapon is aimed
+			Fcolor			m_TorchColor;			// torch_r2_color_*
+			float			m_fTorchRange;			// torch_r2_range
+			float			m_fTorchCone;			// torch_spot_angle (radians)
+			shared_str		m_sTorchSpotTex;		// torch_spot_texture
+			Fcolor			m_TorchOmniColor;		// torch_r2_omni_color_*
+			float			m_fTorchOmniRange;		// torch_r2_omni_range
+			bool			m_bTorchGlow;			// create_glow
+			shared_str		m_sTorchGlowTex;		// torch_glow_texture
+			float			m_fTorchGlowRadius;		// torch_glow_radius
+			ref_light		m_pTorchSpot;
+			ref_light		m_pTorchOmni;
+			ref_glow		m_pTorchGlow;
+public:
+
 	void			ToggleDetector		(bool bFastMode);
 	void			HideDetector		(bool bFastMode);
 	void			ShowDetector		(bool bFastMode);
 	void			ShowDetectorEmergency();	// show with the anm_show_emergency (weapon-in-hand) draw
+	// GS RestoreLastActorDetector (ActorUtils.pas:1700): ask for the detector back once the hands are
+	// free again. Deferred on purpose -- ShowDetector() here would draw it while the item that
+	// replaced the grenade is still coming up; UpdateVisibility's m_bNeedActivation path waits for
+	// that item to be out and compatible, then plays the engine-driven (no weapon gesture) re-show.
+	void			RequestRestore		();
+	// Drop a pending deferred draw. Something else is taking over the hands and will decide for
+	// itself whether the detector comes back -- letting the old request stand would have it grab a
+	// slot out from under that.
+	void			CancelRestore		()	{ m_bNeedActivation = false; m_bNeedActivationManual = false;
+											  m_bRestoreWithWeapon = false; }
 	float			m_fAfDetectRadius;
 	virtual bool	CheckCompatibility	(CHudItem*);
 
@@ -191,6 +245,9 @@ protected:
 			bool	CheckCompatibilityInt		(CHudItem*, u32* slot_to_activate = NULL, bool for_draw = false);
 			bool	AnimForbidsDetector			(CHudItem*);	// GS disable_detector_<alias>
 			bool	HasDetectorDrawGesture		(CHudItem*);	// plays anm_prepare_detector on the draw?
+			// ...and is that gesture something this draw actually has to WAIT for? A restore that comes
+			// up with the weapon does not: the hand-over only makes sense when the weapon is already out.
+			bool	WaitForDrawGesture			(CHudItem* itm)	{ return HasDetectorDrawGesture(itm) && !m_bRestoreWithWeapon; }
 			void 	TurnDetectorInternal		(bool b);
 	void 			UpdateNightVisionMode		(bool b_off);
 	void			UpdateVisibility			();

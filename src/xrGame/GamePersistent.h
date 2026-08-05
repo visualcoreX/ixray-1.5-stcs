@@ -30,6 +30,11 @@ class CGamePersistent:
 	CUISequencer*		m_intro;
 	EVENT				eQuickLoad;
 	Fvector				m_dof		[4];	// 0-dest 1-current 2-from 3-original
+	// GS ActorDOF.pas: the blend rate is NOT a constant. Every transition carries its own speed --
+	// vanilla's hardcoded "reach the target in 0.2s" is only GS's `default_dof_speed`, and aiming in
+	// (3 = 0.33s) / out (1 = 1.0s) are deliberately different from it and from each other.
+	float				m_dof_speed;
+	bool				m_dof_changed;		// GS _dof_changed: a Restore with nothing to undo is a no-op
 
 	fastdelegate::FastDelegate0<> m_intro_event;
 
@@ -86,8 +91,24 @@ public:
 	virtual bool		CanBePaused				();
 
 			void		SetPickableEffectorDOF	(bool bSet);
-			void		SetEffectorDOF			(const Fvector& needed_dof);
-			void		RestoreEffectorDOF		();
+			void		SetEffectorDOF			(const Fvector& needed_dof, float speed);
+			void		RestoreEffectorDOF		(float speed);
+			void		SetEffectorDOF			(const Fvector& needed_dof);	// base speed
+			void		RestoreEffectorDOF		();							// "out" speed
+			bool		DofChanged				() const	{ return m_dof_changed; }
+
+	// GS DOF tuning, read once from [gunslinger_base] (gunslinger_params.ltx) under GS's own key
+	// names, with GS's own fallbacks. Speeds are 1/seconds: 5 = the vanilla 0.2s, 1 = a full second.
+	struct SDofDefaults
+	{
+		Fvector	zoom;			// default_zoom_dof_near/_focus/_far		0.5 / 0.8 / 10000
+		Fvector	action;			// default_action_dof_near/_focus/_far	0   / 0.5 / 5
+		float	speed;			// default_dof_speed		5	(base / pickable)
+		float	speed_in;		// default_dof_speed_in		3	(into aim, into an action)
+		float	speed_out;		// default_dof_speed_out	1	(back out)
+		float	time_offset;	// default_dof_time_offset	-0.5 s (see CHudItem::UpdateCL)
+	};
+	static const SDofDefaults&	DofDefaults	();
 
 	virtual void		GetCurrentDof			(Fvector3& dof);
 	virtual void		SetBaseDof				(const Fvector3& dof);

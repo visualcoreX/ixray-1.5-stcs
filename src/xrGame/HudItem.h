@@ -69,10 +69,25 @@ protected:
 		bool					m_bStopAtEndAnimIsRunning;
 		bool					m_bAttachedNoMotion;
 	};
+
+	// GS action DOF (ActorDOF.pas + the WeaponAnims *_selector calls): the animation now running has
+	// pulled focus onto the hands, and these say how and when to let it back out.
+	bool						m_bActionDofActive;
+	float						m_fActionDofOutSpeed;
+	int							m_iActionDofTimeOffsetMs;	// <0: release that long BEFORE the anim ends
+															// >0: that long AFTER it started
+			void				StartActionDof		(LPCSTR anim_alias);
+			void				StopActionDof		();
+	// While aiming, the aim DOF owns the effector and an action must not yank it back (GS checks
+	// IsAimNow / IsHolderInAimState before ResetDOF). IsHudItemZoomed is CWeapon's IsZoomed().
+			bool				DofHeldByAim		()			{ return IsHudItemZoomed(); }
 public:
 	virtual void				Load				(LPCSTR section);
 	virtual	BOOL				net_Spawn			(CSE_Abstract* DC)				{return TRUE;};
-	virtual void				net_Destroy			()								{};
+	// the action DOF belongs to an animation on THIS item; if the item goes away mid-animation
+	// (an interrupted item-use gesture, whose phantom is simply released) nothing else would ever
+	// let the focus back out -- so release it here too, not only when the animation ends.
+	virtual void				net_Destroy			()								{ StopActionDof(); };
 	virtual void				OnEvent				(NET_Packet& P, u16 type);
 
 	virtual void				OnH_A_Chield		();

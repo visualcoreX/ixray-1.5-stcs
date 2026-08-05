@@ -41,9 +41,31 @@ void create_force_progress()
 	xml_init.InitProgressShape		(uiXml, "progress", 0, g_MissileForceShape);
 }
 
-CMissile::CMissile(void) 
+// GS quick throw arming state (Throwable.pas `_quick_throw_forced`). One actor, one grenade key, so a
+// pair of statics is enough -- and it has to live outside the missile, because the flag is set BEFORE
+// the item this draw will hand us is known.
+static bool	s_quick_throw_armed		= false;
+static u32	s_quick_throw_ret_slot	= NO_ACTIVE_SLOT;
+static bool	s_quick_throw_had_det	= false;
+
+void CMissile::ArmQuickThrow(u32 return_slot, bool had_detector)
 {
-	m_dwStateTime		= 0;
+	s_quick_throw_armed		= true;
+	s_quick_throw_ret_slot	= return_slot;
+	s_quick_throw_had_det	= had_detector;
+}
+bool CMissile::QuickThrowArmed()			{ return s_quick_throw_armed; }
+u32  CMissile::QuickThrowReturnSlot()		{ return s_quick_throw_ret_slot; }
+bool CMissile::QuickThrowHadDetector()		{ return s_quick_throw_had_det; }
+void CMissile::ResetQuickThrow()			{ s_quick_throw_armed = false; s_quick_throw_ret_slot = NO_ACTIVE_SLOT;
+											  s_quick_throw_had_det = false; }
+
+CMissile::CMissile(void)
+{
+	m_dwStateTime			= 0;
+	m_bQuickThrow			= false;
+	m_quick_throw_ret_slot	= NO_ACTIVE_SLOT;
+	m_quick_throw_had_det	= false;
 }
 
 CMissile::~CMissile(void) 
@@ -54,6 +76,7 @@ void CMissile::reinit		()
 {
 	inherited::reinit	();
 	m_throw				= false;
+	m_bQuickThrow		= false;
 	m_constpower = false;
 	m_bSuicideThrow = false;
 	m_fThrowForce		= 0;
@@ -80,6 +103,12 @@ void CMissile::Load(LPCSTR section)
 	m_vHudThrowDir		= pSettings->r_fvector3(*hud_sect,"throw_dir");
 
 	m_ef_weapon_type	= READ_IF_EXISTS(pSettings,r_u32,section,"ef_weapon_type",u32(-1));
+
+	// GS `snd_throw_quick` -> registered under the name the generic per-anim sound lookup expects
+	// (`snd_<alias>` in PlayHUDMotion), so playing anm_throw_quick plays it without a special case.
+	if (pSettings->line_exist(section, "snd_throw_quick"))
+		m_sounds.LoadSound(section, "snd_throw_quick", "snd_anm_throw_quick",
+						   false, SOUND_TYPE_WEAPON_RECHARGING);
 }
 
 BOOL CMissile::net_Spawn(CSE_Abstract* DC) 
@@ -129,10 +158,28 @@ void CMissile::PH_A_CrPr		()
 
 void CMissile::OnActiveItem		()
 {
+	// GS CMissile__OnActiveItem: the quick-throw key armed a throw before this slot was activated, so
+	// this draw is not a draw at all -- State(eShowing) plays anm_throw_quick instead of anm_show.
+	// Claimed here (not in State) so that a grenade without the animation falls back to a normal draw
+	// and the arming does not leak into the next item that happens to come up.
+	m_bQuickThrow = false;
+	if (QuickThrowArmed())
+	{
+		const u32  ret	= QuickThrowReturnSlot();
+		const bool det	= QuickThrowHadDetector();
+		ResetQuickThrow	();
+		if (smart_cast<CActor*>(H_Parent()) && isHUDAnimationExist("anm_throw_quick"))
+		{
+			m_bQuickThrow			= true;
+			m_quick_throw_ret_slot	= ret;
+			m_quick_throw_had_det	= det;
+		}
+	}
+
 	SwitchState				(eShowing);
 	inherited::OnActiveItem	();
 	SetState				(eIdle);
-	SetNextState			(eIdle);	
+	SetNextState			(eIdle);
 }
 
 void CMissile::OnHiddenItem()
@@ -267,6 +314,20 @@ void CMissile::State(u32 state)
 	case eShowing:
         {
 			SetPending			(TRUE);
+			// GS CMissile__State_anm_show_selector: with a quick throw armed the show state plays
+			// anm_throw_quick instead of anm_show -- the grenade is pulled and lobbed in one motion,
+			// at the fixed force_const (no wind-up to hold), and the fake missile that actually flies
+			// is spawned up front because the throw happens on this animation's motion mark.
+			if (m_bQuickThrow)
+			{
+				m_constpower	= true;
+				m_throw			= false;
+				m_fThrowForce	= m_fConstForce;
+				if (!m_fake_missile && !smart_cast<CMissile*>(H_Parent()))
+					spawn_fake_missile	();
+				PlayHUDMotion	("anm_throw_quick", FALSE, this, GetState());
+				break;
+			}
 			PlayHUDMotion("anm_show", FALSE, this, GetState());
 		} break;
 	case eIdle:
@@ -386,6 +447,23 @@ void CMissile::OnAnimationEnd(u32 state)
 	case eShowing:
 		{
 			setVisible(TRUE);
+			// GS CMissile__OnAnimationEnd: anm_throw_quick ends into eThrowEnd, never into idle -- the
+			// grenade already left the hand at the motion mark, so there is nothing left to hold.
+			if (m_bQuickThrow)
+			{
+				// cleared here so the re-show that eThrowEnd kicks off is an ordinary draw and cannot
+				// loop back into anm_throw_quick. m_quick_throw_ret_slot survives -- PutNextToSlot
+				// still needs it to send us back to the weapon we interrupted.
+				m_bQuickThrow = false;
+				// safety net: the release normally happens on the animation's motion mark, but an
+				// anm_throw_quick authored without one would otherwise end with the grenade still in
+				// hand and eThrowEnd doing nothing (CGrenade::State gates on m_thrown). Throw() is
+				// idempotent for grenades -- CGrenade::Throw returns early once m_thrown is set.
+				if (H_Parent() && m_fake_missile)
+					Throw	();
+				SwitchState(eThrowEnd);
+				break;
+			}
 			SwitchState(eIdle);
 		} break;
 	case eThrowStart:
@@ -520,6 +598,14 @@ void CMissile::setup_throw_params()
 void CMissile::OnMotionMark(u32 state, const motion_marks& M)
 {
 	inherited::OnMotionMark(state, M);
+	// GS CMissile__OnMotionMark: for a quick throw the release mark sits in anm_throw_quick, i.e. in
+	// the SHOW state -- that is the whole trick, one animation covers draw + pull + throw.
+	if(m_bQuickThrow && state==eShowing)
+	{
+		if (H_Parent())
+			Throw	();
+		return;
+	}
 	if(state==eThrow && !m_throw)
 	{
 		if (H_Parent())

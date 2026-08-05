@@ -1984,6 +1984,10 @@ void CCC_RegisterCommands()
 		CMD4(CCC_Integer,		"g_pda_dbg",			&g_pda_dbg,				0, 1);
 		extern int g_pda_use_clicks;
 		CMD4(CCC_Integer,		"g_pda_use_clicks",		&g_pda_use_clicks,		0, 1);
+		// GS npc_lasers: 1 = an NPC-carried weapon keeps its laser beam on, 0 = it goes out when the
+		// weapon changes hands. The mounted flashlight is always killed for NPCs (no GS option for it).
+		extern int g_npc_lasers;
+		CMD4(CCC_Integer,		"npc_lasers",			&g_npc_lasers,			0, 1);
 		// how close the 3D PDA is held: lowered / at the face. 0 = use the config value.
 		// SMALLER = narrower hud fov = the PDA looks BIGGER (engine default is 0.45)
 		extern float g_pda_hud_fov;

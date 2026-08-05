@@ -30,10 +30,14 @@ public:
 
 			void UpdateMissileVisibility	();
 	virtual void UnloadMagazine				(bool spawn_ammo = true);
+	virtual void UpdateCL					();
 
 	virtual void net_Import			( NET_Packet& P);				// import from server
 protected:
 	shared_str	m_sRocketSection;
+	// What we last managed to apply to the HUD model's `grenade` bone: 1 shown, 0 hidden, -1 nothing
+	// applied yet (our HUD model is not the attached one). See UpdateCL for why this is needed.
+	int			m_hud_missile_vis;
 
 	DECLARE_SCRIPT_REGISTER_FUNCTION
 };

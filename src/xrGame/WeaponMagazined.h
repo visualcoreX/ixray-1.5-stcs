@@ -180,6 +180,9 @@ public:
 	virtual void	FireStart		();
 	virtual void	FireEnd			();
 	virtual void	Reload			();
+	// shared pre-reload gate (blocks + the "lower the sights first" hand-over). false = do not start the
+	// reload now. Called by Reload() and by CWeaponShotgun's tri-state path, which bypasses Reload().
+	bool			ReloadGate		();
 	
 
 	virtual	void	UpdateCL		();
@@ -249,7 +252,9 @@ public:
 	void			UpdateHudSectionForAddons(LPCSTR extra_upgrade_sect = nullptr);
 	// GS PlaySoundByAnimName set, (re)loaded from the CURRENT hud section -- an upgrade that repoints `hud`
 	// brings its own snd_anm_* values (the gauss's fast-rpm node -> the gauss_shoot_fast shot sounds).
-	void			LoadAnmSounds			();
+	// virtual: a subclass may own snd_anm_* sounds that do NOT come from the hud section (the shotgun's
+	// per-reload-phase set lives in the WEAPON section) and must re-register them after the wipe
+	virtual void	LoadAnmSounds			();
 	shared_str		m_anm_snd_sect;			// hud section the snd_anm_* set was loaded from
 	// GS restricted_gl_and_sil: this weapon cannot wear the launcher and the silencer at once
 	IC bool			GwrRestrictedGLandSil() const
@@ -353,7 +358,7 @@ protected:
 	virtual void	PlayAnimIdle		();
 	virtual void	PlayAnimShoot		();
 	// GS: re-assign the shoot motion to its "_jammed" variant on the shot that jams (false = no such alias)
-	bool			PlayJammedShootAnim	();
+	bool			PlayJammedShootAnim	(bool force = false);
 	// the magazine fill of a reload, once per reload: at the animation's end, or at the config's
 	// lock_time_start_<alias> when it has one (GS) so the loaded round shows up mid-animation
 	void			DoReloadInsert		();
@@ -377,6 +382,14 @@ protected:
 	virtual bool	IsShootLocked		() const override;
 	bool			m_bAimInPending;	// aim pressed mid-fire: play aim-in once fire stops (switch2_Idle)
 	bool			m_bAimOutPending;	// aim released mid-fire: keep aiming, play aim-out when fire ends
+	// reload pressed while aiming: lower the sights FIRST, then blend the reload into the tail of
+	// that transition. (GS just forbids reloading while aimed; this is the variant the user asked for.)
+	bool			m_bReloadAfterAimOut;
+	u32				m_dwReloadAfterAimAt;	// wall clock to start it; 0 = as soon as the sights are down
+	// GS CanReloadNow: a reload may not start until the shot's own cycle (the pump/bolt work) is over.
+	// Wall clock at which the queued reload may go; 0 = nothing waiting on the shot cycle.
+	u32				m_dwReloadAfterShotAt;
+	u32				m_dwLastShotTm;			// when the last round left the barrel (GS RegisterShot)
 	bool			m_bTriggerHeld;		// trigger currently pressed (FireStart..FireEnd); resume fire after a transition
 	bool			m_bAimLockFirePressed;	// fire pressed DURING the aim fire-lock -> autoshoot when it ends (robust vs m_bTriggerHeld)
 	bool			m_bZoomPendingSprint;	// aim pressed during sprint: aim-in once the sprint-exit anim is (almost) done

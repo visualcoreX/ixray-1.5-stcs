@@ -72,6 +72,7 @@ private:
 	bool					m_bExplosionOnHit;			// explosion_on_hit
 	bool					m_bExplosiveWhileNotActivated;	// explosive_while_not_activated
 	bool					m_bHasExplosiveWhileKey;
+	bool					m_bHelpExplosiveInfo;		// help_explosive_info (log every hit, for tuning)
 	xr_vector<u32>			m_ExplosionHitTypes;		// explosion_hit_types (empty = explosion only)
 	static void				ImpactContactCallback	(bool& do_colide, bool bo1, dContact& c,
 													 SGameMtl* material_1, SGameMtl* material_2);

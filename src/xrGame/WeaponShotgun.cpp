@@ -48,25 +48,53 @@ void CWeaponShotgun::Load	(LPCSTR section)
 
 		m_sounds.LoadSound(section, "snd_close_weapon", "sndClose", false, m_eSoundClose);
 
-		// GS per-anim reload sounds: snd_<anim> played when the matching variant plays, else the fixed
-		// sndOpen/sndAddCartridge/sndClose fall back. Load each that the config actually defines; the
-		// label is the config key itself ("snd_anm_..."), so PlayReloadPhaseSound can look it up by anim.
-		static const char* s_open[]  = { "anm_open", "anm_open_empty", "anm_open_first" };
-		static const char* s_add[]   = { "anm_add_cartridge", "anm_add_cartridge_empty", "anm_add_cartridge_first",
-			"anm_add_cartridge_preloaded", "anm_add_cartridge_empty_preloaded", "anm_add_cartridge_first_preloaded" };
-		static const char* s_close[] = { "anm_close", "anm_close_final", "anm_close_first", "anm_close_first_final",
-			"anm_close_empty", "anm_close_empty_final", "anm_close_preloaded", "anm_close_preloaded_final",
-			"anm_close_first_preloaded", "anm_close_first_preloaded_final", "anm_close_empty_preloaded",
-			"anm_close_empty_preloaded_final" };
-		string_path key;
-		for (auto a : s_open)	{ strconcat(sizeof(key), key, "snd_", a); if (pSettings->line_exist(section, key)) m_sounds.LoadSound(section, key, key, false, m_eSoundOpen); }
-		for (auto a : s_add)	{ strconcat(sizeof(key), key, "snd_", a); if (pSettings->line_exist(section, key)) m_sounds.LoadSound(section, key, key, false, m_eSoundAddCartridge); }
-		for (auto a : s_close)	{ strconcat(sizeof(key), key, "snd_", a); if (pSettings->line_exist(section, key)) m_sounds.LoadSound(section, key, key, false, m_eSoundClose); }
+		LoadPhaseAnmSounds	(section);
 
 		// pump feed order: the round chambered on an empty-start reload fires first, then the tube LIFO
 		m_bChamberFirstRound = READ_IF_EXISTS(pSettings, r_bool, section, "chamber_first_round", FALSE);
 	};
 
+}
+
+// GS per-anim reload sounds: snd_<anim> played when the matching variant plays, else the fixed
+// sndOpen/sndAddCartridge/sndClose fall back. Load each that the config actually defines; the
+// label is the config key itself ("snd_anm_..."), so PlayReloadPhaseSound can look it up by anim.
+// These live in the WEAPON section (that is where our shotgun configs put them), not in the hud one.
+void CWeaponShotgun::LoadPhaseAnmSounds(LPCSTR section)
+{
+	if (!section || !section[0] || !pSettings->section_exist(section))	return;
+
+	static const char* s_open[]  = { "anm_open", "anm_open_empty", "anm_open_first" };
+	static const char* s_add[]   = { "anm_add_cartridge", "anm_add_cartridge_empty", "anm_add_cartridge_first",
+		"anm_add_cartridge_preloaded", "anm_add_cartridge_empty_preloaded", "anm_add_cartridge_first_preloaded" };
+	static const char* s_close[] = { "anm_close", "anm_close_final", "anm_close_first", "anm_close_first_final",
+		"anm_close_empty", "anm_close_empty_final", "anm_close_preloaded", "anm_close_preloaded_final",
+		"anm_close_first_preloaded", "anm_close_first_preloaded_final", "anm_close_empty_preloaded",
+		"anm_close_empty_preloaded_final" };
+	string_path key;
+	auto load = [&](const char* a, ESoundTypes t)
+	{
+		strconcat(sizeof(key), key, "snd_", a);
+		if (!pSettings->line_exist(section, key))	return;
+		if (m_sounds.FindSoundItem(key, false))		return;		// already registered
+		m_sounds.LoadSound(section, key, key, false, t);
+	};
+	for (auto a : s_open)	load(a, m_eSoundOpen);
+	for (auto a : s_add)	load(a, m_eSoundAddCartridge);
+	for (auto a : s_close)	load(a, m_eSoundClose);
+}
+
+// A hud-section change (an upgrade repointing `hud`, e.g. the winchester's TAC grip ->
+// [wpn_winchester1300_tac_hud]) re-runs LoadAnmSounds, whose first act is RemoveSounds("snd_anm_") --
+// which threw away the per-phase reload sounds above, because they come from the WEAPON section and the
+// base pass only re-reads the hud one. The empty reload then fell back to the plain sndOpen (user report
+// 2026-08-05: "у tac версии худа winchester не работает звук на анимацию пустой перезарядки"). Re-register
+// them after every wipe.
+void CWeaponShotgun::LoadAnmSounds()
+{
+	inherited::LoadAnmSounds	();
+	if (m_bTriStateReload)
+		LoadPhaseAnmSounds		(*cNameSect());
 }
 
 // Play snd_<anim> if the config defined & loaded it for this exact variant; otherwise the fixed fallback
@@ -288,14 +316,19 @@ void CWeaponShotgun::UpdateCL()
 
 void CWeaponShotgun::Reload()
 {
-	// let the jam inspect gesture finish before the jam can be cleared (see CWeaponMagazined::Reload)
-	if (m_bDryFirePlaying && IsMisfire())
-		return;
+	if (!m_bTriStateReload)		{ inherited::Reload(); return; }	// the magazined path runs the gate itself
 
-	if(m_bTriStateReload)
-		TriStateReload();
-	else
-		inherited::Reload();
+	// "is there anything to do at all" FIRST (same test TriStateReload makes), so a reload press with an
+	// empty backpack does not drop the sights for nothing.
+	if (!IsMisfire() && !HaveCartridgeInInventory(1))	return;
+
+	// The tri-state (pump/break-action) reload starts here and NEVER goes through CWeaponMagazined::Reload,
+	// so it has to run the shared pre-reload gate itself: the jam-inspect / light-misfire blocks, the
+	// detector check and -- the visible one -- "reload pressed while aiming lowers the sights first, then
+	// blends into the reload". Without it every shotgun jumped straight into the reload from the ADS pose.
+	if (!ReloadGate())			return;
+
+	TriStateReload();
 }
 
 void CWeaponShotgun::TriStateReload()

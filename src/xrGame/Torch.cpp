@@ -34,6 +34,9 @@ CTorch::CTorch(void)
 	light_render				= ::Render->light_create();
 	light_render->set_type		(IRender_Light::SPOT);
 	light_render->set_shadow	(true);
+	// the headlamp is ON the actor's head, so his own third-person body must stay out of its shadow
+	// map -- otherwise the self-shadow feature throws a huge silhouette cast from inside him
+	light_render->set_actor_shadow(false);
 	// hud-mode twin so the headlamp also lights the first-person hands/weapon (a world spot never reaches HUD
 	// geometry). No shadow -- avoids self-shadow artifacts on the hands and the extra smap cost.
 	light_render_hud			= ::Render->light_create();

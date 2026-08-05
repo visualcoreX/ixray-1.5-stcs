@@ -66,6 +66,12 @@ public:
 	virtual void					set_color			(float r, float g, float b)			= 0;
 	virtual void					set_hud_mode		(bool b)							= 0;
 	virtual bool					get_hud_mode		()									= 0;
+	// Whether the ACTOR's own third-person body belongs in this light's shadow map. First-person
+	// lights (weapon flashlight, handheld torch, headlamp) sit ON the player, so the shadow they
+	// would cast of him is nonsense -- they set this false. Default true = every other light is
+	// unchanged. Only meaningful with r__actor_shadow on.
+	virtual void					set_actor_shadow	(bool)								{}
+	virtual bool					get_actor_shadow	()									{ return true; }
 	virtual ~IRender_Light()		;
 };
 struct ENGINE_API		resptrcode_light	: public resptr_base<IRender_Light>
