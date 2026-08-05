@@ -307,8 +307,11 @@ void CActor::IR_OnKeyboardPress(int cmd)
 			{
 				PIItem itm = inventory().item((cmd==kUSE_BANDAGE)?  CLSID_IITEM_BANDAGE:CLSID_IITEM_MEDKIT );
 				// don't quick-use (and don't print "used: ...") while a weapon/eat animation is playing --
-				// the item wouldn't actually be applied (the gwr script hands it back)
-				if(itm && !gwr_actor_hud_busy(this))
+				// the item wouldn't actually be applied (the gwr script hands it back). And never while
+				// dead or dying: the use spawns a hud phantom whose binder then keeps working on a
+				// corpse the engine is tearing down -- an access violation with no log. Found by
+				// spamming the medkit key through a controller's tube.
+				if(itm && g_Alive() && !gwr_actor_hud_busy(this))
 				{
 					inventory().Eat				(itm);
 					SDrawStaticStruct* _s		= HUD().GetUI()->UIGame()->AddCustomStatic("item_used", true);
@@ -1686,8 +1689,21 @@ void CActor::UpdateControllerSuicide()
 	// gone the next. Never let the timer outlive the motion it is supposed to cut.
 	if (m_eSuicideState == eSuicideAnim && wm)
 	{
+		// Clamping to the motion end EXACTLY was not enough: both deadlines then landed on the same
+		// tick, and which of the two updates ran first that frame decided the outcome. CHudItem ends
+		// the motion on `curr > end` and calls OnAnimationEnd; we fire on `now >= next`. Weapon first
+		// -> the gesture is already gone and the queued shot is swallowed; actor first -> the shot
+		// goes off. Nothing in the engine orders those two, which is exactly why the same scene fired
+		// on one run and not the next. Pull the shot a hair in front of the motion instead: GS wants
+		// the round to leave WHILE the gesture is still on screen anyway (that is what `lock_time`
+		// cutting the dead tail means), so an early shot is the correct behaviour, not a workaround.
 		const u32 mend = wm->MotionEndTm();
-		if (mend && mend < m_dwSuicideNextTm)	m_dwSuicideNextTm = mend;
+		if (mend)
+		{
+			const u32 guard	= 150;		// ms of clearance; ~9 frames at 60 fps
+			const u32 shoot	= (mend > Device.dwTimeGlobal + guard) ? (mend - guard) : Device.dwTimeGlobal;
+			if (shoot < m_dwSuicideNextTm)	m_dwSuicideNextTm = shoot;
+		}
 
 		// GS runs the WHOLE of PsiEffects on every pulse, a playing gesture included -- only the KNIFE
 		// branch checks "is a suicide animation already running". So walking into
@@ -1829,6 +1845,10 @@ void CActor::RefreshControlTime()
 // its own, so "the vodka is still working" is exactly `alcohol > 0`.
 bool CActor::IsPsiBlocked() const
 {
+	// Two sources, both of which stop a controller from taking hold: the vodka still in him, and the
+	// psi blockade. Only the blockade also cuts telepathic DAMAGE (CActorCondition::ConditionHit) --
+	// vodka does nothing but keep the controller out.
+	if (PsiBlockadeActive())	return true;
 	return const_cast<CActor*>(this)->conditions().GetAlcohol() > 0.f;
 }
 

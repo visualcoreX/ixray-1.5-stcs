@@ -64,7 +64,8 @@ public:
 	void			PlaySuicideSound	();	// snd_suicide, if this weapon has one
 	void			SuicideStopFire		();	// release the trigger (the actor is dead now)
 	void			SuicideAbort		();	// grab broken -> lower the weapon (anm_stop_suicide)
-	bool			m_bSuicideShot;		// the next shot is the one into one's own head
+	bool			m_bSuicideShot;
+	bool			m_bNeedFirstShootAnims;	// section `need_first_shoot_anims`
 	bool			m_bActionAnimNoCB;	// play the action gesture without a state callback (GS PlayCustomAnim)
 protected:
 	shared_str		m_action_anim;
@@ -107,6 +108,15 @@ protected:
 	virtual void	on_b_hud_detach			();
 	static void		FireSelectorBoneCallback(CBoneInstance* B);
 	bool			IsAutoFireMode			() const { return m_iQueueSize == WEAPON_ININITE_QUEUE; }
+	// GS NeedShootMix (WeaponAnims.pas ShootAnimMixPatch): whether the shot animation blends into
+	// whatever is on screen instead of cutting to it. Keyed per hud section, see the three
+	// mix_shoot_after_* switches.
+	BOOL			NeedShootMix			() const;
+	// GS `need_first_shoot_anims` + IsJustAfterReload: the FIRST shot after a reload gets its own
+	// take (`anm_shoot_first` and its aim/scope variants). Opt-in per weapon; GS ships it on the
+	// Protecta alone. JustAfterReload is what the weapon class knows -- only the shotguns track it.
+	bool			NeedFirstShootAnim		() const { return m_bNeedFirstShootAnims && JustAfterReload(); }
+	virtual bool	JustAfterReload			() const { return false; }
 	// May a trigger held through an aim in/out transition auto-resume firing at the handoff?
 	// Only genuine continuous-auto weapons. NOTE: pistols/shotguns/SVD keep the default
 	// m_iQueueSize == WEAPON_ININITE_QUEUE (they gate semi-auto via bWorking in switch2_Fire),

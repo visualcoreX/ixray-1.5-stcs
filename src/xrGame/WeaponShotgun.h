@@ -35,6 +35,7 @@ public:
 	// reloaded & no shot since & mag not empty -> the "_first" anim family (idle/gestures), like the
 	// _first reload variant. PlayHUDMotion rewrites <anim> -> <anim>_first when this is true.
 	virtual bool	NeedFirstAnim		() { return m_bJustAfterReload && iAmmoElapsed > 0; }
+	virtual bool	JustAfterReload		() const { return m_bJustAfterReload; }	// feeds the shot's _first take
 	// chamber-first pumps pin the chambered (fires-next) round at m_magazine.back(); the display must read
 	// the newest LOADED round (size-2) instead. See CWeaponShotgun::AddCartridge chamber-first insert.
 	virtual bool	GwrChamberAtBack	() const { return m_bChamberFirstRound; }

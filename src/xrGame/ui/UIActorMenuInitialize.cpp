@@ -19,6 +19,7 @@
 #include "object_broker.h"
 #include "UIWndCallback.h"
 #include "UIHelper.h"
+#include "UIProgressBar.h"
 
 
 CUIActorMenu::CUIActorMenu()
@@ -112,6 +113,25 @@ void CUIActorMenu::Construct()
 	m_pTradeActorList			= UIHelper::CreateDragDropListEx(uiXml, "dragdrop_actor_trade", this);
 	m_pTradePartnerBagList		= UIHelper::CreateDragDropListEx(uiXml, "dragdrop_partner_bag", this);
 	m_pTradePartnerList			= UIHelper::CreateDragDropListEx(uiXml, "dragdrop_partner_trade", this);
+
+	// GSC's slot condition indicators (Call of Pripyat): a condition bar per equipment slot, drawn
+	// under the slot frame. It belongs to the MENU, not to the cell inside the slot -- the cell's own
+	// bar is a child of the list container, which scissors everything to the slot rect, so a bar sat
+	// on the frame's edge would be cut off. The list just feeds it (CUIDragDropListEx::Update).
+	// Sections are optional: no section in the xml = no bar for that slot.
+	struct { CUIDragDropListEx* lst; LPCSTR sect; } cond_bars[] =
+	{
+		{ m_pInventoryPistolList,		"progess_bar_weapon1" },
+		{ m_pInventoryAutomaticList,	"progess_bar_weapon2" },
+		{ m_pInventoryOutfitList,		"progess_bar_outfit"  },
+	};
+	for (u32 i = 0; i < sizeof(cond_bars)/sizeof(cond_bars[0]); ++i)
+	{
+		if (!cond_bars[i].lst || !uiXml.NavigateToNode(cond_bars[i].sect, 0))	continue;
+		CUIProgressBar* bar = UIHelper::CreateProgressBar(uiXml, cond_bars[i].sect, this);
+		bar->Show					(false);
+		cond_bars[i].lst->SetConditionIndicator(bar);
+	}
 
 	Fvector2 pos{};
 	float dx{}, dy{};

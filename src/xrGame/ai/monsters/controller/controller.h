@@ -150,7 +150,9 @@ public:
 
 public: 
 
-	void						draw_fire_particles();
+	// `with_hit` = also deal the psy_hit_damage. The tube passes false when the victim had no
+	// protection to hold it off (controller_psy_hit.cpp), the ranged psy_fire always deals it.
+	void						draw_fire_particles(bool with_hit = true);
 	
 	void						test_covers();
 

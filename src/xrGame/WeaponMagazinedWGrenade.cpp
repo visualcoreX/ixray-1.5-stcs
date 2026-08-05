@@ -863,6 +863,7 @@ void CWeaponMagazinedWGrenade::SelectActionAnim(LPCSTR base, string_path& result
 
 void CWeaponMagazinedWGrenade::PlayAnimIdle()
 {
+	if (SuicideHoldsPose())		return;		// the scene owns the pose (see CHudItem::PlayAnimIdle)
 	if (TryPlayAnimIdle())
 		return;
 
@@ -884,6 +885,7 @@ void CWeaponMagazinedWGrenade::PlayAnimIdle()
 
 void CWeaponMagazinedWGrenade::PlayAnimIdleMoving()
 {
+	if (SuicideHoldsPose())		return;		// the scene owns the pose (see CHudItem::PlayAnimIdle)
 	if (IsGrenadeLauncherAttached())
 	{
 		if (m_bGrenadeMode)
@@ -1058,7 +1060,7 @@ void CWeaponMagazinedWGrenade::PlayAnimShoot()
 {
 	string_path anim;
 	SelectShootAnim(anim);
-	PlayHUDMotion(anim, FALSE, this, eFire);
+	PlayHUDMotion(anim, NeedShootMix(), this, eFire);
 }
 
 void CWeaponMagazinedWGrenade::PlayAnimFireModeSwitch()

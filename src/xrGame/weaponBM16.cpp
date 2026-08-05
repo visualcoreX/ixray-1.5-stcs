@@ -216,15 +216,15 @@ void CWeaponBM16::PlayAnimShoot()
 	if (aimed && UseScopeAnims())
 	{
 		xr_sprintf(nm, "anm_shoot_aim_scope_%d", shells);
-		if (isHUDAnimationExist(nm))	{ PlayHUDMotion(nm, FALSE, this, GetState()); return; }
+		if (isHUDAnimationExist(nm))	{ PlayHUDMotion(nm, NeedShootMix(), this, GetState()); return; }
 	}
 	if (aimed)
 	{
 		xr_sprintf(nm, "anm_shoot_aim_%d", shells);
-		if (isHUDAnimationExist(nm))	{ PlayHUDMotion(nm, FALSE, this, GetState()); return; }
+		if (isHUDAnimationExist(nm))	{ PlayHUDMotion(nm, NeedShootMix(), this, GetState()); return; }
 	}
 	xr_sprintf(nm, "anm_shoot_%d", shells);
-	PlayHUDMotion(nm, FALSE, this, GetState());
+	PlayHUDMotion(nm, NeedShootMix(), this, GetState());
 }
 
 void CWeaponBM16::PlayAnimShow()

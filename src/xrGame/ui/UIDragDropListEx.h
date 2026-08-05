@@ -8,6 +8,7 @@ class CUIScrollBar;
 class CUIStatic;
 class CUICellItem;
 class CUIDragItem;
+class CUIProgressBar;
 
 
 struct CUICell{
@@ -43,6 +44,7 @@ private:
 	Ivector2				m_orig_cell_capacity;
 	Ivector2				m_virtual_cells_alignment;
 	bool					m_bConditionProgBarVisible;
+	CUIProgressBar*			m_condition_indicator;	// NOT owned: the actor menu holds it
 
 protected:
 	
@@ -115,6 +117,10 @@ public:
 
 			bool			GetConditionProgBarVisibility() {return m_bConditionProgBarVisible;};
 			void			SetConditionProgBarVisibility(bool b) {m_bConditionProgBarVisible = b;};
+			// GSC's slot condition indicator (Call of Pripyat): a progress bar owned by the ACTOR
+			// MENU, not by the cell -- a cell-owned one is clipped away by the container's scissor
+			// as soon as it reaches the slot frame. The list only feeds it the item's condition.
+			void			SetConditionIndicator(CUIProgressBar* indicator) { m_condition_indicator = indicator; }
 public:
 			// items management
 			virtual void	SetItem				(CUICellItem* itm); //auto

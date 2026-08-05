@@ -526,7 +526,7 @@ void CController::OnFreedFromControl(const CEntity *entity)
 
 //////////////////////////////////////////////////////////////////////////
 
-void CController::draw_fire_particles()
+void CController::draw_fire_particles(bool with_hit)
 {
 	if (!EnemyMan.get_enemy()) return;
 	CEntityAlive *enemy	= const_cast<CEntityAlive*>(EnemyMan.get_enemy());
@@ -548,6 +548,7 @@ void CController::draw_fire_particles()
 
 	// check probability
 	/*if (Random.randI(100) > 30)*/
+	if (with_hit)
 	{
 		Hit_Psy						(enemy, m_psy_hit_damage);
 		play_control_sound_hit		();

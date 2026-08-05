@@ -10,6 +10,7 @@
 #include "xr_level_controller.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "ai_object_location.h"
+#include "player_hud.h"	// the companion detector shares the draw with the bolt
 #include "ExtendedGeom.h"
 #include "MathUtils.h"
 #include "characterphysicssupport.h"
@@ -597,9 +598,22 @@ void CMissile::Destroy()
 	if (Local())		DestroyObject();
 }
 
+// A bolt and a detector are drawn together, one per hand, but each runs its own show animation and
+// the bolt's is the shorter one -- so it reached eIdle and could be thrown while the other hand was
+// still lifting the detector into view. Hold the throw until that hand has finished.
+bool CMissile::CompanionDetectorBusy() const
+{
+	attachable_hud_item* d = g_player_hud ? g_player_hud->attached_item(1) : NULL;
+	if (!d || !d->m_parent_hud_item)	return false;
+	return d->m_parent_hud_item->GetState() == CHUDState::eShowing;
+}
+
 bool CMissile::Action(s32 cmd, u32 flags) 
 {
 	if(inherited::Action(cmd, flags)) return true;
+
+	if ((flags & CMD_START) && (cmd == kWPN_FIRE || cmd == kWPN_ZOOM) && CompanionDetectorBusy())
+		return true;		// swallow the press, the detector has not finished coming up
 
 	switch(cmd) 
 	{

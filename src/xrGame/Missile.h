@@ -50,6 +50,7 @@ public:
 	virtual void 			Destroy();
 
 	virtual bool 			Action						(s32 cmd, u32 flags);
+			bool			CompanionDetectorBusy		() const;	// detector shares the draw and is still coming up
 
 	virtual void 			State						(u32 state);
 	virtual void 			OnStateSwitch				(u32 S);

@@ -1113,6 +1113,15 @@ bool CScriptGameObject::active_item_busy()
 	return hi && (hi->GetState() != CHUDState::eIdle || hi->IsPending());	// reload / fire / draw / holster
 }
 
+// The actor's telepathic protection, as CActor::IsPsiBlocked sees it: vodka still in him, or the
+// psi blockade running. Exported so the scripted psi zones can ask the same question the controller
+// asks (sr_psy_antenna).
+bool CScriptGameObject::psi_blocked()
+{
+	CActor* actor = smart_cast<CActor*>(&object());
+	return actor && actor->IsPsiBlocked();
+}
+
 void CScriptGameObject::show_detector(bool emergency)
 {
 	CInventoryOwner* inventory_owner = smart_cast<CInventoryOwner*>(&object());

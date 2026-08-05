@@ -3,6 +3,8 @@
 #include "UIScrollBar.h"
 #include "object_broker.h"
 #include "UICellItem.h"
+#include "UIProgressBar.h"
+#include "../inventory_item.h"	// PIItem / IsUsingCondition
 
 #include "../Include/xrRender/UIRender.h"
 #include "../Include/xrRender/UIShader.h"
@@ -24,6 +26,7 @@ CUIDragDropListEx::CUIDragDropListEx()
 	m_vScrollBar->SetAutoDelete	(true);
 	m_selected_item				= NULL;
 	m_bConditionProgBarVisible	= false;
+	m_condition_indicator		= NULL;
 
 	SetCellSize					(Ivector2().set(50,50));
 	SetCellsCapacity			(Ivector2().set(0,0));
@@ -339,6 +342,22 @@ void CUIDragDropListEx::Update()
 		}else
 			if( this==m_drag_item->BackList() )
 				m_drag_item->SetBackList(NULL);
+	}
+
+	// GSC's slot condition indicator (CoP UIDragDropListEx::Update): feed the bar the condition of
+	// whatever sits in the slot. The bar itself is a child of the actor menu, so it draws outside our
+	// scissor and can hang below the slot frame -- which is exactly where the frames have room for it.
+	if (m_condition_indicator)
+	{
+		PIItem itm = ItemsCount() ? (PIItem)GetItemIdx(0)->m_pData : NULL;
+		if (itm && itm->IsUsingCondition())
+		{
+			// 15 steps, GSC's quantisation for the slot bar (the cell bar uses 13)
+			m_condition_indicator->SetProgressPos(iCeil(itm->GetCondition()*15.0f)/15.0f);
+			m_condition_indicator->Show(true);
+		}
+		else
+			m_condition_indicator->Show(false);
 	}
 }
 

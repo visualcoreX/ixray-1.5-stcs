@@ -112,6 +112,19 @@ void CInventory::Take(CGameObject *pObj, bool bNotActivate, bool strict_placemen
 {
 	CInventoryItem *pIItem				= smart_cast<CInventoryItem*>(pObj);
 	VERIFY								(pIItem);
+
+	// A second ownership event for something we ALREADY own. The stock code only VERIFYs against it,
+	// which is dead in Release, so it went through: the item was pushed into m_all a second time and
+	// re-placed into its slot, and that re-slotting is what holstered and re-drew the weapon every
+	// time another outfit was picked up (the worn one got a duplicate GE_OWNERSHIP_TAKE). Besides the
+	// visible glitch it also double-counted the item's weight and left a dangling twin in the list.
+	if (pIItem->m_pInventory == this)
+	{
+		Msg("! [inventory] duplicate take of [%s], already owned -- ignored", pObj->cNameSect().c_str());
+		return;
+	}
+
+
 	VERIFY								(pIItem->m_pInventory==NULL);
 	VERIFY								(CanTakeItem(pIItem));
 	
@@ -611,6 +624,17 @@ void CInventory::Activate(u32 slot, /*EActivationReason reason, */bool bForce)
 	{
 		return;
 	}
+	// An item-use animation owns the hands (gwr_eatable raises g_block_wpn_switch for its whole
+	// length). Slotting a weapon from the inventory window went straight past that and drew it on
+	// the spot, cutting the animation. Putting something AWAY is still allowed, and so is the
+	// gesture's own phantom, which lives in the artefact slot.
+	{
+		extern int g_block_wpn_switch;
+		if (g_block_wpn_switch && !bForce && smart_cast<CActor*>(m_pOwner) &&
+			slot != NO_ACTIVE_SLOT && slot != (u32)ARTEFACT_SLOT)
+			return;
+	}
+
 	if (m_iActiveSlot==slot || (m_iNextActiveSlot==slot && !bForce))
 	{
 		m_iNextActiveSlot=slot;

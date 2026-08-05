@@ -9,6 +9,10 @@
 #include "actoreffector.h"
 #include "../xrEngine/IGame_Persistent.h"
 #include "InertionData.h"
+#include "CustomDetector.h"	// the deferred hands swap puts an out detector away and back
+#include "CustomOutfit.h"	// the hands section always follows the worn outfit
+#include "object_broker.h"	// READ_IF_EXISTS
+#include "Inventory.h"
 
 player_hud* g_player_hud = NULL;
 Fvector _ancor_pos;
@@ -229,6 +233,9 @@ bool  attachable_hud_item::need_renderable()
 
 void attachable_hud_item::render()
 {
+	// attached, but no motion started yet -- see CHudItem::HudSilentFrame
+	if (m_parent_hud_item && m_parent_hud_item->HudSilentFrame())	return;
+
 	::Render->set_Transform		(&m_item_transform);
 	::Render->add_Visual		(m_model->dcast_RenderVisual());
 	debug_draw_firedeps			();
@@ -496,6 +503,9 @@ player_hud::player_hud()
 	m_attached_items[0]		= NULL;
 	m_attached_items[1]		= NULL;
 	m_transform.identity	();
+	m_restore_slot			= NO_ACTIVE_SLOT;
+	m_restore_detector		= false;
+	m_want_frames			= 0;
 }
 
 
@@ -515,7 +525,104 @@ player_hud::~player_hud()
 	m_pool.clear				();
 }
 
+// GS player_hud__onloadrequest (ActorUtils.pas:507): a hands change is a REQUEST, not an immediate
+// swap. Deleting the model under a drawn weapon restarts whatever it was playing, so GS parks the
+// change until the hands are empty and lets the weapon holster and draw again normally.
+//
+// Ours is driven by the WORN OUTFIT rather than by a stored request, because a stored one cannot be
+// taken back: the engine destroys and respawns the worn outfit object whenever anything is picked
+// up, and for the frame it is gone CCustomOutfit asks for the default hands. Acting on that blip is
+// what put the weapon away and took it out again on every single pickup. Reading the outfit each
+// frame makes the blip self-cancelling, and the debounce below rides out the gap.
 void player_hud::load(const shared_str& player_hud_sect)
+{
+	// Nothing on screen to protect -- no model yet (level load), no actor, or truly idle hands: swap
+	// on the spot. This is the save-load case: the outfit is put on while the weapon has not been
+	// drawn yet, and waiting for the pump there showed bare default hands until it caught up.
+	// `g_block_wpn_switch` is part of the test on purpose. An item-use gesture (gwr_eatable) raises
+	// it and juggles its phantom through slot 10, so there are frames with nothing attached in the
+	// MIDDLE of the animation -- swapping the model there left the phantom holding motion ids that
+	// belong to the deleted model, and the next PlayCycle walked off the end of its motion vector.
+	extern int g_block_wpn_switch;
+	if (!m_model || !Actor() || (!m_attached_items[0] && !m_attached_items[1] && !g_block_wpn_switch))
+	{
+		load_now		(player_hud_sect);
+		m_want_frames	= 0;
+		return;
+	}
+	// Otherwise ignore it -- update_pending_load works the change out from the outfit itself.
+}
+
+void player_hud::update_pending_load()
+{
+	CActor* A = Actor();
+	if (!A || !m_model)		return;
+
+	extern int g_block_wpn_switch;
+
+	// Someone else owns the hands right now -- an item-use animation holds the phantom and the block.
+	// Touching slots or the model under it is what crashed in CKinematicsAnimated::PlayCycle.
+	const bool swap_in_progress = (m_restore_slot != NO_ACTIVE_SLOT) || m_restore_detector;
+	if (g_block_wpn_switch && !swap_in_progress)	return;
+
+	// the hands the actor SHOULD have right now
+	CCustomOutfit*		o = A->GetOutfit();
+	const shared_str	want = o
+		? shared_str(READ_IF_EXISTS(pSettings, r_string, o->cNameSect().c_str(), "player_hud_section", "actor_hud"))
+		: shared_str("actor_hud");
+
+	if (want == m_sect_name)	m_want_frames = 0;
+	else						++m_want_frames;
+
+	// A real change of clothes stays different; the respawn blip lasts a single frame.
+	if (m_want_frames > 5)
+	{
+		PIItem				itm = A->inventory().ActiveItem();
+		CCustomDetector*	det = smart_cast<CCustomDetector*>(A->inventory().ItemFromSlot(DETECTOR_SLOT));
+		const bool			det_out = det && det->IsWorking();
+
+		if (!itm && !det_out)					// hands are clear -- swap invisibly
+		{
+			load_now		(want);
+			m_want_frames	= 0;
+			return;
+		}
+
+		if (m_restore_slot == NO_ACTIVE_SLOT && !m_restore_detector)
+		{
+			// GS waits for a settled weapon before holstering: cutting a reload or a gesture here
+			// would be the very jerk this whole mechanism exists to avoid.
+			CHudItem* hi = itm ? itm->cast_hud_item() : NULL;
+			if (hi && (hi->GetState() != CHUDState::eIdle || hi->IsPending()))	return;
+
+			g_block_wpn_switch	= 1;			// no slot switching while the hands are mid-swap
+			m_restore_slot		= A->inventory().GetActiveSlot();
+			m_restore_detector	= det_out;
+			A->inventory().Activate(NO_ACTIVE_SLOT);
+			if (det_out)	det->HideDetector(true);
+		}
+		return;
+	}
+
+	if (m_restore_slot != NO_ACTIVE_SLOT || m_restore_detector)
+	{
+		if (A->inventory().ActiveItem())		return;		// still putting the old one away
+		g_block_wpn_switch	= 0;
+
+		if (m_restore_detector)
+		{
+			CCustomDetector* det = smart_cast<CCustomDetector*>(A->inventory().ItemFromSlot(DETECTOR_SLOT));
+			if (det)	det->ShowDetector(true);
+		}
+		if (m_restore_slot != NO_ACTIVE_SLOT && A->inventory().ItemFromSlot(m_restore_slot))
+			A->inventory().Activate(m_restore_slot);
+
+		m_restore_slot		= NO_ACTIVE_SLOT;
+		m_restore_detector	= false;
+	}
+}
+
+void player_hud::load_now(const shared_str& player_hud_sect)
 {
 	if(player_hud_sect ==m_sect_name)	return;
 	bool b_reload = (m_model!=NULL);
@@ -550,6 +657,13 @@ void player_hud::load(const shared_str& player_hud_sect)
 
 		if(m_attached_items[0])
 			m_attached_items[0]->m_parent_hud_item->on_a_hud_attach();
+
+		// Deferred swap: the hands are EMPTY here, so neither branch above played anything and the
+		// fresh model would sit in its BIND POSE -- that is the frame of arms stuck in the middle of
+		// the screen between the holster and the draw. Give it the empty-hands idle, exactly like a
+		// first load does.
+		if(!m_attached_items[0] && !m_attached_items[1])
+			m_model->PlayCycle("hand_idle_doun");
 	}
 	m_model->dcast_PKinematics()->CalculateBones_Invalidate	();
 	m_model->dcast_PKinematics()->CalculateBones(TRUE);

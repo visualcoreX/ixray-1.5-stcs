@@ -10,6 +10,8 @@
 #include "eatable_item.h"
 #include "xrmessages.h"
 #include "physic_item.h"
+#include "actor.h"
+#include "object_broker.h"	// READ_IF_EXISTS
 #include "Level.h"
 #include "entity_alive.h"
 #include "EntityCondition.h"
@@ -66,7 +68,7 @@ bool CEatableItem::Useful() const
 {
 	if(!inherited::Useful()) return false;
 
-	//проверить не все ли еще съедено
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if(m_iPortionsNum == 0) return false;
 
 	return true;
@@ -105,8 +107,19 @@ void CEatableItem::UseBy (CEntityAlive* entity_alive)
 	entity_alive->conditions().ChangeBleeding	(m_fWoundsHealPerc);
 	
 	entity_alive->conditions().SetMaxPower( entity_alive->conditions().GetMaxPower()+m_fMaxPowerUpInfluence );
-	
-	//уменьшить количество порций
+
+	// GS's psi blockade. Its own effect is the CoP booster `boost_telepat_protection`, which CS has no
+	// equivalent of, so the item declares a DURATION here instead and the actor keeps the timer:
+	// while it runs, telepathic damage is cut (CActorCondition::ConditionHit) and a controller cannot
+	// take hold at all (CActor::IsPsiBlocked). Any eatable section can carry the key.
+	if (CActor* act = smart_cast<CActor*>(entity_alive))
+	{
+		const float t = READ_IF_EXISTS(pSettings, r_float, object().cNameSect().c_str(),
+									   "psi_blockade_time", 0.f);
+		if (t > 0.f)	act->StartPsiBlockade(u32(t * 1000.f));
+	}
+
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	if(m_iPortionsNum > 0)
 		--(m_iPortionsNum);
 	else

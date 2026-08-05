@@ -14,6 +14,11 @@ const float EffectPars::vel_cret_wallmark=30.f;
 
 
 
+// flt_max = the particle branch can never be reached; sound and wallmark keep the normal thresholds
+const float QuietEffectPars::vel_cret_sound=10.f;
+const float QuietEffectPars::vel_cret_particles=flt_max;
+const float QuietEffectPars::vel_cret_wallmark=30.f;
+
 const float CharacterEffectPars::vel_cret_sound=20.f;
 const float CharacterEffectPars::vel_cret_particles=60.f;
 const float CharacterEffectPars::vel_cret_wallmark=100.f;

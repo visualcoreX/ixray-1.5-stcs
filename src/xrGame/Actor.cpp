@@ -117,6 +117,7 @@ CActor::CActor() : CEntityAlive()
 	m_bWasControlled		= false;
 	m_dwCtrlPrepareStart	= 0;
 	m_dwSuicideRepickTm		= 0;
+	m_dwPsiBlockUntil		= 0;
 	m_bPsiBlockFailed		= false;
 	m_fCtrlDist				= 1000.f;
 	encyclopedia_registry	= xr_new<CEncyclopediaRegistryWrapper	>();
@@ -1012,6 +1013,11 @@ void CActor::UpdateCL	()
 
 	inherited::UpdateCL				();
 	m_pPhysics_support->in_UpdateCL	();
+
+	// GS: a pending hands change (outfit put on / taken off) waits here until the hands are free,
+	// see player_hud::update_pending_load.
+	if (this == Level().CurrentViewEntity())
+		g_player_hud->update_pending_load();
 
 
 	if (g_Alive()) 

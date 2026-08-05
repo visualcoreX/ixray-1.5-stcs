@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "controller_psy_hit.h"
+
 #include "../BaseMonster/base_monster.h"
 #include "controller.h"
 #include "../control_animation_base.h"
@@ -245,6 +246,15 @@ bool CControllerPsyHit::check_conditions_final()
 }
 
 
+// Protected = you take the tube, unprotected = he takes YOU. Covers both halves of the attack: the
+// psy_hit_damage that draw_fire_particles deals at each end of the glide, and the tube_damage at the
+// end of it. The tube only ever targets the player (check_conditions_final refuses any other enemy),
+// so reading the actor's protection here is the whole test.
+bool CControllerPsyHit::damage_allowed() const
+{
+	return Actor() && Actor()->IsPsiBlocked();
+}
+
 void CControllerPsyHit::death_glide_start()
 {
 	if (!check_conditions_final()) {
@@ -271,13 +281,18 @@ void CControllerPsyHit::death_glide_start()
 		m_suicide_started			= Actor()->StartControllerSuicide();
 	}
 
+	// The tube's own damage lands ONLY on a victim the controller could not take, i.e. one that vodka
+	// or the psi blockade is protecting. Unprotected, the grab itself IS the attack -- the suicide
+	// shot, or standing there disarmed -- and damage on top of it killed before the shot went off.
+	const bool hurt = damage_allowed();
+
 	// GS has no "tube" AT ALL -- not just when a suicide takes over. Its Init() cuts the vanilla one
 	// out of death_glide_start (a jump over the setup block plus five nop_code patches), and the
 	// comment there says why: that effector fed NaNs into CRenderDevice and tripped the CLensFlare
 	// assert. So no camera flight at the controller, no FOV sweep, no hidden HUD, no impulse and no
 	// slot block -- GS never takes the weapon out of the victim's hands either. What is left is the
 	// attack itself: particles, sounds, the psi damage, and a CAMERA ANIMATION per phase.
-	smart_cast<CController *>(m_object)->draw_fire_particles();
+	smart_cast<CController *>(m_object)->draw_fire_particles(hurt);
 
 	if (m_suicide_started)
 	{
@@ -373,16 +388,16 @@ void CControllerPsyHit::death_glide_end()
 	// Stop camera effector
 
 	CController *monster = smart_cast<CController *>(m_object);
+	const bool hurt = damage_allowed();
 	// no effector is ever added now (see death_glide_start), so there is nothing to remove
-	monster->draw_fire_particles();
+	monster->draw_fire_particles(hurt);
 
 
 	monster->m_sound_tube_hit_left.play_at_pos(Actor(), Fvector().set(-1.f, 0.f, 1.f), sm_2D);
 	monster->m_sound_tube_hit_right.play_at_pos(Actor(), Fvector().set(1.f, 0.f, 1.f), sm_2D);
 
 	//m_object->Hit_Psy		(Actor(), monster->m_tube_damage);
-	// the suicide IS the damage when it took over -- the tube hit on top would kill before the shot
-	if (!m_suicide_started)
+	if (hurt)
 		m_object->Hit_Wound	(Actor(), monster->m_tube_damage,Fvector().set(0.0f,1.0f,0.0f),0.0f);
 	HUD().SetRenderable(true);
 

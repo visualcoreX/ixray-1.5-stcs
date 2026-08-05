@@ -101,6 +101,14 @@ public:
 					~player_hud			();
 	void			load				(const shared_str& model_name);
 	void			load_default		(){load("actor_hud");};
+	// GS defers a hands change until the hands are EMPTY (ActorUtils.pas player_hud__onloadrequest +
+	// the request pump in the actor update): reloading the model under a drawn weapon restarts its
+	// animation dead. Instead the weapon is holstered normally, the model is swapped while nothing is
+	// on screen, and the weapon is drawn again -- what the player sees is an ordinary holster/draw.
+	void			update_pending_load	();
+private:
+	void			load_now			(const shared_str& model_name);
+public:
 	void			update				(const Fmatrix& trans);
 	void			render_hud			();	
 	void			render_item_ui		();
@@ -130,6 +138,9 @@ private:
 	const Fvector&	attach_pos			() const;
 
 	shared_str							m_sect_name;
+	u32								m_want_frames;		// frames the hands have disagreed with the worn outfit
+	u32								m_restore_slot;		// slot to draw again afterwards, NO_ACTIVE_SLOT = none
+	bool							m_restore_detector;	// a detector was out and has to come back
 
 	Fmatrix								m_attach_offset;
 

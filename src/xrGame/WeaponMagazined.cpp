@@ -72,6 +72,7 @@ CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 	m_bFirePendingSprint		= false;
 	m_bDetectorDrawPending		= false;
 	m_bSuicideShot				= false;
+	m_bNeedFirstShootAnims		= false;
 	m_bActionAnimNoCB			= false;
 	m_dwDetectorShowTm			= 0;
 
@@ -133,6 +134,9 @@ bool CWeaponMagazined::WeaponSoundExist(LPCSTR section, LPCSTR sound_name)
 
 void CWeaponMagazined::Load	(LPCSTR section)
 {
+	// GS: the first shot after a reload may have its own take (anm_shoot_first). Read from the
+	// WEAPON section like GS does; default off -- GS ships it on the Protecta alone.
+	m_bNeedFirstShootAnims = !!READ_IF_EXISTS(pSettings, r_bool, section, "need_first_shoot_anims", FALSE);
 	inherited::Load		(section);
 
 	// fire-selector bone to hold across anims (HUD section, optional; "" disables the feature)
@@ -3337,23 +3341,57 @@ void CWeaponMagazined::SelectShootAnim(string_path& result)
 	// (anm_shot_l hip / anm_shots_aim_last ADS). Lives here rather than in CWeaponPistol so every
 	// magazined weapon gets it; existence-gated, so anything without those aliases is unchanged.
 	bool last = (iAmmoElapsed <= 1);
+	// GS modifier precedence is jammed > empty > first, so `_first` loses to the last-round take.
+	const bool first = NeedFirstShootAnim();
 	if (IsZoomed() && isHUDAnimationExist("anm_shoot_aim"))
 	{
 		if (UseScopeAnims())
 		{
 			if (last && isHUDAnimationExist("anm_shoot_aim_scope_last"))
 				{ xr_strcpy(result, "anm_shoot_aim_scope_last"); return; }
+			if (first && isHUDAnimationExist("anm_shoot_aim_scope_first"))
+				{ xr_strcpy(result, "anm_shoot_aim_scope_first"); return; }
 			if (isHUDAnimationExist("anm_shoot_aim_scope"))
 				{ xr_strcpy(result, "anm_shoot_aim_scope"); return; }
 		}
 		if (last && isHUDAnimationExist("anm_shoot_aim_last"))
 			{ xr_strcpy(result, "anm_shoot_aim_last"); return; }
+		if (first && isHUDAnimationExist("anm_shoot_aim_first"))
+			{ xr_strcpy(result, "anm_shoot_aim_first"); return; }
 		xr_strcpy(result, "anm_shoot_aim");
 		return;
 	}
 	if (last && isHUDAnimationExist("anm_shoot_last"))
 		{ xr_strcpy(result, "anm_shoot_last"); return; }
+	if (first && isHUDAnimationExist("anm_shoot_first"))
+		{ xr_strcpy(result, "anm_shoot_first"); return; }
 	xr_strcpy(result, "anm_shoot");
+}
+
+// GS NeedShootMix (WeaponAnims.pas:1662, patched into the shot animation's bMixIn argument). Firing
+// normally CUTS to the shot pose, which is what a recoil needs -- but not when the hands are in the
+// middle of something else. The aim in/out transitions are `anm_idle_aim_start` / `anm_idle_aim_end`,
+// so they fall under mix_shoot_after_idle and the shot now blends out of them instead of snapping.
+BOOL CWeaponMagazined::NeedShootMix() const
+{
+	if (!H_Parent() || H_Parent() != Actor())			return FALSE;
+
+	const shared_str& cur = CurrentMotion();
+	if (!cur.size())									return FALSE;
+
+	LPCSTR			c = cur.c_str();
+	const shared_str hud = HudSection();
+
+	if (0 == strncmp(c, "anm_idle", 8) &&
+		READ_IF_EXISTS(pSettings, r_bool, hud, "mix_shoot_after_idle", FALSE))		return TRUE;
+
+	if (0 == strncmp(c, "anm_reload", 10) &&
+		READ_IF_EXISTS(pSettings, r_bool, hud, "mix_shoot_after_reload", FALSE))	return TRUE;
+
+	if (0 == strncmp(c, "anm_shoot", 9) && IsAutoFireMode() &&
+		READ_IF_EXISTS(pSettings, r_bool, hud, "mix_shoot_after_shoot_in_queue", FALSE))	return TRUE;
+
+	return FALSE;
 }
 
 void CWeaponMagazined::PlayAnimShoot()
@@ -3361,7 +3399,7 @@ void CWeaponMagazined::PlayAnimShoot()
 	VERIFY(GetState()==eFire);
 	string_path anim;
 	SelectShootAnim(anim);
-	PlayHUDMotion(anim, FALSE, this, GetState());
+	PlayHUDMotion(anim, NeedShootMix(), this, GetState());
 }
 
 // Base alias for the shot that jams. "_last" is deliberately NOT applied: GS's modifier precedence is

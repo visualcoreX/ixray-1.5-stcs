@@ -160,4 +160,5 @@ void  TContactShotMark(CDB::TRI* T,dContactGeom* c)
 
 
 ContactCallbackFun *ContactShotMark = &TContactShotMark<EffectPars>;
+ContactCallbackFun *QuietContactShotMark = &TContactShotMark<QuietEffectPars>;
 ContactCallbackFun *CharacterContactShotMark = &TContactShotMark<CharacterEffectPars>;

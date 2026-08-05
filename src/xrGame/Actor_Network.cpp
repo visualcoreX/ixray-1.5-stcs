@@ -1331,11 +1331,21 @@ ACTOR_DEFS::SMemoryPos*				CActor::FindMemoryPos (u32 Time)
 };
 */
 
+// tag for the appended psi-blockade field, see CActor::load
+static const u32 kPsiBlockadeMark = 0x50534249;	// 'PSBI'
+
 void CActor::save(NET_Packet &output_packet)
 {
 	inherited::save(output_packet);
 	CInventoryOwner::save(output_packet);
 	output_packet.w_u8(u8(m_bOutBorder));
+	// Psi blockade. Store what is LEFT of it, not the deadline -- Device.dwTimeGlobal counts from
+	// engine start, so an absolute tick means nothing in the next session.
+	// CGameObject::net_Load reads CScriptBinder::load straight after us, so an appended field
+	// cannot be detected by "is there anything left"; it is tagged instead, and a save written
+	// before this field simply fails the tag and gives the binder its bytes back untouched.
+	output_packet.w_u32(kPsiBlockadeMark);
+	output_packet.w_u32(PsiBlockadeActive() ? (m_dwPsiBlockUntil - Device.dwTimeGlobal) : 0);
 }
 
 void CActor::load(IReader &input_packet)
@@ -1343,6 +1353,18 @@ void CActor::load(IReader &input_packet)
 	inherited::load(input_packet);
 	CInventoryOwner::load(input_packet);
 	m_bOutBorder=!!(input_packet.r_u8());
+	m_dwPsiBlockUntil = 0;
+	if (input_packet.elapsed() >= 8)
+	{
+		const int mark_pos = input_packet.tell();
+		if (input_packet.r_u32() == kPsiBlockadeMark)
+		{
+			const u32 left = input_packet.r_u32();
+			if (left)	StartPsiBlockade(left);
+		}
+		else
+			input_packet.seek(mark_pos);
+	}
 }
 
 #ifdef DEBUG

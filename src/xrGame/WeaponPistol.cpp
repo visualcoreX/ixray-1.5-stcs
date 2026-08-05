@@ -60,6 +60,7 @@ LPCSTR CWeaponPistol::SprintLoopBase()
 
 void CWeaponPistol::PlayAnimIdleMoving()
 {
+	if (SuicideHoldsPose())		return;		// the scene owns the pose (see CHudItem::PlayAnimIdle)
 	if(UseEmptyAnimOnly())
 	{
 		PlayHUDMotion(SelectMovingAnim("anm_idle_moving_empty"), TRUE, NULL, GetState());
@@ -71,6 +72,7 @@ void CWeaponPistol::PlayAnimIdleMoving()
 
 void CWeaponPistol::PlayAnimIdle()
 {
+	if (SuicideHoldsPose())		return;		// the scene owns the pose (see CHudItem::PlayAnimIdle)
 	if (TryPlayAnimIdle()) return;
 
 	VERIFY(GetState()==eIdle);

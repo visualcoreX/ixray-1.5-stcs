@@ -51,6 +51,7 @@ private:
 			void	play_anim				();
 			void	death_glide_start			();
 			void	death_glide_end			();
+			bool	damage_allowed			() const;
 
 			void	set_sound_state			(ESoundState state);
 			void	hit						();

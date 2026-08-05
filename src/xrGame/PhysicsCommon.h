@@ -64,6 +64,7 @@ typedef void	BoneCallbackFun(CBoneInstance* B);
 
 
 extern ContactCallbackFun *ContactShotMark;
+extern ContactCallbackFun *QuietContactShotMark;	// same, minus the collide particles
 extern ContactCallbackFun *CharacterContactShotMark;
 
 typedef	void	PhysicsStepTimeCallback		(u32	step_start,u32	step_end);

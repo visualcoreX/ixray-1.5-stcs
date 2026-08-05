@@ -758,6 +758,7 @@ private:
 			bool				m_bWasControlled;		// edge detector for "the controller let go"
 			u32					m_dwCtrlPrepareStart;	// GS _controller_preparing_starttime
 			u32					m_dwSuicideRepickTm;	// next re-run of the branch choice (GS: every pulse)
+			u32					m_dwPsiBlockUntil;		// psi blockade (GS drug_psy_blockade) runs until this tick
 			bool				m_bPsiBlockFailed;		// GS _psi_block_failed: the protection gave way
 public:
 			bool				IsActorControlled	() const;	// GS IsActorControlled
@@ -768,6 +769,12 @@ public:
 			bool				IsControllerPreparing	() const;	// GS IsControllerPreparing
 			// GS IsPsiBlocked: telepathic protection. CS has no such booster -- ours is being drunk.
 			bool				IsPsiBlocked			() const;
+			// GS's psi blockade item. CS has no boosters, so the item hands the actor a DURATION
+			// (psi_blockade_time on its eatable section) and this timer is the effect: telepathic
+			// damage is cut while it runs, and a controller cannot take hold. Saved as the
+			// REMAINING time (CActor::save), so it survives a save/load and a level change.
+			void				StartPsiBlockade		(u32 ms) { m_dwPsiBlockUntil = Device.dwTimeGlobal + ms; }
+			bool				PsiBlockadeActive		() const { return Device.dwTimeGlobal < m_dwPsiBlockUntil; }
 			void				RollPsiBlock			(float dist);	// GS UpdatePsiBlockFailedState
 			bool				ControllerPsiBlocked	() const;	// blocked AND the roll did not fail
 			// GS IsHandJitter (ActorUtils.pas:3651): the hands shake for the WHOLE grab and through the

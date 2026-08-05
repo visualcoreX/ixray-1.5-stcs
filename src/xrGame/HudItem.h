@@ -67,6 +67,7 @@ protected:
 		u32						m_startedMotionState;
 		u8						m_started_rnd_anim_idx;
 		bool					m_bStopAtEndAnimIsRunning;
+		bool					m_bAttachedNoMotion;
 	};
 public:
 	virtual void				Load				(LPCSTR section);
@@ -88,6 +89,11 @@ public:
 
 	BOOL						GetHUDmode			();
 	IC BOOL						IsPending			()		const					{ return !!m_huditem_flags.test(fl_pending);}
+	// Attached to the hands with no motion of its own yet: the frame between a finished holster and
+	// the start of the next draw. Rendering there shows the model at its bind pose (or, if parked on
+	// an idle, at a pose that has nothing to do with the draw), so it is simply not drawn.
+	IC bool						HudSilentFrame		()		const					{ return m_bAttachedNoMotion; }
+	void						ClearSilentFrame	()								{ m_bAttachedNoMotion = false; }
 
 	// --- Gunslinger-style locks (single, uniform queries) ---------------------------------------------
 	// Two lock concepts, mirroring GS's WpnBuf:

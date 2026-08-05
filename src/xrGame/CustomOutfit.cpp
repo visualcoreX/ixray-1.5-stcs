@@ -248,6 +248,13 @@ void CCustomOutfit::ApplySkinModel(CActor* pActor, bool bDress, bool bHUDOnly)
 
 void	CCustomOutfit::OnMoveToRuck		(EItemPlace prev)
 {
+	// ONLY when this outfit was actually being WORN. Picking one up puts it straight into the ruck
+	// with prev == eItemPlaceUndefined, and undressing on that took the suit the actor still has on
+	// off his back: the world visual dropped to the default body and the hud hands were reloaded to
+	// `actor_hud`, which restarts whatever animation the weapon was playing. Same call also killed
+	// the night vision. CoP guards this the same way (prev.type == eItemPlaceSlot).
+	if (prev != eItemPlaceSlot)		return;
+
 	if (m_pInventory)
 	{
 		CActor* pActor = smart_cast<CActor*> (m_pInventory->GetOwner());

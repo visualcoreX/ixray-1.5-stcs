@@ -80,6 +80,7 @@ CHudItem::CHudItem()
 //	m_hud_item_shared_data		= NULL;
 	m_bStopAtEndAnimIsRunning = false;
 	m_current_motion_def		= NULL;
+	m_bAttachedNoMotion			= false;
 	m_started_rnd_anim_idx		= u8(-1);
 	m_fHudFov					= 0.f;
 	m_fHudFovAim				= 0.f;
@@ -484,6 +485,16 @@ void CHudItem::on_a_hud_attach()
 		Msg("continue playing [%s][%d]",m_current_motion.c_str(), Device.dwFrame);
 #endif // #ifdef DEBUG
 	}
+	else
+	{
+		// Nothing was playing: the previous motion cleared itself when it ended (CHudItem::UpdateCL
+		// nulls m_current_motion_def at the end of a motion), which is exactly the state a weapon is
+		// in after it has finished holstering. There is nothing sensible to show until the draw
+		// starts -- the bind pose puts the gun in the middle of the screen, and an idle is a pose the
+		// draw does not begin from, so either way there is a visible seam. Skip drawing it instead;
+		// the very next motion (normally anm_show, a frame later) clears this.
+		m_bAttachedNoMotion = true;
+	}
 }
 
 void CHudItem::MakeJammedName(LPCSTR name, string_path& out)
@@ -719,6 +730,7 @@ void CHudItem::TryPlayDetectorCompanion(const shared_str& weaponMotion)
 u32 CHudItem::PlayHUDMotion_noCB(const shared_str& motion_name, BOOL bMixIn)
 {
 	m_current_motion					= motion_name;
+	m_bAttachedNoMotion					= false;	// something is playing again -- safe to draw
 
 	if(bDebug && item().m_pInventory)
 	{

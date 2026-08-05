@@ -82,7 +82,7 @@ void CActorCondition::LoadCondition(LPCSTR entity_section)
 	m_fAccelK					= pSettings->r_float(section,"accel_k");
 	m_fSprintK					= pSettings->r_float(section,"sprint_k");
 
-	//порог силы и здоровья меньше которого актер начинает хромать
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	m_fLimpingHealthBegin		= pSettings->r_float(section,	"limping_health_begin");
 	m_fLimpingHealthEnd			= pSettings->r_float(section,	"limping_health_end");
 	R_ASSERT					(m_fLimpingHealthBegin<=m_fLimpingHealthEnd);
@@ -160,7 +160,7 @@ float CActorCondition::GetZoneMaxPower( ALife::EHitType hit_type ) const
 }
 
 
-//вычисление параметров с ходом времени
+//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 #include "UI.h"
 #include "HUDManager.h"
 
@@ -383,10 +383,23 @@ void CActorCondition::UpdateSatiety()
 CWound* CActorCondition::ConditionHit(SHit* pHDS)
 {
 	if (GodMode()) return NULL;
+
+	// GS's psi blockade (drug_psy_blockade) is a telepathic-protection booster, which CS has none of;
+	// ours is a timer the item starts (CEatableItem::UseBy -> CActor::StartPsiBlockade). While it runs
+	// the actor takes reduced telepathic damage -- the controller's aura and tube, the poltergeist,
+	// the psi dog. Vodka deliberately does NOT do this: it only keeps a controller from taking hold
+	// (CActor::IsPsiBlocked). `psi_blockade_protection` is the fraction taken off, 0 disables it.
+	if (pHDS && pHDS->hit_type == ALife::eHitTypeTelepatic && m_object && m_object->PsiBlockadeActive())
+	{
+		const float k = READ_IF_EXISTS(pSettings, r_float, "gunslinger_base", "psi_blockade_protection", 0.f);
+		if (k > 0.f)
+			pHDS->power *= (1.f - ((k > 1.f) ? 1.f : k));
+	}
+
 	return inherited::ConditionHit(pHDS);
 }
 
-//weight - "удельный" вес от 0..1
+//weight - "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ" пїЅпїЅпїЅ пїЅпїЅ 0..1
 void CActorCondition::ConditionJump(float weight)
 {
 	float power			=	m_fJumpPower;

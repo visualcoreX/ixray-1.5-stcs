@@ -1,6 +1,8 @@
 #include "pch_script.h"
 #include "physicobject.h"
 #include "PhysicsShell.h"
+#include "PhysicsCommon.h"	// QuietContactShotMark
+#include "object_broker.h"	// READ_IF_EXISTS
 #include "Physics.h"
 #include "xrserver_objects_alife.h"
 #include "Level.h"
@@ -233,6 +235,14 @@ void CPhysicObject::CreatePhysicsShell(CSE_Abstract* e)
 {
 	CSE_ALifeObjectPhysic	*po	= smart_cast<CSE_ALifeObjectPhysic*>(e);
 	CreateBody(po);
+
+	// `no_collide_particles`: this prop clatters and marks the floor like any other, but throws no
+	// dust when it lands. Gunslinger's item-use trash (the wrapper, the bottle, the blister) behaves
+	// this way -- our physics fires the generic material-pair particles for it because a skeleton
+	// physic object masses 10 kg by default, so even a short drop clears the effect threshold.
+	if (m_pPhysicsShell &&
+		READ_IF_EXISTS(pSettings, r_bool, cNameSect().c_str(), "no_collide_particles", false))
+		m_pPhysicsShell->set_ContactCallback(QuietContactShotMark);
 }
 
 void CPhysicObject::CreateSkeleton(CSE_ALifeObjectPhysic* po)
