@@ -68,6 +68,7 @@ void SBinocVisibleObj::Update()
 {
 	m_flags.set		(	flVisObjNotValid,TRUE);
 
+	if (!m_object->Visual())	return;		// GS parity: an object without a visual has no box to frame
 
 	Fbox		b		= m_object->Visual()->getVisData().box;
 
@@ -218,7 +219,9 @@ void CBinocularsVision::Update()
 	for (; v_it!=vVisibles.end(); ++v_it)
 	{
 		const CObject*	_object_			= (*v_it).m_object;
-		if (!pActor->memory().visual().visible_now(smart_cast<const CGameObject*>(_object_)))
+		// GS/CoP use visible_RIGHT_now: `visible_now` also answers true for anything seen within
+		// still_visible_time, so a frame kept hanging on a target that had already gone out of sight.
+		if (!pActor->memory().visual().visible_right_now(smart_cast<const CGameObject*>(_object_)))
 			continue;
 
 		CObject* object_ = const_cast<CObject*>(_object_);
@@ -254,8 +257,14 @@ void CBinocularsVision::Update()
 
 	it = m_active_objects.begin();
 	for(;it!=m_active_objects.end();++it)
+	{
+		// GS/CoP: the frame crawls onto the target and then LOCKS -- that transition is what catch_snd
+		// announces (and what turns the corners opaque + relation-coloured, see SBinocVisibleObj::Update).
+		const bool was_locked = !!(*it)->m_flags.test(flTargetLocked);
 		(*it)->Update						();
-
+		if (!was_locked && (*it)->m_flags.test(flTargetLocked) && m_snd_catch._handle())
+			m_snd_catch.play_at_pos			(0, Fvector().set(0,0,0), sm_2D);
+	}
 }
 
 void CBinocularsVision::Draw()
@@ -270,6 +279,9 @@ void CBinocularsVision::Load(const shared_str& section)
 	m_rotating_speed	= pSettings->r_float(section,"vis_frame_speed");
 	m_frame_color		= pSettings->r_fcolor(section,"vis_frame_color");
 	m_snd_found.create	(pSettings->r_string(section,"found_snd"),st_Effect,sg_SourceType);
+	// GS/CoP parity: the lock sound. Optional, so a params section that only has found_snd still loads.
+	if (pSettings->line_exist(section,"catch_snd"))
+		m_snd_catch.create	(pSettings->r_string(section,"catch_snd"),st_Effect,sg_SourceType);
 }
 
 void CBinocularsVision::remove_links(CObject *object)

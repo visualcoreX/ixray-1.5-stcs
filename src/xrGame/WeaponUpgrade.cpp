@@ -170,7 +170,18 @@ bool CWeapon::install_upgrade_disp( LPCSTR section, bool test )
 
 	result |= process_if_exists( section, "misfire_probability", &CInifile::r_float, misfireProbability,       test );
 	result |= process_if_exists( section, "misfire_condition_k", &CInifile::r_float, misfireConditionK,        test );
+	// GS ModifyFloatUpgradedValue: the gauss's magnetic shield ADDS +10 to the surge-jam threshold
+	result |= process_if_exists( section, "misfire_after_problems_level", &CInifile::r_float, m_fMisfireProblemsLevel, test );
 	result |= process_if_exists( section, "condition_shot_dec",  &CInifile::r_float, conditionDecreasePerShot, test );
+	// the rest of the GS wear/jam block -- the gauss's ionistori / pokritie / magnetic_shield nodes all
+	// buy reliability with these and had nothing reading them
+	result |= process_if_exists( section, "condition_queue_shot_dec", &CInifile::r_float, conditionDecreasePerShotQueue, test );
+	result |= process_if_exists( section, "misfire_start_condition",  &CInifile::r_float, misfireStartCondition, test );
+	result |= process_if_exists( section, "misfire_end_condition",    &CInifile::r_float, misfireEndCondition,   test );
+	result |= process_if_exists( section, "misfire_start_prob",       &CInifile::r_float, misfireStartProb,      test );
+	result |= process_if_exists( section, "misfire_end_prob",         &CInifile::r_float, misfireEndProb,        test );
+	// GS `tsevie_ergonomics` (-2): how much the crosshair lags the muzzle
+	result |= process_if_exists( section, "crosshair_inertion",       &CInifile::r_float, m_crosshair_inertion,  test );
 
 	BOOL value = m_zoom_params.m_bZoomEnabled;
 	bool result2 = process_if_exists_set( section, "zoom_enabled", &CInifile::r_bool, value, test );

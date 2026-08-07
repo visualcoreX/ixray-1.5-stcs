@@ -193,6 +193,13 @@ void CCustomDetector::ShowDetectorEmergency()
 	{
 		m_bEmergencyShow = true;		// use the anm_show_emergency draw (weapon in the other hand)
 		m_bAutoToggle = true;
+		// "Emergency" IS the with-a-weapon case -- gwr_eatable.script asks for it (db.actor:show_detector
+		// (true)) at the moment it re-activates the slot the 3D PDA / an item-use gesture interrupted, i.e.
+		// the weapon is right there in eShowing. Without this, ToggleDetector's WaitForDrawGesture test
+		// deferred the draw (m_bNeedActivation) until that weapon's draw ended and the detector came up
+		// AFTER it (user 2026-08-05). Same flag RequestRestore sets for the quick-grenade restore, and the
+		// same GS behaviour (actShowDetectorNow force-unhides instead of queueing behind the hand-over).
+		m_bRestoreWithWeapon = true;
 		ToggleDetector(false);
 	}
 }

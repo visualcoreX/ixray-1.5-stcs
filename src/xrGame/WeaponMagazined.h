@@ -331,6 +331,45 @@ protected:
 							// round is not spent and the fire cycle isn't a stuck action (bm16/toz34/rg6)
 	bool m_bSaveCartridgeInAmmoChange;	// GS save_cartridge_in_ammochange (default true): keep the OLD-type chambered round when swapping ammo type
 
+	// ---- GS autoaim (WeaponEvents.pas:2467 IsShotNeededNow) ------------------------------------
+	// NOT aim assist -- an INTERLOCK on the trigger. The gauss's guard/safari/ideal nodes hold the
+	// shot back until something worth shooting is under the crosshair (or until autoaim_time runs
+	// out). Every key lives on the weapon section and is upgradeable.
+	shared_str m_sAutoAimModes;		// autoaim_modes: the fire modes the interlock applies to ("a" = the infinite/MUI queue)
+	// autoaim_time in MILLISECONDS: >0 fire anyway after this long, <0 wait for a target, 0 = off.
+	// GS reads the two sources with DIFFERENT units and we have to match it: the weapon section goes
+	// through `floor(r_single * 1000)` (WeaponAdditionalBuffer.pas:482, i.e. seconds) while an upgrade's
+	// value is taken RAW by FindIntValueInUpgradesDef -> game_ini_r_int_def (HudItemUtils.pas:399), i.e.
+	// already milliseconds. So the safari node's `autoaim_time = 10` means 10 ms, not 10 seconds.
+	float m_fAutoAimTimeMs;
+	bool  m_bAutoAimOnlyAlive;		// autoaim_only_alive: only a thermovisor-visible target counts (crow yes, bloodsucker no)
+	bool  m_bAutoAimIgnoreDead;		// autoaim_ignore_dead: a corpse is not a target
+	bool  m_bAutoAimShotCancel;		// autoaim_shot_cancellation: no target -> drop the shot instead of holding the trigger
+	bool  m_bAutoAimAfterRelease;	// autoaim_shot_after_key_released: the timer only starts once the trigger is RELEASED
+	// NOT a GS key. GS fires on the very first frame the ray connects, and that shot can go wide -- the ray
+	// catches a limb swinging past or the edge of a model. `autoaim_confirm_time` (ms, weapon section,
+	// default 50) makes the SAME object have to stay under the crosshair that long before it counts.
+	int   m_iAutoAimConfirmMs;
+	u32   m_dwAutoAimOnTargetSince;	// when the current object came under the crosshair; 0 = nothing there
+	u16   m_wAutoAimTargetId;		// which object that is, so sweeping onto another one restarts the wait
+	u32   m_dwAutoAimStartTm;		// when the wait started; 0 = not counting
+	u32   m_dwAutoAimActorState;	// last seen actor movement state (re-pick the idle while the shot waits)
+	// ms; 0 = the interlock is off in the CURRENT fire mode (GS WpnBuf.GetAutoAimPeriod)
+	int   gwr_AutoAimPeriod		() const;
+	// false = this shot must not happen now. Holds the weapon in eFire (fShotTimeCounter = 0) while
+	// waiting, or forces it negative to let state_Fire's tail cancel the shot -- exactly what GS's
+	// SetShootLockTime(0)/(-1) do to the same field.
+	bool  gwr_IsShotNeededNow	(const Fvector& pos, const Fvector& dir);
+
+	// eFire with nothing left to do: the trigger is up, no shot is queued and the shot animation has
+	// finished -- the weapon is only sitting out `fShotTimeCounter` (rpm, or recharge_time: 3 s on the
+	// gauss). Anything that must not wait for that cooldown asks here. See OnZoomOut / UpdateCL.
+	bool  gwr_FireCycleIdle		() const;
+	// If so, close the fire cycle right now -- the same two steps state_Fire's tail would take once the
+	// counter went negative. `fShotTimeCounter` is deliberately left alone: it keeps draining at eIdle,
+	// so this can never be used to skip a recharge.
+	void  gwr_EndIdleFireCycle	();
+
 public:
 	// true while the jam (misfire) inspect gesture is on screen -> block aim / headlamp / NV /
 	// detector so nothing interrupts it (it owns the hands until it finishes)
@@ -386,10 +425,21 @@ protected:
 	// that transition. (GS just forbids reloading while aimed; this is the variant the user asked for.)
 	bool			m_bReloadAfterAimOut;
 	u32				m_dwReloadAfterAimAt;	// wall clock to start it; 0 = as soon as the sights are down
+	// set by UpdateCL for the one Reload() call the schedule above has just come due for, so
+	// ReloadGate lets it through instead of scheduling it all over again (see the gate)
+	bool			m_bReloadAimOutDue;
 	// GS CanReloadNow: a reload may not start until the shot's own cycle (the pump/bolt work) is over.
 	// Wall clock at which the queued reload may go; 0 = nothing waiting on the shot cycle.
 	u32				m_dwReloadAfterShotAt;
 	u32				m_dwLastShotTm;			// when the last round left the barrel (GS RegisterShot)
+	// GS anm_shots_selector (WeaponAnims.pas:956) arms a LOCK from `lock_time_<the shot anim that played>`,
+	// and CanLeaveAimNow waits for that lock -- never for the animation. Deadline, 0 = the config keys no
+	// lock_time for this shot (true of every weapon GS ships) -> the sights come down at once.
+	u32				m_dwShotLockUntil;
+public:
+	virtual bool	AimBlockedByShot	() const override
+	{ return m_dwShotLockUntil != 0 && Device.dwTimeGlobal < m_dwShotLockUntil; }
+protected:
 	bool			m_bTriggerHeld;		// trigger currently pressed (FireStart..FireEnd); resume fire after a transition
 	bool			m_bAimLockFirePressed;	// fire pressed DURING the aim fire-lock -> autoshoot when it ends (robust vs m_bTriggerHeld)
 	bool			m_bZoomPendingSprint;	// aim pressed during sprint: aim-in once the sprint-exit anim is (almost) done

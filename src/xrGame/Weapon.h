@@ -22,6 +22,7 @@ class CSE_ALifeItemWeaponAmmo;
 class CWeaponMagazined;
 class CParticlesObject;
 class CUIWindow;
+class CBinocularsVision;
 
 class CWeapon : public CHudItemObject,
 				public CShootingObject
@@ -37,7 +38,14 @@ public:
 	virtual void			Load				(LPCSTR section);
 
 	virtual BOOL			net_Spawn			(CSE_Abstract* DC);
+	// GS CanAimNow (WeaponAdditionalBuffer.pas:907): the sights may not be raised while the weapon is
+	// action-processing, i.e. while a lock is up. The only lock that reaches this base class is the shot's
+	// (CWeaponMagazined arms it from lock_time_<shot anim>), so the query lives here and defaults to false.
+	virtual bool			AimBlockedByShot	() const { return false; }
 	virtual void			net_Destroy			();
+	// an object going away must be dropped from the alive-detector's tracked list (dangling pointer
+	// otherwise) -- same reason CWeaponBinoculars has always overridden this
+	virtual void			net_Relcase			(CObject* O);
 	virtual void			net_Export			(NET_Packet& P);
 	virtual void			net_Import			(NET_Packet& P);
 	
@@ -203,6 +211,9 @@ private:
 	shared_str m_sScopeDetector;					// scope_alive_detector -> a params section ([scope_detector])
 	float m_fScopeNVMinFactor;						// scope_nightvision_min_factor: PPE strength at brightness step 0
 	bool  m_bScopeNVActive;
+	// scope_alive_detector = the VANILLA binoculars vision (CBinocularsVision) hung on an optic: a frame
+	// crawls onto every living creature the actor can see, with a beep. Lives only while aiming.
+	CBinocularsVision* m_pScopeVision;
 
 	// ---- GS alter zoom (alter_zoom_allowed): a SECOND aim pose toggled by a key while aiming -------
 	// The ELCAN's magnifier: the eye moves to the other optic, so the aim offset (and hud fov) swap.
@@ -218,6 +229,19 @@ public:
 	void			LoadLensFactorParams();
 	void			ResetLensStepToDefault();
 	bool			HasLensSteps		() const { return m_lens_steps > 0; }
+	// GS lens_speed: walk the magnification toward the step the player picked (per-frame, UpdateCL)
+	void			UpdateLensTravel	(float dt);
+	// GS scope nightvision (collimator.pas:523 UpdateWeaponZoomPpe): `scope_nightvision` names an
+	// effector section whose PPE runs while aiming through the optic, at a strength set by the
+	// reticle-brightness step. The gauss buys it with its `nv` node.
+	shared_str		ScopeNVSection		() const;
+	float			ScopeNVFactor		() const;
+	void			UpdateScopeNV		();
+	void			StopScopeNV			();
+	// scope_alive_detector: the vanilla binoculars vision on an optic (the gauss's `detector` node)
+	shared_str		ScopeDetectorSection() const;
+	void			UpdateScopeDetector	();
+	void			StopScopeDetector	();
 	// GS alter zoom
 	// Section the alter-pose keys (alter_zoom_allowed / alter_aim_hud_offset_* / scope_hud_fov_alter_aim /
 	// alter_zoom_time) are read from: the ACTIVE scope when one is attached, else the HUD section -- a
@@ -619,6 +643,10 @@ protected:
 	float					misfireEndCondition;
 	float					misfireStartProb;
 	float					misfireEndProb;
+	// GS misfire_after_problems_level: jam while the emission's electronics interference is at or above
+	// this level. 0 / key absent = the weapon is immune (GS defaults it to 10 for everything, we don't --
+	// see CheckForMisfire). Upgradeable: the gauss's magnetic shield adds +10.
+	float					m_fMisfireProblemsLevel;
 	//увеличение изношености при выстреле
 	float					conditionDecreasePerShot;
 	float					conditionDecreasePerShotQueue;	// GS condition_queue_shot_dec: wear per shot while firing an auto/burst queue (0 = same as single)

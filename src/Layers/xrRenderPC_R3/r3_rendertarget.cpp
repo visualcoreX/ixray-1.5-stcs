@@ -1177,6 +1177,25 @@ void CRender::RenderScopeToRT()
 	}
 }
 
+// GS EndSecondVP_OnUIRender (LensDoubleRender.pas): GS fills TWO scope RTs -- `$user$scope` right after the
+// magnified SCENE, and `$user$scopeui` after the UI has been drawn ON TOP of it, which is why its electronic
+// optics (the gauss lens material samples $user$scopeui) carry UI elements INSIDE the lens picture.
+// This is that second capture: called at the very end of a LENS frame, when the backbuffer holds the
+// magnified world plus whatever UI was drawn this frame, and just before the present bridge puts the last
+// normal frame back for display.
+void CRender::CaptureLensUIToRT()
+{
+	if (!Target || !g_pGamePersistent)					return;
+	if (!g_pGamePersistent->m_bLensFrameNow)			return;
+	CRT* rt_ui = Target->rt_scope_ui._get();
+	if (!rt_ui || !rt_ui->pSurface)						return;
+	ID3D10Texture2D* pBuffer = nullptr;
+	if (FAILED(HW.m_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBuffer))) || !pBuffer)	return;
+	// the swapchain buffer is always 1-sample, so a straight copy is right even under MSAA
+	HW.pDevice->CopyResource(rt_ui->pSurface, pBuffer);
+	_RELEASE(pBuffer);
+}
+
 // 3D PiP present bridge: keep Present firing every frame (a skipped Present flickers on DXGI flip) but make
 // LENS frames show the previous NORMAL frame. Normal frame -> save the swapchain backbuffer to rt_scope_save;
 // lens frame -> copy it back onto the backbuffer before Present. No-op unless aiming a lensed scope.

@@ -1000,6 +1000,9 @@ void CActor::UpdateCL	()
 			float	abber	= (asc.size() && pSettings->line_exist(*asc, "scope_abberation"))
 							? pSettings->r_float(*asc, "scope_abberation")
 							: READ_IF_EXISTS(pSettings, r_float, wpn->cNameSect(), "scope_abberation", 0.f);
+			// read live, so an upgrade cannot be baked in at install time: ask the installed upgrade
+			// sections the way GS's own upgrade pass does (the gauss's zoom / zoom_speed nodes tune it)
+			abber	= wpn->upgraded_float("scope_abberation", abber);
 			// .w = GS lens visibility (collimator.pas GetZoomLensVisibilityFactor): 0 in the alter pose,
 			// cross-fading with the switch, so the ELCAN's lens goes dark when the eye moves to its
 			// backup 1x sight. Shader alpha = min(aim, this) -> 0 discards the lens quad entirely.

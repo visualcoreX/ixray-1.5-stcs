@@ -443,7 +443,14 @@ void CWeaponShotgun::PlayAnimOpenWeapon()
 {
 	VERIFY(GetState()==eReload);
 	string_path anim;	SelectTriReloadAnim("anm_open", false, anim);
-	PlayHUDMotion(anim,FALSE,this,GetState());
+	// bMixIn TRUE: open is the FIRST motion of a tri-state reload, i.e. the one that follows the
+	// aim-out when reload is pressed from the sights. With FALSE it hard-cut every running blend, so
+	// the aim-out tail was killed outright and reload_aim_out_accrue had nothing to ramp -- the seam
+	// stayed a snap on pump guns while it was smooth everywhere else (CWeaponMagazined::PlayAnimReload
+	// plays TRUE for all of its variants, and so does the jam-clear PlayAnimUnjamWeapon here).
+	// The inner phases (add_cartridge / close) deliberately keep FALSE: they chain inside the reload
+	// cycle, where the hard cut is what keeps the shell-by-shell loop crisp.
+	PlayHUDMotion(anim,TRUE,this,GetState());
 	m_sTriCurAnim = anim;
 }
 void CWeaponShotgun::PlayAnimAddOneCartridgeWeapon()

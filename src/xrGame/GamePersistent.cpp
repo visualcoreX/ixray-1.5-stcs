@@ -822,7 +822,17 @@ void CGamePersistent::SetPickableEffectorDOF(bool bSet)
 
 void CGamePersistent::GetCurrentDof(Fvector3& dof)
 {
-	dof = m_dof[1];
+	// A LENS frame IS the picture the scope shows, and the aiming DOF belongs to the MAIN view -- it is
+	// there to blur the world AROUND the lens while the lens image stays sharp (RefreshZoomDOF -> LensDof).
+	// Rendering the lens frame with it would bake that blur INTO the scope image. The lens capture used to
+	// be taken before the combine pass, which hid this; now that $user$scopeui is grabbed from the finished
+	// backbuffer (CRender::CaptureLensUIToRT) the DOF is in it.
+	// GS does exactly this and with these numbers: dof_lens_on (LensDoubleRender.pas:285) swaps the whole
+	// DOF context for LENS_DOF_NEAR/FOCUS/FAR = -9151 / 0 / 9151 for the duration of the lens frame and
+	// restores it in dof_lens_off -- a range that wide simply leaves everything in focus. Taken verbatim
+	// rather than reusing our base dof, which is itself whatever r2_dof happens to be.
+	if (m_bLensFrameNow)	dof.set(-9151.f, 0.f, 9151.f);
+	else					dof = m_dof[1];
 }
 
 void CGamePersistent::SetBaseDof(const Fvector3& dof)

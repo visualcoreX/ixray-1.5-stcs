@@ -41,4 +41,8 @@ protected :
 	float						m_rotating_speed;
 	void	Load				(const shared_str& section);
 	ref_sound					m_snd_found;
+	// GS/CoP parity: a SECOND sound, played the moment a frame stops crawling and LOCKS onto its
+	// target (found_snd = "something is there", catch_snd = "locked"). Optional -- silent if the
+	// params section has no catch_snd.
+	ref_sound					m_snd_catch;
 };

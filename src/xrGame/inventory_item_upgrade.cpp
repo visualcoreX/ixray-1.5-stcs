@@ -75,6 +75,46 @@ bool CInventoryItem::get_upgrades_str( string2048& res ) const
 	return false;
 }
 
+LPCSTR CInventoryItem::upgraded_section_with( LPCSTR key ) const
+{
+	if ( !key || !key[0] || m_upgrades.empty() || !ai().get_alife() )
+	{
+		return NULL;
+	}
+
+	LPCSTR found = NULL;
+	Upgrades_type::const_iterator ib = m_upgrades.begin();
+	Upgrades_type::const_iterator ie = m_upgrades.end();
+	for ( ; ib != ie; ++ib )
+	{
+		inventory::upgrade::Upgrade* upgr = ai().alife().inventory_upgrade_manager().get_upgrade( *ib );
+		if ( !upgr )						{ continue; }
+		LPCSTR sect = upgr->section();
+		if ( !sect || !sect[0] )			{ continue; }
+		// GS lets a LATER upgrade override an earlier one, so keep walking instead of stopping here
+		if ( pSettings->line_exist( sect, key ) )	{ found = sect; }
+	}
+	return found;
+}
+
+float CInventoryItem::upgraded_float( LPCSTR key, float def ) const
+{
+	LPCSTR sect = upgraded_section_with( key );
+	return sect ? pSettings->r_float( sect, key ) : def;
+}
+
+int CInventoryItem::upgraded_int( LPCSTR key, int def ) const
+{
+	LPCSTR sect = upgraded_section_with( key );
+	return sect ? (int)pSettings->r_s32( sect, key ) : def;
+}
+
+LPCSTR CInventoryItem::upgraded_string( LPCSTR key, LPCSTR def ) const
+{
+	LPCSTR sect = upgraded_section_with( key );
+	return sect ? pSettings->r_string( sect, key ) : def;
+}
+
 bool CInventoryItem::equal_upgrades( Upgrades_type const& other_upgrades ) const
 {
 	if ( m_upgrades.size() != other_upgrades.size() )

@@ -357,6 +357,10 @@ void dxRenderDeviceRender::End()
 	// 3D PiP scope double-render: a "lens frame" was rendered world-only at the magnified scope FOV and
 	// captured into $user$scope. Instead of SKIPPING Present for it (a skipped Present flickers on DXGI flip),
 	// put the previous NORMAL frame back on the backbuffer so Present shows that and never flashes the zoom.
+	// ...but FIRST take GS's second scope capture: on a lens frame the backbuffer still holds the magnified
+	// world with this frame's UI drawn over it, and that -- not the world-only copy -- is what an electronic
+	// optic samples ($user$scopeui). Must run BEFORE the bridge below overwrites the backbuffer.
+	RImplementation.CaptureLensUIToRT();
 	RImplementation.PresentBridgeLens();
 
 #ifdef	USE_DX10

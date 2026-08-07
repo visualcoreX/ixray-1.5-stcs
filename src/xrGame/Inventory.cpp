@@ -1203,7 +1203,24 @@ bool CInventory::Eat(PIItem pIItem)
 	if ( !pInventory || pInventory != this )	return false;
 	if ( pInventory != IO->m_inventory )		return false;
 	if ( pItemToEat->object().H_Parent()->ID() != entity_alive->ID() )		return false;
-	
+
+	// THE ACTOR may not use an item while his hands are busy -- a use gesture already playing, a weapon
+	// mid reload/fire/draw, a detector coming out. gwr_eatable.script refuses to ANIMATE in that case and
+	// hands the item back, but a drink (eat_portions_num = -1) is not handed back, so from the inventory
+	// you could still down a bottle of vodka in the middle of another item-use animation: the effect
+	// applied, the bottle was gone, and nothing was shown (user 2026-08-05). Refuse the use itself here,
+	// which is the single funnel for the inventory window, the quick-use slots and the scripts alike --
+	// no consumption, no refund spawn, no callback. NPCs are untouched (they have no HUD).
+	// EXCEPT the gesture's own hidden effect carrier (<item>_eatable, visual gwr\main\fake_object): the
+	// script eats THAT from inside the running gesture, at effect_delay, to apply the effect. Gating it
+	// too meant the carrier was never consumed, sat in the inventory forever, and the very phantom scan
+	// in gwr_actor_hud_busy then reported "hands busy" for good -- nothing could be used again.
+	if ( IsGameTypeSingle() && Actor() && Actor()->m_inventory == this && !CActor::IsGesturePhantom(pIItem) )
+	{
+		extern bool gwr_actor_hud_busy_now();
+		if ( gwr_actor_hud_busy_now() )			return false;
+	}
+
 	pItemToEat->UseBy			(entity_alive);
 
 #ifdef MP_LOGGING

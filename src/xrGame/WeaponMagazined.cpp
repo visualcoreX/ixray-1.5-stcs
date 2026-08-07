@@ -24,6 +24,9 @@ extern int  g_pda_dbg;						// ui\UIPdaWnd.cpp
 #include "player_hud.h"
 #include "CustomDetector.h"
 #include "Actor_Flags.h"
+#include "entity_alive.h"
+#include "ai/crow/ai_crow.h"
+#include "ai/monsters/bloodsucker/bloodsucker.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "../Include/xrRender/KinematicsAnimated.h"
 #include "../Include/xrRender/animation_blend.h"
@@ -67,8 +70,10 @@ CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 	m_bAimOutPending			= false;
 	m_bReloadAfterAimOut		= false;
 	m_dwReloadAfterAimAt		= 0;
+	m_bReloadAimOutDue			= false;
 	m_dwReloadAfterShotAt		= 0;
 	m_dwLastShotTm				= 0;
+	m_dwShotLockUntil			= 0;
 	m_bTriggerHeld				= false;
 	m_bZoomPendingSprint		= false;
 	m_bZoomPendingMisfire		= false;
@@ -96,6 +101,16 @@ CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 	m_iMaxQueueSize				= 0;
 	m_fRechargeTime				= 0.f;
 	m_bSaveCartridgeInAmmoChange = true;
+	m_fAutoAimTimeMs			= 0.f;
+	m_bAutoAimOnlyAlive			= false;
+	m_bAutoAimIgnoreDead		= false;
+	m_bAutoAimShotCancel		= false;
+	m_bAutoAimAfterRelease		= false;
+	m_dwAutoAimStartTm			= 0;
+	m_dwAutoAimActorState		= 0;
+	m_iAutoAimConfirmMs			= 50;
+	m_dwAutoAimOnTargetSince	= 0;
+	m_wAutoAimTargetId			= u16(-1);
 	bMisfireReload				= false;
 	m_bAmmoChangeReload			= false;
 
@@ -159,6 +174,18 @@ void CWeaponMagazined::Load	(LPCSTR section)
 	m_iMaxQueueSize		= (int)READ_IF_EXISTS(pSettings, r_u32, section, "max_queue_size", 0);
 	m_fRechargeTime		= READ_IF_EXISTS(pSettings, r_float, section, "recharge_time", 0.0f);
 	m_bSaveCartridgeInAmmoChange = READ_IF_EXISTS(pSettings, r_bool, section, "save_cartridge_in_ammochange", TRUE);
+
+	// GS autoaim: all six keys sit on the WEAPON section (GS reads them with GetSection(wpn)) and are
+	// re-read from the installed upgrades in install_upgrade_impl. Absent autoaim_modes = off.
+	m_sAutoAimModes		= READ_IF_EXISTS(pSettings, r_string, section, "autoaim_modes", "");
+	// weapon section: SECONDS (GS floor(x*1000)); an upgrade overrides it with raw ms, see the header
+	m_fAutoAimTimeMs	= READ_IF_EXISTS(pSettings, r_float,  section, "autoaim_time", 0.0f) * 1000.f;
+	m_bAutoAimOnlyAlive	= !!READ_IF_EXISTS(pSettings, r_bool, section, "autoaim_only_alive", FALSE);
+	m_bAutoAimIgnoreDead= !!READ_IF_EXISTS(pSettings, r_bool, section, "autoaim_ignore_dead", FALSE);
+	m_bAutoAimShotCancel= !!READ_IF_EXISTS(pSettings, r_bool, section, "autoaim_shot_cancellation", FALSE);
+	m_bAutoAimAfterRelease = !!READ_IF_EXISTS(pSettings, r_bool, section, "autoaim_shot_after_key_released", FALSE);
+	// ours, not GS's -- milliseconds, straight (no seconds->ms conversion anywhere for this one)
+	m_iAutoAimConfirmMs	= (int)READ_IF_EXISTS(pSettings, r_u32, section, "autoaim_confirm_time", 50);
 
 	// Sounds
 	m_sounds.LoadSound(section,"snd_draw", "sndShow"		, false, m_eSoundShow		);
@@ -319,6 +346,18 @@ void CWeaponMagazined::FireStart		()
 	// fire-locks folded into the CWeaponMagazined override still hit their own defer blocks below.
 	if (CHudItem::IsShootLocked())	return;
 
+	// NO QUEUED SHOT (default; `wpn_shot_queue 1` restores the stock behaviour). While the weapon is
+	// still sitting out the post-shot delay (the rpm gap, or recharge_time on the gauss) a fresh trigger
+	// pull is DROPPED, not remembered: the press used to re-enter eFire (switch2_Fire re-arms
+	// m_bFireSingleShot) and state_Fire then let the round out the instant fShotTimeCounter drained --
+	// a shot fired for a click the player made long before.
+	// Continuous fire is untouched: a held trigger never comes back through FireStart (bWorking stays
+	// set from the first press and state_Fire loops on its own).
+	// Actor only -- the AI drives FireStart/FireEnd from its planner (object_actions) and would lose
+	// rate of fire if its START landed inside the gap.
+	if (fShotTimeCounter > 0.f && !psActorFlags.test(AF_WPN_SHOT_QUEUE)
+		&& smart_cast<CActor*>(H_Parent()))	return;
+
 	// let the jam (misfire) dry-fire gesture finish before another trigger pull; the empty
 	// dry-fire stays spammable (each click re-triggers it)
 	if ((m_bDryFirePending || m_bDryFirePlaying) && IsMisfire())	return;
@@ -415,6 +454,12 @@ void CWeaponMagazined::FireEnd()
 // exactly how it went unnoticed (user 2026-08-05: "не работает на дробовики").
 bool CWeaponMagazined::ReloadGate()
 {
+	// Consumed here, before any of the early exits below: the flag is set by UpdateCL immediately
+	// before its Reload() call, so the very next entry into this function is that one and only
+	// that one. Taking it later would leave it set whenever an earlier gate returned first.
+	const bool aim_out_due = m_bReloadAimOutDue;
+	m_bReloadAimOutDue = false;
+
 	// GS IsActionProcessing (WeaponAdditionalBuffer.pas:591) reports the weapon BUSY for the whole
 	// controller scene, which is what stops the victim reloading, aiming or switching his way out of
 	// it. Reload is the one that would actually rescue him -- an empty weapon ends the scene.
@@ -459,7 +504,14 @@ bool CWeaponMagazined::ReloadGate()
 			const float cyc = _max(m_fRechargeTime, fOneShotTime);
 			cycle_end = m_dwLastShotTm + u32(cyc * 1000.f);
 		}
-		if (m_dwShootAnimEndTm > cycle_end)	cycle_end = m_dwShootAnimEndTm;
+		// ONLY the jammed shot still holds the reload back. GS CanReloadNow is a pure TIMER --
+		// it never looks at the animation -- and folding m_dwShootAnimEndTm in unconditionally
+		// made every reload wait for the whole shoot motion. On a fast weapon the motion is about
+		// as long as the fire interval so nothing showed; on a slow one it is much longer than the
+		// cycle and the reload visibly lagged behind the key. The jam case (auto-reload from
+		// FireEnd cutting anm_shoot_jammed before a frame of it was seen) is the one this term was
+		// added for, and IsMisfire() is already set by CheckForMisfire when that reload fires.
+		if (IsMisfire() && m_dwShootAnimEndTm > cycle_end)	cycle_end = m_dwShootAnimEndTm;
 		if (cycle_end > Device.dwTimeGlobal)
 		{
 			m_dwReloadAfterShotAt = cycle_end;
@@ -500,10 +552,20 @@ bool CWeaponMagazined::ReloadGate()
 	// used to fall straight through here: IsZoomed() is already false while the sights are still coming
 	// down, so the reload snapped in mid-transition.) A weapon with no aim-out transition has nothing to
 	// blend into and reloads right away.
-	if (m_dwAimTransitionEndTm > Device.dwTimeGlobal)
+	// THE DUE RETRY MUST NOT RE-SCHEDULE ITSELF. UpdateCL fires the queued reload by calling
+	// Reload(), which lands back here -- and the aim-out transition is BY DESIGN still running at
+	// that point, so this branch used to queue it again, one fraction further along. Every frame
+	// pushed the start point closer to the end of the transition and it converged there: the
+	// reload only ever began once anm_idle_aim_end had played out in full, which is exactly how it
+	// looked on screen. m_bReloadAimOutDue (taken at the top of this function) marks that one
+	// due call so it is let through.
+	if (!aim_out_due && m_dwAimTransitionEndTm > Device.dwTimeGlobal)
 	{
+		// start the reload with `reload_aim_out_blend` of the transition still to run (0.2 = in the
+		// last 20%), the same shape as the fire / aim-transition mix -- the reload grows out of the
+		// aim-out instead of waiting behind it.
 		const u32   len  = m_dwAimTransitionEndTm - Device.dwTimeGlobal;
-		const float frac = READ_IF_EXISTS(pSettings, r_float, HudSection(), "reload_aim_out_blend", 0.5f);
+		const float frac = READ_IF_EXISTS(pSettings, r_float, HudSection(), "reload_aim_out_blend", 0.2f);
 		m_bReloadAfterAimOut = true;
 		m_dwReloadAfterAimAt = m_dwAimTransitionEndTm - u32(len * clampr(frac, 0.f, 1.f));
 		return false;
@@ -985,8 +1047,14 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 	else if (GwrChamberAtBack() && m_magazine.size() >= 2 && GetState() == eReload)
 																			mag_type = (u32)m_magazine[m_magazine.size()-2].m_LocalAmmoType;	// chamber-first reload: chamber pinned at back, so the round being loaded is one before it
 	else																	mag_type = (u32)m_magazine.back().m_LocalAmmoType;		// idle: back() = fires-next (winchester chamber / spas12 last-loaded LIFO)
+	// GS ammo_params_use_previous_shot_type (WeaponUpdate.pas GetOrdinalAmmoType:216): a weapon whose spent
+	// case stays visible (the Protecta/spas12 drum -- the fired shell rides in the chamber until the next
+	// reload) colours that case by the LAST FIRED round, ALWAYS, not by whatever now sits at the back of the
+	// magazine. Config flag, no timing window -- so a reload right after a shot shows the shell of that shot.
+	const bool use_prev_shot = !!READ_IF_EXISTS(pSettings, r_bool, sect, "ammo_params_use_previous_shot_type", FALSE);
 	const bool case_overrides = (m_gwr_fired_until != 0) &&
-		(jam_holds_case || (Device.dwTimeGlobal < m_gwr_fired_until && GetState() != eReload));	// eject window: the shell just FIRED (pop happens before the eject anim, so back() is already the next round). Any per-type-shell weapon.
+		(use_prev_shot || jam_holds_case
+		 || (Device.dwTimeGlobal < m_gwr_fired_until && GetState() != eReload));	// eject window: the shell just FIRED (pop happens before the eject anim, so back() is already the next round). Any per-type-shell weapon.
 	u32 last_type = case_overrides ? (u32)m_gwr_last_fired_type : mag_type;
 
 	// Per-barrel weapons (toz34/bm16): the blanket "fill every barrel with the loaded type" over-shows when
@@ -1471,8 +1539,11 @@ void CWeaponMagazined::UpdateCL			()
 	// re-aims at the end, which is what you want.
 	extern BOOL b_toggle_weapon_aim;
 	const bool wants_aim = b_toggle_weapon_aim ? m_bZoomToggleWanted : m_bZoomKeyHeld;
+	// ...and it must wait out the shot's own lock as well (GS CanAimNow), or it would raise the sights the
+	// instant the fire cycle ends -- which on a weapon whose lock_time_<shot> is longer than 60/rpm is
+	// still in the middle of the shot animation.
 	if (wants_aim && !m_bReloadAfterAimOut && IsZoomEnabled() && !IsZoomed() && !IsPending()
-		&& GetState()==eIdle && !IsJamInspectPlaying())
+		&& GetState()==eIdle && !IsJamInspectPlaying() && !AimBlockedByShot())
 	{
 		m_bZoomToggleWanted = false;
 		OnZoomIn();
@@ -1496,12 +1567,13 @@ void CWeaponMagazined::UpdateCL			()
 		m_bReloadAfterAimOut = false;
 		m_dwReloadAfterAimAt = 0;
 		// The reload STARTS here, at the point picked in Reload() -- but starting it is not the same
-		// as seeing it. Mixed in with the animation's own baked blendAccrue its ramp is about as long
-		// as the rest of the aim-out, so the aim-out visually plays almost to its end before the
-		// reload takes over, whatever start point we choose. Ask for a faster mix-in for this one
-		// motion so the handover happens where we asked for it.
-		// blendAccrue is a RATE (higher = quicker); 0 keeps the animation's own.
-		m_fNextBlendAccrue = READ_IF_EXISTS(pSettings, r_float, HudSection(), "reload_aim_out_accrue", 8.f);
+		// as seeing it: the mix-in rate decides how the two motions overlap. blendAccrue is a RATE and
+		// the motion reaches full weight in 1/accrue seconds (animation_blend.h), so 8 was a 125 ms
+		// ramp -- near enough a cut, which is what made the seam read as a snap. 3 = ~330 ms, long
+		// enough to cross-fade with the tail of anm_idle_aim_end instead of replacing it.
+		// LOWER = softer/slower, HIGHER = sharper; 0 keeps the animation's own baked blend.
+		m_fNextBlendAccrue = READ_IF_EXISTS(pSettings, r_float, HudSection(), "reload_aim_out_accrue", 3.f);
+		m_bReloadAimOutDue = true;	// this one is due -- the gate must not queue it again
 		Reload();
 	}
 
@@ -1578,6 +1650,14 @@ void CWeaponMagazined::UpdateCL			()
 		else
 			m_bFirePendingSprint = false;
 	}
+
+	// A DEFERRED AIM-OUT MUST NOT WAIT OUT THE COOLDOWN. Releasing the aim key while firing sets
+	// m_bAimOutPending (OnZoomOut), and that release almost always lands while the shot animation is still
+	// running -- so the test there fails and nothing would look at it again until fShotTimeCounter drained.
+	// On a long recharge (the gauss: 3 s) that is exactly "the sights won't come down", and pressing the
+	// aim key a second time appeared to fix it only because that re-entered OnZoomOut. Re-run it here.
+	if (m_bAimOutPending)
+		gwr_EndIdleFireCycle();
 
 	// detector draw phase 2, fired just before anm_prepare_detector's static tail would show
 	if (m_dwDetectorShowTm && Device.dwTimeGlobal >= m_dwDetectorShowTm)
@@ -1775,6 +1855,160 @@ void CWeaponMagazined::FireBullet(const Fvector& pos, const Fvector& dir, float 
 	m_fStartBulletSpeed = saved_speed;
 }
 
+// GS Misc.pas:1061 is_visible_by_thermovisor -- what the gauss's MUI counts as a warm body. A crow is
+// NOT a CEntityAlive in this engine either (CAI_Crow : CEntity), hence the explicit yes; a bloodsucker
+// is deliberately invisible to it.
+static bool gwr_VisibleByThermovisor(CObject* O)
+{
+	if (!O)								return false;
+	if (smart_cast<CAI_Crow*>(O))		return true;
+	if (smart_cast<CAI_Bloodsucker*>(O))return false;
+	return !!smart_cast<CEntityAlive*>(O);
+}
+
+bool CWeaponMagazined::gwr_FireCycleIdle() const
+{
+	if (GetState() != eFire)								return false;
+	if (IsWorking())										return false;	// still firing
+	// The shot's LOCK, never its animation. GS's CanLeaveAimNow asks IsActionProcessing = `_lock_remain_time
+	// > 0` (WeaponAdditionalBuffer.pas:586), which anm_shots_selector armed from `lock_time_<shot anim>`.
+	// No such key -> no lock -> the sights come down while the shot anim is still on screen and the aim-out
+	// blends over its tail (switch2_Idle's m_bAimOutPending branch is built for exactly that). Every weapon
+	// GS ships is in that case; a config that DOES key it holds the sights for precisely that long.
+	if (m_dwShotLockUntil && Device.dwTimeGlobal < m_dwShotLockUntil)	return false;
+	if (m_bFireSingleShot)
+	{
+		// A queued shot normally holds the cycle. The exception is the autoaim interlock: it can hold that
+		// shot back for as long as it likes (guard/ideal wait for a target indefinitely), and while the
+		// trigger is already up there is nothing left for the player to do about it -- lowering the sights
+		// has to win, or a long autoaim_time strands them in the scope. Dropping the queued shot with the
+		// fire cycle IS what lowering the sights means. Trigger still down -> the wait is intentional.
+		if (0 == gwr_AutoAimPeriod() || m_bTriggerHeld)		return false;
+	}
+	return true;
+}
+
+void CWeaponMagazined::gwr_EndIdleFireCycle()
+{
+	if (!gwr_FireCycleIdle())	return;
+	if (iAmmoElapsed == 0)		OnMagazineEmpty();
+	StopShooting				();
+}
+
+int CWeaponMagazined::gwr_AutoAimPeriod() const
+{
+	if (!m_sAutoAimModes.size())	return 0;
+
+	// GS WpnBuf.GetAutoAimPeriod: the "mode" is the current queue size as a string, or 'a' for the
+	// infinite queue. On the gauss `fire_modes = 1, -1` makes -1 (= 'a') the MUI mode, so the
+	// interlock is exactly the MUI's autoaim and the plain single-shot mode keeps firing normally.
+	string16 mode;
+	if (m_iQueueSize >= 0)	xr_sprintf	(mode, sizeof(mode), "%d", m_iQueueSize);
+	else					xr_strcpy	(mode, "a");
+
+	if (!strstr(m_sAutoAimModes.c_str(), mode))	return 0;
+	return iFloor(m_fAutoAimTimeMs);
+}
+
+bool CWeaponMagazined::gwr_IsShotNeededNow(const Fvector& pos, const Fvector& dir)
+{
+	// still inside a normal fire-cycle wait (rpm / recharge_time) -- not our business
+	if (fShotTimeCounter > 0.f)		return true;
+
+	const int period = gwr_AutoAimPeriod();
+	if (0 == period)				return true;
+
+	// What is under the crosshair right now. pos/dir are the shot's own ray (already corrected by
+	// g_fireParams), which is what GS feeds in after CorrectShooting.
+	collide::rq_result	RQ;
+	RQ.O = NULL;
+	bool target = !!Level().ObjectSpace.RayPick(pos, dir, 1000.f, collide::rqtObject, RQ, H_Parent());
+
+	if (m_bAutoAimOnlyAlive && !gwr_VisibleByThermovisor(RQ.O))
+		target = false;
+	if (target && m_bAutoAimIgnoreDead)
+	{
+		CEntity* E = smart_cast<CEntity*>(RQ.O);
+		if (!E || !E->g_Alive())	target = false;
+	}
+
+	// CONFIRMATION WINDOW (ours, not GS): GS shoots on the first frame the ray connects, and that shot can
+	// miss -- the ray only had to brush a swinging limb or the silhouette's edge. The same object must hold
+	// under the crosshair for autoaim_confirm_time ms before it counts; sweeping onto a different one
+	// restarts the wait. While it runs the weapon simply stays in the "no target yet" branches below.
+	if (m_iAutoAimConfirmMs > 0)
+	{
+		if (target)
+		{
+			const u16 id = RQ.O ? RQ.O->ID() : u16(-1);
+			if (id != m_wAutoAimTargetId)
+			{
+				m_wAutoAimTargetId		 = id;
+				m_dwAutoAimOnTargetSince = Device.dwTimeGlobal;
+			}
+			// the clock must NOT be reset here -- knocking `target` down is what makes the wait happen,
+			// and clearing it in the same breath would restart the window every single frame
+			if (Device.dwTimeGlobal - m_dwAutoAimOnTargetSince < (u32)m_iAutoAimConfirmMs)
+				target = false;
+		}
+		else	// nothing valid under the crosshair at all -> start over next time something is
+		{
+			m_wAutoAimTargetId		 = u16(-1);
+			m_dwAutoAimOnTargetSince = 0;
+		}
+	}
+
+	bool result;
+	if (period > 0)
+	{
+		// Timed mode (safari: 10 ms -- an upgrade's autoaim_time is raw ms, see the header): fire at the
+		// target, or give up waiting and fire anyway. With
+		// autoaim_shot_after_key_released the countdown is restarted for as long as the trigger is
+		// held, so the clock really starts at the release.
+		if (m_bAutoAimAfterRelease)
+		{
+			if (m_bTriggerHeld || !m_dwAutoAimStartTm)	m_dwAutoAimStartTm = Device.dwTimeGlobal;
+		}
+		else if (!m_dwAutoAimStartTm)
+			m_dwAutoAimStartTm = Device.dwTimeGlobal;
+
+		result = target || (Device.dwTimeGlobal - m_dwAutoAimStartTm >= (u32)period);
+
+		if (result)								m_dwAutoAimStartTm = 0;
+		else if (fShotTimeCounter <= 0.f)		fShotTimeCounter   = 0.f;	// hold the trigger, stay in eFire
+	}
+	else
+	{
+		// Wait-for-target mode (guard / ideal). No target: either drop the shot outright
+		// (autoaim_shot_cancellation) or keep holding it while the trigger is down.
+		result = target;
+		if (!result)
+		{
+			if (m_bAutoAimShotCancel)			fShotTimeCounter = -1.f;	// -> state_Fire tail StopShooting
+			else if (m_bTriggerHeld)			{ if (fShotTimeCounter <= 0.f) fShotTimeCounter = 0.f; }
+			else								fShotTimeCounter = -1.f;
+		}
+	}
+
+	// GS tail: a held-back shot keeps the weapon in eFire, which never re-picks an idle -- so the
+	// hands stay in whatever idle they had when the trigger went down even after the player starts
+	// or stops moving. Replay it on every change of the actor's movement state.
+	if (!result)
+	{
+		CActor* act = smart_cast<CActor*>(H_Parent());
+		if (act && act->MovingState() != m_dwAutoAimActorState)
+		{
+			m_dwAutoAimActorState	= act->MovingState();
+			const u32 st			= GetState();
+			SetState				(eIdle);
+			PlayAnimIdle			();
+			SetState				(st);
+		}
+	}
+
+	return result;
+}
+
 void CWeaponMagazined::state_Fire(float dt)
 {
 	if(iAmmoElapsed > 0)
@@ -1830,6 +2064,13 @@ void CWeaponMagazined::state_Fire(float dt)
 				(m_iMaxQueueSize<=0 || m_iShotNum<m_iMaxQueueSize)
 			   )
 		{
+			// GS autoaim interlock (IsShotNeededNow, patched onto this very loop condition): the
+			// gauss's guard/safari/ideal nodes hold the shot until a valid target is under the
+			// crosshair. Tested BEFORE m_bFireSingleShot is consumed, so a pending shot survives the
+			// wait -- that is what makes autoaim_shot_after_key_released possible at all.
+			if (!gwr_IsShotNeededNow(p1, d))
+				break;
+
 			m_bFireSingleShot		= false;
 
 			// GS AN94_RPM_Patch: the delay to the NEXT round is not always 60/rpm -- see
@@ -1886,6 +2127,22 @@ void CWeaponMagazined::state_Fire(float dt)
 			// just set m_dwMotionEndTm to the (randomly picked) shot variant's end.
 			m_dwShootAnimEndTm		= m_dwMotionEndTm;
 			m_dwLastShotTm			= Device.dwTimeGlobal;	// GS RegisterShot -- feeds the reload gate
+
+			// GS anm_shots_selector: the shot ARMS A LOCK from `lock_time_<the alias that played>`, and
+			// that lock -- not the animation -- is what CanLeaveAimNow waits on. Independent of the motion
+			// length in GS, so it is read straight off the start time here (the generic reader in
+			// PlayHUDMotion is a different thing: it only ever SHORTENS the state).
+			m_dwShotLockUntil		= 0;
+			{
+				shared_str sm = CurrentMotion();
+				if (sm.size())
+				{
+					string128 key;
+					xr_sprintf	(key, "lock_time_%s", sm.c_str());
+					float lt = READ_IF_EXISTS(pSettings, r_float, HudSection(), key, -1.f);
+					if (lt > 0.f)	m_dwShotLockUntil = m_dwMotionStartTm + u32(lt * 1000.f);
+				}
+			}
 
 			// The hyperburst rounds all fly from the aim point captured when the queue started
 			// (vanilla SoC gated this on base_dispersioned_bullets_count, CS on dispersion_start --
@@ -3747,6 +4004,17 @@ void CWeaponMagazined::OnZoomOut		()
 		// when the fire ends (switch2_Idle re-enters here at eIdle). Gunslinger-style.
 		m_bAimOutPending = true;
 		m_bAimInPending  = false;
+
+		// GS CanLeaveAimNow: what keeps the player at the sights is the weapon still WORKING -- a burst
+		// under the finger, a shot animation on screen -- NOT the leftover cooldown of the fire cycle.
+		// eFire lasts until fShotTimeCounter drains, and recharge_time raises that to whole seconds (the
+		// gauss: 3), so a weapon with a long recovery could not be un-aimed for three seconds after every
+		// shot. Same rule the reload gate already follows: the ANIMATION holds the action, the timer does
+		// not. Nothing left to play -> end the fire cycle now (exactly what state_Fire's tail would do
+		// once the counter went negative) and switch2_Idle plays the deferred aim-out next frame.
+		// UpdateCL re-runs this every frame while the aim-out is pending, so a release that lands mid-burst
+		// is honoured the moment the burst ends rather than being dropped.
+		gwr_EndIdleFireCycle	();
 		return;
 	}
 
@@ -3938,6 +4206,10 @@ bool CWeaponMagazined::install_upgrade_impl( LPCSTR section, bool test )
 	bool result2 = process_if_exists_set( section, "fire_modes", &CInifile::r_string, str, test );
 	if ( result2 && !test )
 	{
+		// what the weapon is set to RIGHT NOW, before the list is rebuilt
+		const s8 prev_mode = (!m_aFireModes.empty() && m_iCurFireMode >= 0 && m_iCurFireMode < (int)m_aFireModes.size())
+							 ? m_aFireModes[m_iCurFireMode] : s8(0);
+
 		int ModesCount = _GetItemCount( str );
 		m_aFireModes.clear();
 		for ( int i = 0; i < ModesCount; ++i )
@@ -3946,7 +4218,13 @@ bool CWeaponMagazined::install_upgrade_impl( LPCSTR section, bool test )
 			_GetItem( str, i, sItem );
 			m_aFireModes.push_back( (s8)atoi(sItem) );
 		}
+		// AN UPGRADE MUST NOT SWITCH THE WEAPON INTO THE MODE IT JUST ADDED. Vanilla jumped straight to the
+		// LAST entry, which on the gauss (`fire_modes = 1, -1` from the computer node) is the MUI mode -- so
+		// buying the computer turned the display on and took the rifle off single by itself. Keep the mode
+		// it was actually in whenever that mode still exists; fall back to vanilla only if it is gone.
 		m_iCurFireMode = ModesCount - 1;
+		for ( int i = 0; i < ModesCount; ++i )
+			if ( m_aFireModes[i] == prev_mode ) { m_iCurFireMode = i; break; }
 		// ...and the LIVE queue must follow, or the weapon keeps firing in whatever mode it was in
 		// before the upgrade while m_iCurFireMode already points at the new one. The first press of
 		// the selector then plays its animation and "does nothing" (it only moves the index back to
@@ -3962,6 +4240,43 @@ bool CWeaponMagazined::install_upgrade_impl( LPCSTR section, bool test )
 
 	// GS recharge_time -- the gauss's fast_conders / ionistori nodes shorten the charge (-1.0 / -0.3)
 	result |= process_if_exists( section, "recharge_time", &CInifile::r_float, m_fRechargeTime, test );
+
+	// GS autoaim: GS resolves these through FindXxxValueInUpgradesDef, i.e. the installed upgrade's
+	// value REPLACES the weapon's (it is a mode, not a bonus) -- hence _set for every key, autoaim_time
+	// included (guard/ideal set -1 = "wait for a target", safari sets 10 s).
+	{
+		result2 = process_if_exists_set( section, "autoaim_modes", &CInifile::r_string, str, test );
+		if ( result2 && !test )	m_sAutoAimModes = str;
+		result |= result2;
+
+		// RAW, no *1000: GS pulls an upgrade's autoaim_time through FindIntValueInUpgradesDef (an INT read
+		// with no conversion), so the safari node's `10` is 10 MILLISECONDS -- practically "as soon as the
+		// trigger is released". Converting it like the weapon-section value froze the rifle for 10 seconds:
+		// eFire the whole time, so no shot appeared and the sights could not be lowered either.
+		result |= process_if_exists_set( section, "autoaim_time", &CInifile::r_float, m_fAutoAimTimeMs, test );
+		result |= process_if_exists_set( section, "autoaim_confirm_time", &CInifile::r_s32, m_iAutoAimConfirmMs, test );
+
+		BOOL b;
+		b = m_bAutoAimOnlyAlive;
+		result2 = process_if_exists_set( section, "autoaim_only_alive", &CInifile::r_bool, b, test );
+		if ( result2 && !test )	m_bAutoAimOnlyAlive = !!b;
+		result |= result2;
+
+		b = m_bAutoAimIgnoreDead;
+		result2 = process_if_exists_set( section, "autoaim_ignore_dead", &CInifile::r_bool, b, test );
+		if ( result2 && !test )	m_bAutoAimIgnoreDead = !!b;
+		result |= result2;
+
+		b = m_bAutoAimShotCancel;
+		result2 = process_if_exists_set( section, "autoaim_shot_cancellation", &CInifile::r_bool, b, test );
+		if ( result2 && !test )	m_bAutoAimShotCancel = !!b;
+		result |= result2;
+
+		b = m_bAutoAimAfterRelease;
+		result2 = process_if_exists_set( section, "autoaim_shot_after_key_released", &CInifile::r_bool, b, test );
+		if ( result2 && !test )	m_bAutoAimAfterRelease = !!b;
+		result |= result2;
+	}
 
 	// AN-94 hyperburst keys are upgradeable like any other ballistic value
 	result |= process_if_exists( section, "base_dispersioned_bullets_count",      &CInifile::r_s32,   m_iBaseDispersionedBulletsCount,     test );

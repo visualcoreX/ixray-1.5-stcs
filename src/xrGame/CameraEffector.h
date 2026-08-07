@@ -17,6 +17,7 @@
 #define effBigMonsterHit		(eStartEffectorID+9)
 #define effActorDeath			(eStartEffectorID+10)
 #define effActionAnimPPE		(eStartEffectorID+11)	// gwr: ppe played over a slice of a hud gesture
+#define effScopeNightvision		(eStartEffectorID+12)	// GS scope_nightvision: the optic's own NV, separate from the goggles'
 
 #define	eCEFall					((ECamEffectorType)(cefNext+1))
 #define	eCENoise				((ECamEffectorType)(cefNext+2))

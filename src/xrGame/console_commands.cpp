@@ -1887,6 +1887,9 @@ void CCC_RegisterCommands()
 	CMD1(CCC_MemStats,			"stat_memory"			);
 	// game
 	psActorFlags.set(AF_ALWAYSRUN, true);
+	// the 3D PDA has always opened at the face here, so that stays the default; the save-state option
+	// is off, the same way GS ships the pair
+	psActorFlags.set(AF_PDA_AUTOZOOM, true);
 	CMD3(CCC_Mask,				"g_always_run",			&psActorFlags,	AF_ALWAYSRUN);
 	CMD1(CCC_GameDifficulty,	"g_game_difficulty"		);
 
@@ -1984,6 +1987,12 @@ void CCC_RegisterCommands()
 		CMD4(CCC_Integer,		"g_pda_dbg",			&g_pda_dbg,				0, 1);
 		extern int g_pda_use_clicks;
 		CMD4(CCC_Integer,		"g_pda_use_clicks",		&g_pda_use_clicks,		0, 1);
+		// GS options (gunsl_config.pas): pda_autozoom = the PDA opens already at the face rather than
+		// held down in the hand; pda_savezoomstate = ignore that and reopen it the way it was last left.
+		// Names kept GS's so the two mods' user.ltx read the same. CCC_Mask, not CCC_Integer -- that is
+		// what an options-menu checkbox binds to (same as g_autoreload / hud_crosshair right below).
+		CMD3(CCC_Mask,			"pda_autozoom",			&psActorFlags,	AF_PDA_AUTOZOOM);
+		CMD3(CCC_Mask,			"pda_savezoomstate",	&psActorFlags,	AF_PDA_SAVEZOOM);
 		// GS npc_lasers: 1 = an NPC-carried weapon keeps its laser beam on, 0 = it goes out when the
 		// weapon changes hands. The mounted flashlight is always killed for NPCs (no GS option for it).
 		extern int g_npc_lasers;
@@ -2108,6 +2117,10 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	CMD3(CCC_Mask,			"g_god",			&psActorFlags,	AF_GODMODE	);
 	CMD3(CCC_Mask,			"g_autoreload",		&psActorFlags,	AF_AUTORELOAD	);
 	CMD3(CCC_Mask,			"g_unlimitedammo",	&psActorFlags,	AF_UNLIMITEDAMMO);
+	// 0 (default) = a fire press made during the post-shot delay is DROPPED; 1 = stock behaviour, the
+	// press is queued and the shot comes out the moment the delay expires. CCC_Mask so it can also be
+	// bound to an options checkbox later (same as g_autoreload above).
+	CMD3(CCC_Mask,			"wpn_shot_queue",	&psActorFlags,	AF_WPN_SHOT_QUEUE);
 	CMD1(CCC_Script,		"run_script");
 	CMD1(CCC_ScriptCommand,	"run_string");
 	CMD1(CCC_TimeFactor,	"time_factor");		

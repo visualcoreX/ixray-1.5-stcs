@@ -316,6 +316,7 @@ public:
 	// render is the next step; for now captures the frame and lets the lens shader crop-zoom it.
 	void							RenderScopeToRT				();
 	void							PresentBridgeLens			();	// 3D PiP: save/restore the backbuffer so lens frames present the last normal frame
+	void							CaptureLensUIToRT			();	// GS EndSecondVP_OnUIRender: world+UI of a lens frame -> $user$scopeui
 };
 
 extern CRender						RImplementation;

@@ -54,6 +54,7 @@
 #include "game_cl_single.h"			// g_SingleGameDifficulty (GS suicide visibility rule)
 
 static bool gwr_actor_hud_busy(CActor* actor);	// defined below; true while a weapon/eat/torch animation runs
+static u32  gwr_gesture_lock_start(CHudItem* owner, LPCSTR base, u32 def_ms);	// defined below; GS lock_time_start_<anim>
 static bool gwr_try_burn_use(CActor* actor);	// defined below; USE beats out a fire instead of using the world
 // torch/NV gesture bookkeeping. Defined up here (rather than beside gwr_begin_torch_action, where
 // they used to live) because the quick grenade drops the block to interrupt the gesture, and that
@@ -248,7 +249,11 @@ void CActor::IR_OnKeyboardPress(int cmd)
 				// (=ak74_bayonet), no knife phantom. If a silencer/GL is on, IsBayonetActive()==false -> falls
 				// through to the generic knife-phantom kick below (and the blade bone is hidden in gwr_UpdateBones).
 				// Schedule the melee hit at the stab mark (weapon is already out, so a fixed delay from now).
+				// GS KickCallback (ActorUtils.pas:939) fires it at `lock_time_start_anm_kick` -- the same
+				// per-animation timer every other gesture uses -- so prefer that when the hud section keys it;
+				// `bayonet_hit_time` on the weapon section stays for configs that do not.
 				u32 ht = READ_IF_EXISTS(pSettings, r_u32, wmk->cNameSect().c_str(), "bayonet_hit_time", 250);
+				ht = gwr_gesture_lock_start(wmk, "anm_kick", ht);
 				m_dwBayonetHitTm = Device.dwTimeGlobal + ht;
 				wmk->PlayKickSound();	// GS snd_kick (its own snd_<anim> lookup for anm_kick)
 			}
@@ -850,6 +855,23 @@ static bool s_nv_black_added		= false;
 static const int s_nv_black_pre		= 150;	// ms the black starts BEFORE the nv actually switches
 static const int s_nv_black_post	= 150;	// ms it lingers AFTER (GS spacing ~= 0.35..0.6 of the anim)
 
+// GS arms EVERY gesture off a per-animation lock (MakeLockByConfigParam): the work happens at
+// `lock_time_start_<anim>` -- the frame the hand actually reaches the switch/target -- and only then does
+// it lock again for `lock_time_end_<anim>`. HeadlampCallback / NVCallback / KickCallback (ActorUtils.pas
+// :904/:922/:939) are exactly that. Read that value from the HUD section of whatever item plays the
+// gesture; `def_ms` is what we used before (a single global constant) and stays as the fallback for items
+// or animations that do not key it. The `_empty`/`_jammed`/`_auto`/`_w_gl` variants all carry the SAME
+// value in every shipped config, so the plain alias is enough -- which is just as well, since
+// PlayHudActionAnim is deferred and the resolved variant is not known yet at the call site.
+static u32 gwr_gesture_lock_start(CHudItem* owner, LPCSTR base, u32 def_ms)
+{
+	if (!owner || !base || !base[0])	return def_ms;
+	string128 key;
+	xr_sprintf	(key, "lock_time_start_%s", base);
+	float v = READ_IF_EXISTS(pSettings, r_float, owner->HudSection(), key, -1.f);
+	return (v >= 0.f) ? u32(v * 1000.f) : def_ms;
+}
+
 static CTorch* gwr_find_actor_torch(CActor* actor)
 {
 	xr_vector<CAttachableItem*> const& all = actor->attached_objects();
@@ -908,10 +930,24 @@ static bool gwr_actor_hud_busy(CActor* actor)
 	// starting a second use in that window put two phantoms in slot 10 and clobbered the binder's
 	// (module-wide) saved slot bookkeeping. Crash with no log, reproducible by using a quick slot
 	// right after closing the PDA.
+	// ...but only while it is FRESH. That window is a frame or two; a phantom still sitting there
+	// SECONDS later is a leak -- an effect carrier (<item>_eatable, same fake visual) whose eat never
+	// happened, say -- and it must not jam every gesture for the rest of the save. After the grace
+	// period it stops counting, so the game heals itself instead of going permanently dead-handed.
+	// (A real gesture is covered by g_block_wpn_switch above anyway.)
 	{
+		static u32 s_phantom_seen_at = 0;
+		bool phantom = false;
 		const TIItemContainer& all = actor->inventory().m_all;
 		for (TIItemContainer::const_iterator it = all.begin(); it != all.end(); ++it)
-			if (CActor::IsGesturePhantom(*it))	return true;
+			if (CActor::IsGesturePhantom(*it))	{ phantom = true; break; }
+
+		if (!phantom)					s_phantom_seen_at = 0;
+		else
+		{
+			if (!s_phantom_seen_at)		s_phantom_seen_at = Device.dwTimeGlobal;
+			if (Device.dwTimeGlobal - s_phantom_seen_at < 3000)	return true;
+		}
 	}
 	return false;
 }
@@ -1075,22 +1111,29 @@ void CActor::SwitchNightVision()
 	CWeaponMagazined* wpn = smart_cast<CWeaponMagazined*>(ai);
 	CMissile* msl = smart_cast<CMissile*>(ai);
 	CHudItem* pda = gwr_pda_device_gesture(ai, base);				// PDA phantom plays its own gesture (skips the phantom)
-	if (pda)		{}
-	else if (det)	det->PlayHudActionAnim(base);					// detector in the left hand
-	else if (wpn)	wpn->PlayHudActionAnim(base);					// weapon's own left hand
-	else if (msl)	msl->PlayHudActionAnim(base);					// bolt/grenade in the RIGHT hand (like GS); the left-hand headflash phantom below still plays too
+	// GS OnActorSwithesSmth (ActorUtils.pas:871): the gesture is played on the ITEM IN HAND, and the
+	// detector only MIRRORS it through the companion table (its anm_lefthand_<det>_wpn_nv_on = our
+	// anm_wpn_nv_on). Handing it to the detector INSTEAD left the right hand idle whenever a detector
+	// was out. The mirror costs nothing here -- PlayHUDMotion's companion hook does it.
+	CHudItem* gesture = pda;									// whoever ends up playing it owns the timing
+	bool played = (pda != NULL);
+	if (!played && wpn)	{ played = wpn->PlayHudActionAnim(base);	if (played) gesture = wpn; }	// weapon in the right hand
+	if (!played && msl)	{ played = msl->PlayHudActionAnim(base);	if (played) gesture = msl; }	// bolt/grenade in the right hand
+	if (!played && det)	{ det->PlayHudActionAnim(base);				gesture = det; }			// detector alone (or the item has no gesture)
 	// generic left-hand headflash for empty hands OR a non-weapon item (knife/grenade/bolt/binoc);
 	// never over a real (magazined) weapon, an out detector, or the PDA (it plays its own)
 	gwr_call_action_animator("gwr_eatable.on_nv_switch", desired, det == NULL && wpn == NULL && pda == NULL);
 
-	if (g_torch_switch_delay > 0)	s_nv_switch_at = Device.dwTimeGlobal + (u32)g_torch_switch_delay;
-	else							torch->SwitchNightVision();
+	// GS NVCallback: the goggles flip at lock_time_start_<gesture>, not on the keypress
+	const u32 nv_delay = gwr_gesture_lock_start(gesture, base, (g_torch_switch_delay > 0) ? (u32)g_torch_switch_delay : 0);
+	if (nv_delay > 0)	s_nv_switch_at = Device.dwTimeGlobal + nv_delay;
+	else				torch->SwitchNightVision();
 
 	// Schedule the goggles blackout around the switch moment (see s_nv_black_* notes). Clear any
 	// prior one first so a rapid re-toggle can't leave a stale effector on.
 	if (s_nv_black_added)	{ RemoveEffector(this, effActionAnimPPE); s_nv_black_added = false; }
 	{
-		u32 sw			= Device.dwTimeGlobal + (u32)((g_torch_switch_delay > 0) ? g_torch_switch_delay : 0);
+		u32 sw			= Device.dwTimeGlobal + nv_delay;	// follows the gesture's own lock_time_start
 		u32 on			= (sw > (u32)s_nv_black_pre) ? (sw - s_nv_black_pre) : Device.dwTimeGlobal;
 		s_nv_black_on_at	= on;
 		s_nv_black_off_at	= sw + s_nv_black_post;
@@ -1125,16 +1168,23 @@ void CActor::SwitchTorch()
 	CWeaponMagazined* wpn = smart_cast<CWeaponMagazined*>(ai);
 	CMissile* msl = smart_cast<CMissile*>(ai);
 	CHudItem* pda = gwr_pda_device_gesture(ai, base);				// PDA phantom plays its own gesture (skips the phantom)
-	if (pda)		{}
-	else if (det)	det->PlayHudActionAnim(base);					// detector in the left hand
-	else if (wpn)	wpn->PlayHudActionAnim(base);					// weapon's own left hand
-	else if (msl)	msl->PlayHudActionAnim(base);					// bolt/grenade in the RIGHT hand (like GS); the left-hand headflash phantom below still plays too
+	// Same as the NV toggle above (GS OnActorSwithesSmth): the WEAPON plays anm_headlamp_on/off and the
+	// detector mirrors it as a companion, instead of the detector taking the gesture and the right hand
+	// standing still (user 2026-08-05: "при включении налобного фонаря правая рука не играет анимацию").
+	CHudItem* gesture = pda;									// whoever ends up playing it owns the timing
+	bool played = (pda != NULL);
+	if (!played && wpn)	{ played = wpn->PlayHudActionAnim(base);	if (played) gesture = wpn; }	// weapon in the right hand
+	if (!played && msl)	{ played = msl->PlayHudActionAnim(base);	if (played) gesture = msl; }	// bolt/grenade in the right hand
+	if (!played && det)	{ det->PlayHudActionAnim(base);				gesture = det; }			// detector alone (or the item has no gesture)
 	// generic left-hand headflash for empty hands OR a non-weapon item (knife/grenade/bolt/binoc);
 	// never over a real (magazined) weapon, an out detector, or the PDA (it plays its own)
 	gwr_call_action_animator("gwr_eatable.on_headlamp_switch", desired, det == NULL && wpn == NULL && pda == NULL);
 
-	if (g_torch_switch_delay > 0)	s_torch_switch_at = Device.dwTimeGlobal + (u32)g_torch_switch_delay;
-	else							torch->Switch();
+	// GS HeadlampCallback: the lamp flips at lock_time_start_<gesture> (the ak74 keys 0.58 s, well past
+	// our old flat 350 ms), so the light comes on as the hand reaches the switch
+	const u32 tr_delay = gwr_gesture_lock_start(gesture, base, (g_torch_switch_delay > 0) ? (u32)g_torch_switch_delay : 0);
+	if (tr_delay > 0)	s_torch_switch_at = Device.dwTimeGlobal + tr_delay;
+	else				torch->Switch();
 	gwr_begin_torch_action();
 }
 

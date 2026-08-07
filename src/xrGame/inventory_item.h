@@ -289,6 +289,16 @@ public:
 
 	bool	equal_upgrades				( Upgrades_type const& other_upgrades ) const;
 
+	// GS's upgrade pass (WeaponUpdate.pas:500-590) reads keys straight off the sections of the
+	// upgrades that are INSTALLED, letting the last one that defines a key win. install_upgrade_impl's
+	// member mutation cannot cover values that are re-read from config at runtime (the whole lens
+	// block is rebuilt on every scope change), so those ask here instead.
+	// Returns the effect section (up_sect_*) of the last installed upgrade defining `key`, else NULL.
+	LPCSTR	upgraded_section_with		( LPCSTR key ) const;
+	float	upgraded_float				( LPCSTR key, float def ) const;
+	int		upgraded_int				( LPCSTR key, int def ) const;
+	LPCSTR	upgraded_string				( LPCSTR key, LPCSTR def ) const;
+
 	bool	verify_upgrade				( LPCSTR section );
 	bool	install_upgrade				( LPCSTR section );
 	void	pre_install_upgrade			();

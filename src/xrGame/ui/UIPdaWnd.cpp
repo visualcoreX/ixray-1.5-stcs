@@ -223,6 +223,23 @@ bool gwr_pda_need_fastzoom()
 	return s_pda_shown && !s_pda_zoom_init;
 }
 
+// --- GS options pda_autozoom / pda_savezoomstate (gunsl_config.pas:1695/1700) ------------------
+// autozoom  : the PDA opens ALREADY at the face instead of held down in the hand.
+// savezoom  : ignore that option and reopen in whatever state the player last left it in.
+// GS: NeedFastPdaZoom() = savezoom ? _last_pda_zoom_state : IsFastPdaZoom() (ActorUtils.pas:1995),
+// with _last_pda_zoom_state seeded from the option at actor spawn (:2761) and re-recorded while the
+// PDA is up (:2273). Both default to the behaviour we shipped before they existed: always zoom.
+// Both are bits of psActorFlags (AF_PDA_AUTOZOOM / AF_PDA_SAVEZOOM) so the options menu can bind a
+// checkbox straight to them; the defaults are set with the rest of psActorFlags in console_commands.cpp.
+static bool s_pda_last_zoom_state = true;	// GS _last_pda_zoom_state
+
+static bool pda_need_fast_zoom()
+{
+	return psActorFlags.test(AF_PDA_SAVEZOOM)
+			? s_pda_last_zoom_state
+			: !!psActorFlags.test(AF_PDA_AUTOZOOM);
+}
+
 // The glass shows only a CROP of the screen, so the cursor -- which is free to roam the whole
 // 1024x768 UI space -- can walk off the visible area. Fence it in.
 // Derived from the ui_tc line in shaders\r3\model_pda_screen.ps (and its r2 copy), but held a
@@ -266,6 +283,9 @@ static void pda_set_zoom(CHudItem* hi, bool on)
 
 	if (on)	w->OnZoomIn();
 	else	w->OnZoomOut();
+	// GS records the state the PDA is in while it is up, so `pda_savezoomstate` can reopen it the same
+	// way. Every route into the zoom goes through here (the auto-zoom on open and the RMB toggle alike).
+	s_pda_last_zoom_state = on;
 	// The indicators are killed wholesale by StartMenu(bDoHideIndicators) when the window opens;
 	// re-derive them from the zoom instead, so a lowered PDA still shows health/stamina. StopMenu
 	// restores whatever it saved at open, so this stays local to the PDA being up.
@@ -313,7 +333,10 @@ static void pda_reset_cursor(u32 click_tm)
 	s_pda_cur_tm	  = Device.dwTimeGlobal;
 	s_pda_last_click  = click_tm;	// seed it, else the first Update would fire a phantom click
 	s_pda_click_until = 0;
-	s_pda_zoom_init   = false;
+	// GS `_need_pda_zoom := NeedFastPdaZoom()` at open. Not owing a zoom is expressed by marking it
+	// already done: gwr_pda_need_fastzoom() then reads false from the very first frame, so the draw
+	// plays the ordinary anm_show instead of anm_show_fastzoom and nothing lifts the PDA afterwards.
+	s_pda_zoom_init   = !pda_need_fast_zoom();
 	s_pda_draw_seen   = false;		// this open's phantom hasn't started drawing yet
 	s_pda_open_tm     = Device.dwTimeGlobal;
 }
@@ -493,6 +516,27 @@ void CUIPdaWnd::Update()
 			if (g_pda_dbg)	Msg("~ pda: ZOOM applied t=%d (%d ms after open)",
 								Device.dwTimeGlobal, Device.dwTimeGlobal - s_pda_open_tm);
 		}
+
+	}
+
+	// INDICATORS FOLLOW THE ZOOM -- decided from the moment the window is up, not from when the phantom
+	// lands, and not "hide first, then maybe show". StartMenu blanks them wholesale on open; pda_set_zoom
+	// used to be what brought them back, which only ever worked because the PDA always went to the face.
+	// Hidden iff the PDA IS at the face, or a zoom is still OWED for this open (pda_autozoom on, the draw
+	// still playing) -- that second term is what stops the HUD flashing back in for the length of the
+	// draw and then vanishing again. With pda_autozoom off nothing is owed, so the HUD simply stays up.
+	// Outside the `if (hi)` above on purpose: it has to hold before the phantom exists too.
+	// ShowGameIndicators only sets a flag, so calling it every frame costs nothing.
+	if (HUD().GetUI())
+	{
+		CWeapon* pw = smart_cast<CWeapon*>(hi);
+		const bool zoom_now  = (pw && !!pw->IsZoomed());
+		const bool zoom_owed = !s_pda_zoom_init;
+		HUD().GetUI()->ShowGameIndicators(!(zoom_now || zoom_owed));
+	}
+
+	if (hi)
+	{
 
 		// (the movement is summed in IR_OnMouseMove, which sees the raw dx/dy)
 		if (Device.dwTimeGlobal < s_pda_click_until)

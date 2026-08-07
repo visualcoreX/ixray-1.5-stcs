@@ -348,6 +348,7 @@ public:
 	void							RenderPdaUIToRT				();
 	void							RenderScopeToRT				();	// 3D PiP scope: snapshot the scene into $user$scope for the lens
 	void							PresentBridgeLens			();	// 3D PiP: save/restore the backbuffer so lens frames present the last normal frame
+	void							CaptureLensUIToRT			();	// GS EndSecondVP_OnUIRender: world+UI of a lens frame -> $user$scopeui
 };
 
 extern CRender						RImplementation;

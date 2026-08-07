@@ -8,6 +8,9 @@
 #include "xrserver_objects_alife_items.h"
 #include "actor.h"
 #include "actoreffector.h"
+#include "CameraEffector.h"
+#include "PostprocessAnimator.h"
+#include "WeaponBinocularsVision.h"
 #include "level.h"
 #include "xr_level_controller.h"
 #include "game_cl_base.h"
@@ -58,6 +61,13 @@ CWeapon::CWeapon()
 	m_lens_steps			= 0;
 	m_lens_min				= 0.f;
 	m_lens_max				= 0.f;
+	m_fLensSpeed			= 0.f;
+	m_fLensPos				= 0.f;
+	m_fLensGyroPeriod		= 0.f;
+	m_dwLensGyroSndTm		= 0;
+	m_fScopeNVMinFactor		= 0.f;
+	m_bScopeNVActive		= false;
+	m_pScopeVision			= NULL;
 	m_bAlterZoom			= false;
 	m_bAlterZoomLast		= false;
 	m_fAlterZoomFactor		= 0.f;
@@ -133,6 +143,7 @@ CWeapon::CWeapon()
 CWeapon::~CWeapon		()
 {
 	xr_delete	(m_UIScope);
+	xr_delete	(m_pScopeVision);
 }
 
 void CWeapon::Hit					(SHit* pHDS)
@@ -295,6 +306,10 @@ void CWeapon::Load		(LPCSTR section)
 		m_sounds.LoadSound(section, "snd_scope_brightness_plus", "sndScopeBrightPlus");
 	if (pSettings->line_exist(section, "snd_scope_brightness_minus"))
 		m_sounds.LoadSound(section, "snd_scope_brightness_minus", "sndScopeBrightMinus");
+	// GS snd_scope_zoom_gyro: the motor that drives a variable-power optic, ticked every
+	// lens_gyro_sound_period while the magnification travels (see UpdateLensTravel).
+	if (pSettings->line_exist(section, "snd_scope_zoom_gyro"))
+		m_sounds.LoadSound(section, "snd_scope_zoom_gyro", "sndScopeZoomGyro");
 
 	// load ammo classes
 	m_ammoTypes.clear	(); 
@@ -442,6 +457,8 @@ void CWeapon::Load		(LPCSTR section)
 	misfireEndCondition			  = READ_IF_EXISTS(pSettings, r_float, section, "misfire_end_condition",   0.0f);
 	misfireStartProb			  = READ_IF_EXISTS(pSettings, r_float, section, "misfire_start_prob",      0.0f);
 	misfireEndProb				  = READ_IF_EXISTS(pSettings, r_float, section, "misfire_end_prob",        0.0f);
+	// GS misfire_after_problems_level -- opt-in per weapon here (GS gives every weapon 10 by default)
+	m_fMisfireProblemsLevel		  = READ_IF_EXISTS(pSettings, r_float, section, "misfire_after_problems_level", 0.0f);
 	conditionDecreasePerShot	  = pSettings->r_float(section,"condition_shot_dec");
 	conditionDecreasePerShotQueue = READ_IF_EXISTS(pSettings, r_float, section, "condition_queue_shot_dec", conditionDecreasePerShot);
 		
@@ -1394,6 +1411,7 @@ void CWeapon::net_Destroy	()
 	StopLight			();
 	StopLaserDot		();
 	Light_Destroy		();
+	StopScopeDetector	();		// tracked objects die with the level -- never outlive them
 
 	while (m_magazine.size()) m_magazine.pop_back();
 }
@@ -1677,6 +1695,9 @@ void CWeapon::UpdateCL		()
 	inherited::UpdateCL		();
 	UpdateHUDAddonsVisibility();
 	UpdateAlterZoomBlend	(Device.fTimeDelta);	// GS alter zoom: eased ramp between the two aim poses
+	UpdateLensTravel		(Device.fTimeDelta);	// GS lens_speed: magnification walks toward the picked step
+	UpdateScopeNV			();						// GS scope_nightvision: the optic's own PPE while aiming
+	UpdateScopeDetector		();						// scope_alive_detector: the binoculars vision on an optic
 	// world-model attachment bones (scope / reticle illum / laser ray / bayonet / flashlight lens): these
 	// toggle at runtime and UpdateAddonsVisibility only fires on addon+upgrade events, so track them here.
 	// Guarded by the state signature, so it's a no-op on the frames nothing changed.
@@ -1857,6 +1878,16 @@ bool CWeapon::Action(s32 cmd, u32 flags)
 			// Track the physical aim key (down between CMD_START and CMD_STOP), mirroring m_bTriggerHeld
 			// for fire. Convenience flag for aim-held logic; set regardless of whether zoom is enabled.
 			m_bZoomKeyHeld = !!(flags & CMD_START);
+			// GS CanAimNow: no aiming while a lock is up. A shot arms one from `lock_time_<shot anim>`, and
+			// the aim-in below starts with SwitchState(eIdle) to stop the fire -- which CUT the shot
+			// animation the moment the key was pressed (the hip shot never played out). The press is not
+			// dropped: GS's aim key is a repeat flag that retries every frame, and our held-aim resume
+			// (CWeaponMagazined::UpdateCL) is the same mechanism -- it waits for this lock too.
+			if ((flags & CMD_START) && !IsZoomed() && AimBlockedByShot())
+			{
+				if (b_toggle_weapon_aim)	m_bZoomToggleWanted = true;	// toggle mode has no held key to fall back on
+				return true;
+			}
 			if(IsZoomEnabled())
 			{
 				if(b_toggle_weapon_aim)
@@ -2164,6 +2195,24 @@ BOOL CWeapon::CheckForMisfire	()
 	{
 		m_bMisfireCooldown = false;
 		return FALSE;
+	}
+
+	// GS misfire_after_problems_level (WeaponEvents.pas:2591): once the emission's electronics
+	// interference passes this level the weapon jams on the trigger pull. GS defaults it to 10 for
+	// EVERY weapon; we deliberately do NOT (the blanket surge-misfire was cut on request), so only a
+	// weapon whose config carries the key opts in -- today just the gauss, whose `magnetic_shield`
+	// node raises the threshold (+10) and so buys immunity for most of a surge.
+	if (m_fMisfireProblemsLevel > 0.f)
+	{
+		extern float g_electronics_problems;	// ActorInput.cpp -- ramped by the surge
+		if (g_electronics_problems >= m_fMisfireProblemsLevel)
+		{
+			FireEnd				();
+			bMisfire			= true;
+			m_bMisfireCooldown	= true;
+			SwitchState			(eMisfire);
+			return TRUE;
+		}
 	}
 
 	float rnd = ::Random.randF(0.f,1.f);
@@ -2618,6 +2667,20 @@ void CWeapon::OnZoomIn()
 
 	m_zoom_params.m_bIsZoomModeNow		= true;
 	m_zoom_params.m_fCurrentZoomFactor	= CurrentZoomFactor();
+
+	// The lens block is re-derived here, not just on scope attach / save load: it is now also fed by the
+	// INSTALLED UPGRADES (the gauss's `zoom` node turns 1 fixed step into 5 between 5x and 30x), and an
+	// upgrade bought at a mechanic never touches the scope, so nothing else would refresh it. Without
+	// this the first aim after the upgrade still ran on the base numbers and the wheel then snapped the
+	// magnification across as soon as ChangeLensStep re-read them.
+	LoadLensFactorParams				();
+	clamp								(m_lens_step, 0, m_lens_steps);
+	// ...and START the aim at the step the player actually picked. m_fLensPos is the TRAVELLING position
+	// (GS lens_speed); raising the sights must show that power at once -- only a wheel change mid-aim is
+	// worth ramping. A stale position left over from the old step count was what made the very first aim
+	// come up at full magnification and then dive to the minimum on the first wheel click.
+	m_fLensPos							= (m_lens_steps > 0) ? (float(m_lens_step) / float(m_lens_steps)) : 0.f;
+	m_dwLensGyroSndTm					= 0;
 	// GS IsLastZoomAlter (collimator.pas:132): if the previous aim ENDED in the alter pose, come back
 	// straight into it instead of the normal one. The blend factor is set to 1 rather than ramped --
 	// this is a continuation of the pose the player left, not a fresh toggle, so it must not play the
@@ -2686,6 +2749,8 @@ void CWeapon::OnZoomOut()
 	// (anm_idle_sprint_start) instead of snapping into the loop. Pairs with the m_bPrevSprint edge check.
 	m_bSprintStarted					= false;
 	m_bPrevSprint						= false;
+	StopScopeNV							();			// the optic's nightvision belongs to the aim, like GS's zoom ppe
+	StopScopeDetector					();			// ...and so does its alive detector (CWeaponBinoculars does the same)
 
 	// GS WeaponEvents.pas:1895 -- leaving aim eases the DOF back out over its OWN (slower) speed,
 	// which is most of what made vanilla's flat 0.2s in/out feel wrong next to GS.
@@ -2749,7 +2814,11 @@ float CWeapon::GetLensFOV() const
 	{
 		int step = m_lens_step;
 		clamp(step, 0, m_lens_steps);
-		factor = m_lens_min + (m_lens_max - m_lens_min) * (float(step) / float(m_lens_steps));
+		float t = float(step) / float(m_lens_steps);
+		// GS lens_speed: the picked step is only the target -- read the travelling position instead,
+		// so the magnification ramps between the two powers rather than snapping (UpdateLensTravel).
+		if (m_fLensSpeed > 0.f)	t = m_fLensPos;
+		factor = m_lens_min + (m_lens_max - m_lens_min) * t;
 	}
 	else if (sc.size() && pSettings->line_exist(*sc, "scope_lens_factor"))
 		factor = pSettings->r_float(*sc, "scope_lens_factor");
@@ -2767,20 +2836,61 @@ void CWeapon::LoadLensFactorParams()
 {
 	m_lens_steps = 0;
 	m_lens_min = m_lens_max = 0.f;
+	m_fLensSpeed = m_fLensGyroPeriod = 0.f;
 	shared_str sc = GetCurrentScopeSection();
 	// A PERMANENT optic (scope_status = 1, e.g. the gauss) has no scope section of its own; GS keeps its whole
 	// lens block on the weapon section, so fall back there -- same order IsLensedScope/GetLensFOV already use.
 	LPCSTR lsect = NULL;
 	if (sc.size() && pSettings->line_exist(*sc, "lens_factor_levels_count"))			lsect = *sc;
 	else if (pSettings->line_exist(cNameSect(), "lens_factor_levels_count"))			lsect = *cNameSect();
-	if (!lsect)	return;
 
-	m_lens_steps = (int)pSettings->r_u32(lsect, "lens_factor_levels_count");
-	if (m_lens_steps < 1)	{ m_lens_steps = 0; return; }
-	m_lens_min = READ_IF_EXISTS(pSettings, r_float, lsect, "min_lens_factor", 2.0f);
-	m_lens_max = READ_IF_EXISTS(pSettings, r_float, lsect, "max_lens_factor", m_lens_min);
+	// GS WeaponUpdate.pas:562 -- an installed upgrade REPLACES the lens block key by key. This whole
+	// function re-reads config on every scope change, so the upgrade cannot be baked into a member at
+	// install time; it is resolved here, exactly like GS resolves it in its own per-frame upgrade pass.
+	// (The gauss's `zoom` node turns its fixed 15x into 5..30x over 5 steps.)
+	int steps = lsect ? (int)pSettings->r_u32(lsect, "lens_factor_levels_count") : 0;
+	steps = upgraded_int("lens_factor_levels_count", steps);
+	if (steps < 1)	{ m_lens_steps = 0; return; }
+
+	m_lens_steps = steps;
+	m_lens_min = lsect ? READ_IF_EXISTS(pSettings, r_float, lsect, "min_lens_factor", 2.0f) : 2.0f;
+	m_lens_max = lsect ? READ_IF_EXISTS(pSettings, r_float, lsect, "max_lens_factor", m_lens_min) : m_lens_min;
+	m_lens_min = upgraded_float("min_lens_factor", m_lens_min);
+	m_lens_max = upgraded_float("max_lens_factor", m_lens_max);
 	if (m_lens_max < m_lens_min)	std::swap(m_lens_min, m_lens_max);
 	clamp(m_lens_step, 0, m_lens_steps);
+
+	// GS lens_speed / lens_gyro_sound_period (WeaponUpdate.pas:569): 0 = the magnification snaps to the
+	// new step, >0 = it TRAVELS there at that many positions per second while the gyro motor ticks.
+	// The gauss ships 0 and buys the travel with its `zoom` (+0.3) and `zoom_speed` (+0.9) nodes.
+	m_fLensSpeed		= lsect ? READ_IF_EXISTS(pSettings, r_float, lsect, "lens_speed", 0.f) : 0.f;
+	m_fLensGyroPeriod	= lsect ? READ_IF_EXISTS(pSettings, r_float, lsect, "lens_gyro_sound_period", 0.f) : 0.f;
+	m_fLensSpeed		= upgraded_float("lens_speed", m_fLensSpeed);
+	m_fLensGyroPeriod	= upgraded_float("lens_gyro_sound_period", m_fLensGyroPeriod);
+}
+
+// GS WeaponAdditionalBuffer.pas:747: with lens_speed set, the step the player picked is only a TARGET --
+// the magnification walks to it and the gyro motor ticks all the way. Called every frame from UpdateCL.
+void CWeapon::UpdateLensTravel(float dt)
+{
+	if (m_lens_steps <= 0)						{ m_fLensPos = 0.f; return; }
+
+	float target = float(m_lens_step) / float(m_lens_steps);
+	clamp(target, 0.f, 1.f);
+	if (m_fLensSpeed <= 0.f)					{ m_fLensPos = target; return; }		// instant, as before
+	if (fsimilar(m_fLensPos, target, EPS_L))	{ m_fLensPos = target; m_dwLensGyroSndTm = 0; return; }
+
+	const float step = m_fLensSpeed * dt;
+	if (_abs(target - m_fLensPos) <= step)		m_fLensPos  = target;
+	else										m_fLensPos += (target > m_fLensPos) ? step : -step;
+
+	// the motor is only audible while it actually moves; period 0 = no gyro sound at all
+	if (m_fLensGyroPeriod > 0.f && Device.dwTimeGlobal >= m_dwLensGyroSndTm
+		&& m_sounds.FindSoundItem("sndScopeZoomGyro", false))
+	{
+		PlaySound			("sndScopeZoomGyro", get_LastFP());
+		m_dwLensGyroSndTm	= Device.dwTimeGlobal + iFloor(m_fLensGyroPeriod * 1000.f);
+	}
 }
 
 void CWeapon::ResetLensStepToDefault()
@@ -2794,6 +2904,9 @@ void CWeapon::ResetLensStepToDefault()
 		m_lens_step = sc.size() ? (int)READ_IF_EXISTS(pSettings, r_u32, *sc, "default_lens_factor_step", 0) : 0;
 	}
 	LoadLensFactorParams();
+	// a scope that has just been (re)attached starts AT its power -- only a step CHANGE is worth ramping
+	m_fLensPos			= (m_lens_steps > 0) ? (float(m_lens_step) / float(m_lens_steps)) : 0.f;
+	m_dwLensGyroSndTm	= 0;
 }
 
 bool CWeapon::ChangeLensStep(int delta)
@@ -2921,7 +3034,10 @@ float CWeapon::ZoomMouseSenseKoef() const
 	shared_str sc = GetCurrentScopeSection();
 	if (!IsAlterZoom() && sc.size() && pSettings->line_exist(*sc, "zoom_mouse_sense_koef"))
 		return ScaleSenseByLensStep(pSettings->r_float(*sc, "zoom_mouse_sense_koef"));
-	return ScaleSenseByLensStep(READ_IF_EXISTS(pSettings, r_float, cNameSect(), "zoom_mouse_sense_koef", 1.0f));
+	// live read -> an upgrade has to be resolved here rather than at install time (GS's own pass does
+	// the same); the gauss's `zoom` node re-specifies it together with the rest of the lens block
+	return ScaleSenseByLensStep(upgraded_float("zoom_mouse_sense_koef",
+			READ_IF_EXISTS(pSettings, r_float, cNameSect(), "zoom_mouse_sense_koef", 1.0f)));
 }
 
 // A VARIABLE-magnification optic (min_lens_factor != max_lens_factor with lens_factor_levels_count steps --
@@ -2936,7 +3052,9 @@ float CWeapon::ScaleSenseByLensStep(float k) const
 	if (IsAlterZoom())																return k;
 	int step = m_lens_step;
 	clamp(step, 0, m_lens_steps);
-	const float cur = m_lens_min + (m_lens_max - m_lens_min) * (float(step) / float(m_lens_steps));
+	float t = float(step) / float(m_lens_steps);
+	if (m_fLensSpeed > 0.f)	t = m_fLensPos;			// follow the travelling power, not the target step
+	const float cur = m_lens_min + (m_lens_max - m_lens_min) * t;
 	if (cur <= m_lens_min)															return k;
 	shared_str sc = GetCurrentScopeSection();
 	float p = 1.0f;
@@ -2965,13 +3083,145 @@ void CWeapon::LoadScopeIllumParams()
 	shared_str sc = GetCurrentScopeSection();
 	LPCSTR sect = (sc.size() && pSettings->line_exist(*sc, "steps_brightness"))
 					? *sc : cNameSect().c_str();
-	m_scope_illum_max	= READ_IF_EXISTS(pSettings, r_float, sect, "max_night_brightness", 1.f) / 3.f;
-	m_scope_illum_min	= READ_IF_EXISTS(pSettings, r_float, sect, "min_night_brightness", 1.f) / 3.f;
+	m_scope_illum_max	= READ_IF_EXISTS(pSettings, r_float, sect, "max_night_brightness", 1.f);
+	m_scope_illum_min	= READ_IF_EXISTS(pSettings, r_float, sect, "min_night_brightness", 1.f);
 	m_scope_illum_steps	= READ_IF_EXISTS(pSettings, r_u32,   sect, "steps_brightness",    0);
 	m_scope_illum_jitter= READ_IF_EXISTS(pSettings, r_float, sect, "jitter_brightness",   0.f);
+	// re-read from config on every scope change, so an upgrade cannot be baked into the members at
+	// install time -- ask the installed upgrade sections, GS-style. The gauss's `nv` node is exactly
+	// this case: the weapon itself ships no brightness steps at all and buys the whole block.
+	m_scope_illum_max	= upgraded_float("max_night_brightness", m_scope_illum_max);
+	m_scope_illum_min	= upgraded_float("min_night_brightness", m_scope_illum_min);
+	m_scope_illum_steps	= upgraded_int  ("steps_brightness",     m_scope_illum_steps);
+	m_scope_illum_jitter= upgraded_float("jitter_brightness",    m_scope_illum_jitter);
+	m_scope_illum_max	/= 3.f;		// GS divides the configured brightness by 3
+	m_scope_illum_min	/= 3.f;
 	clamp(m_scope_illum_step, 0, m_scope_illum_steps);
 	const int denom = (m_scope_illum_steps > 0) ? m_scope_illum_steps : 1;
 	m_scope_illum_value = m_scope_illum_min + (m_scope_illum_max - m_scope_illum_min) * (float(m_scope_illum_step) / denom);
+}
+
+// GS UpdateWeaponZoomPpe (collimator.pas:523) + GetNightPPEFactor (WeaponAdditionalBuffer.pas:1794).
+// `scope_nightvision` names an effector section ([scope_nightvision_gauss] -> nightvision_gauss.ppe).
+// It sits on the ACTIVE SCOPE when one is attached, on the weapon for a permanent optic -- and for the
+// gauss it arrives with an UPGRADE, which is why the upgrade sections are asked before the weapon's own.
+shared_str CWeapon::ScopeNVSection() const
+{
+	shared_str sc = GetCurrentScopeSection();
+	if (IsScopeAttached() && sc.size() && pSettings->line_exist(*sc, "scope_nightvision"))
+		return pSettings->r_string(*sc, "scope_nightvision");
+
+	LPCSTR up = upgraded_string("scope_nightvision", NULL);
+	if (up)											return up;
+	if (pSettings->line_exist(cNameSect(), "scope_nightvision"))
+		return pSettings->r_string(cNameSect(), "scope_nightvision");
+	return shared_str();
+}
+
+// GS: the reticle-brightness step drives the PPE strength between scope_nightvision_min_factor (step 0)
+// and full. A scope with no brightness steps at all runs the effect at full strength.
+float CWeapon::ScopeNVFactor() const
+{
+	float min_f = 0.f;
+	shared_str sc = GetCurrentScopeSection();
+	if (IsScopeAttached() && sc.size() && pSettings->line_exist(*sc, "scope_nightvision_min_factor"))
+		min_f = pSettings->r_float(*sc, "scope_nightvision_min_factor");
+	else
+		min_f = upgraded_float("scope_nightvision_min_factor",
+					READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_nightvision_min_factor", 0.f));
+	clamp(min_f, 0.f, 1.f);
+
+	const float v = (m_scope_illum_steps > 0)
+					? (float(m_scope_illum_step) / float(m_scope_illum_steps))
+					: 1.0f;
+	return min_f + (1.0f - min_f) * v;
+}
+
+void CWeapon::UpdateScopeNV()
+{
+	CActor* act = smart_cast<CActor*>(H_Parent());
+	// GS gates it on the weapon being the ACTOR's (a PPE is the player's screen, nothing else has one)
+	shared_str nv_sect;
+	if (act && act == Actor() && IsZoomed())	nv_sect = ScopeNVSection();
+	if (!nv_sect.size())
+	{
+		StopScopeNV();
+		return;
+	}
+
+	CPostprocessAnimator* pp = smart_cast<CPostprocessAnimator*>(
+			act->Cameras().GetPPEffector((EEffectorPPType)effScopeNightvision));
+	if (!pp)
+	{
+		AddEffector	(act, effScopeNightvision, nv_sect);
+		pp = smart_cast<CPostprocessAnimator*>(
+				act->Cameras().GetPPEffector((EEffectorPPType)effScopeNightvision));
+		m_bScopeNVActive = (pp != NULL);
+	}
+	// re-applied every frame: the brightness keys change it live, exactly as in GS
+	if (pp)	pp->SetCurrentFactor(ScopeNVFactor());
+}
+
+// `scope_alive_detector` names a PARAMS section ([scope_detector]: vis_frame_speed / vis_frame_color /
+// found_snd) for the VANILLA binoculars vision -- the same CBinocularsVision the binoculars use, only
+// hung on an optic. Resolution order matches the nightvision: active scope, then the installed
+// upgrades (the gauss buys it with its `detector` node), then the weapon section.
+shared_str CWeapon::ScopeDetectorSection() const
+{
+	shared_str sc = GetCurrentScopeSection();
+	if (IsScopeAttached() && sc.size() && pSettings->line_exist(*sc, "scope_alive_detector"))
+		return pSettings->r_string(*sc, "scope_alive_detector");
+
+	LPCSTR up = upgraded_string("scope_alive_detector", NULL);
+	if (up)											return up;
+	if (pSettings->line_exist(cNameSect(), "scope_alive_detector"))
+		return pSettings->r_string(cNameSect(), "scope_alive_detector");
+	return shared_str();
+}
+
+// Created on aim-in and destroyed on aim-out, exactly like CWeaponBinoculars does with its own vision
+// (the frames are drawn from render_item_ui, which only runs for the active item while zoomed).
+void CWeapon::UpdateScopeDetector()
+{
+	CActor* act = smart_cast<CActor*>(H_Parent());
+	shared_str sect;
+	if (act && act == Actor() && IsZoomed() && IsScopeAttached())	sect = ScopeDetectorSection();
+	if (!sect.size())
+	{
+		StopScopeDetector();
+		return;
+	}
+
+	if (!m_pScopeVision)
+		m_pScopeVision = xr_new<CBinocularsVision>(sect);
+
+	// A LENSED (PiP) optic updates its frames from render_item_ui instead -- see there. Their rects are
+	// projected with Device.mFullTransform, and doing that HERE reads a matrix that does not belong to the
+	// image the frames will land in.
+	if (IsLensedScope())	return;
+
+	m_pScopeVision->Update();
+}
+
+void CWeapon::StopScopeDetector()
+{
+	xr_delete(m_pScopeVision);		// no-op when already null
+}
+
+void CWeapon::net_Relcase(CObject* O)
+{
+	inherited::net_Relcase	(O);
+	if (m_pScopeVision)		m_pScopeVision->remove_links(O);
+}
+
+void CWeapon::StopScopeNV()
+{
+	if (!m_bScopeNVActive)	return;
+	m_bScopeNVActive = false;
+	CActor* act = Actor();
+	if (!act)	return;
+	if (CEffectorPP* pp = act->Cameras().GetPPEffector((EEffectorPPType)effScopeNightvision))
+		pp->Stop(1.0f);
 }
 
 void CWeapon::ResetScopeIllumToDefault()
@@ -3367,29 +3617,41 @@ void CWeapon::UpdateHudAdditonal		(Fmatrix& trans)
 		curr_offs					= hi->m_measures.m_hands_offset[0][idx];//pos,aim
 		curr_rot					= hi->m_measures.m_hands_offset[1][idx];//rot,aim
 
-		// Gunslinger: aiming through an attached scope uses the scope's own aim offset, not the iron sights'.
-		if (idx==1 && IsScopeAttached())
+		// While the in-game HUD tuner is active (hud_adj_mode, Mixed build: Shift+Num1/2) let it drive the
+		// aim offset directly -- otherwise the per-scope override swallows the tuner's changes.
+		extern u32 hud_adj_mode;
+		if (idx==1 && hud_adj_mode == 0)
 		{
 			bool	wide = hi->m_measures.m_prop_flags.test(hud_item_measures::e_16x9_mode_now);
-			Fvector	spos, srot;
-			shared_str sc = GetCurrentScopeSection();
-			// While the in-game HUD tuner is active (hud_adj_mode, Mixed build: Shift+Num1/2) let it drive the
-			// aim offset directly -- otherwise the per-scope override swallows the tuner's changes.
-			extern u32 hud_adj_mode;
-			if (hud_adj_mode == 0 && read_scope_aim_offset(sc.size() ? *sc : nullptr, *hi->m_sect_name, wide, spos, srot))
+
+			// Gunslinger: aiming through an ATTACHED scope uses the scope's own (higher/further-back) aim
+			// offset, not the iron sights'. Without an attached scope, curr_offs already holds the measures'
+			// aim pose (from aim_hud_offset_*) -- the right base for an integrated sight.
+			if (IsScopeAttached())
 			{
-				curr_offs	= spos;
-				curr_rot	= srot;
-				// GS alter zoom: blend smoothly toward the second aim pose (eased), never snap.
-				const float ab = AlterZoomBlend();
-				if (ab > 0.f)
+				Fvector	spos, srot;
+				shared_str sc = GetCurrentScopeSection();
+				if (read_scope_aim_offset(sc.size() ? *sc : nullptr, *hi->m_sect_name, wide, spos, srot))
 				{
-					Fvector apos, arot;
-					if (read_scope_aim_offset(sc.size() ? *sc : nullptr, *hi->m_sect_name, wide, apos, arot, true))
-					{
-						curr_offs.lerp(spos, apos, ab);
-						curr_rot.lerp (srot, arot, ab);
-					}
+					curr_offs	= spos;
+					curr_rot	= srot;
+				}
+			}
+
+			// GS alter zoom: blend the aim offset smoothly toward the second aim pose (eased, never snap).
+			// AlterZoomSection() resolves to the attached scope's section OR, for an integrated sight
+			// (scope_status 0, e.g. the P90), the weapon HUD section -- where alter_aim_hud_offset_* live.
+			// This blend used to sit INSIDE the IsScopeAttached() branch, so integrated sights toggled their
+			// alter FOV/zoom but the aim offset never moved. Now it runs for both.
+			const float ab = AlterZoomBlend();
+			if (ab > 0.f)
+			{
+				shared_str asec = AlterZoomSection();
+				Fvector apos, arot;
+				if (read_scope_aim_offset(asec.size() ? *asec : nullptr, *hi->m_sect_name, wide, apos, arot, true))
+				{
+					curr_offs.lerp(curr_offs, apos, ab);
+					curr_rot.lerp (curr_rot,  arot, ab);
 				}
 			}
 		}
@@ -3476,11 +3738,32 @@ bool CWeapon::render_item_ui_query()
 {
 	bool b_is_active_item = (m_pInventory->ActiveItem()==this);
 	bool res = b_is_active_item && IsZoomed() && ZoomHideCrosshair() && ZoomTexture() && !IsRotatingToZoom();
+	// The alive detector draws through this same hook, and it must work on a weapon that has NO 2D scope
+	// picture -- a PiP/lensed optic deliberately returns ZoomTexture() == NULL (see UseScopeTexture), which
+	// is exactly the gauss's case. On a LENSED optic the frames belong to the LENS frame only: drawn there
+	// they land in the magnified capture and appear inside the lens (GS), while the presented normal frames
+	// stay clean -- which is why they must not be drawn over the main view.
+	if (b_is_active_item && IsZoomed() && !IsRotatingToZoom() && m_pScopeVision)
+		res |= (!IsLensedScope() || (g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow));
 	return res;
 }
 
 void CWeapon::render_item_ui()
 {
+	// frames first, then the scope picture over them -- the order CWeaponBinoculars uses
+	if (m_pScopeVision)
+	{
+		// A LENSED optic projects them HERE, not in UpdateCL. SBinocVisibleObj::Update builds each rect from
+		// Device.mFullTransform, and that matrix is the MAGNIFIED lens one only while the lens frame is being
+		// rendered -- during the game update it is still the previous, wide frame's, which is why the frames
+		// sat next to the characters instead of on them. This is the ordering GS gets for free: it draws the
+		// UI into the second viewport itself (EndSecondVP_OnUIRender -> ForcedRenderUI, LensDoubleRender.pas
+		// :382), i.e. with the lens transform live. render_item_ui runs in the UI pass of that same frame, so
+		// updating here projects against exactly the image the frames are about to be captured into.
+		if (IsLensedScope())	m_pScopeVision->Update();
+		m_pScopeVision->Draw();
+	}
+	if (!ZoomTexture())		return;					// lensed/collimator optic: no 2D picture to draw
 	ZoomTexture()->Update	();
 	ZoomTexture()->Draw		();
 }
