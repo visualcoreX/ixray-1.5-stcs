@@ -1890,6 +1890,8 @@ void CCC_RegisterCommands()
 	// the 3D PDA has always opened at the face here, so that stays the default; the save-state option
 	// is off, the same way GS ships the pair
 	psActorFlags.set(AF_PDA_AUTOZOOM, true);
+	// CoP ships the load gate on; the options checkbox turns it off
+	psActorFlags.set(AF_KEYPRESS_ON_START, true);
 	CMD3(CCC_Mask,				"g_always_run",			&psActorFlags,	AF_ALWAYSRUN);
 	CMD1(CCC_GameDifficulty,	"g_game_difficulty"		);
 
@@ -2121,6 +2123,9 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	// press is queued and the shot comes out the moment the delay expires. CCC_Mask so it can also be
 	// bound to an options checkbox later (same as g_autoreload above).
 	CMD3(CCC_Mask,			"wpn_shot_queue",	&psActorFlags,	AF_WPN_SHOT_QUEUE);
+	// CoP: hold the finished loading screen until the player presses something. Bound to the
+	// "Ожидание нажатия клавиши" checkbox in the gameplay options.
+	CMD3(CCC_Mask,			"keypress_on_start",&psActorFlags,	AF_KEYPRESS_ON_START);
 	CMD1(CCC_Script,		"run_script");
 	CMD1(CCC_ScriptCommand,	"run_string");
 	CMD1(CCC_TimeFactor,	"time_factor");		

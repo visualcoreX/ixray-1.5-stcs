@@ -24,8 +24,14 @@ CGameSpy_Full::CGameSpy_Full()
 	//---------------------------------------
 	m_pGSA = xr_new<CGameSpy_Available>(m_hGameSpyDLL);
 	//-----------------------------------------------------
-	shared_str resultstr;
-	m_bServicesAlreadyChecked = m_pGSA->CheckAvailableServices(resultstr);
+	// The online-services check USED TO RUN HERE, synchronously, on the main thread: CheckAvailableServices
+	// spins `while (GSIAvailableCheckThink() == GSIACWaiting) msleep(5)` and inside that the GameSpy SDK
+	// resolves <game>.available.gamespy.com -- a backend that has been dead since 2014. So every launch
+	// blocked the whole engine on DNS queries to a host that cannot answer, waiting out the resolver's
+	// timeout and retries, only to conclude what we already know. The object stays (the console patch
+	// command reaches through m_pGSA's siblings); only the startup call is gone.
+	// Flagged as "already checked" so Update() does not raise the ErrGSServiceFailed dialog for it.
+	m_bServicesAlreadyChecked = true;
 	//-----------------------------------------------------
 	m_pGS_Patching = xr_new<CGameSpy_Patching>(m_hGameSpyDLL);
 	m_pGS_HTTP  = xr_new<CGameSpy_HTTP>(m_hGameSpyDLL);

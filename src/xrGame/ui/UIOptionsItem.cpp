@@ -4,6 +4,7 @@
 #include "../../xrEngine/xr_ioconsole.h"
 
 CUIOptionsManager CUIOptionsItem::m_optionsManager;
+bool CUIOptionsItem::s_allow_restart_req = false;
 
 CUIOptionsItem::CUIOptionsItem()
 {
@@ -97,6 +98,16 @@ void CUIOptionsItem::SaveOptTokenValue(LPCSTR val)
 
 void CUIOptionsItem::SaveValue()
 {
+	// Not an explicit save (see CUIOptionsItem::BeginSave) -- this is the widget writing its value
+	// back while it is being filled in or restored, which must not order a renderer restart.
+	if(!s_allow_restart_req)	return;
+
+	// DIAGNOSTIC (cheap, once per changed item on Apply): which option is the one that costs a
+	// four-second vid_restart. Only items the UI reported as CHANGED ever get here.
+	if(m_dep==sdVidRestart || m_dep==sdSndRestart || m_dep==sdSystemRestart)
+		Msg("~ options: [%s] changed -> %s restart", m_entry.c_str(),
+			(m_dep==sdVidRestart) ? "vid" : ((m_dep==sdSndRestart) ? "snd" : "system"));
+
 	if(m_dep==sdVidRestart)
 		m_optionsManager.DoVidRestart();
 	else

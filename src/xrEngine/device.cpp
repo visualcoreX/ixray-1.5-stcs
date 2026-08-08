@@ -100,6 +100,75 @@ void CRenderDevice::Clear	()
 
 extern void CheckPrivilegySlowdown();
 
+#include "xr_input.h"
+
+// ---------------------------------------------------------------------------------------------
+// "Press any key" at the end of a load (Call of Pripyat). The precache is held one frame short of
+// finishing, so the loading screen -- shaders and all -- is still alive and simply keeps being
+// drawn, and the game clock is paused meanwhile. Armed per load by PreCache(frames, true).
+// ---------------------------------------------------------------------------------------------
+ENGINE_API bool			g_bLoadWaitKey		= false;
+ENGINE_API string256	g_sLoadWaitKeyText	= { 0 };
+
+static bool				s_wait_key_armed	= false;	// this load asked for the gate
+static bool				s_wait_key_open		= false;	// the gate is up, snapshot below is valid
+static u8				s_wait_key_down[256];			// keys already held when it opened
+static u8				s_wait_btn_down[3];
+static BOOL				s_wait_pause_str	= TRUE;		// bShowPauseString as it was before the gate
+
+extern ENGINE_API BOOL	bShowPauseString;				// defined further down this file
+
+// A key that was ALREADY down when the gate opened must not dismiss it -- the player is quite
+// likely leaning on a movement key while the level comes up. Only a fresh press counts, and
+// releasing a key arms it for the next press.
+static bool				wait_key_pressed	()
+{
+	if (!pInput)	return true;			// no input device -> never hold the game hostage
+
+	for (int dik = 1; dik < 256; ++dik)
+	{
+		if (!pInput->iGetAsyncKeyState(dik))	{ s_wait_key_down[dik] = 0; continue; }
+		if (!s_wait_key_down[dik])				return true;
+	}
+	for (int btn = 0; btn < 3; ++btn)
+	{
+		if (!pInput->iGetAsyncBtnState(btn))	{ s_wait_btn_down[btn] = 0; continue; }
+		if (!s_wait_btn_down[btn])				return true;
+	}
+	return false;
+}
+
+static void				wait_key_open		()
+{
+	ZeroMemory		(s_wait_key_down, sizeof(s_wait_key_down));
+	ZeroMemory		(s_wait_btn_down, sizeof(s_wait_btn_down));
+	if (pInput)
+	{
+		for (int dik = 1; dik < 256; ++dik)
+			if (pInput->iGetAsyncKeyState(dik))	s_wait_key_down[dik] = 1;
+		for (int btn = 0; btn < 3; ++btn)
+			if (pInput->iGetAsyncBtnState(btn))	s_wait_btn_down[btn] = 1;
+	}
+	s_wait_key_open	= true;
+	g_bLoadWaitKey	= true;
+	// the world is live during a precache (the camera spins through it) -- freeze it, or the actor
+	// stands there being shot at while the player reads the loading screen. Sound is left alone:
+	// the master volume is already held at 0 for the whole precache.
+	Device.Pause	(TRUE, TRUE, FALSE, "load_wait_key");
+	// ...but without the "PAUSED" banner over the loading screen -- this is a prompt, not a pause the
+	// player asked for. Same thing the main menu does while it holds the game (CMainMenu::Activate).
+	s_wait_pause_str	= bShowPauseString;
+	bShowPauseString	= FALSE;
+}
+
+static void				wait_key_close		()
+{
+	s_wait_key_armed	= false;
+	s_wait_key_open		= false;
+	g_bLoadWaitKey		= false;
+	Device.Pause		(FALSE, TRUE, FALSE, "load_wait_key");
+	bShowPauseString	= s_wait_pause_str;
+}
 
 void CRenderDevice::End		(void)
 {
@@ -112,7 +181,19 @@ void CRenderDevice::End		(void)
 	if (dwPrecacheFrame)
 	{
 		::Sound->set_master_volume	(0.f);
-		dwPrecacheFrame	--;
+
+		// The gate sits on the LAST precache frame: everything is warmed and the level is ready,
+		// but the counter never reaches 0, so the finish block below (which destroys the loading
+		// shaders) does not run and the screen stays exactly as it is.
+		bool	hold					= false;
+		if (1==dwPrecacheFrame && s_wait_key_armed && !g_dedicated_server)
+		{
+			if (!s_wait_key_open)		wait_key_open	();
+			hold					= !wait_key_pressed();
+			if (!hold)					wait_key_close	();
+		}
+
+		if (!hold)					dwPrecacheFrame	--;
 		pApp->load_draw_internal	();
 		if (0==dwPrecacheFrame)
 		{
@@ -196,13 +277,17 @@ void 			mt_Thread	(void *ptr)	{
 }
 
 #include "igame_level.h"
-void CRenderDevice::PreCache	(u32 amount)
+void CRenderDevice::PreCache	(u32 amount, bool wait_user_input)
 {
 	if (m_pRender->GetForceGPU_REF()) amount=0;
 #ifdef DEDICATED_SERVER
 	amount = 0;
 #endif
 	// Msg			("* PCACHE: start for %d...",amount);
+	// The gate needs a precache to hang off; with none (or none left) there is no loading screen
+	// to hold. Arming is a plain flag, so the two PreCache calls a single load makes still buy
+	// exactly one wait.
+	if (amount && wait_user_input && !s_wait_key_open)	s_wait_key_armed = true;
 	dwPrecacheFrame	= dwPrecacheTotal = amount;
 	if (amount && !precache_light && g_pGameLevel && g_loading_events.empty()) {
 		precache_light					= ::Render->light_create();

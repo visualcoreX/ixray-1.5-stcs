@@ -344,6 +344,7 @@ void game_sv_Single::restart_simulator			(LPCSTR saved_game_name)
 	pApp->LoadBegin			();
 	m_alife_simulator		= xr_new<CALifeSimulator>(&server(),&options);
 	g_pGamePersistent->LoadTitle		("st_client_synchronising");
-	Device.PreCache			(30);
+	extern bool arm_load_keypress_gate();	// GamePersistent.cpp -- CoP "press any key" gate
+	Device.PreCache			(30, arm_load_keypress_gate());
 	pApp->LoadEnd			();
 }

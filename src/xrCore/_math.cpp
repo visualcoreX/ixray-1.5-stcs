@@ -164,17 +164,25 @@ namespace CPU
 
 		// Timers & frequency
 		u64			start,end;
-		u32			dwStart,dwTest;
 
-		SetPriorityClass		(GetCurrentProcess(),REALTIME_PRIORITY_CLASS);
+		// TSC frequency. This used to put the WHOLE PROCESS into REALTIME_PRIORITY_CLASS and then
+		// busy-spin for a full second (timeGetTime loop) before dropping back to NORMAL. WinMain pins
+		// the main thread to CPU 0 before xrCore is initialized, so that second was a REALTIME spin on
+		// the very core that services the NIC interrupts/DPCs -- the whole machine, networking included,
+		// stalled for it on every launch.
+		// Nothing at runtime needs this number to be exact: every clock in the engine is QPC (FTimer.h),
+		// clk_* only feeds the Lua profiler and a couple of stat counters. So measure over a short
+		// QPC-timed window, SLEEPING instead of spinning, and scale the result up to one second. Same
+		// value, no priority games, no burned core.
+		QueryPerformanceFrequency	((PLARGE_INTEGER)&qpc_freq)	;
 
-		// Detect Freq
-		dwTest	= timeGetTime();
-		do { dwStart = timeGetTime(); } while (dwTest==dwStart);
-		start	= GetCLK();
-		while (timeGetTime()-dwStart<1000) ;
-		end		= GetCLK();
-		clk_per_second = end-start;
+		u64			qpc_start	= QPC();
+		start		= GetCLK();
+		const u64	qpc_window	= qpc_freq / 10;	// 100 ms of wall clock
+		u64			qpc_now;
+		do { Sleep(1); qpc_now = QPC(); } while (qpc_now - qpc_start < qpc_window);
+		end			= GetCLK();
+		clk_per_second = (end - start) * qpc_freq / (qpc_now - qpc_start);
 
 		// Detect RDTSC Overhead
 		clk_overhead	= 0;
@@ -185,16 +193,13 @@ namespace CPU
 		}
 		clk_overhead		/=	256;
 
-		// Detect QPC Overhead
-		QueryPerformanceFrequency	((PLARGE_INTEGER)&qpc_freq)	;
+		// Detect QPC Overhead (qpc_freq is already read above)
 		qpc_overhead	= 0;
 		for (int i=0; i<256; i++)	{
 			start			=	QPC();
 			qpc_overhead	+=	QPC()-start-dummy;
 		}
 		qpc_overhead		/=	256;
-
-		SetPriorityClass	(GetCurrentProcess(),NORMAL_PRIORITY_CLASS);
 
 		clk_per_second	-=	clk_overhead;
 		clk_per_milisec	=	clk_per_second/1000;

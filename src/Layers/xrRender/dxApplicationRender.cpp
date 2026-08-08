@@ -205,6 +205,23 @@ void dxApplicationRender::load_draw_internal(CApplication &owner)
 	owner.pFontSystem->OutI			(0.f,0.815f,owner.app_title);
 	owner.pFontSystem->OnRender		();
 
+	// The "press any key" gate (CRenderDevice::End) -- sits above the title, in the gap between the
+	// level shot and it, and PULSES the way CoP's does, so a frozen screen reads as waiting for the
+	// player rather than as a stall. The string comes from the game side already translated.
+	if (g_bLoadWaitKey && g_sLoadWaitKeyText[0])
+	{
+		// dwTimeContinual, NOT dwTimeGlobal: the gate pauses the game clock and the pulse would
+		// freeze along with it.
+		const float	phase	= float(Device.dwTimeContinual % 1400) / 1400.f;
+		const float	alpha	= 0.35f + 0.65f * (0.5f - 0.5f*_cos(phase * PI_MUL_2));
+
+		owner.pFontSystem->Clear		();
+		owner.pFontSystem->SetColor		(color_rgba(216,196,160,u32(iFloor(alpha*255.f))));
+		owner.pFontSystem->SetAligment	(CGameFont::alCenter);
+		owner.pFontSystem->OutI			(0.f,0.700f,g_sLoadWaitKeyText);
+		owner.pFontSystem->OnRender		();
+	}
+
 
 	//draw level-specific screenshot
 	if(hLevelLogo)

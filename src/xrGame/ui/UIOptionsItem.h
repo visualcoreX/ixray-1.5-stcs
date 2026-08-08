@@ -15,6 +15,18 @@ public:
 
 	static CUIOptionsManager* GetOptionsManager	() {return &m_optionsManager;}
 
+	// ONLY AN EXPLICIT SAVE MAY ORDER A RESTART. SaveValue() is called from all over the widget
+	// code -- CUITrackBar::UpdatePos ends in it, so merely OPENING the options screen (which reads
+	// every current value into its widget via SetCurrentValue -> UpdatePos) used to arm a
+	// vid_restart for texture_lod and r__supersample, and then any button, even Cancel with nothing
+	// touched, spent four seconds restarting the renderer. Undo() restoring a value went the same
+	// way. Call of Pripyat splits these (SaveOptValue arms restarts, UndoOptValue does not); this
+	// bracket is that split without touching every item class: the flag is off by default and
+	// CUIOptionsManager::SaveValues turns it on around its own loop. Values are still written
+	// everywhere they were before -- only the restart REQUEST is gated.
+	static void				BeginSave			()	{ s_allow_restart_req = true;  }
+	static void				EndSave				()	{ s_allow_restart_req = false; }
+
 protected:
 	virtual void			SetCurrentValue		()	=0;	
 	virtual void			SaveValue			();
@@ -48,4 +60,5 @@ protected:
 	ESystemDepends			m_dep;
 
 	static CUIOptionsManager m_optionsManager;
+	static bool				s_allow_restart_req;
 };

@@ -27,6 +27,21 @@ extern bool g_pda_rt_pass;
 #include "ActorEffector.h"
 #include "actor.h"
 #include "spectator.h"
+#include "string_table.h"
+#include "Actor_Flags.h"
+
+// Call of Pripyat's "press any key when the level is ready" gate. The engine holds the last
+// precache frame (CRenderDevice::End) when PreCache was told to; this decides whether it should be
+// and hands over the already-translated hint, because the string table lives on this side of the
+// DLL boundary. Single player only -- in MP everyone else is already in the level and waiting.
+bool arm_load_keypress_gate()
+{
+	if (!psActorFlags.test(AF_KEYPRESS_ON_START))					return false;
+	if (!g_pGamePersistent || g_pGamePersistent->GameType() != 1)	return false;	// 1 = eGameIDSingle
+
+	xr_strcpy	(g_sLoadWaitKeyText, *CStringTable().translate("ui_st_press_any_key"));
+	return		true;
+}
 
 #ifndef MASTER_GOLD
 #	include "custommonster.h"

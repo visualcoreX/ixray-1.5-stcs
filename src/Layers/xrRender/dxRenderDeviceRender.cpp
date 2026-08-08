@@ -61,8 +61,13 @@ void  dxRenderDeviceRender::Reset( HWND hWnd, u32 &dwWidth, u32 &dwHeight, float
 	_SHOW_REF("*ref -CRenderDevice::ResetTotal: DeviceREF:",HW.pDevice);
 #endif // DEBUG	
 
+	// DIAGNOSTIC: *** RESET [N ms] covers this whole function; break it down per step so the 2.8 s
+	// has a name instead of a suspect.
+	const u32 t_0			= Device.TimerAsync();
 	Resources->reset_begin	();
+	const u32 t_begin		= Device.TimerAsync();
 	Memory.mem_compact		();
+	const u32 t_compact		= Device.TimerAsync();
 	// REGRESSION FIX (commit c2faeb0e re-enabled DeferredUnload): on DX10+ the device SURVIVES a swap-chain
 	// resize, so game textures stay valid across a reset -- unloading + mass-recreating all ~1400 of them here
 	// is unnecessary and crashes (D3DX10CreateTextureFromMemory fails mid-storm on "Apply video settings",
@@ -72,8 +77,11 @@ void  dxRenderDeviceRender::Reset( HWND hWnd, u32 &dwWidth, u32 &dwHeight, float
 #ifndef USE_DX10
 	ResourcesDeferredUnload();
 #endif
+	const u32 t_unload		= Device.TimerAsync();
 	HW.Reset(hWnd);
+	const u32 t_hw			= Device.TimerAsync();
 	ResourcesDeferredUpload();
+	const u32 t_upload		= Device.TimerAsync();
 
 #ifdef	USE_DX10
 	dwWidth					= HW.m_ChainDesc.BufferDesc.Width;
@@ -86,6 +94,11 @@ void  dxRenderDeviceRender::Reset( HWND hWnd, u32 &dwWidth, u32 &dwHeight, float
 	fWidth_2				= float(dwWidth/2);
 	fHeight_2				= float(dwHeight/2);
 	Resources->reset_end	();
+	const u32 t_end			= Device.TimerAsync();
+
+	Msg("~ reset: begin=%d compact=%d unload=%d hw=%d upload=%d end=%d (ms)",
+		t_begin - t_0, t_compact - t_begin, t_unload - t_compact,
+		t_hw - t_unload, t_upload - t_hw, t_end - t_upload);
 
 #ifdef DEBUG
 	_SHOW_REF("*ref +CRenderDevice::ResetTotal: DeviceREF:",HW.pDevice);

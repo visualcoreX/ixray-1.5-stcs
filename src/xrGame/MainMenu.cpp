@@ -224,6 +224,10 @@ void CMainMenu::Activate	(bool bActivate)
 
 		if(m_Flags.test(flNeedVidRestart))
 		{
+			// DIAGNOSTIC: this is the restart that hits on the way BACK INTO the game. It should now
+			// only fire for a reset nobody asked for (alt-tab, a mode change from outside), never for
+			// one the options screen just performed.
+			Msg					("~ options: vid_restart on menu close (device was reset while the menu was up)");
 			m_Flags.set			(flNeedVidRestart, FALSE);
 			Console->Execute	("vid_restart");
 		}
@@ -648,6 +652,11 @@ void CMainMenu::CancelDownload()
 void CMainMenu::SetNeedVidRestart()
 {
 	m_Flags.set(flNeedVidRestart,TRUE);
+}
+
+void CMainMenu::ClearNeedVidRestart()
+{
+	m_Flags.set(flNeedVidRestart,FALSE);
 }
 
 void CMainMenu::OnDeviceReset()

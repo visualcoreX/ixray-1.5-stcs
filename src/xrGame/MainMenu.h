@@ -158,6 +158,9 @@ public:
 	void			Show_CTMS_Dialog				();
 	void			Hide_CTMS_Dialog				();
 	void			SetNeedVidRestart				();
+	// ...and take it back when the reset was OUR OWN doing (the options screen just ran vid_restart),
+	// so leaving the menu does not run a second four-second one. See CUIOptionsManager::OptionsPostAccept.
+	void			ClearNeedVidRestart				();
 	virtual void	OnDeviceReset					();
 	LPCSTR			GetGSVer						();
 

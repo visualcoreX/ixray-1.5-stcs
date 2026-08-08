@@ -11,6 +11,7 @@
 #include "../xrEngine/CameraBase.h"
 #include "player_hud.h"
 #include "../xrEngine/SkeletonMotions.h"
+#include "../xrEngine/motion.h"			// ESMFlags (esmStopAtEnd) - cyclic vs one-shot sprint loop
 #include "GamePersistent.h"				// GS action DOF (SetEffectorDOF + the [gunslinger_base] defaults)
 
 extern bool gwr_pda_need_fastzoom();		// ui\UIPdaWnd.cpp
@@ -94,6 +95,8 @@ CHudItem::CHudItem()
 	m_bSprintStarted			= false;
 	m_bSprintStartRunning		= false;
 	m_bPrevSprint				= false;
+	m_sprint_loop_motion		= NULL;
+	m_bSprintLoopCyclic			= false;
 	m_fNextBlendAccrue			= 0.f;
 	m_dwSprintExitEndTm			= 0;
 	m_dwShootLockTm				= 0;
@@ -1087,7 +1090,22 @@ void CHudItem::PlayAnimIdleSprint()
 	}
 	m_bSprintStarted     = true;	// no enter anim -> straight to the loop, but remember we're sprinting (for the exit)
 	m_bSprintStartRunning = false;
+	// The sprint loop is a CYCLIC motion: the animator keeps it running by itself, so re-playing it
+	// only cross-fades the hands from wherever the cycle happens to be back to frame 0 -- read on a
+	// run cycle (arms mid-swing) as a hard snap. We used to do that on EVERY speed/direction change,
+	// because OnMovementChanged's HasMovementIdleVariant() fast path is guarded only by
+	// m_bStopAtEndAnimIsRunning -- and that flag is ALWAYS false here, since player_hud::motion_length
+	// returns 0 for a non-esmStopAtEnd motion, so no timer is ever armed. Gunslinger's engine keeps the
+	// same guard but re-plays the idle only on mcSprint/mcAnyMove, so its loop simply runs (user
+	// 2026-08-08, TT-33 -- identical omf and config on both sides, verified against GunsXRay-xd_dev).
+	// Gated on the motion being cyclic: a StopAtEnd sprint loop still NEEDS the re-play, or the hands
+	// would freeze on its last frame.
+	if (m_bSprintLoopCyclic && m_sprint_loop_motion.size() && m_current_motion == m_sprint_loop_motion)
+		return;
 	PlayHUDMotion(loop, TRUE, this, GetState());
+	// remember what it actually resolved to (may carry _empty / _jammed / a firemode mark)
+	m_sprint_loop_motion = m_current_motion;
+	m_bSprintLoopCyclic  = (m_current_motion_def && 0 == (m_current_motion_def->flags & esmStopAtEnd));
 }
 
 void CHudItem::OnMovementChanged(ACTOR_DEFS::EMoveCommand cmd)

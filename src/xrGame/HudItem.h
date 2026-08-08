@@ -192,6 +192,11 @@ public:
 	// transition (anm_idle_sprint_start) must replay even if m_bSprintStarted was left set by a prior
 	// state (e.g. aiming out straight into a sprint) -- otherwise the loop would snap in without the start.
 	bool						m_bPrevSprint;
+	// resolved name of the sprint LOOP we started, and whether that motion is cyclic (self-running).
+	// A cyclic motion keeps going on its own, so re-playing it only cross-fades the hands back to
+	// frame 0; PlayAnimIdleSprint uses these to skip that restart. Empty = no loop of ours playing.
+	shared_str					m_sprint_loop_motion;
+	bool						m_bSprintLoopCyclic;
 	// wall-clock deadline while the sprint-EXIT anim (anm_idle_sprint_end) is playing, minus a few
 	// cut frames: fire/aim is deferred until then so the exit plays first, then the action resumes.
 	u32							m_dwSprintExitEndTm;

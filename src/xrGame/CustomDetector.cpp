@@ -290,6 +290,14 @@ void CCustomDetector::OnStateSwitch(u32 S)
 			LPCSTR show_anm = m_bFastAnimMode ? "anm_show_fast" : "anm_show";
 			if (m_bEmergencyShow && isHUDAnimationExist("anm_show_emergency"))
 				show_anm = "anm_show_emergency";		// drawn together with a weapon
+			// ONE-SHOT: consume it here, at the draw it was requested for. It used to be cleared only by
+			// ShowDetector() (the engine-driven aim/reload re-show), so anything that set it and was NOT
+			// followed by a reload left it stuck ON -- e.g. the quick knife kick, whose Lua binder restores
+			// the detector with show_detector(true) -> ShowDetectorEmergency(). Every later draw, manual
+			// toggle included, then kept playing anm_show_emergency; for the handheld torch that alias has
+			// no torch_enable_time_* entry, so the light and its cone bone stayed dead until a reload
+			// happened to clear the flag (user 2026-08-08).
+			m_bEmergencyShow			= false;
 			PlayHUDMotion				(show_anm, FALSE, this, GetState());
 			ScheduleTorch				(show_anm);	// GS: the light comes on part-way into the draw
 			// the weapon's draw/prepare gestures are driven from the weapon (BeginDetectorDraw ->
@@ -348,7 +356,14 @@ void CCustomDetector::OnAnimationEnd(u32 state)
 				m_companion_done	= m_current_motion;
 			}
 			PlayAnimIdle				();
-			m_companion_done			= NULL;
+			// m_companion_done deliberately KEPT here: it stays valid until the weapon starts a new
+			// motion (PlayCompanionAction clears it on bRestart). Clearing it right after this one
+			// PlayAnimIdle made it a single-call guard, so any LATER idle re-select inside the same
+			// weapon motion re-picked the companion we had just finished and played it a second time.
+			// Walking left-right during an aim-out did exactly that: our anm_wpn_idle_aim_end ends
+			// before the weapon's longer anm_idle_aim_end, the movement change re-ran PlayAnimIdle, the
+			// weapon was still reporting the same motion, and the left hand lowered twice (user
+			// 2026-08-08). The aim-IN was masked because "_start" redirects to the base aim loop below.
 		} break;
 	case eHiding:
 		{
@@ -414,6 +429,11 @@ static void companion_strip(char* s, const char* sub)
 
 bool CCustomDetector::PlayCompanionAction(LPCSTR action, bool bRestart)
 {
+	// bRestart comes only from the weapon-side hook, i.e. the weapon just (re)started a motion -- so
+	// nothing we finished mirroring earlier is stale any more. This is the lifetime boundary of
+	// m_companion_done: set when our one-shot companion ends, cleared here. Before the guard below, so
+	// a detector that is mid draw/hide right now still starts clean once it settles back to idle.
+	if (bRestart)	m_companion_done = NULL;
 	if (!IsWorking() || GetState()!=eIdle || IsPending())	return false;
 	// SPRINT is NOT mirrored as a companion. Like Gunslinger (where the detector's sprint is its OWN
 	// isdetector movement dispatch, and only AIM is a companion), we let the detector run its own sprint

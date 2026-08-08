@@ -20,6 +20,9 @@ enum{
 		// (rpm gap / recharge_time) is dropped. Set it to bring the stock behaviour back -- the press is
 		// remembered and the round leaves the instant the delay expires. See CWeaponMagazined::FireStart.
 		AF_WPN_SHOT_QUEUE	=(1<<12),
+		// CoP: the finished loading screen waits for a keypress before the game starts (console
+		// name kept CoP's). ON by default. See arm_load_keypress_gate / CRenderDevice::End.
+		AF_KEYPRESS_ON_START=(1<<13),
 };
 
 extern Flags32 psActorFlags;

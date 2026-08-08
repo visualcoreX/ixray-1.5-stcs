@@ -616,7 +616,14 @@ int APIENTRY WinMain_impl(HINSTANCE hInstance,
 	g_dedicated_server			= true;
 #endif // DEDICATED_SERVER
 
-	SetThreadAffinityMask		(GetCurrentThread(),1);
+	// The main thread used to be PINNED TO CPU 0 here (SetThreadAffinityMask(..., 1)) -- a leftover from
+	// the days when RDTSC was the clock and could differ from core to core. It is not our clock: every
+	// timer in the engine reads QPC (FTimer.h), and clk_* only feeds the Lua profiler. What the pin did
+	// buy was a permanent fight for one core with everything Windows puts on CPU 0 by default -- the NIC
+	// interrupts and DPCs among them -- so a level load (main thread at 100%) stalled unrelated traffic
+	// on the machine. Let the scheduler place it. Pass -cpu0 to get the old behaviour back.
+	if (strstr(GetCommandLine(), "-cpu0"))
+		SetThreadAffinityMask	(GetCurrentThread(),1);
 
 	// Title window
 	logoWindow					= CreateDialog(GetModuleHandle(NULL),	MAKEINTRESOURCE(IDD_STARTUP), 0, logDlgProc );

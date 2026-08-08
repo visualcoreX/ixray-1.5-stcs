@@ -138,8 +138,15 @@ void	xrMemory::mem_compact	()
 {
 	RegFlushKey						( HKEY_CLASSES_ROOT );
 	RegFlushKey						( HKEY_CURRENT_USER );
-	_heapmin						( );
-	HeapCompact						(GetProcessHeap(),0);
+
+	// _heapmin() + HeapCompact() USED TO RUN HERE and they are what made a video-settings change cost
+	// four seconds: walking a ~670 MB heap with hundreds of thousands of live blocks to hand free pages
+	// back to the OS. They buy nothing -- the CRT reuses freed blocks for the next allocation either
+	// way, and neither call moves anything, so the address space of this 32-bit process is no less
+	// fragmented afterwards. What they DO cost is paid on every device reset (twice: here and in
+	// CRenderDevice::Reset) and at the end of every precache, i.e. every level load.
+	// The Call of Pripyat line these forks descend from dropped them for the same reason.
+	// The container cleanups below are the part that actually reclaims something worth reclaiming.
 	if (g_pStringContainer)			g_pStringContainer->clean		();
 	if (g_pSharedMemoryContainer)	g_pSharedMemoryContainer->clean	();
 	if (strstr(Core.Params,"-swap_on_compact"))

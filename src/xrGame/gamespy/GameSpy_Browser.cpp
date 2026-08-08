@@ -175,6 +175,7 @@ void	RefreshInternetList	(void * inData)
 
 void			CGameSpy_Browser::RefreshListInternet (const char* FilterStr)
 {
+	if (!m_pGSBrowser) return;
 	m_refresh_lock.Enter();
 
 	SBError error = sbe_noerror;
@@ -296,6 +297,7 @@ void __cdecl SBCallback(void* sb, SBCallbackReason reason, void* server, void *i
 
 void CGameSpy_Browser::CallBack_OnUpdateCompleted()
 {
+	if (!m_pGSBrowser) return;
 	int NumServers = xrGS_ServerBrowserCount(m_pGSBrowser);
 
 	ServerInfo NewServerInfo;
@@ -308,11 +310,13 @@ void CGameSpy_Browser::CallBack_OnUpdateCompleted()
 
 int	CGameSpy_Browser::GetServersCount()
 {
+	if (!m_pGSBrowser) return 0;
 	return xrGS_ServerBrowserCount(m_pGSBrowser);
 };
 
 void CGameSpy_Browser::GetServerInfoByIndex(ServerInfo* pServerInfo, int idx)
 {
+	if (!m_pGSBrowser) return;
 	void* pServer = xrGS_ServerBrowserGetServer(m_pGSBrowser, idx);
 	ReadServerInfo(pServerInfo, pServer);
 	pServerInfo->Index = idx;
@@ -501,6 +505,7 @@ void	CGameSpy_Browser::ReadServerInfo	(ServerInfo* pServerInfo, void* pServer)
 
 void			CGameSpy_Browser::RefreshQuick(int Index)
 {
+	if (!m_pGSBrowser) return;
 	void* pServer = xrGS_ServerBrowserGetServer(m_pGSBrowser, Index);
 	if (!pServer) return;
 	ServerInfo xServerInfo;
@@ -510,6 +515,7 @@ void			CGameSpy_Browser::RefreshQuick(int Index)
 
 bool			CGameSpy_Browser::CheckDirectConnection(int Index)
 {
+	if (!m_pGSBrowser) return false;
 	void* pServer = xrGS_ServerBrowserGetServer(m_pGSBrowser, Index);
 	if (!pServer) return false;
 	SBBool res = xrGS_SBServerDirectConnect(pServer);
@@ -518,12 +524,18 @@ bool			CGameSpy_Browser::CheckDirectConnection(int Index)
 
 void			CGameSpy_Browser::OnUpdateFailed		(void* server)
 {
+	if (!m_pGSBrowser) return;
 	xrGS_ServerBrowserRemoveServer(m_pGSBrowser, server);
 }
 
 void			CGameSpy_Browser::Update()
 {
-	xrGS_ServerBrowserThink(m_pGSBrowser);	
+	// ServerBrowserNew can legitimately hand back NULL ("! Unable to init Server Browser!" in the log) --
+	// the GameSpy backend is long dead, and the SDK now fails that call outright. Every entry point below
+	// passed the NULL handle straight into the SDK, which dereferences it. RefreshList_Full was the only
+	// one that ever checked. This one is on the startup path (CGameSpy_Full::Update while the menu is up).
+	if (!m_pGSBrowser) return;
+	xrGS_ServerBrowserThink(m_pGSBrowser);
 	if (!m_bTryingToConnectToMasterServer)
 		if (MainMenu()) MainMenu()->Hide_CTMS_Dialog();
 	if (m_bShowCMSErr)
@@ -546,11 +558,13 @@ void			CGameSpy_Browser::UpdateServerList()
 
 void			CGameSpy_Browser::SortBrowserByPing	()
 {
+	if (!m_pGSBrowser) return;
 	xrGS_ServerBrowserSort(m_pGSBrowser, SBTrue, "ping", sbcm_int);
 }
 
 bool			CGameSpy_Browser::HasAllKeys(int Index)
 {
+	if (!m_pGSBrowser) return true;
 	void* pServer = xrGS_ServerBrowserGetServer(m_pGSBrowser, Index);
 	if (!pServer) return true;
 	ServerInfo xServerInfo;

@@ -219,7 +219,8 @@ bool	CLevel::net_start_client6				()
 		}
 
 		g_pGamePersistent->LoadTitle		("st_client_synchronising");
-		Device.PreCache						(30);
+		extern bool arm_load_keypress_gate();	// GamePersistent.cpp -- CoP "press any key" gate
+		Device.PreCache						(30, arm_load_keypress_gate());
 		net_start_result_total				= TRUE;
 
 	}else{

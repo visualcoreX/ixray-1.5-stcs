@@ -148,7 +148,9 @@ public:
 	BOOL	Paused							();
 
 	// Scene control
-	void PreCache							(u32 frames);
+	// wait_user_input = hold the finished loading screen until the player presses something
+	// (the Call of Pripyat "press any key" gate). See CRenderDevice::End.
+	void PreCache							(u32 frames, bool wait_user_input = false);
 	BOOL Begin								();
 	void Clear								();
 	void End								();
@@ -234,6 +236,12 @@ extern		ENGINE_API		CRenderDevice		Device;
 
 typedef fastdelegate::FastDelegate0<bool>		LOADING_EVENT;
 extern	ENGINE_API xr_list<LOADING_EVENT>		g_loading_events;
+
+// "Press any key" gate at the end of a load (CoP). The renderer draws g_sLoadWaitKeyText on the
+// loading screen while g_bLoadWaitKey is up; the text is filled in by the game (it owns the string
+// table), so the engine never has to know a language.
+extern	ENGINE_API bool							g_bLoadWaitKey;
+extern	ENGINE_API string256					g_sLoadWaitKeyText;
 
 //#include	"R_Backend_Runtime.h"
 
