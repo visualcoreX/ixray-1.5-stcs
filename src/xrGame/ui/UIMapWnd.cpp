@@ -329,7 +329,9 @@ void CUIMapWnd::SetTargetMap			(CUICustomMap* m, const Fvector2& pos, bool bZoom
 		Fvector2						_p;
 		gm->GetAbsolutePos				(_p);
 		m_tgtCenter.sub					(_p);
-		m_tgtCenter.div					(gm->GetCurrentZoom());
+		// x and y no longer share a zoom -- see CUICustomMap::GetAspectKX
+		m_tgtCenter.x					/= gm->GetCurrentZoomX();
+		m_tgtCenter.y					/= gm->GetCurrentZoom();
  	}
 	else
 	{
@@ -338,7 +340,9 @@ void CUIMapWnd::SetTargetMap			(CUICustomMap* m, const Fvector2& pos, bool bZoom
 			SetZoom(GlobalMap()->GetMaxZoom());
 
 		m_tgtCenter						= m->ConvertRealToLocalNoTransform(pos);
-		m_tgtCenter.add					(m->GetWndPos()).div(GlobalMap()->GetCurrentZoom());
+		m_tgtCenter.add					(m->GetWndPos());
+		m_tgtCenter.x					/= GlobalMap()->GetCurrentZoomX();
+		m_tgtCenter.y					/= GlobalMap()->GetCurrentZoom();
 	}
 	ResetActionPlanner				();
 }
@@ -502,8 +506,9 @@ bool CUIMapWnd::UpdateZoom( bool b_zoom_in )
 		CUIGlobalMap* gm				= GlobalMap();
 		gm->GetAbsolutePos				(pos);
 		m_tgtCenter.sub					(pos);
-		m_tgtCenter.div					(gm->GetCurrentZoom());
-		
+		m_tgtCenter.x					/= gm->GetCurrentZoomX();
+		m_tgtCenter.y					/= gm->GetCurrentZoom();
+
 		ResetActionPlanner();
 		HideCurHint();
 		return false;

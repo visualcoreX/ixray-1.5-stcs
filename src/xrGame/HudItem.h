@@ -268,6 +268,7 @@ public:
 	void						ArmPPE					(const shared_str& alias);
 	void						UpdateShowPPE			();
 	u32							MotionEndTm				() const	{ return m_dwMotionEndTm; }	// wall clock; 0 when nothing is running
+	u32							MotionStartTm			() const	{ return m_dwMotionStartTm; }	// ...and when it began
 	// CHudItem knows nothing about aiming; CWeapon overrides this with IsZoomed(). Only used to pick
 	// the PDA's aim-variant idles (anm_idle_aim<dir>) from inside TryPlayAnimIdle.
 	virtual bool				IsHudItemZoomed			()			{ return false; }
@@ -316,6 +317,8 @@ protected:
 	u32							dwXF_Frame;
 
 	u32							m_animation_slot;
+	shared_str					m_actor_anim_group;		// xrMPE `actor_anim_group`, empty when unused
+	shared_str					m_actor_torso_anim;		// xrMPE `actor_anim_group`, empty when unused
 
 	HUD_SOUND_COLLECTION		m_sounds;
 	InertionData				m_current_inertion;		// hip params (per-weapon inertion_* over [gunslinger_base] defaults)
@@ -338,6 +341,10 @@ public:
 	IC CPhysicItem&				object					() const		{ VERIFY(m_object); return(*m_object);}
 	IC CInventoryItem&			item					() const		{ VERIFY(m_item); return(*m_item);}
 	IC		u32					animation_slot			()				{ return m_animation_slot;}
+	// Named actor torso set for this item, empty = use the numbered animation_slot. Virtual because a
+	// launcher rifle swaps between two of them (see CWeaponMagazinedWGrenade).
+	virtual const shared_str&	ActorAnimGroup			() const		{ return m_actor_anim_group; }
+	const shared_str&			ActorTorsoAnim			() const		{ return m_actor_torso_anim; }
 	InertionData&				CurrentInertionData		();				// GS UpdateInertion: hip<->aim blend by zoom factor, honors hud_inertion/zoom_inertion
 	virtual float				GetInertionAimFactor	() const		{ return 0.f; }	// CWeapon: zoom rotation factor
 	virtual bool				InertionZoomedNow		() const		{ return false; }

@@ -57,6 +57,16 @@ void CBaseMonster::Load(LPCSTR section)
 
 	SetfHealth						( (float)pSettings->r_u32		(section,"Health"));
 
+	// Gunslinger skin armour. Its monsters name a `protections_sect` holding skin_armor and
+	// hit_fraction_monster; absent section = no armour, i.e. stock Clear Sky behaviour.
+	m_skin_armor					= 0.0f;
+	m_hit_fraction_monster			= 1.0f;
+	if (pSettings->line_exist(section,"protections_sect")) {
+		LPCSTR prot_sect			= pSettings->r_string(section,"protections_sect");
+		m_skin_armor				= READ_IF_EXISTS(pSettings, r_float, prot_sect, "skin_armor", 0.0f);
+		m_hit_fraction_monster		= READ_IF_EXISTS(pSettings, r_float, prot_sect, "hit_fraction_monster", 1.0f);
+	}
+
 	m_controlled					= smart_cast<CControlledEntityBase*>(this);
 
 	settings_load					(section);
@@ -264,7 +274,7 @@ BOOL CBaseMonster::net_Spawn (CSE_Abstract* DC)
 
 void CBaseMonster::net_Destroy()
 {
-	// функция должена быть вызвана перед inherited
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ inherited
 	if (m_controlled) m_controlled->on_destroy	();
 	if (StateMan) StateMan->critical_finalize	();
 

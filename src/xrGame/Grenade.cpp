@@ -377,6 +377,8 @@ void CGrenade::PutNextToSlot()
 			if (m_pInventory->ItemFromSlot(ret))		// the slot was active when the key was pressed
 				m_pInventory->Activate	(ret);
 		}
+		// hands are handed back -- release the slot lock the key raised (see CMissile::QuickThrowBusy)
+		ClearQuickThrowBusy();
 		// GS RestoreLastActorDetector, called from the same place: drawing the grenade made the
 		// detector incompatible and CheckCompatibility holstered it, which clears m_bNeedActivation --
 		// so nothing remembered to bring it back. A quick throw is not a deliberate switch away from

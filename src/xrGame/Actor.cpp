@@ -181,6 +181,12 @@ CActor::CActor() : CEntityAlive()
 	r_model_yaw				= 0;
 	r_model_yaw_delta		= 0;
 	r_model_yaw_dest		= 0;
+	m_fTorsoYawFix			= 0.f;
+	m_fNeckYawFix			= 0.f;
+	m_fTorsoFollowCam		= 1.f;
+	m_fTorsoFollowCamPitch	= 1.f;
+	m_torso_item_done		= false;
+	m_torso_sync_k			= 0.f;
 
 	b_DropActivated			= 0;
 	f_DropPower				= 0.f;
@@ -902,7 +908,11 @@ float CActor::currentFOV()
 	// 3D PiP lensed scope: keep the WORLD FOV at base -- all magnification lives in the scope lens itself
 	// (the double-rendered $user$scope). Zooming the main view too would double-zoom and defeat the PiP.
 	// A collimator is 1x by definition, so it must not zoom the world either (scope_zoom_factor is moot).
-	if (pWeapon->IsLensedScope() || pWeapon->IsCollimatorScope())
+	// IsLensedScopeCfg, not IsLensedScope: with the 3D lens switched off the magnification comes from
+	// ComputeLensFrame overriding the FOV at full aim (GS does the same), so the vanilla
+	// scope_zoom_factor path must stay out of the way here in BOTH modes -- otherwise the last frame
+	// of the aim-in ramp briefly shows the stock zoom before the override takes over.
+	if (pWeapon->IsLensedScopeCfg() || pWeapon->IsCollimatorScope())
 		return g_fov;
 
 	// Gunslinger: aiming the GL (grenade mode) never zooms the WORLD -- it uses its own HUD fov
@@ -1487,7 +1497,17 @@ void CActor::renderable_Render	()
 	if (inventory().ActiveItem())
 		inventory().ActiveItem()->renderable_Render();		// the held weapon belongs in the silhouette
 	if (!HUDview())
-		CAttachmentOwner::renderable_Render();				// ...the headlamp does not (user request)
+		CAttachmentOwner::renderable_Render();				// third person: everything attached
+	else
+	{
+		// The shadow pass. Only the HEADLAMP is meant to stay out of the silhouette (it sits on
+		// bip01_head and its beam geometry made a mess of the shadow); skipping every attachment
+		// wholesale also took the DETECTOR out, which is why it cast none. Draw the rest.
+		const xr_vector<CAttachableItem*>& att = attached_objects();
+		for (xr_vector<CAttachableItem*>::const_iterator I = att.begin(); I != att.end(); ++I)
+			if (!smart_cast<CTorch*>(&(*I)->item().object()))
+				(*I)->renderable_Render();
+	}
 	VERIFY(_valid(XFORM()));
 }
 

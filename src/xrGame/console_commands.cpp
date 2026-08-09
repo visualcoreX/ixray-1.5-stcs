@@ -95,6 +95,19 @@ extern	BOOL	b_toggle_weapon_aim;
 //extern  BOOL	g_old_style_ui_hud;
 
 extern float	g_smart_cover_factor;
+extern float	g_actor_torso_yaw;		// ActorAnimation.cpp -- third-person upper-body yaw trim, degrees
+extern int		g_actor_legs_relaxed;	// ActorAnimation.cpp -- 0 stock / 1 empty hands / 2 unless aiming / 3 always
+extern float	g_actor_torso_follow_empty;	// ActorAnimation.cpp -- spine/head chase the camera with empty hands
+extern float	g_actor_torso_follow_empty_pitch;	// ...its vertical half alone; -1 = tied to the line above
+extern float	g_actor_torso_blend;		// ActorAnimation.cpp -- ease time for the follow-cam constant
+extern float	g_actor_torso_yaw_blend;	// ActorAnimation.cpp -- ease time for the yaw correction alone
+extern int		g_actor_legs_diagonal;		// ActorAnimation.cpp -- diagonal leg cycles when moving + strafing
+extern float	g_actor_walk_anim_speed;	// ActorAnimation.cpp -- third-person walk cycle playback speed
+extern float	g_actor_legs_blend;			// ActorAnimation.cpp -- cross-fade speed between leg cycles
+extern float	g_actor_detector_yaw;		// ActorAnimation.cpp -- live yaw trim for the +detector sets
+extern int		g_actor_torso_sync_hud;		// ActorAnimation.cpp -- match the torso motion length to the hud one
+extern int		g_actor_detector_gesture;	// ActorAnimation.cpp -- play drawdevice/holsterdevice on the torso
+extern int		g_actor_detector_torso;		// ActorAnimation.cpp -- "<x>+detector" torso sets while the detector is out
 extern int		g_upgrades_log;
 extern float	g_smart_cover_animation_speed_factor;
 
@@ -1887,11 +1900,19 @@ void CCC_RegisterCommands()
 	CMD1(CCC_MemStats,			"stat_memory"			);
 	// game
 	psActorFlags.set(AF_ALWAYSRUN, true);
-	// the 3D PDA has always opened at the face here, so that stays the default; the save-state option
-	// is off, the same way GS ships the pair
-	psActorFlags.set(AF_PDA_AUTOZOOM, true);
-	// CoP ships the load gate on; the options checkbox turns it off
-	psActorFlags.set(AF_KEYPRESS_ON_START, true);
+	// Defaults below were taken from the working user.ltx (2026-08-09) so a fresh profile comes up
+	// the way the mod is actually played, instead of depending on a saved console state.
+	// The 3D PDA is what this mod ships; the option falls back to the stock full-screen one. It
+	// reopens in whatever state it was left (savezoom) rather than always jumping to the face.
+	psActorFlags.set(AF_PDA_3D, true);
+	psActorFlags.set(AF_PDA_AUTOZOOM, false);
+	psActorFlags.set(AF_PDA_SAVEZOOM, true);
+	// NPC laser sights and the 3D PiP scope lens both on -- the lens is a headline feature of this
+	// mod; the options checkbox falls back to the stock full-screen 2D scope picture.
+	psActorFlags.set(AF_NPC_LASERS, true);
+	psActorFlags.set(AF_LENS_3D, true);
+	// CoP's press-any-key gate at the end of a load ships OFF here; the options checkbox turns it on.
+	psActorFlags.set(AF_KEYPRESS_ON_START, false);
 	CMD3(CCC_Mask,				"g_always_run",			&psActorFlags,	AF_ALWAYSRUN);
 	CMD1(CCC_GameDifficulty,	"g_game_difficulty"		);
 
@@ -1934,6 +1955,35 @@ void CCC_RegisterCommands()
 
 	CMD4(CCC_Float,				"hud_fov",				&psHUD_FOV_def,	0.1f,	1.0f);
 	CMD4(CCC_Float,				"fov",					&g_fov,			5.0f,	180.0f);
+
+	// global trim on top of the per-set [actor_torso_yaw] correction, degrees -- for dialling the
+	// third-person upper-body twist in without a rebuild (see torso_yaw_fix in ActorAnimation.cpp)
+	CMD4(CCC_Float,				"actor_torso_yaw",		&g_actor_torso_yaw,	-90.0f,	90.0f);
+	// third-person stance, legs AND torso together: 0 = stock braced, 1 = relaxed with nothing in
+	// hand, 2 = relaxed until aiming, 3 = relaxed always. No effect without a pack that ships it.
+	CMD4(CCC_Integer,			"actor_legs_relaxed",	&g_actor_legs_relaxed,	0,	3);
+	// how much the spine/head chase the camera with NOTHING in hand (0 = not at all, current default)
+	CMD4(CCC_Float,				"actor_torso_follow_empty",	&g_actor_torso_follow_empty,	0.0f,	1.0f);
+	CMD4(CCC_Float,				"actor_torso_follow_empty_pitch",&g_actor_torso_follow_empty_pitch,	-1.0f,	1.0f);
+	// seconds to ease the upper-body constants when they change (0 = snap, i.e. stock behaviour)
+	CMD4(CCC_Float,				"actor_torso_blend",	&g_actor_torso_blend,	0.0f,	2.0f);
+	// separate, much shorter ease for the yaw correction (0 = snap); sharing the one above made
+	// every per-action correction roll in and out over a second, which reads as a swing
+	CMD4(CCC_Float,				"actor_torso_yaw_blend",&g_actor_torso_yaw_blend,	0.0f,	1.0f);
+	// diagonal leg cycles while moving + strafing: 0 = off (stock), 1 = relaxed stance only, 2 = always
+	CMD4(CCC_Integer,			"actor_legs_diagonal",	&g_actor_legs_diagonal,	0,	2);
+	// playback speed of the third-person WALK cycles, legs and torso together (1.0 = as authored)
+	CMD4(CCC_Float,				"actor_walk_anim_speed",&g_actor_walk_anim_speed,	0.25f,	4.0f);
+	// cross-fade between leg cycles: 0 = the speed baked into the motion (stock), lower = longer
+	CMD4(CCC_Float,				"actor_legs_blend",		&g_actor_legs_blend,		0.0f,	10.0f);
+	// degrees, applied only while a "<x>+detector" torso set is playing -- for dialling it in game
+	CMD4(CCC_Float,				"actor_detector_yaw",	&g_actor_detector_yaw,	-90.0f,	90.0f);
+	// scale the third-person torso motion so it ends with the first-person one (1 = on)
+	CMD4(CCC_Integer,			"actor_torso_sync_hud",	&g_actor_torso_sync_hud,	0,	1);
+	// play the device draw/holster torso gesture at all (0 = hold the idle through it)
+	CMD4(CCC_Integer,			"actor_detector_gesture",&g_actor_detector_gesture,	0,	1);
+	// third-person torso sets for "weapon + detector in the other hand" (0 = weapon's own set)
+	CMD4(CCC_Integer,			"actor_detector_torso",	&g_actor_detector_torso,	0,	1);
 
 	// Demo
 	CMD1(CCC_DemoPlay,			"demo_play"				);
@@ -1995,10 +2045,24 @@ void CCC_RegisterCommands()
 		// what an options-menu checkbox binds to (same as g_autoreload / hud_crosshair right below).
 		CMD3(CCC_Mask,			"pda_autozoom",			&psActorFlags,	AF_PDA_AUTOZOOM);
 		CMD3(CCC_Mask,			"pda_savezoomstate",	&psActorFlags,	AF_PDA_SAVEZOOM);
-		// GS npc_lasers: 1 = an NPC-carried weapon keeps its laser beam on, 0 = it goes out when the
+		// master switch: 1 = the 3D PDA in the hands, 0 = the stock full-screen window.
+		// The two options above only mean anything while this is on.
+		CMD3(CCC_Mask,			"pda_3d",				&psActorFlags,	AF_PDA_3D);
+		// GS npc_lasers: on = an NPC-carried weapon keeps its laser beam lit, off = it goes out when the
 		// weapon changes hands. The mounted flashlight is always killed for NPCs (no GS option for it).
-		extern int g_npc_lasers;
-		CMD4(CCC_Integer,		"npc_lasers",			&g_npc_lasers,			0, 1);
+		// CCC_Mask, not CCC_Integer -- that is what the options-menu checkbox binds to.
+		CMD3(CCC_Mask,			"npc_lasers",			&psActorFlags,	AF_NPC_LASERS);
+		// GS lens_enabled / lens_render_factor (gunsl_config.pas:1177/1183), console names kept.
+		// The factor is a DIVISOR: 1 lens frame out of every N, so a bigger number means a smoother
+		// main view and a choppier lens. Our lens frame IS the frame (the screen re-presents the
+		// previous one), so N=1 would freeze the view -- hence a floor of 2, where GS allows 1.
+		// CONSOLE ONLY, deliberately: GS puts this on a "3D-lens FPS" slider because there a lens
+		// frame is a SECOND scene render, i.e. a real performance knob. Ours renders the scene once
+		// either way, so the framerate does not move and the slider read as broken -- it only trades
+		// main-view smoothness against lens refresh rate. Left here for tuning.
+		CMD3(CCC_Mask,			"lens_enabled",			&psActorFlags,	AF_LENS_3D);
+		extern int g_lens_render_factor;
+		CMD4(CCC_Integer,		"lens_render_factor",	&g_lens_render_factor,	2, 6);
 		// how close the 3D PDA is held: lowered / at the face. 0 = use the config value.
 		// SMALLER = narrower hud fov = the PDA looks BIGGER (engine default is 0.45)
 		extern float g_pda_hud_fov;
@@ -2126,6 +2190,8 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	// CoP: hold the finished loading screen until the player presses something. Bound to the
 	// "Ожидание нажатия клавиши" checkbox in the gameplay options.
 	CMD3(CCC_Mask,			"keypress_on_start",&psActorFlags,	AF_KEYPRESS_ON_START);
+	// Hide the quick-use slot icons on the hud. Display only -- the slots keep working.
+	CMD3(CCC_Mask,			"hud_hide_quick_slots",&psActorFlags,AF_HIDE_QUICK_SLOTS);
 	CMD1(CCC_Script,		"run_script");
 	CMD1(CCC_ScriptCommand,	"run_string");
 	CMD1(CCC_TimeFactor,	"time_factor");		

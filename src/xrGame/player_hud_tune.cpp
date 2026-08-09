@@ -9,6 +9,9 @@
 #include "../xrEngine/CameraManager.h"
 #include "../xrEngine/FDemoRecord.h"
 #include "debug_renderer.h"
+#include "actor.h"			// third-person world-model tuning: camera state + active weapon
+#include "inventory.h"
+#include "Weapon.h"
 
 u32 hud_adj_mode		= 0;
 u32 hud_adj_item_idx	= 0;
@@ -205,6 +208,41 @@ void attachable_hud_item::debug_draw_firedeps()
 }
 
 
+// Returns true when it took the input, i.e. we are in cam_3 and one of the two world-model modes is
+// selected -- the hud tuning below is then skipped.
+static bool world_item_tune(const Ivector& values)
+{
+	if (!is_attachable_item_tuning_mode())			return false;
+	if (hud_adj_mode != 1 && hud_adj_mode != 2)		return false;
+	if (!g_pGameLevel || !g_pGameLevel->bReady)		return false;
+
+	CActor* a = Actor();
+	if (!a || a->cam_ActiveStyle() != eacFreeLook)	return false;	// cam_3 only
+
+	CWeapon* w = smart_cast<CWeapon*>(a->inventory().ActiveItem());
+	if (!w)											return false;
+
+	Fvector dpos, dypr;
+	dpos.set(0.f,0.f,0.f);
+	dypr.set(0.f,0.f,0.f);
+	if (hud_adj_mode == 1)
+	{
+		if (values.x)	dpos.x = (values.x>0)? _delta_pos : -_delta_pos;
+		if (values.y)	dpos.y = (values.y>0)? _delta_pos : -_delta_pos;
+		if (values.z)	dpos.z = (values.z>0)? _delta_pos : -_delta_pos;
+	}
+	else
+	{
+		if (values.x)	dypr.x = (values.x>0)? _delta_rot : -_delta_rot;
+		if (values.y)	dypr.y = (values.y>0)? _delta_rot : -_delta_rot;
+		if (values.z)	dypr.z = (values.z>0)? _delta_rot : -_delta_rot;
+	}
+
+	if (values.x || values.y || values.z)
+		w->TuneWorldOffset(dpos, dypr);
+	return true;			// input consumed even on an idle frame, so the hud is left alone
+}
+
 void player_hud::tune(Ivector _values)
 {
 #ifndef MASTER_GOLD
@@ -212,6 +250,14 @@ void player_hud::tune(Ivector _values)
 	tune_remap			(_values,values);
 
 	bool is_16x9		= UI()->is_widescreen();
+
+	// THIRD PERSON (cam_3 / eacFreeLook): the same SHIFT+Numpad 1 and 2 drive the WORLD model's seat
+	// in the hand instead of the hud -- position and orientation, i.e. the two keys we otherwise have
+	// to guess by hand in w_*.ltx. Deliberately keyed to the camera rather than to new mode numbers:
+	// 0..9 are all taken, and in cam_3 the hud is not what you are looking at anyway.
+	// Must come BEFORE the "no attached hud item" bail-out below, which would otherwise skip it.
+	if (world_item_tune(values))
+		return;
 
 	auto is_attached = m_attached_items[hud_adj_item_idx];
 

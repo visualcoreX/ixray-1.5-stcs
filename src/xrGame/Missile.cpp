@@ -47,13 +47,31 @@ void create_force_progress()
 static bool	s_quick_throw_armed		= false;
 static u32	s_quick_throw_ret_slot	= NO_ACTIVE_SLOT;
 static bool	s_quick_throw_had_det	= false;
+// Slot lock for the whole throw. It spans three different owners of the state -- s_quick_throw_armed
+// (key pressed, slot not activated yet), the missile's m_bQuickThrow (anm_throw_quick playing) and
+// m_quick_throw_ret_slot (grenade gone, weapon coming back) -- so it is its own flag rather than a
+// test over those. Without it a weapon-slot key mid-throw left the grenade half-drawn and the throw
+// simply cancelled. The deadline is a safety net only: nothing should hold the hands this long, and
+// a throw that dies somewhere unexpected must not lock the player out of his weapons for good.
+static bool	s_quick_throw_busy		= false;
+static u32	s_quick_throw_busy_until= 0;
+#define QUICK_THROW_BUSY_MAX_MS		4000
 
 void CMissile::ArmQuickThrow(u32 return_slot, bool had_detector)
 {
 	s_quick_throw_armed		= true;
 	s_quick_throw_ret_slot	= return_slot;
 	s_quick_throw_had_det	= had_detector;
+	s_quick_throw_busy		= true;
+	s_quick_throw_busy_until= Device.dwTimeGlobal + QUICK_THROW_BUSY_MAX_MS;
 }
+bool CMissile::QuickThrowBusy()
+{
+	if (!s_quick_throw_busy)								return false;
+	if (Device.dwTimeGlobal >= s_quick_throw_busy_until)	{ s_quick_throw_busy = false; return false; }
+	return true;
+}
+void CMissile::ClearQuickThrowBusy()	{ s_quick_throw_busy = false; s_quick_throw_busy_until = 0; }
 bool CMissile::QuickThrowArmed()			{ return s_quick_throw_armed; }
 u32  CMissile::QuickThrowReturnSlot()		{ return s_quick_throw_ret_slot; }
 bool CMissile::QuickThrowHadDetector()		{ return s_quick_throw_had_det; }
@@ -174,6 +192,8 @@ void CMissile::OnActiveItem		()
 			m_quick_throw_ret_slot	= ret;
 			m_quick_throw_had_det	= det;
 		}
+		else
+			ClearQuickThrowBusy();	// not a quick throw after all -- do not sit on the slot lock
 	}
 
 	SwitchState				(eShowing);

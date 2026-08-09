@@ -526,7 +526,94 @@ bool CCustomDetector::PlayHudActionAnim(LPCSTR base)
 
 void CCustomDetector::UpdateXForm()
 {
-	CInventoryItem::UpdateXForm();
+	// The stock seat (CInventoryItem::UpdateXForm) spans the pair of bones g_WeaponBones hands back,
+	// i.e. it places a two-handed WEAPON. The detector lives in one hand, so it rides that bone plus
+	// a config offset. Anything unexpected -- no parent, no visual, no such bone -- falls back to the
+	// inherited behaviour rather than leaving the model at the origin.
+	if (!m_actor_bone.size())	{ CInventoryItem::UpdateXForm(); return; }
+
+	CEntityAlive* E = smart_cast<CEntityAlive*>(H_Parent());
+	if (!E)						{ CInventoryItem::UpdateXForm(); return; }
+
+	const CInventoryOwner* parent = smart_cast<const CInventoryOwner*>(E);
+	if (parent && parent->use_simplified_visual())	return;
+	if (parent && parent->attached(this))			return;
+
+	IKinematics* V = smart_cast<IKinematics*>(E->Visual());
+	if (!V)						{ CInventoryItem::UpdateXForm(); return; }
+
+	const u16 bid = V->LL_BoneID(m_actor_bone);
+	if (BI_NONE == bid)			{ CInventoryItem::UpdateXForm(); return; }
+
+	V->CalculateBones	();
+	Fmatrix	mRes		= V->LL_GetTransform(bid);	// model space
+	mRes.mulA_43		(E->XFORM());				// ...and now world, as CInventoryItem does it
+	Position().set		(mRes.c);
+	XFORM().mul			(mRes, m_actor_offset);
+}
+
+// THIS is why the world model never appeared, not the visibility and not the spatial list.
+// CHudItem::renderable_Render (huditem.cpp:233) hits `if (_hud_render && !IsHidden()) { }` -- an
+// EMPTY branch: while an item's HUD model is up, its world model is deliberately not drawn. Correct
+// in first person, wrong in third, where the owner's own body is on screen and the device has to be
+// in its hand. Draw it whenever the owner's visual is being drawn; otherwise keep the stock path.
+void CCustomDetector::renderable_Render()
+{
+	if (CObject* p = H_Parent())
+	{
+		// Attached to the owner's hand, so this runs from CAttachmentOwner::renderable_Render and the
+		// bone callback already placed us.
+		if (!IsWorking())						return;
+		// Third person: draw only while the owner's own body is actually on screen. FIRST person is
+		// the case this used to get wrong -- the actor's visual is hidden there, so `getVisible()`
+		// was false and the device bailed out entirely. But with the actor hidden, the only thing
+		// that can still reach his renderable_Render (and through it this attachment) is the SHADOW
+		// pass, PHASE_SMAP -- see the comment in CActor::renderable_Render. Bailing therefore did not
+		// save a draw, it just meant the detector in the off hand cast no shadow at all. So: owner
+		// visible, or owner is the actor (= we are in his shadow pass).
+		if (!p->getVisible() && !smart_cast<CActor*>(p))	return;
+		on_renderable_Render	();
+		return;
+	}
+	inherited::renderable_Render();
+}
+
+// Hang the world model off the owner's hand with the engine's OWN attachment mechanism, the same one
+// the torch uses. This is the piece that was missing: an attached item is drawn from the OWNER's
+// renderable_Render, so it does not depend on the item being in the spatial list (H_SetParent drops
+// it from there), and AttachmentCallback keeps it on the bone every frame.
+// Requirements, all of which the data already met except the first:
+//   * the owner's `attachable_items` must list the section  -- ADDED to [actor]
+//   * the item needs attach_bone_name / attach_position_offset / attach_angle_offset -- already in
+//     [detector_simple] (bip01_l_hand), inherited by advanced/elite
+//   * CAttachableItem::reload ends with enable(false), so it has to be enabled explicitly
+// THE gate that kept the world model off the hand. CAttachableItem::can_be_attached (attachable_item
+// .cpp:109) reads: no inventory -> no; belt NOT useful -> yes; otherwise the item must be ON THE BELT.
+// The actor's belt IS useful and the detector lives in its own slot, so it failed the last test and
+// can_attach never even looked at the section list. CTorch overrides this the same way (Torch.cpp:590)
+// -- that is why the torch, a belt item, attached and the detector never could.
+bool CCustomDetector::can_be_attached() const
+{
+	return m_bWorking;		// out = in the hand = attachable; stowed = nothing to draw
+}
+
+void CCustomDetector::AttachToOwner(bool attach_it)
+{
+	CAttachmentOwner* ao = smart_cast<CAttachmentOwner*>(H_Parent());
+	if (!ao)	return;
+
+	if (attach_it)
+	{
+		if (ao->attached(this))		return;
+		enable		(true);
+		ao->attach	(this);
+	}
+	else
+	{
+		if (!ao->attached(this))	return;
+		ao->detach	(this);
+		enable		(false);
+	}
 }
 
 void CCustomDetector::OnActiveItem()
@@ -578,6 +665,14 @@ void CCustomDetector::Load(LPCSTR section)
 
 	m_sounds.LoadSound( section, "snd_draw", "sndShow");
 	m_sounds.LoadSound( section, "snd_holster", "sndHide");
+
+	// third-person seat -- see the members in CustomDetector.h
+	m_actor_bone			= READ_IF_EXISTS(pSettings, r_string, section, "actor_bone", "bip01_l_hand");
+	Fvector	apos			= READ_IF_EXISTS(pSettings, r_fvector3, section, "actor_position",    Fvector().set(0.f,0.f,0.f));
+	Fvector	aypr			= READ_IF_EXISTS(pSettings, r_fvector3, section, "actor_orientation", Fvector().set(0.f,0.f,0.f));
+	aypr.mul				(PI/180.f);
+	m_actor_offset.setHPB	(aypr.x, aypr.y, aypr.z);
+	m_actor_offset.c		= apos;
 
 	LoadTorchParams			(section);
 }
@@ -875,6 +970,15 @@ void CCustomDetector::UpdateCL()
 
 	UpdateVisibility		();
 	UpdateTorch				();	// GS handheld torch: no-op unless the item declares torch_installed
+
+	// Show the world model exactly when the body carrying it is on screen. The owner's own visual is
+	// the right gate: CActor::UpdateCL does setVisible(!HUDview()), so this is off in first person
+	// (where the HUD model is the one being drawn) and on in third, with no camera test of our own.
+	// ...and drive the seat from here: CWeapon refreshes its own in renderable_Render, but nothing in
+	// the detector's render chain does, so the model would hang wherever it was last placed.
+	// keep the world model attached exactly while the detector is out (cheap: both calls early-out
+	// when the state already matches)
+	AttachToOwner			(IsWorking());
 
 	if( !IsWorking() )		return;
 	UpfateWork				();

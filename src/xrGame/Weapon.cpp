@@ -37,11 +37,11 @@ BOOL	b_toggle_weapon_aim		= FALSE;
 // 0 = force show crosshair while aiming, 1 = force hide. Runtime-only, NOT saved to user.ltx.
 int		g_dbg_zoom_hide_crosshair	= -1;
 
-// GS `npc_lasers` console flag (gunsl_config.pas:1173). 1 = a weapon in an NPC's hands keeps its laser
-// BEAM lit (the dot is actor-only anyway), 0 = the laser is switched off the moment somebody else picks
-// the weapon up. GS default: on in rspec_default/high/extreme, off in rspec_low/minimum -- so ON here.
-// The mounted FLASHLIGHT has no such option in GS: it is always killed for NPCs (see CWeapon::UpdateCL).
-int		g_npc_lasers				= 1;
+// GS `npc_lasers` console flag (gunsl_config.pas:1173) now lives as psActorFlags/AF_NPC_LASERS -- on = a
+// weapon in an NPC's hands keeps its laser BEAM lit (the dot is actor-only anyway), off = the laser is
+// switched off the moment somebody else picks the weapon up. GS default: on in rspec_default/high/extreme,
+// off in rspec_low/minimum -- so ON here. The mounted FLASHLIGHT has no such option in GS: it is always
+// killed for NPCs (see CWeapon::UpdateCL).
 
 CWeapon::CWeapon()
 {
@@ -182,6 +182,33 @@ void CWeapon::UpdateXForm	()
 
 	IKinematics*			V = smart_cast<IKinematics*>	(E->Visual());
 	VERIFY					(V);
+
+	// `actor_hand_bone`: seat the world model on ONE named bone instead of spanning the pair
+	// g_WeaponBones returns. The pair is right for a gun held in both hands; the item-use phantoms
+	// are single objects in one fist, and the vodka in particular belongs in the LEFT one.
+	if (m_actor_hand_bone.size() && E == (CEntityAlive*)Actor())
+	{
+		const u16 hb = V->LL_BoneID(m_actor_hand_bone);
+		if (BI_NONE != hb)
+		{
+			V->CalculateBones	();
+			Fmatrix mRes		= V->LL_GetTransform(hb);
+			mRes.mulA_43		(E->XFORM());
+			UpdatePosition		(mRes);
+			// `actor_hand_scale`: X-Ray has no scale anywhere in the item offset -- position and
+			// orientation are all Load reads -- so it goes straight onto the basis vectors of the
+			// final transform. Scaling i/j/k and leaving `c` alone resizes the model about its own
+			// origin without moving where the hand put it.
+			if (!fsimilar(m_actor_hand_scale, 1.f))
+			{
+				Fmatrix& X		= XFORM();
+				X.i.mul			(m_actor_hand_scale);
+				X.j.mul			(m_actor_hand_scale);
+				X.k.mul			(m_actor_hand_scale);
+			}
+			return;
+		}
+	}
 
 	// Get matrices
 	int						boneL = -1, boneR = -1, boneR2 = -1;
@@ -471,6 +498,8 @@ void CWeapon::Load		(LPCSTR section)
 
 	// hands
 	eHandDependence		= EHandDependence(pSettings->r_s32(section,"hand_dependence"));
+	m_actor_hand_bone	= READ_IF_EXISTS(pSettings, r_string, section, "actor_hand_bone", "");
+	m_actor_hand_scale	= READ_IF_EXISTS(pSettings, r_float,  section, "actor_hand_scale", 1.f);
 	m_bIsSingleHanded	= true;
 	if (pSettings->line_exist(section, "single_handed"))
 		m_bIsSingleHanded	= !!pSettings->r_bool(section, "single_handed");
@@ -1725,8 +1754,7 @@ void CWeapon::UpdateCL		()
 				m_bFlashEnabled		= false;
 				m_dwFlashToggleAt	= 0;
 			}
-			extern int g_npc_lasers;
-			if (!g_npc_lasers && m_bLaserInstalled && (m_bLaserEnabled || m_dwLaserToggleAt))
+			if (!psActorFlags.test(AF_NPC_LASERS) && m_bLaserInstalled && (m_bLaserEnabled || m_dwLaserToggleAt))
 			{
 				m_bLaserEnabled		= false;
 				m_dwLaserToggleAt	= 0;
@@ -1798,8 +1826,41 @@ void CWeapon::UpdateCL		()
 	}
 }
 
+// Third-person counterpart of the HUD tuner (player_hud_tune.cpp). m_Offset is what seats the WORLD
+// model in the owner's hand -- CWeapon::UpdateXForm does
+// `XFORM().mul(trans, m_strapped_mode ? m_StrapOffset : m_Offset)` -- so nudging it here shows up
+// immediately, no reload needed. The two lines logged are exactly what the weapon's .ltx wants.
+// Tunes the ACTOR's seat, not the shared one: you are looking at the player when you tune, and the
+// pack these offsets are for is his alone. So the logged block is the `<section>_actor` override that
+// goes into configs\weapons\actor_wpn_pos.ltx -- paste it there, never into the weapon's own section.
+void CWeapon::TuneWorldOffset(const Fvector& dpos, const Fvector& dypr)
+{
+	m_world_pos_actor.add	(dpos);
+	m_world_ypr_actor.add	(dypr);
+	m_bHasActorOffset		= true;
+
+	Fvector ypr		= m_world_ypr_actor;
+	ypr.mul			(PI/180.f);
+	m_OffsetActor.setHPB			(ypr.x, ypr.y, ypr.z);
+	m_OffsetActor.translate_over	(m_world_pos_actor);
+
+	Msg("[%s_actor]", cNameSect().c_str());
+	Msg("position                = %f, %f, %f", m_world_pos_actor.x, m_world_pos_actor.y, m_world_pos_actor.z);
+	Msg("orientation             = %f, %f, %f", m_world_ypr_actor.x, m_world_ypr_actor.y, m_world_ypr_actor.z);
+	Log("-----------");
+}
+
 bool  CWeapon::need_renderable()
 {
+	// GS IsHudModelForceUnhide (collimator.pas:77), which patches this very function:
+	//   IsCollimatorInstalled or (IsLensedScopeInstalled and IsLensEnabled) or IsAlterZoomMode
+	// The first two ride our UseScopeTexture cascade already (ZoomTexture() == NULL keeps the weapon
+	// drawn). The ALTER pose is the one GS force-unhides unconditionally, and we were missing it: with
+	// the 3D lens off the optic still has a 2D texture, so ZoomTexture() stays non-NULL and the weapon
+	// went on hiding even though render_item_ui_query no longer paints the scope over it -- zoom gone,
+	// no gun, just the world. In the alter pose you are looking at the backup sight ON the weapon, so
+	// the weapon has to be there.
+	if (IsAlterZoom())	return true;
 	return !( IsZoomed() && ZoomTexture() && !IsRotatingToZoom() );
 }
 
@@ -1812,7 +1873,9 @@ void CWeapon::renderable_Render		()
 	RenderLight				();	
 
 	//если мы в режиме снайперки, то сам HUD рисовать не надо
-	if(IsZoomed() && !IsRotatingToZoom() && ZoomTexture())
+	// ...unless the alter (backup) sight is up -- same exemption as need_renderable above, or the object
+	// renders but its HUD model does not, which looks identical to the weapon being gone.
+	if(IsZoomed() && !IsRotatingToZoom() && ZoomTexture() && !IsAlterZoom())
 		RenderHud		(FALSE);
 	else
 		RenderHud		(TRUE);
@@ -1843,7 +1906,14 @@ void CWeapon::SetDefaults()
 void CWeapon::UpdatePosition(const Fmatrix& trans)
 {
 	Position().set		(trans.c);
-	XFORM().mul			(trans,m_strapped_mode ? m_StrapOffset : m_Offset);
+	// The ACTOR gets his own seat when the config supplies one. Everything about the new animation
+	// pack is player-only (the omf is bolted onto his visual alone -- see CActor::OnChangeVisual /
+	// extra_motions), so a hand offset tuned for it must not follow the weapon into NPC hands, which
+	// still animate on the stock set. m_bHasActorOffset is false unless a `<section>_actor` section
+	// exists, and then this is bit-for-bit the old behaviour.
+	const Fmatrix& off	= m_strapped_mode ? m_StrapOffset
+						: ((m_bHasActorOffset && H_Parent() && H_Parent() == (CObject*)Actor()) ? m_OffsetActor : m_Offset);
+	XFORM().mul			(trans, off);
 	VERIFY				(!fis_zero(DET(renderable.xform)));
 }
 
@@ -2777,7 +2847,10 @@ bool CWeapon::UseScopeTexture()
 
 // GS IsLensedScopeInstalled: the currently-attached scope (its addon section) is flagged need_lens_frame.
 // Fallback to the weapon section (for a permanent/built-in lensed optic). Only true while a scope is on.
-bool CWeapon::IsLensedScope() const
+// The raw config test: "this optic is a PiP scope as far as the configs are concerned", ignoring the
+// options switch. Needed because with the lens turned OFF the weapon is still a lensed scope in every
+// way that matters to the ZOOM -- it just gets the magnification as a flat world FOV instead of a lens.
+bool CWeapon::IsLensedScopeCfg() const
 {
 	if (!IsScopeAttached())	return false;
 	if (IsGrenadeMode())	return false;	// aiming the GL ladder sight -- the scope zoom/lens must NOT apply
@@ -2785,6 +2858,16 @@ bool CWeapon::IsLensedScope() const
 	if (sc.size() && pSettings->line_exist(*sc, "need_lens_frame"))
 		return !!pSettings->r_bool(*sc, "need_lens_frame");
 	return READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "need_lens_frame", FALSE);
+}
+
+bool CWeapon::IsLensedScope() const
+{
+	// The options switch. Everything else about the lens -- UseScopeTexture, need_renderable, the
+	// double-render, the DOF, the mouse-sense koef, the scope detector -- asks this one function, so
+	// saying "no" here restores the stock 2D scope wholesale. GS gates the same way, in its
+	// LensConditions (collimator.pas:82) and IsForceHideZoomTexture (:496).
+	// The MAGNIFICATION is deliberately NOT part of this -- see CGamePersistent::ComputeLensFrame.
+	return !!psActorFlags.test(AF_LENS_3D) && IsLensedScopeCfg();
 }
 
 // GS `collimator`: a red-dot sight. Its reticle is part of the weapon MODEL, so the vanilla 2D scope path
@@ -2827,6 +2910,41 @@ float CWeapon::GetLensFOV() const
 	if (factor < 1.01f)		factor = 1.01f;
 	float half = deg2rad(g_fov) * 0.5f;
 	return rad2deg(2.0f * atanf(tanf(half) / factor));
+}
+
+// GS alter_scope_zoom_factor (collimator.pas:28, GetAlterScopeZoomFactor): the magnification of the
+// BACKUP sight -- the ELCAN's 1x notch you flip to with the alter key. A GS-scale multiplier, default
+// 1.0 = no world zoom at all, fed through the same fov = 2*atan(tan(base/2)/factor) as the lens.
+// Read from the active scope section first, then the weapon, exactly like GS.
+float CWeapon::AlterZoomFOV() const
+{
+	extern float g_fov;
+	float factor = 1.0f;
+	shared_str sc = GetCurrentScopeSection();
+	if (sc.size() && pSettings->line_exist(*sc, "alter_scope_zoom_factor"))
+		factor = pSettings->r_float(*sc, "alter_scope_zoom_factor");
+	else
+		factor = READ_IF_EXISTS(pSettings, r_float, cNameSect(), "alter_scope_zoom_factor", 1.0f);
+	if (factor <= 1.0f)		return g_fov;		// 1x -- leave the world FOV alone
+	float half = deg2rad(g_fov) * 0.5f;
+	return rad2deg(2.0f * atanf(tanf(half) / factor));
+}
+
+// GS IsUIForceHiding (collimator.pas:301): while aiming, the optic can blank the ingame indicators.
+// The key lives on the ADDON section named by the active scope section's `scope_name` for an
+// attachable scope, and on the weapon itself for a permanent optic -- GS reads it in that order.
+// A lensed scope hides the HUD anyway (show_indicators below); this is what covers the flat 2D
+// scope, i.e. the same optic once the 3D lens option is switched off.
+bool CWeapon::ZoomHideUI() const
+{
+	shared_str sc = GetCurrentScopeSection();
+	if (IsScopeAttached() && sc.size() && pSettings->line_exist(*sc, "scope_name"))
+	{
+		LPCSTR addon = pSettings->r_string(*sc, "scope_name");
+		if (addon && pSettings->section_exist(addon))
+			return !!READ_IF_EXISTS(pSettings, r_bool, addon, "zoom_hide_ui", FALSE);
+	}
+	return !!READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "zoom_hide_ui", FALSE);
 }
 
 // GS variable magnification (min_lens_factor / max_lens_factor / lens_factor_levels_count on the active
@@ -2911,7 +3029,10 @@ void CWeapon::ResetLensStepToDefault()
 
 bool CWeapon::ChangeLensStep(int delta)
 {
-	if (!IsScopeAttached() || !IsLensedScope())	return false;
+	// IsLensedScopeCfg: a variable-power optic still changes power with the 3D lens switched off -- the
+	// magnification is then applied as a flat world zoom (ComputeLensFrame reads the same GetLensFOV),
+	// so the wheel has to keep working. Gating this on the option left the wheel dead in 2D mode.
+	if (!IsScopeAttached() || !IsLensedScopeCfg())	return false;
 	LoadLensFactorParams();						// the scope may have changed since the last call
 	if (m_lens_steps <= 0)						return false;	// fixed-power optic -> not ours to handle
 
@@ -3364,10 +3485,35 @@ void CWeapon::reload			(LPCSTR section)
 		Fvector				pos,ypr;
 		pos					= pSettings->r_fvector3		(section,"position");
 		ypr					= pSettings->r_fvector3		(section,"orientation");
+		m_world_pos			= pos;						// kept for the third-person tuner
+		m_world_ypr			= ypr;						// (degrees, exactly as configured)
 		ypr.mul				(PI/180.f);
 
 		m_Offset.setHPB			(ypr.x,ypr.y,ypr.z);
 		m_Offset.translate_over	(pos);
+
+		// Actor-only override. Same two keys, in a section named `<weapon>_actor`; absent = the base
+		// values serve everyone, exactly as before.
+		string256			asect;
+		strconcat			(sizeof(asect), asect, section, "_actor");
+		m_bHasActorOffset	= !!pSettings->section_exist(asect)
+							&& pSettings->line_exist(asect, "position")
+							&& pSettings->line_exist(asect, "orientation");
+		if (m_bHasActorOffset)
+		{
+			m_world_pos_actor	= pSettings->r_fvector3(asect, "position");
+			m_world_ypr_actor	= pSettings->r_fvector3(asect, "orientation");
+			Fvector a			= m_world_ypr_actor;
+			a.mul				(PI/180.f);
+			m_OffsetActor.setHPB			(a.x,a.y,a.z);
+			m_OffsetActor.translate_over	(m_world_pos_actor);
+		}
+		else
+		{
+			m_world_pos_actor	= m_world_pos;
+			m_world_ypr_actor	= m_world_ypr;
+			m_OffsetActor		= m_Offset;
+		}
 	}
 
 	m_StrapOffset			= m_Offset;
@@ -3505,7 +3651,10 @@ float CWeapon::GetHudFov()
 			scope_fov = pSettings->r_float(*sc, "scope_hud_fov_aim");
 	}
 	// a collimator has no lens but still aims through the optic, so it uses the per-scope aim FOV too
-	float aim_cfg = ((IsLensedScope() || IsCollimatorScope()) && scope_fov > 0.f) ? scope_fov : m_fHudFovAim;
+	// IsLensedScopeCfg, not IsLensedScope: how CLOSE the sight is held is a property of the optic, not of
+	// the way its image is rendered. Gating this on the option made the weapon fall back to the iron-sight
+	// hud fov the moment the 3D lens was switched off, so the same scope sat visibly further away in 2D.
+	float aim_cfg = ((IsLensedScopeCfg() || IsCollimatorScope()) && scope_fov > 0.f) ? scope_fov : m_fHudFovAim;
 	// GS alter zoom: the second aim pose has its own hud fov -- eased in/out with the same blend as the
 	// offset, so the view glides between the two poses instead of jumping. Applied AFTER the pose above is
 	// picked, so it works for a built-in optic too (no scope item -> the keys live in the HUD section).
@@ -3737,6 +3886,12 @@ void CWeapon::modify_holder_params		(float &range, float &fov) const
 bool CWeapon::render_item_ui_query()
 {
 	bool b_is_active_item = (m_pInventory->ActiveItem()==this);
+	// GS render_item_ui_query_reimpl (collimator.pas:466) bails on `IsAlterZoom` before anything else:
+	// in the alter pose the eye is on the BACKUP sight, not behind the optic, so the full-screen scope
+	// picture must come off entirely -- you look at the world and the little iron/red-dot sight on top
+	// of the scope. Ours kept painting the scope over the alter pose, which is only invisible while the
+	// 3D lens is on (a lensed optic has no 2D picture to paint).
+	if (IsAlterZoom())	return false;
 	bool res = b_is_active_item && IsZoomed() && ZoomHideCrosshair() && ZoomTexture() && !IsRotatingToZoom();
 	// The alive detector draws through this same hook, and it must work on a weapon that has NO 2D scope
 	// picture -- a PiP/lensed optic deliberately returns ZoomTexture() == NULL (see UseScopeTexture), which
@@ -3852,6 +4007,9 @@ bool CWeapon::show_indicators()
 	// for a PiP optic. Includes the alter pose (backup 1x sight, lens faded out): the user wants the HUD
 	// gone for the whole aim on such a scope, not just while the eye is behind the lens.
 	if (IsZoomed() && IsLensedScope())	return false;
+	// ...and GS's own key for the flat-scope case (IsUIForceHiding, collimator.pas:301), which is what
+	// the very same optic falls back to once the 3D lens is switched off in the options.
+	if (IsZoomed() && ZoomHideUI())		return false;
 	return ! ( IsZoomed() && ZoomTexture() );
 }
 

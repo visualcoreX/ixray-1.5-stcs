@@ -164,7 +164,7 @@ void CUIZoneMap::SetupCurrentMap()
 	{
 		zoom_factor *= g_pGameLevel->pLevel->r_float("minimap_zoom", "value");
 	}
-	wnd_size.x						= m_activeMap->BoundRect().width()*zoom_factor;
+	wnd_size.x						= m_activeMap->BoundRect().width()*zoom_factor*m_activeMap->GetAspectKX();
 	wnd_size.y						= m_activeMap->BoundRect().height()*zoom_factor;
 	m_activeMap->SetWndSize			(wnd_size);
 }

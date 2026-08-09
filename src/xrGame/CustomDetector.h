@@ -167,6 +167,9 @@ public:
 	void			WeaponDetectorGesture(bool draw);	// tell an in-hand weapon to play its draw/prepare detector gesture
 	void			ShowAfterPrepare	();	// weapon's anm_prepare_detector finished -> actually show the detector now
 	virtual	void	UpdateXForm			();
+	virtual void	renderable_Render	();
+			void	AttachToOwner		(bool attach_it);	// world model on the owner's hand (third person)
+	virtual bool	can_be_attached		() const;	// the stock test is belt-only; the detector lives in a slot
 	// re-select the detector's (companion) idle NOW — called by the weapon when its aim state changes
 	void			RefreshCompanionIdle();
 
@@ -256,6 +259,13 @@ protected:
 	virtual void 	CreateUI					()				{};
 
 	bool			m_bWorking;
+
+	// Third-person seat. The detector is a LEFT-hand device, so the inherited UpdateXForm (which
+	// spans the two bones g_WeaponBones returns) puts it in the wrong place; it rides one bone plus
+	// an offset instead. Config, in the DETECTOR section: `actor_bone` (default bip01_l_hand),
+	// `actor_position`, `actor_orientation` (degrees). Empty bone name = keep the inherited seat.
+	shared_str		m_actor_bone;
+	Fmatrix			m_actor_offset;
 	float			m_fAfVisRadius;
 
 	CAfList			m_artefacts;

@@ -70,6 +70,14 @@ public:
 	virtual MotionID					LL_MotionID		(LPCSTR B) = 0;
 	virtual u16							LL_PartID		(LPCSTR B) = 0;
 
+	// Extra motion slots bolted onto THIS INSTANCE of the visual (not the shared model): an .omf whose
+	// motions must reach one object only. The actor and the NPCs share the very same visual files, so a
+	// motion ref inside the OGF would reach everybody -- see CActor::OnChangeVisual / `extra_motions`.
+	// Added last, so same-named motions override the model's own (later slot wins in LL_MotionID).
+	// LL_RemoveExtraMotions must run before the instance goes back to the model pool.
+	virtual void						LL_AddMotions			(LPCSTR omf_name) = 0;
+	virtual void						LL_RemoveExtraMotions	() = 0;
+
 //	CBlend*						LL_PlayFX		(u16 bone,		MotionID motion, float blendAccrue,	float blendFalloff, float Speed, float Power);
 	virtual CBlend*						LL_PlayCycle	(u16 partition, MotionID motion, BOOL  bMixing,		float blendAccrue,	float blendFalloff, float Speed, BOOL noloop, PlayCallback Callback, LPVOID CallbackParam, u8 channel = 0) = 0;
 	virtual CBlend*						LL_PlayCycle	(u16 partition, MotionID motion, BOOL bMixIn, PlayCallback Callback, LPVOID CallbackParam, u8 channel = 0) = 0;

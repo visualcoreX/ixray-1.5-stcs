@@ -33,7 +33,15 @@ public:
 
 	void			FitToWidth						(float width);
 	void			FitToHeight						(float height);
-	float			GetCurrentZoom					(){return GetWndRect().width()/m_BoundRect.width();}
+	// Zoom is measured on Y, where UI units map to the screen without any aspect fudge.
+	// GetAspectKX() is the extra factor the X axis needs so that one map metre covers the same
+	// number of *screen* pixels horizontally as it does vertically: the 1024x768 UI space is
+	// stretched to the real resolution non-uniformly, so a map laid out in square UI units comes
+	// out 1/kx too wide. Maps that are drawn rotated (the minimap) keep square units instead --
+	// CUICustomItem::Render(angle) applies kx itself -- hence the per-class value.
+	virtual float	GetAspectKX						() const;
+	float			GetCurrentZoom					(){return GetWndRect().height()/m_BoundRect.height();}
+	float			GetCurrentZoomX					(){return GetCurrentZoom()*GetAspectKX();}
 	const Frect&    BoundRect						()const					{return m_BoundRect;};
 	virtual void	OptimalFit						(const Frect& r);
 
@@ -65,6 +73,7 @@ class CUIGlobalMap: public CUICustomMap
 public:
 
 	virtual Fvector2 ConvertRealToLocal		(const Fvector2& src);// pixels->pixels (relatively own left-top pos)
+	virtual float	GetAspectKX				() const;
 
 					CUIGlobalMap			(CUIMapWnd*	pMapWnd);
 	virtual			~CUIGlobalMap			();
@@ -101,6 +110,7 @@ public:
 								CUILevelMap			(CUIMapWnd*);
 	virtual						~CUILevelMap		();
 	const Frect&				GlobalRect			() const								{return m_GlobalRect;}
+	virtual float				GetAspectKX			() const;
 	virtual void				Draw				();
 	virtual void				Show				(bool status);
 	virtual void				Update				();

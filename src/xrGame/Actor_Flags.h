@@ -23,6 +23,21 @@ enum{
 		// CoP: the finished loading screen waits for a keypress before the game starts (console
 		// name kept CoP's). ON by default. See arm_load_keypress_gate / CRenderDevice::End.
 		AF_KEYPRESS_ON_START=(1<<13),
+		// Master switch for the Gunslinger-style 3D PDA. ON by default. Off = the stock Clear Sky
+		// PDA: no hud phantom in the hands, no render-to-texture, the window is simply drawn
+		// full-screen again. Everything else keys off gwr_pda_screen_active(), which this gates.
+		AF_PDA_3D			=(1<<14),
+		// GS lens_enabled: master switch for the 3D PiP scope lens. ON by default. Off = the stock
+		// full-screen 2D scope picture. Gates CWeapon::IsLensedScope, which is what every other
+		// lens decision asks (GS does exactly this in its LensConditions / IsForceHideZoomTexture).
+		AF_LENS_3D			=(1<<15),
+		// GS npc_lasers: an NPC-carried weapon keeps its laser beam lit. ON by default. Was the int
+		// cvar g_npc_lasers; moved onto a mask bit so the options menu can bind a checkbox to it.
+		AF_NPC_LASERS		=(1<<16),
+		// Hide the quick-use slot icons (and their counters / key labels) on the hud. OFF by default
+		// = they are drawn, as before. The slots keep working either way -- this is display only.
+		// See CUIMainIngameWnd::UpdateQuickSlots.
+		AF_HIDE_QUICK_SLOTS	=(1<<17),
 };
 
 extern Flags32 psActorFlags;

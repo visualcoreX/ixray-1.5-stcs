@@ -220,7 +220,7 @@ void	CKinematicsAnimated::LL_FadeCycle(u16 part, float falloff, u8 mask_channel 
 		B.blend				= CBlend::eFalloff;
 		B.blendFalloff		= falloff;
 		//B.blendAccrue		= B.timeCurrent;
-		if (B.stop_at_end)  B.stop_at_end_callback = FALSE;		// callback не должен приходить!
+		if (B.stop_at_end)  B.stop_at_end_callback = FALSE;		// callback пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!
 	}
 }
 void	CKinematicsAnimated::LL_CloseCycle(u16 part, u8 mask_channel /*= (1<<0)*/)
@@ -550,7 +550,8 @@ CKinematicsAnimated::CKinematicsAnimated():
     m_Partition	( NULL ),
 	m_blend_destroy_callback( 0 ),
 	m_update_tracks_callback( 0 ),
-	Update_LastTime ( 0 )
+	Update_LastTime ( 0 ),
+	m_extra_motions ( 0 )
 {
 	
 }
@@ -581,6 +582,10 @@ void CKinematicsAnimated::Copy(dxRender_Visual *P)
 	CKinematicsAnimated* pFrom = (CKinematicsAnimated*)P;
 	PCOPY			(m_Motions);
     PCOPY			(m_Partition);
+	// A clone inherits the slot vector by value, so it would inherit the source's extra slots too --
+	// and then nobody would own them. Copies are made from the pooled ORIGINAL, which Depart() has
+	// already stripped, so this is belt-and-braces; keep the counter honest either way.
+	PCOPY			(m_extra_motions);
 
 	IBlend_Startup			();
 }
@@ -631,6 +636,78 @@ CBlend*	CKinematicsAnimated::IBlend_Create	()
 	FATAL("Too many blended motions requisted");
 	return 0;
 }
+// Bolt an .omf onto THIS INSTANCE only. m_Motions is a plain by-value member, and CKinematics::Copy
+// copies it, so a slot added here never reaches the shared model or any clone of it -- which is the
+// whole point: the actor and the NPCs are built from the very same visual files, so a motion ref put
+// inside the OGF would animate everybody. Call it BEFORE the animation controller resolves its
+// MotionIDs (CActor::OnChangeVisual does it before m_anims->Create), and note that LL_MotionID /
+// ID_Cycle_Safe search from the END, so an appended slot OVERRIDES same-named motions of the model.
+void CKinematicsAnimated::LL_AddMotions(LPCSTR omf_name)
+{
+	if (!omf_name || !omf_name[0])			return;
+	if (m_Motions.size() >= MAX_ANIM_SLOT)
+	{
+		Msg("! extra_motions: no free animation slot for '%s' (limit %d)", omf_name, MAX_ANIM_SLOT);
+		return;
+	}
+
+	string_path	nm;
+	xr_strcpy	(nm, sizeof(nm), omf_name);
+	if (!strext(nm))	xr_strcat(nm, sizeof(nm), ".omf");
+
+	string_path	fn;
+	if (!FS.exist(fn, "$level$", nm) && !FS.exist(fn, "$game_meshes$", nm))
+	{
+		Msg("! extra_motions: can't find motion file '%s'", nm);
+		return;
+	}
+
+	m_Motions.push_back	(SMotionsSlot());
+	bool create_res		= true;
+	if (!g_pMotionsContainer->has(nm))		// same fs-optimisation the OGF path uses
+	{
+		IReader* MS		= FS.r_open(fn);
+		create_res		= m_Motions.back().motions.create(nm, MS, bones);
+		FS.r_close		(MS);
+	}
+	if (!create_res)
+	{
+		// create() fails when the omf's skeleton does not match this model's bones
+		m_Motions.pop_back();
+		Msg("! extra_motions: unable to load motion file '%s' (bone set mismatch?)", nm);
+		return;
+	}
+	m_Motions.back().motions.create(nm, NULL, bones);
+
+	// the per-bone motion lookup Load() builds for every slot -- without it the new slot's motions
+	// resolve to nothing when a bone is asked for its keys
+	SMotionsSlot& MS	= m_Motions.back();
+	MS.bone_motions.resize(bones->size());
+	for (u32 i = 0; i < bones->size(); ++i)
+		MS.bone_motions[i] = MS.motions.bone_motions((*bones)[i]->name);
+
+	++m_extra_motions;
+}
+
+// Drop the slots LL_AddMotions appended. MUST happen before the instance returns to CModelPool, which
+// hands it out again BY VISUAL NAME -- to an NPC as readily as to the actor (ModelPool.cpp Registry
+// path). That is why Depart() below calls this.
+void CKinematicsAnimated::LL_RemoveExtraMotions()
+{
+	while (m_extra_motions && m_Motions.size() > 1)
+	{
+		m_Motions.pop_back();
+		--m_extra_motions;
+	}
+	m_extra_motions = 0;
+}
+
+void CKinematicsAnimated::Depart()
+{
+	LL_RemoveExtraMotions	();
+	inherited::Depart		();
+}
+
 void CKinematicsAnimated::Load(const char* N, IReader *data, u32 dwFlags)
 {
 	inherited::Load	(N, data, dwFlags);
@@ -639,6 +716,7 @@ void CKinematicsAnimated::Load(const char* N, IReader *data, u32 dwFlags)
 	blend_instances		= NULL;
     m_Partition			= NULL;
 	Update_LastTime 	= 0;
+	m_extra_motions		= 0;
 
 	// Load animation
     if (data->find_chunk(OGF_S_MOTION_REFS))

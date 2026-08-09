@@ -71,7 +71,7 @@ CBaseMonster::CBaseMonster()
 	EnemyMan.init_external			(this);
 	CorpseMan.init_external			(this);
 
-	// Инициализация параметров анимации	
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ	
 
 	StateMan						= 0;
 
@@ -281,10 +281,36 @@ void	CBaseMonster::Hit							(SHit* pHDS)
 		return;
 
 	if (g_Alive())
-		if (!critically_wounded()) 
+		if (!critically_wounded())
 			update_critical_wounded(pHDS->boneID,pHDS->power);
-	
 
+	// Gunslinger skin armour, mirroring CAI_Stalker::Hit's bone-armour block: bullets only.
+	// m_skin_armor is 0 unless the monster names a protections_sect, so untouched monsters and
+	// every non-bullet hit take exactly the stock path.
+	if (m_skin_armor > EPS && pHDS->hit_type == ALife::eHitTypeFireWound)
+	{
+		SHit	HDS			= *pHDS;
+		float	hit_power	= HDS.power;
+		float	ap			= HDS.armor_piercing;
+
+		if (ap > EPS && ap > m_skin_armor)
+		{
+			hit_power		*= (ap - m_skin_armor) / ap;
+			if (hit_power < m_hit_fraction_monster)
+				hit_power	= m_hit_fraction_monster;
+		}
+		else
+		{
+			hit_power		*= m_hit_fraction_monster;
+			HDS.add_wound	= false;
+		}
+
+		if (hit_power < 0.0f)	hit_power = 0.0f;
+		HDS.power			= hit_power;
+
+		inherited::Hit(&HDS);
+		return;
+	}
 
 //	inherited::Hit(P,dir,who,element,p_in_object_space,impulse,hit_type);
 	inherited::Hit(pHDS);
@@ -525,13 +551,13 @@ void CBaseMonster::on_kill_enemy(const CEntity *obj)
 {
 	const CEntityAlive *entity	= smart_cast<const CEntityAlive *>(obj);
 	
-	// добавить в список трупов	
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ	
 	CorpseMemory.add_corpse		(entity);
 	
-	// удалить всю информацию о хитах
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ
 	HitMemory.remove_hit_info	(entity);
 
-	// удалить всю информацию о звуках
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	SoundMemory.clear			();
 }
 
@@ -605,7 +631,7 @@ CParticlesObject* CBaseMonster::PlayParticles(const shared_str& name, const Fvec
 {
 	CParticlesObject* ps = CParticlesObject::Create(name.c_str(),auto_remove);
 	
-	// вычислить позицию и направленность партикла
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	Fmatrix	matrix; 
 
 	matrix.identity			();

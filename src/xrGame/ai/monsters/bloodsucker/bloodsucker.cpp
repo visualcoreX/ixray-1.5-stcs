@@ -72,6 +72,12 @@ void CAI_Bloodsucker::Load(LPCSTR section)
 	if(pSettings->line_exist(section,"collision_hit_off")){
 		collision_hit_off = true;
 	}else collision_hit_off = false;
+
+	// Stock Clear Sky makes a bloodsucker untouchable while it is invisible; IX-Ray dropped that
+	// guard in ab9d120c ("Fix bloodsucker invisibility"), which also killed the immortality of the
+	// scripted bloodsuckers that are held permanently invisible via manual_activate(). Restored,
+	// with a config switch so it can be turned off without a rebuild. Default = stock behaviour.
+	m_invisible_invulnerable = !!READ_IF_EXISTS(pSettings, r_bool, section, "invisible_invulnerable", TRUE);
 	if(!pSettings->line_exist(section,"is_friendly"))
 		com_man().add_ability			(ControlCom::eControlRunAttack);	
 	com_man().add_ability			(ControlCom::eControlRotationJump);
@@ -676,6 +682,10 @@ bool CAI_Bloodsucker::in_solid_state ()
 
 void CAI_Bloodsucker::Hit(SHit* pHDS)
 {
+	if ( m_invisible_invulnerable && state_invisible )
+	{
+		return;
+	}
 	if ( !collision_hit_off )
 	{
 		inherited::Hit(pHDS);

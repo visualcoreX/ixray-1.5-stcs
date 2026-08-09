@@ -106,12 +106,35 @@ void CWeaponMagazinedWGrenade::gwr_UpdateBonesGL()
 	if (pSettings->line_exist(bsect, key))			gwr_SetBones(pSettings->r_string(bsect, key), TRUE);
 }
 
+// The launcher changes how the actor holds the rifle, so xrMPE gives it two extra torso sets. THREE
+// states, not two -- BOTH `_gloff` and `_glon` sets are the rifle WITH the launcher bolted on, and
+// the off/on in their names is the same fire-mode distinction the weapon's own world motions draw
+// (`idle_gl_off` vs `idle_gl_on`), not whether the launcher is there. With nothing attached the
+// plain set is the right one; picking `_gl_off` there put a launcher in the actor's hands that the
+// weapon did not have. Either key may be absent, in which case we fall through to the weapon's plain
+// actor_anim_group (and, if that is empty too, to the numbered animation_slot).
+const shared_str& CWeaponMagazinedWGrenade::ActorAnimGroup() const
+{
+	if (IsGrenadeLauncherAttached())
+	{
+		const shared_str& gl = m_bGrenadeMode ? m_actor_anim_group_gl_on : m_actor_anim_group_gl_off;
+		if (gl.size())	return gl;
+	}
+	return inherited::ActorAnimGroup();
+}
+
 void CWeaponMagazinedWGrenade::Load	(LPCSTR section)
 {
 	inherited::Load			(section);
 	CRocketLauncher::Load	(section);
-	
-	
+
+	// xrMPE ships the actor's third-person set in two flavours for a launcher rifle -- the launcher
+	// changes how the weapon is held, so `norm_torso_ar_gloff_*` and `norm_torso_ar_glon_*`. Both are
+	// optional; whichever is missing falls back to the plain actor_anim_group read by CHudItem.
+	m_actor_anim_group_gl_off = READ_IF_EXISTS(pSettings, r_string, section, "actor_anim_group_gl_off", "");
+	m_actor_anim_group_gl_on  = READ_IF_EXISTS(pSettings, r_string, section, "actor_anim_group_gl_on",  "");
+
+
 	//// Sounds
 	m_sounds.LoadSound(section,"snd_shoot_grenade"	, "sndShotG"		, false, m_eSoundShot);
 	m_sounds.LoadSound(section,"snd_reload_grenade"	, "sndReloadG"	, true, m_eSoundReload);

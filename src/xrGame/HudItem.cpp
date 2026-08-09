@@ -143,6 +143,14 @@ void CHudItem::Load(LPCSTR section)
 {
 	hud_sect				= pSettings->r_string		(section,"hud");
 	m_animation_slot		= pSettings->r_u32			(section,"animation_slot");
+	// xrMPE per-weapon actor (third-person) animations: names a torso set in the actor animation pack
+	// instead of one of the 13 stock numbered slots -- `norm_torso_<group>_aim_1` and so on. Optional;
+	// without it the weapon keeps using animation_slot exactly as before.
+	m_actor_anim_group		= READ_IF_EXISTS(pSettings, r_string, section, "actor_anim_group", "");
+	// A ONE-SHOT torso motion for the actor while this item is in hand, addressed by full motion
+	// name (the pack has no family for these -- just norm_torso_item_medkit and friends). Meant for
+	// the item-use gesture phantoms, whose section IS the hud section gwr_eatable spawns.
+	m_actor_torso_anim		= READ_IF_EXISTS(pSettings, r_string, section, "actor_torso_anim", "");
 
 	m_fHudFov = READ_IF_EXISTS(pSettings, r_float, hud_sect, "hud_fov", 0.f);
 	m_fHudFovAim = READ_IF_EXISTS(pSettings, r_float, hud_sect, "hud_fov_aim", 0.f);
@@ -227,7 +235,14 @@ void CHudItem::renderable_Render()
 	BOOL _hud_render			= ::Render->get_HUD() && GetHUDmode();
 	
 	if(_hud_render  && !IsHidden())
-	{ 
+	{
+		// ...but only for the person LOOKING through that HUD. In third person the owner's own body is
+		// on screen and the item has to be in its hand -- this empty branch is why the world model of
+		// everything held (weapons, the item-use phantoms, the PDA) was invisible there. CActor sets
+		// setVisible(!HUDview()) on itself, so the owner's visual is the exact test.
+		CObject* p = object().H_Parent();
+		if (p && p->getVisible())
+			on_renderable_Render	();
 	}
 	else 
 	{

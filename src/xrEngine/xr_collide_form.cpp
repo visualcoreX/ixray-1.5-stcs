@@ -101,9 +101,23 @@ CCF_Skeleton::CCF_Skeleton(CObject* O) : ICollisionForm(O,cftObject)
 	//IKinematics* K	= PKinematics(pVisual); VERIFY3(K,"Can't create skeleton without Kinematics.",*O->cNameVisual());
 	IKinematics* K	= PKinematics(pVisual); VERIFY3(K,"Can't create skeleton without Kinematics.",*O->cNameVisual());
 	//bv_box.set		(K->vis.box);
+	vis_mask		= 0;
+	// A section can name `cform = skeleton` and no `visual` at all -- the Gunslinger action-animator
+	// phantoms (headlamp / NV gestures) did exactly that, and pressing the torch key then dereferenced
+	// a NULL visual right here (ACCESS_VIOLATION reading 0). The data is fixed, but a missing visual
+	// must not be able to kill the process: degrade to an empty collision form instead. Such an object
+	// simply cannot be hit or picked by a ray, which is the right answer for something with no model.
+	if (!pVisual)
+	{
+		Msg			("! CCF_Skeleton: [%s] has cform=skeleton but no visual -- collision disabled",
+					 O->cName().c_str());
+		bv_box.invalidate	();
+		bv_sphere.P.set		(0.f,0.f,0.f);
+		bv_sphere.R			= 0.f;
+		return;
+	}
 	bv_box.set		(pVisual->getVisData().box);
 	bv_box.getsphere(bv_sphere.P,bv_sphere.R);
-	vis_mask		= 0;
 }
 
 void CCF_Skeleton::BuildState()
@@ -111,6 +125,12 @@ void CCF_Skeleton::BuildState()
 	dwFrame				= Device.dwFrame;
 	IRenderVisual* pVisual = owner->Visual();
 	IKinematics* K		= PKinematics(pVisual);
+	// ...same guard as the constructor: no visual, no bones, nothing to build.
+	if (!pVisual || !K)
+	{
+		elements.clear	();
+		return;
+	}
 	K->CalculateBones();
 	const Fmatrix& L2W	= owner->XFORM();
 	

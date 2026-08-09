@@ -71,6 +71,7 @@ void CUICustomMap::Init_internal(const shared_str& name, CInifile& pLtx, const s
 	m_BoundRect.set			(tmp.x, tmp.y, tmp.z, tmp.w);
 	Fvector2 sz;
 	m_BoundRect.getsize		(sz);
+	sz.x					*= GetAspectKX();	// keep zoom 1 meaning the same on both axes
 	CUIStatic::SetWndSize	(sz);
 	CUIStatic::SetWndPos	(Fvector2().set(0,0));
 	CUIStatic::InitTextureEx(m_texture.c_str(), m_shader_name.c_str());
@@ -87,10 +88,15 @@ void rotation_(float x, float y, const float angle, float& x_, float& y_)
 	y_= y*_sc-x*_sn;
 }
 
+float CUICustomMap::GetAspectKX() const
+{
+	return 1.0f;
+}
+
 Fvector2 CUICustomMap::ConvertLocalToReal(const Fvector2& src)
 {
-	Fvector2 res; 
-	res.x = m_BoundRect.lt.x + src.x/GetCurrentZoom();
+	Fvector2 res;
+	res.x = m_BoundRect.lt.x + src.x/GetCurrentZoomX();
 	res.y = m_BoundRect.height() + m_BoundRect.lt.y - src.y/GetCurrentZoom();
 
 	return res;
@@ -107,6 +113,12 @@ Fvector2 CUICustomMap::ConvertRealToLocal  (const Fvector2& src)// meters->pixel
 		res = ConvertRealToLocalNoTransform(src);
 		res.sub(heading_pivot);
 		rotation_(res.x, res.y, GetHeading(), res.x, res.y);
+		// The map texture under these spots is turned by CUICustomItem::Render(angle), which
+		// squeezes x by kx after rotating so the turn comes out rigid on a non-4:3 screen.
+		// Spots are plain child windows laid out in the same local space, so without the very
+		// same squeeze they drift off the map -- by nothing at the heading pivot and by more
+		// and more the further out they sit, sliding around as the map spins.
+		res.x *= UI()->get_current_kx();
 		res.add(heading_pivot);
 		return res;
 	};
@@ -115,7 +127,7 @@ Fvector2 CUICustomMap::ConvertRealToLocal  (const Fvector2& src)// meters->pixel
 Fvector2 CUICustomMap::ConvertRealToLocalNoTransform  (const Fvector2& src)// meters->pixels (relatively own left-top pos)
 {
 	Fvector2 res;
-	res.x = (src.x-m_BoundRect.lt.x) * GetCurrentZoom();
+	res.x = (src.x-m_BoundRect.lt.x) * GetCurrentZoomX();
 	res.y = (m_BoundRect.height()-(src.y-m_BoundRect.lt.y)) * GetCurrentZoom();
 
 	return res;
@@ -152,7 +164,13 @@ bool CUICustomMap::GetPointerTo(const Fvector2& src, float item_radius, Fvector2
 		return false;
 
 
-	heading = -f_dir.getH();
+	// f_dir lives in UI units; the arrow that gets this heading is drawn rotated, i.e. rigidly
+	// in screen space. Take the direction to screen proportions first (x is stretched by 1/kx
+	// relative to y) or the arrow points beside its target on anything but 4:3.
+	Fvector2 f_dir_screen;
+	f_dir_screen.set	(f_dir.x/UI()->get_current_kx(), f_dir.y);
+	f_dir_screen.normalize_safe();
+	heading = -f_dir_screen.getH();
 
 	f_intersect_point.mad(f_intersect_point,f_dir,item_radius );
 
@@ -163,7 +181,7 @@ bool CUICustomMap::GetPointerTo(const Fvector2& src, float item_radius, Fvector2
 
 void CUICustomMap::FitToWidth(float width)
 {
-	float k			= m_BoundRect.width()/m_BoundRect.height();
+	float k			= (m_BoundRect.width()*GetAspectKX())/m_BoundRect.height();
 	float w			= width;
 	float h			= width/k;
 	SetWndRect		(Frect().set(0.0f,0.0f,w,h));
@@ -171,7 +189,7 @@ void CUICustomMap::FitToWidth(float width)
 
 void CUICustomMap::FitToHeight(float height)
 {
-	float k			= m_BoundRect.width()/m_BoundRect.height();
+	float k			= (m_BoundRect.width()*GetAspectKX())/m_BoundRect.height();
 	float h			= height;
 	float w			= k*height;
 	SetWndRect		(Frect().set(0.0f,0.0f,w,h));
@@ -180,7 +198,7 @@ void CUICustomMap::FitToHeight(float height)
 
 void CUICustomMap::OptimalFit(const Frect& r)
 {
-	if ((m_BoundRect.height()/r.height())<(m_BoundRect.width()/r.width()))
+	if ((m_BoundRect.height()/r.height())<((m_BoundRect.width()*GetAspectKX())/r.width()))
 		FitToHeight	(r.height());
 	else
 		FitToWidth	(r.width());
@@ -296,10 +314,15 @@ void CUIGlobalMap::ClipByVisRect()
 	SetWndPos				(r.lt);
 }
 
+float CUIGlobalMap::GetAspectKX() const
+{
+	return UI()->get_current_kx();
+}
+
 Fvector2 CUIGlobalMap::ConvertRealToLocal(const Fvector2& src)// pixels->pixels (relatively own left-top pos)
 {
 	Fvector2 res;
-	res.x = (src.x-m_BoundRect.lt.x) * GetCurrentZoom();
+	res.x = (src.x-m_BoundRect.lt.x) * GetCurrentZoomX();
 	res.y = (src.y-m_BoundRect.lt.y) * GetCurrentZoom();
 	return res;
 }
@@ -314,10 +337,11 @@ void CUIGlobalMap::MoveWndDelta(const Fvector2& d)
 float CUIGlobalMap::CalcOpenRect(const Fvector2& center_point, Frect& map_desired_rect, float tgt_zoom)
 {
     Fvector2                    new_center_pt;
+	float const tgt_zoom_x		= tgt_zoom*GetAspectKX();
 	// calculate desired rect in new zoom
-    map_desired_rect.set		(0.0f,0.0f, BoundRect().width()*tgt_zoom,BoundRect().height()*tgt_zoom);
+    map_desired_rect.set		(0.0f,0.0f, BoundRect().width()*tgt_zoom_x,BoundRect().height()*tgt_zoom);
 	// calculate center point in new zoom (center_point is in identity global map space)
-    new_center_pt.set           (center_point.x*tgt_zoom,center_point.y*tgt_zoom);
+    new_center_pt.set           (center_point.x*tgt_zoom_x,center_point.y*tgt_zoom);
 	// get vis width & height
 	Frect vis_abs_rect			= m_mapWnd->ActiveMapRect();
 	float vis_w					= vis_abs_rect.width();
@@ -340,8 +364,8 @@ float CUIGlobalMap::CalcOpenRect(const Fvector2& center_point, Frect& map_desire
 	float dist					= 0.f;
 
 	Frect s_rect,t_rect;
-	s_rect.div					(GetWndRect(),GetCurrentZoom(),GetCurrentZoom());
-	t_rect.div					(map_desired_rect,tgt_zoom,tgt_zoom);
+	s_rect.div					(GetWndRect(),GetCurrentZoomX(),GetCurrentZoom());
+	t_rect.div					(map_desired_rect,tgt_zoom_x,tgt_zoom);
 
 	Fvector2 cpS,cpT;
 	s_rect.getcenter			(cpS);
@@ -360,6 +384,11 @@ CUILevelMap::CUILevelMap(CUIMapWnd* p)
 
 CUILevelMap::~CUILevelMap()
 {}
+
+float CUILevelMap::GetAspectKX() const
+{
+	return UI()->get_current_kx();
+}
 
 void CUILevelMap::Draw()
 {

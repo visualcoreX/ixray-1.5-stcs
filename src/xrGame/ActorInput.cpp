@@ -101,7 +101,11 @@ void CActor::IR_OnKeyboardPress(int cmd)
 	if (IsTalking())	return;
 	if (m_input_external_handler && !m_input_external_handler->authorized(cmd))	return;
 
-	if (g_block_wpn_switch &&
+	// ...and a quick grenade throw owns the hands for its whole length. It cannot use
+	// g_block_wpn_switch for that -- the throw drives CInventory::Activate itself and Activate
+	// refuses to cross that flag -- so it gets its own input-only lock. Without it a weapon-slot key
+	// pressed mid-throw simply cancelled the grenade.
+	if ((g_block_wpn_switch || CMissile::QuickThrowBusy()) &&
 		(cmd==kWPN_1 || cmd==kWPN_2 || cmd==kWPN_3 || cmd==kWPN_4 ||
 		 cmd==kWPN_5 || cmd==kWPN_6 || cmd==kARTEFACT || cmd==kWPN_NEXT ||
 		 cmd==kNEXT_SLOT || cmd==kPREV_SLOT))
@@ -454,6 +458,7 @@ void CActor::IR_OnMouseWheel(int direction)
 	if(inventory().Action( (direction>0)? kWPN_ZOOM_DEC:kWPN_ZOOM_INC , CMD_START)) return;
 
 	if (g_block_wpn_switch)	return;
+	if (CMissile::QuickThrowBusy())	return;		// same lock as the slot keys above
 
 	if (direction>0)
 		OnNextWeaponSlot				();
@@ -566,8 +571,12 @@ void CActor::IR_OnMouseMove(int dx, int dy)
 	// (all magnification is in the lens), so the f_fov/g_fov term above is ~1 and gives no slowdown -- the koef
 	// supplies it, matching the strong lens zoom (lower koef for higher magnification).
 	{
+		// IsLensedScopeCfg, not IsLensedScope: with the 3D lens switched off the magnification arrives as a
+		// late FOV override in CCameraManager::ApplyDevice, which `C->f_fov` above never sees (currentFOV
+		// returns the base fov for this optic in BOTH modes) -- so the f_fov/g_fov term is still 1 and the
+		// koef is the ONLY thing slowing the look. Gating it on the option left 2D scopes at full speed.
 		CWeapon* pWpn = smart_cast<CWeapon*>(inventory().ActiveItem());
-		if (pWpn && pWpn->IsZoomed() && pWpn->IsLensedScope())
+		if (pWpn && pWpn->IsZoomed() && pWpn->IsLensedScopeCfg())
 			scale *= pWpn->ZoomMouseSenseKoef();
 	}
 
@@ -836,7 +845,7 @@ static void gwr_call_action_animator(LPCSTR fn_name, bool on, bool spawn_left_ha
 
 // Delay (ms) between pressing the torch/NV key (starts the animation) and the light/NV actually
 // toggling, so the effect syncs with the hand reaching the head. Tunable in console.
-int g_torch_switch_delay = 350;
+int g_torch_switch_delay = 500;	// was 350
 // Anti-spam + slot-block window (ms) covering the whole toggle gesture. Tune to your animation length.
 int g_torch_action_time  = 1200;
 

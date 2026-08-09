@@ -282,6 +282,21 @@ protected:
 	float					r_model_yaw_dest;
 	float					r_model_yaw;			// orientation of model
 	float					r_model_yaw_delta;		// effect on multiple "strafe"+"something"
+	// Upper-body yaw correction for the torso set currently playing, radians, added in
+	// Spin1Callback. Zero = stock behaviour; see torso_yaw_fix() in ActorAnimation.cpp.
+	float					m_fTorsoYawFix;
+	float					m_fNeckYawFix;		// same, for bip01_neck -- see [actor_neck_yaw] in ActorAnimation.cpp
+	// Scales the camera-driven spine/head aiming in the bone callbacks: 1 normally, 0 with nothing
+	// in hand, which is what xrMPE does -- its empty-hands set is a full-body animation that the
+	// stock follow-the-camera twist only fights with. Leaning (roll) is not affected.
+	float					m_fTorsoFollowCam;
+	// Vertical (pitch) half of the same chase, eased separately so the body can turn with the camera
+	// without tipping with it. See g_actor_torso_follow_empty_pitch.
+	float					m_fTorsoFollowCamPitch;
+	MotionID				m_current_larm;		// detector pose playing on the left-arm partition (see ActorAnimation.cpp)
+	MotionID				m_torso_item_anim;	// one-shot item-use gesture now playing (actor_torso_anim)
+	bool					m_torso_item_done;	// ...and it has already run to its end
+	float					m_torso_sync_k;		// torso/hud length factor, captured once when the motion starts
 
 
 public:
@@ -302,6 +317,7 @@ public:
 	static void				Spin1Callback		(CBoneInstance*);
 	static void				ShoulderCallback	(CBoneInstance*);
 	static void				HeadCallback		(CBoneInstance*);
+	static void				NeckCallback		(CBoneInstance*);
 	static void				VehicleHeadCallback	(CBoneInstance*);
 
 	virtual const SRotation	Orientation			()	const	{ return r_torso; };
@@ -321,6 +337,7 @@ public:
 public:
 	CActorCameraManager&	Cameras				() 	{VERIFY(m_pActorEffector); return *m_pActorEffector;}
 	IC CCameraBase*			cam_Active			()	{return cameras[cam_active];}
+	IC EActorCameras		cam_ActiveStyle		() const	{return cam_active;}	// which of cam_1/2/3 is up
 	IC CCameraBase*			cam_FirstEye		()	{return cameras[eacFirstEye];}
 
 protected:

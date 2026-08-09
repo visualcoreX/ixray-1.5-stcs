@@ -87,7 +87,12 @@ private:
 	virtual	bool	install_upgrade_ammo_class	( LPCSTR section, bool test );
 	
 public:
-	//�������������� ��������� �������� 
+	// xrMPE actor torso sets for the two launcher states; empty falls back to the plain group
+	shared_str				m_actor_anim_group_gl_off;
+	shared_str				m_actor_anim_group_gl_on;
+	virtual const shared_str& ActorAnimGroup		() const;
+
+	//�������������� ��������� ��������
 	//��� �������������
 	CWeaponAmmo*			m_pAmmo2;
 	shared_str				m_ammoSect2;

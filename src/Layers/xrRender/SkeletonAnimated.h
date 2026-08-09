@@ -73,6 +73,10 @@ private:
 #endif
 	u32											Update_LastTime;
 
+	// how many slots at the TAIL of m_Motions were bolted on by LL_AddMotions and must come off again
+	// before this instance is recycled by the model pool
+	u32											m_extra_motions;
+
 	CBlendInstance*								blend_instances;
 
 	struct SMotionsSlot{
@@ -137,6 +141,11 @@ public:
 	// Low level interface
 	MotionID					LL_MotionID		(LPCSTR B);
 	u16							LL_PartID		(LPCSTR B);
+
+	// per-INSTANCE extra motion slots (see IKinematicsAnimated for the why)
+	virtual void				LL_AddMotions			(LPCSTR omf_name);
+	virtual void				LL_RemoveExtraMotions	();
+	virtual void				Depart					();
 
 	CBlend*						LL_PlayFX		(u16 bone,		MotionID motion, float blendAccrue,	float blendFalloff, float Speed, float Power);
 	CBlend*						LL_PlayCycle	(u16 partition, MotionID motion, BOOL  bMixing,		float blendAccrue,	float blendFalloff, float Speed, BOOL noloop, PlayCallback Callback, LPVOID CallbackParam, u8 channel = 0);

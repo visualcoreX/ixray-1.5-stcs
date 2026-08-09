@@ -34,7 +34,7 @@ public:
 
 			void	set_hint_wnd			(UIHint* hint_wnd);
 
-	//состояние кнопки
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	IC	bool	GetCheck()
 	{
 		return m_eButtonState == BUTTON_PUSHED;
@@ -45,12 +45,16 @@ public:
 		SeveBackUpValue();
 	}
 
+	// Controls that follow this checkbox: they are Enable()d while it is checked and greyed out
+	// while it isn't. Set replaces the list, Add appends -- a master option can own several
+	// sub-options (pda_3d owns pda_autozoom + pda_savezoomstate).
 	void SetDependControl(CUIWindow* pWnd);
+	void AddDependControl(CUIWindow* pWnd);
 
 private:
 	bool			b_backup_val;
 	void InitTexture2				(LPCSTR texture_name);
-	CUIWindow* m_pDependControl;
+	xr_vector<CUIWindow*>	m_depend_controls;
 
 protected:
 	UIHintWindow*	m_hint_owner;

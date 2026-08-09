@@ -320,6 +320,12 @@ static const u32 PDA_SPAWN_GRACE = 2000;
 // or one of them flashes for the frames the other doesn't.
 bool gwr_pda_screen_active()
 {
+	// AF_PDA_3D off = the stock Clear Sky PDA. This one function is the whole switch: the window
+	// draw, the cursor, the RT capture, the tutorial/talk suppression and the lookout routing all
+	// ask it, so saying "no" here restores the vanilla full-screen behaviour everywhere at once.
+	// (The phantom is what it really tests, and Show() doesn't spawn one when the flag is off --
+	// this is the belt to that braces, and it also covers the spawn grace below.)
+	if (!psActorFlags.test(AF_PDA_3D))	return false;
 	if (pda_hud_item())	return true;
 	return s_pda_shown && (Device.dwTimeGlobal - s_pda_open_tm < PDA_SPAWN_GRACE);
 }
@@ -345,10 +351,13 @@ void CUIPdaWnd::Show()
 {
 	InventoryUtilities::SendInfoToActor	("ui_pda");
 	if (g_pda_dbg)	Msg("~ pda: Show()");
-	gwr_call_pda						("gwr_eatable.on_pda_show");
+	const bool pda_3d					= !!psActorFlags.test(AF_PDA_3D);
+	if (pda_3d)
+		gwr_call_pda					("gwr_eatable.on_pda_show");
 	pda_reset_cursor					(m_dwLastClickTime);
 	s_pda_shown							= true;
-	pda_set_lookout						(true);		// opens lowered -> look around until RMB lifts it
+	if (pda_3d)
+		pda_set_lookout					(true);		// opens lowered -> look around until RMB lifts it
 	inherited::Show						();
 	
 	if ( !m_pActiveDialog )
@@ -363,6 +372,8 @@ void CUIPdaWnd::Hide()
 {
 	inherited::Hide						();
 	InventoryUtilities::SendInfoToActor	("ui_pda_hide");
+	// NOT gated on AF_PDA_3D: if the option was switched off while a phantom was in hand, this is
+	// the only thing that ever puts it away. The script side is a no-op when nothing was spawned.
 	gwr_call_pda						("gwr_eatable.on_pda_hide");
 	s_pda_shown							= false;
 	pda_reset_cursor					(m_dwLastClickTime);	// don't leave a stale direction for the next open
@@ -527,7 +538,9 @@ void CUIPdaWnd::Update()
 	// draw and then vanishing again. With pda_autozoom off nothing is owed, so the HUD simply stays up.
 	// Outside the `if (hi)` above on purpose: it has to hold before the phantom exists too.
 	// ShowGameIndicators only sets a flag, so calling it every frame costs nothing.
-	if (HUD().GetUI())
+	// With the 3D PDA switched off there is nothing to lower the PDA into view for, so leave the
+	// indicators to StartMenu/StopMenu -- stock behaviour is to blank them for the full-screen window.
+	if (HUD().GetUI() && psActorFlags.test(AF_PDA_3D))
 	{
 		CWeapon* pw = smart_cast<CWeapon*>(hi);
 		const bool zoom_now  = (pw && !!pw->IsZoomed());

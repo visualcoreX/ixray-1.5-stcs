@@ -104,6 +104,12 @@ public:
 	static	bool			QuickThrowHadDetector();
 			bool			IsQuickThrow		() const { return m_bQuickThrow; }
 			u32				QuickThrowRetSlot	() const { return m_quick_throw_ret_slot; }
+	// True from the moment the key arms a throw until PutNextToSlot has handed the hands back.
+	// Purely an INPUT gate (see CActor::IR_OnKeyboardPress / IR_OnMouseWheel): the throw drives
+	// CInventory::Activate itself, so it must not use g_block_wpn_switch, which Activate refuses to
+	// cross. Self-expiring, so a throw that never completes cannot lock the slots for good.
+	static	bool			QuickThrowBusy		();
+	static	void			ClearQuickThrowBusy	();
 public:
 	bool			SuicideAllowed		();		// hud `allow_suicide` + the animation exists + grabbed
 	bool			SuicideStillGrabbed	();

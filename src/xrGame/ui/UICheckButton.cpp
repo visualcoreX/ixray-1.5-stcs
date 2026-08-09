@@ -1,5 +1,5 @@
-// UICheckButton.cpp: класс кнопки, имеющей 2 состояния:
-// с галочкой и без
+// UICheckButton.cpp: пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ 2 пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ:
+// пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ
 //////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
@@ -13,7 +13,6 @@ CUICheckButton::CUICheckButton(void)
 {	
 	SetTextAlignment(CGameFont::alLeft);
 	m_bCheckMode = true;
-	m_pDependControl = NULL;
 	m_hint_owner = NULL;
 }
 
@@ -22,15 +21,28 @@ CUICheckButton::~CUICheckButton(void)
 }
 
 void CUICheckButton::SetDependControl(CUIWindow* pWnd){
-	m_pDependControl = pWnd;
+	m_depend_controls.clear();
+	AddDependControl(pWnd);
+}
+
+void CUICheckButton::AddDependControl(CUIWindow* pWnd){
+	if (pWnd)
+		m_depend_controls.push_back(pWnd);
 }
 
 void CUICheckButton::Update(){
 	CUI3tButton::Update();
 	if ( m_hint_owner ) m_hint_owner->Update();
 
-	if (m_pDependControl)
-		m_pDependControl->Enable(GetCheck());
+	if (!m_depend_controls.empty())
+	{
+		// GetCheck() is the PENDING value, not the saved one, so the dependants grey out the moment
+		// the master is clicked and come back if the player cancels out of the options.
+		const bool on = GetCheck();
+		xr_vector<CUIWindow*>::iterator it = m_depend_controls.begin();
+		for (; it != m_depend_controls.end(); ++it)
+			(*it)->Enable(on);
+	}
 }
 
 

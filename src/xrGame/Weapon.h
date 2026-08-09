@@ -166,6 +166,9 @@ public:
 	// Gunslinger IsLensedScopeInstalled: an attached scope flagged need_lens_frame uses the 3D PiP lens
 	// (weapon stays rendered, no 2D full-screen scope texture) instead of the vanilla 2D scope zoom.
 	bool IsLensedScope() const;
+	bool IsLensedScopeCfg() const;	// same, but ignoring the AF_LENS_3D option (zoom still follows the lens)
+	float AlterZoomFOV() const;		// GS alter_scope_zoom_factor -> world FOV for the backup sight
+	bool ZoomHideUI() const;		// GS zoom_hide_ui: this optic blanks the indicators while aimed
 	// Gunslinger `collimator`: the THIRD scope mode. A red-dot/collimator has its reticle on the MODEL, so
 	// it must neither hide the weapon behind a 2D scope texture nor spin up the PiP lens -- and being 1x it
 	// must not zoom the world either. Keeps the weapon and the HUD visible, aim FOV from scope_hud_fov_aim.
@@ -535,8 +538,26 @@ protected:
 	bool					m_can_be_strapped;
 
 	Fmatrix					m_Offset;
+	// The raw `position` / `orientation` m_Offset was built from, kept so the in-game tuner can nudge
+	// them and rebuild the matrix (Load only ever had them as locals). See TuneWorldOffset.
+	Fvector					m_world_pos;
+	Fvector					m_world_ypr;	// degrees, as written in the config
+	// Actor-only override, read from the `<section>_actor` section (configs\weapons\actor_wpn_pos.ltx).
+	// The player animates on the xrMPE pack and the NPCs do not, so the hand seat differs; the base
+	// position/orientation stay vanilla and keep serving everybody else.
+	Fmatrix					m_OffsetActor;
+	Fvector					m_world_pos_actor;
+	Fvector					m_world_ypr_actor;
+	bool					m_bHasActorOffset;
+public:
+	// Third-person tuner: shift the world model's seat in the owner's hands and log the two config
+	// lines. dpos is in metres, dypr in degrees; either may be zero.
+	void					TuneWorldOffset		(const Fvector& dpos, const Fvector& dypr);
+protected:
 	// 0-используется без участия рук, 1-одна рука, 2-две руки
 	EHandDependence			eHandDependence;
+	shared_str				m_actor_hand_bone;	// optional: seat the world model on this one bone (third person)
+	float					m_actor_hand_scale;	// ...and an optional uniform scale for it (1 = as authored)
 	bool					m_bIsSingleHanded;
 
 public:

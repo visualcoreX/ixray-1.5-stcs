@@ -62,6 +62,8 @@ private:
 	CBoneInstance			*bone_spine;
 	CBoneInstance			*bone_head;
 	bool					collision_hit_off;
+	// Stock CS "no damage while invisible" guard; config key invisible_invulnerable, default on.
+	bool					m_invisible_invulnerable;
 	bool					collision_off;
 
 	//--------------------------------------------------------------------

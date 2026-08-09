@@ -184,10 +184,10 @@ public:
 
 	virtual void			SetTurnAnimation				(bool turn_left);
 	
-	// установка специфических анимаций 
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 
 	virtual	void			CheckSpecParams					(u32 /**spec_params/**/) {}
 	virtual void			ForceFinalAnimation				() {}
-	virtual void			LookPosition					(Fvector to_point, float angular_speed = PI_DIV_3);		// каждый монстр может по-разному реализвать эту функ (e.g. кровосос с поворотом головы и т.п.)
+	virtual void			LookPosition					(Fvector to_point, float angular_speed = PI_DIV_3);		// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ-пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ (e.g. пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅ.пїЅ.)
 
 	// Team	
 	virtual void			ChangeTeam						(int team, int squad, int group);
@@ -381,8 +381,16 @@ IC	void					wake_up				(){m_bSleep = false;}
 	int						m_rank;
 	float					m_melee_rotation_factor;
 
+	// Gunslinger's monster skin armour (its `protections_sect`: skin_armor + hit_fraction_monster).
+	// Same shape as the stalker's bone armour in CAI_Stalker::Hit, but flat over the whole body:
+	// a bullet whose k_ap beats skin_armor gets scaled down proportionally, one that does not
+	// keeps only hit_fraction_monster of its power. m_skin_armor <= 0 disables it entirely, so
+	// monsters with no protections_sect behave exactly as before.
+	float					m_skin_armor;
+	float					m_hit_fraction_monster;
+
 private:
-	bool					ignore_collision_hit;	
+	bool					ignore_collision_hit;
 	
 public:
 	IC	void				set_ignore_collision_hit (bool value) {ignore_collision_hit = value;}

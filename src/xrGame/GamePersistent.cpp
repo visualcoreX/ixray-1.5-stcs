@@ -12,6 +12,7 @@
 #include "UI.h"
 #include "HUDManager.h"
 extern bool g_pda_rt_pass;
+extern bool gwr_pda_screen_active();
 #include "game_base_space.h"
 #include "level.h"
 #include "Level_Bullet_Manager.h"
@@ -728,6 +729,9 @@ bool CGamePersistent::OnRenderPdaUI()
 	if (!HUD().GetUI() || !HUD().GetUI()->UIGame())	return false;
 	CUIPdaWnd& pda = HUD().GetUI()->UIGame()->PdaMenu();
 	if (!pda.IsShown())								return false;
+	// with the 3D PDA switched off (AF_PDA_3D) nothing samples $user$ui and the window is drawn
+	// full-screen again, so capturing it here would just be a second, wasted draw of the same UI
+	if (!gwr_pda_screen_active())					return false;
 
 	g_pda_rt_pass	= true;
 	pda.Draw						();
@@ -769,6 +773,14 @@ bool CGamePersistent::OnRenderScopeActive()
 // scope, tell the engine to render the whole scene at the magnified scope FOV -> the world-only capture in
 // $user$scope becomes a true optical zoom. Every other frame is a lens frame (rendered but not presented);
 // the frames in between are the normal view. -> screen + lens each refresh at ~half rate while scoped.
+// GS lens_render_factor (gunsl_config.pas:1177, NeedLensFrameNow = frame mod (GPUs*factor) == 0):
+// one lens frame out of every N. Bigger N = the main view keeps more of its frames (smoother) and the
+// lens image refreshes more rarely. GS allows 1; we cannot, because our lens frame IS the frame -- the
+// screen re-presents the last normal one -- so N=1 would never produce a normal frame to present.
+// Console-only (`lens_render_factor`): unlike GS, where a lens frame is an extra scene render, ours
+// costs the same at any N, so this changes smoothness, never the framerate. See console_commands.cpp.
+int g_lens_render_factor = 2;
+
 bool CGamePersistent::ComputeLensFrame(float& out_fov)
 {
 	m_bLensFrameNow = false;
@@ -778,13 +790,44 @@ bool CGamePersistent::ComputeLensFrame(float& out_fov)
 	CActor* a = Actor();
 	if (!a)											return false;
 	CWeapon* w = smart_cast<CWeapon*>(a->inventory().ActiveItem());
-	if (!w || !w->IsLensedScope())					return false;
+	if (!w)											return false;
+
+	// LENS SWITCHED OFF (AF_LENS_3D). The scope does not stop magnifying -- GS gives the flat 2D scope
+	// exactly the LENS magnification: CCameraManager__Update_Lens_FOV_manipulation
+	// (LensDoubleRender.pas:418) overrides the camera FOV with GetLensFOV once the aim is fully in, and
+	// the scope picture is drawn over that zoomed world. So the option changes HOW the magnified image
+	// is produced (double-rendered lens vs. a plain world zoom), not how much it magnifies -- and
+	// scope_zoom_factor stays out of it entirely, which is why GS can leave it at 1.02 everywhere.
+	// GS's gates, verbatim: aim factor > 0.999, not grenade mode, not the alter (backup 1x) pose.
+	if (!w->IsLensedScope())
+	{
+		// Gunslinger's gate, verbatim (LensDoubleRender.pas:427): aim factor > 0.999, not grenade mode,
+		// not the alter pose -- and OTHERWISE THE FOV IS LEFT ALONE, no easing of our own. GS can be that
+		// blunt because for a lensed optic its vanilla zoom path is already a no-op (scope_zoom_factor
+		// 1.02 through RecalcZoomFOV ~= the base fov), and ours is too: CActor::currentFOV returns g_fov
+		// for IsLensedScopeCfg. So the un-overridden fov IS the base fov -- there is nothing to ramp
+		// between, and an added lerp only fights the camera's own smoothing.
+		if (!w->IsLensedScopeCfg())					return false;
+		// IsZoomed() FIRST, and it is not redundant with the rotation factor below. CWeapon::OnZoomOut
+		// clears m_bAlterZoom and m_bIsZoomModeNow together, in one call, while m_fZoomRotationFactor
+		// only starts DECAYING (by dt/zoom_rotate_time). At a high framerate dt is tiny, so for the first
+		// frame or two after release the factor is still above 0.999 while the alter flag has already
+		// gone -- and this branch would fire GetLensFOV() for exactly one frame: the momentary fov click
+		// on aim-out, most visible leaving the alter pose (which otherwise never changes the fov at all).
+		// Keying on IsZoomed() closes that window because it flips in the very same call as the flag.
+		if (!w->IsZoomed())							return false;
+		if (w->IsAlterZoom())						return false;
+		if (w->GetZoomRotationFactor() <= 0.999f)	return false;
+		out_fov = w->GetLensFOV();
+		return (out_fov > 0.f);
+	}
 
 	// The world FOV is OVERRIDDEN on EVERY frame while a lensed scope is in hand (this runs in ApplyDevice,
-	// AFTER the camera zoom/dispersion effectors, so it wins). Forcing it even when NOT aiming keeps the vanilla
-	// aim-zoom effector fully hidden -- otherwise its residual zoom pops on aim-OUT (camera snaps to a small FOV
-	// and eases back). On a LENS frame (even + aiming) -> the magnified GetLensFOV (captured to $user$scope, not
-	// presented); otherwise -> the base g_fov, so the presented main view is always wide, steady, un-zoomed.
+	// AFTER the camera zoom/dispersion effectors, so it wins). On a LENS frame (throttle + aiming) -> the
+	// magnified GetLensFOV (captured to $user$scope, not presented); otherwise -> the base g_fov, so the
+	// presented main view is always wide, steady, un-zoomed. Overriding on the non-aiming frames too is
+	// belt-and-braces now that CActor::currentFOV already returns g_fov for this optic and ApplyDevice no
+	// longer writes the override back into the camera's fov filter.
 	extern float g_fov;
 	const bool aiming = (w->IsZoomed() || w->GetZoomRotationFactor() > 0.01f);
 	m_bLensAimActive = aiming;						// drives the present bridge (save/restore) while aiming
@@ -796,7 +839,8 @@ bool CGamePersistent::ComputeLensFrame(float& out_fov)
 	// GS LensConditions: with the alter pose engaged the lens is off, so stop paying for (and stop
 	// showing) the magnified double-render -- the main view stays on the base FOV like any 1x sight.
 	const bool lens_on = (w->LensVisibility() > 0.001f);
-	if (aiming && lens_on && m_bLensSaveValid && (Device.dwFrame & 1) == 0)	// even + aiming + valid save = lens frame
+	const u32  lens_mod = (u32)_max(2, g_lens_render_factor);
+	if (aiming && lens_on && m_bLensSaveValid && (Device.dwFrame % lens_mod) == 0)	// 1 frame in N + aiming + valid save = lens frame
 	{
 		out_fov = w->GetLensFOV();
 		if (out_fov <= 0.f)							{ out_fov = g_fov; return true; }
@@ -804,7 +848,11 @@ bool CGamePersistent::ComputeLensFrame(float& out_fov)
 	}
 	else											// presented normal frame (also the first aim frame)
 	{
-		out_fov = g_fov;
+		// Same alter_scope_zoom_factor rule with the lens ON: the alter pose fades the lens out
+		// (lens_on false), and the backup sight's own magnification -- 1.0/none by default -- is what
+		// the world FOV should follow, not the base FOV by accident.
+		out_fov = (aiming && !lens_on && w->IsAlterZoom() && w->GetZoomRotationFactor() > 0.999f)
+					? w->AlterZoomFOV() : g_fov;
 	}
 	return true;
 }

@@ -796,9 +796,11 @@ void	CActor::SetCallbacks()
 	u16 spine1_bone		= V->LL_BoneID("bip01_spine1");
 	u16 shoulder_bone	= V->LL_BoneID("bip01_spine2");
 	u16 head_bone		= V->LL_BoneID("bip01_head");
+	u16 neck_bone		= V->LL_BoneID("bip01_neck");	// stock CS hooks nothing here
 	V->LL_GetBoneInstance(u16(spine0_bone)).set_callback	(bctCustom,Spin0Callback,this);
 	V->LL_GetBoneInstance(u16(spine1_bone)).set_callback	(bctCustom,Spin1Callback,this);
 	V->LL_GetBoneInstance(u16(shoulder_bone)).set_callback	(bctCustom,ShoulderCallback,this);
+	if (BI_NONE != neck_bone)	V->LL_GetBoneInstance(neck_bone).set_callback	(bctCustom,NeckCallback,this);
 	V->LL_GetBoneInstance(u16(head_bone)).set_callback		(bctCustom,HeadCallback,this);
 }
 void	CActor::ResetCallbacks()
@@ -809,9 +811,11 @@ void	CActor::ResetCallbacks()
 	u16 spine1_bone		= V->LL_BoneID("bip01_spine1");
 	u16 shoulder_bone	= V->LL_BoneID("bip01_spine2");
 	u16 head_bone		= V->LL_BoneID("bip01_head");
+	u16 neck_bone		= V->LL_BoneID("bip01_neck");	// stock CS hooks nothing here
 	V->LL_GetBoneInstance(u16(spine0_bone)).reset_callback	();
 	V->LL_GetBoneInstance(u16(spine1_bone)).reset_callback	();
 	V->LL_GetBoneInstance(u16(shoulder_bone)).reset_callback();
+	if (BI_NONE != neck_bone)	V->LL_GetBoneInstance(neck_bone).reset_callback	();
 	V->LL_GetBoneInstance(u16(head_bone)).reset_callback	();
 }
 
@@ -830,6 +834,20 @@ void	CActor::OnChangeVisual()
 	if (V){
 		CStepManager::reload(cNameSect().c_str());
 		SetCallbacks		();
+		// `extra_motions` in [actor] -- omf files whose motions belong to the PLAYER ONLY. They cannot
+		// go into the OGF as an ordinary motion ref: the actor's suit visuals are shared with the NPCs
+		// (20 of the 22 actor_visual entries in outfit.ltx are also worn by character profiles), so the
+		// ref would animate half the Zone. LL_AddMotions puts the slot on this instance alone, and it is
+		// stripped again in CKinematicsAnimated::Depart before the model pool can hand the instance to
+		// somebody else. Must run BEFORE m_anims->Create -- that is where the MotionIDs are resolved,
+		// and the appended slot has to be visible for the overrides to take.
+		if (pSettings->line_exist(*cNameSect(), "extra_motions"))
+		{
+			LPCSTR list = pSettings->r_string(*cNameSect(), "extra_motions");
+			string_path one;
+			for (u32 i = 0, n = _GetItemCount(list); i < n; ++i)
+				V->LL_AddMotions(_GetItem(list, i, one));
+		}
 		m_anims->Create		(V);
 		m_vehicle_anims->Create			(V);
 		CDamageManager::reload(*cNameSect(),"damage",pSettings);

@@ -122,7 +122,12 @@ void CUICustomItem::Render(const Fvector2& pos_ns, u32 color, float angle)
 	LTt.set								(iOriginalRect.x1/ts.x+hp.x, iOriginalRect.y1/ts.y+hp.y);
 	RBt.set								(iOriginalRect.x2/ts.x+hp.x, iOriginalRect.y2/ts.y+hp.y);
 
-	float kx =	(UI()->is_widescreen())?0.8333f:1.0f;
+	// Rotation happens in 1024x768 UI space, which is then stretched to the screen by
+	// (W/1024, H/768) -- a non-uniform scale on anything that is not 4:3. Squeezing x by
+	// kx = (H/768)/(W/1024) beforehand makes the two axes land on the same screen scale, so
+	// the quad turns rigidly instead of shearing. The old hardcoded 0.8333 is that value for
+	// 16:10 only; on 16:9 the correct one is 0.75.
+	float kx =	UI()->get_current_kx();
 
 	// clip poly
 	sPoly2D								S; 

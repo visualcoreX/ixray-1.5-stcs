@@ -346,14 +346,23 @@ void CCameraManager::ApplyDevice (float _viewport_near)
 	// 3D PiP scope double-render: on a "lens frame" render the whole scene at the magnified scope FOV so the
 	// world-only capture in $user$scope is a true optical zoom (Gunslinger LensDoubleRender). The game decides
 	// (throttle + aiming a lensed scope) and returns the magnified FOV; the frame is not presented.
+	// The override is applied to THIS FRAME ONLY and must NOT be written back into m_cam_info.fFov:
+	// that field is the state of the first-order filter in Update() above
+	// (`fFov = fFov*dst + fFOV_Dest*src`). Poking the magnified fov into it left the filter sitting at
+	// the scope's ~8 deg, so the frame the override stopped the camera had to crawl all the way back to
+	// the base fov -- the "sharp zoom-out that slowly settles" on aim release. Gunslinger is careful
+	// about the same thing: its lens path saves the value and restores it on the next non-lens frame
+	// (_restore_fov_after_lens_frame, LensDoubleRender.pas:443). Keeping the filter untouched is the
+	// simpler version of that -- there is no state left to unwind.
+	float fov_now				= m_cam_info.fFov;
 	float lens_fov;
 	if (g_pGamePersistent && g_pGamePersistent->ComputeLensFrame(lens_fov))
-		m_cam_info.fFov			= lens_fov;
+		fov_now					= lens_fov;
 
 	// projection
-	Device.fFOV					= m_cam_info.fFov;
+	Device.fFOV					= fov_now;
 	Device.fASPECT				= m_cam_info.fAspect;
-	Device.mProject.build_projection(deg2rad(m_cam_info.fFov), m_cam_info.fAspect, _viewport_near, m_cam_info.fFar);
+	Device.mProject.build_projection(deg2rad(fov_now), m_cam_info.fAspect, _viewport_near, m_cam_info.fFar);
 
 	if( g_pGamePersistent && g_pGamePersistent->m_pMainMenu->IsActive() )
 		ResetPP					();
