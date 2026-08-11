@@ -233,8 +233,20 @@ bool gwr_pda_need_fastzoom()
 // checkbox straight to them; the defaults are set with the rest of psActorFlags in console_commands.cpp.
 static bool s_pda_last_zoom_state = true;	// GS _last_pda_zoom_state
 
+// The tutorial opens the PDA itself and then points at fixed spots on its screen (part_1_pda, the
+// "how to use the PDA" lesson in the swamps). Lowered it would be pointing at nothing while the
+// player looks around instead -- so a tutorial-driven open goes to the face whatever the two options
+// say. Set by CUISequenceSimpleItem::Start right before it shows the window, dropped when it closes.
+static bool s_pda_force_zoom = false;
+
+void gwr_pda_force_zoom(bool on)
+{
+	s_pda_force_zoom = on;
+}
+
 static bool pda_need_fast_zoom()
 {
+	if (s_pda_force_zoom)	return true;
 	return psActorFlags.test(AF_PDA_SAVEZOOM)
 			? s_pda_last_zoom_state
 			: !!psActorFlags.test(AF_PDA_AUTOZOOM);
@@ -376,6 +388,7 @@ void CUIPdaWnd::Hide()
 	// the only thing that ever puts it away. The script side is a no-op when nothing was spawned.
 	gwr_call_pda						("gwr_eatable.on_pda_hide");
 	s_pda_shown							= false;
+	s_pda_force_zoom					= false;	// the tutorial's hold on the zoom ends with this open
 	pda_reset_cursor					(m_dwLastClickTime);	// don't leave a stale direction for the next open
 	GetUICursor()->Show					();						// we may have hidden it; every other menu needs it back
 	HUD().GetUI()->UIMainIngameWnd->SetFlashIconState_(CUIMainIngameWnd::efiPdaTask, false);

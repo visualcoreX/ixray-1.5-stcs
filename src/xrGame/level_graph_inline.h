@@ -32,6 +32,11 @@ ICF bool CLevelGraph::valid_vertex_id	(u32 id) const
 ICF	CLevelGraph::CVertex	*CLevelGraph::vertex(const u32 vertex_id) const
 {
 	VERIFY				(valid_vertex_id(vertex_id));
+	// VERIFY is compiled out of Release, so a bad id used to walk straight off the node array and
+	// corrupt memory quietly. Hand back the first node instead -- wrong, but survivable, and the
+	// caller's own "is this vertex sane" checks get a chance to run (ixray upstream e5c13711).
+	if (!valid_vertex_id(vertex_id))
+		return			(m_nodes);
 	return				(m_nodes + vertex_id);
 }
 

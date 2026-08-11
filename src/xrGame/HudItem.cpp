@@ -979,14 +979,22 @@ bool CHudItem::TryPlayAnimIdle()
 					// Config `lock_time_anm_idle_sprint_end` (seconds from the anim start, Gunslinger-style)
 					// tunes how many end frames are cut for responsiveness; default = full length - 130ms.
 					u32 now = Device.dwTimeGlobal;
-					float lt = READ_IF_EXISTS(pSettings, r_float, HudSection(), "lock_time_anm_idle_sprint_end", -1.f);
-					if (lt >= 0.f)
-						m_dwSprintExitEndTm = now + (u32)(lt * 1000.f);
-					else
-					{
-						const u32 cut = 130;	// ms (~4 frames @30fps)
-						m_dwSprintExitEndTm = (m_dwMotionEndTm > now + cut) ? (m_dwMotionEndTm - cut) : now;
-					}
+					// GS reads `lock_time_<FULLY RESOLVED anim name>` (WeaponAdditionalBuffer.pas:1059
+					// builds anm_name through ModifierAlterSprint/ModifierStd first), so a weapon whose
+					// sprint anims are numbered variants keys them per variant: the bm16 and the toz34
+					// have lock_time_anm_idle_sprint_end_0/_1/_2 and NO base key at all. Asking for the
+					// base name only found nothing there and dropped us into the fallback below.
+					string128 lk;
+					xr_sprintf(lk, "lock_time_%s", endnm);
+					float lt = READ_IF_EXISTS(pSettings, r_float, HudSection(), lk, -1.f);
+					if (lt < 0.f)
+						lt = READ_IF_EXISTS(pSettings, r_float, HudSection(), "lock_time_anm_idle_sprint_end", -1.f);
+					// No key at all = no lock, which is what GS does (MakeLockByConfigParam only acts
+					// `if game_ini_line_exist`). The old fallback held fire for the whole motion minus
+					// 130 ms -- on the bm16 that was 637 ms of a dead trigger and read as "the lock
+					// system doesn't work here". Still set the deadline (to now) rather than 0: the
+					// UpdateCL handoff needs a non-zero value to release a shot deferred mid-sprint.
+					m_dwSprintExitEndTm = (lt >= 0.f) ? (now + (u32)(lt * 1000.f)) : now;
 					return true;
 				}
 			}

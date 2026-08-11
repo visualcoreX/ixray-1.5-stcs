@@ -1113,6 +1113,23 @@ bool CScriptGameObject::active_item_busy()
 	return hi && (hi->GetState() != CHUDState::eIdle || hi->IsPending());	// reload / fire / draw / holster
 }
 
+// The same question, but for something that is ALLOWED to interrupt: using an item cuts a reload or
+// a jam short (the holster does the cutting), so those do not count as busy here -- only a draw, a
+// holster, a shot cycle or another gesture do. See gwr_weapon_action_interruptible in ActorInput.cpp.
+bool CScriptGameObject::active_item_uninterruptible()
+{
+	CInventoryOwner* inventory_owner = smart_cast<CInventoryOwner*>(&object());
+	if (!inventory_owner)	return false;
+	PIItem		itm = inventory_owner->inventory().ActiveItem();
+	CHudItem*	hi  = itm ? itm->cast_hud_item() : NULL;
+	if (!hi)	return false;
+
+	extern bool gwr_weapon_action_interruptible(CInventoryItem* itm);
+	if (gwr_weapon_action_interruptible(itm))	return false;
+
+	return hi->GetState() != CHUDState::eIdle || hi->IsPending();
+}
+
 // The actor's telepathic protection, as CActor::IsPsiBlocked sees it: vodka still in him, or the
 // psi blockade running. Exported so the scripted psi zones can ask the same question the controller
 // asks (sr_psy_antenna).

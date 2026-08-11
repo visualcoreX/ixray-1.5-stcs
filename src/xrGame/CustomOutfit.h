@@ -13,19 +13,19 @@ public:
 
 	virtual void			Load				(LPCSTR section);
 	
-	//уменьшенная версия хита, для вызова, когда костюм надет на персонажа
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	virtual void			Hit					(float P, ALife::EHitType hit_type);
 
-	//коэффициенты на которые домножается хит
-	//при соответствующем типе воздействия
-	//если на персонаже надет костюм
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
+	//пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	//пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	float					GetHitTypeProtection(ALife::EHitType hit_type, s16 element);
 	float					GetDefHitTypeProtection(ALife::EHitType hit_type);
 	float					GetBoneArmor(s16 element);
 
 	float					HitThroughArmor		(float hit_power, s16 element, float ap, bool& add_wound );
-	//коэффициент на который домножается потеря силы
-	//если на персонаже надет костюм
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+	//пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	float					GetPowerLoss		();
 
 
@@ -55,6 +55,11 @@ public:
 
 	shared_str				m_NightVisionSect;
 	shared_str				m_BonesProtectionSect;
+
+	// The headlamp is no longer something the actor simply owns: the light works only while a suit
+	// that carries one is worn (`torch_enabled`, off by default, switched on by the suit's flashlight
+	// upgrade -- exactly like m_NightVisionSect gates the goggles). CActor::SwitchTorch reads it.
+	bool					m_bTorch;
 
 	virtual u32				ef_equipment_type		() const;
 	virtual	BOOL			BonePassBullet			(int boneID);

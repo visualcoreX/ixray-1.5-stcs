@@ -5,6 +5,7 @@
 #include "UIInvUpgradeInfo.h"
 
 #include "UIDragDropListEx.h"
+#include "UIDragDropReferenceList.h"
 #include "UICharacterInfo.h"
 
 #include "../inventory_item.h"
@@ -23,7 +24,11 @@ void CUIActorMenu::InitUpgradeMode()
 	m_PartnerCharacterInfo->Show( true );
 	m_PartnerMoney->Show( false );
 	m_pUpgradeWnd->Show( true );
-	
+	// Same as the trade screen, and CoP does it too. The upgrade window's <main> is 400 wide, but
+	// everything it actually draws stops at x=276 (its panels, scheme and info frame), so the slot
+	// strip at x 306..533 / y 37..68 stays clear.
+	if (m_pQuickSlot)	m_pQuickSlot->Show(true);
+
 	InitInventoryContents( m_pInventoryBagList );
 	VERIFY( m_pPartnerInvOwner );
 	m_pPartnerInvOwner->StartTrading();
@@ -33,6 +38,7 @@ void CUIActorMenu::InitUpgradeMode()
 void CUIActorMenu::DeInitUpgradeMode()
 {
 	m_PartnerCharacterInfo->Show( false );
+	if (m_pQuickSlot)	m_pQuickSlot->Show(false);
 	m_pUpgradeWnd->Show( false );
 	m_pUpgradeWnd->set_info_cur_upgrade( NULL );
 	m_pUpgradeWnd->m_btn_repair->Enable( false );

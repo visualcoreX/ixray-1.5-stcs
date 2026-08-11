@@ -49,10 +49,7 @@ void CUIActorMenu::InitInventoryMode()
 	m_RightDelimiter->Show				(false);
 	m_clock_value->Show					(true);
 
-	InitInventoryContents				(m_pInventoryBagList);
-	// The slots hold SECTION names, not cell items: after a load (or any inventory refresh) their
-	// cells have to be rebuilt from g_quick_use_slots, otherwise they just look empty.
-	ReloadQuickSlots					();
+	InitInventoryContents				(m_pInventoryBagList);	// rebuilds the quick slots at its end
 
 	VERIFY( HUD().GetUI() && HUD().GetUI()->UIMainIngameWnd );
 	HUD().GetUI()->UIMainIngameWnd->ShowZoneMap(true);
@@ -435,6 +432,11 @@ void CUIActorMenu::InitInventoryContents(CUIDragDropListEx* pBagList)
 		}
 	}
 
+	// The slots hold SECTION names, not cell items, and ClearAllLists above just wiped their cells,
+	// so they have to be rebuilt from g_quick_use_slots -- otherwise they look empty. This is where
+	// CoP does it: at the end of InitInventoryContents, which EVERY mode goes through, instead of in
+	// one mode's Init only.
+	ReloadQuickSlots();
 }
 
 bool CUIActorMenu::TryActiveSlot(CUICellItem* itm)

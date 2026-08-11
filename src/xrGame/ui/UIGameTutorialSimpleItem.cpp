@@ -18,6 +18,8 @@
 
 extern ENGINE_API BOOL bShowPauseString;
 
+extern void gwr_pda_force_zoom(bool on);	// ui\UIPdaWnd.cpp
+
 //-----------------------------------------------------------------------------
 // Tutorial Item
 //-----------------------------------------------------------------------------
@@ -248,6 +250,11 @@ void CUISequenceSimpleItem::Start()
 		if ( ui_game_sp )
 		{
 			bool was_shown = !!ui_game_sp->PdaMenu().IsShown();
+			// A tutorial step that wants the PDA must get it AT THE FACE, whatever pda_autozoom /
+			// pda_savezoomstate are set to: its highlights and its cursor positions are aimed at the
+			// screen, and a PDA held down at the hip would leave the player staring past all of them.
+			// Must be set before the window opens -- CUIPdaWnd::Show decides the zoom right there.
+			gwr_pda_force_zoom( bShowPda );
 			if ( ( !was_shown &&  bShowPda ) ||
 				(   was_shown && !bShowPda ) )
 			{

@@ -97,6 +97,10 @@ void CCustomOutfit::Load(LPCSTR section)
 	else
 		m_NightVisionSect = NULL;
 
+	// Suit-mounted flashlight. Off unless the suit says otherwise -- in practice that means until its
+	// flashlight upgrade is installed (install_upgrade_impl below sets the same key).
+	m_bTorch = !!READ_IF_EXISTS(pSettings, r_bool, section, "torch_enabled", FALSE);
+
 	m_full_icon_name	= pSettings->r_string( section, "full_icon_name" );
 	m_artefact_count 	= READ_IF_EXISTS( pSettings, r_u32, section, "artefact_count", 0 );
 	clamp( m_artefact_count, (u32)0, (u32)5 );
@@ -152,13 +156,19 @@ float CCustomOutfit::HitThroughArmor( float hit_power, s16 element, float ap, bo
 	if( ap > EPS && ap > BoneArmor )
 	{
 		//пуля пробила бронь
-		float d_ap = ap - BoneArmor;
-		NewHitPower *= ( d_ap / ap );
-
-		if ( NewHitPower < m_boneProtection->m_fHitFracActor )
+		// The floor belongs on the FRACTION, not on the resulting hit power. This is CoP's form
+		// (GunsXRay CustomOutfit.cpp, MP branch); CS transcribed it onto NewHitPower, which turns
+		// hit_fraction_actor into an absolute cost in health units -- a flat 0.5 in the novice
+		// suit, 0.3 in the bandit/stalker one. Once GS's low k_hit values dropped the raw damage
+		// below that floor it became the binding term for nearly every hit, so caliber, armor tier
+		// and distance all stopped mattering and a worn novice suit was worse than no suit at all.
+		float hit_fraction = ( ap - BoneArmor ) / ap;
+		if ( hit_fraction < m_boneProtection->m_fHitFracActor )
 		{
-			NewHitPower = m_boneProtection->m_fHitFracActor;
+			hit_fraction = m_boneProtection->m_fHitFracActor;
 		}
+		NewHitPower *= hit_fraction;
+
 		if ( !IsGameTypeSingle() )
 		{
 			NewHitPower *= m_boneProtection->getBoneProtection(element);
@@ -264,6 +274,10 @@ void	CCustomOutfit::OnMoveToRuck		(EItemPlace prev)
 			if(pTorch)
 			{
 				pTorch->SwitchNightVision(false);
+				// The lamp belongs to the SUIT (torch_enabled / its flashlight upgrade), so taking the
+				// suit off puts the light out with it -- same as the goggles above.
+				if (pTorch->torch_active())
+					pTorch->Switch(false);
 			}
 			ApplySkinModel(pActor, false, false);
 		}
@@ -316,6 +330,17 @@ bool CCustomOutfit::install_upgrade_impl( LPCSTR section, bool test )
 		m_NightVisionSect._set( str );
 	}
 	result |= result2;
+
+	// The flashlight upgrade: the suit starts carrying a lamp, so CActor::SwitchTorch stops refusing.
+	{
+		BOOL torch = m_bTorch;
+		result2 = process_if_exists_set( section, "torch_enabled", &CInifile::r_bool, torch, test );
+		if ( result2 && !test )
+		{
+			m_bTorch = !!torch;
+		}
+		result |= result2;
+	}
 	
 	result |= process_if_exists( section, "additional_inventory_weight",  &CInifile::r_float,  m_additional_weight,  test );
 	result |= process_if_exists( section, "additional_inventory_weight2", &CInifile::r_float,  m_additional_weight2, test );

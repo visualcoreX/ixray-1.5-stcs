@@ -127,6 +127,15 @@ float g_actor_detector_yaw = 0.f;
 // player is watching (CHudItem::MotionEndTm). The two sets are authored independently, so a reload
 // that takes 2.5 s in the hands can be 1.8 s on the body. 0 = off, play both at their own pace.
 int g_actor_torso_sync_hud = 1;	// was 0
+// esmSyncPart scrubs the torso blend to the LEGS' phase every frame (bottom of g_SetAnimation). That
+// is only meaningful for a matched PAIR -- the pack authors them the same length, so the ratio is
+// exactly 1.0 (walk legs 33 frames <-> torso aim_2 33, run 24 <-> aim_3 24, idle 401 <-> aim_1 401).
+// The AIM stance breaks the pairing: the actor holds aim_0 while the legs walk, and where the pack
+// left the sync bit on a 401-frame aim_0 (slots 0/1/5/6/11/13 and pda; the named rifle groups and
+// slot 2 have it cleared) 13 s of animation get replayed inside every 1.1 s step and snap back --
+// on screen the upper body vibrates. Reported for pistols (slot 1) 2026-08-10.
+// This is the largest torso:legs length ratio still considered a pair. 0 = no guard = stock.
+float g_actor_torso_sync_part = 1.5f;
 
 // `action` is an optional suffix tried before the plain key. Some sets in the pack are not
 // internally consistent -- 8_mini (MP5 / AKS-74u / the slot-8 family) has its reload baked 17 deg
@@ -1233,6 +1242,17 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 	if (!(motion1->flags & esmSyncPart))
 		return;
 
+	// ...and only when the two are actually a pair -- see g_actor_torso_sync_part. Driving a long
+	// motion off a short one's phase does not slow it down, it REPLAYS it: the aim stance held over
+	// a walk cycle ran 12x and restarted every step, which is what "the upper body shakes while
+	// walking aimed with a pistol" was.
+	if (g_actor_torso_sync_part > 1.f
+		&& m_current_legs_blend->timeTotal > EPS_L && m_current_torso_blend->timeTotal > EPS_L)
+	{
+		const float ratio = m_current_torso_blend->timeTotal / m_current_legs_blend->timeTotal;
+		if (ratio > g_actor_torso_sync_part || ratio < 1.f / g_actor_torso_sync_part)
+			return;
+	}
 
 	m_current_torso_blend->timeCurrent	= m_current_legs_blend->timeCurrent/m_current_legs_blend->timeTotal*m_current_torso_blend->timeTotal;
 }

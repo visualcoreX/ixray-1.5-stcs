@@ -1217,8 +1217,12 @@ bool CInventory::Eat(PIItem pIItem)
 	// in gwr_actor_hud_busy then reported "hands busy" for good -- nothing could be used again.
 	if ( IsGameTypeSingle() && Actor() && Actor()->m_inventory == this && !CActor::IsGesturePhantom(pIItem) )
 	{
-		extern bool gwr_actor_hud_busy_now();
-		if ( gwr_actor_hud_busy_now() )			return false;
+		// `true`: a reload or a jam is NOT a reason to refuse -- using an item interrupts those on
+		// purpose (the phantom takes the hands and the holster cuts the animation). This is the funnel
+		// the quick-use key AND the inventory window both come through, so relaxing the key handler
+		// alone changed nothing.
+		extern bool gwr_actor_hud_busy_now(bool allow_weapon_action);
+		if ( gwr_actor_hud_busy_now(true) )		return false;
 	}
 
 	pItemToEat->UseBy			(entity_alive);

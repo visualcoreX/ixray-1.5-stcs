@@ -17,6 +17,7 @@
 #include "UICharacterInfo.h"
 #include "UIItemInfo.h"
 #include "UIDragDropListEx.h"
+#include "UIDragDropReferenceList.h"
 #include "UIInventoryUpgradeWnd.h"
 #include "UI3tButton.h"
 #include "UIMessageBoxEx.h"
@@ -796,6 +797,9 @@ void CUIActorMenu::ClearAllLists()
 	m_pInventoryDetectorList->ClearAll			(true);
 	m_pInventoryPistolList->ClearAll			(true);
 	m_pInventoryAutomaticList->ClearAll			(true);
+	// CoP clears the quick slot here too. Leaving its cells alone kept stale CUICellItems alive
+	// across a mode switch; InitInventoryContents rebuilds them from g_quick_use_slots at the end.
+	if (m_pQuickSlot)	m_pQuickSlot->ClearAll	(true);
 
 	m_pTradeActorBagList->ClearAll				(true);
 	m_pTradeActorList->ClearAll					(true);

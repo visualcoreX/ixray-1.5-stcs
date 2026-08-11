@@ -2,6 +2,7 @@
 #include "UIActorMenu.h"
 #include "UI3tButton.h"
 #include "UIDragDropListEx.h"
+#include "UIDragDropReferenceList.h"
 #include "UICharacterInfo.h"
 #include "UIFrameLineWnd.h"
 #include "UICellItem.h"
@@ -27,6 +28,12 @@ void CUIActorMenu::InitTradeMode()
 	m_pInventoryBagList->Show		(false);
 	m_PartnerCharacterInfo->Show	(true);
 	m_PartnerMoney->Show			(true);
+
+	// CoP keeps the quick slots on screen while trading (UIActorMenuTrade.cpp: ShowIfExist), and the
+	// strip sits in the empty top-centre of our layout (x 306..533, y 37..68) where nothing on the
+	// trade screen lives. Without this the slots -- and whatever is parked in them -- simply vanish
+	// the moment a trade window opens.
+	if (m_pQuickSlot)	m_pQuickSlot->Show(true);
 
 	m_pTradeActorBagList->Show		(true);
 	m_pTradeActorList->Show			(true);
@@ -105,6 +112,8 @@ void CUIActorMenu::DeInitTradeMode()
 	m_pInventoryBagList->Show		(true);
 	m_PartnerCharacterInfo->Show	(false);
 	m_PartnerMoney->Show			(false);
+
+	if (m_pQuickSlot)	m_pQuickSlot->Show(false);
 
 	m_pTradeActorBagList->Show		(false);
 	m_pTradeActorList->Show			(false);

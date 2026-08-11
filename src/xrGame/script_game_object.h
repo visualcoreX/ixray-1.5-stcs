@@ -579,6 +579,7 @@ public:
 			void				activate_slot						(u32 slot_id);
 			bool				detector_active						();	// is a detector currently out (shown)?
 			bool				active_item_busy					();	// is the active weapon/knife mid-animation (reload/fire/draw)?
+			bool				active_item_uninterruptible			();	// ...the same, but a reload/jam counts as free (item use may cut those)
 			bool				psi_blocked							();	// vodka still working, or the psi blockade running
 			void				show_detector						(bool emergency);	// re-show the equipped detector; emergency=drawn together with a weapon
 			void				enable_level_changer				(bool b);

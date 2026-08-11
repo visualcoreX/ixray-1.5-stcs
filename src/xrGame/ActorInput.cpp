@@ -53,7 +53,9 @@
 #include "UI.h"
 #include "game_cl_single.h"			// g_SingleGameDifficulty (GS suicide visibility rule)
 
-static bool gwr_actor_hud_busy(CActor* actor);	// defined below; true while a weapon/eat/torch animation runs
+// defined below; true while a weapon/eat/torch animation runs. allow_weapon_action = a reload or a
+// jam does not count (the caller is allowed to cut those short -- see gwr_weapon_action_interruptible)
+static bool gwr_actor_hud_busy(CActor* actor, bool allow_weapon_action = false);
 static u32  gwr_gesture_lock_start(CHudItem* owner, LPCSTR base, u32 def_ms);	// defined below; GS lock_time_start_<anim>
 static bool gwr_try_burn_use(CActor* actor);	// defined below; USE beats out a fire instead of using the world
 // torch/NV gesture bookkeeping. Defined up here (rather than beside gwr_begin_torch_action, where
@@ -429,7 +431,9 @@ void CActor::IR_OnKeyboardPress(int cmd)
 				// dead or dying: the use spawns a hud phantom whose binder then keeps working on a
 				// corpse the engine is tearing down -- an access violation with no log. Found by
 				// spamming the medkit key through a controller's tube.
-				if(itm && g_Alive() && !gwr_actor_hud_busy(this))
+				// `true` = a reload or a jam does NOT hold the key off: the item comes out and the
+				// holster cuts the animation, like the quick grenade does.
+				if(itm && g_Alive() && !gwr_actor_hud_busy(this, true))
 				{
 					inventory().Eat				(itm);
 					SDrawStaticStruct* _s		= HUD().GetUI()->UIGame()->AddCustomStatic("item_used", true);
@@ -916,7 +920,24 @@ static CCustomDetector* gwr_active_detector()
 	return a ? smart_cast<CCustomDetector*>(a->m_parent_hud_item) : NULL;
 }
 
-static bool gwr_actor_hud_busy(CActor* actor)
+// A RELOAD and a JAM may be cut short -- using an item is allowed to interrupt them, the way the
+// quick grenade throw interrupts everything (GS ActorUtils.pas:2629): the holster that follows the
+// item's activation kills whatever animation was playing. A draw, a holster, a shot cycle or another
+// gesture is NOT interruptible -- those own the hands for a reason. Shared by the quick-use key here
+// and by the script binding the eat script asks (CScriptGameObject::active_item_uninterruptible).
+bool gwr_weapon_action_interruptible(CInventoryItem* itm)
+{
+	CWeaponMagazined* wm = smart_cast<CWeaponMagazined*>(itm);
+	if (!wm)	return false;
+	const u32 st = wm->GetState();
+	// clearing a jam IS a reload, so eReload covers both; eMisfire is the jam itself
+	if (st == CWeapon::eReload || st == CWeapon::eMisfire)			return true;
+	// a jammed weapon finishing anm_shoot_jammed, or playing the jam-inspect gesture, sits in eIdle
+	if (st == CHUDState::eIdle && (wm->IsMisfire() || wm->IsJamInspectPlaying()))	return true;
+	return false;
+}
+
+static bool gwr_actor_hud_busy(CActor* actor, bool allow_weapon_action)
 {
 	if (g_block_wpn_switch != 0)	return true;
 	// ANY hud item in hand that is not sitting idle owns the hands, not just a weapon. This used to
@@ -925,10 +946,14 @@ static bool gwr_actor_hud_busy(CActor* actor)
 	// then handed straight back.
 	PIItem ai_ = actor->inventory().ActiveItem();
 	CHudItem* h = ai_ ? ai_->cast_hud_item() : NULL;
-	if (h && (h->GetState() != CHUDState::eIdle || h->IsPending()))	return true;
-	// the jam-inspect gesture plays in eIdle without pending -> catch it explicitly
-	CWeaponMagazined* wm = smart_cast<CWeaponMagazined*>(ai_);
-	if (wm && wm->IsJamInspectPlaying())	return true;
+	const bool cuttable = allow_weapon_action && gwr_weapon_action_interruptible(ai_);
+	if (!cuttable)
+	{
+		if (h && (h->GetState() != CHUDState::eIdle || h->IsPending()))	return true;
+		// the jam-inspect gesture plays in eIdle without pending -> catch it explicitly
+		CWeaponMagazined* wm = smart_cast<CWeaponMagazined*>(ai_);
+		if (wm && wm->IsJamInspectPlaying())	return true;
+	}
 	// a detector in the left hand mid-gesture (or showing/hiding) is busy too, even though it's
 	// not the "active item" -- otherwise a spammed toggle would fire with no animation
 	CCustomDetector* det = gwr_active_detector();
@@ -1064,12 +1089,14 @@ void gwr_update_burning(CActor* actor)
 	actor->conditions().ChangeBleedingByType(speed * float(Device.dwTimeDelta), ALife::eHitTypeBurn);
 }
 
-// Same test, for callers outside this file (the PDA key in CUIGameSP) -- resolves the actor itself.
-bool gwr_actor_hud_busy_now()
+// Same test, for callers outside this file -- resolves the actor itself. allow_weapon_action = a
+// reload or a jam is fair game to cut short (CInventory::Eat passes it: using an item interrupts
+// them). The PDA key in CUIGameSP does not -- drawing the PDA over a reload is not wanted.
+bool gwr_actor_hud_busy_now(bool allow_weapon_action)
 {
 	if (!g_pGameLevel || !g_pGameLevel->bReady)	return false;
 	CActor* a = Actor();
-	return a ? gwr_actor_hud_busy(a) : false;
+	return a ? gwr_actor_hud_busy(a, allow_weapon_action) : false;
 }
 
 // PDA in hand (the WP_BINOC phantom): play its own headlamp/NV toggle gesture (GS pda_headflash), the _aim
@@ -1168,7 +1195,15 @@ void CActor::SwitchTorch()
 		}
 	}
 	CTorch* torch = gwr_find_actor_torch(this);
-	if (!torch)	return;											// headlamp is always present, but guard anyway
+	if (!torch)	return;											// the light-carrying device itself must exist
+
+	// There is no headlamp of one's own any more: the lamp comes with the SUIT and only while it is
+	// worn (`torch_enabled`, granted by the suit's flashlight upgrade). Without one the key does
+	// nothing at all -- no toggle, no gesture, no sound -- exactly like night vision above.
+	{
+		CCustomOutfit* outfit = GetOutfit();
+		if (!outfit || !outfit->m_bTorch)	return;
+	}
 
 	bool desired = !torch->torch_active();
 	LPCSTR base = desired ? "anm_headlamp_on" : "anm_headlamp_off";

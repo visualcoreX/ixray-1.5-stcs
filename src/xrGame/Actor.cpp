@@ -1951,6 +1951,18 @@ void CActor::UpdateArtefactsOnBeltAndOutfit()
 			pTorch->SwitchNightVision(false);
 		}
 	}
+
+	// The lamp is the suit's, not the actor's: no suit -- or a suit whose flashlight upgrade is not
+	// installed -- means no light. Catches every route out of a lit suit (undressing, swapping to a
+	// plainer one, a script taking it away), not just the key.
+	if ( !outfit || !outfit->m_bTorch )
+	{
+		CTorch* pTorch = smart_cast<CTorch*>( inventory().ItemFromSlot(TORCH_SLOT) );
+		if ( pTorch && pTorch->torch_active() )
+		{
+			pTorch->Switch(false);
+		}
+	}
 }
 
 float	CActor::HitArtefactsOnBelt(float hit_power, ALife::EHitType hit_type)

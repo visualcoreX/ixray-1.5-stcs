@@ -106,6 +106,7 @@ extern float	g_actor_walk_anim_speed;	// ActorAnimation.cpp -- third-person walk
 extern float	g_actor_legs_blend;			// ActorAnimation.cpp -- cross-fade speed between leg cycles
 extern float	g_actor_detector_yaw;		// ActorAnimation.cpp -- live yaw trim for the +detector sets
 extern int		g_actor_torso_sync_hud;		// ActorAnimation.cpp -- match the torso motion length to the hud one
+extern float	g_actor_torso_sync_part;	// ActorAnimation.cpp -- max torso:legs length ratio esmSyncPart may pair
 extern int		g_actor_detector_gesture;	// ActorAnimation.cpp -- play drawdevice/holsterdevice on the torso
 extern int		g_actor_detector_torso;		// ActorAnimation.cpp -- "<x>+detector" torso sets while the detector is out
 extern int		g_upgrades_log;
@@ -1980,6 +1981,9 @@ void CCC_RegisterCommands()
 	CMD4(CCC_Float,				"actor_detector_yaw",	&g_actor_detector_yaw,	-90.0f,	90.0f);
 	// scale the third-person torso motion so it ends with the first-person one (1 = on)
 	CMD4(CCC_Integer,			"actor_torso_sync_hud",	&g_actor_torso_sync_hud,	0,	1);
+	// esmSyncPart pairs the torso phase to the legs: largest torso:legs length ratio still treated as
+	// a pair (0 = stock, sync whatever the flags say -- that is what made the aim stance vibrate)
+	CMD4(CCC_Float,				"actor_torso_sync_part",&g_actor_torso_sync_part,	0.0f,	100.0f);
 	// play the device draw/holster torso gesture at all (0 = hold the idle through it)
 	CMD4(CCC_Integer,			"actor_detector_gesture",&g_actor_detector_gesture,	0,	1);
 	// third-person torso sets for "weapon + detector in the other hand" (0 = weapon's own set)

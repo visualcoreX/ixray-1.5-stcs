@@ -253,6 +253,7 @@ class_<CScriptGameObject> &script_register_game_object1(class_<CScriptGameObject
 		.def("detector_active",				&CScriptGameObject::detector_active)
 		.def("show_detector",				&CScriptGameObject::show_detector)
 		.def("active_item_busy",			&CScriptGameObject::active_item_busy)
+		.def("active_item_uninterruptible",	&CScriptGameObject::active_item_uninterruptible)
 		.def("psi_blocked",					&CScriptGameObject::psi_blocked)
 
 #ifdef DEBUG

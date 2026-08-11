@@ -11,7 +11,7 @@
 #include "GameTaskManager.h"
 #include "GameTask.h"
 
-extern bool gwr_actor_hud_busy_now();		// ActorInput.cpp
+extern bool gwr_actor_hud_busy_now(bool allow_weapon_action = false);	// ActorInput.cpp
 
 #include "ui/UIActorMenu.h"
 #include "ui/UITradeWnd.h"
