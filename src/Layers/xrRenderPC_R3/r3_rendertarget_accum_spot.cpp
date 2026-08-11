@@ -281,6 +281,11 @@ void CRenderTarget::accum_spot	(light* L)
 		Device.mFullTransform	= FTold;
 		RCache.set_xform_project(Device.mProject);
 	}
+
+	// This light's share of the HUD's own contact shadow. Last, so it runs in the normal viewport
+	// (a hud-mode light was still under rmNear a few lines up) and against a stencil nobody is
+	// reading any more.
+	phase_hud_shadow			(L);
 }
 
 void CRenderTarget::accum_volumetric(light* L)

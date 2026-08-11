@@ -1,0 +1,109 @@
+#include "common.h"
+
+// Screen-space contact shadows for the HUD models (hands + weapon).
+//
+// The HUD already RECEIVES the world's sun shadow: it is drawn into the G-buffer and its vertex
+// shader writes a true view-space position (deffer_model_bump.vs: Pe = mul(m_WV, w_pos)), which is
+// what accum_sun samples the cascade with. What it cannot do is shadow ITSELF -- HUD visuals return
+// out of r__dsgraph_build before the shadow lists, so they are in no shadow map at all.
+//
+// Injecting them into the sun cascade would fix that and drop a gun-shaped shadow on the ground in
+// front of the player, which is exactly what we do not want. So instead: march the depth buffer
+// from each HUD pixel towards the sun and darken it where the HUD's own geometry gets in the way.
+// This physically cannot touch the world -- the pass only ever runs on HUD pixels (depth band +
+// the view-Z cutoff below) and it only reads.
+//
+// ONLY .z is taken from the G-buffer; xy is rebuilt from the screen position through the HUD's own
+// projection (psHUD_FOV), which is what rasterised these pixels. Reading the stored xy would be
+// wrong the moment the G-buffer reconstructs position from depth with the SCENE rays, and it keeps
+// this shader identical in shape to the R3 one, where that is exactly what happens.
+//
+// THREE THINGS THE MARCH GETS RIGHT, all learned from AXR's SSFX_SHADOWS (screenspace_shadows.h):
+//  1. QUADRATIC step spacing. Uniform steps put the first sample a whole step away, so exactly
+//     where the hand touches the stock -- an occluder a few mm off -- nothing was ever sampled and
+//     the shadow was missing at the contact. t*t packs the early samples into the first millimetres
+//     and still reaches the full ray length.
+//  2. Per-pixel JITTER of the ray start. Without it a fixed step pattern turns a soft occlusion
+//     into evenly spaced stripes -- the "dashed" shadow on the hands.
+//  3. SOFT accumulation. Counting hits and dividing by the step count gives a gradient; a binary
+//     max() gives a hard edge that flickers between neighbouring pixels.
+// The near-surface reject also scales with the local step, instead of being a fixed epsilon, so it
+// stays tight where the samples are dense and does not self-shadow where they are far apart.
+//
+// Deliberately branchless inside the loop: tex2D under a divergent branch has no defined
+// derivatives, and the unrolled predicated form costs fewer instructions than an early-out.
+
+// THE SAME MARCH SERVES THE SUN AND EVERY LOCAL LIGHT. For the sun the direction is one constant
+// for the whole screen; for a lamp it is per pixel (towards its position) and the ray must stop AT
+// the lamp, not run the full length past it. The pass then runs once per light, right after that
+// light has accumulated -- see phase_hud_shadow().
+uniform float4	hud_sh_dir;		// xyz: direction TOWARDS the sun, view space   w: hardness
+uniform float4	hud_sh_params;	// x: ray length (m)  y: thickness (m)  z: strength  w: max view Z (m)
+uniform float4	hud_sh_proj;	// xy: HUD projection _11/_22   zw: screen size in pixels
+uniform float4	hud_sh_lpos;	// xyz: light position, view space   w: 1/R^2, <=0 means "the sun"
+
+#define HUD_SH_STEPS 12
+
+float4 main( float2 tc : TEXCOORD0 ) : COLOR
+{
+	float	z0	= tex2D( s_position, tc ).z;
+
+	// Not the HUD -> return white, the multiply blend leaves the accumulator alone. The depth-band
+	// test already did most of this; the cutoff catches world geometry pressed against the camera,
+	// which shares the band.
+	if (z0 <= 0.f || z0 > hud_sh_params.w)	return 1.f;
+
+	float3	P;
+	P.z		= z0;
+	P.xy	= float2( (tc.x*2.f-1.f) / hud_sh_proj.x, -(tc.y*2.f-1.f) / hud_sh_proj.y ) * z0;
+
+	// Sun or lamp. Branchless on purpose -- the selector is a constant for the whole draw, so both
+	// arms cost the same, and lerp keeps the shader identical in shape to the R3 one.
+	//  * ray_len stops the march at the lamp: past it there is nothing that could occlude.
+	//  * att is the lamp's own q-linear falloff (the same 1 - d^2/R^2 plight_local uses). Without it
+	//    a lamp barely in range would still cut a full-strength black shadow -- and since this pass
+	//    multiplies the accumulator, that would eat the light of everything else in it too.
+	float3	L2P		= hud_sh_lpos.xyz - P;
+	float	Ldist	= length( L2P );
+	float	local	= step( 0.0001f, hud_sh_lpos.w );
+	float3	Ldir	= lerp( hud_sh_dir.xyz, L2P / max(Ldist, 0.0001f), local );
+	float	ray_len	= lerp( hud_sh_params.x, min(hud_sh_params.x, Ldist), local );
+	float	att		= lerp( 1.f, saturate(1.f - Ldist*Ldist*hud_sh_lpos.w), local );
+
+	// interleaved-gradient noise on pixel coords: cheap, stable per pixel, no texture
+	float2	px		= tc * hud_sh_proj.zw;
+	float	jitter	= frac( 52.9829189f * frac( dot(px, float2(0.06711056f, 0.00583715f)) ) );
+
+	float	occ		= 0.f;
+	float	prev	= 0.f;
+
+	for (int i = 0; i < HUD_SH_STEPS; ++i)
+	{
+		float	t		= (float(i) + jitter) / HUD_SH_STEPS;
+		float	dist	= t * t * ray_len;
+		float3	cur		= P + Ldir * dist;
+
+		float	z		= max(cur.z, 0.01f);
+		float2	suv		= float2( cur.x * hud_sh_proj.x / z, -cur.y * hud_sh_proj.y / z ) * 0.5f + 0.5f;
+
+		float	sz		= tex2D( s_position, saturate(suv) ).z;
+
+		// sz < cur.z means the buffer holds something in front of the ray. The upper bound turns
+		// the depth buffer back into thin geometry -- without it everything behind the weapon would
+		// count as occluded, the distant world included, and the whole HUD would go black.
+		float	d		= cur.z - sz;
+		float	bias	= max(0.0004f, (dist - prev) * 0.5f);
+		prev			= dist;
+
+		float	hit		= step(bias, d) * step(d, hud_sh_params.y);
+
+		// walked off screen or behind the eye -- nothing there to be occluded by
+		hit *= step(0.f, suv.x) * step(suv.x, 1.f) * step(0.f, suv.y) * step(suv.y, 1.f);
+		hit *= step(0.01f, cur.z);
+
+		occ += hit;
+	}
+
+	occ = saturate( occ * hud_sh_dir.w / HUD_SH_STEPS );
+	return 1.f - occ * hud_sh_params.z * att;
+}

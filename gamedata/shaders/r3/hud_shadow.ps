@@ -1,0 +1,104 @@
+#include "common.h"
+
+// Screen-space contact shadows for the HUD models (hands + weapon). DX10 twin of
+// r2\hud_shadow.ps -- the reasoning, and the three things the march has to get right (quadratic
+// step spacing, per-pixel jitter, soft accumulation), are written out there.
+//
+// DX10-only differences:
+//  * s_position is a Texture2DMS as soon as USE_MSAA is on (common_samplers.h), so it has to be
+//    read with Load() and a sample index instead of Sample(). One variant with ISAMPLE 0 is
+//    enough for a soft occlusion term: the quad covers whole pixels, so every sample of a HUD
+//    pixel gets the same multiplier anyway.
+//  * with r3_gbuffer_opt the G-buffer holds no xy at all -- position is rebuilt from depth using
+//    the SCENE rays, which is wrong for HUD pixels. So take ONLY .z (true view Z either way) and
+//    rebuild xy here through the HUD's own projection, exactly as the R2 shader does.
+
+#ifndef ISAMPLE
+#define ISAMPLE 0
+#endif
+
+// The same march serves the sun and every local light -- see the R2 twin and phase_hud_shadow().
+uniform float4	hud_sh_dir;		// xyz: direction TOWARDS the sun, view space   w: hardness
+uniform float4	hud_sh_params;	// x: ray length (m)  y: thickness (m)  z: strength  w: max view Z (m)
+uniform float4	hud_sh_proj;	// xy: HUD projection _11/_22   zw: screen size in pixels
+uniform float4	hud_sh_lpos;	// xyz: light position, view space   w: 1/R^2, <=0 means "the sun"
+
+#define HUD_SH_STEPS 12
+
+float	hud_sh_z( float2 tc )
+{
+#ifdef USE_MSAA
+	return s_position.Load( int3( tc * pos_decompression_params2.xy, 0 ), ISAMPLE ).z;
+#else
+	return s_position.Sample( smp_nofilter, tc ).z;
+#endif
+}
+
+struct	_input
+{
+	float2	tc0		: TEXCOORD0;
+	float4	pos2d	: SV_Position;
+};
+
+float4 main( _input I ) : SV_Target
+{
+	float	z0	= hud_sh_z( I.tc0 );
+
+	// Not the HUD -> return white, the multiply blend leaves the accumulator alone. The depth-band
+	// test already did most of this; the cutoff catches world geometry pressed against the camera,
+	// which shares the band.
+	if (z0 <= 0.f || z0 > hud_sh_params.w)	return 1.f;
+
+	float3	P;
+	P.z		= z0;
+	P.xy	= float2( (I.tc0.x*2.f-1.f) / hud_sh_proj.x, -(I.tc0.y*2.f-1.f) / hud_sh_proj.y ) * z0;
+
+	// Sun or lamp. Branchless on purpose -- the selector is a constant for the whole draw.
+	//  * ray_len stops the march at the lamp: past it there is nothing that could occlude.
+	//  * att is the lamp's own q-linear falloff (the same 1 - d^2/R^2 plight_local uses). Without it
+	//    a lamp barely in range would still cut a full-strength black shadow -- and since this pass
+	//    multiplies the accumulator, that would eat the light of everything else in it too.
+	float3	L2P		= hud_sh_lpos.xyz - P;
+	float	Ldist	= length( L2P );
+	float	local	= step( 0.0001f, hud_sh_lpos.w );
+	float3	Ldir	= lerp( hud_sh_dir.xyz, L2P / max(Ldist, 0.0001f), local );
+	float	ray_len	= lerp( hud_sh_params.x, min(hud_sh_params.x, Ldist), local );
+	float	att		= lerp( 1.f, saturate(1.f - Ldist*Ldist*hud_sh_lpos.w), local );
+
+	// interleaved-gradient noise on pixel coords: cheap, stable per pixel, no texture
+	float	jitter	= frac( 52.9829189f * frac( dot(I.pos2d.xy, float2(0.06711056f, 0.00583715f)) ) );
+
+	float	occ		= 0.f;
+	float	prev	= 0.f;
+
+	[unroll]
+	for (int i = 0; i < HUD_SH_STEPS; ++i)
+	{
+		float	t		= (float(i) + jitter) / HUD_SH_STEPS;
+		float	dist	= t * t * ray_len;
+		float3	cur		= P + Ldir * dist;
+
+		float	z		= max(cur.z, 0.01f);
+		float2	suv		= float2( cur.x * hud_sh_proj.x / z, -cur.y * hud_sh_proj.y / z ) * 0.5f + 0.5f;
+
+		float	sz		= hud_sh_z( saturate(suv) );
+
+		// sz < cur.z means the buffer holds something in front of the ray. The upper bound turns
+		// the depth buffer back into thin geometry -- without it everything behind the weapon would
+		// count as occluded, the distant world included, and the whole HUD would go black.
+		float	d		= cur.z - sz;
+		float	bias	= max(0.0004f, (dist - prev) * 0.5f);
+		prev			= dist;
+
+		float	hit		= step(bias, d) * step(d, hud_sh_params.y);
+
+		// walked off screen or behind the eye -- nothing there to be occluded by
+		hit *= step(0.f, suv.x) * step(suv.x, 1.f) * step(0.f, suv.y) * step(suv.y, 1.f);
+		hit *= step(0.01f, cur.z);
+
+		occ += hit;
+	}
+
+	occ = saturate( occ * hud_sh_dir.w / HUD_SH_STEPS );
+	return 1.f - occ * hud_sh_params.z * att;
+}

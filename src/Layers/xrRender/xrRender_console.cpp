@@ -147,6 +147,19 @@ Flags32		ps_r2_ls_flags_ext			= {
 // the "actor shadow" checkbox in the advanced video options, or `r__actor_shadow` in the console.
 Flags32 ps_r__common_flags = { R2FLAG_USE_BUMP | RFLAG_ACTOR_SHADOW };
 
+// HUD contact shadows. Lengths are metres of TRUE geometry, not of the HUD-FOV picture: the models
+// really are a few dm across, so 0.35 already reaches across the whole weapon.
+float		ps_r2_hud_shadow			= 0.7f;
+float		ps_r2_hud_shadow_len		= 0.35f;
+float		ps_r2_hud_shadow_thickness	= 0.08f;
+float		ps_r2_hud_shadow_maxz		= 2.0f;
+// how fast counted hits saturate into full shadow -- AXR calls the same knob ray hardness
+float		ps_r2_hud_shadow_hardness	= 4.0f;
+// Same term for point/spot lights, run once per light right after it accumulates. Separate strength
+// because the multiply hits everything already in the accumulator, not only that light -- see
+// phase_hud_shadow(). 0 = sun only, which is what this started as.
+float		ps_r2_hud_shadow_lights		= 1.0f;
+
 float		ps_r2_df_parallax_h			= 0.02f;
 float		ps_r2_df_parallax_range		= 75.f;
 float		ps_r2_tonemap_middlegray	= 0.25f;			// r2-only
@@ -602,6 +615,13 @@ void		xrRender_initconsole	()
 	// R2-specific
 	CMD2(CCC_R2GM,		"r2em",					&ps_r2_gmaterial							);
 	CMD3(CCC_Mask,		"r2_tonemap",			&ps_r2_ls_flags,			R2FLAG_TONEMAP	);
+	CMD4(CCC_Float,		"r2_hud_shadow",		&ps_r2_hud_shadow,			0.0f,	1.0f	);
+	CMD4(CCC_Float,		"r2_hud_shadow_len",	&ps_r2_hud_shadow_len,		0.02f,	2.0f	);
+	CMD4(CCC_Float,		"r2_hud_shadow_thickness",&ps_r2_hud_shadow_thickness,0.01f,	1.0f	);
+	CMD4(CCC_Float,		"r2_hud_shadow_maxz",	&ps_r2_hud_shadow_maxz,		0.2f,	10.0f	);
+	CMD4(CCC_Float,		"r2_hud_shadow_hardness",&ps_r2_hud_shadow_hardness,	1.0f,	12.0f	);
+	CMD4(CCC_Float,		"r2_hud_shadow_lights",	&ps_r2_hud_shadow_lights,	0.0f,	1.0f	);
+
 	CMD4(CCC_Float,		"r2_tonemap_middlegray",&ps_r2_tonemap_middlegray,	0.0f,	2.0f	);
 	CMD4(CCC_Float,		"r2_tonemap_adaptation",&ps_r2_tonemap_adaptation,	0.01f,	10.0f	);
 	CMD4(CCC_Float,		"r2_tonemap_lowlum",	&ps_r2_tonemap_low_lum,		0.0001f,1.0f	);
@@ -715,6 +735,9 @@ void		xrRender_initconsole	()
 	CMD3(CCC_Mask,		"r2_detail_bump",				&ps_r2_ls_flags,			R2FLAG_DETAIL_BUMP);
 	CMD3(CCC_Mask, "r2_use_bump", &ps_r__common_flags, R2FLAG_USE_BUMP);
 	CMD3(CCC_Mask, "r__actor_shadow", &ps_r__common_flags, RFLAG_ACTOR_SHADOW);
+	// the "SSS" checkbox in the advanced video options. Master switch for phase_hud_shadow -- the
+	// r2_hud_shadow* floats stay as the tuning knobs behind it.
+	CMD3(CCC_Mask, "r__hud_shadow", &ps_r__common_flags, RFLAG_HUD_SHADOW);
 	CMD3(CCC_Token,		"r2_sun_quality",				&ps_r_sun_quality,			qsun_quality_token);
 
 	//	Igor: need restart

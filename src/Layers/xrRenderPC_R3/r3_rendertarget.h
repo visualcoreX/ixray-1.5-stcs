@@ -45,6 +45,7 @@ public:
 	IBlender*					b_accum_point_msaa[8];
 	IBlender*					b_accum_reflected_msaa[8];
 	IBlender*					b_ssao;
+	IBlender*					b_hud_shadow;
 	IBlender*					b_ssao_msaa[8];
 
 	IBlender* b_fxaa;
@@ -131,6 +132,8 @@ private:
 	ref_rt						rt_ssao_temp;
 	ref_rt						rt_half_depth;
 	ref_shader					s_ssao;
+	// HUD contact shadows (self-shadowing of the first-person hands/weapon)
+	ref_shader					s_hud_shadow;
 	ref_shader					s_ssao_msaa[8];
 
 	// Accum
@@ -258,6 +261,7 @@ public:
 	void						phase_scene_end			();
 	void						phase_occq				();
 	void						phase_ssao				();
+	void						phase_hud_shadow		(light* L = nullptr);	// nullptr == the sun
 	void						phase_downsamp			();
 	void						phase_wallmarks			();
 	void						phase_smap_direct		(light* L,	u32 sub_phase);

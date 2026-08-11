@@ -76,6 +76,14 @@ extern ECORE_API	float		ps_r2_ssaLOD_B;
 // R2-specific
 extern ECORE_API Flags32		ps_r2_ls_flags;				// r2-only
 extern ECORE_API Flags32		ps_r2_ls_flags_ext;
+// HUD contact shadows: strength 0 turns the whole pass off (r2/r3 only -- r1 has no G-buffer)
+extern ECORE_API float			ps_r2_hud_shadow;
+extern ECORE_API float			ps_r2_hud_shadow_len;
+extern ECORE_API float			ps_r2_hud_shadow_thickness;
+extern ECORE_API float			ps_r2_hud_shadow_maxz;
+extern ECORE_API float			ps_r2_hud_shadow_hardness;
+extern ECORE_API float			ps_r2_hud_shadow_lights;
+
 extern ECORE_API float			ps_r2_df_parallax_h;		// r2-only
 extern ECORE_API float			ps_r2_df_parallax_range;	// r2-only
 extern ECORE_API float			ps_r2_gmaterial;			// r2-only
@@ -188,6 +196,7 @@ enum
 	R2FLAGEXT_SUN_ZCULLING = (1 << 8),
 	RFLAG_ACTOR_SHADOW = (1 << 9),
 	R2FLAG_USE_BUMP = (1 << 10),
+	RFLAG_HUD_SHADOW = (1 << 11),	// screen-space contact shadows on the HUD models
 };
 
 extern void						xrRender_initconsole	();

@@ -10,6 +10,7 @@
 #include "blender_bloom_build.h"
 #include "blender_luminance.h"
 #include "blender_ssao.h"
+#include "blender_hud_shadow.h"
 #include "../xrRender/blender_fxaa.h"
 
 #include "../xrRender/dxRenderDeviceRender.h"
@@ -207,6 +208,7 @@ CRenderTarget::CRenderTarget		()
 	b_accum_reflected				= xr_new<CBlender_accum_reflected>		();
 	b_bloom							= xr_new<CBlender_bloom_build>			();
 	b_ssao							= xr_new<CBlender_SSAO>					();
+	b_hud_shadow					= xr_new<CBlender_HUD_Shadow>			();
 	b_luminance						= xr_new<CBlender_luminance>			();
 	b_combine						= xr_new<CBlender_combine>				();
 	b_fxaa = xr_new<CBlender_FXAA>();
@@ -365,6 +367,9 @@ CRenderTarget::CRenderTarget		()
 		rt_ssao_temp.create			(r2_RT_ssao_temp, w, h, D3DFMT_G16R16F);
 		s_ssao.create				(b_ssao, "r2\\ssao");
 	}
+
+	// HUD contact shadows -- unconditional, the pass itself is a no-op while ps_r2_hud_shadow is 0
+	s_hud_shadow.create			(b_hud_shadow, "r2\\hud_shadow");
 
 	//FXAA
 	s_fxaa.create(b_fxaa, "r2\\fxaa");
@@ -631,6 +636,7 @@ CRenderTarget::~CRenderTarget	()
 	xr_delete					(b_luminance			);
 	xr_delete					(b_bloom				);
 	xr_delete					(b_ssao					);
+	xr_delete					(b_hud_shadow			);
 	xr_delete(b_fxaa);
 	xr_delete					(b_accum_reflected		);
 	xr_delete					(b_accum_spot			);

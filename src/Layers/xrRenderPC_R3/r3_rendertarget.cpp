@@ -10,6 +10,7 @@
 #include "blender_bloom_build.h"
 #include "blender_luminance.h"
 #include "blender_ssao.h"
+#include "blender_hud_shadow.h"
 #include "dx10MinMaxSMBlender.h"
 #include "../xrRenderDX10/msaa/dx10MSAABlender.h"
 #include "../xrRenderDX10/DX10 Rain/dx10RainBlender.h"
@@ -307,6 +308,7 @@ CRenderTarget::CRenderTarget		()
 	b_luminance				= xr_new<CBlender_luminance>			();
 	b_combine				= xr_new<CBlender_combine>				();
 	b_ssao					= xr_new<CBlender_SSAO_noMSAA>			();
+	b_hud_shadow			= xr_new<CBlender_HUD_Shadow>			();
 
 	const u32 s_dwWidth = Device.dwWidth, s_dwHeight = Device.dwHeight;
 
@@ -412,6 +414,9 @@ CRenderTarget::CRenderTarget		()
 
 	// FXAA
 	{
+		// HUD contact shadows -- unconditional, the pass is a no-op while ps_r2_hud_shadow is 0
+		s_hud_shadow.create		(b_hud_shadow, "r2\\hud_shadow");
+
 		b_fxaa = xr_new<CBlender_FXAA>();
 		s_fxaa.create(b_fxaa);
 	}
@@ -1012,6 +1017,7 @@ CRenderTarget::~CRenderTarget	()
 	xr_delete					(b_accum_point			);
 	xr_delete					(b_accum_direct			);
 	xr_delete					(b_ssao					);
+	xr_delete					(b_hud_shadow			);
 	xr_delete(b_fxaa);
 	xr_delete(b_smaa);
 

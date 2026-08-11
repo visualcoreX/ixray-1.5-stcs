@@ -338,6 +338,7 @@
     <ClInclude Include="blender_light_spot.h" />
     <ClInclude Include="blender_luminance.h" />
     <ClInclude Include="blender_ssao.h" />
+    <ClInclude Include="blender_hud_shadow.h" />
     <ClInclude Include="cl_intersect.h" />
     <ClInclude Include="DetailFormat.h" />
     <ClInclude Include="doug_lea_memory_allocator.h" />
@@ -527,6 +528,7 @@
     <ClCompile Include="blender_luminance.cpp" />
     <ClCompile Include="blender_smaa.cpp" />
     <ClCompile Include="blender_ssao.cpp" />
+    <ClCompile Include="blender_hud_shadow.cpp" />
     <ClCompile Include="dx10MinMaxSMBlender.cpp" />
     <ClCompile Include="light_GI.cpp" />
     <ClCompile Include="Light_Render_Direct.cpp" />
@@ -566,6 +568,7 @@
     <ClCompile Include="r3_rendertarget_phase_smap_D.cpp" />
     <ClCompile Include="r3_rendertarget_phase_smap_S.cpp" />
     <ClCompile Include="r3_rendertarget_phase_ssao.cpp" />
+    <ClCompile Include="r3_rendertarget_phase_hud_shadow.cpp" />
     <ClCompile Include="r3_R_rain.cpp" />
     <ClCompile Include="r3_R_render.cpp" />
     <ClCompile Include="stdafx.cpp">

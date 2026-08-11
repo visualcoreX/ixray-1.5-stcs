@@ -26,6 +26,7 @@ public:
 	IBlender*					b_accum_reflected;
 	IBlender*					b_bloom;
 	IBlender*					b_ssao;
+	IBlender*					b_hud_shadow;
 	IBlender* b_fxaa;
 	IBlender*					b_luminance;
 	IBlender*					b_combine;
@@ -126,6 +127,9 @@ private:
 	ref_rt						rt_ssao_temp;
 	ref_rt						rt_half_depth;
 
+	// HUD contact shadows (self-shadowing of the first-person hands/weapon)
+	ref_shader					s_hud_shadow;
+
 	//FXAA
 	ref_shader s_fxaa;
 	ref_geom g_fxaa;
@@ -202,6 +206,7 @@ public:
 	void						u_DBT_disable			();
 
 	void						phase_ssao				();
+	void						phase_hud_shadow		(light* L = nullptr);	// nullptr == the sun
 	void phase_fxaa(u32 pass);
 	void						phase_downsamp			();
 	void						phase_scene_prepare		();

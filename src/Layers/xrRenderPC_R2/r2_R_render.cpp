@@ -401,6 +401,9 @@ void CRender::Render		()
 	if (bSUN)	{
 		RImplementation.stats.l_visible		++;
 		render_sun_cascades					();
+		// HUD models cast no shadow of their own (they never enter a shadow map); fake the
+		// self-occlusion in screen space while the accumulator still holds only the sun.
+		Target->phase_hud_shadow			();
 	}
 
 	{
