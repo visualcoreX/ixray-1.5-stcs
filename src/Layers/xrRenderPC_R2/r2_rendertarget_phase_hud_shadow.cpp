@@ -62,9 +62,14 @@ void CRenderTarget::phase_hud_shadow	(light* L)
 		// embedded in the very geometry being marched always finds that geometry in the way, so the
 		// occlusion came out ~1 over the whole HUD and every shot blacked the weapon out. Screen
 		// space cannot answer this case at all: the buffer holds one surface per pixel and knows
-		// nothing about the light sitting behind it. maxz is the right bound to reuse -- it is
-		// already "how deep the HUD reaches", so a light nearer than that shares its volume.
-		if (L_camdist < ps_r2_hud_shadow_maxz)								return;
+		// nothing about the light sitting behind it.
+		//
+		// This used to be a distance test (borrowing maxz, 2 m), which threw out campfires the
+		// moment the player walked up to one. The lights that actually break the march say so
+		// themselves now: set_inside_hud is put on the muzzle flash, the weapon lamp, the handheld
+		// torch and the headlamp while they are the PLAYER's -- an NPC carrying the same gear is
+		// an ordinary world light and still lights the hud.
+		if (L->flags.bHudMode || L->flags.bInsideHud)						return;
 		if (IRender_Light::SPOT == L->flags.type)
 		{
 			Fvector	d;	d.sub		(Device.vCameraPosition, L->position);

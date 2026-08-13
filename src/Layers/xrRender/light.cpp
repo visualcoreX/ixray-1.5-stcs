@@ -16,6 +16,7 @@ light::light		(void)	: ISpatial(g_SpatialSpace)
 	flags.bVolumetric = false;
 	flags.bHudMode	= false;
 	flags.bNoActorShadow = false;	// every light casts the actor's shadow unless told otherwise
+	flags.bInsideHud = false;		// ...and is a world light until something says it rides the hud
 	position.set	(0,-1000,0);
 	direction.set	(0,-1,0);
 	right.set		(0,0,0);
@@ -309,7 +310,16 @@ void	light::export_		(light_Package& package)
 						L->set_cone			(PI_DIV_2);
 						L->set_range		(range);
 						L->set_color		(color);
-						L->spatial.sector	= spatial.sector;	//. dangerous?
+						// ...and the flags that say what KIND of light this is, not just where it
+					// shines. A shadowed omni is torn into six of these, and it is the piece --
+					// not the original -- that reaches the light passes: without this a muzzle
+					// flash marked "lives inside the hud models" arrived unmarked, and its own
+					// contact-shadow pass blacked out the weapon on every shot. Same for the
+					// actor-shadow opt-out, read off whichever light owns the shadow map.
+					L->flags.bInsideHud		= flags.bInsideHud;
+					L->flags.bNoActorShadow	= flags.bNoActorShadow;
+					L->flags.bHudMode		= flags.bHudMode;
+					L->spatial.sector	= spatial.sector;	//. dangerous?
 						L->s_spot			= s_spot	;
 						L->s_point			= s_point	;
 						

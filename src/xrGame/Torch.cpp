@@ -432,6 +432,9 @@ void CTorch::UpdateCL()
 				offset.mad					(M.j,m_vTorchOffset.y);
 				offset.mad					(M.k,m_vTorchOffset.z);
 				light_render->set_position	(offset);
+				// Sitting on the player's own head, this one shares the hud's volume -- keep it out
+				// of their screen-space contact shadow (see phase_hud_shadow).
+				light_render->set_inside_hud(true);
 				// hud twin lives in CAMERA/HUD space (that's where the first-person hands are drawn), NOT at the
 				// world head bone -- otherwise it never lines up with the hands. Camera pos + camera-basis offset.
 				Fvector hud_pos = Device.vCameraPosition;
@@ -477,6 +480,7 @@ void CTorch::UpdateCL()
 			{
 				light_render->set_position	(M.c);
 				light_render->set_rotation	(M.k,M.i);
+				light_render->set_inside_hud(false);	// an NPC's headlamp is an ordinary world light
 
 				Fvector offset				= M.c; 
 				offset.mad					(M.i,OMNI_OFFSET.x);

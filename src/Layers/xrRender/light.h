@@ -26,6 +26,7 @@ public:
 		u32			bVolumetric:1;
 		u32			bHudMode:	1;
 		u32			bNoActorShadow:1;	// the actor's own body is left OUT of this light's shadow map
+		u32			bInsideHud:1;		// sits inside the first-person models (muzzle flash, weapon lamp)
 
 	}				flags;
 	Fvector			position	;
@@ -130,6 +131,8 @@ public:
 	virtual bool	get_hud_mode			()								{return flags.bHudMode;};
 	virtual void	set_actor_shadow		(bool b)						{flags.bNoActorShadow=b?0:1;}
 	virtual bool	get_actor_shadow		()								{return !flags.bNoActorShadow;}
+	virtual void	set_inside_hud			(bool b)						{flags.bInsideHud=b?1:0;}
+	virtual bool	get_inside_hud			()								{return !!flags.bInsideHud;}
 
 	virtual	void	spatial_move			();
 	virtual	Fvector	spatial_sector_point	();

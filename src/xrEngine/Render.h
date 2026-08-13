@@ -72,6 +72,14 @@ public:
 	// unchanged. Only meaningful with r__actor_shadow on.
 	virtual void					set_actor_shadow	(bool)								{}
 	virtual bool					get_actor_shadow	()									{ return true; }
+	// Whether this light lives INSIDE the first-person models: a muzzle flash sits in the fire
+	// point, the weapon lamp on the barrel, the headlamp on the camera. The hud's screen-space
+	// contact shadow cannot do anything sane with those -- marching the depth buffer towards a
+	// light embedded in the very geometry being marched hits that geometry every time, so the
+	// weapon came out solid black on every shot. Such lights skip that pass; ordinary world
+	// lights, however close the player walks up to them, do not. Default false.
+	virtual void					set_inside_hud		(bool)								{}
+	virtual bool					get_inside_hud		()									{ return false; }
 	virtual ~IRender_Light()		;
 };
 struct ENGINE_API		resptrcode_light	: public resptr_base<IRender_Light>

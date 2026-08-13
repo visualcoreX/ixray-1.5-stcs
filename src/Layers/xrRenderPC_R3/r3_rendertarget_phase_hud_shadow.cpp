@@ -45,7 +45,12 @@ void CRenderTarget::phase_hud_shadow	(light* L)
 		// which is what blacked the whole weapon out on every shot. See R2 twin.
 		float	L_camdist	= Device.vCameraPosition.distance_to(L->position);
 		if (L_camdist >= L->range)											return;
-		if (L_camdist < ps_r2_hud_shadow_maxz)								return;
+		// ...and it must not be one of the lights that live INSIDE these models. This used to be a
+		// distance test, which threw out campfires the moment the player walked up to one; the
+		// lights that actually break the march say so themselves now (set_inside_hud, put on the
+		// muzzle flash, the weapon lamp, the handheld torch and the headlamp while they are the
+		// player's own -- an NPC carrying the same gear stays a world light).
+		if (L->flags.bHudMode || L->flags.bInsideHud)						return;
 		if (IRender_Light::SPOT == L->flags.type)
 		{
 			Fvector	d;	d.sub		(Device.vCameraPosition, L->position);
@@ -59,6 +64,10 @@ void CRenderTarget::phase_hud_shadow	(light* L)
 		Fvector	p;		Device.mView.transform_tiny	(p, L->position);
 		L_dir.set		(0.f, 0.f, 1.f);
 		L_pos.set		(p.x, p.y, p.z, 1.f/(L_R*L_R));
+		if (ps_r2_hud_shadow_debug)
+			Msg("~ [hudshadow] type=%d pos=(%3.2f,%3.2f,%3.2f) range=%3.2f camdist=%3.2f hud=%d inside=%d shadow=%d",
+				L->flags.type, VPUSH(L->position), L->range, L_camdist,
+				L->flags.bHudMode, L->flags.bInsideHud, L->flags.bShadow);
 		strength		*= ps_r2_hud_shadow_lights;
 		thickness		*= 4.f;		// flat grazing angles from a lamp, see the R2 twin
 	}
