@@ -834,9 +834,11 @@ void CUIMainIngameWnd::UpdatePickUpItem	()
 	// GS layered weapon icon: for a composed weapon the inv_grid slot above is deliberately EMPTY (the
 	// picture is made of sprite layers), so drawing only that rect showed nothing when you walked up to
 	// a dropped weapon. Rebuild the same layers here, scaled and offset like the base rect.
+	// with_addons: a weapon lying in the world is shown AS IT IS, mounted silencer/scope/launcher and
+	// all -- same as the inventory cell, which draws those itself.
 	GWR_AttachIconLayers(UIPickUpItemIcon, smart_cast<CWeapon*>(m_pPickUpItem),
 						 scale * UI()->get_current_kx(), scale,
-						 m_gwr_pickup_layers, color_rgba(255, 255, 255, 192));
+						 m_gwr_pickup_layers, color_rgba(255, 255, 255, 192), true);
 	UIPickUpItemIcon->SetWidth(m_iGridWidth * INV_GRID_WIDTH(GameConstants::GetUseHQ_Icons()) * scale * UI()->get_current_kx());
 	UIPickUpItemIcon->SetHeight(m_iGridHeight * INV_GRID_HEIGHT(GameConstants::GetUseHQ_Icons()) * scale);
 	UIPickUpItemIcon->SetWndPos(Fvector2().set(m_iPickUpItemIconX + (m_iPickUpItemIconWidth - UIPickUpItemIcon->GetWidth()) / 2.0f,
