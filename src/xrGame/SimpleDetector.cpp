@@ -64,7 +64,7 @@ void CSimpleDetector::UpdateAf()
 	float fRelPow			= (dist/m_fAfDetectRadius);
 	clamp					(fRelPow, 0.f, 1.f);
 
-	//определить текущую частоту срабатывания сигнала
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	af_info.cur_period = item_type->freq.x + 
 		(item_type->freq.y - item_type->freq.x) * (fRelPow*fRelPow);
 
@@ -77,7 +77,14 @@ void CSimpleDetector::UpdateAf()
 	{
 		af_info.snd_time		= 0;
 		HUD_SOUND_ITEM::PlaySound	(item_type->detect_snds, Fvector().set(0,0,0), this, true, false);
-		ui().Flash					(true, fRelPow);
+		// How long the lamp stays lit used to be fRelPow SECONDS flat (Flash turns it into
+		// fRelPower*1000 ms), a number with no relation to cur_period -- the gap between flashes.
+		// With the stock 0.05..2 s period that made the lit time longer than the period itself over
+		// most of the range: from ~20 m in the lamp merely glowed without ever going out, and only
+		// started blinking again in the last metre or so, where fRelPow finally drops below it.
+		// Cap it at half the period, so there is always an off-phase; at full range the two agree
+		// anyway (1 s of 2 s), so the far end looks exactly as it does now.
+		ui().Flash					(true, _min(fRelPow, af_info.cur_period*0.5f));
 		if(item_type->detect_snds.m_activeSnd)
 			item_type->detect_snds.m_activeSnd->snd.set_frequency(snd_freq);
 	} 
