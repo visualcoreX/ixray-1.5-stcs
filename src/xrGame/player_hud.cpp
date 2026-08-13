@@ -594,6 +594,13 @@ void player_hud::update_pending_load()
 			// would be the very jerk this whole mechanism exists to avoid.
 			CHudItem* hi = itm ? itm->cast_hud_item() : NULL;
 			if (hi && (hi->GetState() != CHUDState::eIdle || hi->IsPending()))	return;
+			// The detector has to be settled too. HideDetector() only acts from eIdle, so arming the
+			// restore while the detector is still coming up -- take the outfit off and put it back on
+			// fast enough and the previous swap's re-show is still playing -- swallowed the holster
+			// silently. The pump then waited forever for hands that never clear, with
+			// g_block_wpn_switch stuck at 1: that is what blocked eating until the detector was put
+			// away by hand.
+			if (det_out && det->GetState() != CHUDState::eIdle)					return;
 
 			g_block_wpn_switch	= 1;			// no slot switching while the hands are mid-swap
 			m_restore_slot		= A->inventory().GetActiveSlot();
@@ -607,13 +614,18 @@ void player_hud::update_pending_load()
 	if (m_restore_slot != NO_ACTIVE_SLOT || m_restore_detector)
 	{
 		if (A->inventory().ActiveItem())		return;		// still putting the old one away
+
+		CCustomDetector* det = m_restore_detector
+			? smart_cast<CCustomDetector*>(A->inventory().ItemFromSlot(DETECTOR_SLOT)) : NULL;
+		// ...and the detector's holster has to finish: ShowDetector() only acts from eHidden, so
+		// firing it mid-hide (outfit put back on while the swap's hide is still playing) was
+		// swallowed and left the detector down. Wait only while eHiding, never on any other state,
+		// so a detector that came back some other way can't wedge the pump here.
+		if (det && det->GetState() == CHUDState::eHiding)	return;
+
 		g_block_wpn_switch	= 0;
 
-		if (m_restore_detector)
-		{
-			CCustomDetector* det = smart_cast<CCustomDetector*>(A->inventory().ItemFromSlot(DETECTOR_SLOT));
-			if (det)	det->ShowDetector(true);
-		}
+		if (det)	det->ShowDetector(true);
 		if (m_restore_slot != NO_ACTIVE_SLOT && A->inventory().ItemFromSlot(m_restore_slot))
 			A->inventory().Activate(m_restore_slot);
 
