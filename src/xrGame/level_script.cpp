@@ -9,6 +9,10 @@
 #include "pch_script.h"
 #include "level.h"
 #include "actor.h"
+#include "inventory.h"
+#include "Torch.h"
+#include "CustomDetector.h"
+#include "Weapon.h"
 #include "script_game_object.h"
 #include "patrol_path_storage.h"
 #include "xrServer.h"
@@ -438,6 +442,53 @@ void show_indicators()
 	psActorFlags.set(AF_GODMODE_RT, FALSE);
 }
 
+// hide_indicators*() raises AF_GODMODE_RT along with hiding the HUD, which is right for a cutscene
+// but not for the sleeping bag any more: sleep used to run the world at 480x for the length of the
+// sound, so the actor had to be untouchable; it now jumps the clock in one frame and nothing gets to
+// act. Leaving the flag up also froze the whole condition step (hunger, radiation, bleeding) for the
+// slept hours. This lets a script drop the invulnerability without un-hiding the HUD.
+void set_actor_invulnerable(bool b)
+{
+	psActorFlags.set(AF_GODMODE_RT, b ? TRUE : FALSE);
+}
+
+// --- what a sentry could actually notice about the actor -------------------------------------
+// Neither of these was reachable from Lua: crouch lives in the actor's mstate (target_body_state()
+// only answers for CCustomMonster, i.e. NPCs), and the three light sources are three unrelated
+// classes. Exposed as plain facts so a script can decide what counts as "hidden".
+bool actor_crouch()
+{
+	CActor* actor = smart_cast<CActor*>(Level().CurrentEntity());
+	return actor && !!(actor->MovingState() & mcCrouch);	// covers both crouch depths
+}
+
+bool actor_light_on()
+{
+	CActor* actor = smart_cast<CActor*>(Level().CurrentEntity());
+	if (!actor)						return false;
+
+	CTorch* headlamp = smart_cast<CTorch*>(actor->inventory().ItemFromSlot(TORCH_SLOT));
+	if (headlamp && headlamp->torch_active())			return true;
+
+	CCustomDetector* handheld = smart_cast<CCustomDetector*>(actor->inventory().ItemFromSlot(DETECTOR_SLOT));
+	if (handheld && handheld->IsTorchOn())				return true;
+
+	CWeapon* weapon = smart_cast<CWeapon*>(actor->inventory().ActiveItem());
+	if (weapon && weapon->IsFlashlightEnabled())		return true;
+
+	return false;
+}
+
+// Milliseconds since the actor last fired, or a huge number if he has not fired at all this session.
+// There is no "actor fired" callback in the script API, and watching the magazine misses launchers
+// and mistakes reloads for shots, so this reads the stamp the shot effector leaves on the actor.
+u32 actor_time_since_shot()
+{
+	CActor* actor = smart_cast<CActor*>(Level().CurrentEntity());
+	if (!actor || !actor->LastShotTime())	return u32(-1);
+	return Device.dwTimeGlobal - actor->LastShotTime();
+}
+
 void show_weapon(bool b)
 {
 	psHUD_Flags.set	(HUD_WEAPON_RT2, b);
@@ -810,6 +861,10 @@ void CLevel::script_register(lua_State *L)
 		def("hide_indicators_safe",				hide_indicators_safe),
 
 		def("show_indicators",					show_indicators),
+		def("set_actor_invulnerable",			set_actor_invulnerable),
+		def("actor_crouch",						actor_crouch),
+		def("actor_light_on",					actor_light_on),
+		def("actor_time_since_shot",			actor_time_since_shot),
 		def("show_weapon",						show_weapon),
 		def("add_call",							((void (*) (const luabind::functor<bool> &,const luabind::functor<void> &)) &add_call)),
 		def("add_call",							((void (*) (const luabind::object &,const luabind::functor<bool> &,const luabind::functor<void> &)) &add_call)),

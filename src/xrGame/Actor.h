@@ -755,7 +755,13 @@ public:
 			void				SuicideHudOffsetArrived			();
 			bool				SuicideDropAndTakeKnife			();	// GS PerformDrop, right in the branch
 			void				SetControllerDist				(float d) { m_fCtrlDist = d; }	// GS re-reads it per pulse
+public:
+			// Wall-clock tick of the actor's last shot (0 = has not fired this session). Scripts have
+			// no "actor fired" event at all, and counting rounds in the magazine misses launchers and
+			// trips over reloads, so the shot effector -- which runs once per shot -- stamps it here.
+			IC	u32				LastShotTime		() const	{ return m_dwLastShotTime; }
 private:
+			u32					m_dwLastShotTime;
 			ESuicideState		m_eSuicideState;
 			u32					m_dwSuicideNextTm;	// gesture end, then the kill moment
 			bool				m_bSuicideBroken;

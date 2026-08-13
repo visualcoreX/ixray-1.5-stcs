@@ -123,6 +123,7 @@ CActor::CActor() : CEntityAlive()
 {
 	m_dwBayonetHitTm		= 0;
 	m_eSuicideState			= eSuicideNone;
+	m_dwLastShotTime		= 0;
 	m_dwSuicideNextTm		= 0;
 	m_bSuicideBroken		= false;
 	m_bSuicideKillPending	= false;
