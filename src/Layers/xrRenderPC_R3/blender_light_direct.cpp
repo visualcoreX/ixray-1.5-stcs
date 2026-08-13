@@ -12,7 +12,11 @@ void	CBlender_accum_direct::Compile(CBlender_Compile& C)
 
 //	BOOL	b_HW_smap		= RImplementation.o.HW_smap;
 //	BOOL	b_HW_PCF		= RImplementation.o.HW_smap_PCF;
-	BOOL		blend		= FALSE;	//RImplementation.o.fp16_blend;
+	// The cascades cross-fade into each other, so a pixel in a border band gets a weighted share
+	// from two of them and the accumulator has to SUM the passes instead of overwriting. Safe as
+	// the first thing written each frame: phase_accumulator clears the target to black and the sun
+	// is accumulated before any other light.
+	BOOL		blend		= TRUE;		//RImplementation.o.fp16_blend;
 	D3DBLEND	dest		= blend?D3DBLEND_ONE:D3DBLEND_ZERO;
 
 	switch (C.iElement)
@@ -165,7 +169,8 @@ void	CBlender_accum_direct_msaa::Compile(CBlender_Compile& C)
 
 //	BOOL	b_HW_smap		= RImplementation.o.HW_smap;
 //	BOOL	b_HW_PCF		= RImplementation.o.HW_smap_PCF;
-	BOOL		blend		= FALSE;	//RImplementation.o.fp16_blend;
+	// see the non-MSAA blender above -- cascades cross-fade, so the passes must sum
+	BOOL		blend		= TRUE;		//RImplementation.o.fp16_blend;
 	D3DBLEND	dest		= blend?D3DBLEND_ONE:D3DBLEND_ZERO;
 
 	switch (C.iElement)

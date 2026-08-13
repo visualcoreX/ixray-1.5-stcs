@@ -2,10 +2,38 @@
 #include "lmodel.h"
 #include "shadow.h"
 
+//	Cascade cross-fade. Each cascade covers a box of the world in light space; where two of them
+//	meet the shadow map is suddenly stretched over a much larger area, and that step used to be a
+//	hard edge because the stencil let exactly one cascade light each pixel. Now every cascade takes
+//	a_own of what the earlier ones left over -- see R_sun.cpp for why that has to be a product.
+uniform float4x4	m_shadow_prev;		//	same as m_shadow, for the previous cascade
+uniform float4		cascade_blend;		//	x: own fade width, y: previous cascade's, z: has previous
+
+//	1 well inside the cascade's box, sliding to 0 over the last `fade` of it, and hard 0 outside.
+//	The z test is not cosmetic: it is what keeps this in step with the volume actually rasterised
+//	(see `corners` in accum_direct_cascade -- only the 0.7..1 slice of the box is drawn), so a
+//	cascade never claims a pixel it did not light, and never gets counted twice on a pixel its
+//	front and back face both cover.
+float cascade_weight( float4 PS, float fade )
+{
+	float3	p	= PS.xyz/PS.w;
+	float2	d	= 0.5f - abs( p.xy - 0.5f );
+	float2	f	= saturate( d/fade );
+	return	min( f.x, f.y ) * step( 0.7f, p.z ) * step( p.z, 1.f );
+}
+
 float4 	main		( float4 tc : TEXCOORD0, float4 tcJ : TEXCOORD1 ) : COLOR
 {
   float4 _P		= tex2Dproj 	(s_position, 	tc);
   float4  _N		= tex2Dproj 	(s_normal,   	tc);
+
+  	float4 	P4 	= float4	(_P.x,_P.y,_P.z,1.0f);
+	float4 	PS	= mul		(m_shadow, 	P4);
+
+	// ----- cascade weight (before anything expensive: most pixels belong to another cascade)
+	float	w	= cascade_weight( PS, cascade_blend.x );
+			w  *= 1.f - cascade_blend.z * cascade_weight( mul( m_shadow_prev, P4 ), cascade_blend.y );
+	clip( w - 0.001f );
 
 	// ----- light-model
 	float 	m	= xmaterial	;
@@ -15,8 +43,6 @@ float4 	main		( float4 tc : TEXCOORD0, float4 tcJ : TEXCOORD1 ) : COLOR
 	float4	light 	= plight_infinity (m,_P,_N,Ldynamic_dir);
 
 	// ----- shadow
-  	float4 	P4 	= float4	(_P.x,_P.y,_P.z,1.0f);
-	float4 	PS	= mul		(m_shadow, 	P4);
 	float 	s 	= sunmask	(P4);
 	#if SUN_QUALITY==2
 	  s 	*= shadow_high 	(PS);//shadowtest_sun 	(PS,float4(0,0,0,0));
@@ -24,5 +50,5 @@ float4 	main		( float4 tc : TEXCOORD0, float4 tcJ : TEXCOORD1 ) : COLOR
 	  s 	*= shadow		(PS);
 	#endif
 
-	return 		blend		(Ldynamic_color * light * s/*float4( 1.f, 0.2f, 0.2f, 1.f)*/,tc);
+	return 		blend		(Ldynamic_color * light * s * w,tc);
 }
