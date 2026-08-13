@@ -43,9 +43,11 @@ public:
 	IC float				GetPower				() const			{return m_fPower;}	
 	IC float				GetRadiation			() const			{return m_fRadiation;}
 	IC float				GetPsyHealth			() const			{return m_fPsyHealth;}
-	IC float GetSatiety() const {
-		return 1.0f;
-	}
+	// Satiety only exists on the actor, so the base returns "full" -- but this used to be NON-virtual,
+	// which meant every caller holding a CEntityCondition& got the constant instead of the real value.
+	// The Lua binding is one of them (it goes through CEntityAlive::conditions()), so `db.actor.satiety`
+	// always read 1.0 and no script could ever see the actor go hungry.
+	virtual float			GetSatiety				() const			{return 1.0f;}
 
 	IC float 				GetEntityMorale			() const			{return m_fEntityMorale;}
 
