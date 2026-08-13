@@ -123,6 +123,12 @@ class CCustomDetector :		public CHudItemObject
 protected:
 	CUIArtefactDetectorBase*			m_ui;
 	bool			m_bFastAnimMode;
+	bool			m_bDrawUI;			// draw_af_ui: the class's own screen overlay. For the elite that is
+										// the radar arc drawn on the `cover` bone plus the artefact marks.
+										// A detector with no af_class_* entries already shows no marks, but
+										// the arc is background and draws regardless -- this is for a dead
+										// device that should show nothing at all. Absent = on, so every
+										// stock detector behaves exactly as before.
 	bool			m_bEmergencyShow;	// next show plays anm_show_emergency (drawn together with a weapon)
 	bool			m_bNeedActivation;
 	bool			m_bNeedActivationManual;	// that deferred draw came from a KEYPRESS, so when it finally
@@ -180,6 +186,7 @@ public:
 	// `torch_disable_time_<alias>` in the hud section. Opt-in: `torch_installed` in the item section.
 public:
 			bool	HasTorch			() const	{ return m_bTorchInstalled; }
+			bool	IsTorchOn			() const	{ return m_bTorchInstalled && m_bTorchOn; }
 protected:
 			void	LoadTorchParams		(LPCSTR section);
 			void	UpdateTorch			();	// per frame from UpdateCL

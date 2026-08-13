@@ -484,18 +484,27 @@ bool CCustomDetector::PlayCompanionAction(LPCSTR action, bool bRestart)
 	// freeze on its last frame. Fall through -> our own idle/moving plays instead.
 	if (!bRestart && m_companion_done.size() && 0 == xr_strcmp(m_companion_done.c_str(), alias))
 	{
-		// ...but an ENTER transition is different: our mirror of anm_idle_aim_start ends before the
-		// weapon's own (longer) motion does, so the weapon is still reporting it and falling through to
-		// our own idle dropped the left hand out of the aim pose for a frame -- until the weapon's
-		// aim-state refresh put it back (user 2026-08-03, detector + TT-33). Hold the pose it LEADS
-		// INTO instead: anm_wpn_idle_aim_start -> anm_wpn_idle_aim.
-		// ONLY "_start". An "_end" transition leads OUT of the aim, into our own plain idle -- trimming
-		// it the same way put the hand back into the aim pose after lowering the weapon.
+		// ...but anything that happens INSIDE the aim is different. Our mirror is shorter than the
+		// weapon's own motion, so the weapon is still reporting it while we are already done, and
+		// falling through to our own idle drops the left hand out of the aim pose -- which reads as
+		// the hand JUMPING. Seen twice with a TT-33 in the right hand: on the aim-in transition
+		// (user 2026-08-03) and on firing while aimed (user 2026-08-11). Hold the aim pose instead.
+		//
+		// Two shapes of that:
+		//  * an ENTER transition holds the pose it LEADS INTO -- anm_wpn_idle_aim_start -> anm_wpn_idle_aim;
+		//  * an aimed one-shot (shot, dry fire, empty shot) has no such "leads into" name, so it goes
+		//    to the aim loop directly.
+		// "_end" is deliberately excluded from both: it leads OUT of the aim, into our own plain idle,
+		// and holding the pose there left the hand aiming after the weapon had already come down.
+		// Non-aim one-shots are excluded too -- falling through to the hip idle is right for those.
 		string256 base;	xr_strcpy(base, alias);
 		const int bl = (int)xr_strlen(base);
 		const int sl = (int)xr_strlen("_start");
-		if (bl <= sl || 0 != xr_strcmp(base + bl - sl, "_start"))	return false;
-		base[bl - sl] = 0;
+		const bool b_end	= (bl > 4 && 0 == xr_strcmp(base + bl - 4, "_end"));
+		const bool b_start	= (bl > sl && 0 == xr_strcmp(base + bl - sl, "_start"));
+		if (b_start)					base[bl - sl] = 0;
+		else if (!b_end && strstr(base, "aim"))	xr_strcpy(base, "anm_wpn_idle_aim");
+		else							return false;
 		if (!isHUDAnimationExist(base) || 0 == xr_strcmp(m_companion_done.c_str(), base))
 			return false;
 		xr_strcpy(alias, base);
@@ -629,6 +638,7 @@ CCustomDetector::CCustomDetector()
 {
 	m_ui				= NULL;
 	m_bFastAnimMode		= false;
+	m_bDrawUI			= true;
 	m_bNeedActivation	= false;
 	m_bNeedActivationManual	= false;
 	m_bRestoreWithWeapon	= false;
@@ -662,6 +672,12 @@ void CCustomDetector::Load(LPCSTR section)
 	m_fAfDetectRadius		= pSettings->r_float(section,"af_radius");
 	m_fAfVisRadius			= pSettings->r_float(section,"af_vis_radius");
 	m_artefacts.load		(section, "af");
+
+	// See the member. Note that NOT detecting anything needs no key at all: CDetectList::load walks
+	// af_class_1, af_class_2, ... and stops at the first index missing, so a section that inherits no
+	// af_class_* leaves the type map empty and CAfList::feel_touch_contact rejects every object. That
+	// is how detector_torch does it. This key is only about the SCREEN.
+	m_bDrawUI				= !!READ_IF_EXISTS(pSettings, r_bool, section, "draw_af_ui", TRUE);
 
 	m_sounds.LoadSound( section, "snd_draw", "sndShow");
 	m_sounds.LoadSound( section, "snd_holster", "sndHide");
@@ -850,6 +866,8 @@ void CCustomDetector::UpdateTorch()
 
 	m_pTorchSpot->set_position	(pos);
 	m_pTorchSpot->set_rotation	(dir, right);
+	// Held in the hud's own hand -> not a light the hud's contact shadow can march towards
+	m_pTorchSpot->set_inside_hud(!!GetHUDmode());
 	m_pTorchSpot->set_active	(true);
 	m_pTorchOmni->set_position	(omnipos);
 	m_pTorchOmni->set_rotation	(dir, right);

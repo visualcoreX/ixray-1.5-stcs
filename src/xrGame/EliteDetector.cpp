@@ -56,7 +56,9 @@ void CEliteDetector::UpdateAf()
 
 bool  CEliteDetector::render_item_3d_ui_query()
 {
-	return IsWorking();
+	// draw_af_ui = false -> the screen stays dead: no radar arc, no artefact marks. The marks would be
+	// gone anyway on a detector that finds nothing; the arc is background and would not.
+	return IsWorking() && m_bDrawUI;
 }
 
 void CEliteDetector::render_item_3d_ui()
