@@ -142,7 +142,11 @@ protected:
 	
 	////////////////////////////////////////////////
 	//����� ������� ��� ������ � ���������� ������
-			void			StartParticles		(CParticlesObject*& pParticles, LPCSTR particles_name, const Fvector& pos, const Fvector& vel = zero_vel, bool auto_remove_flag = false);
+			// force_world: play it as an ordinary world effect even when the shooter is the player.
+			// A hud-mode particle is drawn in the hud viewport, so it inherits hud_fov and rides the
+			// camera -- right for the muzzle flame, which belongs to the gun, wrong for smoke, which
+			// should hang where it was born.
+			void			StartParticles		(CParticlesObject*& pParticles, LPCSTR particles_name, const Fvector& pos, const Fvector& vel = zero_vel, bool auto_remove_flag = false, bool force_world = false);
 			void			StopParticles		(CParticlesObject*& pParticles);
 			void			UpdateParticles		(CParticlesObject*& pParticles, const Fvector& pos, const  Fvector& vel = zero_vel);
 
