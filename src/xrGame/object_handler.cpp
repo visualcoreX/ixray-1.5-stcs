@@ -99,6 +99,10 @@ void CObjectHandler::OnItemTake		(CInventoryItem *inventory_item)
 		CameraRecoil cam_recoil_copy;
 		cam_recoil_copy.Clone( weapon->cam_recoil );
 		cam_recoil_copy.RelaxSpeed = cam_recoil_copy.RelaxSpeed_AI;
+		// The vertical ceiling too: an NPC does not pull the muzzle back down between rounds, so
+		// the player's 50-70 deg headroom would let his aim climb clean over the target inside one
+		// burst. See the note next to MaxAngleVert_AI in Weapon.cpp.
+		cam_recoil_copy.MaxAngleVert = cam_recoil_copy.MaxAngleVert_AI;
 		planner().object().weapon_shot_effector().Initialize( cam_recoil_copy );
 	}
 }

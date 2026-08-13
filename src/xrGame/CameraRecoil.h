@@ -17,6 +17,7 @@ struct CameraRecoil
 	float		DispersionInc;
 	float		DispersionFrac;
 	float		MaxAngleVert;
+	float		MaxAngleVert_AI;	// ceiling used when an NPC holds the weapon -- see object_handler.cpp
 	float		MaxAngleHorz;
 	float		StepAngleHorz;
 	bool		ReturnMode;
@@ -24,6 +25,7 @@ struct CameraRecoil
 
 	CameraRecoil():
 		MaxAngleVert	( EPS   ),
+		MaxAngleVert_AI	( EPS   ),
 		RelaxSpeed		( EPS_L ),
 		RelaxSpeed_AI	( EPS_L ),
 		Dispersion		( EPS   ),
@@ -46,6 +48,7 @@ struct CameraRecoil
 		DispersionInc	= clone.DispersionInc;
 		DispersionFrac	= clone.DispersionFrac;
 		MaxAngleVert	= clone.MaxAngleVert;
+		MaxAngleVert_AI	= clone.MaxAngleVert_AI;
 		MaxAngleHorz	= clone.MaxAngleHorz;
 		StepAngleHorz	= clone.StepAngleHorz;
 

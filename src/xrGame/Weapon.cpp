@@ -395,7 +395,22 @@ void CWeapon::Load		(LPCSTR section)
 	{
 		cam_recoil.MaxAngleVert = EPS;
 	}
-	
+	// ...and a separate ceiling for when an NPC holds it. The Gunslinger figures raise cam_max_angle
+	// from the stock 5..15 deg to 50..70, which works because the PLAYER pulls the muzzle back down;
+	// an NPC never compensates, and his aim direction is displaced by this very angle
+	// (ai_stalker_fire.cpp -> weapon_shot_effector_direction), so with a 50 deg ceiling everything
+	// after the first round of a burst goes over the target. The engine already keeps a separate AI
+	// copy of these params (object_handler.cpp swaps in RelaxSpeed_AI); this is the same idea for
+	// the ceiling. Default keeps the stock-era bound, `cam_max_angle_ai` overrides per weapon.
+	cam_recoil.MaxAngleVert_AI	= _min( cam_recoil.MaxAngleVert, _abs(deg2rad(5.f)) );
+	if ( pSettings->line_exist( section, "cam_max_angle_ai" ) )
+	{
+		temp_f						= pSettings->r_float( section, "cam_max_angle_ai" );
+		cam_recoil.MaxAngleVert_AI	= _abs( deg2rad( temp_f ) );
+		if ( fis_zero(cam_recoil.MaxAngleVert_AI) )
+			cam_recoil.MaxAngleVert_AI = EPS;
+	}
+
 	temp_f						= pSettings->r_float( section, "cam_max_angle_horz" );
 	cam_recoil.MaxAngleHorz		= _abs( deg2rad( temp_f ) );
 	VERIFY( !fis_zero(cam_recoil.MaxAngleHorz) );
@@ -1344,10 +1359,17 @@ void CWeapon::UpdateFlashlight()
 	m_pFlashSpot->set_color(spot_clr);
 	m_pFlashSpot->set_position(pos);
 	m_pFlashSpot->set_rotation(dir, right);
+	// On our own weapon this lamp rides the hud models, so it has nothing to say to their
+	// screen-space contact shadow; on an NPC's weapon it is a world light like any other.
+	m_pFlashSpot->set_inside_hud(!!GetHUDmode());
 	m_pFlashSpot->set_active(true);
 	m_pFlashOmni->set_color(omni_clr);
 	m_pFlashOmni->set_position(omnipos);
 	m_pFlashOmni->set_rotation(dir, right);
+	// Same as the spot: on our own weapon it rides the hud models. It matters beyond its own pass --
+	// every per-light hud shadow multiplies the WHOLE accumulator, so a lamp running after the muzzle
+	// flash darkens the flash's light on the hands too.
+	m_pFlashOmni->set_inside_hud(!!GetHUDmode());
 	m_pFlashOmni->set_active(true);
 	if (m_pFlashGlowObj)
 	{
