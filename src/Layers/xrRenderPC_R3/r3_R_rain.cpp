@@ -8,7 +8,9 @@
 using namespace DirectX;
 
 const	float	tweak_rain_COP_initial_offs			= 1200.f;
-const	float	tweak_rain_ortho_xform_initial_offs	= 1000.f	;	//. ?
+// extern: draw_rain.cpp turns the depth bias from NDC into metres and needs the ortho depth range,
+// which is 3x this (near = bb.min.z - offs, far = bb.min.z + 2*offs, see below).
+extern const float	tweak_rain_ortho_xform_initial_offs	= 1000.f	;	//. ?
 
 //	Defined in r2_R_sun.cpp
 Fvector3		wform	(Fmatrix& m, Fvector3 const& v);

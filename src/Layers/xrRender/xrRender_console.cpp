@@ -160,6 +160,7 @@ float		ps_r2_hud_shadow_hardness	= 4.0f;
 // because the multiply hits everything already in the accumulator, not only that light -- see
 // phase_hud_shadow(). 0 = sun only, which is what this started as.
 float		ps_r2_hud_shadow_lights		= 1.0f;
+int			ps_r2_hud_shadow_debug		= 0;	// log every per-light hud shadow pass that actually runs
 
 float		ps_r2_df_parallax_h			= 0.02f;
 float		ps_r2_df_parallax_range		= 75.f;
@@ -242,6 +243,13 @@ float		ps_r2_dof_kernel_size		= 7.0f;						//	7.0f
 float		ps_r3_dyn_wet_surf_near		= 10.f;				// 10.0f
 float		ps_r3_dyn_wet_surf_far		= 30.f;				// 30.0f
 int			ps_r3_dyn_wet_surf_sm_res	= 256;				// 256
+float		ps_r3_dyn_wet_surf_bias		= 0.03f;			// depth bias of the rain map, IN METRES:
+															// how far under a roof a surface may sit
+															// and still count as rained on
+float		ps_r3_dyn_wet_surf_hud		= 0.7f;				// how much of the wetness lands on the
+															// first-person models (0 = the old dry gun)
+float		ps_r3_dyn_wet_surf_hud_tile	= 6.0f;				// ...and how tight the drop pattern tiles
+															// on them (they are ~1/3 m across)
 
 
 //- Mad Max
@@ -648,6 +656,7 @@ void		xrRender_initconsole	()
 	CMD4(CCC_Float,		"r2_hud_shadow_maxz",	&ps_r2_hud_shadow_maxz,		0.2f,	10.0f	);
 	CMD4(CCC_Float,		"r2_hud_shadow_hardness",&ps_r2_hud_shadow_hardness,	1.0f,	12.0f	);
 	CMD4(CCC_Float,		"r2_hud_shadow_lights",	&ps_r2_hud_shadow_lights,	0.0f,	1.0f	);
+	CMD4(CCC_Integer,	"r2_hud_shadow_debug",	&ps_r2_hud_shadow_debug,	0,	1	);
 
 	CMD4(CCC_Float,		"r2_tonemap_middlegray",&ps_r2_tonemap_middlegray,	0.0f,	2.0f	);
 	CMD4(CCC_Float,		"r2_tonemap_adaptation",&ps_r2_tonemap_adaptation,	0.01f,	10.0f	);
@@ -801,6 +810,9 @@ void		xrRender_initconsole	()
 	CMD4(CCC_Float,		"r3_dynamic_wet_surfaces_near",	&ps_r3_dyn_wet_surf_near,	10,	70		);
 	CMD4(CCC_Float,		"r3_dynamic_wet_surfaces_far",	&ps_r3_dyn_wet_surf_far,	30,	100		);
 	CMD4(CCC_Integer,	"r3_dynamic_wet_surfaces_sm_res",&ps_r3_dyn_wet_surf_sm_res,64,	2048	);
+	CMD4(CCC_Float,		"r3_dynamic_wet_surfaces_bias",	&ps_r3_dyn_wet_surf_bias,	0.001f,	1.f	);
+	CMD4(CCC_Float,		"r3_dynamic_wet_surfaces_hud",	&ps_r3_dyn_wet_surf_hud,	0.f,	1.f	);
+	CMD4(CCC_Float,		"r3_dynamic_wet_surfaces_hud_tile",&ps_r3_dyn_wet_surf_hud_tile,1.f,	32.f);
 
 	CMD3(CCC_Mask,		"r3_volumetric_smoke",			&ps_r2_ls_flags,			R3FLAG_VOLUMETRIC_SMOKE);
 

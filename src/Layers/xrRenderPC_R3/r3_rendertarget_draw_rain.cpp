@@ -76,7 +76,14 @@ void CRenderTarget::draw_rain( light &RainSetup )
 		float			fRange				=  1;
 		//float			fBias				= (SE_SUN_NEAR==sub_phase)?ps_r2_sun_depth_near_bias:ps_r2_sun_depth_far_bias;
 		//float			fBias				= 0.00001;
-		float			fBias				= -0.0001;
+		// fBias lands in NDC depth, and the rain ortho spans THREE KILOMETRES (r3_R_rain.cpp builds
+		// it as bb.min.z-offs .. bb.min.z+2*offs with offs = 1000 m), so the stock -0.0001 was 30 cm
+		// of peter-panning: anything within 30 cm under a roof still tested as open sky, which is
+		// how ledges and beams right below an indoor ceiling ended up wet. Ask for the bias in
+		// METRES instead and convert, so the number means something.
+		extern const float	tweak_rain_ortho_xform_initial_offs;
+		const float		rain_depth_range	= 3.f * tweak_rain_ortho_xform_initial_offs;
+		float			fBias				= -(ps_r3_dyn_wet_surf_bias / rain_depth_range);
 		float			smapsize			= float(RImplementation.o.smapsize);
 		float			fTexelOffs			= (.5f / smapsize);
 //		float			view_dimX			= float(RainSetup.X.D.maxX-RainSetup.X.D.minX-2)/smapsize;
@@ -241,6 +248,7 @@ void CRenderTarget::draw_rain( light &RainSetup )
 		RCache.set_c				("m_shadow",			m_shadow						);
 		RCache.set_c				("m_sunmask",			m_clouds_shadow					);
 		RCache.set_c				("RainDensity",			fRainFactor, 0, 0, 0			);
+		RCache.set_c				("RainHud",				ps_r3_dyn_wet_surf_hud, ps_r3_dyn_wet_surf_hud_tile, 0, 0	);
 		RCache.set_c				("RainFallof",			ps_r3_dyn_wet_surf_near, ps_r3_dyn_wet_surf_far, 0, 0			);
 		if( !RImplementation.o.dx10_msaa )
 		{
@@ -263,6 +271,7 @@ void CRenderTarget::draw_rain( light &RainSetup )
 				RCache.set_c				("m_shadow",			m_shadow						);
 				RCache.set_c				("m_sunmask",			m_clouds_shadow					);
 				RCache.set_c				("RainDensity",			fRainFactor, 0, 0, 0			);
+				RCache.set_c				("RainHud",				ps_r3_dyn_wet_surf_hud, ps_r3_dyn_wet_surf_hud_tile, 0, 0	);
 				RCache.set_CullMode(CULL_NONE	);
 				RCache.set_Stencil( TRUE, D3DCMP_EQUAL, 0x81, 0x81, 0  );
 				RCache.Render		( D3DPT_TRIANGLELIST,Offset,0,4,0,2);
@@ -278,6 +287,7 @@ void CRenderTarget::draw_rain( light &RainSetup )
 					RCache.set_c				("m_shadow",			m_shadow						);
 					RCache.set_c				("m_sunmask",			m_clouds_shadow					);
 					RCache.set_c				("RainDensity",			fRainFactor, 0, 0, 0			);
+					RCache.set_c				("RainHud",				ps_r3_dyn_wet_surf_hud, ps_r3_dyn_wet_surf_hud_tile, 0, 0	);
 					StateManager.SetSampleMask ( u32(1) << i );
 					RCache.set_CullMode(CULL_NONE	);
 					RCache.set_Stencil         ( TRUE, D3DCMP_EQUAL, 0x81, 0x81, 0  );

@@ -8,8 +8,9 @@ float3x4 m_sunmask;	// ortho-projection
 Texture3D	s_water;
 Texture2D	s_waterFall;
 float4	RainDensity;	//	float
-float4	WorldX;	//	Float3	
-float4	WorldZ;	//	Float3	
+float4	WorldX;	//	Float3
+float4	WorldZ;	//	Float3
+float4	RainHud;	//	x = how much of the effect reaches the first-person models, y = pattern tiling on them
 
 
 float3	GetNVNMap( Texture3D s_texture, float2 tc, float time)
@@ -87,16 +88,31 @@ float4 main ( float2 tc : TEXCOORD0, float2 tcJ : TEXCOORD1 ) : SV_Target
 
 	_N.xyz = normalize(_N.xyz);
 
-	_P.xyz += _N.xyz * 0.15f;
+	//	Normal offset, but only ACROSS the rain, never along it. Rain falls straight down, so the
+	//	vertical part of this push just slides the sample point up towards whatever is overhead:
+	//	on a ledge or a beam under an indoor ceiling it ate 15 cm of the gap to that ceiling and
+	//	the surface came out wet. Sideways it still does its job of keeping a wall's own face from
+	//	shadowing itself.
+	float3 _Nup	= -Ldynamic_dir.xyz;
+	float3 _No	= _N.xyz - _Nup * dot( _N.xyz, _Nup );
+	_P.xyz += _No * 0.15f;
 	float4 PS = mul( m_shadow,  _P );
 
 	float3 WorldP	= mul( m_sunmask, _P );
 	float3 WorldN	= mul( m_sunmask, _N.xyz );
 
-	// Read rain projection with some jetter. Also adding pixel normal 
+	//	fIsHud: 1 on the first-person models, 0 out in the world. They are already in the g-buffer
+	//	when this pass runs (r_dsgraph_render_hud precedes render_rain) -- they were only ever being
+	//	masked out further down, by WeaponAttenuation.
+	float fIsHud = 1 - smoothstep( 0.8, 0.9, length( _P.xyz ) );
+
+	// Read rain projection with some jetter. Also adding pixel normal
 	// factor to jitter to make rain strips more realistic.
-	float s		= shadow_hw(PS) * saturate(gbd.hemi * 10.0f);	
-	
+	//	The baked hemi gate is what keeps interiors dry, but a hud model carries the actor's own
+	//	hemi rather than the surface it stands on, so for those pixels trust the rain map alone:
+	//	sampled at the camera, it already answers "is there open sky over the player".
+	float s		= shadow_hw(PS) * saturate( max( gbd.hemi * 10.0f, fIsHud ) );
+
 	//	Apply distance falloff
 	//float	fAtten = 1 - smoothstep( 10, 30, length( _P.xyz ));
 	// Using fixed fallof factors according to float16 depth coordinate precision.
@@ -113,7 +129,12 @@ float4 main ( float2 tc : TEXCOORD0, float2 tcJ : TEXCOORD1 ) : SV_Target
 	float fIsX = WorldN.x;
 	float fIsZ = WorldN.z;
 
-	float3 waterSplash = GetNVNMap( s_water, WorldP.xz, timers.x*3.0 );
+	//	The splash pattern is anchored in WORLD space so puddles stay put while the player walks.
+	//	On a hud model that is exactly wrong -- the weapon travels with the camera, so the pattern
+	//	would pour across it at walking speed. Anchor those pixels to VIEW space instead, where the
+	//	weapon is nearly still, and tile tighter (RainHud.y) since a gun is a third of a metre wide.
+	float2 splash_tc = lerp( WorldP.xz, _P.xz * RainHud.y, fIsHud );
+	float3 waterSplash = GetNVNMap( s_water, splash_tc, timers.x*3.0 );
 //	float3 waterFallX = GetWaterNMap( s_waterFall, float2(WorldP.x, WorldP.y-timers.x), 0.5 );
 //	float3 waterFallZ = GetWaterNMap( s_waterFall, float2(WorldP.z, WorldP.y-timers.x), 0.5 );
 
@@ -140,13 +161,17 @@ float4 main ( float2 tc : TEXCOORD0, float2 tcJ : TEXCOORD1 ) : SV_Target
 	float3 waterFall = GetWaterNMap( s_waterFall, float2( dot(tc1.xz, IsDir), tc1.y+timers.x) );
 	
 //	float WeaponAttenuation = smoothstep( 1.0, 1.1, length( _P.xyz ));
-	float WeaponAttenuation = smoothstep( 0.8, 0.9, length( _P.xyz ));
+	//	...and instead of cutting the hud off, scale it: RainHud.x = 0 restores the old dry weapon.
+	float WeaponAttenuation = lerp( 1.0, RainHud.x, fIsHud );
 	float ApplyNormalCoeff = s * WeaponAttenuation;
 
 	float3 water = waterSplash*(fIsUp*ApplyNormalCoeff);
 
-	water += waterFallX.yxz*(abs(fIsX)*ApplyNormalCoeff);
-	water += waterFallZ.zxy*(abs(fIsZ)*ApplyNormalCoeff);
+	//	Running streaks stay a world thing. On a hud model they read as water sliding along the gun
+	//	in whichever direction it happens to point, which is not what "drops on it" should look like.
+	float fFallCoeff = ApplyNormalCoeff * (1 - fIsHud);
+	water += waterFallX.yxz*(abs(fIsX)*fFallCoeff);
+	water += waterFallZ.zxy*(abs(fIsZ)*fFallCoeff);
 
 	//	Translate NM to view space
 	water.xyz = mul( m_V, water.xyz );

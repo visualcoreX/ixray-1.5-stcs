@@ -87,6 +87,7 @@ extern ECORE_API float			ps_r2_hud_shadow_thickness;
 extern ECORE_API float			ps_r2_hud_shadow_maxz;
 extern ECORE_API float			ps_r2_hud_shadow_hardness;
 extern ECORE_API float			ps_r2_hud_shadow_lights;
+extern ECORE_API int			ps_r2_hud_shadow_debug;
 
 extern ECORE_API float			ps_r2_df_parallax_h;		// r2-only
 extern ECORE_API float			ps_r2_df_parallax_range;	// r2-only
@@ -148,6 +149,9 @@ extern ECORE_API float			ps_r2_dof_kernel_size;		//	7.0f
 extern ECORE_API float			ps_r3_dyn_wet_surf_near;	// 10.0f
 extern ECORE_API float			ps_r3_dyn_wet_surf_far;		// 30.0f
 extern ECORE_API int			ps_r3_dyn_wet_surf_sm_res;	// 256
+extern ECORE_API float			ps_r3_dyn_wet_surf_bias;	// 0.03 m
+extern ECORE_API float			ps_r3_dyn_wet_surf_hud;		// 0.7
+extern ECORE_API float			ps_r3_dyn_wet_surf_hud_tile;// 6.0
 
 enum
 {
