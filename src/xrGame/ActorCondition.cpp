@@ -16,6 +16,9 @@
 #include "script_callback_ex.h"
 #include "object_broker.h"
 #include "weapon.h"
+#include "HUDManager.h"				// GS bloodscreen: the custom statics live on the game UI
+#include "UIGameCustom.h"
+#include "game_cl_single.h"			// g_SingleGameDifficulty (the splash threshold scales with it)
 
 #define MAX_SATIETY					1.0f
 #define START_SATIETY				0.5f
@@ -41,6 +44,8 @@ CActorCondition::CActorCondition(CActor *object) :
 	m_fSprintK					= 0.f;
 	m_fAlcohol					= 0.f;
 	m_fSatiety					= 1.0f;
+	m_fBloodScreenLastHealth	= -1.f;		// -1 = no previous sample, so the first frame cannot
+	m_bBloodScreenShown			= false;	// mistake "health appeared" for "health was lost"
 
 	VERIFY						(object);
 	m_object					= object;
@@ -166,7 +171,13 @@ float CActorCondition::GetZoneMaxPower( ALife::EHitType hit_type ) const
 
 void CActorCondition::UpdateCondition()
 {
-	if (GodMode())				return;
+	// GodMode() is not only the g_god cheat: level.hide_indicators*() raises AF_GODMODE_RT for every
+	// cutscene, dialog -- and for the sleeping bag. Returning outright threw away the whole elapsed
+	// step, and since sleep advances the clock by hours with that flag up, sleeping never made the
+	// actor hungry (the time did arrive in UpdateConditionTime, it just died here).
+	// Hunger is not damage, so keep it ticking; UpdateSatiety guards the health/power half with its
+	// own AF_GODMODE_RT test, so nothing harmful is applied while invulnerable.
+	if (GodMode())				{ UpdateSatiety(); return; }
 	if (!object().g_Alive())	return;
 	if (!object().Local() && m_object != Level().CurrentViewEntity())		return;	
 	
@@ -265,6 +276,8 @@ void CActorCondition::UpdateCondition()
 
 	AffectDamage_InjuriousMaterial();
 
+	UpdateBloodScreen();
+
 	/*if(m_fDeltaTime > 0.0f)
 	{
 		float inj_material_damage = GetInjuriousMaterialDamage();
@@ -282,6 +295,76 @@ void CActorCondition::UpdateCondition()
 			m_object->Hit(&HDS);
 		}
 	}*/
+}
+
+// GS bloodscreen (gunsl_bloodscreen.script by Sin!): a full-screen blood overlay. Two statics, split
+// the way GS splits them:
+//   gwr_bloodscreen_main - cyclic pulse, held while the actor is bleeding out or nearly dead;
+//   gwr_bloodscreen_end  - a one-shot splash on a single big loss of health (ttl in the xml ends it).
+// Ported into the engine rather than as a script because the night-vision mask, from the same GS
+// script family, already lives here (CTorch, gwr_nv_screen_mask) -- one mechanism, one place.
+//
+// The AUDIO half of GS's effect is NOT ported: Clear Sky already has it natively. CActor::UpdateCL
+// plays m_BloodSnd (the actor section's heavy_blood_snd) looped in 2D off the very same
+// BleedingSpeed() > 0.6 test, so adding GS's heartbeat would just double it up.
+//
+// GS's own numbers, kept as they are.
+static const float BS_BLEEDING_TRESHOLD	= 0.6f;		// same constant CActor::UpdateCL uses for the sound
+static const float BS_HEALTH_TRESHOLD	= 0.15f;
+
+void CActorCondition::UpdateBloodScreen()
+{
+	CUIGameCustom* g = HUD().GetUI() ? HUD().GetUI()->UIGame() : NULL;
+	if (!g)		return;
+
+	// Only for the actor we are actually looking through -- a spectated/other actor must not paint
+	// blood over our screen.
+	if (m_object != Level().CurrentViewEntity())	return;
+
+	const float health = GetHealth();
+
+	if (!object().g_Alive())
+	{
+		if (m_bBloodScreenShown)
+		{
+			g->RemoveCustomStatic	("gwr_bloodscreen_main");
+			m_bBloodScreenShown		= false;
+		}
+		m_fBloodScreenLastHealth	= -1.f;
+		return;
+	}
+
+	const bool bad = (const_cast<CActorCondition*>(this)->BleedingSpeed() > BS_BLEEDING_TRESHOLD)
+					|| (health < BS_HEALTH_TRESHOLD);
+
+	if (bad && !m_bBloodScreenShown)
+	{
+		// the one-shot splash would fight the pulse for the same screen
+		g->RemoveCustomStatic	("gwr_bloodscreen_end");
+		g->AddCustomStatic		("gwr_bloodscreen_main", true);
+		m_bBloodScreenShown		= true;
+	}
+	else if (!bad && m_bBloodScreenShown)
+	{
+		g->RemoveCustomStatic	("gwr_bloodscreen_main");
+		m_bBloodScreenShown		= false;
+	}
+
+	// A big single-step loss splashes the screen. GS scales the threshold with the difficulty --
+	// on master you are meant to notice a hit that would be routine on veteran. Order follows
+	// EGameDifficulty (game_cl_single.h): novice, stalker, veteran, master.
+	if (m_fBloodScreenLastHealth >= 0.f && !m_bBloodScreenShown)
+	{
+		static const float delta[] = { 0.15f, 0.18f, 0.20f, 0.15f };
+		int d = (int)g_SingleGameDifficulty;
+		clamp(d, 0, (int)(sizeof(delta)/sizeof(delta[0])) - 1);
+		if (m_fBloodScreenLastHealth - health >= delta[d])
+		{
+			g->RemoveCustomStatic	("gwr_bloodscreen_end");	// restart it, don't stack
+			g->AddCustomStatic		("gwr_bloodscreen_end", true);
+		}
+	}
+	m_fBloodScreenLastHealth = health;
 }
 
 void CActorCondition::AffectDamage_InjuriousMaterial()
@@ -371,7 +454,7 @@ void CActorCondition::UpdateSatiety()
 		m_fSatiety -= m_fV_Satiety * m_fDeltaTime;
 		clamp(m_fSatiety, 0.0f, 1.0f);
 	}
-		
+
 	float satiety_health_koef = (m_fSatiety - m_fSatietyCritical) / (m_fSatiety >= m_fSatietyCritical ? 1 - m_fSatietyCritical : m_fSatietyCritical);
 	if(CanBeHarmed() && !psActorFlags.test(AF_GODMODE_RT)) {
 		m_fDeltaHealth += m_fV_SatietyHealth * satiety_health_koef * m_fDeltaTime;
