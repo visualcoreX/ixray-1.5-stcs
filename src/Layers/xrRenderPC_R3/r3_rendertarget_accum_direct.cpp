@@ -440,7 +440,33 @@ void CRenderTarget::accum_direct_cascade	( u32 sub_phase, Fmatrix& xform, Fmatri
 		//	Igor: draw volumetric here
 		//if (ps_r2_ls_flags.test(R2FLAG_SUN_SHAFTS))
 		if ( RImplementation.o.advancedpp&&(ps_r_sun_shafts>0) && sub_phase == SE_SUN_FAR)
-			accum_direct_volumetric	(sub_phase, Offset, m_shadow);
+		{
+			// The shafts march the light BOX. Once this pass started drawing a screen quad instead
+			// (b_screen_quad, the fix that stopped the cascades doubling up the sun), that box was
+			// never written, and the volumetric draw read four stale vertices out of the dynamic
+			// buffer -- the swimming bright wedges. Build it here, into an offset of its own.
+			u32	vol_offset	= Offset;
+			if ( b_screen_quad )
+			{
+				u32		vol_ioffset;
+				u16*	pib	= RCache.Index.Lock	(sizeof(facetable)/sizeof(u16),vol_ioffset);
+				CopyMemory			(pib,&facetable,sizeof(facetable));
+				RCache.Index.Unlock	(sizeof(facetable)/sizeof(u16));
+
+				u32			ver_count	= sizeof(corners)/sizeof(Fvector3);
+				Fvector4*	pv			= (Fvector4*) RCache.Vertex.Lock (ver_count,g_combine_cuboid.stride(),vol_offset);
+				Fmatrix		inv_box;	inv_box.invert(xform_prev);
+				for ( u32 i = 0; i < ver_count; ++i )
+				{
+					Fvector3	tmp_vec;
+					inv_box.transform	(tmp_vec, corners[i]);
+					pv->set				(tmp_vec.x,tmp_vec.y,tmp_vec.z,1);
+					pv++;
+				}
+				RCache.Vertex.Unlock	(ver_count,g_combine_cuboid.stride());
+			}
+			accum_direct_volumetric	(sub_phase, vol_offset, m_shadow);
+		}
 	}
 }
 
@@ -583,7 +609,11 @@ void CRenderTarget::accum_direct_volumetric	(u32 sub_phase, const u32 Offset, co
 		// setup stencil: we have to draw to both lit and unlit pixels
 		//RCache.set_Stencil			(TRUE,D3DCMP_LESSEQUAL,dwLightMarkerID,0xff,0x00);
       //if( ! RImplementation.o.dx10_msaa )
-		   RCache.Render				(D3DPT_TRIANGLELIST,Offset,0,8,0,16);
+		// The marched volume is the 8-vertex light box, always -- a screen quad draws nothing here.
+		// accum_direct hands over an Offset that holds one: it builds a separate cuboid for us when
+		// its own far pass draws a quad instead.
+		RCache.set_Geometry			(g_combine_cuboid);
+		RCache.Render				(D3DPT_TRIANGLELIST,Offset,0,8,0,16);
          /*
       else 
       {

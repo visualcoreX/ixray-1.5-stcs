@@ -253,7 +253,15 @@ void CRender::render_sun_cascade ( u32 cascade_ind )
 			// move at all when you turn (at the cost of half the box being spent behind you).
 			// Safe to scale here: the caster cull planes computed above stay a superset, and the
 			// cross-fade weights carry any gap that opens up (see below).
-			lightXZshift.mul( clampr(ps_r2_sun_cascade_focus, 0.f, 1.f) );
+			// ...but ONLY for the cascades whose border the player can actually see. The LAST one
+			// is what the sun shafts march through (accum_direct draws them on SE_SUN_FAR, using
+			// that cascade's matrix), so pinning it to the camera spends half its box behind the
+			// player and the shaft ray walks straight out of the map -- which reads as bright
+			// wedges that swim and flicker as you turn. Its box is the huge one (160 m by default)
+			// and its border is far enough away that the seam this scaling exists for is not
+			// visible there anyway, so it keeps the stock fit.
+			if ( cascade_ind + 1 < m_sun_cascades.size() )
+				lightXZshift.mul( clampr(ps_r2_sun_cascade_focus, 0.f, 1.f) );
 
 			// Initialize rays for the next cascade
 			if( cascade_ind < m_sun_cascades.size()-1 )
