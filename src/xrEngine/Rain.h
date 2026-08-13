@@ -68,6 +68,13 @@ private:
 
 	// Sounds
 	ref_sound						snd_Ambient;
+	// How much sky is over the listener (0 = fully roofed), smoothed; the ambient is scaled by it.
+	// A MEMBER, not the static local the hemi factor used to live in: CEnvironment::load/unload
+	// build and drop the effect per level, so this starts fresh with the level instead of carrying
+	// the last one's value across a load. Defaults to "open sky" and snaps to the first real
+	// measurement (sky_valid) rather than fading up from zero.
+	float							sky_factor;
+	bool							sky_valid;
 
 	// Utilities
 	void							p_create		();
@@ -83,6 +90,7 @@ private:
 	void							Born			(Item& dest, float radius);
 	void							Hit				(Fvector& pos);
 	BOOL							RayPick			(const Fvector& s, const Fvector& d, float& range, collide::rq_target tgt);
+	void							UpdateSkyFactor	();
 	void							RenewItem		(Item& dest, float height, BOOL bHit);
 public:
 									CEffect_Rain	();

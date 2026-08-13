@@ -654,6 +654,8 @@ extern int			psNET_ServerPending;
 extern int			psNET_DedicatedSleep;
 extern char			psNET_Name[32];
 extern Flags32		psEnvFlags;
+extern float		ps_snd_rain_volume;		// Rain.cpp
+extern float		ps_snd_rain_indoor;		// Rain.cpp
 //extern float		r__dtex_range;
 
 extern int			g_ErrorLineCount;
@@ -746,6 +748,8 @@ void CCC_Register()
 	// Sound
 	CMD2(CCC_Float,		"snd_volume_eff",		&psSoundVEffects);
 	CMD2(CCC_Float,		"snd_volume_music",		&psSoundVMusic);
+	CMD2(CCC_Float,		"snd_rain_volume",		&ps_snd_rain_volume);	// rain ambient scale, 1.0 = engine default
+	CMD2(CCC_Float,		"snd_rain_indoor",		&ps_snd_rain_indoor);	// ...of it left when the sky is fully covered
 	CMD1(CCC_SND_Restart,"snd_restart"			);
 	CMD3(CCC_Mask,		"snd_acceleration",		&psSoundFlags,		ss_Hardware	);
 	CMD3(CCC_Mask,		"snd_efx",				&psSoundFlags,		ss_EFX		);

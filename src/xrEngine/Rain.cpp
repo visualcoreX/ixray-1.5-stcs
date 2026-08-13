@@ -36,10 +36,17 @@ const float particles_time		= .3f;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
+// Scale for the rain ambient, console `snd_rain_volume` (1.0 = engine default).
+float	ps_snd_rain_volume			= 1.0f;
+// How much of it is still heard with the sky fully covered, console `snd_rain_indoor`.
+float	ps_snd_rain_indoor			= 0.35f;
+
 CEffect_Rain::CEffect_Rain()
 {
 	state							= stIdle;
-	
+	sky_factor						= 1.f;
+	sky_valid						= false;
+
 	snd_Ambient.create				("ambient\\rain",st_Effect,sg_Undefined);
 
 	//	Moced to p_Render constructor
@@ -120,6 +127,41 @@ void CEffect_Rain::RenewItem(Item& dest, float height, BOOL bHit)
 	}
 }
 
+// Fraction of the sky the listener can see, 0..1, smoothed. A fan of rays: straight up plus four
+// tilted ones, so a pipe or a balcony overhead takes a bite out of the sound instead of switching
+// it off, and stepping into a doorway fades rather than snaps. Static geometry only -- rqtBoth
+// would let a stalker standing next to you count as a roof.
+void	CEffect_Rain::UpdateSkyFactor()
+{
+	static const Fvector	dirs[5] =
+	{
+		{  0.00f, 1.00f,  0.00f },
+		{  0.42f, 0.91f,  0.00f },
+		{ -0.42f, 0.91f,  0.00f },
+		{  0.00f, 0.91f,  0.42f },
+		{  0.00f, 0.91f, -0.42f },
+	};
+
+	u32		open				= 0;
+	for (u32 i=0; i<5; ++i)
+	{
+		float	range			= source_offset;
+		if (!RayPick(Device.vCameraPosition,dirs[i],range,collide::rqtStatic))
+			++open;
+	}
+	float	target				= float(open)/5.f;
+
+	if (!sky_valid)					// first frame on this level: take it, don't fade in from 0
+	{
+		sky_factor				= target;
+		sky_valid				= true;
+		return;
+	}
+	float	t					= Device.fTimeDelta/0.4f;	// ~0.4 s to settle
+	clamp	(t, 0.f, 1.f);
+	sky_factor					+= (target-sky_factor)*t;
+}
+
 void	CEffect_Rain::OnFrame	()
 {
 #ifndef _EDITOR
@@ -132,25 +174,14 @@ void	CEffect_Rain::OnFrame	()
 
 	// Parse states
 	float	factor				= g_pGamePersistent->Environment().CurrentEnv->rain_density;
-	static float hemi_factor	= 0.f;
-#ifndef _EDITOR
-	CObject* E 					= g_pGameLevel->CurrentViewEntity();
-	if (E&&E->renderable_ROS())
-	{
-//		hemi_factor				= 1.f-2.0f*(0.3f-_min(_min(1.f,E->renderable_ROS()->get_luminocity_hemi()),0.3f));
-		float* hemi_cube		= E->renderable_ROS()->get_luminocity_hemi_cube();
-		float hemi_val			= _max(hemi_cube[0],hemi_cube[1]);
-		hemi_val				= _max(hemi_val, hemi_cube[2]);
-		hemi_val				= _max(hemi_val, hemi_cube[3]);
-		hemi_val				= _max(hemi_val, hemi_cube[5]);
-		
-//		float f					= 0.9f*hemi_factor + 0.1f*hemi_val;
-		float f					= hemi_val;
-		float t					= Device.fTimeDelta;
-		clamp					(t, 0.001f, 1.0f);
-		hemi_factor				= hemi_factor*(1.0f-t) + f*t;
-	}
-#endif
+
+	// How much sky is over the listener. Upstream drove this off the view entity's hemi CUBE,
+	// which is NOT sky visibility: LightTrack mixes the light sources around the object into the
+	// same cube, so a lit room reads as "outdoors" and plays rain at full blast while a dark one
+	// reads as buried and goes dead silent -- the "muffled in some rooms but not others" of it.
+	// It also lags (five sky rays a frame) and is never filled at all under R1.
+	// Ask the geometry instead: a small fan of rays straight up, the same test the drops do.
+	UpdateSkyFactor				();
 
 	switch (state)
 	{
@@ -158,8 +189,10 @@ void	CEffect_Rain::OnFrame	()
 		if (factor<EPS_L)		return;
 		state					= stWorking;
 		snd_Ambient.play		(0,sm_Looped);
-		snd_Ambient.set_position(Fvector().set(0,0,0));
 		snd_Ambient.set_range	(source_offset,source_offset*2.f);
+		// no set_position here: the block below seats it above the camera on this very frame,
+		// before the mixer ever runs. Parking it at the world origin (what upstream did) put a
+		// 40/80 m point source at (0,0,0) -- culled everywhere but the middle of the map.
 	break;
 	case stWorking:
 		if (factor<EPS_L){
@@ -173,10 +206,18 @@ void	CEffect_Rain::OnFrame	()
 	// ambient sound
 	if (snd_Ambient._feedback())
 	{
-//		Fvector					sndP;
-//		sndP.mad				(Device.vCameraPosition,Fvector().set(0,1,0),source_offset);
-//		snd_Ambient.set_position(sndP);
-		snd_Ambient.set_volume	(_max(0.1f,factor) * hemi_factor );
+		// Ride the camera, one source_offset up -- rain is overhead everywhere, not a landmark.
+		// This also makes the occlusion ray (listener -> source) ask "is the sky above me
+		// covered", which is the muffling we want indoors; aimed at the world origin it asked
+		// whether half the level was in the way instead.
+		Fvector					sndP;
+		sndP.mad				(Device.vCameraPosition,Fvector().set(0,1,0),source_offset);
+		snd_Ambient.set_position(sndP);
+		// Under a roof the rain does not stop, it just moves off you: keep a floor
+		// (`snd_rain_indoor`) so what is left is the downpour outside, heard through the roof.
+		// The sound engine's own occlusion still multiplies on top of this.
+		float	roof			= ps_snd_rain_indoor + (1.f-ps_snd_rain_indoor)*sky_factor;
+		snd_Ambient.set_volume	(_max(0.1f,factor) * roof * ps_snd_rain_volume);
 	}
 #endif
 }
@@ -229,7 +270,7 @@ void	CEffect_Rain::Render	()
 		if (one.dwTime_Hit<Device.dwTimeGlobal)		Hit (one.Phit);
 		if (one.dwTime_Life<Device.dwTimeGlobal)	Born(one,source_radius);
 
-// последняя дельта ??
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ ??
 //.		float xdt		= float(one.dwTime_Hit-Device.dwTimeGlobal)/1000.f;
 //.		float dt		= Device.fTimeDelta;//xdt<Device.fTimeDelta?xdt:Device.fTimeDelta;
 		float dt		= Device.fTimeDelta;
