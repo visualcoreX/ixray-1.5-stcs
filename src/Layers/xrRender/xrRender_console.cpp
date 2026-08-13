@@ -86,6 +86,7 @@ int			ps_r__LightSleepFrames		= 10	;
 float		ps_r__Detail_l_ambient		= 0.9f	;
 float		ps_r__Detail_l_aniso		= 0.25f	;
 float		ps_r__Detail_density		= 0.3f	;
+int			ps_r__Detail_radius			= 48	;	// metres; the engine's own long-standing distance -- raise it in the options if you want more
 float		ps_r__Detail_rainbow_hemi	= 0.75f	;
 
 float		ps_r__Tree_SBC				= 1.5f	;	// scale bias correct
@@ -604,6 +605,10 @@ void		xrRender_initconsole	()
 
 //.	CMD4(CCC_Float,		"r__detail_density",	&ps_r__Detail_density,		.05f,	0.99f	);
 	CMD4(CCC_Float,		"r__detail_density",	&ps_r__Detail_density,		.2f,	0.6f	);
+	// Grass draw distance. The upper bound is the cache the engine allocates (dm_size in
+	// DetailManager.h): 2*dm_size-0.5 metres. Gunslinger exposes the same knob and ships
+	// 49/81/121/181/241 across its presets; ours reaches its default of 121.
+	CMD4(CCC_Integer,	"r__detail_radius",	&ps_r__Detail_radius,		20,		181		);
 
 #ifdef DEBUG
 	CMD4(CCC_Float,		"r__detail_l_ambient",	&ps_r__Detail_l_ambient,	.5f,	.95f	);

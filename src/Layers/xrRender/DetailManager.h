@@ -24,7 +24,15 @@
 #else
 	const int	dm_max_decompress	= 7;
 #endif
-const int		dm_size				= 24;								//!
+// Half-width of the grass cache, in slots (a slot is DETAIL_SLOT_SIZE = 2 m), so the physical
+// maximum draw distance is 2*dm_size-0.5 metres. It sizes the fixed arrays below, hence a constant.
+// Was 24 (~48 m -- Gunslinger's LOWEST preset); 92 gives ~183 m, enough for a 181 m ceiling.
+// `r__detail_radius` trims the actual radius down from here at runtime -- that is what the player
+// sets; this constant only decides how far the slider is ALLOWED to go.
+// The headroom is paid for whether or not the slider is turned up: the caches below are sized from
+// it (185x185 slots, ~14 MB) and the per-frame grid walks are quadratic in dm_size.
+// Constraint: 2*dm_size must divide by dm_cache1_count.
+const int		dm_size				= 92;								//!
 const int 		dm_cache1_count		= 4;								// 
 const int 		dm_cache1_line		= dm_size*2/dm_cache1_count;		//! dm_size*2 must be div dm_cache1_count
 const int		dm_max_objects		= 64;

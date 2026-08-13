@@ -30,6 +30,10 @@ extern ECORE_API float ps_r__tf_Mipbias;
 extern ECORE_API	float		ps_r__Detail_l_ambient;
 extern ECORE_API	float		ps_r__Detail_l_aniso;
 extern ECORE_API	float		ps_r__Detail_density;
+// Grass draw distance, in metres. The cache behind it is sized at compile time (dm_size in
+// DetailManager.h), so this only trims the radius DOWN from that physical maximum -- which is what
+// makes it adjustable at runtime without reallocating anything.
+extern ECORE_API	int			ps_r__Detail_radius;
 
 extern ECORE_API	float		ps_r__Tree_SBC;		// scale bias correct
 

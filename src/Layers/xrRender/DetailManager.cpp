@@ -194,7 +194,9 @@ void CDetailManager::UpdateVisibleM()
 	Fmatrix Viewm_old = Device.mFullTransform;
 	View_old.CreateFromMatrix(Viewm_old, FRUSTUM_P_LRTB + FRUSTUM_P_FAR);
 	
-	float fade_limit			= dm_fade;	fade_limit=fade_limit*fade_limit;
+	// The cache reaches dm_fade metres; the console knob only ever pulls that in, never past it.
+	float fade_limit			= _min(dm_fade, float(ps_r__Detail_radius));
+	fade_limit					= fade_limit*fade_limit;
 	float fade_start			= 1.f;		fade_start=fade_start*fade_start;
 	float fade_range			= fade_limit-fade_start;
 	float		r_ssaCHEAP		= 16*r_ssaDISCARD;
