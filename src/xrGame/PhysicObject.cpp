@@ -148,7 +148,17 @@ void CPhysicObject::RunStartupAnim(CSE_Abstract *D)
 			CSE_Visual					*visual = smart_cast<CSE_Visual*>(D);
 			R_ASSERT					(visual);
 			R_ASSERT2					(*visual->startup_animation,"no startup animation");
-			m_anim_blend				= m_anim_script_callback.play_cycle( PKinematicsAnimated, visual->startup_animation );
+			// The spawn names an animation the visual does not actually carry -> LL_MotionID returns
+			// an invalid id and play_cycle asserted, killing the level load. One broken prop is not
+			// worth the level: name it in the log and leave it unanimated.
+			if (!PKinematicsAnimated->LL_MotionID(*visual->startup_animation).valid())
+			{
+				Msg("! [physic object] startup animation [%s] is missing from visual [%s] (object [%s], section [%s]) -- left unanimated",
+					*visual->startup_animation, *visual->visual_name,
+					D->name_replace() ? D->name_replace() : "?", D->name() ? D->name() : "?");
+			}
+			else
+				m_anim_blend			= m_anim_script_callback.play_cycle( PKinematicsAnimated, visual->startup_animation );
 		}
 		smart_cast<IKinematics*>(Visual())->CalculateBones_Invalidate();
 		smart_cast<IKinematics*>(Visual())->CalculateBones	(TRUE);
@@ -271,8 +281,8 @@ void CPhysicObject::UpdateCL()
 {
 	inherited::UpdateCL();
 
-	//Если наш физический объект анимированный, то 
-	//двигаем объект за анимацией
+	//пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ 
+	//пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	if (m_pPhysicsShell->PPhysicsShellAnimator())
 	{
 		m_pPhysicsShell->PPhysicsShellAnimator()->OnFrame();
