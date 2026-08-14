@@ -192,7 +192,7 @@ float shadow_extreme_quality( float3 tc )
         }
     }
 #endif
-
+   
    // compute ratio average blocker depth vs. pixel depth
    if( blockerCount > 0.0 )
    {
@@ -206,10 +206,10 @@ float shadow_extreme_quality( float3 tc )
    }
 
    for( row = 0; row < FS; ++row )
-{
+   {
       for( col = 0; col < FS; ++col )
          w += Fw(row,col,fRatio);
-}
+   }
 
     // filter shadow map samples using the dynamic weights
     [unroll(11)]for( row = -FS2; row <= FS2; row += 2 )
@@ -245,7 +245,7 @@ float shadow_extreme_quality( float3 tc )
 			 s += ( 1 - fc.y ) * ( v1[FS2].w * ( fc.x * ( Fw(row+FS2,FS-2,fRatio) - Fw(row+FS2,FS-1,fRatio) ) + Fw(row+FS2,FS-1,fRatio) ) + v1[FS2].z * fc.x * Fw(row+FS2,FS-1,fRatio) );
 			 s += (     fc.y ) * ( v1[FS2].x * ( fc.x * ( Fw(row+FS2,FS-2,fRatio) - Fw(row+FS2,FS-1,fRatio) ) + Fw(row+FS2,FS-1,fRatio) ) + v1[FS2].y * fc.x * Fw(row+FS2,FS-1,fRatio) );
 			 if( row > -FS2 )
-{
+			 {
 				s += ( 1 - fc.y ) * ( v0[FS2].x * ( fc.x * ( Fw(row+FS2-1,FS-2,fRatio) - Fw(row+FS2-1,FS-1,fRatio) ) + Fw(row+FS2-1,FS-1,fRatio) ) + v0[FS2].y * fc.x * Fw(row+FS2-1,FS-1,fRatio) );
 				s += (     fc.y ) * ( v1[FS2].w * ( fc.x * ( Fw(row+FS2-1,FS-2,fRatio) - Fw(row+FS2-1,FS-1,fRatio) ) + Fw(row+FS2-1,FS-1,fRatio) ) + v1[FS2].z * fc.x * Fw(row+FS2-1,FS-1,fRatio) );
 			 }
@@ -460,9 +460,9 @@ float dx10_1_hw_hq_7x7( float3 tc )
    
    // loop over the rows
    for( row = -GS2; row <= GS2; row += 2 )
-{
-       [unroll]for( col = -GS2; col <= GS2; col += 2 )
    {
+       [unroll]for( col = -GS2; col <= GS2; col += 2 )
+       {
             float4 v = ( tc.zzzz <= s_smap.Gather( smp_nofilter, tc.xy, int2( col, row ) ) ) ? (1.0).xxxx : (0.0).xxxx; 
             
             if( row == -GS2 ) // top row
@@ -484,7 +484,7 @@ float dx10_1_hw_hq_7x7( float3 tc )
                     s += dot( float4(fc.yy,1.0,1.0), v );
             }
             else // center rows
-      {
+            {
                 if( col == -GS2 ) // left
                     s += dot( float4( (1.0-fc.x), 1.0, 1.0, (1.0-fc.x) ), v ); 
                 else if( col == GS2 ) // right
@@ -492,9 +492,9 @@ float dx10_1_hw_hq_7x7( float3 tc )
                 else // center
                     s += dot( (1.0).xxxx, v ); 
             }
-      }
+        }
    }
-
+  
    return s*(1.0/49.0);
 }
 
@@ -550,7 +550,7 @@ float dx10_0_hw_hq_7x7( float4 tc )
 				s += (    2.0 * 2.0    ) * s_smap.SampleCmpLevelZero( smp_smap, tc.xy + tcM, tc.z, int2( col, row ) ).x;
 		}
       }
-}
+	}
 
     return s/49.0;
 }
@@ -625,7 +625,7 @@ float shadow_hw_hq( float4 tc )
       return shadow_extreme_quality( tc.xyz / tc.w );
 #else // SUN_QUALITY<4
 #ifdef SM_4_1
-   return dx10_1_hw_hq_7x7( tc.xyz / tc.w );
+      return dx10_1_hw_hq_7x7( tc.xyz / tc.w );
 #else // SM_4_1
       return dx10_0_hw_hq_7x7( tc ); 
 #endif // SM_4_1
@@ -637,59 +637,97 @@ float shadow_hw_hq( float4 tc )
 //	D24X8+PCF
 //////////////////////////////////////////////////////////////////////////////////////////
 
-float4 test(float4 tc, float2 offset)
+float4 	test 		(float4 tc, float2 offset)
 {
+
+//	float4	tcx	= float4 (tc.xy + tc.w*offset, tc.zw);
+//	return 	tex2Dproj (s_smap,tcx);
+
 	tc.xyz 	/= tc.w;
 	tc.xy 	+= offset;
 	return s_smap.SampleCmpLevelZero( smp_smap, tc.xy, tc.z).x;
 }
 
-float 	shadowtest_sun 	(float4 tc, float4 tcJ)			// jittered sampling
+/*half 	shadowtest_sun 	(float4 tc, float4 tcJ)			// jittered sampling
 {
-	float4	r;
+	half4	r;
+
+	const 	float 	scale 	= (0.5f/float(SMAP_size));
+
+	float  	texsize = 2*SMAP_size;
+	float2 	tc_J	= tc.xy/tc.w*texsize/8.0f;
+	float2 	fr 		= frac(tc_J)*.5f;
+	
+//	half4	J0 	= tex2D	(jitter0,fr)*scale;
+//	half4	J1 	= tex2D	(jitter1,fr)*scale*2;
+	float4	J0 	= jitter0.Sample( smp_jitter, fr )*scale;
+//	float4	J1 	= jitter1.Sample( smp_jitter, fr )*scale;
+
+	float k = 0.99f/float(SMAP_size);
+	r.x 	= test 	(tc,J0.xy+float2(-k,-k)).x;
+	r.y 	= test 	(tc,J0.wz+float2( k,-k)).y;
+	
+ 	r.z		= test	(tc,J0.xy+float2(-k, k)).z;
+ 	r.w		= test	(tc,J0.wz+float2( k, k)).x;
+	
+	half4	f;
+	float k1 = 1.5f/float(SMAP_size);
+	f.x 	= test 	(tc,-J0.xy+float2(-k1,0)).x;
+	f.y 	= test 	(tc,-J0.wz+float2( 0,-k1)).y;
+
+	f.z		= test	(tc,-J0.xy+float2( k1, 0)).z;
+ 	f.w		= test	(tc,-J0.wz+float2( 0, k1)).x;
+
+	half res = ( r.x + r.y + r.z + r.w + f.x + f.y + f.z + f.w )*1.h/(4.h + 4.h );
+	return res;
+}*/
+half 	shadowtest_sun 	(float4 tc, float4 tcJ)			// jittered sampling
+{
+	half4	r;
 
 	//	const 	float 	scale 	= (2.0f/float(SMAP_size));
 	const 	float 	scale 	= (0.7f/float(SMAP_size));
 
 
-	float2 	tc_J	= frac(tc.xy/tc.w*SMAP_size/4.0f )*0.5f;
+	float2 	tc_J	= frac(tc.xy/tc.w*SMAP_size/4.0f )*.5f;
 	float4	J0		= jitter0.Sample(smp_jitter,tc_J)*scale;
-	//float4	J1 	= tex2D	(jitter1,tc_J)*scale;
+	//half4	J1 	= tex2D	(jitter1,tc_J)*scale;
 
-	const float k = 0.5f/float(SMAP_size);
-	r.x 	= test 	(tc, J0.xy+float2(-k,-k)).x;
-	r.y 	= test 	(tc, J0.wz+float2( k,-k)).y;
-	r.z		= test	(tc,-J0.xy+float2(-k, k)).z;
-	r.w		= test	(tc,-J0.wz+float2( k, k)).x;
+	const float k = .5f/float(SMAP_size);
+	r.x 	= test 	(tc, J0.xy+half2(-k,-k)).x;
+	r.y 	= test 	(tc, J0.wz+half2( k,-k)).y;
+	r.z		= test	(tc,-J0.xy+half2(-k, k)).z;
+	r.w		= test	(tc,-J0.wz+half2( k, k)).x;
 
-	return	dot(r,1.0f/4.0f);
+	return	dot(r,1.h/4.h);
 }
 
-// jittered sampling
-float shadow_high(float4 tc) {
+half 	shadow_high 	(float4 tc)			// jittered sampling
+{
+
 	const	float 	scale 	= (0.5f/float(SMAP_size));
 
-	float2 tc_J = frac(tc.xy/tc.w*SMAP_size/4.0f )*.5f;
-	float4 J0 = jitter0.Sample(smp_jitter, tc_J) * scale;
+	float2 	tc_J	= frac(tc.xy/tc.w*SMAP_size/4.0f )*.5f;
+	float4	J0 		=	jitter0.Sample	(smp_jitter,tc_J)*scale;
 
-	const float k = 1.0f / float(SMAP_size);
-	float4 r;
-	r.x = test(tc, J0.xy + float2(-k,-k)).x;
-	r.y = test(tc, J0.wz + float2(k,-k)).y;
+	const float k = 1.f/float(SMAP_size);
+	half4	r;
+	r.x 	= test 	(tc,J0.xy+half2(-k,-k)).x;
+	r.y 	= test 	(tc,J0.wz+half2( k,-k)).y;
 
-	r.z = test(tc, J0.xy + float2(-k, k)).z;
-	r.w = test(tc, J0.wz + float2(k, k)).x;
+	r.z		= test	(tc,J0.xy+half2(-k, k)).z;
+	r.w		= test	(tc,J0.wz+half2( k, k)).x;
 
 
-	const float k1 = 1.3f / float(SMAP_size);
-	float4 r1;
-	r1.x = test(tc, -J0.xy + float2(-k1,0)).x;
-	r1.y = test(tc, -J0.wz + float2(0,-k1)).y;
+	const float k1 = 1.3f/float(SMAP_size);
+	half4	r1;
+	r1.x 	= test 	(tc,-J0.xy+half2(-k1,0)).x;
+	r1.y 	= test 	(tc,-J0.wz+half2( 0,-k1)).y;
 
-	r1.z = test(tc, -2 * J0.xy + float2(k1, 0)).z;
-	r1.w = test(tc, -2 * J0.wz + float2(0, k1)).x;
+	r1.z	= test	(tc,-2*J0.xy+half2( k1, 0)).z;
+	r1.w	= test	(tc,-2*J0.wz+half2( 0, k1)).x;
 
-	return (r.x + r.y + r.z + r.w + r1.x + r1.y + r1.z + r1.w) * 1.0f/8.0f;
+	return ( r.x + r.y + r.z + r.w + r1.x + r1.y + r1.z + r1.w )*1.h/8.h;
 }
 
 float shadow( float4 tc ) 
