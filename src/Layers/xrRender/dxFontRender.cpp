@@ -72,7 +72,8 @@ void dxFontRender::OnRender(CGameFont &owner)
 				float fSize = 0;
 
 				if ( PS.align )
-					fSize = owner.IsMultibyte() ? owner.SizeOf_( wsStr ) : owner.SizeOf_( PS.string );
+					fSize = (owner.IsMultibyte() ? owner.SizeOf_( wsStr ) : owner.SizeOf_( PS.string ))
+							* PS.width_scale;	// keep centre/right alignment honest under a width scale
 
 				switch ( PS.align )
 				{
@@ -107,7 +108,7 @@ void dxFontRender::OnRender(CGameFont &owner)
 
 					l = owner.IsMultibyte() ? owner.GetCharTC( wsStr[ 1 + j ] ) : owner.GetCharTC( ( u16 ) ( u8 ) PS.string[j] );
 
-					float scw		= l.z * g_current_font_scale.x;
+					float scw		= l.z * g_current_font_scale.x * PS.width_scale;
 
 					float fTCWidth	= l.z/owner.vTS.x;
 

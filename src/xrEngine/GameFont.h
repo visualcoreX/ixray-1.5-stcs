@@ -24,6 +24,10 @@ private:
 		string1024	string;
 		float		x,y;
 		float		height;
+		// Horizontal multiplier. Glyph width comes straight from the char map and never depended
+		// on `height`, so raising the height alone stretched text vertically only. 1.0f = the
+		// original behaviour; dxFontRender multiplies the glyph width and the advance by it.
+		float		width_scale;
 		u32			c;
 		EAligment	align;
 	};
@@ -34,6 +38,7 @@ protected:
 	EAligment				eCurrentAlignment;
 	u32						dwCurrentColor;
 	float					fCurrentHeight;
+	float					fCurrentWidthScale;	// see String::width_scale; 1.0f = stock
 	float					fCurrentX, fCurrentY;
 	Fvector2				vInterval;
 
@@ -80,6 +85,9 @@ public:
 	IC void					SetHeight		(float S);
 
 	IC float				GetHeight		(){return fCurrentHeight;};
+	// Scale the glyphs horizontally as well, so raising the height grows the text on both axes.
+	IC void					SetWidthScale	(float S)	{fCurrentWidthScale=S;};
+	IC float				GetWidthScale	(){return fCurrentWidthScale;};
 	IC void					SetInterval		(float x, float y) {vInterval.set(x,y);};
 	IC void					SetInterval		(const Fvector2& v) {vInterval.set(v);};
 	IC void					SetAligment		(EAligment aligment){ eCurrentAlignment=aligment; }

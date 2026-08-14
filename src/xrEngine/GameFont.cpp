@@ -21,6 +21,7 @@ CGameFont::CGameFont(LPCSTR section, u32 flags)
 {
 	pFontRender					= RenderFactory->CreateFontRender();
 	fCurrentHeight				= 0.0f;
+	fCurrentWidthScale			= 1.0f;
 	fXStep						= 0.0f;
 	fYStep						= 0.0f;
 	uFlags						= flags;
@@ -40,6 +41,7 @@ CGameFont::CGameFont(LPCSTR shader, LPCSTR texture, u32 flags)
 {
 	pFontRender					= RenderFactory->CreateFontRender();
 	fCurrentHeight				= 0.0f;
+	fCurrentWidthScale			= 1.0f;
 	fXStep						= 0.0f;
 	fYStep						= 0.0f;
 	uFlags						= flags;
@@ -267,6 +269,7 @@ void CGameFont::MasterOut(
 	rs.y = ( bUseCoords ? ( bScaleCoords ? ( DI2PY( _y ) ) : _y ) : fCurrentY );
 	rs.c = dwCurrentColor;
 	rs.height = fCurrentHeight;
+	rs.width_scale = fCurrentWidthScale;
 	rs.align = eCurrentAlignment;
 #ifndef __BORLANDC__
 	int vs_sz = vsprintf_s( rs.string , fmt , p );
