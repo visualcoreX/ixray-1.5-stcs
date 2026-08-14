@@ -43,6 +43,8 @@ CActorCondition::CActorCondition(CActor *object) :
 	m_fAccelK					= 0.f;
 	m_fSprintK					= 0.f;
 	m_fAlcohol					= 0.f;
+	m_fAlcoholEff				= 0.f;
+	m_fAlcoholEffSpeed			= 0.5f;
 	m_fSatiety					= 1.0f;
 	m_fBloodScreenLastHealth	= -1.f;		// -1 = no previous sample, so the first frame cannot
 	m_bBloodScreenShown			= false;	// mistake "health appeared" for "health was lost"
@@ -107,6 +109,9 @@ void CActorCondition::LoadCondition(LPCSTR entity_section)
 	m_fPowerLeakSpeed			= pSettings->r_float(section,"max_power_leak_speed");
 	
 	m_fV_Alcohol				= pSettings->r_float(section,"alcohol_v");
+	// How fast the effector amplitude follows the alcohol level, in units per second: 0.5 = a full
+	// 0..1 swing takes two seconds. Only the LOOK eases -- the level itself is untouched.
+	m_fAlcoholEffSpeed			= READ_IF_EXISTS(pSettings, r_float, section, "alcohol_effector_speed", 0.5f);
 
 	m_fSatietyCritical			= pSettings->r_float(section,"satiety_critical");
 	clamp(m_fSatietyCritical, 0.0f, 1.0f);
@@ -214,12 +219,27 @@ void CActorCondition::UpdateCondition()
 	m_fAlcohol		+= m_fV_Alcohol*m_fDeltaTime;
 	clamp			(m_fAlcohol,			0.0f,		1.0f);
 
+	// Ease the effector amplitude towards the real level (see GetAlcoholEffector). Drinking raises
+	// m_fAlcohol in a single step, and the camera animation is scaled by this number, so without
+	// the easing every swig -- and every threshold the level crosses -- jolted the view.
+	{
+		// REAL seconds, not m_fDeltaTime: that one is the condition step, which runs on GAME time
+		// (roughly x10), so the eased value reached full swing in a fifth of a second and still read
+		// as a snap. A camera effect has to follow the wall clock.
+		const float step = m_fAlcoholEffSpeed * Device.fTimeDelta;
+		const float diff = m_fAlcohol - m_fAlcoholEff;
+		if (_abs(diff) <= step)	m_fAlcoholEff = m_fAlcohol;
+		else					m_fAlcoholEff += (diff > 0.f) ? step : -step;
+	}
+
 	if ( IsGameTypeSingle() )
 	{	
 		CEffectorCam* ce = Actor()->Cameras().GetCamEffector((ECamEffectorType)effAlcohol);
-		if	((m_fAlcohol>0.0001f) ){
+		// Keep it alive while the EASED value is still winding down, or the effector would be torn
+		// off at full amplitude the moment the level itself hit zero.
+		if	((m_fAlcohol>0.0001f) || (m_fAlcoholEff>0.0001f) ){
 			if(!ce){
-				AddEffector(m_object,effAlcohol, "effector_alcohol", GET_KOEFF_FUNC(this, &CActorCondition::GetAlcohol));
+				AddEffector(m_object,effAlcohol, "effector_alcohol", GET_KOEFF_FUNC(this, &CActorCondition::GetAlcoholEffector));
 			}
 		}else{
 			if(ce)

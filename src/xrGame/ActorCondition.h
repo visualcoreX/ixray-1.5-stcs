@@ -55,6 +55,10 @@ public:
 	IC		float		MaxWalkWeight				() const	{ return m_MaxWalkWeight; }
 			
 			float	xr_stdcall	GetAlcohol			()	{return m_fAlcohol;}
+			// What the drunk camera/ppe effectors are actually driven by: the same value, but eased.
+			// A swig of vodka adds its whole dose to m_fAlcohol in one frame, and feeding that straight
+			// to the effector amplitude snapped the camera; this catches up over alcohol_effector_speed.
+			float	xr_stdcall	GetAlcoholEffector	()	{return m_fAlcoholEff;}
 			float	xr_stdcall	GetPsy				()	{return 1.0f-GetPsyHealth();}
 			virtual float		GetSatiety			() const override	{return m_fSatiety;}
 			IC float GetSatietyPower() const {
@@ -91,6 +95,8 @@ public:
 
 protected:
 	float m_fAlcohol;
+	float m_fAlcoholEff;		// eased value the effectors read, see GetAlcoholEffector()
+	float m_fAlcoholEffSpeed;	// units per second it moves towards m_fAlcohol
 	float m_fV_Alcohol;
 //--
 	float m_fSatiety;
