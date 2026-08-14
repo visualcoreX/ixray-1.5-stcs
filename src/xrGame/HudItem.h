@@ -76,6 +76,11 @@ protected:
 	float						m_fActionDofOutSpeed;
 	int							m_iActionDofTimeOffsetMs;	// <0: release that long BEFORE the anim ends
 															// >0: that long AFTER it started
+	// A hud model is attached a beat AFTER its motion starts -- the item-use phantoms play anm_show
+	// with nothing on screen yet -- so a DOF request that arrives too early is parked here and
+	// re-issued from UpdateCL once the model is actually up.
+	shared_str				m_pending_dof_alias;
+	u32						m_pending_dof_until;
 			void				StartActionDof		(LPCSTR anim_alias);
 			void				StopActionDof		();
 	// While aiming, the aim DOF owns the effector and an action must not yank it back (GS checks

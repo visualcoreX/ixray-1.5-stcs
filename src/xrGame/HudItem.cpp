@@ -84,6 +84,8 @@ CHudItem::CHudItem()
 	m_current_motion_def		= NULL;
 	m_bAttachedNoMotion			= false;
 	m_bActionDofActive			= false;
+	m_pending_dof_alias			= NULL;
+	m_pending_dof_until			= 0;
 	m_fActionDofOutSpeed		= 1.f;
 	m_iActionDofTimeOffsetMs	= -500;
 	m_started_rnd_anim_idx		= u8(-1);
@@ -400,6 +402,17 @@ void CHudItem::UpdateHudAdditonal		(Fmatrix& hud_trans)
 void CHudItem::UpdateCL()
 {
 	UpdateShowPPE();
+
+	if (m_pending_dof_alias.size())
+	{
+		shared_str	a		= m_pending_dof_alias;
+		const bool	expired	= (Device.dwTimeGlobal > m_pending_dof_until);
+		if (expired || HudItemData())
+		{
+			m_pending_dof_alias	= NULL;
+			if (!expired)	StartActionDof(a.c_str());
+		}
+	}
 
 	if(m_current_motion_def)
 	{
@@ -767,7 +780,18 @@ void CHudItem::StartActionDof(LPCSTR alias)
 {
 	m_bActionDofActive = false;
 	if (!alias || !alias[0])			return;
-	if (!GetHUDmode())					return;		// only the item the player is actually looking at
+	// Only the item the player is actually looking at -- HudItemData() is the direct question, and
+	// it also keeps an NPC's reload from blurring the player's screen. But the item-use phantoms
+	// (slot 10, gwr_eatable) start anm_show a beat BEFORE their model is attached -- the log showed
+	// huddata=0 there and 1 only by the next motion -- so a plain refusal dropped the DOF for every
+	// bandage and medkit. Park the request and let UpdateCL re-issue it on the frame the model
+	// appears; the motion timings are already stamped, so the release still lands as configured.
+	if (!HudItemData())
+	{
+		m_pending_dof_alias	= alias;
+		m_pending_dof_until	= Device.dwTimeGlobal + 1000;	// a stale request must not fire later
+		return;
+	}
 
 	static const char* dof_on_by_default[] = { "anm_reload", "anm_open", "anm_close", "anm_add_cartridge" };
 	bool def = false;
