@@ -832,7 +832,6 @@ void	CActor::OnChangeVisual()
 	
 	IKinematicsAnimated* V	= smart_cast<IKinematicsAnimated*>(Visual());
 	if (V){
-		CStepManager::reload(cNameSect().c_str());
 		SetCallbacks		();
 		// `extra_motions` in [actor] -- omf files whose motions belong to the PLAYER ONLY. They cannot
 		// go into the OGF as an ordinary motion ref: the actor's suit visuals are shared with the NPCs
@@ -849,6 +848,14 @@ void	CActor::OnChangeVisual()
 				V->LL_AddMotions(_GetItem(list, i, one));
 		}
 		m_anims->Create		(V);
+		// AFTER extra_motions + m_anims->Create, for the same reason they are ordered that way: the
+		// step manager resolves leg-cycle names to MotionIDs too (ID_Cycle_Safe), and a MotionID is a
+		// (slot, idx) pair. Resolved before LL_AddMotions it points at the model's own slot, while
+		// g_SetAnimation later plays the SAME name out of the appended actor-only slot, which wins --
+		// the lookup in on_animation_start then misses and step_info.disable stays true, i.e. no
+		// footsteps at all. Showed up as "silent after loading a save made with no outfit"; putting an
+		// outfit on and off masked it by giving reload() another pass.
+		CStepManager::reload(cNameSect().c_str());
 		m_vehicle_anims->Create			(V);
 		CDamageManager::reload(*cNameSect(),"damage",pSettings);
 		//-------------------------------------------------------------------------------

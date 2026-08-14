@@ -31,6 +31,11 @@ DLL_Pure *CStepManager::_construct	()
 
 void CStepManager::reload(LPCSTR section)
 {
+	// NOTE: the map is deliberately NOT cleared here. reload() runs on every visual change and the
+	// same animation resolves to a DIFFERENT (slot, idx) depending on what is loaded at that
+	// moment, so the entries of previously seen visuals are what keep the lookup hitting.
+	// Clearing it makes the footsteps go silent. See also CActor::OnChangeVisual: this reload
+	// must stay AFTER LL_AddMotions / m_anims->Create, or it resolves against the wrong slot.
 	m_legs_count		= pSettings->r_u8		(section, "LegsCount");
 	LPCSTR anim_section = pSettings->r_string	(section, "step_params");
 
