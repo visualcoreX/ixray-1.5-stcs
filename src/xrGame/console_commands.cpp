@@ -85,6 +85,8 @@ extern	int		g_dwInputUpdateDelta	;
 #ifdef DEBUG
 extern	BOOL	g_ShowAnimationInfo		;
 #endif // DEBUG
+extern	BOOL	g_show_hud_anim_info	;	// hud animation overlay, available in Release (player_hud.cpp)
+extern	float	g_hud_anim_info_size	;
 extern	BOOL	g_bShowHitSectors		;
 extern	BOOL	g_bDebugDumpPhysicsStep	;
 extern	ESingleGameDifficulty g_SingleGameDifficulty;
@@ -2196,6 +2198,10 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	CMD3(CCC_Mask,			"keypress_on_start",&psActorFlags,	AF_KEYPRESS_ON_START);
 	// Hide the quick-use slot icons on the hud. Display only -- the slots keep working.
 	CMD3(CCC_Mask,			"hud_hide_quick_slots",&psActorFlags,AF_HIDE_QUICK_SLOTS);
+	// Top-left overlay for every playing hud blend: source .omf, motion name, time and state.
+	// Registered here rather than in the DEBUG block so it works in a Release build.
+	CMD4(CCC_Integer,		"hud_dbg_anim",		&g_show_hud_anim_info,	0, 1);
+	CMD4(CCC_Float,			"hud_dbg_anim_size",&g_hud_anim_info_size,	0.5f, 6.0f);
 	CMD1(CCC_Script,		"run_script");
 	CMD1(CCC_ScriptCommand,	"run_string");
 	CMD1(CCC_TimeFactor,	"time_factor");		

@@ -13,6 +13,8 @@
 #include "CustomOutfit.h"	// the hands section always follows the worn outfit
 #include "object_broker.h"	// READ_IF_EXISTS
 #include "Inventory.h"
+#include "HUDmanager.h"		// HUD().Font() for the animation debug overlay
+#include "../xrEngine/GameFont.h"
 
 player_hud* g_player_hud = NULL;
 Fvector _ancor_pos;
@@ -741,6 +743,97 @@ void player_hud::render_hud()
 	
 	if(m_attached_items[1])
 		m_attached_items[1]->render();
+}
+
+// --- animation debug overlay ---------------------------------------------------------------
+// Deliberately NOT under DEBUG: the whole point is to inspect animations in a Release build.
+// LL_IterateBlends / LL_MotionsSlot are release-safe, but LL_MotionDefName_dbg is DEBUG-only,
+// so the motion name is resolved here by walking the slot's motion map.
+BOOL  g_show_hud_anim_info = FALSE;
+float g_hud_anim_info_size = 1.0f;	// "hud_dbg_anim_size", multiplier over the stat font height
+
+namespace
+{
+	struct hud_anim_dump : public IterateBlendsCallback
+	{
+		IKinematicsAnimated*	m_k;
+		LPCSTR					m_tag;
+
+		hud_anim_dump(IKinematicsAnimated* k, LPCSTR tag) : m_k(k), m_tag(tag) {}
+
+		static LPCSTR state_of(const CBlend& B)
+		{
+			if (CBlend::eFalloff == B.blend)	return "falloff";
+			if (!B.playing)						return "stopped";
+			return B.stop_at_end ? "playing (once)" : "playing (loop)";
+		}
+
+		virtual void operator() (CBlend& B)
+		{
+			if (!B.motionID.valid())							return;
+			if (B.motionID.slot >= m_k->LL_MotionsSlotCount())	return;
+
+			// motions_value::m_id is the KEY the motion set was registered under, relative to
+			// $game_meshes$ (i.e. gamedata\meshes). It is not proof that a file is being read:
+			// once g_pMotionsContainer holds that key the data is reused without touching the
+			// disk, so a file deleted mid-session still shows up here. Hence the [MISSING] mark,
+			// and note even that answers from the virtual file table, not from the disk.
+			shared_motions&	slot	= const_cast<shared_motions&>(m_k->LL_MotionsSlot(B.motionID.slot));
+			LPCSTR			omf		= *slot.id();
+			LPCSTR			gone	= FS.exist("$game_meshes$", omf) ? "" : "   [MISSING]";
+
+			LPCSTR			motion	= "<not found>";
+			accel_map*		mm		= slot.motion_map();
+			for (accel_map::iterator it = mm->begin(); it != mm->end(); ++it)
+				if (it->second == B.motionID.idx)	{ motion = *it->first; break; }
+
+			CGameFont* F = HUD().Font().pFontStat;
+			F->OutNext	("%s  [slot %d, part %d, ch %d]", m_tag, B.motionID.slot, B.bone_or_part, B.channel);
+			F->OutNext	("    omf    meshes\\%s%s   (%s)   %.3f / %.3f s",
+						 omf, gone, motion, B.timeCurrent, B.timeTotal);
+			F->OutNext	("    state  %s   speed x%.2f   blend %.2f",
+						 state_of(B), B.speed, B.blendAmount);
+		}
+	};
+}
+
+void player_hud::draw_anim_debug()
+{
+	if (!g_show_hud_anim_info)		return;
+
+	CGameFont* F = HUD().Font().pFontStat;
+	F->SetColor	(0xffffe000);
+	F->OutSetI	(-0.99f, -0.98f);	// device-independent space is -1..1, so this is the top-left corner
+
+	// pFontStat is shared, so bump the height only for our lines and put it back. Safe because
+	// each queued string keeps its own height (CGameFont::String::height), applied at flush time.
+	const float saved_height = F->GetHeight();
+	const float saved_wscale = F->GetWidthScale();
+	F->SetHeight		(saved_height * g_hud_anim_info_size);
+	F->SetWidthScale	(saved_wscale * g_hud_anim_info_size);
+
+	if (m_model)
+	{
+		hud_anim_dump	hands(m_model, "HANDS");
+		m_model->LL_IterateBlends(hands);
+	}
+
+	for (u16 i = 0; i < 2; ++i)
+	{
+		attachable_hud_item* itm = m_attached_items[i];
+		if (!itm || !itm->m_model)	continue;
+
+		IKinematicsAnimated* ka = itm->m_model->dcast_PKinematicsAnimated();
+		if (!ka)					continue;
+
+		string128 tag;
+		xr_sprintf		(tag, sizeof(tag), "ITEM %d  %s", i, itm->m_sect_name.c_str());
+		hud_anim_dump	item(ka, tag);
+		ka->LL_IterateBlends(item);
+	}
+
+	F->SetHeight		(saved_height);
+	F->SetWidthScale	(saved_wscale);
 }
 
 

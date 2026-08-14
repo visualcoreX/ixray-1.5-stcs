@@ -110,7 +110,10 @@ private:
 	void			load_now			(const shared_str& model_name);
 public:
 	void			update				(const Fmatrix& trans);
-	void			render_hud			();	
+	void			render_hud			();
+	// "hud_dbg_anim 1": top-left overlay listing every active blend of the hands model and of
+	// each attached hud item -- source .omf, motion name, play time and blend state.
+	void			draw_anim_debug		();
 	void			render_item_ui		();
 	bool			render_item_ui_query();
 	u32				anim_play			(u16 part, const MotionID& M, BOOL bMixIn, const CMotionDef*& md, float speed, float blend_accrue = 0.f);

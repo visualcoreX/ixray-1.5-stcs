@@ -1623,6 +1623,9 @@ void CActor::OnHUDDraw	(CCustomHUD*)
 	if(! ( (mstate_real & mcLookout) && !IsGameTypeSingle() ) )
 		g_player_hud->render_hud		();
 
+	// drawn unconditionally: the overlay has to stay readable even in the states that skip the hud
+	g_player_hud->draw_anim_debug		();
+
 
 #if 0//ndef NDEBUG
 	if (Level().CurrentControlEntity() == this && g_ShowAnimationInfo)
