@@ -31,6 +31,12 @@ protected:
 
 	u16						RenderMode	;	
 	u16						ChildIDX	;
+	// Quantization range used when this mesh was packed into the HW vertex format, in metres.
+	// 12 = stock (see q_P in FSkinned.cpp): a fixed +-12 m lattice sized for the largest skinned
+	// model in the game, which leaves 0.37 mm steps -- enough to visibly facet a 6 mm sight ring
+	// on a hud weapon. Hud visuals get their own, much smaller range and _Render hands it to the
+	// shader so the decode matches.
+	float					m_quant_range;
 
 	// render-mode specifics
 	union {
@@ -46,6 +52,7 @@ protected:
 	void					_Copy				(CSkeletonX *V);
 	void					_Render_soft		(ref_geom& hGeom, 	u32 vCount,	u32 iOffset, u32 pCount);
 	void					_Render				(ref_geom& hGeom, 	u32 vCount,	u32 iOffset, u32 pCount);
+	void					set_quant_range		();	// pushes m_quant_range to the shader
 	void					_Load				(const char* N,		IReader *data,	u32& dwVertCount);
 
 	virtual void			_Load_hw			(Fvisual& V,		void *data)			= 0;

@@ -17,6 +17,7 @@
 #include "../../xrCPU_Pipe/xrCPU_Pipe.h"
 
 shared_str	s_bones_array_const;
+shared_str	s_quant_range_const;
 
 //////////////////////////////////////////////////////////////////////
 // Body Part
@@ -41,12 +42,22 @@ void CSkeletonX::_Copy		(CSkeletonX *B)
 	cache_vCount			= B->cache_vCount;
 	cache_vOffset			= B->cache_vOffset;
 	RenderMode				= B->RenderMode;
+	m_quant_range			= B->m_quant_range;
 	RMS_boneid				= B->RMS_boneid;
 	RMS_bonecount			= B->RMS_bonecount;
 
 #ifdef	USE_DX10
 	m_Indices				= B->m_Indices;
 #endif	//	USE_DX10
+}
+// Tell the shader which lattice this mesh was packed on. Sits at the single choke point every
+// skinned draw passes through, so it reaches the colour pass, the depth pass and every shadow
+// pass alike -- there is no "forgot one of them" failure mode. Stock meshes carry 12, i.e.
+// exactly what the shader used to hardcode.
+void CSkeletonX::set_quant_range ()
+{
+	ref_constant c = RCache.get_c(s_quant_range_const);
+	if (c)	RCache.set_c(&*c, m_quant_range, m_quant_range, m_quant_range, 1.f/32768.f);
 }
 //////////////////////////////////////////////////////////////////////
 void CSkeletonX::_Render	(ref_geom& hGeom, u32 vCount, u32 iOffset, u32 pCount)
@@ -62,6 +73,7 @@ void CSkeletonX::_Render	(ref_geom& hGeom, u32 vCount, u32 iOffset, u32 pCount)
 		{
 			Fmatrix	W;	W.mul_43	(RCache.xforms.m_w,Parent->LL_GetTransform_R	(u16(RMS_boneid)));
 			RCache.set_xform_world	(W);
+			set_quant_range			();
 			RCache.set_Geometry		(hGeom);
 			RCache.Render			(D3DPT_TRIANGLELIST,0,0,vCount,iOffset,pCount);
 			RCache.stat.r.s_dynamic_inst.add	(vCount);
@@ -85,6 +97,7 @@ void CSkeletonX::_Render	(ref_geom& hGeom, u32 vCount, u32 iOffset, u32 pCount)
 			}
 
 			// render
+			set_quant_range					();
 			RCache.set_Geometry				(hGeom);
 			RCache.Render					(D3DPT_TRIANGLELIST,0,0,vCount,iOffset,pCount);
 			if (RM_SKINNING_1B==RenderMode)	
@@ -164,6 +177,7 @@ void CSkeletonX::_Render_soft	(ref_geom& hGeom, u32 vCount, u32 iOffset, u32 pCo
 void CSkeletonX::_Load	(const char* N, IReader *data, u32& dwVertCount) 
 {	
 	s_bones_array_const		= "sbones_array";
+	s_quant_range_const		= "skin_qrange";
 	xr_vector<u16>			bids;
 
 	// Load vertices
@@ -329,6 +343,50 @@ void CSkeletonX::_Load	(const char* N, IReader *data, u32& dwVertCount)
 		Debug.fatal	(DEBUG_INFO,"Invalid vertex type in skinned model '%s'",N);
 		break;
 	}
+	// ---- per-mesh quantization range -------------------------------------------------------
+	// q_P packs the position into s16 over a FIXED +-12 m lattice (0.37 mm steps), sized for the
+	// biggest skinned model in the game -- measured: 12.00 m for red_forest_bridge_01_dynamic,
+	// 7.9 m for the vehicles. A hud weapon is barely a metre across and is drawn a hand-width from
+	// the camera, so those 0.37 mm are enough to turn a 6 mm sight ring into a visible polygon.
+	// Hud visuals therefore get their own range, taken from the vertices themselves; everything
+	// else keeps 12 and is bit-for-bit unchanged. _Render passes the value to the shader so the
+	// decode matches the packing.
+	m_quant_range = 12.f;
+	{
+		string_path		low;
+		xr_strcpy		(low, sizeof(low), N ? N : "");
+		xr_strlwr		(low);
+		// the hands rig has no "_hud" in its name, hence the second test
+		const bool is_hud = (0 != strstr(low, "_hud")) || (0 != strstr(low, "wpn_hand"));
+		if (is_hud && dwVertCount)
+		{
+			u32 stride = 0;
+			switch (dwVertType)
+			{
+			case OGF_VERTEXFORMAT_FVF_1L: case 1:	stride = sizeof(vertBoned1W); break;
+			case OGF_VERTEXFORMAT_FVF_2L: case 2:	stride = sizeof(vertBoned2W); break;
+			case 3:									stride = sizeof(vertBoned3W); break;
+			case 4:									stride = sizeof(vertBoned4W); break;
+			}
+			// every vertBonedNW starts with its Fvector position, so one walk covers all formats
+			if (stride)
+			{
+				const u8* raw = (const u8*)data->pointer();
+				float mx = 0.f;
+				for (u32 v = 0; v < dwVertCount; ++v)
+				{
+					const Fvector& P = *(const Fvector*)(raw + v*stride);
+					mx = _max(mx, _max(_abs(P.x), _max(_abs(P.y), _abs(P.z))));
+				}
+				if (mx > 0.f)
+				{
+					m_quant_range = mx * 1.05f;		// headroom so nothing lands on the clamp
+					clamp(m_quant_range, 0.25f, 12.f);
+				}
+			}
+		}
+	}
+
 #ifdef _EDITOR
 	if (bids.size()>0)	
 #else

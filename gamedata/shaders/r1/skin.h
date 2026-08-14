@@ -3,6 +3,11 @@
 
 #include "common.h"
 
+// Quantization range of the mesh being drawn, in metres, pushed by CSkeletonX::set_quant_range.
+// .x = range (12 = stock, what this file used to hardcode; hud meshes get a much smaller one
+// so their s16 lattice is fine enough not to facet small round details).
+float4 skin_qrange;
+
 struct 	v_model_skinned_0
 {
 	float4 	P	: POSITION;	// (float,float,float,1) - quantized	// short4
@@ -49,7 +54,7 @@ struct 	v_model_skinned_4		// 28 bytes
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
-float4 	u_position	(float4 v)	{ return float4(v.xyz*(12.f / 32768.f), 1.f);	}	// -12..+12
+float4 	u_position	(float4 v)	{ return float4(v.xyz*(skin_qrange.x / 32768.f), 1.f);	}	// -12..+12
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //uniform float4 	sbones_array	[256-22] : register(vs,c22);

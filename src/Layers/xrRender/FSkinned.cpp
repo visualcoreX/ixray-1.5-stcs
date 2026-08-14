@@ -23,13 +23,27 @@ using namespace FVF;
 static	shared_str	sbones_array;
 
 #pragma pack(push,1)
+// Quantization range of the mesh currently being packed, in metres. Stock is 12: one fixed
+// lattice for every skinned model, sized for the largest one in the game, which leaves a
+// 0.37 mm step. Hud visuals are barely a metre across and are drawn a hand-width from the
+// camera, so they get a much smaller range here and CSkeletonX::_Render tells the shader
+// which one to decode with. Load-time only and the model pool loads on one thread, so a
+// file-static is enough -- it is read by q_P/u_P a few lines below and nowhere else.
+static float s_pack_range = 12.f;
+void  set_pack_range (float r)	{ s_pack_range = (r > 0.f) ? r : 12.f; }
+
+// CAUTION: this reads the LOAD-TIME range, so it is only correct while the mesh it belongs to is
+// the one being loaded. Today that is fine -- the vertHW_*::get_pos/get_pos_bones helpers below
+// are the only callers and nothing outside this file calls them (wallmarks go through the float
+// vertBoned* path in SkeletonX.cpp instead). If they are ever revived, pass the owning mesh's
+// m_quant_range in explicitly.
 float u_P	(s16 v)
 {
-	return	float(v)/(32767.f/12.f);
+	return	float(v)/(32767.f/s_pack_range);
 }
 s16	q_P		(float v)
 {
-	int		_v	= clampr(iFloor(v*(32767.f/12.f)), -32768, 32767);
+	int		_v	= clampr(iFloor(v*(32767.f/s_pack_range)), -32768, 32767);
 	return	s16	(_v);
 }
 u8	q_N		(float v)
@@ -406,6 +420,7 @@ void CSkeletonX_ST::Load(const char* N, IReader *data, u32 dwFlags)
 
 void CSkeletonX_ext::_Load_hw	(Fvisual& V, void *	_verts_)
 {
+	set_pack_range	(m_quant_range);		// see s_pack_range above
 	// Create HW VB in case this is possible
 //	BOOL	bSoft				= HW.Caps.geometry.bSoftware;
 //	u32		dwUsage				= /*D3DUSAGE_WRITEONLY |*/ (bSoft?D3DUSAGE_SOFTWAREPROCESSING:0);	// VB may be read by wallmarks code
@@ -589,6 +604,7 @@ void CSkeletonX_ext::_Load_hw	(Fvisual& V, void *	_verts_)
 
 void CSkeletonX_ext::_Load_hw	(Fvisual& V, void *	_verts_)
 {
+	set_pack_range	(m_quant_range);		// see s_pack_range above
 	// Create HW VB in case this is possible
 	BOOL	bSoft				= HW.Caps.geometry.bSoftware;
 	u32		dwUsage				= /*D3DUSAGE_WRITEONLY |*/ (bSoft?D3DUSAGE_SOFTWAREPROCESSING:0);	// VB may be read by wallmarks code
