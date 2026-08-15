@@ -360,27 +360,36 @@ void CSkeletonX::_Load	(const char* N, IReader *data, u32& dwVertCount)
 		const bool is_hud = (0 != strstr(low, "_hud")) || (0 != strstr(low, "wpn_hand"));
 		if (is_hud && dwVertCount)
 		{
-			u32 stride = 0;
+			// Only vertBoned1W starts with its position; every multi-weight format leads with the
+			// bone indices (u16 matrix0/matrix1, u16 m[3], u16 m[4]), so the position sits 4, 6 or
+			// 8 bytes in. Reading it at offset 0 for those hands back the bone indices reinterpreted
+			// as a float and everything after them shifted, i.e. garbage -- and an UNDERESTIMATE of
+			// the extent quantizes the mesh onto a lattice smaller than itself, where q_P clamps the
+			// outlying vertices to +-32767 and the geometry collapses. Take the offsets from the
+			// structs so they cannot drift.
+			u32 stride = 0, pofs = 0;
 			switch (dwVertType)
 			{
-			case OGF_VERTEXFORMAT_FVF_1L: case 1:	stride = sizeof(vertBoned1W); break;
-			case OGF_VERTEXFORMAT_FVF_2L: case 2:	stride = sizeof(vertBoned2W); break;
-			case 3:									stride = sizeof(vertBoned3W); break;
-			case 4:									stride = sizeof(vertBoned4W); break;
+			case OGF_VERTEXFORMAT_FVF_1L: case 1:	stride = sizeof(vertBoned1W); pofs = offsetof(vertBoned1W, P); break;
+			case OGF_VERTEXFORMAT_FVF_2L: case 2:	stride = sizeof(vertBoned2W); pofs = offsetof(vertBoned2W, P); break;
+			case OGF_VERTEXFORMAT_FVF_3L: case 3:	stride = sizeof(vertBoned3W); pofs = offsetof(vertBoned3W, P); break;
+			case OGF_VERTEXFORMAT_FVF_4L: case 4:	stride = sizeof(vertBoned4W); pofs = offsetof(vertBoned4W, P); break;
 			}
-			// every vertBonedNW starts with its Fvector position, so one walk covers all formats
 			if (stride)
 			{
-				const u8* raw = (const u8*)data->pointer();
+				const u8* raw = (const u8*)data->pointer() + pofs;
 				float mx = 0.f;
 				for (u32 v = 0; v < dwVertCount; ++v)
 				{
 					const Fvector& P = *(const Fvector*)(raw + v*stride);
 					mx = _max(mx, _max(_abs(P.x), _max(_abs(P.y), _abs(P.z))));
 				}
-				if (mx > 0.f)
+				// The lower clamp may only ever RAISE the range (a coarser lattice is merely less
+				// precise), never lower it past what the vertices need -- that is the difference
+				// between a blunt result and a broken mesh.
+				if (mx > 0.f && _valid(mx))
 				{
-					m_quant_range = mx * 1.05f;		// headroom so nothing lands on the clamp
+					m_quant_range = _max(mx * 1.05f, 0.25f);	// headroom so nothing lands on the clamp
 					clamp(m_quant_range, 0.25f, 12.f);
 				}
 			}
