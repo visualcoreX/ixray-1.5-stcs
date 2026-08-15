@@ -260,7 +260,20 @@ void CRender::render_sun_cascade ( u32 cascade_ind )
 			// wedges that swim and flicker as you turn. Its box is the huge one (160 m by default)
 			// and its border is far enough away that the seam this scaling exists for is not
 			// visible there anyway, so it keeps the stock fit.
-			if ( cascade_ind + 1 < m_sun_cascades.size() )
+			// ...and only on a normally-framed view. A 3D scope lens frame renders the whole scene at
+			// the magnified scope fov (CCameraManager::ApplyDevice), and there the pinning is exactly
+			// backwards: a camera-pinned box covers a fixed bubble -- 15 m, 40 m -- while a 4x scope
+			// starts showing ground at ~9 m and puts the 20 m border in the middle of the picture,
+			// magnified fourfold. That is the seam still visible inside the lens after the main view
+			// was fixed. A needle frustum is what focusing is FOR: the box slides onto the thin slice
+			// it has to cover, so a 15 m box reaches ~39 m at 21.7 deg (4x) and ~97 m at 8.8 deg (10x)
+			// and the borders leave the frame entirely. The wobble the pinning exists to kill cannot
+			// show there either -- the box now contains the whole visible slice, so its border is
+			// off-screen. So the lens frame takes the stock fit regardless of the cvar. The presented
+			// main view is unaffected: on a lens frame the screen shows the saved normal frame
+			// (CGamePersistent::ComputeLensFrame), and normal frames still read the cvar.
+			const bool	b_lens_frame	= g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow;
+			if ( cascade_ind + 1 < m_sun_cascades.size() && !b_lens_frame )
 				lightXZshift.mul( clampr(ps_r2_sun_cascade_focus, 0.f, 1.f) );
 
 			// Initialize rays for the next cascade
