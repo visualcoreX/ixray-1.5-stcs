@@ -230,8 +230,13 @@ public		:
 		else	*value = v;
 	}
 	virtual void	Status	(TStatus& S)
-	{	
-		xr_sprintf	(S,sizeof(S),"%3.5f",*value);
+	{
+		// 8 decimals, not 5. This is what Save() writes into user.ltx, and five places cannot hold
+		// the small ones: r2_sun_depth_far_bias sits at -0.00002 and is tuned finer than that, so
+		// -0.000002 formatted as "%3.5f" became "-0.00000" and the trailing-zero trim below then ate
+		// it down to "-0." -- the value was silently lost on every save. Eight places cover the ~7
+		// significant digits a float actually carries; the trim keeps the common cases short.
+		xr_sprintf	(S,sizeof(S),"%3.8f",*value);
 		while	(xr_strlen(S) && ('0'==S[xr_strlen(S)-1]))	S[xr_strlen(S)-1] = 0;
 	}
 	virtual void	Info	(TInfo& I)
@@ -240,7 +245,7 @@ public		:
 	}
 	virtual void fill_tips(vecTips& tips, u32 mode) {
 		TStatus str;
-		xr_sprintf(str, sizeof(str), "%3.5f  (current)  [%3.3f,%3.3f]", *value, min, max);
+		xr_sprintf(str, sizeof(str), "%3.8f  (current)  [%3.3f,%3.3f]", *value, min, max);
 		tips.push_back(str);
 		IConsole_Command::fill_tips(tips, mode);
 	}
