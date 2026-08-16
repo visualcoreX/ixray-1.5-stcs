@@ -635,7 +635,7 @@ void CUIWeaponCellItem::gwr_UpdateLayers()
 		AttachChild		(s);
 		s->SetShader	(InventoryUtilities::GetEquipmentIconsShader());
 		s->SetColor		(GetColor());
-		InitAddon		(s, L.section.c_str(), L.offset, Heading());
+		gwr_InitLayer	(s, L.section.c_str(), L.offset, Heading());
 		m_gwr_icons.push_back(s);
 	}
 }
@@ -752,6 +752,81 @@ void CUIWeaponCellItem::OnAfterChild(CUIDragDropListEx* parent_list)
 
 	if(is_launcher() && GetIcon(eLauncher))
 		InitAddon	(GetIcon(eLauncher), *object()->GetGrenadeLauncherName(),m_addon_offset[eLauncher], parent_list->GetVerticalPlacement());
+}
+
+// Layer placement, split off from InitAddon (which keeps serving the stock scope/silencer/launcher
+// sprites untouched). Identical in the un-rotated case; the difference is the horizontal term of the
+// rotated case.
+//
+// In a vertical slot the cell is drawn turned, and a layer's ATLAS-space offset has to be turned with
+// it: the icon's Y becomes the widget's X, and the icon's X becomes the widget's Y counted from the
+// far edge. The vertical term is measured in the widget's own vertical units and is fine. The
+// horizontal one is not: the rotated geometry is squeezed along x by kx inside CUICustomItem::Draw
+// (it rotates in 1024x768 UI space, where the two axes do not share a screen scale), but the sprite's
+// POSITION is added after that squeeze, so a position built with the same kx does not compose with it.
+// It cancels out only when the term is zero -- which is exactly why the ak74 looks right (every one of
+// its layers has offset_y = 0) while the lr300 and g36 magazines, at offset_y = 50, sit visibly beside
+// the weapon. Take the horizontal scale from the widget's own width instead (base_scale.y), so the
+// offset is expressed in the same units the position is finally added in.
+void CUIWeaponCellItem::gwr_InitLayer(CUIStatic* s, LPCSTR section, Fvector2 addon_offset, bool b_rotate)
+{
+	Frect					tex_rect;
+	Fvector2				base_scale;
+
+	if (Heading())
+	{
+		base_scale.x		= GetHeight()/(INV_GRID_WIDTHF(GameConstants::GetUseHQ_Icons()) * m_grid_size.x);
+		base_scale.y		= GetWidth() /(INV_GRID_HEIGHTF(GameConstants::GetUseHQ_Icons()) * m_grid_size.y);
+	}
+	else
+	{
+		base_scale.x		= GetWidth() /(INV_GRID_WIDTHF(GameConstants::GetUseHQ_Icons()) * m_grid_size.x);
+		base_scale.y		= GetHeight()/(INV_GRID_HEIGHTF(GameConstants::GetUseHQ_Icons()) * m_grid_size.y);
+	}
+	Fvector2				cell_size;
+	cell_size.x				= pSettings->r_u32(section, "inv_grid_width") *INV_GRID_WIDTHF (GameConstants::GetUseHQ_Icons());
+	cell_size.y				= pSettings->r_u32(section, "inv_grid_height")*INV_GRID_HEIGHTF(GameConstants::GetUseHQ_Icons());
+
+	tex_rect.x1				= pSettings->r_u32(section, "inv_grid_x")*INV_GRID_WIDTHF (GameConstants::GetUseHQ_Icons());
+	tex_rect.y1				= pSettings->r_u32(section, "inv_grid_y")*INV_GRID_HEIGHTF(GameConstants::GetUseHQ_Icons());
+	tex_rect.rb.add			(tex_rect.lt, cell_size);
+
+	cell_size.mul			(base_scale);
+
+	if (b_rotate)
+	{
+		s->SetWndSize		(Fvector2().set(cell_size.y, cell_size.x));
+		Fvector2 new_offset;
+		// The icon's Y becomes the widget's X, so the horizontal term must use the widget's own WIDTH
+		// scale. On a rotated cell base_scale.x and base_scale.y are NOT interchangeable -- measured:
+		// 0.64 vs 0.52 for a 5x2 icon in a 52x160 cell -- and taking the height scale put the sprite
+		// ~1/5 of a cell too far out. The kx that follows is a separate correction and stays: Draw
+		// squeezes rotated geometry along x about each sprite's own origin, so a position has to be
+		// squeezed the same way to stay in register (which is why every layer at x=0 looks right no
+		// matter what this term does -- the whole ak74 is such a case).
+		new_offset.x		= addon_offset.y * base_scale.y;
+		new_offset.y		= GetHeight() - addon_offset.x*base_scale.x - cell_size.x;
+		addon_offset		= new_offset;
+		addon_offset.x		*= UI()->get_current_kx();
+	}
+	else
+	{
+		s->SetWndSize		(cell_size);
+		addon_offset.mul	(base_scale);
+	}
+
+	s->SetWndPos			(addon_offset);
+	s->SetOriginalRect		(tex_rect);
+	s->SetStretchTexture	(true);
+
+	s->EnableHeading		(b_rotate);
+	if (b_rotate)
+	{
+		s->SetHeading		(GetHeading());
+		Fvector2 offs;		offs.set(0.0f, s->GetWndSize().y);
+		s->SetHeadingPivot	(Fvector2().set(0.0f,0.0f), offs, true);
+	}
+
 }
 
 void CUIWeaponCellItem::InitAddon(CUIStatic* s, LPCSTR section, Fvector2 addon_offset, bool b_rotate)

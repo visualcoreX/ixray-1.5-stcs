@@ -114,6 +114,10 @@ public:
 	// Rebuild the layer statics when the visible set changes (an upgrade installed, an addon
 	// attached/removed, the optic swapped for another one, or the cell rotated).
 	void	gwr_UpdateLayers	();
+	// Same job as InitAddon, but for the composed layers only. Split off because the rotated
+	// (vertical-slot) placement of a layer whose offset has a non-zero Y lands in the wrong spot,
+	// and the stock addon sprites must not be disturbed while that is being sorted out.
+	void	gwr_InitLayer		(CUIStatic* s, LPCSTR section, Fvector2 offset, bool use_heading);
 };
 
 class CBuyItemCustomDrawCell :public ICustomDrawCell
