@@ -151,6 +151,10 @@ bool CWeaponMagazined::WeaponSoundExist(LPCSTR section, LPCSTR sound_name)
 	}
 }
 
+// Shot sounds play as detached instances so consecutive shots overlap (see CHudItem::PlaySound).
+// Console: snd_shot_overlap. Raising snd_targets goes with it -- each ringing shot holds a voice.
+BOOL	g_snd_shot_overlap	= TRUE;
+
 void CWeaponMagazined::Load	(LPCSTR section)
 {
 	// GS: the first shot after a reload may have its own take (anm_shoot_first). Read from the
@@ -422,11 +426,33 @@ void CWeaponMagazined::FireStart		()
 	}else
 	{//misfire -- the "weapon jammed" message is raised with the dry-fire gesture (PlayAnimDryFire),
 	 // like GS's OnEmptyClick, not here: a pull that cannot even play the gesture says nothing.
-		if (GetState()==eIdle)
-		{
-			m_bDryFirePending = true;
-			SwitchState(eIdle);		// route the dry-fire through the deferred switch2_Idle
-		}
+		// Take over whatever is playing, the shot motion's tail included. This used to arm only while
+		// the weapon was already idle, so a jam found while the previous shot was still running threw
+		// the pull away: nothing played, and the press was long gone by the time the motion ended.
+		// Aiming into that window made it worse -- the hands sat in one pose with no gesture to leave
+		// it. The jam gesture is the answer to THIS pull, so it interrupts the shot rather than queueing
+		// behind it. Safe to switch unconditionally here: FireStart above already returned for eReload,
+		// eShowing, eHiding and eMisfire, so only idle/firing can reach this branch.
+		m_bDryFirePending = true;
+		// ...and drop any aim transition still in flight. switch2_Idle returns early while one is
+		// pending, so without this the switch below did nothing: the gesture never played, the pending
+		// flag stayed armed, and the weapon sat frozen until it was holstered and drawn again (user:
+		// jam mid-burst, then aim and pull -- the gun locks up). The jam gesture outranks the tail of
+		// an aim-in, exactly as at the light-misfire strike above.
+		m_dwAimTransitionEndTm	= 0;
+		// The deferred aim transitions have to go with it. switch2_Idle serves m_bAimOutPending before
+		// anything else, so with one armed the dry-fire never reached the HUD: the camera effect for it
+		// played (that hangs off the request, not the motion) while the weapon stayed in its idle and
+		// locked up -- user: jam, aim in and straight out, then pull. Nothing may defer this gesture.
+		m_bAimInPending			= false;
+		m_bAimOutPending		= false;
+		// Already idle -> go straight to switch2_Idle. SwitchState(eIdle) from eIdle is a transition to
+		// the same state and gets filtered out, so the handler never ran and the pending flag above
+		// stayed armed for good: the weapon answered nothing and only a holster/draw cleared it. This
+		// is the case the trace caught -- state=0, every aim flag zero, three pulls, no gesture, while
+		// anm_idle_aim_end was still running.
+		if (GetState() == eIdle)	switch2_Idle();
+		else						SwitchState(eIdle);
 		OnEmptyClick();
 	}
 }
@@ -2256,8 +2282,10 @@ void CWeaponMagazined::OnShot()
 		m_gwr_fired_until     = Device.dwTimeGlobal + 600;
 	}
 
-	// Sound
-	PlaySound					(m_sSndShotCurrent.c_str(), get_LastFP());
+	// Sound. Overlapping, so a burst is several shots ringing over each other instead of one sound
+	// restarted at every round -- the shared sound object is stopped on replay, which cut the tail off
+	// each time (snd_shot_overlap 0 puts the old behaviour back without a rebuild).
+	PlaySound					(m_sSndShotCurrent.c_str(), get_LastFP(), !!g_snd_shot_overlap);
 
 	// pump/bolt rack (GS breechblock) -- layered on the shot for weapons that define snd_breechblock
 	if (m_sounds.FindSoundItem("sndBreechblock", false))
@@ -2437,7 +2465,12 @@ void CWeaponMagazined::switch2_Idle	()
 	// a shoot / light-misfire anim is still on screen (the fire-rate timing ended before the anim did --
 	// e.g. a longer random variant like de_shoot2, or the click gesture): let it finish before the idle.
 	// UpdateCL replays switch2_Idle at m_dwShootAnimEndTm. Mirrors Gunslinger's CanAssignIdleAnimNow.
-	if (m_dwShootAnimEndTm && Device.dwTimeGlobal < m_dwShootAnimEndTm)
+	// ...but a pending JAM gesture is not the idle and does not wait for it. This guard sits above the
+	// m_bDryFirePending branch below, so while the shot animation ran the gesture was never reached --
+	// and every further pull just re-armed a flag nobody consumed, which is the lock-up: the weapon
+	// answered nothing until it was holstered and drawn. The jam is the answer to the pull that found
+	// it, so it takes the shot animation over instead of queueing behind it.
+	if (m_dwShootAnimEndTm && Device.dwTimeGlobal < m_dwShootAnimEndTm && !m_bDryFirePending)
 		return;
 	m_dwShootAnimEndTm = 0;	// committing to the idle now
 
@@ -3645,6 +3678,22 @@ void CWeaponMagazined::PlayAnimReload()
 			PlayHUDMotion("anm_reload_detector", TRUE, this, GetState());
 		else
 			PlayHUDMotion("anm_reload", TRUE, this, GetState());
+	}
+	// A reload of its own for a nearly-empty magazine: `reload_low_ammo` in the hud section is the round
+	// count at or below which it applies (absent or 0 = off), and the motion is anm_reload_low. Placed
+	// after the empty branch on purpose -- at 0 rounds anm_reload_empty is still the right one; this is
+	// the "almost out" case, where the belt or magazine is visibly short and the hands work differently.
+	// Existence-gated like every other variant here, so the key alone changes nothing until the motion
+	// is authored.
+	else if (iAmmoElapsed > 0
+		&& iAmmoElapsed <= READ_IF_EXISTS(pSettings, r_s32, HudSection(), "reload_low_ammo", 0)
+		&& (isHUDAnimationExist("anm_reload_low")
+			|| (det && isHUDAnimationExist("anm_reload_low_detector"))))
+	{
+		if (det && isHUDAnimationExist("anm_reload_low_detector"))
+			PlayHUDMotion("anm_reload_low_detector", TRUE, this, GetState());
+		else
+			PlayHUDMotion("anm_reload_low", TRUE, this, GetState());
 	}
 	else if (det && isHUDAnimationExist("anm_reload_detector"))
 		PlayHUDMotion("anm_reload_detector", TRUE, this, GetState());
