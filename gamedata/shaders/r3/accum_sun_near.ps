@@ -15,51 +15,6 @@
 
 #include "shadow.h"
 
-//	Cascade cross-fade. Each cascade covers a box of the world in light space; where two of them
-//	meet the shadow map is suddenly stretched over a much larger area, and that step used to be a
-//	hard edge because the stencil let exactly one cascade light each pixel. Now every cascade takes
-//	a_own of what the earlier ones left over -- see R_sun.cpp for why that has to be a product.
-uniform float4x4	m_shadow_prev;		//	same as m_shadow, for the previous cascade
-uniform float4		cascade_blend;		//	x: own fade width, y: previous cascade's, z: has previous
-
-//	1 well inside the cascade's box, sliding to 0 over the last `fade` of it, and hard 0 outside.
-//	The z test is not cosmetic: it is what keeps this in step with the volume actually rasterised
-//	(see `corners` in accum_direct_cascade -- only the 0.7..1 slice of the box is drawn), so a
-//	cascade never claims a pixel it did not light, and never gets counted twice on a pixel its
-//	front and back face both cover.
-float cascade_weight( float4 PS, float fade )
-{
-	float3	p	= PS.xyz/PS.w;
-	float2	d	= 0.5f - abs( p.xy - 0.5f );
-	float2	f	= saturate( d/fade );
-	return	min( f.x, f.y ) * step( 0.7f, p.z ) * step( p.z, 1.f );
-}
-
-#ifdef USE_SUNFILTER
-#ifdef MSAA_OPTIMIZATION
-float4 main ( v2p_volume I, uint iSample : SV_SAMPLEINDEX  ) : SV_Target
-#else
-float4 main ( v2p_volume I  ) : SV_Target
-#endif
-{
-	//float4 _P = tex2D( s_position, tc );
-
-	gbuffer_data gbd = gbuffer_load_data( GLD_P(I.tc, I.hpos, ISAMPLE) );
-
-#ifdef	GBUFFER_OPTIMIZATION
-	//	Emulate virtual offset
-	gbd.P += gbd.N*0.015f;
-#endif	//	GBUFFER_OPTIMIZATION
-
-	float4 _P = float4( gbd.P, 1.f);
-
-	float4 PS = mul( m_shadow,  _P );
-
-	float s	= shadowtest_sun( PS, I.tcJ ) * sunmask( _P );
-
-	return s;
-}
-#else
 #ifdef MSAA_OPTIMIZATION
 float4 main ( v2p_volume I,  uint iSample : SV_SAMPLEINDEX ) : SV_Target
 #else
@@ -79,14 +34,6 @@ float4 main ( v2p_volume I ) : SV_Target
 	float4 _P = float4( gbd.P, gbd.mtl );
 	float4  _N = float4( gbd.N, gbd.hemi );
 
-  	float4 	P4 	= float4( _P.x, _P.y, _P.z, 1.f);
-	float4 	PS	= mul( m_shadow, P4 );
-
-	// ----- cascade weight (before anything expensive: most pixels belong to another cascade)
-	float	w	= cascade_weight( PS, cascade_blend.x );
-			w  *= 1.f - cascade_blend.z * cascade_weight( mul( m_shadow_prev, P4 ), cascade_blend.y );
-	clip( w - 0.001f );
-
 	// ----- light-model
 	float	m	= xmaterial;
 # ifndef USE_R2_STATIC_SUN
@@ -95,21 +42,14 @@ float4 main ( v2p_volume I ) : SV_Target
 	float4	light	= plight_infinity ( m, _P, _N, Ldynamic_dir );
 
 	// ----- shadow
+  	float4 	P4 	= float4( _P.x, _P.y, _P.z, 1.f);
+	float4 	PS	= mul( m_shadow, P4 );
 	float 	s 	= sunmask( P4 );
-	#if defined	(USE_SJITTER) || SUN_QUALITY==2 // Hight quality
+	#if SUN_QUALITY==2 // Hight quality
 	  		s 	*= shadow_high(PS); //shadowtest_sun( PS, float4(0,0,0,0) );
 	#else
-#ifdef SM_MINMAX
-		#ifdef USE_SJITTER
-	  		s 	*= shadow_dx10_1( PS, I.tcJ, I.hpos.xy );
-		#else
 			s *= shadow( PS );
-		#endif
-#else
-			s *= shadow( PS );
-#endif
 	#endif
 
-	return 		blend( Ldynamic_color * light * s * w, I.tc );
+	return 		blend( Ldynamic_color * light * s/*float4( 1.f, 0.2f, 0.2f, 1.f)*/, I.tc );
 }
-#endif

@@ -41,41 +41,26 @@ Fvector3		wform	(Fmatrix& m, Fvector3 const& v)
 	return		r3;
 }
 
-// Cascade layout. `size` is the side, in metres, of the light-space square the cascade covers;
-// every cascade gets the same shadow-map resolution, so the ratio between neighbours is exactly how
-// much the shadows coarsen when you step over the border -- that border is the hard-edged quad
-// visible around the player on open ground. Console-driven (r2_sun_cascades, r2_sun_cascade0..2) so
-// the seam can be pushed out at runtime; re-read every frame from render_sun_cascades().
 void CRender::init_cacades()
 {
-	u32 cascade_count = (u32)clampr(ps_r2_sun_cascades, 2, 3);
-	if (m_sun_cascades.size() != cascade_count)
-		m_sun_cascades.resize(cascade_count);
+	u32 cascade_count = 3;
+	m_sun_cascades.resize(cascade_count);
 
-	constexpr float fBias = -0.0000025f;
-
-	// With two cascades the middle step is what gets dropped -- keep the far distance.
-	float sizes[3] = { ps_r2_sun_cascade0, ps_r2_sun_cascade1, ps_r2_sun_cascade2 };
-	if (2 == cascade_count)
-		sizes[1] = sizes[2];
+	float fBias = -0.0000025f;
 
 	m_sun_cascades[0].reset_chain = true;
-	for (u32 i = 0; i < cascade_count; ++i)
-	{
-		// sizes must grow, otherwise the chained frustum rays walk backwards
-		if (i > 0)
-			sizes[i] = _max(sizes[i], sizes[i-1] * 1.05f);
+	m_sun_cascades[0].size = 15;
+	m_sun_cascades[0].bias = m_sun_cascades[0].size*fBias;
 
-		m_sun_cascades[i].size = sizes[i];
-		m_sun_cascades[i].bias = m_sun_cascades[i].size*fBias;
-	}
+	m_sun_cascades[1].size = 40;
+	m_sun_cascades[1].bias = m_sun_cascades[1].size*fBias;
+
+ 	m_sun_cascades[2].size = 160;
+ 	m_sun_cascades[2].bias = m_sun_cascades[2].size*fBias;
 }
 
 void CRender::render_sun_cascades ( )
 {
-	init_cacades();		// pick up console changes
-
-
 	bool b_need_to_render_sunshafts = RImplementation.Target->need_to_render_sunshafts();
 	bool last_cascade_chain_mode = m_sun_cascades.back().reset_chain;
 	if ( b_need_to_render_sunshafts )
@@ -242,40 +227,6 @@ void CRender::render_sun_cascade ( u32 cascade_ind )
 			proj_view.normalize();
 //			lightXZshift.mad(proj_view, 20);
 
-			// Focusing. compute_caster_model_fixed() slides the box forward along the view so that
-			// it hugs this cascade's slice of the frustum -- the shadow map is then spent only on
-			// what you can actually see. The price is that the box position depends on where you
-			// LOOK, and it does so discontinuously: the shift is built from whichever one or two
-			// side planes happen to face the camera, so the set changes as you turn and the box
-			// jumps. That is the cascade border visibly re-laying itself out while you rotate, and
-			// looking down it slides out from under your feet. r2_sun_cascade_focus scales the
-			// shift: 1 is the stock fit, 0 pins the box to the camera and the border then does not
-			// move at all when you turn (at the cost of half the box being spent behind you).
-			// Safe to scale here: the caster cull planes computed above stay a superset, and the
-			// cross-fade weights carry any gap that opens up (see below).
-			// ...but ONLY for the cascades whose border the player can actually see. The LAST one
-			// is what the sun shafts march through (accum_direct draws them on SE_SUN_FAR, using
-			// that cascade's matrix), so pinning it to the camera spends half its box behind the
-			// player and the shaft ray walks straight out of the map -- which reads as bright
-			// wedges that swim and flicker as you turn. Its box is the huge one (160 m by default)
-			// and its border is far enough away that the seam this scaling exists for is not
-			// visible there anyway, so it keeps the stock fit.
-			// ...and only on a normally-framed view. A 3D scope lens frame renders the whole scene at
-			// the magnified scope fov (CCameraManager::ApplyDevice), and there the pinning is exactly
-			// backwards: a camera-pinned box covers a fixed bubble -- 15 m, 40 m -- while a 4x scope
-			// starts showing ground at ~9 m and puts the 20 m border in the middle of the picture,
-			// magnified fourfold. That is the seam still visible inside the lens after the main view
-			// was fixed. A needle frustum is what focusing is FOR: the box slides onto the thin slice
-			// it has to cover, so a 15 m box reaches ~39 m at 21.7 deg (4x) and ~97 m at 8.8 deg (10x)
-			// and the borders leave the frame entirely. The wobble the pinning exists to kill cannot
-			// show there either -- the box now contains the whole visible slice, so its border is
-			// off-screen. So the lens frame takes the stock fit regardless of the cvar. The presented
-			// main view is unaffected: on a lens frame the screen shows the saved normal frame
-			// (CGamePersistent::ComputeLensFrame), and normal frames still read the cvar.
-			const bool	b_lens_frame	= g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow;
-			if ( cascade_ind + 1 < m_sun_cascades.size() && !b_lens_frame )
-				lightXZshift.mul( clampr(ps_r2_sun_cascade_focus, 0.f, 1.f) );
-
 			// Initialize rays for the next cascade
 			if( cascade_ind < m_sun_cascades.size()-1 )
 				m_sun_cascades[cascade_ind+1].rays =  light_cuboid.view_frustum_rays;
@@ -407,35 +358,13 @@ void CRender::render_sun_cascade ( u32 cascade_ind )
 	PIX_EVENT(SE_SUN_NEAR);
 #endif // USE_DX10
 
-	// Cross-fade weights, handed to the accumulation shader. Cascade i contributes
-	//     w_i    = a_i * PROD(j<i) (1 - a_j)      and the last one takes the whole remainder,
-	//     w_last =       PROD(j<last) (1 - a_j),
-	// where a_j is 1 deep inside cascade j's box and slides to 0 over the last
-	// ps_r2_sun_cascade_blend metres of it. The product form sums to exactly 1 for ANY layout of
-	// the boxes, and that matters here: the boxes are NOT nested. compute_caster_model_fixed()
-	// slides each one forward along the view to hug its slice of the frustum, so cascade 0 sticks
-	// out of cascade 1 behind the player. A simpler "subtract only the previous cascade" formula
-	// assumes nesting and pays for it with up to 2x sunlight exactly there.
-	// Widths go in normalised to each box (shadow tc spans the whole side), hence the sizes of the
-	// two preceding cascades.
-	Fvector4	blend;
-	{
-		const float	band		= _max(ps_r2_sun_cascade_blend, 0.001f);
-		const float	size_cur	= m_sun_cascades[cascade_ind].size;
-		const float	size_prev	= cascade_ind > 0 ? m_sun_cascades[cascade_ind-1].size : size_cur;
-		blend.set	(band/size_cur, band/size_prev, cascade_ind > 0 ? 1.f : 0.f,
-					 cascade_ind > 1 ? band/m_sun_cascades[cascade_ind-2].size : 0.f);
-	}
-	Fmatrix&	xform_prev	= m_sun_cascades[cascade_ind > 0 ? cascade_ind-1 : cascade_ind].xform;
-	Fmatrix&	xform_prev2	= m_sun_cascades[cascade_ind > 1 ? cascade_ind-2 : cascade_ind].xform;
-
 	if( cascade_ind == 0 )
-		Target->accum_direct_cascade		(SE_SUN_NEAR, m_sun_cascades[cascade_ind].xform, xform_prev, xform_prev2, m_sun_cascades[cascade_ind].bias, blend );
+		Target->accum_direct_cascade		(SE_SUN_NEAR, m_sun_cascades[cascade_ind].xform, m_sun_cascades[cascade_ind].xform, m_sun_cascades[cascade_ind].bias );
 	else
 		if( cascade_ind < m_sun_cascades.size()-1 )
-			Target->accum_direct_cascade		(SE_SUN_MIDDLE, m_sun_cascades[cascade_ind].xform, xform_prev, xform_prev2, m_sun_cascades[cascade_ind].bias, blend);
+			Target->accum_direct_cascade		(SE_SUN_MIDDLE, m_sun_cascades[cascade_ind].xform, m_sun_cascades[cascade_ind-1].xform, m_sun_cascades[cascade_ind].bias);
 		else
-			Target->accum_direct_cascade		(SE_SUN_FAR, m_sun_cascades[cascade_ind].xform, xform_prev, xform_prev2, m_sun_cascades[cascade_ind].bias, blend);
+			Target->accum_direct_cascade		(SE_SUN_FAR, m_sun_cascades[cascade_ind].xform, m_sun_cascades[cascade_ind-1].xform, m_sun_cascades[cascade_ind].bias);
 
 	// Restore XForms
 	RCache.set_xform_world		(Fidentity			);

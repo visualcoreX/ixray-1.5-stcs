@@ -116,12 +116,6 @@ extern ECORE_API float			ps_r2_ls_depth_scale;		// 1.0f
 extern ECORE_API float			ps_r2_ls_depth_bias;		// -0.0001f
 extern ECORE_API float			ps_r2_ls_squality;			// 1.0f
 extern ECORE_API float			ps_r2_sun_near;				// 16.0f
-extern ECORE_API int			ps_r2_sun_cascades;			// 3
-extern ECORE_API float			ps_r2_sun_cascade0;			// 15.0f
-extern ECORE_API float			ps_r2_sun_cascade1;			// 40.0f
-extern ECORE_API float			ps_r2_sun_cascade2;			// 160.0f
-extern ECORE_API float			ps_r2_sun_cascade_blend;	// 2.5f
-extern ECORE_API float			ps_r2_sun_cascade_focus;	// 0.0f (stock fit is 1.0f)
 extern ECORE_API float			ps_r2_sun_near_border;		// 1.0f
 extern ECORE_API float			ps_r2_sun_tsm_projection;	// 0.2f
 extern ECORE_API float			ps_r2_sun_tsm_bias;			// -0.3f

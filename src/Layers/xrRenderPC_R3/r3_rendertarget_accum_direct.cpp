@@ -28,7 +28,7 @@ static u16			facetable[16][3]		= {
 	{ 2, 4, 1 },
 };
 
-void CRenderTarget::accum_direct_cascade	( u32 sub_phase, Fmatrix& xform, Fmatrix& xform_prev, Fmatrix& xform_prev2, float fBias, const Fvector4& blend )
+void CRenderTarget::accum_direct_cascade	( u32 sub_phase, Fmatrix& xform, Fmatrix& xform_prev, float fBias )
 {
 	// Choose normal code-path or filtered
 	phase_accumulator					();
@@ -178,21 +178,6 @@ void CRenderTarget::accum_direct_cascade	( u32 sub_phase, Fmatrix& xform, Fmatri
 			FPU::m24r		();
 		}
 
-		// Same xform for the two PRECEDING cascades' boxes. The shader needs them to work out how
-		// much of this pixel those cascades have already lit -- built without the tsm-bias, so
-		// that they match bit for bit what those cascades used for their own fade. Both are
-		// needed, not just the immediate predecessor: the boxes are not nested (see R_sun.cpp).
-		// See the cross-fade in accum_sun_near.ps / accum_sun_far.ps.
-		Fmatrix				m_shadow_prev, m_shadow_prev2;
-		{
-			FPU::m64r		();
-			Fmatrix			xf_project;		xf_project.mul		(m_TexelAdjust,xform_prev);
-			m_shadow_prev.mul(xf_project,	xf_invview);
-			xf_project.mul	(m_TexelAdjust,	xform_prev2);
-			m_shadow_prev2.mul(xf_project,	xf_invview);
-			FPU::m24r		();
-		}
-
 		// clouds xform
 		Fmatrix				m_clouds_shadow;
 		{
@@ -230,37 +215,8 @@ void CRenderTarget::accum_direct_cascade	( u32 sub_phase, Fmatrix& xform, Fmatri
 		j0.set						(offset,offset);
 		j1.set						(scale_X,scale_X).add(offset);
 
-		// Fill vertex buffer.
-		// The last cascade owns everything the tighter ones did not take, so it has to cover the
-		// whole screen EXACTLY once. Its box cannot do that: the cascade boxes are slid forward
-		// along the view (compute_caster_model_fixed), so the camera usually sits OUTSIDE them,
-		// and a closed box drawn with CULL_NONE then rasterises TWICE -- entry and exit face --
-		// for everything in front of it. That was harmless while the passes overwrote each other;
-		// with additive accumulation it is a straight double dose of sunlight. A screen-filling
-		// quad gives one fragment per pixel by construction, and costs nothing here because the
-		// far pass runs with ZFUNC ALWAYS anyway. (With SUN_ZCULLING on the depth test is real, so
-		// that path keeps the box.)
-		const bool	b_screen_quad	= (SE_SUN_FAR == sub_phase) && !ps_r2_ls_flags_ext.is(R2FLAGEXT_SUN_ZCULLING);
+		// Fill vertex buffer
 		u32		i_offset;
-		if ( b_screen_quad )
-		{
-			static const Fvector3	ndc_quad[4]	= {
-				{ -1.f, +1.f, 0.5f },	{ -1.f, -1.f, 0.5f },
-				{ +1.f, +1.f, 0.5f },	{ +1.f, -1.f, 0.5f }
-			};
-			Fmatrix	inv_full;	inv_full.invert(Device.mFullTransform);
-
-			Fvector4* pv				= (Fvector4*)	RCache.Vertex.Lock	( 4,g_combine_cuboid.stride(),Offset);
-			for ( u32 i = 0; i < 4; ++i )
-			{
-				Fvector3 tmp_vec;
-				inv_full.transform		(tmp_vec, ndc_quad[i]);
-				pv->set					( tmp_vec.x,tmp_vec.y, tmp_vec.z, 1 );
-				pv++;
-			}
-			RCache.Vertex.Unlock		(4,g_combine_cuboid.stride());
-		}
-		else
 		{
 			u16*	pib					= RCache.Index.Lock	(sizeof(facetable)/sizeof(u16),i_offset);
 			CopyMemory					(pib,&facetable,sizeof(facetable));
@@ -270,20 +226,20 @@ void CRenderTarget::accum_direct_cascade	( u32 sub_phase, Fmatrix& xform, Fmatri
 
 			u32 ver_count = sizeof(corners)/ sizeof(Fvector3);
 			Fvector4* pv				= (Fvector4*)	RCache.Vertex.Lock	( ver_count,g_combine_cuboid.stride(),Offset);
-
+			
 
 			Fmatrix inv_XDcombine;
 			if( /*ps_r2_ls_flags_ext.is(R2FLAGEXT_SUN_ZCULLING) &&*/ sub_phase == SE_SUN_FAR )
 				inv_XDcombine.invert(xform_prev);
 			else
 				inv_XDcombine.invert(xform);
-
+				
 
 			for ( u32 i = 0; i < ver_count; ++i )
 			{
 				Fvector3 tmp_vec;
 				inv_XDcombine.transform(tmp_vec, corners[i]);
-				pv->set						( tmp_vec.x,tmp_vec.y, tmp_vec.z, 1 );
+				pv->set						( tmp_vec.x,tmp_vec.y, tmp_vec.z, 1 );	
 				pv++;
 			}
 			RCache.Vertex.Unlock		(ver_count,g_combine_cuboid.stride());
@@ -297,10 +253,7 @@ void CRenderTarget::accum_direct_cascade	( u32 sub_phase, Fmatrix& xform, Fmatri
 		RCache.set_c				("Ldynamic_dir",		L_dir.x,L_dir.y,L_dir.z,0		);
 		RCache.set_c				("Ldynamic_color",		L_clr.x,L_clr.y,L_clr.z,L_spec	);
 		RCache.set_c				("m_shadow",			m_shadow						);
-		RCache.set_c				("m_shadow_prev",		m_shadow_prev					);
-		RCache.set_c				("m_shadow_prev2",		m_shadow_prev2					);
 		RCache.set_c				("m_sunmask",			m_clouds_shadow					);
-		RCache.set_c				("cascade_blend",		blend							);
 
 		if(sub_phase == SE_SUN_FAR)
 		{
@@ -355,34 +308,28 @@ void CRenderTarget::accum_direct_cascade	( u32 sub_phase, Fmatrix& xform, Fmatri
 				RCache.set_ZFunc(D3DCMP_LESS);
 
 
-		// Cascades used to be made mutually exclusive here: a cascade zeroed the stencil (write mask
-		// 0xFE, keeping the scene bit) wherever it lit a pixel, so the next one could not touch it.
-		// That is exactly what makes the border a hard edge -- every pixel got its light from one
-		// cascade only. Now the pixel is lit by both neighbours with weights that sum to 1, so the
-		// stencil must survive the pass and the accumulation must be additive (see the blender).
-		const u32 st_mask = 0x00;
-		const _D3DSTENCILOP st_pass = D3DSTENCILOP_KEEP;
+		u32 st_mask = 0xFE;
+		_D3DSTENCILOP st_pass = D3DSTENCILOP_ZERO;
 
-		// one draw of the light volume: the cascade box, or the screen quad of the far pass
-		auto draw_volume = [&]()
+		if( sub_phase == SE_SUN_FAR )
 		{
-			if ( b_screen_quad )	RCache.Render	(D3DPT_TRIANGLESTRIP,Offset,2);
-			else					RCache.Render	(D3DPT_TRIANGLELIST,Offset,0,8,0,16);
-		};
+			st_mask = 0x00;
+			st_pass = D3DSTENCILOP_KEEP;
+		}
 
 		// setup stencil
 		if( ! RImplementation.o.dx10_msaa )
 		{
 			//RCache.set_Stencil	(TRUE,D3DCMP_LESSEQUAL,dwLightMarkerID,0xff,0x00);
 			RCache.set_Stencil	(TRUE,D3DCMP_LESSEQUAL,dwLightMarkerID,0xff,st_mask, D3DSTENCILOP_KEEP, st_pass, D3DSTENCILOP_KEEP);
-			draw_volume();
+			RCache.Render			(D3DPT_TRIANGLELIST,Offset,0,8,0,16);
 		}
 		else 
 		{
 			// per pixel
 			//RCache.set_Stencil	(TRUE,D3DCMP_EQUAL,dwLightMarkerID,0xff,0x00);
 			RCache.set_Stencil	(TRUE,D3DCMP_EQUAL,dwLightMarkerID,0xff,st_mask, D3DSTENCILOP_KEEP, st_pass, D3DSTENCILOP_KEEP);
-			draw_volume();
+			RCache.Render			(D3DPT_TRIANGLELIST,Offset,0,8,0,16);
 
 			// per sample
 			if( RImplementation.o.dx10_msaa_opt )
@@ -400,7 +347,7 @@ void CRenderTarget::accum_direct_cascade	( u32 sub_phase, Fmatrix& xform, Fmatri
 
 				RCache.set_Stencil	(TRUE,D3DCMP_EQUAL,dwLightMarkerID|0x80,0xff,st_mask, D3DSTENCILOP_KEEP, st_pass, D3DSTENCILOP_KEEP);
 				RCache.set_CullMode	(CULL_NONE	);
-				draw_volume();
+				RCache.Render			(D3DPT_TRIANGLELIST,Offset,0,8,0,16);
 			}
 			else
 			{
@@ -419,7 +366,7 @@ void CRenderTarget::accum_direct_cascade	( u32 sub_phase, Fmatrix& xform, Fmatri
 					RCache.set_Stencil	      (TRUE,D3DCMP_EQUAL,dwLightMarkerID|0x80,0xff,st_mask, D3DSTENCILOP_KEEP, st_pass, D3DSTENCILOP_KEEP);
 					RCache.set_CullMode		   (CULL_NONE	);
 					StateManager.SetSampleMask ( u32(1) << i  );
-					draw_volume();
+					RCache.Render					(D3DPT_TRIANGLELIST,Offset,0,8,0,16);
 				}
 				StateManager.SetSampleMask	( 0xffffffff );
 			}
@@ -441,31 +388,10 @@ void CRenderTarget::accum_direct_cascade	( u32 sub_phase, Fmatrix& xform, Fmatri
 		//if (ps_r2_ls_flags.test(R2FLAG_SUN_SHAFTS))
 		if ( RImplementation.o.advancedpp&&(ps_r_sun_shafts>0) && sub_phase == SE_SUN_FAR)
 		{
-			// The shafts march the light BOX. Once this pass started drawing a screen quad instead
-			// (b_screen_quad, the fix that stopped the cascades doubling up the sun), that box was
-			// never written, and the volumetric draw read four stale vertices out of the dynamic
-			// buffer -- the swimming bright wedges. Build it here, into an offset of its own.
-			u32	vol_offset	= Offset;
-			if ( b_screen_quad )
-			{
-				u32		vol_ioffset;
-				u16*	pib	= RCache.Index.Lock	(sizeof(facetable)/sizeof(u16),vol_ioffset);
-				CopyMemory			(pib,&facetable,sizeof(facetable));
-				RCache.Index.Unlock	(sizeof(facetable)/sizeof(u16));
-
-				u32			ver_count	= sizeof(corners)/sizeof(Fvector3);
-				Fvector4*	pv			= (Fvector4*) RCache.Vertex.Lock (ver_count,g_combine_cuboid.stride(),vol_offset);
-				Fmatrix		inv_box;	inv_box.invert(xform_prev);
-				for ( u32 i = 0; i < ver_count; ++i )
-				{
-					Fvector3	tmp_vec;
-					inv_box.transform	(tmp_vec, corners[i]);
-					pv->set				(tmp_vec.x,tmp_vec.y,tmp_vec.z,1);
-					pv++;
-				}
-				RCache.Vertex.Unlock	(ver_count,g_combine_cuboid.stride());
-			}
-			accum_direct_volumetric	(sub_phase, vol_offset, m_shadow);
+			// The shafts march the light BOX, and this pass has just drawn it at Offset, so that is
+			// what they read. (While the far pass drew a screen quad instead, the box was never
+			// written and the volumetric draw picked up stale vertices -- swimming bright wedges.)
+			accum_direct_volumetric	(sub_phase, Offset, m_shadow);
 		}
 	}
 }

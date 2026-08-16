@@ -191,28 +191,6 @@ float		ps_r2_sun_tsm_projection	= 0.6f;				// 0.6f
 float		ps_r2_sun_tsm_bias			= -0.3f;			// -0.3f
 float		ps_r2_sun_near				= 16.f;				// 12.0f
 
-// Sun shadow cascades: how many, and the side (metres) of the light-space square each one covers.
-// Cascade 0's border is the hard-edged quad the player sees around himself on open ground -- the
-// shadow map is the same resolution for every cascade, so crossing that border the same texels get
-// stretched over a 40/15 = 2.7x wider area and the shadows visibly coarsen. Raising cascade 0 pushes
-// the seam away at the cost of sharpness underfoot; see init_cacades() in R_sun.cpp.
-// r2_sun_cascade_blend is the width, in metres, of the band where two neighbouring cascades
-// cross-fade: the inner one fades out over the last `blend` metres of its box while the outer one
-// fades in over exactly the same band, so the two weights sum to 1 and the border stops being a
-// visible edge. 0 = the stock hard switch.
-int			ps_r2_sun_cascades			= 3;				// 2..3
-float		ps_r2_sun_cascade0			= 15.f;				// 15.0f
-float		ps_r2_sun_cascade1			= 40.f;				// 40.0f
-float		ps_r2_sun_cascade2			= 160.f;			// 160.0f
-float		ps_r2_sun_cascade_blend		= 2.5f;				// metres
-// 0 by default, NOT the stock 1: with the stock frustum fit the cascade box chases the view
-// direction, so its border slides under the player when looking down and visibly re-lays itself out
-// when turning. Pinned to the camera all three boxes are concentric around the player, the border
-// keeps a fixed distance in every direction and does not move at all when you rotate. It costs
-// reach: half of each box is now spent behind you, so a cascade of size N reaches N/2 ahead instead
-// of nearly N. Raise r2_sun_cascade0..2 to buy that back -- at the usual price in sharpness.
-float		ps_r2_sun_cascade_focus		= 0.0f;				// 1 = stock frustum fit, 0 = camera-pinned
-
 extern float OLES_SUN_LIMIT_27_01_07;	//	actually sun_far
 
 float		ps_r2_sun_near_border		= 1.0f;			// 1.0f
@@ -699,12 +677,6 @@ void		xrRender_initconsole	()
 	CMD4(CCC_Float,		"r2_sun_near",			&ps_r2_sun_near,			1.f,	50.f	);
 #if RENDER!=R_R1
 	CMD4(CCC_Float,		"r2_sun_far",			&OLES_SUN_LIMIT_27_01_07,	51.f,	180.f	);
-	CMD4(CCC_Integer,	"r2_sun_cascades",		&ps_r2_sun_cascades,		2,		3		);
-	CMD4(CCC_Float,		"r2_sun_cascade0",		&ps_r2_sun_cascade0,		5.f,	160.f	);
-	CMD4(CCC_Float,		"r2_sun_cascade1",		&ps_r2_sun_cascade1,		5.f,	320.f	);
-	CMD4(CCC_Float,		"r2_sun_cascade2",		&ps_r2_sun_cascade2,		5.f,	640.f	);
-	CMD4(CCC_Float,		"r2_sun_cascade_blend",	&ps_r2_sun_cascade_blend,	0.f,	15.f	);
-	CMD4(CCC_Float,		"r2_sun_cascade_focus",	&ps_r2_sun_cascade_focus,	0.f,	1.f		);
 #endif
 	CMD4(CCC_Float,		"r2_sun_near_border",	&ps_r2_sun_near_border,		.5f,	1.0f	);
 	CMD4(CCC_Float,		"r2_sun_depth_far_scale",&ps_r2_sun_depth_far_scale,0.5,	1.5		);
