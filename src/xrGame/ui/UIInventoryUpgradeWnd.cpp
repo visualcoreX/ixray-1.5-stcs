@@ -206,16 +206,32 @@ bool CUIInventoryUpgradeWnd::install_item( CInventoryItem& inv_item, bool can_up
 	for ( ; ib != ie; ++ib )
 	{
 		UIUpgrade* ui_item = (*ib);
-		m_scheme_wnd->AttachChild( ui_item );
-		
+
 		LPCSTR upgrade_name = get_manager().get_upgrade_by_index( inv_item, ui_item->get_scheme_index() );
+		Upgrade_type* upgrade_p = ( upgrade_name && upgrade_name[0] )
+								? get_manager().get_upgrade( upgrade_name ) : NULL;
+
+		// A scheme cell this item defines no upgrade for. Only VERIFY stood between that and
+		// UIUpgrade::update_item calling can_install() on the NULL, and VERIFY is nothing in Release --
+		// so selecting such an item in the upgrade menu was a read of address 0 with an empty log.
+		// Real case: the lr300 and the g36 are pointed at upgrade_scheme_u16a_nolamp, a scheme drawn
+		// for the outfits with 16 cells (9 + 5 + 2), while both weapons define 15 upgrades and leave
+		// column 1 row 4 empty. Leave the cell out of the window and name it, so the next mismatch is
+		// a line in the log instead of a silent crash.
+		if ( !upgrade_p )
+		{
+			Msg( "! [%s]: upgrade scheme cell <%d,%d> has no upgrade -- cell skipped",
+				inv_item.m_section_id.c_str(),
+				ui_item->get_scheme_index().x, ui_item->get_scheme_index().y );
+			continue;
+		}
+
+		m_scheme_wnd->AttachChild( ui_item );
 		ui_item->init_upgrade( upgrade_name, inv_item );
-		
-		Upgrade_type* upgrade_p = get_manager().get_upgrade( upgrade_name );
-		VERIFY( upgrade_p );
+
 		Property_type* prop_p = get_manager().get_property( upgrade_p->get_property_name() );
 		VERIFY( prop_p );
-		
+
 		ui_item->set_texture( UIUpgrade::LAYER_ITEM,   upgrade_p->icon_name() );
 		ui_item->set_texture( UIUpgrade::LAYER_COLOR,  m_cell_textures[UIUpgrade::STATE_ENABLED].c_str() ); //default
 		ui_item->set_texture( UIUpgrade::LAYER_BORDER, m_border_texture.c_str() );
