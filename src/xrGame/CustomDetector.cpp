@@ -448,24 +448,30 @@ bool CCustomDetector::PlayCompanionAction(LPCSTR action, bool bRestart)
 	// anm_idle_aim_empty_start -> anm_wpn_idle_aim_start).
 	string256 alias;
 	xr_sprintf(alias, "anm_wpn_%s", action);
+
+	// The FIRE MODE mark. The weapon's alias carries mask_firemode_<a|N> (anm_shoot -> anm_shoot_auto),
+	// but a detector mirrors an ACTION, not a fire mode, and no detector defines a per-mode companion --
+	// so in auto every companion silently failed to resolve. The mark is per weapon, so ask the weapon
+	// itself instead of hardcoding "_auto"/"_triple". Looked up once: the fallback below needs it, and
+	// so does the transition test further down. r_string hands back config storage, so it outlives us.
+	LPCSTR mark = NULL;
+	{
+		attachable_hud_item* wh = g_player_hud ? g_player_hud->attached_item(0) : NULL;
+		CWeaponMagazined* wm = wh ? smart_cast<CWeaponMagazined*>(wh->m_parent_hud_item) : NULL;
+		if (wm)
+		{
+			string64 marked;	xr_sprintf(marked, "anm_%s", action);
+			mark = wm->GetFireModeMark(marked);
+		}
+	}
+
 	if (!isHUDAnimationExist(alias))
 	{
 		string256 clean;
 		xr_strcpy(clean, action);
 		companion_strip(clean, "_empty");
 		companion_strip(clean, "_jammed");
-		// ...and the FIRE MODE mark. The weapon's alias carries mask_firemode_<a|N> (anm_shoot ->
-		// anm_shoot_auto), but a detector mirrors an ACTION, not a fire mode, and no detector defines a
-		// per-mode companion -- so in auto every companion silently failed to resolve. The mark is per
-		// weapon, so ask the weapon itself instead of hardcoding "_auto"/"_triple".
-		attachable_hud_item* wh = g_player_hud ? g_player_hud->attached_item(0) : NULL;
-		CWeaponMagazined* wm = wh ? smart_cast<CWeaponMagazined*>(wh->m_parent_hud_item) : NULL;
-		if (wm)
-		{
-			string64 marked;	xr_sprintf(marked, "anm_%s", action);
-			LPCSTR mark = wm->GetFireModeMark(marked);
-			if (mark && mark[0])	companion_strip(clean, mark);
-		}
+		if (mark && mark[0])	companion_strip(clean, mark);
 		xr_sprintf(alias, "anm_wpn_%s", clean);
 		if (!isHUDAnimationExist(alias))
 		{
@@ -497,7 +503,18 @@ bool CCustomDetector::PlayCompanionAction(LPCSTR action, bool bRestart)
 		// "_end" is deliberately excluded from both: it leads OUT of the aim, into our own plain idle,
 		// and holding the pose there left the hand aiming after the weapon had already come down.
 		// Non-aim one-shots are excluded too -- falling through to the hip idle is right for those.
+		// Classify on the alias with the weapon-STATE suffixes taken off, not on the alias as played.
+		// "_start"/"_end" sit at the end of the ACTION, but an empty or jammed weapon appends its own
+		// suffix after them, and a detector that authors the exact variant resolves to it verbatim
+		// above instead of falling into the strip path -- detector_torch has anm_wpn_idle_aim_end_empty
+		// and _end_jammed. The literal tail was then "_empty", the aim-out stopped being recognised as
+		// an exit, and it took the "hold the aim pose" branch below: the torch hand went back to aiming
+		// after the weapon had already come down (user 2026-08-16). Same for the fire-mode mark, which
+		// can sit between the two (anm_wpn_idle_aim_end_auto_empty).
 		string256 base;	xr_strcpy(base, alias);
+		companion_strip(base, "_empty");
+		companion_strip(base, "_jammed");
+		if (mark && mark[0])	companion_strip(base, mark);
 		const int bl = (int)xr_strlen(base);
 		const int sl = (int)xr_strlen("_start");
 		const bool b_end	= (bl > 4 && 0 == xr_strcmp(base + bl - 4, "_end"));
