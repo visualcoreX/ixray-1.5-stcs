@@ -665,8 +665,13 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 							(g_actor_legs_relaxed == 3);
 	const bool bDiagLegs =	(g_actor_legs_diagonal == 2) || (g_actor_legs_diagonal == 1 && bRelaxed);
 
-	// Legs
-	if		(mstate_rl&mcLanding)	M_legs	= ST->landing[0];
+	// Legs. The landing cycle is held by its OWN timer (m_fLegsLandingHold), not by mcLanding:
+	// that state is over in 0.1s, and the movement cycle below would take the legs straight off the
+	// landing animation -- which is why a jump taken while walking barely touched down and lost its
+	// footstep sound (the mark for norm_jump_end sits at 0.2). Standing still masked it: with no
+	// movement cycle to fall through to, the animation played on by itself.
+	if		(m_fLegsLandingHold>0.f)M_legs	= ST->landing[m_uLegsLandingIdx ? 1 : 0];
+	else if (mstate_rl&mcLanding)	M_legs	= ST->landing[0];
 	else if (mstate_rl&mcLanding2)	M_legs	= ST->landing[1];
 	else if ((mstate_rl&mcTurn)&&
 			!(mstate_rl&mcClimb))	M_legs	= ST->TurnLegs(bRelaxed);

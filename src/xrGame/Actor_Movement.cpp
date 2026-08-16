@@ -20,8 +20,23 @@
 #ifdef DEBUG
 #include "phdebug.h"
 #endif
-static const float	s_fLandingTime1		= 0.1f;// ����� ������� ����� ���� Landing1 (�.�. �������� ��������� ��������)
-static const float	s_fLandingTime2		= 0.3f;// ����� ������� ����� ���� Landing2 (�.�. �������� ��������� ��������)
+// How long the landing state is held. It is not only a timer: while it lasts the legs play the
+// landing cycle, and the moment it ends the movement cycle takes over. At the stock 0.1s a landing
+// taken while walking was cut after 100ms -- the character barely touched the ground before walking
+// on, and the footstep mark for norm_jump_end (0.2, stalker_step_manager) was never reached, so the
+// landing sound went missing with it. Standing still hid the bug: with no movement cycle to replace
+// it, the landing animation simply played on.
+// RAISING THIS IS NOT THE FIX: the same state also drives the camera dip (ActorCameras) and the
+// hud offset hud_move_landing_offset (player_hud.cpp:1302), so a longer landing holds the hands
+// down far longer than a normal jump should -- it reads as broken first-person inertia. Left at
+// the stock value; the legs need their own hold, separate from this state.
+// Console: actor_landing_time / actor_landing_time_hard.
+float	s_fLandingTime1		= 0.1f;		// soft landing (no damage taken)
+// How long the LEGS hold the landing cycle, independent of the state above. Long enough to reach
+// the footstep mark of norm_jump_end (0.2 in stalker_step_manager), which is what makes a landing
+// audible, and long enough to actually see the animation from third person.
+float	s_fLegsLandingHold	= 0.3f;		// console: actor_landing_legs_time
+float	s_fLandingTime2		= 0.3f;		// hard landing (damage taken)
 static const float	s_fJumpTime			= 0.3f;
 static const float	s_fJumpGroundTime	= 0.1f;	// ��� ������ ������ Jump ���� �� �����
 	   const float	s_fFallTime			= 0.2f;
@@ -45,6 +60,7 @@ void CActor::g_cl_ValidateMState(float dt, u32 mstate_wf)
 		mstate_real		&= ~mcLookout;
 
 	// ��������� �����������
+	if (m_fLegsLandingHold > 0.f)	m_fLegsLandingHold -= dt;
 	if (mstate_real&(mcLanding|mcLanding2)){
 		m_fLandingTime		-= dt;
 		if (m_fLandingTime<=0.f){
@@ -58,11 +74,17 @@ void CActor::g_cl_ValidateMState(float dt, u32 mstate_wf)
 			if (character_physics_support()->movement()->GetContactSpeed()>4.f){
 				if (fis_zero(character_physics_support()->movement()->gcontact_HealthLost)){	
 					m_fLandingTime	= s_fLandingTime1;
+					m_uLegsLandingIdx = 0;
 					mstate_real		|= mcLanding;
 				}else{
 					m_fLandingTime	= s_fLandingTime2;
+					m_uLegsLandingIdx = 1;
 					mstate_real		|= mcLanding2;
 				}
+				// The legs get their own, longer hold: the state above is over in 0.1s and the walk
+				// cycle would replace the landing animation before it has played -- taking the footstep
+				// mark, and with it the landing sound, along with it.
+				m_fLegsLandingHold	= s_fLegsLandingHold;
 			}
 		}
 		m_bJumpKeyPressed	=	TRUE;

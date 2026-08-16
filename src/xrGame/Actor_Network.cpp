@@ -581,6 +581,8 @@ BOOL CActor::net_Spawn		(CSE_Abstract* DC)
 	mstate_real				= 0;
 	mstate_old				= 0;
 	m_bJumpKeyPressed		= FALSE;
+	m_fLegsLandingHold		= 0.f;		// legs' own landing hold, see Actor_Movement
+	m_uLegsLandingIdx		= 0;
 
 	NET_SavedAccel.set		(0,0,0);
 	NET_WasInterpolating	= TRUE;

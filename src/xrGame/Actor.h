@@ -227,6 +227,10 @@ protected:
 
 
 	float					m_fLandingTime;
+	// How much longer the LEGS keep the landing cycle. Separate from m_fLandingTime on purpose:
+	// that one also gates the camera dip and the hud hand offset, so it has to stay short.
+	float					m_fLegsLandingHold;
+	u8						m_uLegsLandingIdx;	// which of the two landing cycles (0 soft, 1 hard)
 	float					m_fJumpTime;
 	float					m_fFallTime;
 	float					m_fCamHeightFactor;
