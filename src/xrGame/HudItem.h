@@ -100,7 +100,7 @@ public:
 	virtual void				OnH_B_Independent	(bool just_before_destroy);
 	virtual void				OnH_A_Independent	();
 	
-	virtual void				PlaySound			(LPCSTR alias, const Fvector& position);
+	virtual void				PlaySound			(LPCSTR alias, const Fvector& position, bool b_overlap = false);
 
 	virtual bool				Action				(s32 cmd, u32 flags)			{return false;}
 			void				OnMovementChanged	(ACTOR_DEFS::EMoveCommand cmd)	;

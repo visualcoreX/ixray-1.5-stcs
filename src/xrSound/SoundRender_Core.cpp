@@ -9,7 +9,7 @@
 
 #include <AL/efx.h>
 
-int		psSoundTargets			= 32;
+int		psSoundTargets			= 64;	// 32 ran out once shots stopped cutting each other off
 Flags32	psSoundFlags			= {ss_Hardware | ss_EFX};
 float	psSoundOcclusionScale	= 0.5f;
 float	psSoundCull				= 0.01f;

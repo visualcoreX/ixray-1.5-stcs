@@ -81,12 +81,10 @@ void HUD_SOUND_ITEM::PlaySound(	HUD_SOUND_ITEM&		hud_snd,
 								const CObject*	parent,
 								bool			b_hud_mode,
 								bool			looped,
-								u8 index)
+								u8 index,
+								bool			b_overlap)
 {
 	if (hud_snd.sounds.empty())	return;
-
-	hud_snd.m_activeSnd			= NULL;
-	StopSound					(hud_snd);
 
 	u32 flags = b_hud_mode?sm_2D:0;
 	if(looped)
@@ -95,8 +93,26 @@ void HUD_SOUND_ITEM::PlaySound(	HUD_SOUND_ITEM&		hud_snd,
 	if(index==u8(-1))
 		index = (u8)Random.randI(hud_snd.sounds.size());
 
+	// Let this one ring out over the previous one instead of replacing it. The normal path below
+	// reuses a single sound object per alias, so starting it again cuts whatever it was playing --
+	// which is why a burst sounded like one shot repeatedly retriggered rather than several
+	// overlapping. A detached instance has no feedback handle, so nothing can stop it early and
+	// several can sound at once; it also means no m_activeSnd bookkeeping, hence no position or
+	// volume updates after the fact. Fine for a shot, wrong for anything looped or tracked.
+	if (b_overlap && !looped)
+	{
+		SSnd&	s	= hud_snd.sounds[ index ];
+		float	vol	= s.volume * (b_hud_mode?psHUDSoundVolume:1.0f);
+		Fvector	pos	= (flags&sm_2D) ? Fvector().set(0,0,0) : position;
+		s.snd.play_no_feedback	(const_cast<CObject*>(parent), flags, s.delay, &pos, &vol);
+		return;
+	}
+
+	hud_snd.m_activeSnd			= NULL;
+	StopSound					(hud_snd);
+
 	hud_snd.m_activeSnd = &hud_snd.sounds[ index ];
-	
+
 
 	hud_snd.m_activeSnd->snd.play_at_pos(	const_cast<CObject*>(parent),
 											flags&sm_2D?Fvector().set(0,0,0):position,
@@ -146,7 +162,8 @@ void HUD_SOUND_COLLECTION::PlaySound(	LPCSTR alias,
 										const CObject* parent,
 										bool hud_mode,
 										bool looped,
-										u8 index)
+										u8 index,
+										bool b_overlap)
 {
 	xr_vector<HUD_SOUND_ITEM>::iterator it		= m_sound_items.begin();
 	xr_vector<HUD_SOUND_ITEM>::iterator it_e	= m_sound_items.end();
@@ -158,7 +175,7 @@ void HUD_SOUND_COLLECTION::PlaySound(	LPCSTR alias,
 
 
 	HUD_SOUND_ITEM* snd_item		= FindSoundItem(alias, true);
-	HUD_SOUND_ITEM::PlaySound		(*snd_item, position, parent, hud_mode, looped, index);
+	HUD_SOUND_ITEM::PlaySound		(*snd_item, position, parent, hud_mode, looped, index, b_overlap);
 }
 
 void HUD_SOUND_COLLECTION::StopSound(LPCSTR alias)

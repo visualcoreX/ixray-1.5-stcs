@@ -226,9 +226,9 @@ InertionData& CHudItem::CurrentInertionData()
 }
 
 
-void CHudItem::PlaySound(LPCSTR alias, const Fvector& position)
+void CHudItem::PlaySound(LPCSTR alias, const Fvector& position, bool b_overlap)
 {
-	m_sounds.PlaySound	(alias, position, object().H_Root(), !!GetHUDmode());
+	m_sounds.PlaySound	(alias, position, object().H_Root(), !!GetHUDmode(), false, u8(-1), b_overlap);
 }
 
 void CHudItem::renderable_Render()

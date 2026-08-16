@@ -18,12 +18,15 @@ struct HUD_SOUND_ITEM
 
 	static void		DestroySound	(	HUD_SOUND_ITEM& hud_snd);
 
+	// b_overlap: play a detached instance instead of restarting the shared one, so consecutive
+	// plays sound over each other (burst fire). Ignored for looped sounds -- see the implementation.
 	static void		PlaySound		(	HUD_SOUND_ITEM& snd,
 										const Fvector& position,
 										const CObject* parent,
 										bool hud_mode,
 										bool looped = false,
-										u8 index=u8(-1));
+										u8 index=u8(-1),
+										bool b_overlap = false);
 
 	static void		StopSound		(	HUD_SOUND_ITEM& snd);
 
@@ -61,12 +64,13 @@ class HUD_SOUND_COLLECTION
 public:
 	HUD_SOUND_ITEM* FindSoundItem(LPCSTR alias, bool b_assert);
 								~HUD_SOUND_COLLECTION();
-	void						PlaySound		(	LPCSTR alias, 
+	void						PlaySound		(	LPCSTR alias,
 													const Fvector& position,
 													const CObject* parent,
 													bool hud_mode,
 													bool looped = false,
-													u8 index=u8(-1));
+													u8 index=u8(-1),
+													bool b_overlap = false);
 
 	void						StopSound		(	LPCSTR alias);
 
