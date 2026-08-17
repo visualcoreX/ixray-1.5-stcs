@@ -157,6 +157,8 @@ protected:
 	bool						m_item_info_view;
 	bool						m_highlight_clear;
 	u32							m_trade_partner_inventory_state;
+	u32							m_dead_body_state;
+	u32							m_dead_body_watch_until;	// 0 = not watching
 public:
 	void						SetMenuMode					(EMenuMode mode);
 	void						SetActor					(CInventoryOwner* io);
@@ -315,6 +317,12 @@ public:
 	void						UpdateActor					();
 	void						UpdatePartnerBag			();
 	void						UpdateDeadBodyBag			();
+	// the corpse/box list is not event-driven; WatchDeadBodyBag() arms a short watch after an action
+	// that changes its contents from outside the menu, and Update() refills once it sees the change
+	u32							DeadBodyStateStamp			() const;
+	void						FillDeadBodyBag				();
+	void						WatchDeadBodyBag			();
+	void						UpdateDeadBodySearch		();
 
 	void		xr_stdcall		OnBtnPerformTrade			(CUIWindow* w, void* d);
 	void		xr_stdcall		OnBtnExitClicked			(CUIWindow* w, void* d);

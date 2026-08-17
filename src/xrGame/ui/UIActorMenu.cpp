@@ -248,6 +248,7 @@ void CUIActorMenu::Update()
 		}
 	case mmDeadBodySearch:
 		{
+			UpdateDeadBodySearch();
 			CheckDistance();
 			break;
 		}

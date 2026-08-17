@@ -1359,8 +1359,15 @@ bool CInventory::CanTakeItem(CInventoryItem *inventory_item) const
 	VERIFY3(it == m_all.end(), "item already exists in inventory",*inventory_item->object().cName());
 
 	CActor* pActor = smart_cast<CActor*>(m_pOwner);
+	// A CORPSE is a container, not a carrier -- MaxCarryWeight stopped meaning anything the moment it
+	// died, and a body is normally loaded right up to that limit anyway. Enforcing it here made
+	// everything spawned into a body bounce straight back out (CAI_Stalker::OnEvent answers a refused
+	// GE_OWNERSHIP_TAKE with GE_OWNERSHIP_REJECT), which is why unloading a weapon INSIDE a dead
+	// stalker lost the rounds whenever there was no ammo box already in there to merge them into.
+	CEntityAlive* pAlive = smart_cast<CEntityAlive*>(m_pOwner);
+	const bool	corpse	 = (pAlive && !pAlive->g_Alive());
 	//����� ������ ����� ����� ����
-	if(!pActor && (TotalWeight() + inventory_item->Weight() > m_pOwner->MaxCarryWeight()))
+	if(!pActor && !corpse && (TotalWeight() + inventory_item->Weight() > m_pOwner->MaxCarryWeight()))
 		return	false;
 
 	return	true;

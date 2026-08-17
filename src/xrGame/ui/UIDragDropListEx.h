@@ -99,6 +99,7 @@ public:
 	const	Ivector2		GetVirtualCellsAlignment() {return m_virtual_cells_alignment;};
 
 			int				ScrollPos			();
+			void			SetScrollPos		(int pos);	// survive a rebuild without jumping to the top
 			void			ReinitScroll		();
 			void			GetClientArea		(Frect& r);
 			Fvector2		GetDragItemPosition	();

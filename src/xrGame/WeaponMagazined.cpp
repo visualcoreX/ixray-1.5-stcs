@@ -715,13 +715,25 @@ void CWeaponMagazined::UnloadMagazine(bool spawn_ammo, u32 keep_count)
 	xr_map<LPCSTR, u16>::iterator l_it;
 	for(l_it = l_ammo.begin(); l_ammo.end() != l_it; ++l_it) 
 	{
-		CWeaponAmmo *l_pA = smart_cast<CWeaponAmmo*>(m_pInventory->GetAny(l_it->first));
-		if(l_pA) 
+		// A weapon lying in an inventory BOX belongs to no CInventory at all, and unloading one is
+		// offered in exactly the same menu -- so there may be nothing to top up here. SpawnAmmo below
+		// still puts the rounds where the weapon is (H_Parent).
+		CWeaponAmmo *l_pA = m_pInventory ? smart_cast<CWeaponAmmo*>(m_pInventory->GetAny(l_it->first)) : NULL;
+		if(l_pA)
 		{
 			u16 l_free = l_pA->m_boxSize - l_pA->m_boxCurr;
 			l_pA->m_boxCurr = l_pA->m_boxCurr + (l_free < l_it->second ? l_free : l_it->second);
 			l_it->second = l_it->second - (l_free < l_it->second ? l_free : l_it->second);
+			// m_boxCurr is written straight through here, so nothing marked the inventory as changed
+			// -- CWeaponAmmo::Get does it when a round LEAVES a box, and there is no counterpart for
+			// one going back in. Every UI that watches ModifyFrame (the trade panel, the corpse
+			// panel) therefore kept drawing the old count, which reads as "the rounds vanished".
+			m_pInventory->InvalidateState();
 		}
+		// NOTE `unlimited_ammo()` (the g_unlimitedammo cheat) swallows the leftovers here: the rounds
+		// leave the magazine and no box is ever spawned for them. That is stock behaviour and it is
+		// what "unloading a weapon in a corpse eats the ammo" turned out to be -- not a bug in the
+		// transfer, just the cheat being on.
 		if(l_it->second && !unlimited_ammo()) SpawnAmmo(l_it->second, l_it->first);
 	}
 }

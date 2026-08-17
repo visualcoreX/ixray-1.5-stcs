@@ -1030,6 +1030,9 @@ void CUIActorMenu::ProcessPropertiesBoxClicked( CUIWindow* w, void* d )
 					child_weap_mag->UnloadMagazine();
 				}
 			}
+			// The rounds land in whatever owns the weapon, and when that is a corpse or a box the
+			// list showing it is not event-driven -- see WatchDeadBodyBag.
+			WatchDeadBodyBag();
 			break;
 		}
 	case INVENTORY_REPAIR:

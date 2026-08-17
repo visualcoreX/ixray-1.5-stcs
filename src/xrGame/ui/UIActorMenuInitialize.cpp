@@ -27,6 +27,8 @@ CUIActorMenu::CUIActorMenu()
 {
 	m_currMenuMode					= mmUndefined;
 	m_trade_partner_inventory_state = 0;
+	m_dead_body_state				= 0;
+	m_dead_body_watch_until			= 0;
 	Construct						();
 }
 

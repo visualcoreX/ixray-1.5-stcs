@@ -443,6 +443,16 @@ int CUIDragDropListEx::ScrollPos()
 	return m_vScrollBar->GetScrollPos();
 }
 
+// Rebuilding a list drops every cell and puts the container back at the top. Callers that refill a
+// list the player is already looking at use this to put the view back where it was.
+void CUIDragDropListEx::SetScrollPos(int pos)
+{
+	if (!m_vScrollBar)						return;
+
+	m_vScrollBar->SetScrollPos	(pos);		// clamps to the bar's own range
+	OnScrollV					(NULL, NULL);
+}
+
 void CUIDragDropListEx::SetItem(CUICellItem* itm) //auto
 {
 	if(m_container->AddSimilar(itm)){
