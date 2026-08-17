@@ -30,6 +30,11 @@ void CUICheckButton::AddDependControl(CUIWindow* pWnd){
 		m_depend_controls.push_back(pWnd);
 }
 
+void CUICheckButton::AddExclusiveControl(CUICheckButton* pBtn){
+	if (pBtn && pBtn != this)
+		m_exclusive_controls.push_back(pBtn);
+}
+
 void CUICheckButton::Update(){
 	CUI3tButton::Update();
 	if ( m_hint_owner ) m_hint_owner->Update();
@@ -133,5 +138,15 @@ void CUICheckButton::Show( bool status )
 bool CUICheckButton::OnMouseDown( int mouse_btn )
 {
 	if ( m_hint_owner ) m_hint_owner->disable_hint();
-	return inherited::OnMouseDown( mouse_btn );
+	const bool res = inherited::OnMouseDown( mouse_btn );
+
+	// Handled on the CLICK, not in Update(): the two boxes name each other, and a per-frame rule
+	// would have them taking turns clearing one another instead of settling.
+	if ( GetCheck() )
+	{
+		xr_vector<CUICheckButton*>::iterator it = m_exclusive_controls.begin();
+		for ( ; it != m_exclusive_controls.end(); ++it )
+			(*it)->SetCheckKeepBackup( false );
+	}
+	return res;
 }

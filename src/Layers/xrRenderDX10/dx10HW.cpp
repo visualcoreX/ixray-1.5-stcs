@@ -711,7 +711,27 @@ void CHW::updateWindowProps(HWND m_hWnd)
 
 	u32		dwWindowStyle			= 0;
 	// Set window properties depending on what mode were in.
-	if (bWindowed)		{
+	if (bWindowed && psDeviceFlags.test(rsBorderless))
+	{
+		// Borderless: still an ordinary windowed swap chain -- no exclusive mode, so alt-tab is
+		// instant and the desktop resolution is left alone -- but drawn with no caption and no
+		// frame, sized exactly to the chosen resolution and centred on the desktop.
+		// (Twin of the same block in xrRender\HW.cpp.)
+		SetWindowLong			( m_hWnd, GWL_STYLE, dwWindowStyle=(WS_POPUP|WS_VISIBLE) );
+		SetWindowLong			( m_hWnd, GWL_EXSTYLE, 0 );
+
+		RECT	desktop;
+		GetClientRect			(GetDesktopWindow(), &desktop);
+		const int w	= int(m_ChainDesc.BufferDesc.Width);
+		const int h	= int(m_ChainDesc.BufferDesc.Height);
+
+		SetWindowPos			(	m_hWnd, HWND_NOTOPMOST,
+									(desktop.right  - w) / 2,
+									(desktop.bottom - h) / 2,
+									w, h,
+									SWP_SHOWWINDOW|SWP_NOCOPYBITS|SWP_FRAMECHANGED );
+	}
+	else if (bWindowed)		{
 		if (m_move_window) {
 			if (strstr(Core.Params,"-no_dialog_header"))
 				SetWindowLong	( m_hWnd, GWL_STYLE, dwWindowStyle=(WS_BORDER|WS_VISIBLE) );

@@ -40,6 +40,10 @@ enum {
 	rsR2							= (1ul<<19ul),
 	rsR3							= (1ul<<20ul),
 
+	// borderless window: a plain windowed device (no exclusive mode, so alt-tab is instant) drawn
+	// with no caption and no frame. Ignored while rsFullscreen is on -- that one is exclusive.
+	rsBorderless					= (1ul<<21ul),
+
 	// 20-32 bit - reserved to Editor
 };
 

@@ -364,6 +364,23 @@ public:
 		}
 	}
 };
+// A mask flag that switches a sibling off when it goes on -- for settings that are alternatives
+// rather than independent switches (fullscreen vs a borderless window).
+class CCC_ExclusiveMask : public CCC_Mask
+{
+	typedef CCC_Mask inherited;
+	u32		other;
+public:
+	CCC_ExclusiveMask(LPCSTR N, Flags32* V, u32 M, u32 O) : inherited(N, V, M), other(O) {}
+
+	virtual void Execute(LPCSTR args)
+	{
+		inherited::Execute(args);
+		if (value->test(mask))
+			value->set(other, FALSE);
+	}
+};
+
 class CCC_VidMode : public CCC_Token
 {
 	u32		_dummy;
@@ -714,7 +731,10 @@ void CCC_Register()
 
 	CMD3(CCC_Mask,		"rs_v_sync",			&psDeviceFlags,		rsVSync				);
 //	CMD3(CCC_Mask,		"rs_disable_objects_as_crows",&psDeviceFlags,	rsDisableObjectsAsCrows	);
-	CMD3(CCC_Mask,		"rs_fullscreen",		&psDeviceFlags,		rsFullscreen			);
+	// Two ways of filling the screen, and they cannot both be on -- whichever was asked for last
+	// wins and takes the other down. Both take effect on the next vid_restart.
+	CMD4(CCC_ExclusiveMask,	"rs_fullscreen",	&psDeviceFlags,	rsFullscreen,	rsBorderless	);
+	CMD4(CCC_ExclusiveMask,	"rs_borderless",	&psDeviceFlags,	rsBorderless,	rsFullscreen	);
 	CMD3(CCC_Mask,		"rs_refresh_60hz",		&psDeviceFlags,		rsRefresh60hz			);
 	CMD3(CCC_Mask,		"rs_stats",				&psDeviceFlags,		rsStatistic				);
 	CMD4(CCC_Float,		"rs_vis_distance",		&psVisDistance,		0.4f,	1.5f			);
