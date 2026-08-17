@@ -593,7 +593,12 @@ void CMapLocation::SetHint	(const shared_str& hint)
 	if ( hint == "disable_hint" )
 	{
 		m_hint_enable = false;
-		m_hint._set( "" );
+		// KEEP the marker instead of clearing the string. `m_hint_enable` is not serialized -- save()
+		// writes only m_hint -- so blanking it here meant a saved spot came back with an EMPTY hint
+		// and hints ENABLED, i.e. an empty popup box on hover. Storing the marker makes load() run
+		// through this same branch and switch the hint off again. GetHint() returns NULL while
+		// disabled, so nothing can ever show the marker itself.
+		m_hint._set( "disable_hint" );
 		return;
 	}
 	m_hint = hint;
