@@ -57,6 +57,76 @@ bool CSavedGameWrapper::valid_saved_game		(LPCSTR saved_game_name)
 	return						(result);
 }
 
+int g_quick_save_count			= 5;
+
+IC u32 quick_save_slot_count	()
+{
+	return						(u32(clampr(g_quick_save_count,1,10)));
+}
+
+void quick_save_name			(u32 slot, string_path& result)
+{
+	string16					index;
+	xr_sprintf					(index,sizeof(index),"%d",slot + 1);
+	strconcat					(sizeof(result),result,Core.UserName,"_","quicksave",index);
+}
+
+// the slot holding the most recent quick save, u32(-1) when no slot is occupied
+static u32 newest_quick_save_slot()
+{
+	u32							result = u32(-1), newest = 0;
+	string_path					name, full_name;
+	for (u32 i=0, n=quick_save_slot_count(); i<n; ++i) {
+		quick_save_name			(i,name);
+		if (!CSavedGameWrapper::saved_game_exist(name))
+			continue;
+
+		// unknown age (the file is not in the file registry yet) counts as the oldest one
+		u32						age = FS.get_file_age(CSavedGameWrapper::saved_game_full_name(name,full_name));
+		if (age == u32(-1))
+			age					= 0;
+
+		if ((result == u32(-1)) || (age >= newest)) {
+			newest				= age;
+			result				= i;
+		}
+	}
+
+	return						(result);
+}
+
+// remembered inside the session, so that quick saves made within the same second still rotate
+static u32						s_last_quick_save_slot = u32(-1);
+
+u32 quick_save_slot_to_write	()
+{
+	if (s_last_quick_save_slot == u32(-1))
+		s_last_quick_save_slot	= newest_quick_save_slot();
+
+	if (s_last_quick_save_slot == u32(-1))
+		s_last_quick_save_slot	= 0;
+	else
+		s_last_quick_save_slot	= (s_last_quick_save_slot + 1) % quick_save_slot_count();
+
+	return						(s_last_quick_save_slot);
+}
+
+bool last_quick_save_name		(string_path& result)
+{
+	u32							slot = s_last_quick_save_slot;
+	if ((slot == u32(-1)) || (slot >= quick_save_slot_count()))
+		slot					= newest_quick_save_slot();
+
+	if (slot != u32(-1)) {
+		quick_save_name			(slot,result);
+		return					(true);
+	}
+
+	// quick saves made before the slots were introduced went into a single unnumbered file
+	strconcat					(sizeof(result),result,Core.UserName,"_","quicksave");
+	return						(!!CSavedGameWrapper::saved_game_exist(result));
+}
+
 CSavedGameWrapper::CSavedGameWrapper			(LPCSTR saved_game_name)
 {
 	string_path					file_name;

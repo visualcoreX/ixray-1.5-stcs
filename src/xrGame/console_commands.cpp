@@ -544,7 +544,8 @@ public:
 		timer.Start				();
 #endif
 		if (!xr_strlen(S)){
-			strconcat			(sizeof(S),S,Core.UserName,"_","quicksave");
+			// no name = quick save: rotate through the quick save slots
+			quick_save_name		(quick_save_slot_to_write(),S);
 			NET_Packet			net_packet;
 			net_packet.w_begin	(M_SAVE_GAME);
 			net_packet.w_stringZ(S);
@@ -2085,6 +2086,8 @@ void CCC_RegisterCommands()
 		CMD4(CCC_Integer,		"g_torch_switch_delay",	&g_torch_switch_delay,	0, 5000);
 		extern int g_torch_action_time;
 		CMD4(CCC_Integer,		"g_torch_action_time",	&g_torch_action_time,	0, 5000);
+		// how many files the quick save key cycles through before it starts overwriting them
+		CMD4(CCC_Integer,		"g_quick_save_count",	&g_quick_save_count,	1, 10);
 	}
 
 #ifdef DEBUG

@@ -39,4 +39,14 @@ add_to_type_list(CSavedGameWrapper)
 #undef script_type_list
 #define script_type_list save_type_list(CSavedGameWrapper)
 
+// Quick saves go into a ring of slots ("<user>_quicksave1" .. "<user>_quicksaveN") instead of
+// overwriting a single file, so a quick save cannot destroy the only copy of the game.
+extern	int		g_quick_save_count;
+
+		void	quick_save_name			(u32 slot, string_path& result);
+		// slot the next quick save has to be written to (the one after the last written)
+		u32		quick_save_slot_to_write();
+		// name of the most recent quick save, false if there is none
+		bool	last_quick_save_name	(string_path& result);
+
 #include "saved_game_wrapper_inline.h"
