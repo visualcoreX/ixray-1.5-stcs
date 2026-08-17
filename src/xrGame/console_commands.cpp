@@ -205,12 +205,85 @@ public:
 	}
 };
 
+// Master leaves the player without a hud: no interface, no crosshair. Gunslinger does the same, by
+// refusing to draw the in-game hud at gd_master (ActorUtils.pas, drawingame_conditions). We hold the
+// two flags off instead, so the state is honest everywhere -- the options checkboxes and the console
+// report exactly what is on screen -- and refuse to let either be turned back on until the
+// difficulty drops. What the player had before the lock is remembered and handed back on the way out.
+static bool	 s_hud_lock_saved	= false;
+static bool	 s_hud_draw_was		= true;
+static bool	 s_crosshair_was	= true;
+
+bool gwr_hud_locked_by_difficulty()
+{
+	return	(g_SingleGameDifficulty == egdMaster);
+}
+
+static void gwr_apply_hud_lock()
+{
+	if (gwr_hud_locked_by_difficulty())
+	{
+		if (!s_hud_lock_saved)
+		{
+			s_hud_draw_was		= !!psHUD_Flags.test(HUD_DRAW);
+			s_crosshair_was		= !!psHUD_Flags.test(HUD_CROSSHAIR);
+			s_hud_lock_saved	= true;
+		}
+		psHUD_Flags.set	(HUD_DRAW,		FALSE);
+		psHUD_Flags.set	(HUD_CROSSHAIR,	FALSE);
+	}
+	else if (s_hud_lock_saved)
+	{
+		psHUD_Flags.set	(HUD_DRAW,		s_hud_draw_was		? TRUE : FALSE);
+		psHUD_Flags.set	(HUD_CROSSHAIR,	s_crosshair_was		? TRUE : FALSE);
+		s_hud_lock_saved = false;
+	}
+}
+
+// `hud_draw` / `hud_crosshair`: an ordinary mask command that goes deaf while the lock is on, so the
+// setting cannot be put back through the console either.
+class CCC_HudMask : public CCC_Mask
+{
+	typedef CCC_Mask inherited;
+	bool*	remembered;		// the player's own setting, kept aside while the lock holds the flag off
+public:
+	CCC_HudMask(LPCSTR N, Flags32* V, u32 M, bool* R) : inherited(N, V, M), remembered(R) {}
+
+	virtual void Execute(LPCSTR args)
+	{
+		if (gwr_hud_locked_by_difficulty())
+		{
+			// still take the value down, so turning it on now means it comes back with the difficulty
+			if (EQ(args,"on") || EQ(args,"1"))			*remembered = true;
+			else if (EQ(args,"off") || EQ(args,"0"))	*remembered = false;
+			else										{ InvalidSyntax(); return; }
+
+			Msg("~ [%s] stays off on master difficulty; remembered for lower ones", cName);
+			return;
+		}
+		inherited::Execute(args);
+	}
+
+	// user.ltx must keep what the PLAYER chose, not the zero the lock is forcing -- otherwise one
+	// session on master would silently turn the hud off for every difficulty afterwards.
+	virtual void Save(IWriter* F)
+	{
+		if (gwr_hud_locked_by_difficulty())
+		{
+			F->w_printf("%s %s\r\n", cName, *remembered ? "on" : "off");
+			return;
+		}
+		inherited::Save(F);
+	}
+};
+
 // console commands
 class CCC_GameDifficulty : public CCC_Token {
 public:
 	CCC_GameDifficulty(LPCSTR N) : CCC_Token(N,(u32*)&g_SingleGameDifficulty,difficulty_type_token)  {};
 	virtual void Execute(LPCSTR args) {
 		CCC_Token::Execute(args);
+		gwr_apply_hud_lock();
 		if (g_pGameLevel && Level().game){
 //#ifndef	DEBUG
 			if (GameID() != eGameIDSingle){
@@ -1951,14 +2024,15 @@ void CCC_RegisterCommands()
 	CMD3(CCC_Mask,				"hud_weapon",			&psHUD_Flags,	HUD_WEAPON);
 	CMD3(CCC_Mask,				"hud_info",				&psHUD_Flags,	HUD_INFO);
 
-	CMD3(CCC_Mask, "hud_draw", &psHUD_Flags, HUD_DRAW);
+	// these two are held off on master difficulty and refuse to be switched back on -- see CCC_HudMask
+	CMD4(CCC_HudMask, "hud_draw", &psHUD_Flags, HUD_DRAW, &s_hud_draw_was);
 	// hud
 	psHUD_Flags.set(HUD_CROSSHAIR,		true);
 	psHUD_Flags.set(HUD_WEAPON,			true);
 	psHUD_Flags.set(HUD_DRAW,			true);
 	psHUD_Flags.set(HUD_INFO,			true);
 
-	CMD3(CCC_Mask,				"hud_crosshair",		&psHUD_Flags,	HUD_CROSSHAIR);
+	CMD4(CCC_HudMask,			"hud_crosshair",		&psHUD_Flags,	HUD_CROSSHAIR,	&s_crosshair_was);
 	CMD3(CCC_Mask,				"hud_crosshair_dist",	&psHUD_Flags,	HUD_CROSSHAIR_DIST);
 
 	CMD4(CCC_Float,				"hud_fov",				&psHUD_FOV_def,	0.1f,	1.0f);

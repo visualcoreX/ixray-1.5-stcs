@@ -16,6 +16,8 @@ class CUIComboBox : public CUIWindow, public CUIOptionsItem, public pureRender
 	} E_COMBO_STATE;
 	
 	xr_vector<int>		m_disabled;
+	// controls greyed out while a given entry is the current one (see AddDisabledOnValue)
+	xr_vector< std::pair<int, CUIWindow*> >	m_disable_on_value;
 public:
 						CUIComboBox				();
 	virtual				~CUIComboBox			();
@@ -42,6 +44,11 @@ public:
 			int			CurrentID				()	{return m_itoken_id;}
 			void		disable_id				(int id);
 			void		enable_id				(int id);
+			// Grey a control out while a particular entry is picked -- the same idea as
+			// CUICheckButton::AddDependControl, keyed on a list value instead of a tick. Reads the
+			// PENDING selection, so the dependants react as soon as the player picks the entry and
+			// come back if they cancel out of the options.
+			void		AddDisabledOnValue		(int id, CUIWindow* pWnd);
 protected:
 	virtual void		SetState				(UIState state);	
 	virtual bool		OnMouseAction			(float x, float y, EUIMessages mouse_action);

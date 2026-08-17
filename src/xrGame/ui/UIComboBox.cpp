@@ -116,6 +116,12 @@ void CUIComboBox::enable_id(int id)
 		m_disabled.erase(it);
 }
 
+void CUIComboBox::AddDisabledOnValue(int id, CUIWindow* pWnd)
+{
+	if (pWnd)
+		m_disable_on_value.push_back(std::make_pair(id, pWnd));
+}
+
 #include "../string_table.h"
 void CUIComboBox::SetCurrentValue()
 {
@@ -201,6 +207,14 @@ void CUIComboBox::ShowList(bool bShow)
 void CUIComboBox::Update()
 {
 	CUIWindow::Update	();
+
+	if (!m_disable_on_value.empty())
+	{
+		xr_vector< std::pair<int, CUIWindow*> >::iterator it = m_disable_on_value.begin();
+		for (; it != m_disable_on_value.end(); ++it)
+			it->second->Enable(CurrentID() != it->first);
+	}
+
 	if (!m_bIsEnabled)
 	{
 		SetState		(S_Disabled);
