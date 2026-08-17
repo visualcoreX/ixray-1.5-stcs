@@ -226,9 +226,9 @@ InertionData& CHudItem::CurrentInertionData()
 }
 
 
-void CHudItem::PlaySound(LPCSTR alias, const Fvector& position, bool b_overlap)
+void CHudItem::PlaySound(LPCSTR alias, const Fvector& position, bool b_force_unlock)
 {
-	m_sounds.PlaySound	(alias, position, object().H_Root(), !!GetHUDmode(), false, u8(-1), b_overlap);
+	m_sounds.PlaySound	(alias, position, object().H_Root(), !!GetHUDmode(), false, u8(-1), b_force_unlock);
 }
 
 void CHudItem::renderable_Render()
@@ -414,6 +414,29 @@ void CHudItem::UpdateCL()
 		}
 	}
 
+	// GS WeaponUpdate.pas:928 -- the action DOF is released relative to the ANIMATION, not on a timer
+	// of its own: dof_time_offset_<alias> is negative by default (-0.5 s), meaning "start easing out
+	// half a second before this animation ends", so the focus is already back by the time the hands
+	// settle. A positive value counts from the start instead. Skipped while aiming, because there the
+	// aim DOF is the one in charge.
+	// This sits at the TOP level on purpose. It used to live inside the motion bookkeeping below, and
+	// an animation that never reaches its end took the DOF with it: StopCurrentAnimWithoutCallback
+	// (a hud item going independent, an item-use phantom released mid-gesture) zeroes the timings and
+	// m_current_motion_def, after which that block never runs again. Hence a zero end time counts as
+	// due -- the animation that owned the focus is gone, so give it back. The stuck blur was obvious
+	// only with empty hands, where no later weapon animation happens to re-arm and release it.
+	if(m_bActionDofActive && !DofHeldByAim() && GamePersistent().DofChanged())
+	{
+		const u32 now = Device.dwTimeGlobal;
+		const int off = m_iActionDofTimeOffsetMs;
+		bool due = (0 == m_dwMotionEndTm);
+		if(!due && off < 0)
+			due = (m_dwMotionEndTm <= now) || ((m_dwMotionEndTm - now) < u32(-off));
+		else if(!due && off > 0)
+			due = (now - m_dwMotionStartTm) > u32(off);
+		if(due)		StopActionDof();
+	}
+
 	if(m_current_motion_def)
 	{
 		if(m_bStopAtEndAnimIsRunning)
@@ -440,23 +463,6 @@ void CHudItem::UpdateCL()
 					}
 				}
 			
-			}
-
-			// GS WeaponUpdate.pas:928 -- the action DOF is released relative to the ANIMATION, not on
-			// a timer of its own: dof_time_offset_<alias> is negative by default (-0.5 s), meaning
-			// "start easing out half a second before this animation ends", so the focus is already
-			// back by the time the hands settle. A positive value counts from the start instead.
-			// Skipped while aiming, because there the aim DOF is the one in charge.
-			if(m_bActionDofActive && !DofHeldByAim() && GamePersistent().DofChanged())
-			{
-				const u32 now = Device.dwTimeGlobal;
-				const int off = m_iActionDofTimeOffsetMs;
-				bool due = false;
-				if(off < 0)
-					due = (m_dwMotionEndTm <= now) || ((m_dwMotionEndTm - now) < u32(-off));
-				else if(off > 0)
-					due = (now - m_dwMotionStartTm) > u32(off);
-				if(due)		StopActionDof();
 			}
 
 			m_dwMotionCurrTm					= Device.dwTimeGlobal;
@@ -778,7 +784,12 @@ u32 CHudItem::PlayHUDMotion(const shared_str& M, BOOL bMixIn, CHudItem*  W, u32 
 // [gunslinger_base] default_action_dof_* and may be overridden per alias.
 void CHudItem::StartActionDof(LPCSTR alias)
 {
-	m_bActionDofActive = false;
+	// Hand the focus back before taking it again. Dropping the flag here instead (what this used to do)
+	// leaked the effector: the very next motion after a DOF one is usually an idle with no use_dof_ key,
+	// so it cleared the flag and returned -- and with the flag down, neither the release below nor
+	// net_Destroy would ever restore. StopActionDof is a no-op unless a DOF is actually held, and
+	// re-arming right after restoring interpolates from the same current value, so nothing flickers.
+	StopActionDof			();
 	if (!alias || !alias[0])			return;
 	// Only the item the player is actually looking at -- HudItemData() is the direct question, and
 	// it also keeps an NPC's reload from blurring the player's screen. But the item-use phantoms

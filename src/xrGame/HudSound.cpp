@@ -8,11 +8,26 @@ void InitHudSoundSettings()
 	psHUDSoundVolume		= pSettings->r_float("hud_sound", "hud_sound_vol_k");
 }
 
-void HUD_SOUND_ITEM::LoadSound(	LPCSTR section, LPCSTR line, 
+// GS (wpnpatch, WeaponSoundLoader.pas) moved the real volume out of the sound line and into a
+// separate per-alias key, in percent: "volume_snd_silncer_shot = 80". Absent = full volume.
+static float LoadSndVolume(LPCSTR section, LPCSTR line)
+{
+	string256					volume_line;
+	strconcat					(sizeof(volume_line),volume_line,"volume_",line);
+	if (!pSettings->line_exist(section,volume_line))
+		return					(1.0f);
+
+	int							volume = pSettings->r_s32(section,volume_line);
+	clamp						(volume, 0, 200);
+	return						(float(volume) / 100.0f);
+}
+
+void HUD_SOUND_ITEM::LoadSound(	LPCSTR section, LPCSTR line,
 							HUD_SOUND_ITEM& hud_snd, int type)
 {
 	hud_snd.m_activeSnd		= NULL;
 	hud_snd.sounds.clear	();
+	hud_snd.m_volume		= LoadSndVolume(section, line);
 
 	string256	sound_line;
 	xr_strcpy		(sound_line,line);
@@ -21,16 +36,16 @@ void HUD_SOUND_ITEM::LoadSound(	LPCSTR section, LPCSTR line,
 		hud_snd.sounds.push_back( SSnd() );
 		SSnd& s = hud_snd.sounds.back();
 
-		LoadSound	(section, sound_line, s.snd, type, &s.volume, &s.delay);
+		LoadSound	(section, sound_line, s.snd, type, &s.unlock_freq, &s.delay);
 		xr_sprintf		(sound_line,"%s%d",line,++k);
 	}//while
 }
 
-void  HUD_SOUND_ITEM::LoadSound(LPCSTR section, 
-								LPCSTR line, 
-								ref_sound& snd, 
+void  HUD_SOUND_ITEM::LoadSound(LPCSTR section,
+								LPCSTR line,
+								ref_sound& snd,
 								int type,
-								float* volume, 
+								float* unlock_freq,
 								float* delay)
 {
 	LPCSTR str = pSettings->r_string(section, line);
@@ -43,14 +58,14 @@ void  HUD_SOUND_ITEM::LoadSound(LPCSTR section,
 	snd.create(buf_str, st_Effect,type);
 
 
-	if(volume != NULL)
+	if(unlock_freq != NULL)
 	{
-		*volume = 1.f;
+		*unlock_freq = 1.f;
 		if(count>1)
 		{
 			_GetItem (str, 1, buf_str);
 			if(xr_strlen(buf_str)>0)
-				*volume = (float)atof(buf_str);
+				*unlock_freq = (float)atof(buf_str);
 		}
 	}
 
@@ -82,7 +97,7 @@ void HUD_SOUND_ITEM::PlaySound(	HUD_SOUND_ITEM&		hud_snd,
 								bool			b_hud_mode,
 								bool			looped,
 								u8 index,
-								bool			b_overlap)
+								bool			b_force_unlock)
 {
 	if (hud_snd.sounds.empty())	return;
 
@@ -93,33 +108,51 @@ void HUD_SOUND_ITEM::PlaySound(	HUD_SOUND_ITEM&		hud_snd,
 	if(index==u8(-1))
 		index = (u8)Random.randI(hud_snd.sounds.size());
 
-	// Let this one ring out over the previous one instead of replacing it. The normal path below
-	// reuses a single sound object per alias, so starting it again cuts whatever it was playing --
-	// which is why a burst sounded like one shot repeatedly retriggered rather than several
-	// overlapping. A detached instance has no feedback handle, so nothing can stop it early and
-	// several can sound at once; it also means no m_activeSnd bookkeeping, hence no position or
-	// volume updates after the fact. Fine for a shot, wrong for anything looped or tracked.
-	if (b_overlap && !looped)
+	SSnd&		s			= hud_snd.sounds[ index ];
+
+	// The second number on the config line, read GS's way (WeaponSoundLoader.pas): the sign says
+	// whether the sound is unlocked, the modulus is the pitch spread -- and only when it is over
+	// 1.0, so -0.9 means "unlock, leave the pitch alone" and -1.1 means "unlock, +-10% pitch".
+	const float	freq_eps	= 0.001f;		// GS's own threshold
+	const float	deviation	= _abs(s.unlock_freq);
+	const bool	vary_freq	= (deviation - 1.0f > freq_eps);
+	const bool	unlocked	= (s.unlock_freq < 0.0f) || b_force_unlock;
+
+	float		freq		= 1.0f;
+	if (vary_freq)
 	{
-		SSnd&	s	= hud_snd.sounds[ index ];
-		float	vol	= s.volume * (b_hud_mode?psHUDSoundVolume:1.0f);
-		Fvector	pos	= (flags&sm_2D) ? Fvector().set(0,0,0) : position;
-		s.snd.play_no_feedback	(const_cast<CObject*>(parent), flags, s.delay, &pos, &vol);
-		return;
+		float	delta		= deviation - 1.0f;
+		if (delta > 0.9f)	delta = 0.9f;
+		freq				= 1.0f + Random.randF(-delta, delta);
 	}
 
-	hud_snd.m_activeSnd			= NULL;
-	StopSound					(hud_snd);
+	float		volume		= hud_snd.m_volume * (b_hud_mode?psHUDSoundVolume:1.0f);
 
-	hud_snd.m_activeSnd = &hud_snd.sounds[ index ];
+	// A locked sound keeps the one shared object per alias: it can be stopped, moved and re-tuned
+	// afterwards, but starting it again cuts whatever it was playing -- which is why a burst used to
+	// sound like a single shot being retriggered. An unlocked one is a detached instance, so several
+	// ring at once; the price is that there is no handle at all, hence no m_activeSnd bookkeeping and
+	// no way to stop it. That rules it out for anything looped or exclusive.
+	if (!unlocked || hud_snd.m_b_exclusive || looped)
+	{
+		hud_snd.m_activeSnd		= NULL;
+		StopSound				(hud_snd);
 
+		hud_snd.m_activeSnd		= &s;
+		s.snd.play_at_pos		(	const_cast<CObject*>(parent),
+									flags&sm_2D?Fvector().set(0,0,0):position,
+									flags,
+									s.delay);
 
-	hud_snd.m_activeSnd->snd.play_at_pos(	const_cast<CObject*>(parent),
-											flags&sm_2D?Fvector().set(0,0,0):position,
-											flags,
-											hud_snd.m_activeSnd->delay);
-
-	hud_snd.m_activeSnd->snd.set_volume		(hud_snd.m_activeSnd->volume * b_hud_mode?psHUDSoundVolume:1.0f);
+		s.snd.set_volume		(volume);
+		if (vary_freq)
+			s.snd.set_frequency	(freq);
+	}
+	else
+	{
+		Fvector	pos				= (flags&sm_2D) ? Fvector().set(0,0,0) : position;
+		s.snd.play_no_feedback	(const_cast<CObject*>(parent), flags, s.delay, &pos, &volume, vary_freq?&freq:NULL);
+	}
 }
 
 void HUD_SOUND_ITEM::StopSound(HUD_SOUND_ITEM& hud_snd)
@@ -163,7 +196,7 @@ void HUD_SOUND_COLLECTION::PlaySound(	LPCSTR alias,
 										bool hud_mode,
 										bool looped,
 										u8 index,
-										bool b_overlap)
+										bool b_force_unlock)
 {
 	xr_vector<HUD_SOUND_ITEM>::iterator it		= m_sound_items.begin();
 	xr_vector<HUD_SOUND_ITEM>::iterator it_e	= m_sound_items.end();
@@ -175,7 +208,7 @@ void HUD_SOUND_COLLECTION::PlaySound(	LPCSTR alias,
 
 
 	HUD_SOUND_ITEM* snd_item		= FindSoundItem(alias, true);
-	HUD_SOUND_ITEM::PlaySound		(*snd_item, position, parent, hud_mode, looped, index, b_overlap);
+	HUD_SOUND_ITEM::PlaySound		(*snd_item, position, parent, hud_mode, looped, index, b_force_unlock);
 }
 
 void HUD_SOUND_COLLECTION::StopSound(LPCSTR alias)

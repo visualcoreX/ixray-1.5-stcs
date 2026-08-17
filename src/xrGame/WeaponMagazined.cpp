@@ -151,9 +151,11 @@ bool CWeaponMagazined::WeaponSoundExist(LPCSTR section, LPCSTR sound_name)
 	}
 }
 
-// Shot sounds play as detached instances so consecutive shots overlap (see CHudItem::PlaySound).
-// Console: snd_shot_overlap. Raising snd_targets goes with it -- each ringing shot holds a voice.
-BOOL	g_snd_shot_overlap	= TRUE;
+// Force every shot sound to overlap, whether or not its config line asks for it with a negative
+// number (see HUD_SOUND_ITEM::PlaySound). Off, like GS's equivalent global switch (snd_unlock): the
+// weapon config decides. Console: snd_shot_overlap -- turning it on holds a voice per ringing shot,
+// so snd_targets has to be able to take it.
+BOOL	g_snd_shot_overlap	= FALSE;
 
 void CWeaponMagazined::Load	(LPCSTR section)
 {
@@ -2282,9 +2284,9 @@ void CWeaponMagazined::OnShot()
 		m_gwr_fired_until     = Device.dwTimeGlobal + 600;
 	}
 
-	// Sound. Overlapping, so a burst is several shots ringing over each other instead of one sound
+	// Sound. Unlocked, so a burst is several shots ringing over each other instead of one sound
 	// restarted at every round -- the shared sound object is stopped on replay, which cut the tail off
-	// each time (snd_shot_overlap 0 puts the old behaviour back without a rebuild).
+	// each time (snd_shot_overlap 0 leaves it to the weapon config without a rebuild).
 	PlaySound					(m_sSndShotCurrent.c_str(), get_LastFP(), !!g_snd_shot_overlap);
 
 	// pump/bolt rack (GS breechblock) -- layered on the shot for weapons that define snd_breechblock

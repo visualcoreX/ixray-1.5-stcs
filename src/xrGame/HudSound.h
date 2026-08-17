@@ -3,12 +3,12 @@
 
 struct HUD_SOUND_ITEM
 {
-	HUD_SOUND_ITEM():m_activeSnd(NULL),m_b_exclusive(false)		{}
+	HUD_SOUND_ITEM():m_activeSnd(NULL),m_b_exclusive(false),m_volume(1.0f)		{}
 
 	static void		LoadSound		(	LPCSTR section, LPCSTR line,
 										ref_sound& hud_snd,
 										int type = sg_SourceType,
-										float* volume = NULL,
+										float* unlock_freq = NULL,
 										float* delay = NULL);
 
 	static void		LoadSound		(	LPCSTR section, 
@@ -18,15 +18,15 @@ struct HUD_SOUND_ITEM
 
 	static void		DestroySound	(	HUD_SOUND_ITEM& hud_snd);
 
-	// b_overlap: play a detached instance instead of restarting the shared one, so consecutive
-	// plays sound over each other (burst fire). Ignored for looped sounds -- see the implementation.
+	// b_force_unlock: treat the sound as unlocked even if the config did not ask for it (GS has the
+	// same thing as a global console mask). An exclusive or looped sound is never unlocked.
 	static void		PlaySound		(	HUD_SOUND_ITEM& snd,
 										const Fvector& position,
 										const CObject* parent,
 										bool hud_mode,
 										bool looped = false,
 										u8 index=u8(-1),
-										bool b_overlap = false);
+										bool b_force_unlock = false);
 
 	static void		StopSound		(	HUD_SOUND_ITEM& snd);
 
@@ -48,11 +48,15 @@ struct HUD_SOUND_ITEM
 	struct SSnd		{
 		ref_sound	snd;
 		float		delay;		//задержка перед проигрыванием
-		float		volume;		//громкость
+		// The second value on a config line. It is NOT the volume: the stock engine's use of it was
+		// broken (a precedence slip threw the number away), so GS cut that out and reused the field --
+		// a NEGATIVE value unlocks the sound, and the MODULUS is the pitch spread. See PlaySound.
+		float		unlock_freq;
 	};
 	shared_str		m_alias;
 	SSnd*			m_activeSnd;
 	bool			m_b_exclusive;
+	float			m_volume;	// real volume, from the "volume_<line>" key (percent); 1.0 if absent
 	xr_vector<SSnd> sounds;
 
 	bool operator == (LPCSTR alias) const{return 0==_stricmp(m_alias.c_str(),alias);}
@@ -70,7 +74,7 @@ public:
 													bool hud_mode,
 													bool looped = false,
 													u8 index=u8(-1),
-													bool b_overlap = false);
+													bool b_force_unlock = false);
 
 	void						StopSound		(	LPCSTR alias);
 
