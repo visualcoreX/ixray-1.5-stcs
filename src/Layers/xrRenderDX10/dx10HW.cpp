@@ -905,12 +905,23 @@ void fill_vid_mode_list(CHW* _hw)
 
 	_RELEASE(pOutput);
 
+	// Square screens are left out of the list: the hud, the menus and the inventory grid here are
+	// laid out for widescreen, and 4:3 / 5:4 only give a stretched, clipped picture. Anything
+	// narrower than 3:2 is dropped. `biggest` tracks the panel's largest mode, wide or not, so a
+	// square-only adapter can still be offered widescreen sizes that fit on it (see below).
+	u32 biggest_w = 0, biggest_h = 0;
 	for (u32 i=0; i<num; ++i)
 	{
 		DXGI_MODE_DESC &desc = modes[i];
 		string32		str;
 
 		if(desc.Width < 800)
+			continue;
+
+		if (desc.Width > biggest_w)		biggest_w = desc.Width;
+		if (desc.Height > biggest_h)	biggest_h = desc.Height;
+
+		if(desc.Width * 2 < desc.Height * 3)		// narrower than 3:2 -- square, skip
 			continue;
 
 		xr_sprintf(str, sizeof(str), "%dx%d", desc.Width, desc.Height);
@@ -920,6 +931,27 @@ void fill_vid_mode_list(CHW* _hw)
 
 		_tmp.push_back				(NULL);
 		_tmp.back()					= xr_strdup(str);
+	}
+
+	// A genuinely square panel reports no wide mode at all, and dropping it to nothing would leave
+	// the options with an empty list. Offer the standard widescreen sizes that still fit on it --
+	// the picture is then letterboxed rather than stretched, which is the point of the filter.
+	// (Same table lives in xrRender\HW.cpp -- keep the two in step.)
+	if (_tmp.empty())
+	{
+		static const u32 wide[][2] = {
+			{1024,576},{1280,720},{1280,800},{1366,768},{1440,900},{1600,900},
+			{1680,1050},{1920,1080},{1920,1200},{2560,1440},{3840,2160}
+		};
+		for (u32 i = 0; i < sizeof(wide)/sizeof(wide[0]); ++i)
+		{
+			if (biggest_w && (wide[i][0] > biggest_w || wide[i][1] > biggest_h))	continue;
+
+			string32	str;
+			xr_sprintf	(str, sizeof(str), "%dx%d", wide[i][0], wide[i][1]);
+			_tmp.push_back	(NULL);
+			_tmp.back()		= xr_strdup(str);
+		}
 	}
 	
 
