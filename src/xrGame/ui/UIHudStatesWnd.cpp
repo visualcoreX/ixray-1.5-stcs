@@ -660,30 +660,39 @@ void CUIHudStatesWnd::UpdateIndicatorType( CActor* actor, ALife::EInfluenceType 
 	float max_power = actor->conditions().GetZoneMaxPower( hit_type );
 	protect = protect / max_power; // = 0..1
 
-	if ( hit_power < EPS )
+	// How loud the ZONE is right now: 0 nothing, 1 green (the suit is holding it), 2 yellow, 3 red.
+	int zone_sev = 0;
+	if ( hit_power >= EPS )
 	{
-		m_indik[type]->SetColor( c_white );
-		SwitchLA( false, type );
-		actor->conditions().SetZoneDanger( 0.0f, type );
-		return;
+		if ( hit_power < protect )								zone_sev = 1;
+		else if ( hit_power - protect < m_zone_threshold[type] )	zone_sev = 2;
+		else													zone_sev = 3;
 	}
-	if ( hit_power < protect )
+
+	int sev = zone_sev;
+
+	// Radiation is not like the other three. Walk out of the field and the field is gone, but the
+	// dose you picked up in it is still in you and still ticking your health down -- and the icon
+	// went white the moment you stepped clear, which said the opposite. So it stays lit until the
+	// actor is clean again, coloured by HOW MUCH is left rather than by the field: the indicator
+	// doubles as a read-out of the dose. Whichever of the two is louder wins.
+	if ( type == ALife::infl_rad )
 	{
-		m_indik[type]->SetColor( c_green );
-		SwitchLA( false, type );
-		actor->conditions().SetZoneDanger( 0.0f, type );
-		return;
+		int dose_sev = 0;
+		if ( m_radia_self >= 2.0f/3.0f )		dose_sev = 3;
+		else if ( m_radia_self >= 1.0f/3.0f )	dose_sev = 2;
+		else if ( m_radia_self > EPS )			dose_sev = 1;
+
+		if ( dose_sev > sev )	sev = dose_sev;
 	}
-	if ( hit_power - protect < m_zone_threshold[type] )
-	{
-		m_indik[type]->SetColor( c_yellow );
-		SwitchLA( false, type );
-		actor->conditions().SetZoneDanger( 0.0f, type );
-		return;
-	}
-	m_indik[type]->SetColor( c_red );
-	SwitchLA( true, type );
-	actor->conditions().SetZoneDanger( hit_power - protect, type );
+
+	static const u32 s_sev_color[4] = { c_white, c_green, c_yellow, c_red };
+	m_indik[type]->SetColor( s_sev_color[sev] );
+	SwitchLA( sev == 3, type );
+
+	// the danger the actor reacts to is still the FIELD only -- a dose already taken is not an
+	// incoming hit, and hit_power - protect would be negative out in the open
+	actor->conditions().SetZoneDanger( (zone_sev == 3) ? (hit_power - protect) : 0.0f, type );
 }
 
 void CUIHudStatesWnd::SwitchLA( bool state, ALife::EInfluenceType type )
