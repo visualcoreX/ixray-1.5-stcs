@@ -26,6 +26,8 @@
 #include "PHCommander.h"
 #include "PHScriptCall.h"
 #include "HUDManager.h"
+#include "ui/UIMainIngameWnd.h"		// hud_warn_row_left: where the corner warning row ends
+#include "ui/UIHudStatesWnd.h"
 #include "script_engine.h"
 #include "game_cl_single.h"
 #include "game_sv_single.h"
@@ -440,6 +442,23 @@ void show_indicators()
 		HUD().GetUI()->ShowCrosshair(true);
 	}
 	psActorFlags.set(AF_GODMODE_RT, FALSE);
+}
+
+// Are the hud indicators currently up? A script-drawn indicator (the thirst icon) has to follow the
+// engine ones -- otherwise it stays on screen through sleep, cutscenes and the PDA.
+bool indicators_shown()
+{
+	return	(HUD().GetUI() ? HUD().GetUI()->GameIndicatorsShown() : false);
+}
+
+// With the interface off the engine lays its warning indicators out in a row in the bottom-right
+// corner (CUIHudStatesWnd::DrawWarningsOnly). This is the left edge of that row, so the script-drawn
+// thirst icon can fall in beside it instead of overlapping it. UI_BASE_WIDTH when the row is empty.
+float hud_warn_row_left()
+{
+	CUI* ui = HUD().GetUI();
+	if (!ui || !ui->UIMainIngameWnd || !ui->UIMainIngameWnd->get_hud_states())	return UI_BASE_WIDTH;
+	return	(ui->UIMainIngameWnd->get_hud_states()->WarnRowLeft());
 }
 
 // hide_indicators*() raises AF_GODMODE_RT along with hiding the HUD, which is right for a cutscene
@@ -861,6 +880,8 @@ void CLevel::script_register(lua_State *L)
 		def("hide_indicators_safe",				hide_indicators_safe),
 
 		def("show_indicators",					show_indicators),
+		def("indicators_shown",					indicators_shown),
+		def("hud_warn_row_left",				hud_warn_row_left),
 		def("set_actor_invulnerable",			set_actor_invulnerable),
 		def("actor_crouch",						actor_crouch),
 		def("actor_light_on",					actor_light_on),

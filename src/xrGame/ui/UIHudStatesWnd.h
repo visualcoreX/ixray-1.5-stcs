@@ -50,6 +50,7 @@ private:
 	CUIStatic*			m_bleeding;
 	
 	float				m_radia_self;
+	float				m_warn_row_left;	// see WarnRowLeft()
 //	float				m_actor_radia_factor;
 	float				m_radia_hit;
 	shared_str			m_lanim_name;
@@ -91,6 +92,17 @@ public:
 
 			float	get_zone_cur_power	( ALife::EHitType hit_type );
 			float	get_main_sensor_value()	{ return m_radia_hit; }
+
+			// With the interface switched off the whole column is gone. These two keep the WARNING
+			// indicators alive on their own: the colours still have to be worked out every frame,
+			// and the ones that are saying something (anything but their idle white) still get drawn
+			// where they normally sit. See CUI::Render.
+			void	UpdateWarningsOnly	();
+			void	DrawWarningsOnly	();
+			// Left edge of that row, in the 1024x768 ui space, as of the last draw. The thirst icon
+			// is a SCRIPT static living outside this window and has to queue up next to the row
+			// rather than on top of it -- see level.hud_warn_row_left().
+			float	WarnRowLeft			() const	{ return m_warn_row_left; }
 
 protected:
 	static	ALife::EInfluenceType	get_indik_type( ALife::EHitType hit_type );

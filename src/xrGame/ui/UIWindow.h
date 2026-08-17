@@ -154,6 +154,8 @@ public:
 			void			SetWndRect_script(Frect rect)										{CUISimpleWindow::SetWndRect(rect);}
 			void			SetWndPos_script(Fvector2 pos)										{CUISimpleWindow::SetWndPos(pos);}
 			void			SetWndSize_script(Fvector2 size)									{CUISimpleWindow::SetWndSize(size);}
+			// by value: luabind cannot hand a const reference back to a script
+			Fvector2		GetWndPos_script()													{return CUISimpleWindow::GetWndPos();}
 
 	//прорисовка окна
 	virtual void			Draw				();

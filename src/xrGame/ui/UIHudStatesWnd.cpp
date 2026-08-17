@@ -28,6 +28,7 @@ CUIHudStatesWnd::CUIHudStatesWnd()
 {
 	m_last_time = Device.dwTimeGlobal;
 	m_radia_self         = 0.0f;
+	m_warn_row_left      = UI_BASE_WIDTH;
 	m_radia_hit          = 0.0f;
 	m_lanim_name         = NULL;
 //	m_actor_radia_factor = 0.0f;
@@ -215,6 +216,97 @@ void CUIHudStatesWnd::Update()
 	UpdateZones();
 
 	inherited::Update();
+}
+
+// Playing with the interface off should not mean playing blind to a radiation field or to starving:
+// an indicator that has left its idle white is a warning, and a warning is exactly the thing worth
+// breaking the empty screen for. So the colours keep being computed here (nothing else updates this
+// window while the hud is down) and DrawWarningsOnly puts the loud ones back on screen. The health,
+// stamina and weapon parts of the column deliberately stay hidden -- they say nothing on their own.
+void CUIHudStatesWnd::UpdateWarningsOnly()
+{
+	CActor* actor = smart_cast<CActor*>( Level().CurrentViewEntity() );
+	if ( !actor )		return;
+
+	UpdateIndicators	( actor );
+	UpdateZones			();
+}
+
+void CUIHudStatesWnd::DrawWarningsOnly()
+{
+	// Gather the ones that are actually saying something. A red indicator blinks through a light
+	// animation, so its colour is never plain white either -- the white test catches only the quiet.
+	CUIStatic*	plate[ALife::infl_max_count + 1];
+	CUIStatic*	glyph[ALife::infl_max_count + 1];
+	int			cnt = 0;
+
+	for ( int i = ALife::infl_rad; i <= ALife::infl_psi; ++i )
+	{
+		if ( !m_indik[i] || m_indik[i]->GetColor() == c_white )		continue;
+		plate[cnt] = m_resist_back[i];
+		glyph[cnt] = m_indik[i];
+		++cnt;
+	}
+	if ( m_ind_starvation && m_ind_starvation->GetColor() != c_white )
+	{
+		plate[cnt] = m_resist_back_starvation;
+		glyph[cnt] = m_ind_starvation;
+		++cnt;
+	}
+	const float	margin	= 14.0f;		// from both screen edges, in the 1024x768 ui space
+	const float	gap		= 4.0f;			// between neighbours
+
+	m_warn_row_left = UI_BASE_WIDTH - margin;	// nothing drawn -> the row is empty, start at the edge
+	if ( !cnt )		return;
+
+	// Laid out in a ROW along the bottom-right corner rather than in the column's usual vertical
+	// stack: with the interface off there is no column for them to belong to, and a short row tucked
+	// into the corner reads as a warning strip instead of the leftovers of a hud. The icons are only
+	// moved for this draw and put straight back, so the normal column is untouched if the interface
+	// comes back on.
+	Fvector2 parent;
+	GetAbsolutePos	(parent);
+
+	Fvector2	saved_plate[ALife::infl_max_count + 1];
+	Fvector2	saved_glyph[ALife::infl_max_count + 1];
+
+	float x = UI_BASE_WIDTH - margin;
+	for ( int i = cnt - 1; i >= 0; --i )	// filled right to left, so the order stays left to right
+	{
+		CUIStatic* g = glyph[i];
+		CUIStatic* p = plate[i];
+		CUIStatic* anchor = p ? p : g;		// the plate is the bigger of the two; align by it
+
+		x -= anchor->GetWidth();
+
+		saved_glyph[i] = g->GetWndPos();
+		if ( p )	saved_plate[i] = p->GetWndPos();
+
+		// where the anchor should end up, expressed in this window's own coordinates
+		const Fvector2 want = Fvector2().set( x - parent.x,
+											  UI_BASE_HEIGHT - margin - anchor->GetHeight() - parent.y );
+		const Fvector2 from = anchor->GetWndPos();
+		const Fvector2 d    = Fvector2().set( want.x - from.x, want.y - from.y );
+
+		// shift the pair together, so the glyph keeps sitting on its plate exactly as the xml put it
+		g->SetWndPos( Fvector2().set( saved_glyph[i].x + d.x, saved_glyph[i].y + d.y ) );
+		if ( p )	p->SetWndPos( Fvector2().set( saved_plate[i].x + d.x, saved_plate[i].y + d.y ) );
+
+		m_warn_row_left = x;	// last one placed is the leftmost
+		x -= gap;
+	}
+
+	for ( int i = 0; i < cnt; ++i )
+	{
+		if ( plate[i] )		plate[i]->Draw();
+		glyph[i]->Draw();
+	}
+
+	for ( int i = 0; i < cnt; ++i )
+	{
+		glyph[i]->SetWndPos( saved_glyph[i] );
+		if ( plate[i] )		plate[i]->SetWndPos( saved_plate[i] );
+	}
 }
 
 void CUIHudStatesWnd::UpdateHealth( CActor* actor )

@@ -8,6 +8,7 @@
 #include "level.h"
 #include "game_cl_base.h"
 #include "ui/UIMainIngameWnd.h"
+#include "ui/UIHudStatesWnd.h"		// warning indicators kept alive while the interface is off
 #include "ui/UIMessagesWindow.h"
 #include "ui/UIPdaWnd.h"
 #include "UIGameCustom.h"
@@ -62,6 +63,12 @@ void CUI::UIOnFrame()
 		{
 			UIMainIngameWnd->Update	();
 		}
+		else if( GameIndicatorsShown() && UIMainIngameWnd->get_hud_states() )
+		{
+			// interface off: the column is not drawn, but its warning indicators still are, and their
+			// colours are decided here -- nothing else updates this window while the hud is down
+			UIMainIngameWnd->get_hud_states()->UpdateWarningsOnly();
+		}
 	}
 
 	// out GAME-style depend information
@@ -114,6 +121,12 @@ bool CUI::Render()
 		}
 		else
 		{
+			// The interface is off, but a radiation field, a psi zone or an empty stomach still have
+			// to reach the player somehow. Everything the column normally shows stays hidden; only
+			// the indicators that have left their idle white are drawn, in their usual place.
+			if ( GameIndicatorsShown() && UIMainIngameWnd->get_hud_states() )
+				UIMainIngameWnd->get_hud_states()->DrawWarningsOnly();
+
 			//hack - draw messagess wnd in scope mode
 			CUIGameSP* gSP = smart_cast<CUIGameSP*>( HUD().GetUI()->UIGame() );
 			if ( gSP )
