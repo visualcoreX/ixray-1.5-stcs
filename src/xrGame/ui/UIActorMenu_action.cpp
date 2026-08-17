@@ -21,10 +21,40 @@
 #include "UIMessageBoxEx.h"
 #include "UIPropertiesBox.h"
 #include "UIDialogWnd.h"
+#include "../../xrEngine/xr_input.h"
 
 #ifdef DEBUG
 #include <dinput.h>
 #endif
+
+bool CUIActorMenu::StackKeyPressed()
+{
+	return	(!!pInput->iGetAsyncKeyState(DIK_LSHIFT) || !!pInput->iGetAsyncKeyState(DIK_RSHIFT));
+}
+
+// One move takes a single item off a grouped cell: RemoveItem pops a child and PopChild swaps the
+// item data into it, so the cell that leaves always carries the root's item and the cell left behind
+// picks up the next one. Repeating the very same call therefore drains the whole stack -- the last
+// repeat, with no children left, moves the cell itself. Only the first move can use the cursor
+// position (it is the one that consumes the drag item); the rest are placed by the target list.
+bool CUIActorMenu::MoveStack(TItemMove move, CUICellItem* itm, bool b_use_cursor_pos)
+{
+	CUIDragDropListEx*	owner	= itm->OwnerList();
+	u32					rest	= StackKeyPressed() ? itm->ChildsCount() : 0;
+
+	bool				result	= (this->*move)(itm, b_use_cursor_pos);
+
+	for (u32 i=0; result && (i<rest); ++i)
+	{
+		if (itm->OwnerList() != owner)		// the cell itself has already left the list
+			break;
+
+		if (!(this->*move)(itm, false))		// no room / not tradeable -- keep what is left where it is
+			break;
+	}
+
+	return	(result);
+}
 
 
 bool  CUIActorMenu::AllowItemDrops(EDDListType from, EDDListType to)
@@ -175,31 +205,31 @@ bool CUIActorMenu::OnItemDrop(CUICellItem* itm)
 		}break;
 		case iActorBag:
 		{
-			ToBag	(itm, true);
+			MoveStack	(&CUIActorMenu::ToBag, itm, true);
 		}break;
 		case iActorBelt:
 		{
-			ToBelt	(itm, true);
+			MoveStack	(&CUIActorMenu::ToBelt, itm, true);
 		}break;
 		case iActorTrade:
 		{
-			ToActorTrade(itm, true);
+			MoveStack	(&CUIActorMenu::ToActorTrade, itm, true);
 		}break;
 		case iPartnerTrade:
 		{
-			if(t_old!=iPartnerTradeBag)	
+			if(t_old!=iPartnerTradeBag)
 				return false;
-			ToPartnerTrade(itm, true);
+			MoveStack	(&CUIActorMenu::ToPartnerTrade, itm, true);
 		}break;
 		case iPartnerTradeBag:
 		{
-			if(t_old!=iPartnerTrade)	
+			if(t_old!=iPartnerTrade)
 				return false;
-			ToPartnerTradeBag(itm, true);
+			MoveStack	(&CUIActorMenu::ToPartnerTradeBag, itm, true);
 		}break;
 		case iDeadBodyBag:
 		{
-			ToDeadBodyBag(itm, true);
+			MoveStack	(&CUIActorMenu::ToDeadBodyBag, itm, true);
 		}break;
 	};
 
@@ -236,12 +266,12 @@ bool CUIActorMenu::OnItemDbClick(CUICellItem* itm)
 		{
 			if ( m_currMenuMode == mmTrade )
 			{
-				ToActorTrade( itm, false );
+				MoveStack( &CUIActorMenu::ToActorTrade, itm, false );
 				break;
 			}else
 			if ( m_currMenuMode == mmDeadBodySearch )
 			{
-				ToDeadBodyBag( itm, false );
+				MoveStack( &CUIActorMenu::ToDeadBodyBag, itm, false );
 				break;
 			}
 			if(m_currMenuMode!=mmUpgrade && TryUseItem( itm ))
@@ -264,27 +294,27 @@ bool CUIActorMenu::OnItemDbClick(CUICellItem* itm)
 		}
 		case iActorBelt:
 		{
-			ToBag( itm, false );
+			MoveStack( &CUIActorMenu::ToBag, itm, false );
 			break;
 		}
 		case iActorTrade:
 		{
-			ToBag( itm, false );
+			MoveStack( &CUIActorMenu::ToBag, itm, false );
 			break;
 		}
 		case iPartnerTradeBag:
 		{
-			ToPartnerTrade( itm, false );
+			MoveStack( &CUIActorMenu::ToPartnerTrade, itm, false );
 			break;
 		}
 		case iPartnerTrade:
 		{
-			ToPartnerTradeBag( itm, false );
+			MoveStack( &CUIActorMenu::ToPartnerTradeBag, itm, false );
 			break;
 		}
 		case iDeadBodyBag:
 		{
-			ToBag( itm, false );
+			MoveStack( &CUIActorMenu::ToBag, itm, false );
 			break;
 		}
 

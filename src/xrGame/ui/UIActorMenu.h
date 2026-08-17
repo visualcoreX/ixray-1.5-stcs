@@ -207,6 +207,11 @@ protected:
 	void		xr_stdcall		OnDragItemOnTrash			(CUIDragItem* item, bool b_receive);
 	bool						OnItemDropped				(PIItem itm, CUIDragDropListEx* new_owner, CUIDragDropListEx* old_owner);
 	bool						ToQuickSlot					(CUICellItem* itm);
+
+	// holding shift while moving a grouped cell ("x5") moves the whole stack instead of one item
+	typedef bool (CUIActorMenu::*TItemMove)(CUICellItem*, bool);
+	static bool					StackKeyPressed				();
+	bool						MoveStack					(TItemMove move, CUICellItem* itm, bool b_use_cursor_pos);
 public:
 	void						ReloadQuickSlots			();
 private:
