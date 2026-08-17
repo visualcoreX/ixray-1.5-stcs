@@ -48,6 +48,7 @@ CUIStatic:: CUIStatic()
 	m_fHeading				= 0.0f;
 	m_lanim_clr.set_defaults	();
 	m_lanim_xform.set_defaults	();
+	m_lanim_alpha_scale			= 1.0f;
 
 	m_pLines				= NULL;
 	m_bEnableTextHighlighting = false;
@@ -235,17 +236,26 @@ void CUIStatic::Update()
 			int frame;
 			u32 clr					= m_lanim_clr.m_lanim->CalculateRGB(t-m_lanim_clr.m_lanim_start_time,frame);
 
+			// the whole effect can be asked to play fainter without touching the animation itself
+			u32 a = color_get_A(clr);
+			if (!fsimilar(m_lanim_alpha_scale, 1.0f))
+			{
+				float fa = float(a) * m_lanim_alpha_scale;
+				clamp(fa, 0.0f, 255.0f);
+				a = u32(iFloor(fa));
+			}
+
 			if(m_lanim_clr.m_lanimFlags.test(LA_TEXTURECOLOR))
 				if(m_lanim_clr.m_lanimFlags.test(LA_ONLYALPHA))
-					SetColor				(subst_alpha(GetColor(), color_get_A(clr)));
+					SetColor				(subst_alpha(GetColor(), a));
 				else
-					SetColor				(clr);
+					SetColor				(subst_alpha(clr, a));
 
 			if(m_lanim_clr.m_lanimFlags.test(LA_TEXTCOLOR))
 				if(m_lanim_clr.m_lanimFlags.test(LA_ONLYALPHA))
-					SetTextColor				(subst_alpha(GetTextColor(), color_get_A(clr)));
+					SetTextColor				(subst_alpha(GetTextColor(), a));
 				else
-					SetTextColor				(clr);
+					SetTextColor				(subst_alpha(clr, a));
 			
 		}
 	}

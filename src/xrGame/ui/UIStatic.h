@@ -31,6 +31,7 @@ private:
 	typedef CUIWindow inherited;
 	lanim_cont				m_lanim_clr;
 	lanim_cont_xf			m_lanim_xform;
+	float					m_lanim_alpha_scale;	// see SetLAAlphaScale
 	void					EnableHeading_int		(bool b)				{m_bHeading = b;}
 public:
 	using CUISimpleWindow::SetWndRect;
@@ -54,6 +55,11 @@ public:
 			void		SetVTextAlignment(EVTextAlignment al);
 	virtual void		SetColor					(u32 color)					{ m_UIStaticItem.SetColor(color);		}
 	u32					GetColor					() const					{ return m_UIStaticItem.GetColor();		}
+	// A light animation rewrites the alpha every frame (la_alpha="1"), so a caller that wants the
+	// whole effect FAINTER cannot just SetColor -- the next Update would undo it. This scales what
+	// the animation produces instead: 1 = as authored, 0 = invisible. See CUIStatic::Update.
+			void		SetLAAlphaScale				(float s)					{ m_lanim_alpha_scale = s;				}
+			float		GetLAAlphaScale				() const					{ return m_lanim_alpha_scale;			}
 	u32&				GetColorRef					()							{ return m_UIStaticItem.GetColorRef();	}
 	virtual void		InitTexture					(LPCSTR tex_name);
 	virtual void		InitTextureEx				(LPCSTR tex_name, LPCSTR sh_name="hud\\default");

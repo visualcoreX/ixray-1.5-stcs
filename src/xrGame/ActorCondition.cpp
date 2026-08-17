@@ -18,6 +18,7 @@
 #include "weapon.h"
 #include "HUDManager.h"				// GS bloodscreen: the custom statics live on the game UI
 #include "UIGameCustom.h"
+#include "ui/UIStatic.h"		// bloodscreen: the pulse lives on the auto_static children
 #include "game_cl_single.h"			// g_SingleGameDifficulty (the splash threshold scales with it)
 
 #define MAX_SATIETY					1.0f
@@ -331,6 +332,9 @@ void CActorCondition::UpdateCondition()
 // GS's own numbers, kept as they are.
 static const float BS_BLEEDING_TRESHOLD	= 0.6f;		// same constant CActor::UpdateCL uses for the sound
 static const float BS_HEALTH_TRESHOLD	= 0.15f;
+// How faint the overlay gets for the lightest scratch. Not zero on purpose: the whole point of
+// showing it below the old threshold is that a small wound should still register -- but only just.
+static const float BS_FAINTEST			= 0.10f;
 
 void CActorCondition::UpdateBloodScreen()
 {
@@ -354,8 +358,23 @@ void CActorCondition::UpdateBloodScreen()
 		return;
 	}
 
-	const bool bad = (const_cast<CActorCondition*>(this)->BleedingSpeed() > BS_BLEEDING_TRESHOLD)
-					|| (health < BS_HEALTH_TRESHOLD);
+	// ANY bleeding shows the overlay, not just a heavy one -- a cut you cannot see is a cut you
+	// forget to bandage. What changes with the severity is how strong it is: at GS's old threshold
+	// and above it looks exactly as it did, below that it fades down to a faint tint. Bleeding out
+	// on low health stays at full strength, since that is the state worth shouting about.
+	const float bleed = const_cast<CActorCondition*>(this)->BleedingSpeed();
+	const bool	dying = (health < BS_HEALTH_TRESHOLD);
+	const bool	bad   = (bleed > EPS) || dying;
+
+	float strength = 1.0f;
+	if (!dying)
+	{
+		float k = bleed / BS_BLEEDING_TRESHOLD;
+		clamp(k, 0.0f, 1.0f);
+		// squared, so the light half of the range stays genuinely light instead of ramping straight
+		// up to something loud; the top of the range is still exactly 1.0, i.e. unchanged
+		strength = BS_FAINTEST + (1.0f - BS_FAINTEST) * k * k;
+	}
 
 	if (bad && !m_bBloodScreenShown)
 	{
@@ -368,6 +387,28 @@ void CActorCondition::UpdateBloodScreen()
 	{
 		g->RemoveCustomStatic	("gwr_bloodscreen_main");
 		m_bBloodScreenShown		= false;
+	}
+
+	if (m_bBloodScreenShown)
+	{
+		// The pulse's alpha comes from a light animation, so the severity has to scale what the
+		// animation produces rather than the colour underneath it (CUIStatic::SetLAAlphaScale).
+		// The animation -- and the texture -- live on the <auto_static> CHILD, not on the node named
+		// in the xml: CUIXmlInit::InitAutoStaticGroup builds each auto_static as a separate CUIStatic
+		// attached to the parent. Scaling only the parent, which is what this did at first, changes
+		// nothing at all, because the parent draws nothing.
+		SDrawStaticStruct* s = g->GetCustomStatic("gwr_bloodscreen_main");
+		if (s && s->wnd())
+		{
+			s->wnd()->SetLAAlphaScale(strength);
+
+			CUIWindow::WINDOW_LIST& kids = s->wnd()->GetChildWndList();
+			for (CUIWindow::WINDOW_LIST_it it = kids.begin(); it != kids.end(); ++it)
+			{
+				CUIStatic* st = smart_cast<CUIStatic*>(*it);
+				if (st)		st->SetLAAlphaScale(strength);
+			}
+		}
 	}
 
 	// A big single-step loss splashes the screen. GS scales the threshold with the difficulty --
