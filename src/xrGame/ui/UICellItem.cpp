@@ -208,7 +208,19 @@ void CUICellItem::UpdateConditionProgressBar()
 	if(m_pParentList && m_pParentList->GetConditionProgBarVisibility())
 	{
 		PIItem itm = (PIItem)m_pData;
-		if(itm && itm->IsUsingCondition())
+		// A partly used item is a section of its own, not a worn-down one (a bottle drunk to a
+		// quarter is `water4`), so it has no condition to draw. GS gives those sections a
+		// `visual_condition` and shows the same bar for "how much is left" -- present it here
+		// whether or not the item uses condition at all, exactly as their UI patch does.
+		float	cond	= (itm ? itm->GetCondition() : 0.f);
+		bool	show	= (itm && itm->IsUsingCondition());
+		if(itm && pSettings->line_exist(itm->m_section_id, "visual_condition"))
+		{
+			cond	= pSettings->r_float(itm->m_section_id, "visual_condition");
+			show	= true;
+		}
+
+		if(show)
 		{
 			Ivector2 itm_grid_size = GetGridSize();
 			if(m_pParentList->GetVerticalPlacement())
@@ -216,11 +228,21 @@ void CUICellItem::UpdateConditionProgressBar()
 
 			Ivector2 cell_size = m_pParentList->CellSize();
 			Ivector2 cell_space = m_pParentList->CellsSpacing();
+
+			// The bar's width is a constant out of the xml (condition_progess_bar, 38px) and was
+			// drawn for a weapon spanning several cells. A bag cell is 26px, so on a ONE-cell item
+			// -- which every usable one is -- the bar hung out past the icon. Clamp it to the item's
+			// own footprint. Only ever shrink: a weapon keeps the narrow vanilla bar, and a cell
+			// item's grid size never changes once it has been built for an item.
+			const float span = float(itm_grid_size.x * (cell_size.x + cell_space.x) - cell_space.x) - 2.f;
+			if (m_pConditionState->GetWidth() > span)
+				m_pConditionState->SetWndSize(Fvector2().set(span, m_pConditionState->GetHeight()));
+
 			float x = 1.f;
 			float y = itm_grid_size.y * (cell_size.y + cell_space.y) - m_pConditionState->GetHeight() - 2.f;
 
 			m_pConditionState->SetWndPos(Fvector2().set(x,y));
-			m_pConditionState->SetProgressPos(iCeil(itm->GetCondition()*13.0f)/13.0f);
+			m_pConditionState->SetProgressPos(iCeil(cond*13.0f)/13.0f);
 			m_pConditionState->Show(true);
 			return;
 		}
