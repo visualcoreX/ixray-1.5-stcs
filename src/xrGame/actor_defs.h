@@ -7,7 +7,10 @@
 #define ACTOR_HEIGHT			1.75f
 #define ACTOR_LOOKOUT_SPEED		2.f
 
-namespace ACTOR_DEFS 
+class CInventory;
+class CInventoryItem;
+
+namespace ACTOR_DEFS
 {
 // CoP quick-use slots: the SECTION assigned to each of the four slots, empty = unassigned.
 // Global rather than per-actor, exactly as in CoP; saved with the actor.
@@ -15,6 +18,12 @@ extern string32	g_quick_use_slots[4];
 // Short name of the key bound to quick slot `idx` ("F1"), for the labels on the slots and on
 // the hud. Empty when the action is unbound.
 LPCSTR			quick_use_key_name(int idx);
+// What the slot bound to `section` actually points at right now -- see Actor.cpp. Used by the key
+// that fires the slot, by the menu that draws it and by the hud icons, so they can never disagree.
+CInventoryItem*	quick_use_resolve(CInventory& inv, LPCSTR section);
+// ...and how many drinks the slot is worth in total: a sealed bottle and a half-drunk one are two
+// different sections but still two uses.
+u32				quick_use_count(CInventory& inv, LPCSTR section);
 
 
 enum ESoundCcount {

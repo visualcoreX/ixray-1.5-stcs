@@ -584,19 +584,26 @@ void CUIMainIngameWnd::UpdateQuickSlots()
 			continue;
 		}
 
+		// A multi-use item changes section as it is used up (water -> water2 -> ...), so both the
+		// icon and the count have to follow the chain: draw whichever stage the key would actually
+		// reach for, exactly as the menu does. Counting the bound section alone greyed a slot out
+		// the moment its bottle was opened, with the bottle still in the bag.
+		PIItem		held	= ACTOR_DEFS::quick_use_resolve(actor->inventory(), sect);
+		LPCSTR		draw	= held ? held->object().cNameSect().c_str() : sect;
+
 		icon->SetShader(InventoryUtilities::GetEquipmentIconsShader());
 		Frect r;
-		r.x1 = pSettings->r_float(sect, "inv_grid_x")		* gw;
-		r.y1 = pSettings->r_float(sect, "inv_grid_y")		* gh;
-		r.x2 = pSettings->r_float(sect, "inv_grid_width")	* gw;
-		r.y2 = pSettings->r_float(sect, "inv_grid_height")	* gh;
+		r.x1 = pSettings->r_float(draw, "inv_grid_x")		* gw;
+		r.y1 = pSettings->r_float(draw, "inv_grid_y")		* gh;
+		r.x2 = pSettings->r_float(draw, "inv_grid_width")	* gw;
+		r.y2 = pSettings->r_float(draw, "inv_grid_height")	* gh;
 		r.rb.add(r.lt);
 		icon->SetOriginalRect	(r);
 		icon->TextureOn			();
 		icon->SetStretchTexture	(true);
 
 		// nothing of that section left: keep the icon as a dim reminder and drop the counter
-		const u32 count = actor->inventory().dwfGetSameItemCount(sect, true);
+		const u32 count = ACTOR_DEFS::quick_use_count(actor->inventory(), sect);
 		icon->SetTextureColor(color_rgba(255, 255, 255, count ? 255 : 100));
 		if (cnt)
 		{

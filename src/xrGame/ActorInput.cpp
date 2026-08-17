@@ -422,7 +422,7 @@ void CActor::IR_OnKeyboardPress(int cmd)
 				if (cmd >= kQUICK_USE_1 && cmd <= kQUICK_USE_4)
 				{
 					LPCSTR sect = ACTOR_DEFS::g_quick_use_slots[cmd - kQUICK_USE_1];
-					if (sect && sect[0])	itm = inventory().GetAny(sect);
+					if (sect && sect[0])	itm = ACTOR_DEFS::quick_use_resolve(inventory(), sect);
 				}
 				else
 					itm = inventory().item((cmd==kUSE_BANDAGE)?  CLSID_IITEM_BANDAGE:CLSID_IITEM_MEDKIT );

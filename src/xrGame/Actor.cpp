@@ -119,6 +119,58 @@ LPCSTR ACTOR_DEFS::quick_use_key_name(int idx)
 	return buff;
 }
 
+// A quick slot stores a SECTION, but a partly used item is a section of its OWN: one sip from a full
+// bottle (`water`) leaves `water2` in the bag, so a slot bound to `water` would go dead -- and the
+// menu would draw it dimmed -- with the bottle still in the inventory. Walk the GS use chain
+// (`base_object` -> `uses_count` -> `using_2..N`) and take the MOST used stage present: an open
+// bottle gets finished before a sealed one is broken into. Items with no chain resolve exactly as a
+// plain GetAny would. GS does this in Lua by rewriting the binding (ProcessQuickslots*); resolving
+// it on the fly instead leaves the player's own choice of section in the slot untouched.
+CInventoryItem* ACTOR_DEFS::quick_use_resolve(CInventory& inv, LPCSTR section)
+{
+	if (!section || !section[0])					return NULL;
+	if (!pSettings->section_exist(section))			return NULL;
+
+	LPCSTR base = READ_IF_EXISTS(pSettings, r_string, section, "base_object", section);
+	if (!pSettings->section_exist(base))			base = section;
+
+	const int uses = READ_IF_EXISTS(pSettings, r_s32, base, "uses_count", 1);
+	for (int i = uses; i >= 2; --i)
+	{
+		string64	key;
+		xr_sprintf	(key, sizeof(key), "using_%d", i);
+		LPCSTR stage = READ_IF_EXISTS(pSettings, r_string, base, key, (LPCSTR)0);
+		if (!stage)									continue;
+		if (PIItem itm = inv.GetAny(stage))			return itm;
+	}
+
+	if (PIItem full = inv.GetAny(base))				return full;
+	return inv.GetAny(section);
+}
+
+// Same walk, counting instead of picking. The hud slot dims itself when this reaches zero, and
+// counting only the bound section made a slot go grey the moment its bottle was opened.
+u32 ACTOR_DEFS::quick_use_count(CInventory& inv, LPCSTR section)
+{
+	if (!section || !section[0])					return 0;
+	if (!pSettings->section_exist(section))			return 0;
+
+	LPCSTR base = READ_IF_EXISTS(pSettings, r_string, section, "base_object", section);
+	if (!pSettings->section_exist(base))			base = section;
+
+	u32 total = inv.dwfGetSameItemCount(base, true);
+
+	const int uses = READ_IF_EXISTS(pSettings, r_s32, base, "uses_count", 1);
+	for (int i = 2; i <= uses; ++i)
+	{
+		string64	key;
+		xr_sprintf	(key, sizeof(key), "using_%d", i);
+		LPCSTR stage = READ_IF_EXISTS(pSettings, r_string, base, key, (LPCSTR)0);
+		if (stage)	total += inv.dwfGetSameItemCount(stage, true);
+	}
+	return total;
+}
+
 CActor::CActor() : CEntityAlive()
 {
 	m_dwBayonetHitTm		= 0;

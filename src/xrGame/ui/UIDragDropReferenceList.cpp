@@ -165,7 +165,10 @@ void CUIDragDropReferenceList::ReloadReferences(CInventoryOwner* pActor)
 
 			if (name && name[0])
 			{
-				PIItem itm = pActor->inventory().GetAny(name);
+				// not GetAny: the slot remembers the FULL bottle, and after a sip the bag holds the
+				// next stage instead. Resolve the same way the key does, or the slot dims while the
+				// item it fires is sitting in the inventory.
+				PIItem itm = ACTOR_DEFS::quick_use_resolve(pActor->inventory(), name);
 				if (itm)
 					SetItem(create_cell_item(itm), Ivector2().set(i, j));
 				else
