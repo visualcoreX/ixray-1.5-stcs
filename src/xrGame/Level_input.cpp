@@ -19,6 +19,7 @@
 #include "actor.h"
 #include "huditem.h"
 #include "ui/UIDialogWnd.h"
+#include "ui/UIPdaWnd.h"			// pda_play_click: the camp-names key is a press on the PDA
 #include "../xrEngine/xr_input.h"
 #include "saved_game_wrapper.h"
 
@@ -148,6 +149,9 @@ void CLevel::IR_OnKeyboardPress	(int key)
 			luabind::functor<void>	functor;
 			R_ASSERT2				(ai().script_engine().functor("sim_combat.start_attack",functor),"failed to get sim_combat.start_attack functor");
 			functor					();
+			// this is the key that puts the camp names on the map -- it is a press on the PDA as far
+			// as the player is concerned, so give it the same click gesture a UI click gets
+			pda_play_click			();
 		}break;
 	};
 

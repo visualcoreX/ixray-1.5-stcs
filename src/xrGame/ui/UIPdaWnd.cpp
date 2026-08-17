@@ -445,6 +445,26 @@ static bool pda_apply_cursor_dir(CHudItem* hi, int dir)
 	return false;
 }
 
+// Play the click gesture once for something that did NOT come through the window's own mouse
+// handling -- the map's camp-names key (kALIFE_CMD) is the case this exists for. Direction 9 is the
+// click slot, and the item picks pda_click or pda_aim_click from it depending on whether the PDA is
+// being held to the face. Unlike the mouse path this ignores g_pda_use_clicks: the gesture was asked
+// for on this action specifically, not as a general "click the screen" flourish. g_pda_cursor_dir is
+// cleared first so a second press replays it instead of being swallowed as "already in that state".
+void pda_play_click()
+{
+	CHudItem* hi = pda_hud_item();
+	if (!hi)											return;
+	if (Device.dwTimeGlobal < s_pda_click_until)		return;	// one is still on screen
+
+	g_pda_cursor_dir = -1;
+	if (pda_apply_cursor_dir(hi, 9))
+		s_pda_click_until = hi->MotionEndTm();
+
+	s_pda_cur_acc.set	(0.f, 0.f);
+	s_pda_cur_tm		= Device.dwTimeGlobal;
+}
+
 // RMB = hold the PDA to the face / lower it; MMB = flip the mouse between cursor and looking around.
 // The window is a dialog, so it gets the input first and the item would never see these itself --
 // Gunslinger injects the same two actions for exactly this reason.

@@ -22,6 +22,10 @@ class CUILogsWnd;
 class CUIAnimatedStatic;
 class UIHint;
 
+// Play the PDA's click gesture (pda_click / pda_aim_click) once, for an action that reaches the PDA
+// from outside its own mouse handling -- see UIPdaWnd.cpp. No-op when the 3D PDA is not in hand.
+void pda_play_click();
+
 
 class CUIPdaWnd: public CUIDialogWnd
 {
