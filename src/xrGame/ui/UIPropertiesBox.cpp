@@ -4,6 +4,7 @@
 #include "../level.h"
 #include "UIListBoxItem.h"
 #include "UIXmlInit.h"
+#include "../xr_level_controller.h"	// get_binded_action: keep the box open on movement keys
 
 #define OFFSET_X (5.0f)
 #define OFFSET_Y (5.0f)
@@ -170,6 +171,29 @@ void CUIPropertiesBox::Draw()
 }
 
 bool CUIPropertiesBox::OnKeyboardAction(int dik, EUIMessages keyboard_action){
+	// Any key used to close the box, which meant a finger resting on WASD threw away the menu
+	// the player had just opened on an item. Movement (and the stance/lean keys that ride along
+	// with it) is swallowed instead: the actor cannot walk with the inventory open anyway, so
+	// nothing is lost by ignoring it here. Everything else -- Esc, the inventory key, hotkeys --
+	// still closes the box exactly as before.
+	switch (get_binded_action(dik))
+	{
+	case kFWD:
+	case kBACK:
+	case kL_STRAFE:
+	case kR_STRAFE:
+	case kL_LOOKOUT:
+	case kR_LOOKOUT:
+	case kJUMP:
+	case kCROUCH:
+	case kCROUCH_TOGGLE:
+	case kACCEL:
+	case kSPRINT_TOGGLE:
+		return true;	// consumed, the box stays up
+	default:
+		break;
+	}
+
 	Hide();
 	return true;
 }
