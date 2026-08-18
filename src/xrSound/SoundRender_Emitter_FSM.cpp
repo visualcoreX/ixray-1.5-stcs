@@ -229,6 +229,17 @@ IC void	volume_lerp(float& c, float t, float s, float dt)
 #include "..\xrServerEntities\ai_sounds.h"
 BOOL CSoundRender_Emitter::update_culling(float dt)
 {
+	// The cull decision must NOT depend on the master volume sliders. Both tests below compare an
+	// amplitude that already carries the master volume as a factor, so playing at snd_volume_eff 0.1
+	// used to shrink every effect's cull radius 10x: the fade_scale test flipped negative and
+	// fade_volume dropped to 0 in 100 ms *while the sound was still playing* -> distant sounds come
+	// out chopped. Quiet-authored ones go first: an NPC step is base_volume 0.45 * power 0.9 (run) /
+	// 0.25 (walk), which put the fade radius at ~8 m / ~2 m instead of ~81 m / ~22 m.
+	// Scaling the threshold by the same master volume cancels it out of both tests, so the audible
+	// radius is a property of the sound and the distance only -- the slider just makes it quieter.
+	const float	master_volume	= (owner_data->s_type==st_Effect)?psSoundVEffects*psSoundVFactor:psSoundVMusic;
+	if (master_volume<=EPS_S)											{ smooth_volume = 0; return FALSE; }
+	const float	cull			= psSoundCull*master_volume;
 
 	if (b2D)
 	{
@@ -241,7 +252,7 @@ BOOL CSoundRender_Emitter::update_culling(float dt)
 
 		// Calc attenuated volume
 		float att			= p_source.min_distance/(psSoundRolloff*dist);	clamp(att,0.f,1.f);
-		float fade_scale	= bStopping||(att*p_source.base_volume*p_source.volume*(owner_data->s_type==st_Effect?psSoundVEffects*psSoundVFactor:psSoundVMusic)<psSoundCull)?-1.f:1.f;
+		float fade_scale	= bStopping||(att*p_source.base_volume*p_source.volume*master_volume<cull)?-1.f:1.f;
 		fade_volume			+=	dt*10.f*fade_scale;
 
 		// Update occlusion
@@ -251,8 +262,8 @@ BOOL CSoundRender_Emitter::update_culling(float dt)
 	}
 	clamp				(fade_volume,0.f,1.f);
 	// Update smoothing
-	smooth_volume		= .9f*smooth_volume + .1f*(p_source.base_volume*p_source.volume*(owner_data->s_type==st_Effect?psSoundVEffects*psSoundVFactor:psSoundVMusic)*occluder_volume*fade_volume);
-	if (smooth_volume<psSoundCull)							return FALSE;	// allow volume to go up
+	smooth_volume		= .9f*smooth_volume + .1f*(p_source.base_volume*p_source.volume*master_volume*occluder_volume*fade_volume);
+	if (smooth_volume<cull)									return FALSE;	// allow volume to go up
 	// Here we has enought "PRIORITY" to be soundable
 	// If we are playing already, return OK
 	// --- else check availability of resources

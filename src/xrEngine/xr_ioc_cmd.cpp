@@ -774,6 +774,7 @@ void CCC_Register()
 	CMD3(CCC_Mask,		"snd_acceleration",		&psSoundFlags,		ss_Hardware	);
 	CMD3(CCC_Mask,		"snd_efx",				&psSoundFlags,		ss_EFX		);
 	CMD4(CCC_Integer,	"snd_targets",			&psSoundTargets,	4,64		);
+	CMD4(CCC_Float,		"snd_cull",				&psSoundCull,		0.0001f, 0.1f);	// amplitude below which an emitter is faded out and released; scaled by the master volume, see CSoundRender_Emitter::update_culling
 	CMD4(CCC_Integer,	"snd_cache_size",		&psSoundCacheSizeMB,4,32		);
 
 #ifdef DEBUG
