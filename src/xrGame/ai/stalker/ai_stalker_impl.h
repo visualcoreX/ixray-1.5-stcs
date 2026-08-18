@@ -25,6 +25,16 @@ IC	CAgentManager &CAI_Stalker::agent_manager	() const
 
 IC	Fvector CAI_Stalker::weapon_shot_effector_direction	(const Fvector &current) const
 {
+	// Call of Pripyat -- and so Gunslinger, which does not patch this -- hands the aim back
+	// UNCHANGED: GSC left the displacement below behind an `#if 1 return current`. The shot
+	// effector still runs (it drives the shooting animation), it just no longer walks the NPC's
+	// aim. That is why the GS recoil figures work there and sprayed here: with the displacement
+	// live, an aks74u (1.2 deg + 0.6 per round) put everything after the first bullet of a burst
+	// over the target. NPC spread stays what it always was -- fire_dispersion_base and AI skill.
+	return			(current);
+
+#if 0
+
 	VERIFY			(weapon_shot_effector().IsActive());
 	Fvector			result;
 	weapon_shot_effector().GetDeltaAngle(result);
@@ -35,4 +45,5 @@ IC	Fvector CAI_Stalker::weapon_shot_effector_direction	(const Fvector &current) 
 	result.setHP	(-result.y + y, -result.x + p);
 
 	return			(result);
+#endif
 }
