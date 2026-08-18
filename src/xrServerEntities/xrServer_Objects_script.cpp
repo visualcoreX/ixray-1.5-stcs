@@ -106,6 +106,9 @@ void CSE_Abstract::script_register(lua_State *L)
 			.def_readonly	("parent_id",		&BaseType::ID_Parent)
 			.def_readonly	("script_version",	&BaseType::m_script_version)
 			.def_readwrite	("position",		&BaseType::o_Position)
+			// spawn orientation (XYZ Euler, radians -- CGameObject::net_Spawn does XFORM().setXYZ).
+			// Needed to lay a spawned physics object down instead of dropping it upright.
+			.def_readwrite	("angle",			&BaseType::o_Angle)
 			.def			("section_name",	&get_section_name)
 			.def			("name",			&get_name)
 			.def			("clsid",			&BaseType::script_clsid)
