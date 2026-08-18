@@ -1,6 +1,7 @@
 #pragma once
 
 #include "state_defs.h"
+#include "control_com_defs.h"
 
 // Lain: added
 #ifdef DEBUG
@@ -27,6 +28,9 @@ public:
 
 	virtual bool 		check_completion		() { return false; }
 	virtual bool 		check_start_conditions	() { return true;  }
+
+	// may a control (jump, rotation jump, ...) start in the current state?
+	virtual bool		check_control_start_conditions	(ControlCom::EControlType type);
 
 	virtual void		reselect_state			() {}	
 	virtual void		check_force_state		() {}

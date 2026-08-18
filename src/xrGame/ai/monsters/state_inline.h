@@ -208,6 +208,15 @@ EMonsterState CStateAbstract::get_state_type()
 }
 
 TEMPLATE_SPECIALIZATION
+bool CStateAbstract::check_control_start_conditions(ControlCom::EControlType type)
+{
+	CStateAbstract *child = get_state_current();
+	if (child && !child->check_control_start_conditions(type)) return false;
+
+	return true;
+}
+
+TEMPLATE_SPECIALIZATION
 void CStateAbstract::remove_links	(CObject* object_)
 {
 	SubStates::iterator	i = substates.begin();

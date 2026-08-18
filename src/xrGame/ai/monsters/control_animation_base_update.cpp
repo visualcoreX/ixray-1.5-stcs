@@ -42,6 +42,8 @@ char *dbg_anim_name_table[] = {
 	"eAnimAttack",
 	"eAnimAttackFromBack",
 	"eAnimAttackRun",
+	"eAnimAttackOnRunLeft",
+	"eAnimAttackOnRunRight",
 
 	"eAnimEat",
 	"eAnimSleep",
@@ -135,6 +137,12 @@ void CControlAnimationBase::update()
 // Out:	установить анимацию в cur_anim_info().motion
 void CControlAnimationBase::SelectAnimation()
 {
+	// forced animation wins over everything else (attack on move)
+	if (m_override_animation != eAnimUndefined) {
+		SetCurAnim					(m_override_animation);
+		return;
+	}
+
 	EAction							action = m_tAction;
 	if (m_object->control().path_builder().is_moving_on_path() && m_object->path().enabled()) action = GetActionFromPath();
 

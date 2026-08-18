@@ -28,6 +28,9 @@
 #include "../../../../xrServerEntities/xrServer_objects_ALife.h"
 #include "../../../phMovementControl.h"
 #include "../ai_monster_squad.h"
+#include "../control_animation_base.h"
+#include "../control_movement_base.h"
+#include "../monster_velocity_space.h"
 
 namespace detail
 {
@@ -36,6 +39,15 @@ namespace base_monster
 {
 	const float feel_enemy_who_just_hit_max_distance = 20;
 	const float feel_enemy_max_distance = 3;
+
+	// attack on move (CoP defaults)
+	const float aom_far_radius			= 9;
+	const float aom_prepare_radius		= 7;
+	const float aom_prepare_time		= 0;
+	const float aom_attack_radius		= 0.6f;
+	const float aom_update_side_period	= 4;
+	const float aom_prediction_factor	= 1.3f;
+	const float aom_max_go_close_time	= 8;
 
 } // namespace base_monster
 
@@ -83,6 +95,9 @@ void CBaseMonster::Load(LPCSTR section)
 //		m_spawn_probability				= pSettings->r_float(section,"Spawn_Inventory_Item_Probability");
 //	} else m_spawn_probability			= 0.f;
 
+	// attack on move stays off unless the monster opts in -- see load_attack_on_move_params()
+	m_attack_on_move_params.enabled	= false;
+
 	m_melee_rotation_factor			= READ_IF_EXISTS(pSettings,r_float,section,"Melee_Rotation_Factor", 1.5f);
 	berserk_always					= !!READ_IF_EXISTS(pSettings,r_bool,section,"berserk_always", false);
 
@@ -110,6 +125,49 @@ void CBaseMonster::Load(LPCSTR section)
 
 		get_steer_manager()->add( xr_new<steering_behaviour::grouping>(m_grouping_behaviour) );
 	}
+}
+
+// Attack On Move (AOM), ported from Call of Pripyat.
+// Call it at the END of the monster's Load(): by then the movement velocities
+// (move().get_velocity) are in place and the animation set can take the two
+// eAnimAttackOnRunLeft/Right slots.
+//------------------------------------
+void CBaseMonster::load_attack_on_move_params(LPCSTR section)
+{
+	attack_on_move_params_t	&aom	= m_attack_on_move_params;
+
+	aom.enabled				= !!READ_IF_EXISTS(pSettings, r_bool,  section, "aom_enabled", false);
+	aom.far_radius			= READ_IF_EXISTS(pSettings, r_float, section, "aom_far_radius",			detail::base_monster::aom_far_radius);
+	aom.attack_radius		= READ_IF_EXISTS(pSettings, r_float, section, "aom_attack_radius",		detail::base_monster::aom_attack_radius);
+	aom.update_side_period	= READ_IF_EXISTS(pSettings, r_float, section, "aom_update_side_period",	detail::base_monster::aom_update_side_period);
+	aom.prediction_factor	= READ_IF_EXISTS(pSettings, r_float, section, "aom_prediction_factor",	detail::base_monster::aom_prediction_factor);
+	aom.prepare_time		= READ_IF_EXISTS(pSettings, r_float, section, "aom_prepare_time",		detail::base_monster::aom_prepare_time);
+	aom.prepare_radius		= READ_IF_EXISTS(pSettings, r_float, section, "aom_prepare_radius",		detail::base_monster::aom_prepare_radius);
+	aom.max_go_close_time	= READ_IF_EXISTS(pSettings, r_float, section, "aom_max_go_close_time",	detail::base_monster::aom_max_go_close_time);
+
+	if (!aom.enabled) return;
+
+	SVelocityParam &velocity_run	= move().get_velocity(MonsterMovement::eVelocityParameterRunNormal);
+
+	LPCSTR anim_left		= READ_IF_EXISTS(pSettings, r_string, section, "aom_animation_left",	"stand_attack_run_");
+	anim().AddAnim			(eAnimAttackOnRunLeft,	anim_left,	-1, &velocity_run, PS_STAND);
+
+	LPCSTR anim_right		= READ_IF_EXISTS(pSettings, r_string, section, "aom_animation_right",	"stand_attack_run_");
+	anim().AddAnim			(eAnimAttackOnRunRight,	anim_right,	-1, &velocity_run, PS_STAND);
+}
+
+//------------------------------------
+// Gunslinger DropWeaponOnMonsterHit: a boar (or a pseudogiant) that connects can tear the weapon
+float CBaseMonster::get_attack_on_move_far_radius()
+{
+	float radius			= m_attack_on_move_params.far_radius;
+	clamp					(radius, 0.f, 100.f);
+	return					radius;
+}
+
+bool CBaseMonster::is_jumping()
+{
+	return					com_man().is_jumping();
 }
 
 steering_behaviour::manager*   CBaseMonster::get_steer_manager ()

@@ -209,6 +209,38 @@ public:
 	
 	virtual void			event_on_step					() {}
 	virtual void			on_threaten_execute				() {}
+	// called when a hit lands during an attack-on-move charge (CoP)
+	virtual void			on_attack_on_run_hit			() {}
+
+	// ---------------------------------------------------------------------------------
+	// Attack on move (CoP): charge past the enemy, hit on the run, loop out
+	// ---------------------------------------------------------------------------------
+	struct attack_on_move_params_t {
+		bool				enabled;
+		float				far_radius;
+		float				attack_radius;
+		float				update_side_period;
+		float				prediction_factor;
+		float				prepare_time;
+		float				prepare_radius;
+		float				max_go_close_time;
+	};
+
+			bool			can_attack_on_move						() {return m_attack_on_move_params.enabled;}
+			float			get_attack_on_move_max_go_close_time	() {return m_attack_on_move_params.max_go_close_time;}
+			float			get_attack_on_move_far_radius			();
+			float			get_attack_on_move_attack_radius		() {return m_attack_on_move_params.attack_radius;}
+			float			get_attack_on_move_update_side_period	() {return m_attack_on_move_params.update_side_period;}
+			float			get_attack_on_move_prediction_factor	() {return m_attack_on_move_params.prediction_factor;}
+			float			get_attack_on_move_prepare_radius		() {return m_attack_on_move_params.prepare_radius;}
+			float			get_attack_on_move_prepare_time			() {return m_attack_on_move_params.prepare_time;}
+
+			bool			is_jumping								();
+
+	// ---------------------------------------------------------------------------------
+			void			load_attack_on_move_params				(LPCSTR section);
+	attack_on_move_params_t	m_attack_on_move_params;
+public:
 	// ---------------------------------------------------------------------------------
 	// Memory
 			void			UpdateMemory					();

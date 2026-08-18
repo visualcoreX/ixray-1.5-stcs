@@ -98,6 +98,28 @@ ICF	Fvector   crossproduct (const Fvector& v1, const Fvector& v2)
 	return r;
 }
 
+// angle between two vectors, [0..PI]
+ICF	float	angle_between_vectors (const Fvector& v1, const Fvector& v2)
+{
+	float	magnitudes	= v1.magnitude() * v2.magnitude();
+	if (magnitudes < EPS_S) return 0.f;
+
+	float	cos_alpha	= dotproduct(v1, v2) / magnitudes;
+	clamp	(cos_alpha, -1.f, +1.f);
+	return	acosf(cos_alpha);
+}
+
+// rotate a point around the Y axis by <angle>
+ICF	Fvector   rotate_point (const Fvector& point, float angle)
+{
+	float	cos_alpha	= _cos(angle);
+	float	sin_alpha	= _sin(angle);
+
+	Fvector	r;
+	r.set	(point.x*cos_alpha - point.z*sin_alpha, point.y, point.x*sin_alpha + point.z*cos_alpha);
+	return	r;
+}
+
 ICF	Fvector   cr_vectorHP (float h, float p)
 {
 	float ch = _cos(h), cp=_cos(p), sh=_sin(h), sp=_sin(p);

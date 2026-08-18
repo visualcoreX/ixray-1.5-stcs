@@ -106,6 +106,9 @@ void CAI_Boar::Load(LPCSTR section)
 	anim().accel_chain_test		();
 #endif
 
+	// attack on move (CoP): registers the two charge animation slots as well,
+	// so it has to run after the velocities and the animation set are loaded
+	load_attack_on_move_params	(section);
 }
 
 void CAI_Boar::reinit()

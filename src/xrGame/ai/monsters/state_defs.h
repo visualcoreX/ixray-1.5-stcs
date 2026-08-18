@@ -59,6 +59,7 @@ enum EMonsterState {
 	eStateAttack_HomePoint_Hide		= eStateAttack | 22,
 	eStateAttack_HomePoint_Camp		= eStateAttack | 23,
 	eStateAttack_HomePoint_LookOpenPlace = eStateAttack | 24,
+	eStateAttack_Attack_On_Run		= eStateAttack | 25,
 
 	// -------------------------------------------------------------
 
@@ -209,7 +210,8 @@ xr_string   make_xrstr (EMonsterState state)
      case eStateAttack: return "Attack";				
      case eStateAttack_Run: return "Attack_Run";			
      case eStateAttack_Melee: return "Attack_Melee";			
-     case eStateAttack_RunAttack: return "Attack_RunAttack";		
+     case eStateAttack_RunAttack: return "Attack_RunAttack";
+     case eStateAttack_Attack_On_Run: return "Attack_On_Run";
      case eStateAttack_RunAway: return "Attack_RunAway";		
      case eStateAttack_FindEnemy: return "Attack_FindEnemy";		
      case eStateAttack_Steal: return "Attack_Steal";			

@@ -1,5 +1,6 @@
 #pragma once
 #include "state_defs.h"
+#include "control_com_defs.h"
 
 // Lain: added
 #ifdef DEBUG
@@ -16,6 +17,9 @@ public:
 	virtual	void			critical_finalize		()						= 0;
 	virtual void			remove_links			(CObject *O)			= 0;
 	virtual	EMonsterState	get_state_type			()						= 0;
+
+	// ask the current state whether a control may start (attack on move)
+	virtual	bool			check_control_start_conditions	(ControlCom::EControlType type)	{ return true; }
 
 // Lain: added
 #ifdef DEBUG

@@ -214,5 +214,22 @@ public:
 	void					set_animation_speed	();
 
 	void					check_hit			(MotionID motion, float time_perc);
+
+	// animation queries (CoP: needed by the attack-on-move state)
+	float					get_animation_length		(EMotionAnim anim, u32 index) const;	// anim must exist
+	bool					get_animation_info			(EMotionAnim anim, u32 index, MotionID &motion, float &length) const;
+	float					get_animation_hit_time		(EMotionAnim anim, u32 index) const;
+	u32						get_animation_variants_count(EMotionAnim anim) const;
+
+	// forced animation: while it is set, SelectAnimation() keeps returning it
+	// (call with the default arguments to switch it off)
+	void					set_override_animation		(EMotionAnim anim = eAnimUndefined, u32 index = u32(-1));
+	void					clear_override_animation	();
+	EMotionAnim				get_override_animation		() const {return m_override_animation;}
+	bool					has_override_animation		() const {return get_override_animation() != eAnimUndefined;}
+
+private:
+	u32						m_override_animation_index;	// used when != -1
+	EMotionAnim				m_override_animation;		// used when != eAnimUndefined
 };
 

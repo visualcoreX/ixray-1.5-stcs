@@ -5,6 +5,9 @@
 
 typedef u32 TTime;
 
+// global time helper, used by the monster states (attack on move)
+IC TTime current_time() {return Device.dwTimeGlobal;}
+
 constexpr auto COLOR_RED = color_xrgb(255, 0, 0);
 constexpr auto COLOR_GREEN = color_xrgb(0, 255, 0);
 constexpr auto COLOR_BLUE = color_xrgb(0, 0, 255);
@@ -148,6 +151,8 @@ enum EMotionAnim {
 	eAnimAttack,
 	eAnimAttackFromBack,
 	eAnimAttackRun,
+	eAnimAttackOnRunLeft,
+	eAnimAttackOnRunRight,
 
 	eAnimEat,
 	eAnimSleep,

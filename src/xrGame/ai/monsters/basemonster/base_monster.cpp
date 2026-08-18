@@ -680,9 +680,12 @@ void CBaseMonster::load_effector(LPCSTR section, LPCSTR line, SAttackEffector &e
 
 bool CBaseMonster::check_start_conditions(ControlCom::EControlType type)
 {
+	// let the current state veto the control (attack on move, CoP)
+	if (!StateMan->check_control_start_conditions(type)) return false;
+
 	if (type == ControlCom::eControlRotationJump) {
 		EMonsterState state = StateMan->get_state_type();
-		if (state != eStateAttack_Run) return false;
+		if ((state != eStateAttack_Run) && (state != eStateAttack_Attack_On_Run)) return false;
 	} if (type == ControlCom::eControlMeleeJump) {
 		EMonsterState state = StateMan->get_state_type();
 		if (!is_state(state, eStateAttack_Run) && !is_state(state, eStateAttack_Melee)) return false;

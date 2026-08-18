@@ -33,6 +33,9 @@ char *dbg_action_name_table[] = {
 CControlAnimationBase::CControlAnimationBase()
 {
 	init_anim_storage	();
+
+	m_override_animation		= eAnimUndefined;
+	m_override_animation_index	= u32(-1);
 }
 
 CControlAnimationBase::~CControlAnimationBase()
@@ -81,6 +84,9 @@ void CControlAnimationBase::reinit()
 	braking_mode				= false;
 
 	m_state_attack				= false;
+
+	m_override_animation		= eAnimUndefined;
+	m_override_animation_index	= u32(-1);
 }
 
 void CControlAnimationBase::on_start_control(ControlCom::EControlType type)
@@ -137,7 +143,12 @@ void CControlAnimationBase::select_animation(bool anim_end)
 
 	// определить необходимый индекс
 	int index;
-	if (-1 != anim_it->spec_id) index = anim_it->spec_id;
+	if ((m_override_animation == cur_anim_info().motion) && (m_override_animation_index != u32(-1))) {
+		// forced animation index (attack on move)
+		VERIFY(anim_it->count != 0);
+		VERIFY(m_override_animation_index < anim_it->count);
+		index = int(m_override_animation_index);
+	} else if (-1 != anim_it->spec_id) index = anim_it->spec_id;
 	else {
 		VERIFY(anim_it->count != 0);
 		index = ::Random.randI(anim_it->count);
@@ -161,6 +172,68 @@ void CControlAnimationBase::select_animation(bool anim_end)
 	m_cur_anim.time_started		= Device.dwTimeGlobal;
 	m_cur_anim.speed._set_current	(1.f);
 	m_cur_anim.speed._set_target	(-1.f);
+}
+
+bool CControlAnimationBase::get_animation_info(EMotionAnim anim, u32 index, MotionID &motion, float &length) const
+{
+	SAnimItem *anim_it		= m_anim_storage[anim];
+	if (!anim_it)			return false;
+
+	IKinematicsAnimated	*animated	= smart_cast<IKinematicsAnimated*>(m_object->Visual());
+	if (!animated)			return false;
+
+	string128	s1,s2;
+	motion					= animated->ID_Cycle_Safe(strconcat(sizeof(s2),s2,*anim_it->target_name,_itoa(index,s1,10)));
+	if (!motion.valid())	return false;
+
+	length					= m_man->animation().motion_time(motion, m_object->Visual());
+	return					true;
+}
+
+float CControlAnimationBase::get_animation_length(EMotionAnim anim, u32 index) const
+{
+	MotionID	motion;
+	float		length;
+	bool		res			= get_animation_info(anim, index, motion, length);
+	R_ASSERT	(res);
+	return		length;
+}
+
+// time, in seconds, from the start of the animation to its hit moment
+float CControlAnimationBase::get_animation_hit_time(EMotionAnim anim, u32 index) const
+{
+	float const	error_default_return_value	= 0.5f;
+
+	MotionID	motion;
+	float		animation_time;
+	if (!get_animation_info(anim, index, motion, animation_time)) return error_default_return_value;
+
+	for (AA_VECTOR::const_iterator it = m_attack_anims.begin(); it != m_attack_anims.end(); ++it) {
+		if (it->motion == motion) return it->time * animation_time;
+	}
+
+	return		error_default_return_value;
+}
+
+u32 CControlAnimationBase::get_animation_variants_count(EMotionAnim anim) const
+{
+	SAnimItem *anim_it		= m_anim_storage[anim];
+	VERIFY					(anim_it);
+	return					anim_it ? u32(anim_it->count) : 0;
+}
+
+void CControlAnimationBase::clear_override_animation()
+{
+	m_override_animation		= eAnimUndefined;
+	m_override_animation_index	= u32(-1);
+}
+
+void CControlAnimationBase::set_override_animation(EMotionAnim anim, u32 index)
+{
+	if (m_override_animation == anim) return;
+
+	m_override_animation		= anim;
+	m_override_animation_index	= index;
 }
 
 // проверить существует ли переход из анимации from в to
