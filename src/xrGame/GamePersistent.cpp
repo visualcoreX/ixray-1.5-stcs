@@ -204,6 +204,10 @@ void CGamePersistent::OnGameStart()
 	UpdateGameType				();
 	GameConstants::LoadConstants();
 
+	// exit_Zone never runs if the zone goes offline (or the level changes) with the actor still
+	// inside it, and a stuck m_bPickableDOF blocks every DOF request for the rest of the session
+	m_bPickableDOF				= false;
+	m_dof_changed				= false;
 }
 
 LPCSTR GameTypeToString(EGameIDs gt, bool bShort)
@@ -880,7 +884,16 @@ void CGamePersistent::SetPickableEffectorDOF(bool bSet)
 {
 	m_bPickableDOF = bSet;
 	if(!bSet)
+	{
+		// A zone with pick_dof_effector (zone_base, so every radiation zone too) drives the DOF
+		// from the crosshair range in UpdateDof for as long as the actor is inside, and swallows
+		// every SetEffectorDOF meanwhile -- so m_dof_changed is usually still FALSE on the way out,
+		// and GS's "nothing to undo" early-out in RestoreEffectorDOF returned without restoring:
+		// the pick blur stayed on until something else happened to move the DOF. The zone did
+		// change it, so mark it and let the restore run.
+		m_dof_changed = true;
 		RestoreEffectorDOF();
+	}
 }
 
 void CGamePersistent::GetCurrentDof(Fvector3& dof)
