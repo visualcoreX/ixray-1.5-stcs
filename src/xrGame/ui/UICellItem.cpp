@@ -214,7 +214,11 @@ void CUICellItem::UpdateConditionProgressBar()
 		// whether or not the item uses condition at all, exactly as their UI patch does.
 		float	cond	= (itm ? itm->GetCondition() : 0.f);
 		bool	show	= (itm && itm->IsUsingCondition());
-		if(itm && pSettings->line_exist(itm->m_section_id, "visual_condition"))
+		// ...but only for an item that really has stages. visual_condition is inherited along with
+		// the rest of the drink section, so a single-use item built on one (energy_drink : vodka)
+		// used to show a permanently full bar. uses_count is what makes an item a chain.
+		if(itm && pSettings->line_exist(itm->m_section_id, "visual_condition") &&
+			(READ_IF_EXISTS(pSettings, r_u32, itm->m_section_id, "uses_count", 1) > 1))
 		{
 			cond	= pSettings->r_float(itm->m_section_id, "visual_condition");
 			show	= true;
