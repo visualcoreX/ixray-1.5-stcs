@@ -48,6 +48,11 @@ struct hud_item_measures
 
 	Fvector							m_hands_attach[2];//pos,rot
 
+	// uniform scale of the ITEM model only (the hands keep their size). `item_scale` in the
+	// hud section; 1.0 = as exported. For models that came out of the editor at the wrong unit
+	// scale, which is otherwise only fixable by re-exporting the mesh.
+	float							m_item_scale;
+
 	void load						(const shared_str& sect_name, IKinematics* K);
 };
 

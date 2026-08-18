@@ -167,6 +167,16 @@ void attachable_hud_item::update(bool bForce)
 	m_attach_offset.translate_over	(m_measures.m_item_attach[0]);
 
 	m_parent->calc_transform		(m_attach_place_idx, m_attach_offset, m_item_transform);
+
+	// item_scale: grow/shrink the item model about its own attach origin. Post-multiplied, so
+	// the hands and the attach point stay exactly where they were -- only the mesh changes size.
+	if (!fsimilar(m_measures.m_item_scale, 1.0f)) {
+		Fmatrix scale_m;
+		scale_m.identity			();
+		scale_m.scale				(m_measures.m_item_scale, m_measures.m_item_scale, m_measures.m_item_scale);
+		m_item_transform.mulB_43	(scale_m);
+	}
+
 	m_upd_firedeps_frame			= Device.dwFrame;
 
 	IKinematicsAnimated* ka			=	m_model->dcast_PKinematicsAnimated();
@@ -314,6 +324,8 @@ void hud_item_measures::load(const shared_str& sect_name, IKinematics* K)
 	R_ASSERT2(pSettings->line_exist(sect_name,"fire_point")==pSettings->line_exist(sect_name,"fire_bone"),		sect_name.c_str());
 	R_ASSERT2(pSettings->line_exist(sect_name,"fire_point2")==pSettings->line_exist(sect_name,"fire_bone2"),	sect_name.c_str());
 	R_ASSERT2(pSettings->line_exist(sect_name,"shell_point")==pSettings->line_exist(sect_name,"shell_bone"),	sect_name.c_str());
+
+	m_item_scale				= READ_IF_EXISTS(pSettings, r_float, sect_name, "item_scale", 1.0f);
 
 	m_prop_flags.set(e_16x9_mode_now,is_16x9);
 }
