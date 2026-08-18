@@ -238,6 +238,14 @@ void CActor::IR_OnKeyboardPress(int cmd)
 		}
 	case kWPN_KICK:
 		{
+			// A no-weapon zone (sr_no_weapon -> hide_weapon) blocks every weapon slot, but the quick
+			// stab never asked: with a weapon in hand it plays the bayonet anim on the hud item, and
+			// with empty hands it spawns the knife phantom in the ARTEFACT slot -- the one slot
+			// SetSlotsBlocked deliberately leaves open so eat/heal anims still work in a safe zone.
+			// So the player could still stab people at a base. A stab is a weapon action: gate it on
+			// the knife slot being blocked, which is exactly what hide_weapon does.
+			if (inventory().m_slots[KNIFE_SLOT].IsBlocked())	break;
+
 			// GS quick knife kick (быстрая атака ножом). If a KNIFE is already the active weapon, GS just
 			// runs its normal attack (OnActorKick: virtual_Action FIRE) -- no holster/phantom, the knife in
 			// hand simply stabs. Otherwise spawn the full-view knife-stab phantom (Lua): holster -> stab ->
