@@ -2654,7 +2654,23 @@ void CWeaponMagazined::ArmReloadLockTimes()
 	string128 key;
 	xr_sprintf(key, "lock_time_start_%s", anim);
 	float ls = READ_IF_EXISTS(pSettings, r_float, HudSection(), key, -1.0f);
-	if (ls < 0.0f)							return;
+
+	// No per-alias key: Gunslinger only keys the reloads it hand-timed, and everything else
+	// (most pistols, mp5, svd/svu, val, vintorez, pkm...) then seats its magazine at the very END
+	// of the animation -- the round pops into the counter as the weapon is already coming back up.
+	// Fall back to a fraction of THIS animation, so every weapon loads somewhere in the middle.
+	// [gunslinger_base] default_reload_insert, 0 = off (stock behaviour). A per-alias
+	// lock_time_start_<alias> always wins, so a hand-timed reload is never overridden.
+	if (ls < 0.0f)
+	{
+		const float frac = READ_IF_EXISTS(pSettings, r_float, "gunslinger_base", "default_reload_insert", 0.0f);
+		if (frac <= 0.0f)					return;
+
+		// the effective length: m_dwMotionEndTm is already clamped by a plain lock_time_<alias>,
+		// so a config that cuts the dead tail keeps the insert inside what the player actually sees
+		if (m_dwMotionEndTm <= m_dwMotionStartTm)	return;
+		ls = ((m_dwMotionEndTm - m_dwMotionStartTm) / 1000.0f) * frac;
+	}
 
 	m_dwReloadInsertTm = Device.dwTimeGlobal + u32(ls * 1000.0f);
 
