@@ -658,7 +658,7 @@ public		:
 };
 
 
-ENGINE_API float psHUD_FOV_def = 0.45f;
+ENGINE_API float psHUD_FOV_def = 0.66f;	// hud fov multiplier; x `fov` = the hud's own fov in degrees
 ENGINE_API float psHUD_FOV = psHUD_FOV_def;
 
 //extern int			psSkeletonUpdate;

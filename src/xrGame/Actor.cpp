@@ -944,7 +944,7 @@ void CActor::g_Physics			(Fvector& _accel, float jump, float dt)
 		}
 	}
 }
-float g_fov = 67.5f;
+float g_fov = 75.0f;
 
 extern void gwr_update_burning(CActor* actor);		// ActorInput.cpp
 
