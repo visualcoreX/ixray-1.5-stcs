@@ -10,6 +10,12 @@
 #include "base_monster.h"
 #include "../../../actor.h"
 #include "../../../ActorEffector.h"
+#include "../../../ActorCondition.h"
+#include "../../../Inventory.h"
+#include "../../../inventory_item.h"
+#include "../../../WeaponMagazined.h"
+#include "../../../WeaponBinoculars.h"
+#include "../../../../xrEngine/CameraBase.h"
 #include "../ai_monster_effector.h"
 #include "../../../hudmanager.h"
 #include "../../../../Include/xrRender/KinematicsAnimated.h"
@@ -130,6 +136,9 @@ void CBaseMonster::HitEntity(const CEntity *pEntity, float fDamage, float impuls
 			//
 			//////////////////////////////////////////////////////////////////////////
 			
+			// Gunslinger: the hit can also tear the weapon out of the hands
+			try_knock_actor_weapon	(fDamage, hit_dir);
+
 			CEffectorCam* ce = Actor()->Cameras().GetCamEffector((ECamEffectorType)effBigMonsterHit);
 			if(!ce)
 			{
@@ -192,6 +201,92 @@ void CBaseMonster::HitEntity(const CEntity *pEntity, float fDamage, float impuls
 	}
 }
 
+
+// Gunslinger DropWeaponOnMonsterHit (ActorUtils.pas). While the actor still has the stamina to
+// absorb the blow it only tires him; once the blow is bigger than what is left (or the monster is
+// inside hit_weapon_drop_dist) the item in his hands can be knocked to the ground, taking some
+// condition with it, and the view is jolted.
+void CBaseMonster::try_knock_actor_weapon(float power, const Fvector &hit_dir)
+{
+	const actor_weapon_drop_params_t &p = m_actor_weapon_drop_params;
+	if (!p.enabled)					return;
+
+	CActor *actor					= Actor();
+	if (!actor || !actor->g_Alive())	return;
+
+	float const	stamina				= actor->conditions().GetPower();
+	float const	stamina_hit			= power * p.stamina_k;
+
+	bool	unconditional			= false;
+	if (p.uncond_dist > 0.f)
+		unconditional				= (actor->Position().distance_to(Position()) < p.uncond_dist);
+
+	float	new_stamina				= stamina - stamina_hit;
+	if (new_stamina < 0.f)	new_stamina	= 0.f;
+
+	actor->conditions().ChangePower	(-stamina_hit);
+
+	// still on his feet: the blow only costs stamina
+	if (!unconditional && (new_stamina > 0.f))	return;
+
+	PIItem	item					= actor->inventory().ActiveItem();
+
+	// ONLY a real firearm can be knocked out. The knife (CWeaponKnife), the bolt (CBolt,
+	// a CMissile) and the detectors are not CWeaponMagazined and drop out here by themselves;
+	// the binocular has to be named explicitly, because CWeaponBinoculars descends from
+	// CWeaponCustomPistol -> CWeaponMagazined -- and so do the item-use phantoms built on it.
+	// The PDA is refused inside PerformDropForced as well, this is just the earlier gate.
+	CWeaponMagazined *wpn		= smart_cast<CWeaponMagazined*>(item);
+	bool const knockable		= wpn && !smart_cast<CWeaponBinoculars*>(item) &&
+								  !CActor::IsGesturePhantom(item);
+
+	bool	dropped				= false;
+	if (knockable && (unconditional || (::Random.randF() < (stamina_hit - stamina)))) {
+		actor->PerformDropForced	();
+		dropped					= true;
+
+		// a firearm that hits the ground takes damage
+		float const cond_dec	= p.cond_dec_min + ::Random.randF() * (p.cond_dec_max - p.cond_dec_min);
+		wpn->ChangeCondition	(-cond_dec);
+	}
+
+	// the blow got through: play GS's empty-hands flinch, front or back.
+	// GS tests dot(hit dir, camera dir) in 3D, but the hit dir carries the attack's impulse_dir
+	// (0,1,2 for the boar), i.e. a big UP component -- and since the player always looks down at
+	// an animal that low, the vertical term outweighs the horizontal one and the test answers
+	// "front" every single time. Use the horizontal geometry instead: is the monster behind us?
+	if (dropped || !item)
+	{
+		Fvector	self2actor;	self2actor.sub(actor->Position(), Position());	self2actor.y = 0.f;
+		Fvector	cam_dir	= Device.vCameraDirection;						cam_dir.y    = 0.f;
+
+		bool from_back;
+		if ((self2actor.square_magnitude() < EPS_S) || (cam_dir.square_magnitude() < EPS_S))
+			from_back	= (hit_dir.dotproduct(Device.vCameraDirection) >= 0.f);
+		else {
+			self2actor.normalize	();
+			cam_dir.normalize		();
+			// monster -> actor pointing the same way the actor looks = it came from behind
+			from_back	= (self2actor.dotproduct(cam_dir) >= 0.f);
+		}
+
+		extern void gwr_plan_monster_kick(bool from_back);
+		gwr_plan_monster_kick	(from_back);
+	}
+
+	// jolt the aim off target (GS nudges the mouse; here it is degrees, so it does not depend
+	// on the player's sensitivity setting)
+	CCameraBase *cam				= actor->cam_Active();
+	if (cam) {
+		float yaw					= (p.kick_yaw_min + ::Random.randF() * (p.kick_yaw_max - p.kick_yaw_min)) * power;
+		float pitch					= (p.kick_pitch_min + ::Random.randF() * (p.kick_pitch_max - p.kick_pitch_min)) * power;
+
+		if (::Random.randF() > 0.5f)	yaw = -yaw;
+
+		cam->Move					((yaw < 0.f) ? kLEFT : kRIGHT, _abs(deg2rad(yaw)));
+		cam->Move					(kUP, _abs(deg2rad(pitch)));
+	}
+}
 
 BOOL  CBaseMonster::feel_vision_isRelevant(CObject* O)
 {

@@ -98,6 +98,8 @@ void CBaseMonster::Load(LPCSTR section)
 	// attack on move stays off unless the monster opts in -- see load_attack_on_move_params()
 	m_attack_on_move_params.enabled	= false;
 
+	load_actor_weapon_drop_params	(section);
+
 	m_melee_rotation_factor			= READ_IF_EXISTS(pSettings,r_float,section,"Melee_Rotation_Factor", 1.5f);
 	berserk_always					= !!READ_IF_EXISTS(pSettings,r_bool,section,"berserk_always", false);
 
@@ -127,6 +129,7 @@ void CBaseMonster::Load(LPCSTR section)
 	}
 }
 
+//------------------------------------
 // Attack On Move (AOM), ported from Call of Pripyat.
 // Call it at the END of the monster's Load(): by then the movement velocities
 // (move().get_velocity) are in place and the animation set can take the two
@@ -158,6 +161,25 @@ void CBaseMonster::load_attack_on_move_params(LPCSTR section)
 
 //------------------------------------
 // Gunslinger DropWeaponOnMonsterHit: a boar (or a pseudogiant) that connects can tear the weapon
+// out of the actor's hands. Off unless the monster's section says hit_weapon_drop.
+//------------------------------------
+void CBaseMonster::load_actor_weapon_drop_params(LPCSTR section)
+{
+	actor_weapon_drop_params_t	&p	= m_actor_weapon_drop_params;
+
+	p.enabled			= !!READ_IF_EXISTS(pSettings, r_bool,  section, "hit_weapon_drop", false);
+	if (!p.enabled)		return;
+
+	p.stamina_k			= READ_IF_EXISTS(pSettings, r_float, section, "hit_stamina_k",				1.0f);
+	p.cond_dec_min		= READ_IF_EXISTS(pSettings, r_float, section, "hit_weapon_cond_dec_min",	0.15f);
+	p.cond_dec_max		= READ_IF_EXISTS(pSettings, r_float, section, "hit_weapon_cond_dec_max",	0.3f);
+	p.uncond_dist		= READ_IF_EXISTS(pSettings, r_float, section, "hit_weapon_drop_dist",		0.f);
+	p.kick_yaw_min		= READ_IF_EXISTS(pSettings, r_float, section, "hit_view_kick_yaw_min",		3.f);
+	p.kick_yaw_max		= READ_IF_EXISTS(pSettings, r_float, section, "hit_view_kick_yaw_max",		6.f);
+	p.kick_pitch_min	= READ_IF_EXISTS(pSettings, r_float, section, "hit_view_kick_pitch_min",	3.f);
+	p.kick_pitch_max	= READ_IF_EXISTS(pSettings, r_float, section, "hit_view_kick_pitch_max",	6.f);
+}
+
 float CBaseMonster::get_attack_on_move_far_radius()
 {
 	float radius			= m_attack_on_move_params.far_radius;

@@ -186,6 +186,8 @@ public:
 	virtual float						GetMass				() ;
 	virtual float						Radius				() const;
 	virtual void						g_PerformDrop		();
+	// GS monster kick: fires the empty-hands flinch once the knocked-out weapon has actually left
+			void						UpdatePlannedMonsterKick();
 			void						PerformDropForced	();	// GS PerformDrop: the controller's own
 	static	bool						IsGesturePhantom	(PIItem pItem);	// item-use animator, never droppable
 	

@@ -238,6 +238,27 @@ public:
 			bool			is_jumping								();
 
 	// ---------------------------------------------------------------------------------
+	// Gunslinger: a hit from this monster can knock the item out of the actor's hands
+	// ---------------------------------------------------------------------------------
+	struct actor_weapon_drop_params_t {
+		bool				enabled;
+		float				stamina_k;			// hit power -> stamina drained
+		float				cond_dec_min;		// condition the dropped firearm loses
+		float				cond_dec_max;
+		float				uncond_dist;		// closer than this the drop is unconditional (<=0 = off)
+		float				kick_yaw_min;		// view jolt, degrees, scaled by the hit power
+		float				kick_yaw_max;
+		float				kick_pitch_min;
+		float				kick_pitch_max;
+	};
+
+			void			load_actor_weapon_drop_params			(LPCSTR section);
+			void			try_knock_actor_weapon					(float power, const Fvector &hit_dir);
+protected:
+	actor_weapon_drop_params_t	m_actor_weapon_drop_params;
+public:
+
+protected:
 			void			load_attack_on_move_params				(LPCSTR section);
 	attack_on_move_params_t	m_attack_on_move_params;
 public:

@@ -1081,6 +1081,7 @@ void CActor::UpdateCL	()
 		}
 	}
 
+	UpdatePlannedMonsterKick	();
 	UpdateDelayedDeviceSwitch	();		// fire any pending delayed torch/NV toggle
 	UpdateElectronicsProblems	();		// GS blowout: glitch/disable devices during a surge
 

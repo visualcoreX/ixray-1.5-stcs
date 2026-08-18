@@ -840,6 +840,24 @@ void CActor::set_input_external_handler(CActorInputHandler *handler)
 
 // Notify a Lua handler for the headlamp/NV toggle. `spawn_left_hand` = play the generic left-hand
 // headflash animator (ONLY when hands are empty); otherwise the script just plays the toggle sound.
+// GS monster kick (ActorUtils.pas _planned_kick_animator): when a boar knocks the item out of the
+// hands, the flinch animation is a HANDS motion (boar_hit_front / _front1 / _back, they live in
+// wpn_hand_animation.omf) and it can only be shown by a hud phantom -- which in turn needs EMPTY
+// hands. The drop itself lands a frame later, so the request waits here for the hands to clear,
+// exactly like GS pumps _planned_kick_animator from its actor update.
+static bool s_kick_planned		= false;
+static bool s_kick_from_back	= false;
+static u32  s_kick_expire_at	= 0;
+
+void gwr_plan_monster_kick(bool from_back)
+{
+	if (s_kick_planned)	return;
+
+	s_kick_planned		= true;
+	s_kick_from_back	= from_back;
+	s_kick_expire_at	= Device.dwTimeGlobal + 2500;
+}
+
 static void gwr_call_action_animator(LPCSTR fn_name, bool on, bool spawn_left_hand)
 {
 	luabind::functor<void>	fn;
@@ -2187,6 +2205,21 @@ float CActor::ControlledSpeedKoef() const
 // GS GetCurrentControllerInputCorrectionParams + GetControllerInputRandomOffset: while the victim is
 // controlled the mouse is rotated by a fixed random angle, scaled down per axis, sometimes inverted,
 // and every frame gets a random nudge -- you fight your own aim.
+void CActor::UpdatePlannedMonsterKick()
+{
+	if (!s_kick_planned)	return;
+
+	if (Device.dwTimeGlobal > s_kick_expire_at)	{ s_kick_planned = false; return; }
+
+	// hands must be free: the phantom attaches where a detector would sit, and a weapon still on
+	// screen means the drop has not gone through yet
+	if (inventory().ActiveItem())					return;
+	if (g_player_hud && g_player_hud->attached_item(1))	return;
+
+	s_kick_planned		= false;
+	gwr_call_action_animator("gwr_eatable.on_monster_kick", s_kick_from_back, true);
+}
+
 void CActor::ApplyControlledMouse(int& dx, int& dy)
 {
 	if (!IsActorControlled() && m_eSuicideState == eSuicideNone)	return;
