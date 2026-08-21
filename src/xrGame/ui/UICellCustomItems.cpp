@@ -860,7 +860,12 @@ void CUIWeaponCellItem::InitAddon(CUIStatic* s, LPCSTR section, Fvector2 addon_o
 		{
 			s->SetWndSize		(Fvector2().set(cell_size.y, cell_size.x) );
 			Fvector2 new_offset;
-			new_offset.x		= addon_offset.y*base_scale.x;
+			// Same correction as in gwr_InitLayer above: on a rotated cell the icon's Y becomes the
+			// widget's X, so the term has to be scaled by the widget's own WIDTH factor (base_scale.y),
+			// not by the height one. Stock used base_scale.x, which only cancels out for an addon whose
+			// offset_y is 0 -- the lr300's M203 (grenade_launcher_y = 28) and its silencer (12) end up
+			// visibly off the weapon in the vertical slot.
+			new_offset.x		= addon_offset.y*base_scale.y;
 			new_offset.y		= GetHeight() - addon_offset.x*base_scale.x - cell_size.x;
 			addon_offset		= new_offset;
 			addon_offset.x		*= UI()->get_current_kx();
