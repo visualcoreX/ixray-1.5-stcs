@@ -786,6 +786,24 @@ void CCustomDetector::StopTorch()
 	if (m_pTorchGlow)	m_pTorchGlow->set_active(false);
 }
 
+// UpdateTorch is the ONLY thing that ever switches the emitters off, and it runs from UpdateCL --
+// which stops for good the moment the item leaves the slot: CInventory::Ruck and CInventory::DropItem
+// both call processing_deactivate() right after their OnMoveTo*/OnH_B_Independent hook. So any way of
+// putting the torch away that does NOT play the holster animation used to leave the light burning in
+// mid-air until the item was put back in the hands. Taking a second detector is exactly that: the UI
+// rucks the torch to free slot 8, no anm_hide is ever played, and nothing turned the light off.
+// The bone reset has to happen while the hud item is still attached -- attachable_hud_item is pooled
+// per section, so the cone geometry would otherwise stay open on the pooled model.
+void CCustomDetector::ResetTorch()
+{
+	if (!m_bTorchInstalled)	return;
+	m_bTorchOn			= false;
+	m_bTorchPending		= false;
+	m_dwTorchSwitchAt	= 0;
+	UpdateTorchBones	(false);
+	StopTorch			();
+}
+
 // GS SwitchLefthandedTorch (ActorUtils.pas:3157): the beam/cone geometry on the model is switched
 // WITH the light -- `SetWeaponMultipleBonesStatus(det, light_cone_bones, status)` -- and it starts
 // hidden. Only `torch_cone_bones` is touched; `torch_light_bone` is the emitter ANCHOR, GS never
@@ -1024,10 +1042,11 @@ void CCustomDetector::OnH_A_Chield()
 	inherited::OnH_A_Chield		();
 }
 
-void CCustomDetector::OnH_B_Independent(bool just_before_destroy) 
+void CCustomDetector::OnH_B_Independent(bool just_before_destroy)
 {
 	inherited::OnH_B_Independent(just_before_destroy);
-	
+
+	ResetTorch					();	// dropped straight out of the hands -- same leak as OnMoveToRuck
 	m_artefacts.clear			();
 }
 
@@ -1035,6 +1054,7 @@ void CCustomDetector::OnH_B_Independent(bool just_before_destroy)
 void CCustomDetector::OnMoveToRuck(EItemPlace prev)
 {
 	inherited::OnMoveToRuck	(prev);
+	ResetTorch				();	// before the detach below -- the cone bones live on the POOLED hud model
 	if(GetState()==eIdle)
 	{
 		SwitchState					(eHidden);

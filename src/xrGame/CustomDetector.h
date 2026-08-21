@@ -192,6 +192,9 @@ protected:
 			void	UpdateTorch			();	// per frame from UpdateCL
 			void	StopTorch			();
 			void	ScheduleTorch		(LPCSTR anim_alias);	// arm the on/off moment for this motion
+			// kill the light NOW and forget any pending switch -- for the paths that take the detector
+			// out of the hands without playing the holster (see the note on the definition)
+			void	ResetTorch			();
 			// the emitter/cone geometry on the model is shown and hidden WITH the light, so a drawn
 			// but not yet lit torch has a dark lens
 			void	UpdateTorchBones	(bool on);
