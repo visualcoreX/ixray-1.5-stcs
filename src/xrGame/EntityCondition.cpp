@@ -32,6 +32,34 @@ float gwr_burn_damage_factor()
 		s_k = READ_IF_EXISTS(pSettings, r_float, "gwr_burning", "burn_damage_factor", 1.0f);
 	return s_k;
 }
+
+// Smallest RAW hit power (what the zone sent, before outfit and immunities) that may set the actor
+// alight. A zone hits EVERYTHING inside its radius with
+//     Power(dist) = max_start_power * (1 - attenuation*(dist/radius)^2)
+// so this is really "how close to the flame you have to be": with the stock fire anomaly
+// (max_start_power 1, attenuation 1) 0.5 covers the inner ~70% of the radius. Without it the far
+// edge of the aura ignited the actor exactly like the flame in the middle. 0 = that old behaviour.
+float gwr_burn_wound_min_power()
+{
+	static float	s_k		= -1.0f;
+	if (s_k < 0.0f)
+		s_k = READ_IF_EXISTS(pSettings, r_float, "gwr_burning", "burn_wound_min_power", 0.5f);
+	return s_k;
+}
+
+// How much of a burn hit is taken out of the actor's STAMINA. Stock Clear Sky spends
+// power_hit_part (0.1 in actor.ltx) of every hit, whatever its type -- and a fire anomaly hits
+// over and over while you are inside it, so stamina sits at the floor and CActor::CanMove()
+// (cant_walk_power_begin = 0.01) refuses to move the actor at all, again and again: the
+// "he stops on every step" stutter. Actor only; NPCs keep the stock drain.
+// -1 = stock behaviour (use power_hit_part), 0 = burning costs no stamina.
+float gwr_burn_power_part()
+{
+	static float	s_k		= -2.0f;
+	if (s_k < -1.0f)
+		s_k = READ_IF_EXISTS(pSettings, r_float, "gwr_burning", "burn_power_part", 0.0f);
+	return s_k;
+}
 #define MIN_HEALTH -0.01f
 
 
@@ -455,14 +483,24 @@ CWound* CEntityCondition::ConditionHit(SHit* pHDS)
 		hit_power *= m_HitTypeK[pHDS->hit_type];
 		m_fHealthLost = hit_power*m_fHealthHitPart*m_fHitBoneScale;
 		m_fDeltaHealth -= CanBeHarmed() ? m_fHealthLost : 0;
-		m_fDeltaPower -= hit_power*m_fPowerHitPart;
+		// Stamina share of a burn hit, config-gated for the actor (see gwr_burn_power_part).
+		{
+			float power_part = m_fPowerHitPart;
+			if (gwr_burn_power_part() >= 0.0f && smart_cast<CActor*>(m_object))
+				power_part = gwr_burn_power_part();
+			m_fDeltaPower -= hit_power*power_part;
+		}
 		// Stock Clear Sky refuses a wound for burn hits, so the fire anomaly only ever drained health
 		// -- nothing was left burning afterwards. The burn WOUND is what "the actor is on fire" means
 		// (both to us and to [entity_fire_particles]), so let it through, config-gated the way
 		// Gunslinger does it (its wound_factor_for_hit_type_0). 0 = stock behaviour.
 		// Actor only: this whole burning feature is his. NPCs keep stock Clear Sky (no burn wound, just
 		// the health tick above), so nothing about their fire behaviour or balance changes.
-		bAddWound		=  (gwr_burn_wound_factor() > 0.0f) && (smart_cast<CActor*>(m_object) != NULL);
+		// ...and only from a hit strong enough to BE the flame. The zone hits everything inside its
+		// radius with a power that falls off with distance, so without this the aura's outermost,
+		// nearly harmless tick set the actor on fire just like standing in the fire column did.
+		bAddWound		=  (gwr_burn_wound_factor() > 0.0f) && (smart_cast<CActor*>(m_object) != NULL)
+						&& (hit_power_org >= gwr_burn_wound_min_power());
 		hit_power		*= (bAddWound ? gwr_burn_wound_factor() : 1.0f);
 		break;
 	case ALife::eHitTypeChemicalBurn:
