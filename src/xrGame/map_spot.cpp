@@ -13,6 +13,8 @@
 
 #include "../Include/xrRender/UIShader.h"
 
+extern float gwr_pda_border_trim();	// extra sideways trim for the highlight ring, see UIPdaWnd.cpp
+
 CMapSpot::CMapSpot(CMapLocation* ml)
 :m_map_location(ml)
 {
@@ -20,6 +22,8 @@ CMapSpot::CMapSpot(CMapLocation* ml)
 	m_bScale			= false;
 	m_location_level    = 0;
 	m_border_static		= NULL;
+	m_border_origin_pos.set	(0.0f, 0.0f);
+	m_border_origin_size.set(0.0f, 0.0f);
 }
 
 CMapSpot::~CMapSpot()
@@ -61,6 +65,10 @@ void CMapSpot::Load(CUIXml* xml, LPCSTR path)
 			}
 			m_border_static->SetStretchTexture(true);
 		}
+		// Snapshot AFTER the aspect correction above, so SetWndSize() below rescales the corrected
+		// geometry rather than resurrecting the raw xml numbers.
+		m_border_origin_pos		= m_border_static->GetWndPos();
+		m_border_origin_size	= m_border_static->GetWndSize();
 	}
 
 	/*strconcat			(sizeof(str), str, path, ":focused_border");
@@ -80,6 +88,28 @@ LPCSTR CMapSpot::GetHint()
 void CMapSpot::SetWndPos(const Fvector2& pos)
 {
 	inherited::SetWndPos( pos );
+}
+
+// The active-task highlight ring (`static_border`) is an ordinary CUIStatic child, so the
+// CUIStaticOrig loop in CComplexMapSpot::SetWndSize walks straight past it and it kept its
+// load-time width while the spot around it was being stretched for the 3D PDA screen -- which is
+// exactly why the ring came out too narrow there. Give it the same treatment the icons get.
+void CMapSpot::SetWndSize(const Fvector2& size)
+{
+	inherited::SetWndSize( size );
+
+	if ( !m_border_static )											return;
+	if ( m_originSize.x <= EPS_S || m_originSize.y <= EPS_S )		return;
+
+	// Same split as CComplexMapSpot::SetWndSize: y carries the uniform map zoom, and whatever x
+	// has on top of that is the horizontal-only 3D PDA compensation. Off the model screen both
+	// are equal, so the ring behaves exactly as it always did.
+	float k  = size.y / m_originSize.y;
+	float kx = ( k > EPS_S ) ? (size.x / m_originSize.x) / k : 1.0f;
+	kx		*= gwr_pda_border_trim();
+
+	m_border_static->SetWndPos ( Fvector2().set( m_border_origin_pos.x  * k * kx, m_border_origin_pos.y  * k ) );
+	m_border_static->SetWndSize( Fvector2().set( m_border_origin_size.x * k * kx, m_border_origin_size.y * k ) );
 }
 
 void CMapSpot::Update()
@@ -281,10 +311,10 @@ void CUIStaticOrig::InitWndOrigin()
 	m_origin_size = GetWndSize();
 }
 
-void CUIStaticOrig::ScaleOrigin( float k )
+void CUIStaticOrig::ScaleOrigin( float k, float kx )
 {
-	SetWndPos(  Fvector2().set( m_origin_pos.x  * k, m_origin_pos.y  * k ) );
-	SetWndSize( Fvector2().set( m_origin_size.x * k, m_origin_size.y * k ) );
+	SetWndPos(  Fvector2().set( m_origin_pos.x  * k * kx, m_origin_pos.y  * k ) );
+	SetWndSize( Fvector2().set( m_origin_size.x * k * kx, m_origin_size.y * k ) );
 }
 
 CComplexMapSpot::CComplexMapSpot( CMapLocation* ml )
@@ -330,6 +360,10 @@ void CComplexMapSpot::Load( CUIXml* xml, LPCSTR path ) // complex_spot_template
 	if (!UI()->is_widescreen()) {
 		m_top_icon->SetHeight(m_top_icon->GetHeight() * UI()->get_current_kx());
 	}
+	// CreateStaticOrig snapshotted the size BEFORE those two lines, and ScaleOrigin() restores the
+	// snapshot on every resize -- which threw the aspect correction away and left the icon a third
+	// too wide. Re-snapshot so the corrected size is what gets scaled.
+	m_top_icon->InitWndOrigin();
 	m_timer			= CreateStaticOrig( *xml, "timer" );
 
 	xml->SetLocalRoot( stored_root );
@@ -393,14 +427,20 @@ void CComplexMapSpot::SetWndSize( const Fvector2& size )
 	{
 		return;
 	}
-	float k = size.x / m_originSize.x;
+	// Two different things can resize a spot: the map zoom, which scales BOTH axes, and the 3D
+	// PDA screen compensation, which stretches x only. Deriving k from x alone (as this did)
+	// fed the horizontal stretch in as a uniform scale, so the child icons drifted diagonally
+	// away from the marker. y carries the zoom cleanly, and whatever x has on top of it is the
+	// horizontal-only part. Without the PDA factor both are equal and nothing changes.
+	float k  = size.y / m_originSize.y;
+	float kx = (k > EPS_S) ? (size.x / m_originSize.x) / k : 1.0f;
 
 	for ( WINDOW_LIST_it it = m_ChildWndList.begin(); m_ChildWndList.end() != it; ++it )
 	{
 		CUIStaticOrig* static_orig = smart_cast<CUIStaticOrig*>( *it );
 		if ( static_orig )
 		{
-			static_orig->ScaleOrigin( k );
+			static_orig->ScaleOrigin( k, kx );
 		}
 	}
 

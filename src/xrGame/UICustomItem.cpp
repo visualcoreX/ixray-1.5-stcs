@@ -127,7 +127,11 @@ void CUICustomItem::Render(const Fvector2& pos_ns, u32 color, float angle)
 	// kx = (H/768)/(W/1024) beforehand makes the two axes land on the same screen scale, so
 	// the quad turns rigidly instead of shearing. The old hardcoded 0.8333 is that value for
 	// 16:10 only; on 16:9 the correct one is 0.75.
-	float kx =	UI()->get_current_kx();
+	// gwr_pda_map_kx() is 1.0 everywhere except while the 3D PDA screen is being captured,
+	// where the model shows the picture at its own proportion and the monitor correction has
+	// to be walked back -- same factor the non-rotated map spots get in CUILevelMap::Draw.
+	extern float gwr_pda_map_kx();
+	float kx =	UI()->get_current_kx() * gwr_pda_map_kx();
 
 	// clip poly
 	sPoly2D								S; 

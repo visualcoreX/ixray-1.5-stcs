@@ -14,8 +14,12 @@ private:
 	int						m_location_level;
 
 	CUIStatic*				m_border_static;
+	// The border is a plain CUIStatic, so nothing in the composite spot rescales it -- these are
+	// its load-time pos/size, the base every resize of the spot is applied to.
+	Fvector2				m_border_origin_pos;
+	Fvector2				m_border_origin_size;
 //	CUIStatic*				m_focused_static;
-	
+
 	bool					m_mark_focused;
 
 public:
@@ -32,6 +36,7 @@ public:
 				int			get_location_level				()							{return m_location_level;}
 	virtual LPCSTR			GetHint							();
 	virtual		void		SetWndPos						(const Fvector2& pos);
+	virtual		void		SetWndSize						(const Fvector2& size);
 	virtual		void		Update							();
 	virtual		bool		OnMouseDown						(int mouse_btn);
 	virtual		void		OnFocusLost						();
@@ -78,7 +83,9 @@ public:
 	IC const Fvector2&	GetWndSizeOrigin	() const		{ return m_origin_size; }
 
 				void	InitWndOrigin		();
-				void	ScaleOrigin			( float k );
+				// k scales both axes (the map zoom); kx is an EXTRA horizontal-only factor, so a
+				// composite spot can be stretched sideways without its parts drifting diagonally
+				void	ScaleOrigin			( float k, float kx = 1.0f );
 
 				CUIStaticOrig				() {};
 	virtual		~CUIStaticOrig				() {};

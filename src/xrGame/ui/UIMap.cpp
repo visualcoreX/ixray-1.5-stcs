@@ -7,6 +7,9 @@
 #include "UIMapWnd.h"
 #include "../../xrEngine/xr_input.h"		//remove me !!!
 
+extern float gwr_pda_map_kx();		// 3D PDA screen aspect compensation; 1.0 everywhere else
+extern float gwr_pda_map_body_kx();	// ...and the separate one for the map canvas
+
 const u32			activeLocalMapColor			= 0xffffffff;//0xffc80000;
 const u32			inactiveLocalMapColor		= 0xffffffff;//0xff438cd1;
 const u32			ourLevelMapColor			= 0xffffffff;
@@ -316,7 +319,8 @@ void CUIGlobalMap::ClipByVisRect()
 
 float CUIGlobalMap::GetAspectKX() const
 {
-	return UI()->get_current_kx();
+	// canvas + spot POSITIONS: its own knob, see gwr_pda_map_body_kx
+	return UI()->get_current_kx() * gwr_pda_map_body_kx();
 }
 
 Fvector2 CUIGlobalMap::ConvertRealToLocal(const Fvector2& src)// pixels->pixels (relatively own left-top pos)
@@ -387,34 +391,46 @@ CUILevelMap::~CUILevelMap()
 
 float CUILevelMap::GetAspectKX() const
 {
-	return UI()->get_current_kx();
+	// canvas + spot POSITIONS: its own knob, see gwr_pda_map_body_kx
+	return UI()->get_current_kx() * gwr_pda_map_body_kx();
 }
+
 
 void CUILevelMap::Draw()
 {
 	if(MapWnd())
 	{
+		// 1.0 for the normal full-screen PDA; on the 3D PDA screen it undoes the monitor aspect
+		// correction baked into the spot width at load time. Recomputed from m_originSize every
+		// frame, so switching the option off restores the plain size immediately.
+		const float pda_kx		= gwr_pda_map_kx();
 		for(WINDOW_LIST_it it = m_ChildWndList.begin(); m_ChildWndList.end() != it; ++it)
 		{
 			CMapSpot* sp			= smart_cast<CMapSpot*>((*it));
-			if(sp && sp->m_bScale)
+			if(!sp)					continue;
+			Fvector2 sz				= sp->m_originSize;
+			if(sp->m_bScale)
 			{
 				float gmz			= MapWnd()->GlobalMap()->GetCurrentZoom();
 				if(gmz>sp->m_scale_bounds.x && gmz<sp->m_scale_bounds.y)
 				{
-					Fvector2 sz			= sp->m_originSize;
 					float k				= (gmz-sp->m_scale_bounds.x)/(sp->m_scale_bounds.y-sp->m_scale_bounds.x);
 					sz.mul				( k );
-					sp->SetWndSize		(sz);
 				}else
-				if(gmz>sp->m_scale_bounds.y)
+				if(gmz<=sp->m_scale_bounds.x)
 				{
-					sp->SetWndSize		(sp->m_originSize);
-				}else
-				{
-					sp->SetWndSize		(Fvector2().set(0,0));
+					sz.set				(0.0f, 0.0f);
 				}
 			}
+			// Rotated spots (level changers) must keep a SQUARE widget -- CUICustomItem::Render
+			// squeezes their x after rotating, and that is what keeps the turn rigid. Their share
+			// of the PDA compensation is folded into that kx instead.
+			if(!sp->Heading())		sz.x *= pda_kx;
+			// Only touch it when it really changes: CComplexMapSpot::SetWndSize rescales the spot's
+			// child icons, so calling it every frame for a spot that is not being scaled is waste.
+			const Fvector2 cur		= sp->GetWndSize();
+			if(_abs(cur.x-sz.x)>EPS_S || _abs(cur.y-sz.y)>EPS_S)
+				sp->SetWndSize		(sz);
 		}
 	}
 	inherited::Draw();

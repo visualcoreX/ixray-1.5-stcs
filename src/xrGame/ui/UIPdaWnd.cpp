@@ -216,6 +216,58 @@ bool gwr_pda_rt_pass_now()
 	return g_pda_rt_pass;
 }
 
+// Aspect factor the map spots need while they are drawn onto the 3D PDA's screen.
+//
+// Spots are authored in square UI units and CMapSpot::Load narrows them by get_current_kx() so
+// they come out square on the MONITOR, which stretches the 1024x768 UI space non-uniformly. The
+// PDA model's screen is 4:3 -- the proportion the UI is authored in -- so the capture is shown
+// there undistorted and that correction must be undone, or every icon sits 25% too narrow.
+// Returns 1.0 outside the capture, so the ordinary full-screen PDA is bit-for-bit unchanged.
+float g_pda_map_kx = 0.87f;		// matched against the 2D PDA by eye; 0.75 = no compensation,
+								// 1.0 = fully undo the monitor correction (would be exact for a 4:3 screen)
+
+float gwr_pda_map_kx()
+{
+	// deliberately the whole-frame predicate, not gwr_pda_rt_pass_now(): GetAspectKX() is also
+	// asked during layout (OptimalFit / CalcOpenRect / scrolling), and a factor that differed
+	// between layout and draw would slide the icons against the terrain.
+	if (!gwr_pda_screen_active())		return 1.0f;
+	float kx = UI()->get_current_kx();
+	if (kx < EPS_S)					return 1.0f;
+	return g_pda_map_kx / kx;
+}
+
+// The SAME idea for the map CANVAS (CUI*Map::GetAspectKX), kept as a separate knob on purpose.
+// Icon size and the distance BETWEEN icons are driven by different things -- an icon's own
+// width vs the map's zoom -- so one number cannot satisfy both. Default 0.75 == the monitor
+// kx == no compensation at all, i.e. spacing stays exactly as it is on the 2D PDA; raise it
+// toward 1.0 to widen the terrain if the canvas looks squeezed.
+float g_pda_map_body_kx = 0.87f;	// canvas compensated like the icons, as asked
+
+// The highlight ring around the ACTIVE side quest is the <static_border> of the composite spot
+// (map_spots_complex*.xml, texture ui_pda2_stask_last_02a). It is a plain CUIStatic child, so
+// CMapSpot::SetWndSize now stretches it by whatever horizontal factor the spot itself got --
+// i.e. it follows g_pda_map_kx and matches the icon it wraps. This is a TRIM on top of that:
+// 1.0 = exactly as wide as the icon's compensation, >1 wider, <1 narrower.
+// (NOT the same thing the old value of this variable meant -- it used to be an absolute kx aimed
+// at level_map_spot_border, which is the WRONG object: that one is drawn with <texture a="0">,
+// i.e. fully transparent, which is why the knob appeared to do nothing at all.)
+float g_pda_border_kx = 1.0f;
+
+float gwr_pda_border_trim()
+{
+	if (!gwr_pda_screen_active())		return 1.0f;
+	return g_pda_border_kx;
+}
+
+float gwr_pda_map_body_kx()
+{
+	if (!gwr_pda_screen_active())		return 1.0f;
+	float kx = UI()->get_current_kx();
+	if (kx < EPS_S)					return 1.0f;
+	return g_pda_map_body_kx / kx;
+}
+
 // Gunslinger's _need_pda_zoom: set while the open-zoomed is still owed, cleared once it lands.
 // CWeaponMagazined::PlayAnimShow reads it to pick the draw-to-the-face anim.
 bool gwr_pda_need_fastzoom()

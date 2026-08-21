@@ -2124,6 +2124,18 @@ void CCC_RegisterCommands()
 		CMD4(CCC_Integer,		"g_pda_dbg",			&g_pda_dbg,				0, 1);
 		extern int g_pda_use_clicks;
 		CMD4(CCC_Integer,		"g_pda_use_clicks",		&g_pda_use_clicks,		0, 1);
+		// 3D PDA screen aspect: map icons and the map canvas are pre-narrowed for the MONITOR,
+		// but the model screen shows the capture at its own proportion, so that is walked back
+		// there. 0.75 = no compensation, 1.0 = full undo; 0.87 matched by eye.
+		extern float g_pda_map_kx;
+		CMD4(CCC_Float,			"g_pda_map_kx",			&g_pda_map_kx,			0.1f, 4.0f);
+		// same, but for the map CANVAS and the spacing between icons (0.75 = leave it alone)
+		extern float g_pda_map_body_kx;
+		CMD4(CCC_Float,			"g_pda_map_body_kx",	&g_pda_map_body_kx,		0.1f, 4.0f);
+		// trim for the active side-quest highlight ring: it already follows g_pda_map_kx, this is
+		// a multiplier ON TOP of that, so 1.0 = exactly as wide as the icon it wraps
+		extern float g_pda_border_kx;
+		CMD4(CCC_Float,			"g_pda_border_kx",		&g_pda_border_kx,		0.1f, 4.0f);
 		// GS options (gunsl_config.pas): pda_autozoom = the PDA opens already at the face rather than
 		// held down in the hand; pda_savezoomstate = ignore that and reopen it the way it was last left.
 		// Names kept GS's so the two mods' user.ltx read the same. CCC_Mask, not CCC_Integer -- that is
