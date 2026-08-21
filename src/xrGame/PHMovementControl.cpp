@@ -1163,12 +1163,17 @@ void CPHMovementControl::ApplyHit(const Fvector& dir,const dReal P,ALife::EHitTy
 	{
 		switch(hit_type)
 		{
-			case ALife::eHitTypeBurn  :												;//stop
 			case ALife::eHitTypeShock :												;//stop
 			case ALife::eHitTypeStrike:												;//stop
 			case ALife::eHitTypeWound:			SetVelocity(Fvector().set(0,0,0))	; break; // stop							;
 			case ALife::eHitTypeRadiation:											;//not stop
 			case ALife::eHitTypeTelepatic:											;//not stop
+			// Burn used to fall through to SetVelocity(0) with wound/shock/strike. A fire anomaly's
+			// field (zone_field_thermal_*, a CRadioactiveZone) hits ten times a SECOND, so every one
+			// of those ticks killed the actor's velocity outright -- walking through it read as being
+			// yanked to a halt on every step. Chemical burn (the burning fuzz) was already exempt for
+			// exactly the same reason; burn now joins it. The hit still burns, damages and ignites.
+			case ALife::eHitTypeBurn  :												;//not stop
 			case ALife::eHitTypeChemicalBurn:										;break;//not stop
 			case ALife::eHitTypeExplosion:											;//stop
 			case ALife::eHitTypeFireWound:											;//stop
