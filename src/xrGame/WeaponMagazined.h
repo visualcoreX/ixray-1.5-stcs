@@ -404,6 +404,7 @@ protected:
 	void			ArmReloadLockTimes	();	// read lock_time_start_/lock_time_end_ for the played alias
 	u32				m_dwReloadInsertTm;		// wall clock of that fill; 0 = none pending
 	bool			m_bReloadInsertDone;	// guard so the timer and OnAnimationEnd can't both fill
+	bool			m_bReloadInsertHandTimed;	// insert time came from a per-alias lock_time_start_, not the generic fallback
 	bool			m_bLastEmptyAnim;		// last NeedEmptyAnim(): flips -> re-pick the idle at once
 	virtual void	SelectJammedShootBase(string_path& out);	// base alias that gets the "_jammed" token
 	virtual void	SelectShootAnim		(string_path& result);	// hip / ADS / scope shoot motion

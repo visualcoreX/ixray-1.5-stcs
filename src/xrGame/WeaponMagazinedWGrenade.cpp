@@ -76,8 +76,13 @@ void CWeaponMagazinedWGrenade::gwr_UpdateBonesGL()
 		// in at that instant -- show the bone exactly THEN, so the visual and the load can't drift apart.
 		// Without one (the plain GL reload, which GS also leaves unlocked and loads at the animation's
 		// end) fall back to the configured fraction, which is what gl_reload_insert_mark was tuned for.
+		// ...but only a HAND-TIMED insert may override the mark. Since the generic fallback landed
+		// ([gunslinger_base] default_reload_insert, 0.55 of the animation) EVERY reload arms a timer,
+		// including the plain GL one that has no lock_time_start_ of its own -- and the grenade bone,
+		// tuned by gl_reload_insert_mark to 0.2, started appearing past the middle of the animation.
 		bool seated     = m_bReloadInsertDone ? true
-						: (m_dwReloadInsertTm ? (Device.dwTimeGlobal >= m_dwReloadInsertTm)
+						: ((m_dwReloadInsertTm && m_bReloadInsertHandTimed)
+											  ? (Device.dwTimeGlobal >= m_dwReloadInsertTm)
 											  : (progress >= mark));
 
 		if (ammochange)

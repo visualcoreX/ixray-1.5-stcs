@@ -97,6 +97,7 @@ CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 	m_bNoJamFire				= false;
 	m_dwReloadInsertTm			= 0;
 	m_bReloadInsertDone			= false;
+	m_bReloadInsertHandTimed	= false;
 	m_bLastEmptyAnim			= false;
 	m_iMaxQueueSize				= 0;
 	m_fRechargeTime				= 0.f;
@@ -2654,6 +2655,10 @@ void CWeaponMagazined::ArmReloadLockTimes()
 	string128 key;
 	xr_sprintf(key, "lock_time_start_%s", anim);
 	float ls = READ_IF_EXISTS(pSettings, r_float, HudSection(), key, -1.0f);
+
+	// Whether this insert is hand-timed by the config or comes from the generic fallback below.
+	// The grenade-launcher bone display honours only the hand-timed one (see gwr_UpdateBonesGL).
+	m_bReloadInsertHandTimed = (ls >= 0.0f);
 
 	// No per-alias key: Gunslinger only keys the reloads it hand-timed, and everything else
 	// (most pistols, mp5, svd/svu, val, vintorez, pkm...) then seats its magazine at the very END
