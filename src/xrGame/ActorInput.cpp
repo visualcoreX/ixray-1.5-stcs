@@ -1391,7 +1391,10 @@ void CActor::ResetTorchActionState()
 	s_block_set_by_action	= false;
 	s_torch_switch_at		= 0;
 	s_nv_switch_at			= 0;
-	if (s_nv_black_added)	RemoveEffector(this, effActionAnimPPE);
+	// net_Spawn calls us BEFORE m_pActorEffector is created, so the camera manager can be NULL
+	// here; Cameras() only VERIFYs it (compiled out in Release) and would deref null. Nothing to
+	// remove in that case anyway -- the effectors die with the old camera manager.
+	if (s_nv_black_added && m_pActorEffector)	RemoveEffector(this, effActionAnimPPE);
 	s_nv_black_on_at		= 0;
 	s_nv_black_off_at		= 0;
 	s_nv_black_added		= false;
