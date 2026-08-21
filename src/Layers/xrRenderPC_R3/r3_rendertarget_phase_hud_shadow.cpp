@@ -94,9 +94,24 @@ void CRenderTarget::phase_hud_shadow	(light* L)
 	pv->set						(  1, -1, 1, 0, 0, 0, 0);	pv++;
 	RCache.Vertex.Unlock		(4,g_combine->vb_stride);
 
-	// Stencil off: the depth band is the mask here, and the light-marker values in the stencil have
-	// nothing to say about which pixels are HUD.
-	RCache.set_Stencil			(FALSE);
+	// Which pixels are HUD is decided by the depth band, not by the stencil -- but the stencil does
+	// carry one thing worth reading: self-lit surfaces.
+	//
+	// models_selflight / _selflightl / _selflight_det tag their G-buffer pixels with stencil bit
+	// 0x02 on top of the usual 0x01 (see the dx10stencil_ref(3) in those .s files). Those are lamp
+	// glass, glowing sights, screens -- surfaces that are supposed to read as light sources, and
+	// dragging a contact shadow across one looks plainly wrong. Skip them.
+	//
+	// Only for the sun. By the time the light-driven invocations run, r_dsgraph_render_emissive has
+	// rewritten the stencil of exactly these pixels back to 0x01 (r3_R_render.cpp, right after the
+	// accumulator), and the light passes have put their own marker values in it, so the bit is no
+	// longer there to test.
+	if (nullptr == L)
+		// pass only where (stencil & 0x02) == 0; read mask 0x02, write mask 0x00 = touch nothing
+		RCache.set_Stencil		(TRUE, D3DCMP_EQUAL, 0x00, 0x02, 0x00,
+								 D3DSTENCILOP_KEEP, D3DSTENCILOP_KEEP, D3DSTENCILOP_KEEP);
+	else
+		RCache.set_Stencil		(FALSE);
 	RCache.set_CullMode			(CULL_NONE);
 	RCache.set_ColorWriteEnable	();
 
