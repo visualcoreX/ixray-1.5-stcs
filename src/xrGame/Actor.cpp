@@ -351,6 +351,7 @@ void CActor::reinit	()
 	
 	set_input_external_handler					(0);
 	m_time_lock_accel							= 0;
+	m_ladder_hide_mask							= 0;
 }
 
 void CActor::reload	(LPCSTR section)

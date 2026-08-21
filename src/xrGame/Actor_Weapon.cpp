@@ -102,6 +102,27 @@ void CActor::SetCantRunState(bool bDisable)
 		u_EventSend	(P);
 	};
 }
+// Stock Clear Sky hid whatever sat in RIFLE_SLOT and APPARATUS_SLOT while climbing
+// (INV_STATE_LADDER, Inventory.cpp) -- a fixed SLOT mask, so what stayed in your hands depended
+// on where the weapon lived rather than on what it was. Decide per item instead: everything the
+// actor cannot hold in one hand goes away on the ladder, pistols and the knife stay.
+// IsSingleHanded() is the weapon's own `single_handed` config flag (CWeapon::Load); non-weapons
+// -- outfit, PDA, detector, torch -- inherit CInventoryItem's default of true and are untouched.
+u32 CActor::CalcLadderHideMask () const
+{
+	u32 mask = 0;
+	const CInventory& inv = inventory();
+
+	for (u32 i = 0; i < inv.m_slots.size(); ++i)
+	{
+		PIItem item = inv.ItemFromSlot(i);
+		if (item && !item->IsSingleHanded())
+			mask |= (u32(1) << i);
+	}
+
+	return mask;
+}
+
 void CActor::SetWeaponHideState (u32 State, bool bSet)
 {
 	if (g_Alive() && this == Level().CurrentControlEntity())

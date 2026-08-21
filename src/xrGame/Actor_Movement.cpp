@@ -146,7 +146,19 @@ void CActor::g_cl_ValidateMState(float dt, u32 mstate_wf)
 
 		if (bOnClimbNow != bOnClimbOld )
 		{
-			SetWeaponHideState		(INV_STATE_LADDER, bOnClimbNow );
+			// per-item mask (see CalcLadderHideMask), cached so the release passes the same bits
+			if (bOnClimbNow)
+			{
+				m_ladder_hide_mask	= CalcLadderHideMask();
+				if (m_ladder_hide_mask)
+					SetWeaponHideState	(m_ladder_hide_mask, true );
+			}
+			else
+			{
+				if (m_ladder_hide_mask)
+					SetWeaponHideState	(m_ladder_hide_mask, false );
+				m_ladder_hide_mask	= 0;
+			}
 		};
 	};
 };

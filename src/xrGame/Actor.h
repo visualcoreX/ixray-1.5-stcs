@@ -679,6 +679,11 @@ protected:
 		void							SelectBestWeapon				(CObject* O);
 public:
 		void							SetWeaponHideState				(u32 State, bool bSet);
+		// Which slots a ladder empties, decided per ITEM instead of by a fixed slot mask.
+		// The result is cached in m_ladder_hide_mask because CInventory::SetSlotsBlocked counts
+		// blocks per slot: the release call must pass exactly the mask that was blocked.
+		u32								CalcLadderHideMask				() const;
+		u32								m_ladder_hide_mask;
 		void							SetCantRunState					(bool bSet);
 		virtual CCustomOutfit*			GetOutfit() const;
 private:
