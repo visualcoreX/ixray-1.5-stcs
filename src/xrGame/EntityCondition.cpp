@@ -11,6 +11,7 @@
 #include "../Include/xrRender/KinematicsAnimated.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "object_broker.h"
+#include "customzone.h"
 
 #define MAX_HEALTH 1.0f
 
@@ -44,6 +45,20 @@ float gwr_burn_wound_min_power()
 	static float	s_k		= -1.0f;
 	if (s_k < 0.0f)
 		s_k = READ_IF_EXISTS(pSettings, r_float, "gwr_burning", "burn_wound_min_power", 0.5f);
+	return s_k;
+}
+
+// Same gate, but for fire that reaches the actor DIRECTLY instead of as an area effect -- today
+// that means a fire poltergeist's flame column (CPolterFlame). It ray-tests the actor before every
+// hit, so contact is already proven and there is no aura to gate against; its hit is also far
+// weaker than an anomaly's (flame_hit_value 0.3 / 0.7, falling off along the column), so the zone
+// threshold above silently made the flamer unable to set anyone alight at all. Raise this to demand
+// a hit closer to the flame's root, or put it above flame_hit_value to turn the flamer's ignition off.
+float gwr_burn_wound_min_power_direct()
+{
+	static float	s_k		= flt_max;
+	if (s_k == flt_max)
+		s_k = READ_IF_EXISTS(pSettings, r_float, "gwr_burning", "burn_wound_min_power_direct", 0.05f);
 	return s_k;
 }
 
@@ -499,8 +514,22 @@ CWound* CEntityCondition::ConditionHit(SHit* pHDS)
 		// ...and only from a hit strong enough to BE the flame. The zone hits everything inside its
 		// radius with a power that falls off with distance, so without this the aura's outermost,
 		// nearly harmless tick set the actor on fire just like standing in the fire column did.
-		bAddWound		=  (gwr_burn_wound_factor() > 0.0f) && (smart_cast<CActor*>(m_object) != NULL)
-						&& (hit_power_org >= gwr_burn_wound_min_power());
+		// A fire poltergeist is not a zone: it aims a flame column and ray-tests the actor before each
+		// hit, so it gets the direct threshold instead -- otherwise the anomaly gate above swallowed its
+		// attack, which is weaker than any anomaly, and its fire never ignited anybody. The zone may hit
+		// under an owner's id (an artefact-deployed anomaly), so look at weaponID too -- CCustomZone
+		// always puts itself there.
+		{
+			CObject*	hit_source	= pHDS->who;
+			bool		from_zone	= (smart_cast<CCustomZone*>(hit_source) != NULL);
+			if (!from_zone && pHDS->weaponID && (pHDS->weaponID != u16(-1)))
+				from_zone	= (smart_cast<CCustomZone*>(Level().Objects.net_Find(pHDS->weaponID)) != NULL);
+
+			float		min_power	= from_zone ? gwr_burn_wound_min_power() : gwr_burn_wound_min_power_direct();
+
+			bAddWound		=  (gwr_burn_wound_factor() > 0.0f) && (smart_cast<CActor*>(m_object) != NULL)
+							&& (hit_power_org >= min_power);
+		}
 		hit_power		*= (bAddWound ? gwr_burn_wound_factor() : 1.0f);
 		break;
 	case ALife::eHitTypeChemicalBurn:
