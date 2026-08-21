@@ -661,6 +661,16 @@ bool CUIActorMenu::TryUseItem( CUICellItem* cell_itm )
 	{
 		return false;
 	}
+
+	// Ask the same question the eat funnel will ask. CInventory::Eat refuses outright while an
+	// item-use animation or a weapon gesture is running -- but it does that AFTER SendEvent_Item_Eat
+	// has already been queued, so from here the use looks like it succeeded. Without this check the
+	// window closed and the use sound played for a use that never happened: exactly what you see if
+	// you try to use a second item while the first one is still being eaten.
+	{
+		extern bool gwr_actor_hud_busy_now(bool allow_weapon_action);
+		if ( gwr_actor_hud_busy_now(true) )		return false;
+	}
 	u16 recipient = m_pActorInvOwner->object_id();
 	if ( item->parent_id() != recipient )
 	{
@@ -668,9 +678,23 @@ bool CUIActorMenu::TryUseItem( CUICellItem* cell_itm )
 		cell_itm->OwnerList()->RemoveItem( cell_itm, false );
 	}
 
+	// Read this BEFORE the eat event: that queues a net packet which can take the item with it.
+	// An item carrying a `hud` section is one of the animated-use ones (the gwr port -- medkits,
+	// food, drinks); a plain one has no hud model and nothing to watch.
+	bool const animated = pSettings->line_exist( item->object().cNameSect(), "hud" );
+
 	SendEvent_Item_Eat		( item, recipient );
 	PlaySnd					( eItemUse );
 	SetCurrentItem			( NULL );
+
+	// Get out of the way so the first-person animation is actually visible -- from the inventory
+	// only. Trade and corpse search run through here too, and closing either would throw the player
+	// out of what he was doing mid-transaction.
+	if ( animated && m_currMenuMode == mmInventory )
+	{
+		GetHolder()->StartStopMenu( this, true );
+	}
+
 	return true;
 }
 
