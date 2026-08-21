@@ -310,7 +310,7 @@ static bool pda_need_fast_zoom()
 // touch INSIDE it on X so the cursor stops before the very edge: shader crops 0.0915..0.9085,
 // we fence 0.1..0.9. Retune the shader crop and these want a look too.
 static const float	PDA_UI_X = 0.1000f, PDA_UI_W = 0.8000f;
-static const float	PDA_UI_Y = 0.0388f, PDA_UI_H = 0.9095f;
+static const float	PDA_UI_Y = 0.0364f, PDA_UI_H = 0.9119f;
 
 // The slice of the 1024x768 UI space that actually reaches the model's screen. Anything that lays
 // itself out against the full screen (button tooltips) must use this instead: by the full screen's

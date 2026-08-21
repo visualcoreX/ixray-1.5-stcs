@@ -33,7 +33,13 @@ half4 problems_main( v2p I )
 	
 	// gwr: crop $user$ui (the whole captured screen) to the PDA device -- x 85..939 of the 1024-wide
 	// UI space -- dropping pda_16.xml's widescreen filler strips. See the r3 copy for the full note.
-	float2	ui_tc	 = float2( 0.0915 + I.tc0.x * 0.8170, 0.0388 + I.tc0.y * 0.9095 );
+	// gwr: Y measured off the ui_pda2 texture itself (column x=512): the device's frame line
+	// sits on row 32 at the top and 716 at the bottom, with an 8px black gap outside each.
+	// The old start 0.0388 = row 29.8 left the top line right on the edge of the glass while
+	// the bottom had ~12px of slack, so the top read as clipped. Settled at 0.0364 = row 28.0:
+	// the outer edge of the gap (row 24) and its midpoint (row 27) both dropped the top too
+	// far by eye. The END is deliberately unchanged (0.0364+0.9119=0.9483).
+	float2	ui_tc	 = float2( 0.0915 + I.tc0.x * 0.8170, 0.0364 + I.tc0.y * 0.9119 );
 	half4	t_vp2	 = ( m_affects.x < 0.27 ) ? tex2D( s_vp2, ui_tc) : tex2D( s_base, I.tc0) ;			// ����������� �� ������� ��������
 	
 	// ��� ��� �������
