@@ -584,6 +584,13 @@ void	CRender::Render		()
 	r_dsgraph_render_graph						(1);			// normal level, secondary priority
 	PortalTraverser.fade_render					();				// faded-portals
 	r_dsgraph_render_sorted						();				// strict-sorted geoms
+	// World tracers. Their normal home is the UI pass (CLevel::OnRender), which runs after the scene
+	// with no scene depth bound -- so on R1 they were drawn straight over the weapon in your hands.
+	// Here the depth buffer still holds the HUD, which R1 wrote FIRST (r_dsgraph_render_hud above, in
+	// the near depth range), so the weapon occludes them like any other geometry. Drawn with the rest
+	// of the blended geometry, right after the sorted pass. CBulletManager::Render raises its own
+	// guard, so the UI pass does not draw them a second time. R3 does the same in its MSAA path.
+	if (g_pGamePersistent)	g_pGamePersistent->OnRenderForward();
 	if(L_Glows)L_Glows->Render					();				// glows
 	g_pGamePersistent->Environment().RenderFlares	();				// lens-flares
 	g_pGamePersistent->Environment().RenderLast	();				// rain/thunder-bolts
