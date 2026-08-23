@@ -2289,6 +2289,12 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	// CoP: hold the finished loading screen until the player presses something. Bound to the
 	// "Ожидание нажатия клавиши" checkbox in the gameplay options.
 	CMD3(CCC_Mask,			"keypress_on_start",&psActorFlags,	AF_KEYPRESS_ON_START);
+	// TEMPORARY: why a stalker sits beside a smart cover instead of in it. Prints the requested
+	// point vs the one the engine substitutes. Remove once the Red Forest mechanic is sorted.
+	{
+		extern int g_smartcover_dbg;
+		CMD4(CCC_Integer, "smartcover_dbg", &g_smartcover_dbg, 0, 1);
+	}
 	// Hide the quick-use slot icons on the hud. Display only -- the slots keep working.
 	CMD3(CCC_Mask,			"hud_hide_quick_slots",&psActorFlags,AF_HIDE_QUICK_SLOTS);
 	// Top-left overlay for every playing hud blend: source .omf, motion name, time and state.

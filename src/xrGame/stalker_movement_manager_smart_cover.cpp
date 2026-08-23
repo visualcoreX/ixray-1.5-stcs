@@ -171,6 +171,11 @@ void stalker_movement_manager_smart_cover::modify_animation				(CBlend* blend)
 
 bool show_restrictions	(CRestrictedObject *object);
 
+// Diagnostics for "the NPC sits next to the smart cover, not in it" (console: smartcover_dbg 1).
+// Prints the point the config asks for and the point the engine actually drives him to -- they
+// differ whenever the requested one has no accessible ai-node under it, see below.
+int	g_smartcover_dbg = 0;
+
 void stalker_movement_manager_smart_cover::reach_enter_location			(u32 const& time_delta)
 {
 	m_current.m_path_type				= MovementManager::ePathTypeLevelPath;
@@ -189,6 +194,12 @@ void stalker_movement_manager_smart_cover::reach_enter_location			(u32 const& ti
 	m_target.cover()->object().XFORM().transform_tiny(position, current_transition().animation().position());
 
 	u32									level_vertex_id	= ai().level_graph().vertex( u32(-1), position);
+
+	Fvector								requested = position;
+	u32									requested_vertex = level_vertex_id;
+	bool								acc_v = !!accessible(level_vertex_id);
+	bool								acc_p = !!accessible(position);
+
 	if (!accessible(level_vertex_id) || !accessible(position)) {
 		if (!ai().level_graph().inside(level_vertex_id,position))
 			position				= ai().level_graph().vertex_position(level_vertex_id);
@@ -221,6 +232,23 @@ void stalker_movement_manager_smart_cover::reach_enter_location			(u32 const& ti
 		m_current.desired_position				(&position);
 	}
 	
+	if (g_smartcover_dbg) {
+		static u32	s_last_time = 0;
+		if (Device.dwTimeGlobal > s_last_time + 1000) {
+			s_last_time = Device.dwTimeGlobal;
+			Fvector	vpos = ai().level_graph().vertex_position(level_vertex_id);
+			Fvector	npc  = object().Position();
+			Msg("~ [SCDBG] npc[%s] cover[%s] loophole[%s]", *object().cName(),
+				m_target.cover()->id().c_str(), loophole.id().c_str());
+			Msg("~ [SCDBG]   requested (%7.3f, %7.3f, %7.3f) vertex %u  accessible: vertex %d pos %d",
+				VPUSH(requested), requested_vertex, acc_v ? 1 : 0, acc_p ? 1 : 0);
+			Msg("~ [SCDBG]   final     (%7.3f, %7.3f, %7.3f) vertex %u  vertex_pos (%7.3f, %7.3f, %7.3f)",
+				VPUSH(position), level_vertex_id, VPUSH(vpos));
+			Msg("~ [SCDBG]   npc now   (%7.3f, %7.3f, %7.3f)  drift from requested %5.3f m",
+				VPUSH(npc), npc.distance_to(requested));
+		}
+	}
+
 	Fvector								direction = m_target.cover()->enter_direction(loophole);
 	m_current.desired_direction			(&direction);
 
