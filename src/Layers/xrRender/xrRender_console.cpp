@@ -105,9 +105,11 @@ float		ps_r__ssaHZBvsTEX			=  96.f	;					//RO
 
 int			ps_r__tf_Anisotropic		= 4		;
 
-// Upload a texture only when something actually draws with it. 0 = stock (everything a loaded
-// model references is uploaded immediately, drawn or not).
-int			ps_r__texture_lazy			= 0		;
+// Upload a texture only when something actually draws with it. ON by default: hidden addon bones,
+// weapons sitting in NPC inventories and LOD-only parts otherwise cost their full surface, which is
+// what pushed the 32-bit process past the largest block D3D could still hand out on Army Warehouses.
+// 0 = stock (everything a loaded model references is uploaded immediately, drawn or not).
+int			ps_r__texture_lazy			= 1		;
 
 // R1
 float		ps_r1_ssaLOD_A				= 64.f	;
