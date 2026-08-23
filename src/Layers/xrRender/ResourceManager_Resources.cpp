@@ -6,6 +6,7 @@
 #endif
 
 #include "ResourceManager.h"
+#include "startup_profile.h"
 #include "tss.h"
 #include "blenders\blender.h"
 #include "blenders\blender_recorder.h"
@@ -205,15 +206,30 @@ SVS*	CResourceManager::_CreateVS		(LPCSTR _name)
 		LPCSTR						c_target	= "vs_3_0";
 		LPCSTR						c_entry		= "main";
 
+		// same profile-suffixed entry rule as the pixel shaders below -- this buffer was already being
+		// made and thrown away here, which is the leftover of the scan the fork removed
 		LPSTR pfs					= xr_alloc<char>(fs->length() + 1);
 		strncpy						(pfs, (LPCSTR)fs->pointer(), fs->length());
 		pfs							[fs->length()] = 0;
+		if (strstr(pfs, "main_vs_1_1"))		c_entry = "main_vs_1_1";
+		if (strstr(pfs, "main_vs_2_0"))		c_entry = "main_vs_2_0";
 		xr_free(pfs);
 
 		// vertex
 		R_ASSERT2					(fs,cname);
-		hr = ::Render->shader_compile(name,LPCSTR(fs->pointer()),fs->length(), NULL, &Includer, c_entry, c_target, D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR /*| D3DXSHADER_PREFER_FLOW_CONTROL*/, &pShaderBuf, &pErrorBuf, NULL);
+		startup_compile_begin	();
+		// D3DXSHADER_ENABLE_BACKWARDS_COMPATIBILITY: the DX9 shader tree declares its global uniforms
+		// as `half` (r1\shared\common.h alone has 14 of them, r2\shadow.h one), which the modern
+		// compiler rejects outright -- "error X3650: global variables cannot use the 'half' type in
+		// vs_3_0/ps_3_0. To treat this variable as a float, use the backwards compatibility flag."
+		// That is one error per shader, so without this R1 could not build a single one of its 128 and
+		// R2 died on the first deferred pass; the CHECK_OR_EXIT below then blamed the video card
+		// ("Pixel Shaders v1.1 or higher required"). R3 is unaffected -- it compiles through the DX10
+		// path, where `half` globals are legal. Flags reach D3DXCompileShader untouched in both
+		// FStaticRender.cpp and r2.cpp.
+		hr = ::Render->shader_compile(name,LPCSTR(fs->pointer()),fs->length(), NULL, &Includer, c_entry, c_target, D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR | D3DXSHADER_ENABLE_BACKWARDS_COMPATIBILITY /*| D3DXSHADER_PREFER_FLOW_CONTROL*/, &pShaderBuf, &pErrorBuf, NULL);
 //		hr = D3DXCompileShader		(LPCSTR(fs->pointer()),fs->length(), NULL, &Includer, "main", target, D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &pShaderBuf, &pErrorBuf, NULL);
+		startup_compile_end			(_name);
 		FS.r_close					(fs);
 
 		if (SUCCEEDED(hr))
@@ -308,13 +324,29 @@ SPS*	CResourceManager::_CreatePS			(LPCSTR name)
 		// Select target
 		LPCSTR						c_target	= "ps_3_0";
 		LPCSTR						c_entry		= "main";
+		// Profile-suffixed entry points. Stock X-Ray (1.5.10, ResourceManager_Resources.cpp) picked BOTH
+		// the entry and the target from these markers -- ps_1_1 .. ps_2_0 -- because R1 targeted DX8-class
+		// hardware. This fork dropped the scan and hardcoded main/ps_3_0, so 19 R1 shaders that declare
+		// only `main_ps_1_4` (pda screen, clock arrows, condition bars, scope lenses...) failed with
+		// "X3501: 'main': entrypoint not found" the moment a level tried to draw one -- reported as the
+		// bogus "Pixel Shaders v1.1 or higher required". We take the ENTRY name but keep ps_3_0 as the
+		// target: it is a strict superset of the 1.x profiles, and D3DCompiler_47 dropped 1.x support
+		// entirely, so compiling them as ps_1_4 is no longer an option anyway.
+		if (strstr(data,"main_ps_1_1"))		c_entry = "main_ps_1_1";
+		if (strstr(data,"main_ps_1_2"))		c_entry = "main_ps_1_2";
+		if (strstr(data,"main_ps_1_3"))		c_entry = "main_ps_1_3";
+		if (strstr(data,"main_ps_1_4"))		c_entry = "main_ps_1_4";
+		if (strstr(data,"main_ps_2_0"))		c_entry = "main_ps_2_0";
 
 		// Compile
 		LPD3DXBUFFER				pShaderBuf	= NULL;
 		LPD3DXBUFFER				pErrorBuf	= NULL;
 		LPD3DXSHADER_CONSTANTTABLE	pConstants	= NULL;
 		HRESULT						hr			= S_OK;
-		hr = ::Render->shader_compile	(name,data,size, NULL, &Includer, c_entry, c_target, D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &pShaderBuf, &pErrorBuf, NULL);
+		// see the note on the vertex-shader call above -- same `half` globals, same X3650
+		startup_compile_begin		();
+		hr = ::Render->shader_compile	(name,data,size, NULL, &Includer, c_entry, c_target, D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR | D3DXSHADER_ENABLE_BACKWARDS_COMPATIBILITY, &pShaderBuf, &pErrorBuf, NULL);
+		startup_compile_end			(name);
 		//hr = D3DXCompileShader		(text,text_size, NULL, &Includer, c_entry, c_target, D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &pShaderBuf, &pErrorBuf, NULL);
 		xr_free						(data);
 
@@ -345,9 +377,13 @@ SPS*	CResourceManager::_CreatePS			(LPCSTR name)
 		if (FAILED(hr))
 			Msg			("Can't compile shader %s",name);
 
+		// The stock text blamed the video card for EVERY failed compile, which sent us hunting hardware
+		// twice for what were plain source errors. Name the shader and point at the log, where
+		// "error is <compiler output>" already sits.
 		CHECK_OR_EXIT		(
 			!FAILED(hr),
-			make_string("Your video card doesn't meet game requirements\n\nPixel Shaders v1.1 or higher required")
+			make_string("Can't compile pixel shader '%s'.\n\nSee the compiler error in the log:\n%s",
+						name, "_appdata_\\logs\\*.log")
 		);
 		return			_ps;
 	}
