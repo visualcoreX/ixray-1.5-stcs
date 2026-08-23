@@ -451,6 +451,16 @@ bool indicators_shown()
 	return	(HUD().GetUI() ? HUD().GetUI()->GameIndicatorsShown() : false);
 }
 
+// Is the indicator column actually being drawn this frame? Two flags have to be up for it (see
+// CUI::Render): HUD_DRAW is the `hud_draw` console switch, HUD_DRAW_RT is dropped by the actor every
+// frame a scope asks for the interface to go away (CWeapon::show_indicators). A script that reads the
+// console variable alone sees only the first of the two -- which is why the thirst icon stayed hanging
+// in the column while the engine indicators had already moved to the corner row for the aim.
+bool hud_drawn()
+{
+	return	!!psHUD_Flags.is(HUD_DRAW | HUD_DRAW_RT);
+}
+
 // With the interface off the engine lays its warning indicators out in a row in the bottom-right
 // corner (CUIHudStatesWnd::DrawWarningsOnly). This is the left edge of that row, so the script-drawn
 // thirst icon can fall in beside it instead of overlapping it. UI_BASE_WIDTH when the row is empty.
@@ -881,6 +891,7 @@ void CLevel::script_register(lua_State *L)
 
 		def("show_indicators",					show_indicators),
 		def("indicators_shown",					indicators_shown),
+		def("hud_drawn",						hud_drawn),
 		def("hud_warn_row_left",				hud_warn_row_left),
 		def("set_actor_invulnerable",			set_actor_invulnerable),
 		def("actor_crouch",						actor_crouch),
