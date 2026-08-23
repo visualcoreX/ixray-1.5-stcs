@@ -21,6 +21,7 @@ extern bool gwr_pda_screen_active();		// UIPdaWnd.cpp
 #include "../string_table.h"
 #include "../xr_level_controller.h"
 #include "../../xrEngine/cameraBase.h"
+#include "../Include/xrRender/Kinematics.h"
 #include "UIXmlInit.h"
 #include "UI3tButton.h"
 
@@ -176,14 +177,60 @@ void CUITalkWnd::SendMessage(CUIWindow* pWnd, s16 msg, void* pData)
 }
 
 //////////////////////////////////////////////////////////////////////////
+// Where the camera looks while the talk window is up.
+//
+// Stock CS aimed at Center() + Radius()*0.5f, i.e. the centre of the model's VISIBILITY sphere
+// raised by half its radius. That sphere is not the mesh: CalculateBones rebuilds it every
+// ~psSkeletonUpdate (32) frames from the OBB of every VISIBLE bone and takes the sphere around the
+// resulting box (SkeletonRigid.cpp), so it inherits whatever junk OBB the exporter left behind, and
+// the radius is a half-DIAGONAL, so a wide box also lifts the point.
+// Measured over the 73 models in meshes\actors: 23 of them aim ABOVE the head bone (1.656) --
+// stalker_neutral_gasmask/_wolf land at 1.82 because bip01_l_clavicle carries a 0.643 half-size
+// (a 1.3 m crate) that pushes the box top to 2.23, and stalker_bandit_3/_4 reach 1.94, above the
+// crown itself. The .object files next to those .ogf show they were re-exported, which is where
+// such OBBs come from.
+//
+// Aim at the eyes instead. Every one of those 73 models carries eye_left/eye_right, their midpoint
+// is where a person actually looks, and it follows the skeleton -- so a seated or crouching partner
+// works too, which the bounding sphere never did. Falls back to the head bone and then to the old
+// formula, so a partner without a human skeleton still behaves as before.
+static bool TalkFocusPoint(CGameObject* pTo, Fvector& dest)
+{
+	if (!pTo->Visual())							return false;
+	IKinematics* K = smart_cast<IKinematics*>(pTo->Visual());
+	if (!K)										return false;
+
+	u16 l = K->LL_BoneID("eye_left");
+	u16 r = K->LL_BoneID("eye_right");
+	u16 h = K->LL_BoneID("bip01_head");
+	if (BI_NONE==l && BI_NONE==r && BI_NONE==h)	return false;
+
+	K->CalculateBones						();
+
+	Fvector p;
+	if (BI_NONE!=l && BI_NONE!=r)
+	{
+		p.add								(K->LL_GetTransform(l).c, K->LL_GetTransform(r).c);
+		p.mul								(0.5f);
+	}
+	else
+		p.set								(K->LL_GetTransform(BI_NONE!=h ? h : (BI_NONE!=l ? l : r)).c);
+
+	pTo->XFORM().transform_tiny				(dest, p);
+	return									true;
+}
+
 void UpdateCameraDirection(CGameObject* pTo)
 {
 	CCameraBase* cam = Actor()->cam_Active();
 
-	Fvector des_dir; 
+	Fvector des_dir;
 	Fvector des_pt;
-	pTo->Center(des_pt);
-	des_pt.y+=pTo->Radius()*0.5f;
+	if (!TalkFocusPoint(pTo, des_pt))
+	{
+		pTo->Center(des_pt);
+		des_pt.y+=pTo->Radius()*0.5f;
+	}
 
 	des_dir.sub(des_pt,cam->vPosition);
 
