@@ -1422,7 +1422,6 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 	else if (READ_IF_EXISTS(pSettings, r_bool, sect, "use_advanced_ammo_bones", FALSE))
 	{
 		int cnt = eff_count;					// reload-phased (see the effective-state block above)
-		string128 key;
 		// Prefer a NAME-keyed section (ammo_params_section_<ammo_section>) so the shell colour tracks the
 		// ammo TYPE, not its position in ammo_class -- an upgrade that drops a cartridge (e.g. barrel-mod
 		// removes buckshot) shifts the positional indices and would otherwise recolour the survivors.
@@ -1455,7 +1454,14 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 				if (eff_count >= iMagazineSize && pSettings->line_exist(s, "configuration_full"))
 					return pSettings->r_string(s, "configuration_full");
 				xr_sprintf(k, "configuration_%d", cnt);
-				return pSettings->line_exist(s, k) ? pSettings->r_string(s, k) : NULL;
+				if (pSettings->line_exist(s, k))	return pSettings->r_string(s, k);
+				// A bones section is written for ONE magazine size, but hud sections are inherited:
+				// red_quest_tank_minigun is a [wpn_pkm] with ammo_mag_size = 2000, so it asked
+				// wpn_pkm_ammo_bones -- which spells out configuration_0..100 -- for configuration_1999,
+				// got nothing, and the belt stayed invisible (all_bones had already hidden it) until the
+				// count dropped under 101. configuration_over is what to show for any count the section
+				// does not spell out; without the key the old behaviour (draw nothing) is unchanged.
+				return pSettings->line_exist(s, "configuration_over") ? pSettings->r_string(s, "configuration_over") : NULL;
 			};
 
 			LPCSTR msect = (bullet_type != eff_type) ? resolve_sect(bullet_type) : NULL;
