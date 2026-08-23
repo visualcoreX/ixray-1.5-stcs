@@ -690,8 +690,12 @@ void CCC_Register()
 
 #ifdef DEBUG
 	CMD1(CCC_MotionsStat,	"stat_motions"		);
-	CMD1(CCC_TexturesStat,	"stat_textures"		);
 #endif // DEBUG
+	// Dumps every resident texture with its refcount and size. This is the only way to see who
+	// is actually holding the texture set while the game is running -- otherwise the list only
+	// shows up in the log when the level is destroyed. Needed in Release: the memory ceiling we
+	// are chasing is only reachable in a real playthrough.
+	CMD1(CCC_TexturesStat,	"stat_textures"		);
 
 #ifdef DEBUG_MEMORY_MANAGER
 	CMD1(CCC_MemStat,		"dbg_mem_dump"		);
