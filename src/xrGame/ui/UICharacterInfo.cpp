@@ -204,7 +204,10 @@ void CUICharacterInfo::InitCharacter(u16 id)
 	shared_str our_comm, enemy;
 	if ( CUICharacterInfo::get_actor_community( &our_comm, &enemy ) )
 	{
-		if ( xr_strcmp( our_comm, "actor" ) ) // !=
+		// Stock CS hid the faction logo while the actor belonged to no faction (community "actor"),
+		// leaving an empty plate in the inventory. The texture descriptor DOES carry actor_icon /
+		// actor_wide, so draw them like any other community and let the config decide what they show
+		// (ui_pda2_noice.xml points them at the mercenary art).
 		{
 			xr_strcpy( community1, sizeof(community1), our_comm.c_str() );
 			xr_strcat( community1, sizeof(community1), "_icon" );
