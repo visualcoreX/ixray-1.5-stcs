@@ -242,6 +242,10 @@ private:
 
 extern		ENGINE_API		CRenderDevice		Device;
 
+// Startup profiling stamp -- logs "* startup [stage]: N ms" counted from the first call. See device.cpp:
+// the log is flushed in bulk, so these are the only usable startup timings.
+extern	ENGINE_API void		startup_stamp		(LPCSTR stage);
+
 typedef fastdelegate::FastDelegate0<bool>		LOADING_EVENT;
 extern	ENGINE_API xr_list<LOADING_EVENT>		g_loading_events;
 

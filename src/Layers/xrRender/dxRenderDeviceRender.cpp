@@ -3,6 +3,7 @@
 
 #include "ResourceManager.h"
 #include "../../xrEngine/igame_persistent.h"	// g_pGamePersistent (3D PiP lens-frame present suppression)
+#include "../../xrEngine/device.h"				// startup_stamp (startup profiling)
 
 dxRenderDeviceRender::dxRenderDeviceRender()
 	:	Resources(0)
@@ -159,13 +160,22 @@ void dxRenderDeviceRender::SetupStates()
 #endif	//	USE_DX10
 }
 
+// Startup profiling counters (startup_profile.h) -- one set per render DLL.
+u32		g_sh_compile_count	= 0;
+u32		g_sh_compile_ms		= 0;
+CTimer	g_sh_compile_timer;
+
 void dxRenderDeviceRender::OnDeviceCreate(LPCSTR shName)
 {
 	// Signal everyone - device created
 	RCache.OnDeviceCreate		();
 	m_Gamma.Update				();
 	Resources->OnDeviceCreate	(shName);
+	startup_stamp				("  blenders parsed (shaders.xr)");
 	::Render->create			();
+	startup_stamp				("  renderer created");
+	Msg							("* startup: shaders compiled: %u, %u ms in the compiler",
+									g_sh_compile_count, g_sh_compile_ms);
 	Device.Statistic->OnDeviceCreate	();
 
 //#ifndef DEDICATED_SERVER

@@ -173,6 +173,7 @@ void CRenderDevice::Create	()
 		m_pRender			= RenderFactory->CreateRenderDeviceRender();
 	SetupGPU(m_pRender);
 	Log					("Starting RENDER device...");
+	startup_stamp		("render device: begin");
 
 #ifdef _EDITOR
 	psCurrentVidMode[0]	= dwWidth;
@@ -193,11 +194,15 @@ void CRenderDevice::Create	()
 		true
 	);
 
-	string_path			fname; 
+	startup_stamp		("render device: HW created");
+
+	string_path			fname;
 	FS.update_path		(fname,"$game_data$","shaders.xr");
 
 	//////////////////////////////////////////////////////////////////////////
 	_Create				(fname);
+	startup_stamp		("render device: shaders.xr loaded");
 
 	PreCache			(0);
+	startup_stamp		("render device: done");
 }

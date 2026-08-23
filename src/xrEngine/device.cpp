@@ -317,6 +317,12 @@ void CRenderDevice::on_idle		()
 
 	u32 FrameStartTime = TimerGlobal.GetElapsed_ms();
 
+	// first frame actually presented -- i.e. the moment the player sees something
+	{
+		static bool s_first_frame = true;
+		if (s_first_frame)	{ s_first_frame = false; startup_stamp("first frame"); }
+	}
+
 	if (psDeviceFlags.test(rsStatistic))	g_bEnableStatGather	= TRUE;
 	else									g_bEnableStatGather	= FALSE;
 	if(g_loading_events.size())
@@ -443,11 +449,24 @@ void CRenderDevice::message_loop()
     }
 }
 
+// Startup profiling. The engine logs its milestones but never a time, and xrCore buffers the log and
+// flushes it in bulk (measured: all ~150 startup lines land in the file in ONE write), so no amount of
+// watching the file can tell which startup stage is slow. These stamps are the only way to see it.
+// Cheap enough to leave in: five Msg's per process launch.
+static CTimer	g_startup_timer;
+static bool		g_startup_timer_on	= false;
+ENGINE_API void startup_stamp(LPCSTR stage)
+{
+	if (!g_startup_timer_on)	{ g_startup_timer.Start(); g_startup_timer_on = true; }
+	Msg			("* startup [%s]: %u ms", stage, g_startup_timer.GetElapsed_ms());
+}
+
 void CRenderDevice::Run			()
 {
 //	DUMP_PHASE;
 	g_bLoaded		= FALSE;
 	Log				("Starting engine...");
+	startup_stamp	("engine start");
 	thread_name		("X-RAY Primary thread");
 
 	// Startup timers and calculate timer delta
@@ -470,6 +489,7 @@ void CRenderDevice::Run			()
 
 	// Message cycle
 	seqAppStart.Process			(rp_AppStart);
+	startup_stamp				("app start done (main menu built)");
 
 	//CHK_DX(HW.pDevice->Clear(0, 0, D3DCLEAR_TARGET, color_xrgb(0, 0, 0), 1, 0));
 	m_pRender->ClearTarget		();
