@@ -260,7 +260,7 @@ void CGameFont::MasterOut(
 	BOOL bCheckDevice , BOOL bUseCoords , BOOL bScaleCoords , BOOL bUseSkip , 
 	float _x , float _y , float _skip , LPCSTR fmt , va_list p )
 {
-	if ( bCheckDevice && ( ! Device.b_is_Active ) )
+	if ( bCheckDevice && ( ! Device.may_render() ) )
 		return;
 
 	String rs;

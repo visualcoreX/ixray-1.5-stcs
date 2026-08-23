@@ -58,7 +58,14 @@ public:
 	float									fWidth_2, fHeight_2;
 	BOOL									b_is_Ready;
 	BOOL									b_is_Active;
+	// Unfocused and minimised are NOT the same thing: with g_pause_on_minimize off we still draw
+	// while another window has the focus, but a minimised window has no client area to draw into.
+	BOOL									b_is_Minimized;
 	void									OnWM_Activate(WPARAM wParam, LPARAM lParam);
+	// May a frame be drawn right now? Focused always; unfocused only with g_pause_on_minimize
+	// off; minimised never. Both the render loop and CGameFont ask this -- the font had its own
+	// b_is_Active test, which silently dropped every string while the rest of the frame drew.
+	BOOL									may_render() const;
 public:
 	//ref_shader								m_WireShader;
 	//ref_shader								m_SelectionShader;
@@ -139,6 +146,7 @@ public:
 	{
 	    m_hWnd              = NULL;
 		b_is_Active			= FALSE;
+		b_is_Minimized		= FALSE;
 		b_is_Ready			= FALSE;
 		Timer.Start			();
 		m_bNearer			= FALSE;

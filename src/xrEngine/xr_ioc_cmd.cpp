@@ -735,6 +735,7 @@ void CCC_Register()
 	// wins and takes the other down. Both take effect on the next vid_restart.
 	CMD4(CCC_ExclusiveMask,	"rs_fullscreen",	&psDeviceFlags,	rsFullscreen,	rsBorderless	);
 	CMD4(CCC_ExclusiveMask,	"rs_borderless",	&psDeviceFlags,	rsBorderless,	rsFullscreen	);
+	CMD3(CCC_Mask,		"g_pause_on_minimize",	&psDeviceFlags,	rsPauseOnMinimize	);
 	CMD3(CCC_Mask,		"rs_refresh_60hz",		&psDeviceFlags,		rsRefresh60hz			);
 	CMD3(CCC_Mask,		"rs_stats",				&psDeviceFlags,		rsStatistic				);
 	CMD4(CCC_Float,		"rs_vis_distance",		&psVisDistance,		0.4f,	1.5f			);

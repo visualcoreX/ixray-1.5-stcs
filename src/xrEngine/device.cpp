@@ -220,7 +220,11 @@ void CRenderDevice::End		(void)
 
 			CheckPrivilegySlowdown							();
 			
-			if(g_pGamePersistent->GameType()==1)//haCk
+			// A load that finishes while the player is looking at something else used to drop
+			// straight into a pause -- the same "window is not in front" case the option covers,
+			// so it obeys g_pause_on_minimize as well. With the option off the game simply resumes
+			// running behind the other window, which is the whole point of turning it off.
+			if(g_pGamePersistent->GameType()==1 && psDeviceFlags.test(rsPauseOnMinimize))//haCk
 			{
 				WINDOWINFO	wi;
 				GetWindowInfo(m_hWnd,&wi);
@@ -360,7 +364,8 @@ void CRenderDevice::on_idle		()
 #ifndef DEDICATED_SERVER
 	Statistic->RenderTOTAL_Real.FrameStart	();
 	Statistic->RenderTOTAL_Real.Begin		();
-	if (b_is_Active)							{
+	const BOOL b_render = may_render();
+	if (b_render)							{
 		if (Begin())				{
 
 			seqRender.Process						(rp_Render);
@@ -595,10 +600,19 @@ BOOL CRenderDevice::Paused()
 	return g_pauseMngr.Paused();
 };
 
+// Draw even when the window is not focused, unless the pause option is on -- otherwise the
+// picture freezes on its last frame while the world keeps running behind it. A minimised window
+// is always skipped: there is no client area to present into.
+BOOL CRenderDevice::may_render() const
+{
+	return (b_is_Active || (!b_is_Minimized && !psDeviceFlags.test(rsPauseOnMinimize)));
+}
+
 void CRenderDevice::OnWM_Activate(WPARAM wParam, LPARAM lParam)
 {
 	u16 fActive						= LOWORD(wParam);
 	BOOL fMinimized					= (BOOL) HIWORD(wParam);
+	Device.b_is_Minimized			= fMinimized;
 	BOOL bActive					= ((fActive!=WA_INACTIVE) && (!fMinimized))?TRUE:FALSE;
 	
 	if (bActive!=Device.b_is_Active)

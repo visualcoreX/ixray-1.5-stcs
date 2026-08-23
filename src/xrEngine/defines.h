@@ -44,6 +44,13 @@ enum {
 	// with no caption and no frame. Ignored while rsFullscreen is on -- that one is exclusive.
 	rsBorderless					= (1ul<<21ul),
 
+	// Pause the game while the window is not focused (alt-tab / minimise). ON = the stock
+	// behaviour. Off means two things together: the game logic is not paused (see
+	// CGamePersistent::OnAppDeactivate) AND the renderer keeps drawing frames, so a windowed
+	// game on a second monitor stays alive instead of freezing on its last frame. A truly
+	// MINIMISED window is still skipped -- there is no client area to draw into.
+	rsPauseOnMinimize				= (1ul<<22ul),
+
 	// 20-32 bit - reserved to Editor
 };
 

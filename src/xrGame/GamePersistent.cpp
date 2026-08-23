@@ -666,11 +666,21 @@ float CGamePersistent::MtlTransparent(u32 mtl_idx)
 }
 static BOOL bRestorePause	= FALSE;
 static BOOL bEntryFlag		= TRUE;
+// Did WE pause on the way out? Only then may the return lift it: with g_pause_on_minimize off
+// nothing was paused, and calling Pause(FALSE) anyway would clear a pause the player set.
+static BOOL bPausedByDeactivate = FALSE;
 
 void CGamePersistent::OnAppActivate		()
 {
 	bool bIsMP = (g_pGameLevel && Level().game && GameID() != eGameIDSingle);
 	bIsMP		&= !Device.Paused();
+
+	if( !bPausedByDeactivate )
+	{
+		bEntryFlag = TRUE;
+		return;
+	}
+	bPausedByDeactivate = FALSE;
 
 	if( !bIsMP )
 	{
@@ -691,6 +701,15 @@ void CGamePersistent::OnAppDeactivate	()
 
 	bRestorePause = FALSE;
 
+	// Options: "pause on minimise" (g_pause_on_minimize / AF_PAUSE_ON_MINIMIZE, on by default).
+	// Single player only -- a multiplayer session cannot stop because one window lost focus, and
+	// that branch keeps its own timer-less pause.
+	if ( !bIsMP && !psDeviceFlags.test(rsPauseOnMinimize) )
+	{
+		bEntryFlag = FALSE;
+		return;
+	}
+
 	if ( !bIsMP )
 	{
 		bRestorePause			= Device.Paused();
@@ -699,6 +718,7 @@ void CGamePersistent::OnAppDeactivate	()
 	{
 		Device.Pause			(TRUE, FALSE, TRUE, "CGP::OnAppDeactivate MP");
 	}
+	bPausedByDeactivate = TRUE;
 	bEntryFlag = FALSE;
 }
 
