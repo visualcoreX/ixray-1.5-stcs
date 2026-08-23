@@ -148,18 +148,28 @@ void CPatrolPathManager::select_point(const Fvector &position, u32 &dest_vertex_
 			}
 			default			: NODEFAULT;
 		}
-		if ( !(vertex || show_restrictions(m_object)) ) {
-			// ugly HACK, just because Plecha asked...
-			VERIFY2					(
-			vertex || show_restrictions(m_object),
-			make_string(
-				"any vertex in patrol path [%s] is inaccessible for object [%s]",
-				*m_path_name,
-				*m_game_object->cName()
-			)
-		);
-			dest_vertex_id			= m_game_object->ai_location().level_vertex_id();
-			return;
+		if (!vertex) {
+			// No point of the path survives this object's restrictions -- typically a job whose patrol
+			// route lies outside the out_restr its logic set (the Red Forest mechanic's little box, the
+			// Agroprom sniper walk vs agr_smart_terrain_4_4_def). Stock behaviour was to stand still and
+			// re-pick the same impossible path every frame; with asserts enabled it is a fatal error, and
+			// that is what SRP avoided by deleting the out_restr lines altogether.
+			// Walk the route anyway: take the nearest point without the accessibility filter. The
+			// restriction still governs where he may FIGHT and be sent by the simulation; it should not
+			// be able to freeze him on the spot.
+			vertex					= m_path->point(position);
+			if (!vertex) {
+				dest_vertex_id		= m_game_object->ai_location().level_vertex_id();
+				return;
+			}
+
+			// once per path per 10 s -- the old code printed four restriction lines every single frame
+			static u32			s_last_report = 0;
+			if (Device.dwTimeGlobal > s_last_report + 10000) {
+				s_last_report	= Device.dwTimeGlobal;
+				Msg				("~ patrol path [%s] is fully outside the restrictions of [%s] -- walking it regardless",
+								*m_path_name, *m_game_object->cName());
+			}
 		}
 
 		R_ASSERT2			(
