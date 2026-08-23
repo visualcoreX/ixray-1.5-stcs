@@ -73,6 +73,14 @@ bool CStateGroupAttackMoveToHomePointAbstract::check_start_conditions()
 {
 	if ( !object->Home->at_home() )
 	{
+		// Same rule as the single-monster state: a home flagged aggressive is an assault target the
+		// squad has not reached yet, so "I am not at home" must not cancel the fight on the way in.
+		// See monster_state_home_point_attack_inline.h for the full note.
+		if ( object->Home->is_aggressive() )
+		{
+			return false;
+		}
+
 		return true;
 	}
 

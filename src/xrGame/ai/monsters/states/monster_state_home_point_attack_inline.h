@@ -82,6 +82,19 @@ bool CStateMonsterAttackMoveToHomePointAbstract::check_start_conditions()
 {
 	if ( !object->Home->at_home() )
 	{
+		// An AGGRESSIVE home is a place the squad is on its way to TAKE, not a lair it guards:
+		// gulag_general writes "aggressive = true" into the attack jobs it generates for a smart
+		// being assaulted, and mob_home passes it here through set_home(). A monster walking to
+		// such a home is by definition not at home yet, so this test fired every frame of the
+		// march and sent it back to the path instead of letting it fight -- which is why a squad
+		// crossing the map to capture a camp walked straight past the actor without a glance.
+		// Only the outbound case is relaxed: once it HAS arrived, the enemy-outside-home test
+		// below still pulls it back, so a monster holding a camp does not chase across the level.
+		if ( object->Home->is_aggressive() )
+		{
+			return false;
+		}
+
 		return true;
 	}
 

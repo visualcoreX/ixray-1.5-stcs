@@ -75,6 +75,16 @@ void CStateManagerDog::execute()
 		{
 			atack = true;
 		}
+
+		// Dogs decide to attack from the home radii alone (or from 6 m, atack_decision_maxdist),
+		// so a pack marching on a smart it was ordered to capture ignored anything further out --
+		// the home it is measured against is the camp at the far end of the march. An aggressive
+		// home means exactly "we are assaulting this", and while the pack has not arrived yet it
+		// should engage what it meets. Arrived dogs keep the stock behaviour.
+		if ( object->Home->is_aggressive() && !object->Home->at_home() )
+		{
+			atack = true;
+		}
 	}
 
 	if ( !object->is_under_control() )
