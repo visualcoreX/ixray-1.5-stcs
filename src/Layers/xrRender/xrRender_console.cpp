@@ -105,6 +105,10 @@ float		ps_r__ssaHZBvsTEX			=  96.f	;					//RO
 
 int			ps_r__tf_Anisotropic		= 4		;
 
+// Upload a texture only when something actually draws with it. 0 = stock (everything a loaded
+// model references is uploaded immediately, drawn or not).
+int			ps_r__texture_lazy			= 0		;
+
 // R1
 float		ps_r1_ssaLOD_A				= 64.f	;
 float		ps_r1_ssaLOD_B				= 48.f	;
@@ -605,6 +609,10 @@ void		xrRender_initconsole	()
 	// Seconds between automatic model pool trims; 0 = never (stock behaviour).
 	CMD4(CCC_Integer,	"r__models_trim",		&g_models_trim_period,		0,		600		);
 	CMD1(CCC_ModelsTrim,"models_trim"			);
+
+	// Needs a level reload to take effect: it only changes what happens to textures created
+	// from now on. Existing surfaces are never dropped by it.
+	CMD4(CCC_Integer,	"r__texture_lazy",		&ps_r__texture_lazy,		0,		1		);
 
 	CMD4(CCC_Integer,	"r__supersample",		&ps_r__Supersample,			1,		8		);
 

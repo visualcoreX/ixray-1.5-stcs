@@ -49,6 +49,7 @@ extern ECORE_API	float		ps_r__ssaDISCARD	;
 extern ECORE_API	float		ps_r__ssaDONTSORT	;
 extern ECORE_API	float		ps_r__ssaHZBvsTEX	;
 extern ECORE_API	int			ps_r__tf_Anisotropic;
+extern ECORE_API	int			ps_r__texture_lazy;
 
 // R1
 extern ECORE_API	float		ps_r1_ssaLOD_A;

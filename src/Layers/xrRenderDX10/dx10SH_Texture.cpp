@@ -118,6 +118,10 @@ void					CTexture::surface_set	(ID3DBaseTexture* surf )
 
 ID3DBaseTexture*	CTexture::surface_get	()
 {
+	// Reaches the surface without going through bind(), so under lazy upload it has to trigger
+	// the load itself -- the sky blend in dxEnvironmentRender does exactly this.
+	if (!flags.bLoaded)	Load();
+
 	if (flags.bLoadedAsStaging)
 		ProcessStaging();
 

@@ -80,6 +80,12 @@ void  dxRenderDeviceRender::Reset( HWND hWnd, u32 &dwWidth, u32 &dwHeight, float
 	const u32 t_unload		= Device.TimerAsync();
 	HW.Reset(hWnd);
 	const u32 t_hw			= Device.TimerAsync();
+#ifdef USE_DX10
+	// In lazy mode this would upload every texture that has deliberately never been drawn,
+	// undoing the whole point on the first "Apply video settings". Safe to skip: on DX10 the
+	// device survives the resize, so nothing that IS loaded needs recreating (see above).
+	if (!ps_r__texture_lazy)
+#endif
 	ResourcesDeferredUpload();
 	const u32 t_upload		= Device.TimerAsync();
 
@@ -260,6 +266,12 @@ void dxRenderDeviceRender::overdrawEnd()
 
 void dxRenderDeviceRender::DeferredLoad(BOOL E)
 {
+	// Lazy texture upload. A CTexture starts out with no surface and gets one on the first draw
+	// that binds it (CTexture::apply_load -> Load -> PostLoad). Stock code switches deferral OFF
+	// once the level is in (Level_network_start_client.cpp), so from then on every texture a model
+	// pulls in is uploaded whether or not anything ever draws it -- hidden addon bones, weapons
+	// sitting in NPC inventories, LOD-only parts. Keeping deferral on makes those cost a header.
+	if (!E && ps_r__texture_lazy)	return;
 	Resources->DeferredLoad(E);
 }
 
