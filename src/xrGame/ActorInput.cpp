@@ -342,6 +342,13 @@ void CActor::IR_OnKeyboardPress(int cmd)
 			if (inventory().GetActiveSlot() == (u32)GRENADE_SLOT)	break;	// it is already in hand
 			if (!g_Alive())										break;
 
+			// Same gate the quick stab got: a no-weapon zone (sr_no_weapon -> hide_weapon) blocks
+			// every slot but the artefact one, so Activate(GRENADE_SLOT) below would refuse and no
+			// grenade would ever come out. That refusal happens LAST, though -- by then this branch
+			// has already cancelled a running item-use gesture, so at a base the key did nothing
+			// except interrupt the medkit. Ask first.
+			if (inventory().m_slots[GRENADE_SLOT].IsBlocked())	break;
+
 			PIItem gr = inventory().ItemFromSlot(GRENADE_SLOT);
 			if (!gr)
 			{
