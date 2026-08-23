@@ -189,11 +189,18 @@ void CModelPool::Destroy()
 	g_pMotionsContainer->clean(false);
 }
 
+// Period between automatic Trim() passes, in seconds. 0 disables it entirely.
+// Lives here rather than in xrRender_console.cpp because this file is also built for the editor,
+// which does not compile the console.
+int		g_models_trim_period	= 0;
+BOOL	g_models_trim_request	= FALSE;
+
 CModelPool::CModelPool()
 {
 	bLogging				= TRUE;
     bForceDiscard 			= FALSE;
-    bAllowChildrenDuplicate	= TRUE; 
+    bAllowChildrenDuplicate	= TRUE;
+	dwTrimNextTime			= 0;
 	g_pMotionsContainer		= xr_new<motions_container>();
 }
 
@@ -266,6 +273,7 @@ dxRender_Visual* CModelPool::CreateChild(LPCSTR name, IReader* data)
 	// 1. Search for already loaded model
 	dxRender_Visual* Base	= Instance_Find(low_name);
 //.	if (0==Base) Base	 	= Instance_Load(name,data,FALSE);
+	BOOL bShared			= (0!=Base);		// came from Models, i.e. somebody else's base
 	if(0==Base)
 	{
 		if (data)		Base = Instance_Load	(low_name,data,FALSE);
@@ -273,6 +281,15 @@ dxRender_Visual* CModelPool::CreateChild(LPCSTR name, IReader* data)
 	}
 
     dxRender_Visual* Model	= bAllowChildrenDuplicate?Instance_Duplicate(Base):Base;
+
+	// Handing a registered base out as a child without duplicating it creates a reference
+	// nothing counts (CKinematics::m_lod does this). Freeing that base while the parent still
+	// holds the pointer would dangle, so pin it: Trim() then leaves it alone until level change.
+	if (bShared && !bAllowChildrenDuplicate)
+	{
+		for (xr_vector<ModelDef>::iterator I=Models.begin(); I!=Models.end(); I++)
+			if (I->model==Base)	{ I->pinned = TRUE; break; }
+	}
     return					Model;
 }
 
@@ -316,6 +333,28 @@ void	CModelPool::DeleteQueue		()
 	for (u32 it=0; it<ModelsToDelete.size(); it++)
 		DeleteInternal(ModelsToDelete[it]);
 	ModelsToDelete.clear			();
+
+#ifndef _EDITOR
+	// Called from CRender::OnFrame, i.e. outside rendering -- the same safe point the queue
+	// above relies on, so freeing visuals here is legal.
+	if (g_models_trim_request)
+	{
+		g_models_trim_request		= FALSE;
+		Trim						();
+		dwTrimNextTime				= Device.dwTimeGlobal + u32(g_models_trim_period)*1000;
+	}
+	else if (g_models_trim_period>0)
+	{
+		if (0==dwTrimNextTime)		dwTrimNextTime = Device.dwTimeGlobal + u32(g_models_trim_period)*1000;
+		else if (Device.dwTimeGlobal>=dwTrimNextTime)
+		{
+			Trim					();
+			dwTrimNextTime			= Device.dwTimeGlobal + u32(g_models_trim_period)*1000;
+		}
+	}
+	else
+		dwTrimNextTime				= 0;
+#endif
 }
 
 void	CModelPool::Discard	(dxRender_Visual* &V, BOOL b_complete)
@@ -389,6 +428,80 @@ void CModelPool::ClearPool( BOOL b_complete)
 		Discard	(_I->second, b_complete)	;
 	}
 	Pool.clear			();
+}
+
+BOOL CModelPool::IsPinned(const shared_str& name)
+{
+	for (xr_vector<ModelDef>::iterator I=Models.begin(); I!=Models.end(); I++)
+		if (I->name==name)	return I->pinned;
+	return FALSE;
+}
+
+static u32 texture_memory_kb()
+{
+#ifndef _EDITOR
+	u32	m_base=0,c_base=0,m_lmaps=0,c_lmaps=0;
+	if (Device.m_pRender)
+		Device.m_pRender->ResourcesGetMemoryUsage(m_base,c_base,m_lmaps,c_lmaps);
+	return (m_base+m_lmaps)/1024;
+#else
+	return 0;
+#endif
+}
+
+u32	CModelPool::Trim()
+{
+	const u32	tex_before		= texture_memory_kb();
+	const u32	models_before	= (u32)Models.size();
+	const u32	pooled			= (u32)Pool.size();
+
+	// Pass 1: the Pool holds only instances nobody is using -- Delete() parks them here and
+	// Create() takes them back -- so discarding one is always safe. Discard(V,TRUE) also drops
+	// a ref off the base model and frees the base once its last instance is gone; that base is
+	// what owns the textures.
+	{
+		POOL_IT	_I	= Pool.begin();
+		POOL_IT	_E	= Pool.end();
+		for (; _I!=_E; _I++)
+		{
+			// A pinned base is shared as somebody's child -- kill the instance, keep the base.
+			Discard	(_I->second, !IsPinned(_I->first));
+		}
+		Pool.clear	();
+	}
+
+	// Pass 2: a base can also sit at zero refs with NOTHING in the Pool, because Discard(V,FALSE)
+	// decrements without freeing -- that is what models_Clear(FALSE) does on connect, and what
+	// pass 1 does for pinned models. Those orphans are invisible to a loop over the Pool, so
+	// sweep Models directly. Level geometry is not affected: LoadVisuals builds it with
+	// Instance_Create and keeps it in CRender::Visuals, never registering it here.
+	for (int i=(int)Models.size()-1; i>=0; --i)
+	{
+		ModelDef& D		= Models[i];
+		if (D.pinned || D.refs || !D.model)	continue;
+		bForceDiscard	= TRUE;
+		D.model->Release();
+		xr_delete		(D.model);
+		bForceDiscard	= FALSE;
+		Models.erase	(Models.begin()+i);
+	}
+
+	// What is left, and why
+	u32	in_use = 0, pinned_cnt = 0;
+	for (xr_vector<ModelDef>::iterator I=Models.begin(); I!=Models.end(); I++)
+	{
+		if (I->pinned)		pinned_cnt++;
+		else if (I->refs)	in_use++;
+	}
+
+	const u32	freed = models_before - (u32)Models.size();
+#ifndef _EDITOR
+	Msg	("* model pool trim: models %d -> %d (freed %d), pooled instances dropped %d; "
+		 "left %d in use, %d pinned; textures %d K -> %d K",
+		 models_before, (u32)Models.size(), freed, pooled, in_use, pinned_cnt,
+		 tex_before, texture_memory_kb());
+#endif
+	return freed;
 }
 
 dxRender_Visual* CModelPool::CreatePE	(PS::CPEDef* source)

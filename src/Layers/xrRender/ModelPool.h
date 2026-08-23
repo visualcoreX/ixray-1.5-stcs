@@ -26,7 +26,10 @@ private:
 		shared_str			name;
 		dxRender_Visual*		model;
         u32					refs;
-        ModelDef()			{ refs=0;model=0; }
+		// Set when this base model is handed out as somebody else's child (a LOD, typically)
+		// without being duplicated: nothing counts that use, so Trim() must never free it.
+		BOOL				pinned;
+        ModelDef()			{ refs=0;model=0;pinned=FALSE; }
 	};
 
 	typedef xr_multimap<shared_str,dxRender_Visual*,str_pred>	POOL;
@@ -35,14 +38,16 @@ private:
 	typedef REGISTRY::iterator									REGISTRY_IT;
 private:
 	xr_vector<ModelDef>			Models;				// Reference / Base
-	xr_vector<dxRender_Visual*>	ModelsToDelete;		// 
+	xr_vector<dxRender_Visual*>	ModelsToDelete;		//
 	REGISTRY					Registry;			// Just pairing of pointer / Name
 	POOL						Pool;				// Unused / Inactive
 	BOOL						bLogging;
     BOOL						bForceDiscard;
     BOOL						bAllowChildrenDuplicate;
+	u32							dwTrimNextTime;		// next scheduled Trim(), ms of Device.dwTimeGlobal
 
 	void						Destroy	();
+	BOOL						IsPinned(const shared_str& name);
 public:
                             CModelPool			();
 	virtual 				~CModelPool			();
@@ -66,6 +71,9 @@ public:
 	
 	void					Prefetch			();
 	void					ClearPool			( BOOL b_complete );
+	// Mid-level reclaim: drop every pooled (unused) instance and free the base models that
+	// are left with no live instance. Returns how many base models went away.
+	u32						Trim				();
 
 	void					dump 				();
 #ifdef _EDITOR    

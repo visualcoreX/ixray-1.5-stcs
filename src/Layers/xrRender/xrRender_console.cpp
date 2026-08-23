@@ -353,6 +353,26 @@ public:
 	}
 };
 //-----------------------------------------------------------------------
+// Model pool trimming. The pool never gives anything back on its own: ClearPool only runs on
+// level change, so every NPC outfit and every weapon you have met stays resident (with its
+// textures) for as long as you are on the map. On Army Warehouses that is what pushes the
+// 32-bit process past the largest contiguous block D3D can still hand out.
+extern int	g_models_trim_period;
+extern BOOL	g_models_trim_request;
+
+class CCC_ModelsTrim : public IConsole_Command
+{
+public:
+	CCC_ModelsTrim(LPCSTR N) : IConsole_Command(N)  { bEmptyArgsHandled = TRUE; };
+	virtual void Execute(LPCSTR args)
+	{
+		// Deferred to CRender::OnFrame: freeing visuals mid-frame is not allowed.
+		g_models_trim_request = TRUE;
+	}
+	virtual void	Info	(TInfo& I)
+	{ xr_strcpy(I,"free the model pool now (unused models and their textures)"); }
+};
+//-----------------------------------------------------------------------
 class	CCC_Preset		: public CCC_Token
 {
 public:
@@ -581,6 +601,10 @@ void		xrRender_initconsole	()
 	CMD1(CCC_ModelPoolStat,"stat_models"		);
 #endif // DEBUG
 	CMD4(CCC_Float,		"r__wallmark_ttl",		&ps_r__WallmarkTTL,			1.0f,	5.f*60.f);
+
+	// Seconds between automatic model pool trims; 0 = never (stock behaviour).
+	CMD4(CCC_Integer,	"r__models_trim",		&g_models_trim_period,		0,		600		);
+	CMD1(CCC_ModelsTrim,"models_trim"			);
 
 	CMD4(CCC_Integer,	"r__supersample",		&ps_r__Supersample,			1,		8		);
 
