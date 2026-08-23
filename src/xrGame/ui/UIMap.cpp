@@ -408,6 +408,15 @@ void CUILevelMap::Draw()
 		{
 			CMapSpot* sp			= smart_cast<CMapSpot*>((*it));
 			if(!sp)					continue;
+			// A spot driven by an xform animation owns its own size: CUIStatic::Update rewrites it
+			// every frame from the snapshot SetXformLightAnim took (which is the RAW xml size, before
+			// CMapSpot::Load's aspect squeeze) and turns the heading on, so it renders through the
+			// rotated path where uicustomitem.cpp applies the aspect -- including the 3D PDA share.
+			// Resizing it from here just fights the animation: it flattens the pulse and, because
+			// m_originSize IS squeezed, feeds a narrowed width into a path that narrows it again.
+			// Vanilla only ever resized scale="1" spots, so it never touched these; keep it that way.
+			// This is what displaced the new-task highlight ring (ui_pda_blink_point_location_spot).
+			if(sp->HasXformAnim())	continue;
 			Fvector2 sz				= sp->m_originSize;
 			if(sp->m_bScale)
 			{

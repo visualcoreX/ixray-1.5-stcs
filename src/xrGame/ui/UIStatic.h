@@ -80,6 +80,10 @@ public:
 			void		EnableTextHighlighting		(bool value)		{ m_bEnableTextHighlighting = value; }
 			void		SetClrLightAnim				(LPCSTR lanim, bool bCyclic, bool bOnlyAlpha, bool bTextColor, bool bTextureColor);
 			void		SetXformLightAnim			(LPCSTR lanim, bool bCyclic);
+			// True while a transform animation owns this element's size and heading: Update() rewrites
+			// both every frame from the snapshot taken in SetXformLightAnim, so anything that resizes
+			// the element from the outside is either overwritten or fights the animation.
+			bool		HasXformAnim				() const	{ return m_lanim_xform.m_lanim != NULL; }
 			void		ResetClrAnimation			();
 			void		ResetXformAnimation			();
 			bool		IsClrAnimStoped				();
