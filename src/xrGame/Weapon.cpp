@@ -2889,6 +2889,10 @@ bool CWeapon::IsLensedScope() const
 	// saying "no" here restores the stock 2D scope wholesale. GS gates the same way, in its
 	// LensConditions (collimator.pas:82) and IsForceHideZoomTexture (:496).
 	// The MAGNIFICATION is deliberately NOT part of this -- see CGamePersistent::ComputeLensFrame.
+	// R1 has no render target to put the lens picture in: $user$scope is created by CRenderTarget in
+	// the R2/R3 trees only, so on R1 the lens material sampled nothing and the optic went black.
+	// Force the stock 2D scope there -- same test the options menu already applies to the checkbox.
+	if (0==psDeviceFlags.test(rsR2|rsR3))	return false;
 	return !!psActorFlags.test(AF_LENS_3D) && IsLensedScopeCfg();
 }
 

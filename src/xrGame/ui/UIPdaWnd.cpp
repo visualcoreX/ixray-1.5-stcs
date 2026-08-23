@@ -382,6 +382,17 @@ static const u32 PDA_SPAWN_GRACE = 2000;
 // True while the UI (cursor included) belongs on the PDA model's screen and must NOT also be
 // painted over the viewport. Used by CUIPdaWnd::Draw and CUICursor::OnRender -- they must agree,
 // or one of them flashes for the frames the other doesn't.
+// Is the 3D PDA available at all? AF_PDA_3D is the player's switch; the renderer test is not
+// optional. $user$ui -- the render target the PDA model's screen material samples -- is created by
+// CRenderTarget in the R2/R3 trees only, so on R1 the screen is black however well the rest works.
+// Everything that used to read AF_PDA_3D directly must come through here, or R1 gets a half-enabled
+// PDA: the phantom spawns and plays anm_show in your hands with a dead screen, while the flat window
+// draws over it. See CWeapon::IsLensedScope for the same rule on the scope lens.
+bool gwr_pda_3d_enabled()
+{
+	return	psDeviceFlags.test(rsR2|rsR3) && !!psActorFlags.test(AF_PDA_3D);
+}
+
 bool gwr_pda_screen_active()
 {
 	// AF_PDA_3D off = the stock Clear Sky PDA. This one function is the whole switch: the window
@@ -389,7 +400,7 @@ bool gwr_pda_screen_active()
 	// ask it, so saying "no" here restores the vanilla full-screen behaviour everywhere at once.
 	// (The phantom is what it really tests, and Show() doesn't spawn one when the flag is off --
 	// this is the belt to that braces, and it also covers the spawn grace below.)
-	if (!psActorFlags.test(AF_PDA_3D))	return false;
+	if (!gwr_pda_3d_enabled())	return false;
 	if (pda_hud_item())	return true;
 	return s_pda_shown && (Device.dwTimeGlobal - s_pda_open_tm < PDA_SPAWN_GRACE);
 }
@@ -415,7 +426,9 @@ void CUIPdaWnd::Show()
 {
 	InventoryUtilities::SendInfoToActor	("ui_pda");
 	if (g_pda_dbg)	Msg("~ pda: Show()");
-	const bool pda_3d					= !!psActorFlags.test(AF_PDA_3D);
+	// gwr_pda_3d_enabled, not the bare flag: this is what spawns the hud phantom and starts anm_show,
+	// and on R1 that gave a PDA in the hands whose screen could never be filled.
+	const bool pda_3d					= gwr_pda_3d_enabled();
 	if (pda_3d)
 		gwr_call_pda					("gwr_eatable.on_pda_show");
 	pda_reset_cursor					(m_dwLastClickTime);
@@ -625,7 +638,7 @@ void CUIPdaWnd::Update()
 	// ShowGameIndicators only sets a flag, so calling it every frame costs nothing.
 	// With the 3D PDA switched off there is nothing to lower the PDA into view for, so leave the
 	// indicators to StartMenu/StopMenu -- stock behaviour is to blank them for the full-screen window.
-	if (HUD().GetUI() && psActorFlags.test(AF_PDA_3D))
+	if (HUD().GetUI() && gwr_pda_3d_enabled())
 	{
 		CWeapon* pw = smart_cast<CWeapon*>(hi);
 		const bool zoom_now  = (pw && !!pw->IsZoomed());
