@@ -255,8 +255,12 @@ void	CRenderTarget::phase_combine	()
 		//g_pGamePersistent->Environment().RenderClouds	();
 		RImplementation.render_forward	();
 		// under MSAA, draw world tracers here (scene depth is bound) so the HUD occludes them;
-		// the game's UI-pass tracer render is skipped this frame. Non-MSAA keeps the UI-pass path.
-		if (RImplementation.o.dx10_msaa && g_pGamePersistent)	g_pGamePersistent->OnRenderForward();
+		// the game's UI-pass tracer render is skipped this frame. Non-MSAA keeps the UI-pass path --
+		// EXCEPT on a lens frame, which is snapshotted into $user$scope right below and never
+		// presented, so without this the 3D scope showed a world with no tracers in it (that is what
+		// R2 hit, where every frame takes the UI-pass path).
+		if (g_pGamePersistent && (RImplementation.o.dx10_msaa || g_pGamePersistent->m_bLensFrameNow))
+			g_pGamePersistent->OnRenderForward();
 		if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_main()	;	// PP-UI
 	}
 

@@ -192,6 +192,13 @@ void	CRenderTarget::phase_combine	()
 		RCache.set_ColorWriteEnable		();
 		//g_pGamePersistent->Environment().RenderClouds	();
 		RImplementation.render_forward	();
+		// World tracers normally go in with the UI pass (CLevel::OnRender), which runs long after this
+		// phase -- so on a LENS frame they missed the $user$scope snapshot below and the scope showed a
+		// world without a single tracer in it. Draw them here on lens frames only: that frame is never
+		// presented (PresentBridgeLens puts the last normal frame back), so nothing about the normal
+		// picture changes, and CBulletManager::Render raises its own guard so the UI pass does not draw
+		// them a second time. Same call R3 makes in its MSAA path, for the same depth-ordering reason.
+		if (g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow)	g_pGamePersistent->OnRenderForward();
 		if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_main()	;	// PP-UI
 	}
 
