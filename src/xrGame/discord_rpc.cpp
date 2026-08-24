@@ -22,7 +22,7 @@ namespace
 // application. Overridable through the optional [discord_rpc] config section below.
 const s64		DEFAULT_CLIENT_ID	= 1541182300086345779ll;
 LPCSTR			DEFAULT_LARGE_IMAGE	= "csga_dirt_skull";	// the mod's own logo, uploaded as an Art Asset
-LPCSTR			DEFAULT_LARGE_TEXT	= "Clear Sky Gunslinger Addon";
+LPCSTR			DEFAULT_LARGE_TEXT	= "Clear Sky Gunslinger Mod";
 LPCSTR			DEFAULT_PATCH		= "stalker_patch_stalker";
 
 LPCSTR			CFG_SECTION			= "discord_rpc";
