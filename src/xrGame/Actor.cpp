@@ -311,6 +311,8 @@ CActor::CActor() : CEntityAlive()
 
 CActor::~CActor()
 {
+	m_legs_controller.destroy();	// the legs hold a visual of their own -- give it back to the render
+
 	xr_delete				(m_location_manager);
 
 	xr_delete				(m_memory);
@@ -1024,6 +1026,10 @@ void CActor::UpdateCL	()
 		if (g_pGamePersistent)
 			g_pGamePersistent->m_bSuppressActorShadow = (Device.dwTimeGlobal < m_dwShadowSuppressUntil);
 	}
+	// First-person legs: rebuild/repose the second body copy. Drawing it is the renderer's call,
+	// through IGame_Persistent::RenderFirstPersonLegs -- see player_legs.cpp.
+	m_legs_controller.update		(this);
+
 	gwr_update_burning				(this);		// burn wound drains: fast while beating it out, slow otherwise
 
 	// GS bayonet stab: land the melee hit at the scheduled mark (the ak74_bayonet plays on the weapon's own hud)
@@ -1540,6 +1546,15 @@ void CActor::shedule_Update	(u32 DT)
 	Check_for_AutoPickUp						();
 };
 #include "debug_renderer.h"
+// Called from the renderer's NORMAL phase only (IGame_Persistent::RenderFirstPersonLegs ->
+// CGamePersistent::RenderFirstPersonLegs), because in first person the actor is invisible and the
+// visibility loop skips him. Deliberately NOT part of renderable_Render: that one is reached from
+// the SMAP pass, and drawing the legs there would double the silhouette.
+void CActor::RenderLegs()
+{
+	m_legs_controller.render();
+}
+
 void CActor::renderable_Render	()
 {
 	VERIFY(_valid(XFORM()));

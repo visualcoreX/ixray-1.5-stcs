@@ -2302,6 +2302,39 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	CMD3(CCC_Mask,			"hud_hide_quick_slots",&psActorFlags,AF_HIDE_QUICK_SLOTS);
 	// "Discord Rich Presence" checkbox in the video options (see discord_rpc.cpp).
 	CMD3(CCC_Mask,			"discord_rpc",		&psActorFlags,	AF_DISCORD_RPC);
+	// "First-person body" checkbox in the ADVANCED video options. OFF by default.
+	psActorFlags.set(AF_LEGS, false);
+	CMD3(CCC_Mask,			"g_legs",			&psActorFlags,	AF_LEGS);
+	// First-person legs (player_legs.cpp). OFF by default -- it needs a per-outfit legs_visual to
+	// look right, and the offsets below are what you tune it with.
+	{
+		extern float	g_legs_fwd_offset;
+		extern float	g_legs_spine_offset_y;
+		extern BOOL		g_legs_attach_to_camera;
+		extern BOOL		g_legs_in_low_crouch;
+		extern BOOL		g_legs_arms;
+		extern BOOL		g_legs_anchor_pelvis;
+		extern float	g_legs_body_offset;
+		extern float	g_legs_align_speed;
+		extern BOOL		g_legs_yaw_hold;
+		extern float	g_legs_yaw_deadzone;
+		extern float	g_legs_yaw_speed;
+		extern float	g_legs_sprint_offset;
+		extern float	g_legs_sprint_speed;
+		CMD4(CCC_Integer,	"g_legs_arms",				&g_legs_arms,				0, 1);
+		CMD4(CCC_Integer,	"g_legs_anchor_pelvis",		&g_legs_anchor_pelvis,		0, 1);
+		CMD4(CCC_Float,		"g_legs_body_offset",		&g_legs_body_offset,		-2.0f, 2.0f);
+		CMD4(CCC_Float,		"g_legs_align_speed",		&g_legs_align_speed,		0.f, 30.0f);
+		CMD4(CCC_Integer,	"g_legs_yaw_hold",			&g_legs_yaw_hold,			0, 1);
+		CMD4(CCC_Float,		"g_legs_yaw_deadzone",		&g_legs_yaw_deadzone,		0.f, 180.f);
+		CMD4(CCC_Float,		"g_legs_yaw_speed",			&g_legs_yaw_speed,			10.f, 1440.f);
+		CMD4(CCC_Float,		"g_legs_sprint_offset",		&g_legs_sprint_offset,		-2.f, 2.f);
+		CMD4(CCC_Float,		"g_legs_sprint_speed",		&g_legs_sprint_speed,		0.5f, 30.f);
+		CMD4(CCC_Float,		"g_legs_fwd_offset",		&g_legs_fwd_offset,			-2.0f, 2.0f);
+		CMD4(CCC_Float,		"g_legs_spine_offset_y",	&g_legs_spine_offset_y,		-1.0f, 1.0f);
+		CMD4(CCC_Integer,	"g_legs_attach_to_camera",	&g_legs_attach_to_camera,	0, 1);
+		CMD4(CCC_Integer,	"g_legs_in_low_crouch",		&g_legs_in_low_crouch,		0, 1);
+	}
 	// Top-left overlay for every playing hud blend: source .omf, motion name, time and state.
 	// Registered here rather than in the DEBUG block so it works in a Release build.
 	CMD4(CCC_Integer,		"hud_dbg_anim",		&g_show_hud_anim_info,	0, 1);

@@ -16,6 +16,7 @@
 #include "ui_defs.h"
 
 #include "step_manager.h"
+#include "player_legs.h"
 #include "script_export_space.h"
 
 using namespace ACTOR_DEFS;
@@ -892,6 +893,12 @@ private:
 public:
 	virtual void			On_SetEntity();
 	virtual void			On_LostEntity();
+
+	// First-person legs (g_legs). A second copy of the actor's visual, driven from his skeleton and
+	// hung off the camera -- the actor himself stays setVisible(FALSE) in first person, so the render
+	// asks for this one by name through IGame_Persistent::RenderFirstPersonLegs. See player_legs.cpp.
+	void					RenderLegs						();
+	player_legs_controller	m_legs_controller;
 
 static CPhysicsShell		*actor_camera_shell;
 

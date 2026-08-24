@@ -42,6 +42,10 @@ enum{
 	// ON by default; the checkbox lives in the video options. Clearing the bit disconnects
 	// from Discord instead of merely freezing the last state. See discord_rpc.cpp.
 	AF_DISCORD_RPC		=(1<<18),
+	// First-person body/legs (console: g_legs, checkbox in the ADVANCED video options).
+	// OFF by default. On the mask rather than an int cvar because an options-menu checkbox
+	// binds to a CCC_Mask bit. See player_legs.cpp.
+	AF_LEGS				=(1<<19),
 };
 
 extern Flags32 psActorFlags;

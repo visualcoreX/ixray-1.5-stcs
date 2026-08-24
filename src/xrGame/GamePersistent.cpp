@@ -888,6 +888,13 @@ bool CGamePersistent::ComputeLensFrame(float& out_fov)
 	return true;
 }
 
+// The renderer asks once per NORMAL phase; the actor decides whether there is anything to draw.
+void CGamePersistent::RenderFirstPersonLegs()
+{
+	if (g_pGameLevel && g_pGameLevel->bReady && Actor())
+		Actor()->RenderLegs();
+}
+
 void CGamePersistent::OnRenderForward()
 {
 	// draw world tracers with the scene depth still bound (MSAA path) so the HUD occludes them

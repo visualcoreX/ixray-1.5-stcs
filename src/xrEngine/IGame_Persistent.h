@@ -171,6 +171,12 @@ public:
 	// g_bDisableAllInput lives in xrGame. So the game parks the answer here and the renderer reads it.
 	// Appended at the END of the class, same ABI rule as OnRenderForward above.
 	bool							m_bSuppressActorShadow = false;
+
+	// First-person legs. In first person the actor is setVisible(FALSE), so the visibility loop in
+	// CRender::Calculate never reaches him -- exactly the reason the shadow block above has to call
+	// him by hand. The renderer therefore asks the game once per NORMAL phase to add the legs visual.
+	// Render calls game, same bridge shape as OnRenderForward / OnRenderPdaUI.
+	virtual void					RenderFirstPersonLegs	() {};
 };
 
 class IMainMenu

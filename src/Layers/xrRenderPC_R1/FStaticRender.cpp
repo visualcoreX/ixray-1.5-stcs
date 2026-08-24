@@ -505,6 +505,17 @@ void CRender::Calculate				()
 			}
 		}
 
+		// First-person legs: the actor is setVisible(FALSE) in first person, so the loop above never
+		// reaches him and the game has to be asked by hand. See IGame_Persistent::RenderFirstPersonLegs.
+		// set_Object gives the stand-in body the actor's own lighting (apply_object reads his ROS);
+		// leaving it at 0 would light it with whatever was set last.
+		if (g_pGamePersistent && (phase==PHASE_NORMAL))
+		{
+			set_Object										(g_pGameLevel->CurrentViewEntity());
+			g_pGamePersistent->RenderFirstPersonLegs		();
+			set_Object										(0);
+		}
+
 		// Calculate miscelaneous stuff
 		L_Shadows->calculate								();
 		L_Projector->calculate								();

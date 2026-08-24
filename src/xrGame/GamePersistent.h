@@ -84,6 +84,7 @@ public:
 	virtual void		OnRenderPPUI_PP			();
 	virtual void		OnRenderForward			();
 	virtual bool		OnRenderPdaUI			();	// 3D PDA: draw the window for the $user$ui snapshot
+	virtual void		RenderFirstPersonLegs	();	// g_legs: the invisible actor's stand-in body
 	virtual bool		OnRenderScopeActive		();	// 3D PiP scope: true while aiming through a lensed scope
 	virtual bool		ComputeLensFrame		(float& out_fov);	// 3D PiP double-render: decide lens frame + magnified FOV
 	virtual	void		LoadTitle				(LPCSTR str);

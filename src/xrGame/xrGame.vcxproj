@@ -1290,6 +1290,7 @@
     <ClInclude Include="physic_item_inline.h" />
     <ClInclude Include="ph_shell_interface.h" />
     <ClInclude Include="player_hud.h" />
+    <ClInclude Include="player_legs.h" />
     <ClInclude Include="player_name_modifyer.h" />
     <ClInclude Include="poses_blending.h" />
     <ClInclude Include="pose_extrapolation.h" />
@@ -3856,6 +3857,7 @@
     <ClCompile Include="physics_shell_animated.cpp" />
     <ClCompile Include="physic_item.cpp" />
     <ClCompile Include="player_hud.cpp" />
+    <ClCompile Include="player_legs.cpp" />
     <ClCompile Include="player_hud_tune.cpp" />
     <ClCompile Include="player_name_modifyer.cpp" />
     <ClCompile Include="poses_blending.cpp" />
