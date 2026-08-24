@@ -888,6 +888,8 @@
     <ClInclude Include="detail_path_manager_inline.h" />
     <ClInclude Include="detail_path_manager_space.h" />
     <ClInclude Include="dijkstra.h" />
+    <ClInclude Include="discord_game_sdk.h" />
+    <ClInclude Include="discord_rpc.h" />
     <ClInclude Include="dijkstra_inline.h" />
     <ClInclude Include="DisablingParams.h" />
     <CustomBuild Include="dRayMotions.h" />
@@ -3018,6 +3020,7 @@
     </ClCompile>
     <ClCompile Include="detail_path_manager.cpp" />
     <ClCompile Include="detail_path_manager_smooth.cpp" />
+    <ClCompile Include="discord_rpc.cpp" />
     <ClCompile Include="DisablingParams.cpp" />
     <ClCompile Include="dRayMotions.cpp" />
     <ClCompile Include="DummyArtifact.cpp" />

@@ -38,6 +38,10 @@ enum{
 		// = they are drawn, as before. The slots keep working either way -- this is display only.
 		// See CUIMainIngameWnd::UpdateQuickSlots.
 		AF_HIDE_QUICK_SLOTS	=(1<<17),
+	// Discord Rich Presence: level, faction and active task shown to the player's friends.
+	// ON by default; the checkbox lives in the video options. Clearing the bit disconnects
+	// from Discord instead of merely freezing the last state. See discord_rpc.cpp.
+	AF_DISCORD_RPC		=(1<<18),
 };
 
 extern Flags32 psActorFlags;

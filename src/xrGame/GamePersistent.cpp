@@ -30,6 +30,7 @@ extern bool gwr_pda_screen_active();
 #include "spectator.h"
 #include "string_table.h"
 #include "Actor_Flags.h"
+#include "discord_rpc.h"
 
 // Call of Pripyat's "press any key when the level is ready" gate. The engine holds the last
 // precache frame (CRenderDevice::End) when PreCache was told to; this decides whether it should be
@@ -164,6 +165,9 @@ void CGamePersistent::OnAppStart()
 
 void CGamePersistent::OnAppEnd	()
 {
+	// let Discord drop the presence while the process is still healthy
+	DiscordRPC().Shutdown		();
+
 	if(m_pMainMenu->IsActive())
 		m_pMainMenu->Activate(false);
 
@@ -529,6 +533,9 @@ void CGamePersistent::OnFrame	()
 
 	if( !m_pMainMenu->IsActive() )
 		m_pMainMenu->DestroyInternal(false);
+
+	// Above the "no level" return on purpose: sitting in the main menu is a state worth showing.
+	DiscordRPC().OnFrame		();
 
 	if(!g_pGameLevel)			return;
 	if(!g_pGameLevel->bReady)	return;

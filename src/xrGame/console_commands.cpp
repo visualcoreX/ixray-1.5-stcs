@@ -1994,6 +1994,9 @@ void CCC_RegisterCommands()
 	psActorFlags.set(AF_LENS_3D, true);
 	// CoP's press-any-key gate at the end of a load ships OFF here; the options checkbox turns it on.
 	psActorFlags.set(AF_KEYPRESS_ON_START, false);
+	// Discord Rich Presence on by default -- it costs nothing when Discord is not installed
+	// (the dll is simply never found) and the video options carry the switch.
+	psActorFlags.set(AF_DISCORD_RPC, true);
 	CMD3(CCC_Mask,				"g_always_run",			&psActorFlags,	AF_ALWAYSRUN);
 	CMD1(CCC_GameDifficulty,	"g_game_difficulty"		);
 
@@ -2297,6 +2300,8 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	}
 	// Hide the quick-use slot icons on the hud. Display only -- the slots keep working.
 	CMD3(CCC_Mask,			"hud_hide_quick_slots",&psActorFlags,AF_HIDE_QUICK_SLOTS);
+	// "Discord Rich Presence" checkbox in the video options (see discord_rpc.cpp).
+	CMD3(CCC_Mask,			"discord_rpc",		&psActorFlags,	AF_DISCORD_RPC);
 	// Top-left overlay for every playing hud blend: source .omf, motion name, time and state.
 	// Registered here rather than in the DEBUG block so it works in a Release build.
 	CMD4(CCC_Integer,		"hud_dbg_anim",		&g_show_hud_anim_info,	0, 1);
