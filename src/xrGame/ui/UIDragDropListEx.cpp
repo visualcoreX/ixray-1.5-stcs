@@ -667,7 +667,16 @@ Ivector2 CUICellContainer::FindFreeCell	(const Ivector2& _size)
 				if(IsRoomFree(tmp,_size))
 					return  tmp;
 
-		R_ASSERT2		(0,"there are no free room to place item");
+		// Name the list, its grid and the item that would not fit. The bare "no free room" told us
+		// nothing about WHICH of the fixed-size lists (belt / weapon slots / outfit / detector /
+		// quick slots) overflowed, and every one of them has a different cause.
+		string512		_dbg;
+		xr_sprintf		(_dbg, sizeof(_dbg),
+						 "there are no free room to place item: list [%s], capacity %dx%d, item %dx%d, %d items in it",
+						 m_pParentDragDropList->WindowName().c_str(),
+						 m_cellsCapacity.x, m_cellsCapacity.y, _size.x, _size.y,
+						 m_pParentDragDropList->ItemsCount());
+		R_ASSERT2		(0,_dbg);
 	}
 	return			tmp;
 }
