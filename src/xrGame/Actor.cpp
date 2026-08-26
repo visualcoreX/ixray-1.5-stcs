@@ -811,7 +811,14 @@ void CActor::Die	(CObject* who)
 			{
 				if((*I).m_pIItem)
 				{
-					if (IsGameTypeSingle())
+					// ...but never the hud-only gesture phantom (the 3D PDA animator, an eat/medkit
+					// animator, the quick kick). Death drops whatever is in the active slot, and a
+					// phantom carries a HUD visual with no physics shapes at all, so building a shell
+					// for it yields a NaN box: "_valid( c )" in CPhysicsShellHolder::correct_spawn_pos
+					// on dev_pda_hud. It is not an inventory item either -- see g_PerformDrop, which
+					// refuses the same thing for the DROP key. Leaving it in the inventory is safe: the
+					// script binder owns it and the corpse is the end of the session anyway.
+					if (IsGameTypeSingle() && !IsGesturePhantom((*I).m_pIItem))
 						(*I).m_pIItem->SetDropManual(TRUE);
 					else
 					{
@@ -1633,8 +1640,23 @@ bool CActor::IsGesturePhantom(PIItem pItem)
 	// gwr_base_usable: it spawns from weapons\gwr_animation and wears the fake visual. Testing
 	// `ammo_class` instead -- which is what the drop used to do -- is worthless here, because that base
 	// section CARRIES ammo_class, so every phantom read as a real firearm.
-	return pSettings->line_exist(s, "visual") &&
-		   0 == xr_strcmp(pSettings->r_string(s, "visual"), "gwr\\main\\fake_object");
+	if (pSettings->line_exist(s, "visual") &&
+		0 == xr_strcmp(pSettings->r_string(s, "visual"), "gwr\\main\\fake_object"))
+		return true;
+
+	// ...and the ones that OVERRIDE the fake visual with a real model: the 3D PDA animator carries
+	// dynamics\devices\dev_pda\dev_pda_hud so there is something to see in third person. The visual
+	// test alone let it slip past every phantom guard -- including the death drop, where a HUD model
+	// with no physics shapes produced a NaN box in correct_spawn_pos and killed the game. What ALL of
+	// them share instead is the binder that owns them: script_binding = gwr_eatable.<init*>, and
+	// nothing but a phantom is bound to that script (grep of gamedata\configs: init / init_pda /
+	// init_kick / init_action, plus init_trash which is a physics object and never an inventory item).
+	if (pSettings->line_exist(s, "script_binding"))
+	{
+		LPCSTR b = pSettings->r_string(s, "script_binding");
+		if (b && 0 == strncmp(b, "gwr_eatable.", 12))	return true;
+	}
+	return false;
 }
 
 void CActor::PerformDropForced()
