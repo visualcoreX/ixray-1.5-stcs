@@ -335,6 +335,20 @@ bool CInventory::Slot(PIItem pIItem, bool bNotActivate, bool strict_placement)
 	if(m_slots[pIItem->GetSlot()].m_pIItem == pIItem)
 		return false;
 
+	// The slot the resolve above settled on may still be held by ANOTHER item, and the write at the
+	// bottom of this function overwrites it without asking. Stock code only ever got here with
+	// single-slot items, where a save can hold at most one item per slot, so it never mattered. With
+	// the interchangeable weapon slots two weapons CAN come back from a save both marked
+	// eItemPlaceSlot and resolve onto the same index -- and Take() restores those with
+	// strict_placement, which skips the CanPutInSlot test below. The loser was then silently
+	// overwritten while keeping m_slot and eItemPlaceSlot: a ghost occupant of a slot it is not in.
+	// The actor menu believes it and hands it to the slot's drag-drop list, which already holds the
+	// winner -- R_ASSERT in CUICellContainer::FindFreeCell, "there are no free room to place item",
+	// fired right after loading a quicksave.
+	// Refusing here lets Take() fall through to its belt/ruck placement, where the item belongs.
+	if (m_slots[pIItem->GetSlot()].m_pIItem != NULL)
+		return false;
+
 	if (!IsGameTypeSingle())
 	{
 		u16 real_parent = pIItem->object().H_Parent() ? pIItem->object().H_Parent()->ID() : u16(-1);
