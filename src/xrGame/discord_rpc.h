@@ -7,10 +7,10 @@
 // so it also works while the player sits in the main menu, and it cannot go stale.
 //
 // What the player's friends see:
-//   details    = "<Exploring:> <level>"   both halves come from the string table, so the whole
-//                                         line follows whatever localization the game runs in
-//   state      = the active storyline task title (or "no task" when there is none)
-//   small icon = the faction patch, its tooltip = the localized community name
+//   details    = "<level> | <storyline task>"  both halves come from the string table, so the whole
+//                                              line follows whatever localization the game runs in
+//   state      = the side task, on a line of its own (empty when there is none)
+//   small icon = the faction patch, its tooltip = "<community> | <rank>", both localized
 //
 // discord_game_sdk.dll is loaded lazily with LoadLibrary and every entry point is resolved by hand:
 // a missing or broken dll must never keep xrGame.dll itself from loading, and a player without

@@ -9,6 +9,7 @@
 #include "GametaskManager.h"
 #include "GameTask.h"
 #include "string_table.h"
+#include "ui/UIInventoryUtilities.h"
 
 #include "discord_game_sdk.h"
 
@@ -331,13 +332,10 @@ void CDiscordRPC::BuildPresence()
 
 	// ---- location ------------------------------------------------------------------------
 	// The level ids double as string table ids (ui_st_pda.xml: "marsh", "escape", ...), so the
-	// caption is localized for free; an unknown level falls back to printing its id.
+	// caption is localized for free; an unknown level falls back to printing its id. The line it
+	// goes on is composed further down: it shares it with the storyline task.
 	string256		level_name;
 	translate_utf8	(Level().name().c_str(), level_name, sizeof(level_name));
-
-	string256		prefix;
-	translate_utf8	("ui_st_discord_exploring", prefix, sizeof(prefix));
-	strconcat		((int)sizeof(details), details, prefix, " ", level_name);
 
 	// ---- faction -------------------------------------------------------------------------
 	// NO_COMMUNITY_INDEX is not just "no faction" -- CHARACTER_COMMUNITY::id() would run it
@@ -349,26 +347,59 @@ void CDiscordRPC::BuildPresence()
 		if (community.size())
 		{
 			xr_strcpy(small_image, community_patch_image(community.c_str()));
-			translate_utf8(community.c_str(), small_text, sizeof(small_text));
+
+			// Tooltip is "<faction> | <rank>". GetRankAsText turns the rank value into the
+			// game_relations `rating_names` id (novice / experienced / veteran / master), which is
+			// a string table id exactly like the community one, so both halves stay localized.
+			string256	community_name;
+			string256	rank_name;
+			translate_utf8(community.c_str(), community_name, sizeof(community_name));
+			translate_utf8(InventoryUtilities::GetRankAsText(Actor()->Rank()), rank_name, sizeof(rank_name));
+
+			if (rank_name[0])
+				strconcat((int)sizeof(small_text), small_text, community_name, " | ", rank_name);
+			else
+				xr_strcpy(small_text, community_name);
 		}
 	}
 
 	// ---- task ----------------------------------------------------------------------------
 	// Only once there is an actor: before that the task registry behind ActiveTask has not been
-	// read out of the save yet. The storyline task is the interesting one, a side task is what
-	// gets shown while the main line is between assignments.
-	CGameTask* task	= NULL;
+	// read out of the save yet. The storyline task shares the first line with the level, the side
+	// task gets the second one to itself -- that is how three things fit into the two single-line
+	// labels Discord gives us (details/state; a newline inside one does not split it).
+	CGameTask* story	= NULL;
+	CGameTask* side		= NULL;
 	if (Actor())
 	{
-		task		= Level().GameTaskManager().ActiveTask(eTaskTypeStoryline);
-		if (!task)
-			task	= Level().GameTaskManager().ActiveTask(eTaskTypeAdditional);
+		story		= Level().GameTaskManager().ActiveTask(eTaskTypeStoryline);
+		side		= Level().GameTaskManager().ActiveTask(eTaskTypeAdditional);
 	}
 
-	if (task && task->m_Title.size())
-		translate_utf8(task->m_Title.c_str(), state, sizeof(state));
+	string256		story_title;
+	string256		side_title;
+	story_title[0]	= 0;
+	side_title[0]	= 0;
+
+	if (story && story->m_Title.size())
+		translate_utf8(story->m_Title.c_str(), story_title, sizeof(story_title));
+	if (side && side->m_Title.size())
+		translate_utf8(side->m_Title.c_str(), side_title, sizeof(side_title));
+
+	// The "no task" caption belongs in the task slot only when there is NO active task at all: with a
+	// side task running below, printing it next to the level would contradict the line underneath.
+	if (story_title[0])
+		strconcat	((int)sizeof(details), details, level_name, " | ", story_title);
+	else if (side_title[0])
+		xr_strcpy	(details, level_name);
 	else
-		translate_utf8("ui_st_discord_no_task", state, sizeof(state));
+	{
+		string256	no_task;
+		translate_utf8("ui_st_discord_no_task", no_task, sizeof(no_task));
+		strconcat	((int)sizeof(details), details, level_name, " | ", no_task);
+	}
+
+	xr_strcpy		(state, side_title);	// empty when there is none -- Discord then shows no second line
 
 	PushPresence	(details, state, small_image, small_text);
 }
