@@ -1114,6 +1114,25 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 		if (gwr_new > room)	gwr_new = room;
 		if (gwr_new < 0)	gwr_new = 0;
 	}
+	// A MAGAZINE weapon had the same blanket over-show: past the insert mark the bones assumed the magazine
+	// came back FULL, so reloading a pistol with a single round left in the pouch drew a full stack of
+	// bullets (user 2026-08-25, on the PM: load one round and the magazine shows all of them). Predict the
+	// real fill the way ReloadMagazine performs it: what survives the reload, plus what is actually on hand.
+	int gwr_reload_total = iMagazineSize;
+	if (reloading && !per_barrel && !unlimited_ammo())
+	{
+		// A type change ejects the whole magazine, except for the one old-type round that
+		// save_cartridge_in_ammochange parks in the chamber (same conditions as ReloadMagazine).
+		const bool typechange = !m_bLockType && !m_magazine.empty() &&
+								(reload_type != (u32)m_magazine.back().m_LocalAmmoType);
+		const bool save_chamber = typechange && m_bAmmoInChamber && m_bSaveCartridgeInAmmoChange
+								&& !IsGrenadeMode() && (iAmmoElapsed > 0);
+		const int  kept  = typechange ? (save_chamber ? 1 : 0) : (int)m_magazine.size();
+		int        fresh = GetAmmoCountByType(reload_type);		// inventory only, magazine excluded
+		if (fresh < 0)	fresh = 0;
+		gwr_reload_total = kept + fresh;
+		if (gwr_reload_total > iMagazineSize)	gwr_reload_total = iMagazineSize;
+	}
 	// Spent-casing colour for the empty barrels BEFORE the insert mark. For an empty magazine last_type falls
 	// back to m_ammoType -- but an ammo change (old type exhausted) or a re-selected type has already flipped
 	// m_ammoType, so the casings would show the wrong colour. Track the type the magazine LAST held (updated
@@ -1145,14 +1164,14 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 			else if (i < gwr_kept + gwr_new)	{ loaded = true;  t = reload_type; }
 			else								{ loaded = false; t = reload_type; }	// empty barrel: shell colour matches the type being loaded (blue bullet -> blue shell)
 		}
-		else if (reloading && inserted)			{ loaded = (i < mag_visible(iMagazineSize)); t = reload_type; }	// all filled (minus chamber), new type
+		else if (reloading && inserted)			{ loaded = (i < mag_visible(gwr_reload_total)); t = reload_type; }	// only what actually loads (minus chamber), new type
 		else if (i < mag_visible((int)m_magazine.size()))	{ loaded = true;  t = (u32)m_magazine[i].m_LocalAmmoType; }
 		else									{ loaded = false; t = last_type; }			// spent shell keeps the current colour
 		bstate[i] = (loaded ? 1 : 0) | (int(t) << 1);
 	}
 
 	// Also the flat count/type (for the single-type advanced & count modes).
-	int eff_count = mag_visible((reloading && inserted) ? iMagazineSize : iAmmoElapsed);
+	int eff_count = mag_visible((reloading && inserted) ? gwr_reload_total : iAmmoElapsed);
 	// ...and the unjam must not adopt the loaded type mid-animation either (see jam_holds_case above):
 	// the revival loads nothing, it only clears the stuck case.
 	u32 eff_type  = (reloading && inserted && !jam_holds_case) ? reload_type : last_type;
