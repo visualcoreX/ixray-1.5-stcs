@@ -171,13 +171,47 @@ int CScriptEngine::lua_panic			(lua_State *L)
 	return			(0);
 }
 
+// The log is the only place the script call stack ever went (print_stack), and it is truncated on the
+// next launch -- so a crash reported second-hand, with nothing but a screenshot of the dialog, carried
+// the error text and NOTHING that says which script raised it. Errors raised by luabind itself ("No
+// such operator defined", a failed cast) do not even carry a position, so the text alone is useless.
+// Put the Lua call stack into the fatal message as well: lua_pcall_failed runs as the pcall MESSAGE
+// HANDLER and lua_cast_failed from inside the converter, i.e. both BEFORE the stack is unwound, so the
+// frames are still there and the dialog itself names the script and the line.
+static LPCSTR script_call_stack			(lua_State *L, LPSTR buffer, size_t const buffer_size)
+{
+	*buffer						= 0;
+	if (!L)
+		return					(buffer);
+
+	LPSTR						i = buffer;
+	LPSTR const					e = buffer + buffer_size;
+	lua_Debug					info;
+	for (int level=0; (level<8) && lua_getstack(L,level,&info); ++level) {
+		// keep a frame's worth of room: the longest line below cannot exceed it
+		if ((e - i) < 160)
+			break;
+
+		if (!lua_getinfo(L,"nSl",&info))
+			break;
+
+		if (!xr_strcmp(info.what,"C"))
+			i					+= xr_sprintf(i,e - i,"\n%2d: [C] %.60s",level,info.name ? info.name : "?");
+		else
+			i					+= xr_sprintf(i,e - i,"\n%2d: %.60s(%d) %.40s",level,info.short_src,info.currentline,info.name ? info.name : "");
+	}
+
+	return						(buffer);
+}
+
 void CScriptEngine::lua_error			(lua_State *L)
 {
 	print_output			(L,"",LUA_ERRRUN);
 	ai().script_engine().on_error	(L);
 
 #if !XRAY_EXCEPTIONS
-	Debug.fatal				(DEBUG_INFO,"LUA error: %s",lua_tostring(L,-1));
+	string512				stack;
+	Debug.fatal				(DEBUG_INFO,"LUA error: %.256s%s",lua_tostring(L,-1),script_call_stack(L,stack,sizeof(stack)));
 #else
 	throw					lua_tostring(L,-1);
 #endif
@@ -189,7 +223,8 @@ int  CScriptEngine::lua_pcall_failed	(lua_State *L)
 	ai().script_engine().on_error	(L);
 
 #if !XRAY_EXCEPTIONS
-	Debug.fatal				(DEBUG_INFO,"LUA error: %s",lua_isstring(L,-1) ? lua_tostring(L,-1) : "");
+	string512				stack;
+	Debug.fatal				(DEBUG_INFO,"LUA error: %.256s%s",lua_isstring(L,-1) ? lua_tostring(L,-1) : "",script_call_stack(L,stack,sizeof(stack)));
 #endif
 	if (lua_isstring(L,-1))
 		lua_pop				(L,1);
@@ -200,7 +235,8 @@ void lua_cast_failed					(lua_State *L, LUABIND_TYPE_INFO info)
 {
 	CScriptEngine::print_output	(L,"",LUA_ERRRUN);
 
-	Debug.fatal				(DEBUG_INFO,"LUA error: cannot cast lua value to %s",info->name());
+	string512				stack;
+	Debug.fatal				(DEBUG_INFO,"LUA error: cannot cast lua value to %s%s",info->name(),script_call_stack(L,stack,sizeof(stack)));
 }
 
 void CScriptEngine::setup_callbacks		()
