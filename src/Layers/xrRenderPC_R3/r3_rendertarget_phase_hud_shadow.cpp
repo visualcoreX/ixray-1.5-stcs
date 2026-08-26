@@ -51,6 +51,13 @@ void CRenderTarget::phase_hud_shadow	(light* L)
 		// muzzle flash, the weapon lamp, the handheld torch and the headlamp while they are the
 		// player's own -- an NPC carrying the same gear stays a world light).
 		if (L->flags.bHudMode || L->flags.bInsideHud)						return;
+
+		// ...and it must cast shadows at all: a lamp with flCastShadow off renders no shadow map, so
+		// its cage/grate darkens nothing in the world -- but the depth buffer this marches has that
+		// geometry like any other, which put a grid of shadows on the weapon and nowhere else.
+		// See the R2 twin.
+		if (!L->flags.bShadow)												return;
+
 		if (IRender_Light::SPOT == L->flags.type)
 		{
 			Fvector	d;	d.sub		(Device.vCameraPosition, L->position);

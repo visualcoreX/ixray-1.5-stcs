@@ -70,6 +70,16 @@ void CRenderTarget::phase_hud_shadow	(light* L)
 		// torch and the headlamp while they are the PLAYER's -- an NPC carrying the same gear is
 		// an ordinary world light and still lights the hud.
 		if (L->flags.bHudMode || L->flags.bInsideHud)						return;
+
+		// AND IT MUST BE A LIGHT THAT CASTS SHADOWS AT ALL. A lamp the level author marked as
+		// non-shadowing (CSE_ALifeObjectHangingLamp::flCastShadow off -> CHangingLamp does
+		// set_shadow(false)) never renders a shadow map, so nothing around it -- its own cage or
+		// grate included -- darkens anything in the world. This march does not know that: it reads
+		// the depth buffer, where that geometry sits like any other, so the weapon alone picked up a
+		// grid of shadows the rest of the level does not have (user 2026-08-25: lamps behind grates
+		// cast no world shadows, yet the grate shows up on the HUD models). Take the light's word.
+		if (!L->flags.bShadow)												return;
+
 		if (IRender_Light::SPOT == L->flags.type)
 		{
 			Fvector	d;	d.sub		(Device.vCameraPosition, L->position);
