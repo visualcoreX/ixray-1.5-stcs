@@ -8,6 +8,7 @@
 #include "CustomDetector.h"
 #include "../xrServerEntities/inventory_space.h"
 #include "../Include/xrRender/Kinematics.h"
+#include "../xrEngine/IGame_Persistent.h"
 
 // How the body is parked behind the camera. g_legs_body_offset moves the WHOLE model (feet and
 // all) along the model heading; g_legs_fwd_offset leans the TORSO alone in model space and never
@@ -340,6 +341,16 @@ void player_legs_controller::update(CActor* actor)
 
 	// Transient reasons not to draw. The model stays built and keeps following the skeleton, so
 	// coming back out of a ladder or a vehicle costs nothing.
+	//
+	// Control taken away -- a scripted cutscene (level.disable_input) or the intro's "osoznanie"
+	// talk: the actor is posed by script and the camera is no longer his eyes, so a body hanging in
+	// front of it is nonsense. That is the same decision the self-shadow already makes, and it is
+	// made in ONE place -- CActor::UpdateCL, a few lines above this call -- so read the result
+	// instead of testing the game state a second time. It carries the 500 ms tail with it, which
+	// covers the gap where the talk window closes just before the script disables input.
+	if (g_pGamePersistent && g_pGamePersistent->m_bSuppressActorShadow)
+		return;
+
 	const u32 mstate			= actor->MovingState();
 	const bool low_crouch		= (0 != (mstate & mcCrouch)) && (0 != (mstate & mcAccel));
 	if ((actor->cam_ActiveStyle() != eacFirstEye) ||
