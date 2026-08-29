@@ -1997,6 +1997,13 @@ void CCC_RegisterCommands()
 	// Discord Rich Presence on by default -- it costs nothing when Discord is not installed
 	// (the dll is simply never found) and the video options carry the switch.
 	psActorFlags.set(AF_DISCORD_RPC, true);
+	// Shot queue ON by default = the stock behaviour: a trigger pull that lands inside the post-shot gap
+	// is REMEMBERED and fires the moment the gap ends, instead of being thrown away. Dropping it made
+	// click-firing a semi-auto slower than its own rpm -- a press even slightly early was eaten and the
+	// player waited out another whole cycle (user 2026-08-29, tt33 / vintorez_nimble). Weapons that must
+	// NOT queue -- a long gap would let the round out seconds after the click, i.e. the gauss with
+	// recharge_time = 3 -- opt out per weapon in config with `shot_queue = false`.
+	psActorFlags.set(AF_WPN_SHOT_QUEUE, true);
 	CMD3(CCC_Mask,				"g_always_run",			&psActorFlags,	AF_ALWAYSRUN);
 	CMD1(CCC_GameDifficulty,	"g_game_difficulty"		);
 

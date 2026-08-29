@@ -301,6 +301,11 @@ protected:
 	float			m_fBaseDispersionedBulletsTimeDelta;	// sec between those rounds (= 1/rpm)
 	// GS singleshoots_time_delta: own rate for the single-shot fire mode
 	float			m_fSingleShootsTimeDelta;
+	// `shot_queue` (weapon section, default true): may a trigger pull made DURING the post-shot gap be
+	// remembered and fired when the gap ends? Turn it off on a weapon whose gap is long enough that the
+	// queued round would be a surprise (the gauss: recharge_time = 3 s). The wpn_shot_queue console flag
+	// is the global master switch on top of this.
+	bool			m_bShotQueue;
 	// true while the shot being fired belongs to the fast part of the queue (m_iShotNum is already
 	// incremented by then, so the first round is 1)
 	IC bool			InBaseDispersionedBurst() const

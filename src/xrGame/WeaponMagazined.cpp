@@ -91,6 +91,7 @@ CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 	m_fBaseDispersionedBulletsSpeed		= 0.0f;
 	m_fBaseDispersionedBulletsTimeDelta	= 0.0f;
 	m_fSingleShootsTimeDelta			= 0.0f;
+	m_bShotQueue						= true;
 	m_iQueueSize				= WEAPON_ININITE_QUEUE;
 	m_bLockType					= false;
 	m_bAmmoInChamber			= false;
@@ -304,6 +305,9 @@ void CWeaponMagazined::Load	(LPCSTR section)
 	// GS gives some weapons their own rate in single-shot mode (glock17, gsh18, sr1m, stechkin,
 	// p90, vintorez, svu_uniq); same patch, so it lives here.
 	m_fSingleShootsTimeDelta			= READ_IF_EXISTS(pSettings, r_float, section, "singleshoots_time_delta",				0.0f);
+	// Per-weapon opt-out from the shot queue (see the header). Default true = a press inside the gap is
+	// honoured when the gap ends; false = it is dropped, for weapons whose gap is seconds long.
+	m_bShotQueue						= !!READ_IF_EXISTS(pSettings, r_bool,  section, "shot_queue",							TRUE);
 
 	if (pSettings->line_exist(section, "fire_modes"))
 	{
@@ -353,16 +357,21 @@ void CWeaponMagazined::FireStart		()
 	// fire-locks folded into the CWeaponMagazined override still hit their own defer blocks below.
 	if (CHudItem::IsShootLocked())	return;
 
-	// NO QUEUED SHOT (default; `wpn_shot_queue 1` restores the stock behaviour). While the weapon is
-	// still sitting out the post-shot delay (the rpm gap, or recharge_time on the gauss) a fresh trigger
-	// pull is DROPPED, not remembered: the press used to re-enter eFire (switch2_Fire re-arms
-	// m_bFireSingleShot) and state_Fire then let the round out the instant fShotTimeCounter drained --
-	// a shot fired for a click the player made long before.
-	// Continuous fire is untouched: a held trigger never comes back through FireStart (bWorking stays
-	// set from the first press and state_Fire loops on its own).
+	// SHOT QUEUE. While the weapon sits out the post-shot delay (the rpm gap, or recharge_time on the
+	// gauss) a fresh trigger pull is normally REMEMBERED: the press re-enters eFire (switch2_Fire re-arms
+	// m_bFireSingleShot) and state_Fire lets the round out the instant fShotTimeCounter drains. That is
+	// the stock behaviour and it is what makes click-firing reach the weapon's actual rpm -- dropping the
+	// press instead cost 25-35% of the rate, because a click even slightly early was eaten and the player
+	// waited out another full cycle (user 2026-08-29, tt33 / vintorez_nimble).
+	// It is wrong only where the gap is long enough that the queued round reads as a phantom shot (the
+	// gauss, recharge_time = 3 s), so THAT is opt-out per weapon: `shot_queue = false` -> m_bShotQueue.
+	// wpn_shot_queue is the global master on top (default on); turning it off drops the press everywhere.
+	// Continuous fire is untouched either way: a held trigger never comes back through FireStart (bWorking
+	// stays set from the first press and state_Fire loops on its own).
 	// Actor only -- the AI drives FireStart/FireEnd from its planner (object_actions) and would lose
 	// rate of fire if its START landed inside the gap.
-	if (fShotTimeCounter > 0.f && !psActorFlags.test(AF_WPN_SHOT_QUEUE)
+	const bool shot_queue_ok = m_bShotQueue && psActorFlags.test(AF_WPN_SHOT_QUEUE);
+	if (fShotTimeCounter > 0.f && !shot_queue_ok
 		&& smart_cast<CActor*>(H_Parent()))	return;
 
 	// let the jam (misfire) dry-fire gesture finish before another trigger pull; the empty
