@@ -4035,7 +4035,12 @@ bool CWeapon::show_indicators()
 	if (IsZoomed() && IsLensedScope())	return false;
 	// ...and GS's own key for the flat-scope case (IsUIForceHiding, collimator.pas:301), which is what
 	// the very same optic falls back to once the 3D lens is switched off in the options.
-	if (IsZoomed() && ZoomHideUI())		return false;
+	// NOT for a collimator: a red dot leaves the whole screen visible, so blanking the indicators
+	// behind it only throws information away -- the HUD goes only for an optic you actually look
+	// THROUGH (the PiP lens above, or the flat 2D scope picture below). Ours inherit zoom_hide_ui
+	// from the generic scope addon base, which is how 23 of the 49 collimator scope entries
+	// (cobra / pka / rakurs) ended up hiding the HUD like a real scope (user 2026-08-29).
+	if (IsZoomed() && ZoomHideUI() && !IsCollimatorScope())	return false;
 	return ! ( IsZoomed() && ZoomTexture() );
 }
 
