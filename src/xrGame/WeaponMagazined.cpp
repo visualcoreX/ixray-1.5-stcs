@@ -1681,6 +1681,20 @@ void CWeaponMagazined::UpdateCL			()
 	if (m_dwShootAnimEndTm && Device.dwTimeGlobal >= m_dwShootAnimEndTm)
 	{
 		m_dwShootAnimEndTm = 0;
+		// ...and this handoff must drain what OnAnimationEnd drains, because it is the path taken when
+		// OnAnimationEnd does NOT arrive. The two run off the SAME deadline (state_Fire sets
+		// m_dwShootAnimEndTm = m_dwMotionEndTm) but compare it differently: CHudItem::UpdateCL fires
+		// OnAnimationEnd on `m_dwMotionCurrTm > m_dwMotionEndTm` (strict), this one on `>=`. A frame that
+		// lands exactly ON the deadline therefore reaches HERE first (inherited::UpdateCL ran above and
+		// skipped the strict test) -> switch2_Idle -> PlayAnimIdle -> a CYCLIC idle, whose anim_time is 0
+		// (player_hud::motion_length returns 0 for non-esmStopAtEnd), which clears
+		// m_bStopAtEndAnimIsRunning -- so the gesture's OnAnimationEnd can never fire afterwards and
+		// m_bLightMisfirePlaying stays true FOREVER. That flag gates Reload(), OnZoomIn() and OnZoomOut()
+		// and nothing else, which is exactly the reported lock-up: the weapon could still shoot but could
+		// not reload, could not aim, and could not leave the sights (user 2026-08-28, tt33). Reaching this
+		// deadline means the gesture's own motion is over, so end it here too.
+		m_bLightMisfirePlaying	= false;
+		m_bDryFirePlaying		= false;	// same shape for the jam inspect / dry-fire gesture
 		if (GetState()==eIdle && GetNextState()==eIdle)
 			switch2_Idle();
 	}
