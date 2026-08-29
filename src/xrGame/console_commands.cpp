@@ -210,13 +210,33 @@ public:
 // two flags off instead, so the state is honest everywhere -- the options checkboxes and the console
 // report exactly what is on screen -- and refuse to let either be turned back on until the
 // difficulty drops. What the player had before the lock is remembered and handed back on the way out.
+// The two flags do NOT fall at the same difficulty. Gunslinger drops the crosshair one step earlier
+// than the rest of the interface: CanDrawCrosshairNow (WeaponUpdate.pas:1097) is >= gd_veteran, while
+// drawingame_conditions (ActorUtils.pas:3262) is >= gd_master. So each flag keeps its own threshold
+// and its own saved value -- going veteran -> master must not overwrite the crosshair setting that was
+// already put aside when veteran was picked.
 static bool	 s_hud_lock_saved	= false;
 static bool	 s_hud_draw_was		= true;
+static bool	 s_xhair_lock_saved	= false;
 static bool	 s_crosshair_was	= true;
+// hud_info ("Идентификация NPC") is drawn AT the crosshair and reads the target under it, so it goes
+// with the crosshair rather than with the rest of the interface -- same veteran threshold, own saved value.
+static bool	 s_info_lock_saved	= false;
+static bool	 s_hud_info_was		= true;
+// The quick-slot panel is interface, so it follows hud_draw at master -- but this flag is INVERTED
+// ("hide the slots"), so the lock pins it ON, not off: on master the slots really are gone, and the
+// greyed checkbox has to say so. It also lives on psActorFlags, not psHUD_Flags.
+static bool	 s_qslots_lock_saved		= false;
+static bool	 s_hide_quick_slots_was		= false;
 
 bool gwr_hud_locked_by_difficulty()
 {
-	return	(g_SingleGameDifficulty == egdMaster);
+	return	(g_SingleGameDifficulty >= egdMaster);
+}
+
+bool gwr_crosshair_locked_by_difficulty()
+{
+	return	(g_SingleGameDifficulty >= egdVeteran);
 }
 
 static void gwr_apply_hud_lock()
@@ -226,17 +246,61 @@ static void gwr_apply_hud_lock()
 		if (!s_hud_lock_saved)
 		{
 			s_hud_draw_was		= !!psHUD_Flags.test(HUD_DRAW);
-			s_crosshair_was		= !!psHUD_Flags.test(HUD_CROSSHAIR);
 			s_hud_lock_saved	= true;
 		}
 		psHUD_Flags.set	(HUD_DRAW,		FALSE);
-		psHUD_Flags.set	(HUD_CROSSHAIR,	FALSE);
 	}
 	else if (s_hud_lock_saved)
 	{
 		psHUD_Flags.set	(HUD_DRAW,		s_hud_draw_was		? TRUE : FALSE);
-		psHUD_Flags.set	(HUD_CROSSHAIR,	s_crosshair_was		? TRUE : FALSE);
 		s_hud_lock_saved = false;
+	}
+
+	if (gwr_crosshair_locked_by_difficulty())
+	{
+		if (!s_xhair_lock_saved)
+		{
+			s_crosshair_was		= !!psHUD_Flags.test(HUD_CROSSHAIR);
+			s_xhair_lock_saved	= true;
+		}
+		psHUD_Flags.set	(HUD_CROSSHAIR,	FALSE);
+	}
+	else if (s_xhair_lock_saved)
+	{
+		psHUD_Flags.set	(HUD_CROSSHAIR,	s_crosshair_was		? TRUE : FALSE);
+		s_xhair_lock_saved = false;
+	}
+
+	// Quick slots: master, and pinned ON (see above) -- the only lock in here that forces a flag SET.
+	if (gwr_hud_locked_by_difficulty())
+	{
+		if (!s_qslots_lock_saved)
+		{
+			s_hide_quick_slots_was	= !!psActorFlags.test(AF_HIDE_QUICK_SLOTS);
+			s_qslots_lock_saved		= true;
+		}
+		psActorFlags.set	(AF_HIDE_QUICK_SLOTS,	TRUE);
+	}
+	else if (s_qslots_lock_saved)
+	{
+		psActorFlags.set	(AF_HIDE_QUICK_SLOTS,	s_hide_quick_slots_was	? TRUE : FALSE);
+		s_qslots_lock_saved = false;
+	}
+
+	// ...and the NPC identification line with it (same threshold, see above).
+	if (gwr_crosshair_locked_by_difficulty())
+	{
+		if (!s_info_lock_saved)
+		{
+			s_hud_info_was		= !!psHUD_Flags.test(HUD_INFO);
+			s_info_lock_saved	= true;
+		}
+		psHUD_Flags.set	(HUD_INFO,		FALSE);
+	}
+	else if (s_info_lock_saved)
+	{
+		psHUD_Flags.set	(HUD_INFO,		s_hud_info_was		? TRUE : FALSE);
+		s_info_lock_saved = false;
 	}
 }
 
@@ -246,19 +310,21 @@ class CCC_HudMask : public CCC_Mask
 {
 	typedef CCC_Mask inherited;
 	bool*	remembered;		// the player's own setting, kept aside while the lock holds the flag off
+	bool	(*locked)();	// this flag's own threshold -- hud_draw and hud_crosshair differ, see above
 public:
-	CCC_HudMask(LPCSTR N, Flags32* V, u32 M, bool* R) : inherited(N, V, M), remembered(R) {}
+	CCC_HudMask(LPCSTR N, Flags32* V, u32 M, bool* R, bool (*L)()) :
+		inherited(N, V, M), remembered(R), locked(L) {}
 
 	virtual void Execute(LPCSTR args)
 	{
-		if (gwr_hud_locked_by_difficulty())
+		if (locked())
 		{
 			// still take the value down, so turning it on now means it comes back with the difficulty
 			if (EQ(args,"on") || EQ(args,"1"))			*remembered = true;
 			else if (EQ(args,"off") || EQ(args,"0"))	*remembered = false;
 			else										{ InvalidSyntax(); return; }
 
-			Msg("~ [%s] stays off on master difficulty; remembered for lower ones", cName);
+			Msg("~ [%s] is fixed at this difficulty; your choice is remembered for lower ones", cName);
 			return;
 		}
 		inherited::Execute(args);
@@ -268,7 +334,7 @@ public:
 	// session on master would silently turn the hud off for every difficulty afterwards.
 	virtual void Save(IWriter* F)
 	{
-		if (gwr_hud_locked_by_difficulty())
+		if (locked())
 		{
 			F->w_printf("%s %s\r\n", cName, *remembered ? "on" : "off");
 			return;
@@ -2032,17 +2098,22 @@ void CCC_RegisterCommands()
 
 
 	CMD3(CCC_Mask,				"hud_weapon",			&psHUD_Flags,	HUD_WEAPON);
-	CMD3(CCC_Mask,				"hud_info",				&psHUD_Flags,	HUD_INFO);
+	{ static CCC_HudMask x_hud_info("hud_info", &psHUD_Flags, HUD_INFO, &s_hud_info_was, gwr_crosshair_locked_by_difficulty);
+	  Console->AddCommand(&x_hud_info); }
 
-	// these two are held off on master difficulty and refuse to be switched back on -- see CCC_HudMask
-	CMD4(CCC_HudMask, "hud_draw", &psHUD_Flags, HUD_DRAW, &s_hud_draw_was);
+	// these two are held off by difficulty and refuse to be switched back on -- see CCC_HudMask.
+	// hud_draw goes at master, hud_crosshair already at veteran (Gunslinger's own two thresholds).
+	// (registered by hand: CMD4 takes exactly four arguments and the predicate is a fifth)
+	{ static CCC_HudMask x_hud_draw("hud_draw", &psHUD_Flags, HUD_DRAW, &s_hud_draw_was, gwr_hud_locked_by_difficulty);
+	  Console->AddCommand(&x_hud_draw); }
 	// hud
 	psHUD_Flags.set(HUD_CROSSHAIR,		true);
 	psHUD_Flags.set(HUD_WEAPON,			true);
 	psHUD_Flags.set(HUD_DRAW,			true);
 	psHUD_Flags.set(HUD_INFO,			true);
 
-	CMD4(CCC_HudMask,			"hud_crosshair",		&psHUD_Flags,	HUD_CROSSHAIR,	&s_crosshair_was);
+	{ static CCC_HudMask x_hud_crosshair("hud_crosshair", &psHUD_Flags, HUD_CROSSHAIR, &s_crosshair_was, gwr_crosshair_locked_by_difficulty);
+	  Console->AddCommand(&x_hud_crosshair); }
 	CMD3(CCC_Mask,				"hud_crosshair_dist",	&psHUD_Flags,	HUD_CROSSHAIR_DIST);
 
 	CMD4(CCC_Float,				"hud_fov",				&psHUD_FOV_def,	0.1f,	1.0f);
@@ -2306,7 +2377,9 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 		CMD4(CCC_Integer, "smartcover_dbg", &g_smartcover_dbg, 0, 1);
 	}
 	// Hide the quick-use slot icons on the hud. Display only -- the slots keep working.
-	CMD3(CCC_Mask,			"hud_hide_quick_slots",&psActorFlags,AF_HIDE_QUICK_SLOTS);
+	{ static CCC_HudMask x_hide_quick_slots("hud_hide_quick_slots", &psActorFlags, AF_HIDE_QUICK_SLOTS,
+											&s_hide_quick_slots_was, gwr_hud_locked_by_difficulty);
+	  Console->AddCommand(&x_hide_quick_slots); }
 	// "Discord Rich Presence" checkbox in the video options (see discord_rpc.cpp).
 	CMD3(CCC_Mask,			"discord_rpc",		&psActorFlags,	AF_DISCORD_RPC);
 	// "First-person body" checkbox in the ADVANCED video options. OFF by default.

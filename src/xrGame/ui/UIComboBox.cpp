@@ -210,9 +210,21 @@ void CUIComboBox::Update()
 
 	if (!m_disable_on_value.empty())
 	{
-		xr_vector< std::pair<int, CUIWindow*> >::iterator it = m_disable_on_value.begin();
-		for (; it != m_disable_on_value.end(); ++it)
-			it->second->Enable(CurrentID() != it->first);
+		// A control may be registered for SEVERAL values -- the crosshair box is greyed on veteran AND
+		// on master, because the crosshair falls one difficulty before the rest of the interface. One
+		// Enable() per pair let the LAST pair decide: at veteran the (2, chk) entry disabled it and the
+		// (3, chk) entry immediately turned it back on, so only the value registered last ever worked
+		// (user 2026-08-29: greys out on master, stays live on veteran). Decide per CONTROL, over all
+		// of its entries, then set it once.
+		typedef xr_vector< std::pair<int, CUIWindow*> >::iterator it_t;
+		const int cur = CurrentID();
+		for (it_t it = m_disable_on_value.begin(); it != m_disable_on_value.end(); ++it)
+		{
+			bool disabled = false;
+			for (it_t jt = m_disable_on_value.begin(); jt != m_disable_on_value.end(); ++jt)
+				if (jt->second == it->second && jt->first == cur)	{ disabled = true; break; }
+			it->second->Enable(!disabled);
+		}
 	}
 
 	if (!m_bIsEnabled)
