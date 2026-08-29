@@ -1170,17 +1170,12 @@ void CRender::RenderScopeToRT()
 	else
 		HW.pDevice->CopyResource(rt->pSurface, src->pSurface);
 
-	// Same image into $user$scopeui -- GS grabs that one after the UI pass so its electronic optics show the
-	// HUD inside the lens; we only need the magnified world there, and this feeds both scope shader families
-	// (models_zoom -> $user$scope, models_zoom_gauss -> $user$scopeui) from a single capture.
-	CRT* rt_ui = Target->rt_scope_ui._get();
-	if (rt_ui && rt_ui->pSurface)
-	{
-		if (RImplementation.o.dx10_msaa)
-			HW.pDevice->ResolveSubresource(rt_ui->pSurface, 0, src->pSurface, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
-		else
-			HW.pDevice->CopyResource(rt_ui->pSurface, src->pSurface);
-	}
+	// $user$scopeui is NOT filled here. CaptureLensUIToRT overwrites it whole from the backbuffer at the
+	// END of this same lens frame, and nothing can read it in between: the weapon (and with it the lens
+	// material that samples $user$scopeui) is not drawn on a lens frame at all -- CActor::OnHUDDraw returns
+	// early on m_bLensFrameNow, or the gun would end up inside the scope picture. On normal frames neither
+	// function runs, so what the lens actually samples is always CaptureLensUIToRT's copy. Writing it here
+	// was a full-screen copy per lens frame whose result was overwritten before anyone looked at it.
 }
 
 // GS EndSecondVP_OnUIRender (LensDoubleRender.pas): GS fills TWO scope RTs -- `$user$scope` right after the
