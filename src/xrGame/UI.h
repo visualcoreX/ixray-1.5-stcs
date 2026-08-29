@@ -45,7 +45,10 @@ public:
 	void					ShowCrosshair			(bool b);
 	bool					CrosshairShown			();
 
-	SDrawStaticStruct*		AddInfoMessage			(LPCSTR message);
+	// GS Messenger.SendMessage(msg, max_difficulty) (Messenger.pas:11): every on-screen line carries a
+	// difficulty ceiling and is simply not shown above it -- the harder the game, the less it tells you.
+	// Default = no ceiling, so a call that does not care is unchanged.
+	SDrawStaticStruct*		AddInfoMessage			(LPCSTR message, u32 max_difficulty = u32(-1));
 	void					OnConnected				();
 
 	void					UpdatePda				();

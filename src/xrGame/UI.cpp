@@ -6,6 +6,7 @@
 #include "UIGameSP.h"
 #include "actor.h"
 #include "level.h"
+#include "game_cl_single.h"		// g_SingleGameDifficulty (message difficulty ceiling)
 #include "game_cl_base.h"
 #include "ui/UIMainIngameWnd.h"
 #include "ui/UIHudStatesWnd.h"		// warning indicators kept alive while the interface is off
@@ -236,8 +237,10 @@ bool CUI::IR_OnMouseMove(int dx,int dy)
 	return false;
 }
 
-SDrawStaticStruct* CUI::AddInfoMessage			(LPCSTR message)
+SDrawStaticStruct* CUI::AddInfoMessage			(LPCSTR message, u32 max_difficulty)
 {
+	// GS Messenger.SendMessage: above the line's ceiling nothing is shown at all (see UI.h).
+	if ((u32)g_SingleGameDifficulty > max_difficulty)	return NULL;
 	SDrawStaticStruct* ss	=	pUIGame->GetCustomStatic(message);
 	if(!ss)
 	{

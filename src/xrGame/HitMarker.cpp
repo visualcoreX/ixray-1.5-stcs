@@ -6,6 +6,8 @@
 #include "UIStaticItem.h"
 
 #include "grenade.h"
+#include "game_cl_single.h"		// g_SingleGameDifficulty
+#include "GamePersistent.h"		// m_bLensFrameNow (the 3D PiP scope capture)
 
 #include "../Include/xrRender/UIRender.h"
 #include "../Include/xrRender/UIShader.h"
@@ -62,18 +64,38 @@ void CHitMarker::Render()
 		m_GrenadeMarks.pop_front();
 	}
 
-	HITMARKS::iterator it_b = m_HitMarks.begin();
-	HITMARKS::iterator it_e = m_HitMarks.end();
-	for( ; it_b != it_e; ++it_b )
+	// The expiry passes above run unconditionally -- a mark that is not DRAWN still has to die on
+	// time, or it would be waiting on screen the moment the gate opens again.
+	//
+	// GS HitMarkCondition (ActorUtils.pas:3180): the damage-direction marks are off on master; you
+	// take the hit and find the shooter yourself.
+	// GS NeedDrawGrenMark (Throwable.pas:811): the grenade danger marker only below veteran.
+	// ...and NEITHER on a lens frame. That frame is not presented: it is captured into $user$scope
+	// and shown as the optic's picture, so anything drawn here is baked INTO the scope image and
+	// rides along inside the lens (user 2026-08-29 -- hit marks appearing on the PiP lens). Same
+	// reason CActor::OnHUDDraw skips the whole first-person HUD on those frames.
+	const bool lens_frame = (g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow);
+	const bool draw_hits  = !lens_frame && (g_SingleGameDifficulty < egdMaster);
+	const bool draw_gren  = !lens_frame && (g_SingleGameDifficulty < egdVeteran);
+
+	if (draw_hits)
 	{
-		(*it_b)->Draw( -h1 );
+		HITMARKS::iterator it_b = m_HitMarks.begin();
+		HITMARKS::iterator it_e = m_HitMarks.end();
+		for( ; it_b != it_e; ++it_b )
+		{
+			(*it_b)->Draw( -h1 );
+		}
 	}
 
-	GRENADEMARKS::iterator itg_b = m_GrenadeMarks.begin();
-	GRENADEMARKS::iterator itg_e = m_GrenadeMarks.end();
-	for( ; itg_b != itg_e; ++itg_b )
+	if (draw_gren)
 	{
-		(*itg_b)->Draw( -h1 );
+		GRENADEMARKS::iterator itg_b = m_GrenadeMarks.begin();
+		GRENADEMARKS::iterator itg_e = m_GrenadeMarks.end();
+		for( ; itg_b != itg_e; ++itg_b )
+		{
+			(*itg_b)->Draw( -h1 );
+		}
 	}
 
 }

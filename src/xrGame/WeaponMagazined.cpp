@@ -3,6 +3,7 @@
 #include "WeaponMagazined.h"
 #include "entity.h"
 #include "actor.h"
+#include "game_cl_single.h"		// g_SingleGameDifficulty (GS message difficulty ceiling)
 #include "ParticlesObject.h"
 #include "scope.h"
 #include "silencer.h"
@@ -2436,7 +2437,9 @@ void CWeaponMagazined::PlayAnimDryFire()
 		// ('gunsl_msg_weapon_jammed', gd_novice), which is GS's small message line, not the stock
 		// centred hint the engine used to throw at the moment of the jam.
 		else if (IsMisfire() && smart_cast<CActor*>(H_Parent()) && Level().CurrentViewEntity() == H_Parent())
-			HUD().GetUI()->AddInfoMessage("gun_jammed");
+			// ...and GS caps that line at NOVICE (Messenger.SendMessage(txt, gd_novice)): above it the jam
+			// announces itself with the sound and the gesture only.
+			HUD().GetUI()->AddInfoMessage("gun_jammed", egdNovice);
 	}
 	else
 		PlayAnimIdle();

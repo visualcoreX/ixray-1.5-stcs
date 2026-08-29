@@ -7,6 +7,7 @@
 #include "../xrEngine/CustomHUD.h"
 #include "Entity.h"
 #include "level.h"
+#include "game_cl_single.h"		// g_SingleGameDifficulty (GS CanDrawCrosshairNow)
 #include "game_cl_base.h"
 #include "../xrEngine/igame_persistent.h"
 
@@ -270,9 +271,12 @@ void CHUDTarget::Render()
 		F->OutNext		("%4.1f - %4.2f - %d",PP.RQ.range, PP.power, PP.pass);
 	}
 
-	// GS CanDrawCrosshairNow (WeaponUpdate.pas:1097): no crosshair while a controller holds you or a
-	// suicide scene is running -- you are not the one aiming any more.
+	// GS CanDrawCrosshairNow (WeaponUpdate.pas:1097), in full: no crosshair from VETERAN up -- you aim
+	// down the sights, not by a dot on the glass -- and none while a controller holds you or a suicide
+	// scene is running, where you are not the one aiming any more. Only the second half was ported
+	// before; the difficulty clause is GS's own first condition.
 	{
+		if (g_SingleGameDifficulty >= egdVeteran)									return;
 		CActor* c_act = smart_cast<CActor*>(Level().CurrentControlEntity());
 		if (c_act && (c_act->IsActorControlled() || c_act->IsSuicideInProgress()))	return;
 	}

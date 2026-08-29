@@ -12,6 +12,7 @@
 #include "game_cl_base.h"
 
 #include "actor.h"
+#include "game_cl_single.h"		// g_SingleGameDifficulty
 #include "ai_space.h"
 #include "game_graph.h"
 
@@ -73,6 +74,18 @@ void CUIZoneMap::Init()
 
 void CUIZoneMap::Render			()
 {
+	// GS ZoneMapCondition (ActorUtils.pas:3216): no minimap from veteran up -- navigate by the world and
+	// the PDA map. GS lets a "tactical helmet" (one upgraded with nearest_enemies_show_dist) hand it back;
+	// we have no such upgrade, so the rule is unconditional here.
+	//
+	// The test lives HERE and not at the call site because there are TWO callers: CUIMainIngameWnd::Draw
+	// for the ordinary hud, and CUIActorMenu::Draw -> CUIMainIngameWnd::DrawZoneMap() while the inventory
+	// is open -- the second one bypasses the first entirely, and the inventory also turns the game
+	// indicators off, so CUIMainIngameWnd::Draw is not even running then. Gating only the hud path left
+	// the minimap on screen for as long as the inventory was up, at every difficulty (user 2026-08-29).
+	// One gate inside the drawing function cannot be walked around by a caller that is added later.
+	if (g_SingleGameDifficulty >= egdVeteran)	return;
+
 	if ( !visible )
 	{
 		return;
@@ -92,7 +105,10 @@ void CUIZoneMap::Update()
 		string16	text_str;
 		xr_strcpy( text_str, sizeof(text_str), "" );
 
-		CPda* pda = pActor->GetPDA();
+		// GS CUIZoneMap__Update_Counter_Patch (UIUtils.pas:2093) forces the nearby-contacts count to
+		// zero from STALKER up, so the number on the minimap is a novice-only convenience. Cutting it
+		// off at the source keeps the rest of the path identical: count 0 -> empty text -> blank plate.
+		CPda* pda = (g_SingleGameDifficulty < egdStalker) ? pActor->GetPDA() : NULL;
 		if ( pda )
 		{
 			u32 cn = pda->ActiveContactsNum();

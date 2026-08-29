@@ -274,6 +274,8 @@ void CUIMainIngameWnd::Draw()
 
 	CUIWindow::Draw();
 
+	// The difficulty rule lives in CUIZoneMap::Render itself -- the inventory draws the minimap through
+	// its own path (CUIActorMenu -> DrawZoneMap), so a gate here would only cover half the cases.
 	UIZoneMap->visible = true;
 	UIZoneMap->Render();
 
