@@ -516,6 +516,8 @@ void CUIMainIngameWnd::InitQuickSlots(CUIXml& uiXml)
 		AttachChild			(icon);
 		xml_init.InitStatic	(uiXml, path, 0, icon);
 		m_quick_icons.push_back(icon);
+		m_quick_box.push_back(Fvector4().set(icon->GetWndPos().x, icon->GetWndPos().y,
+											 icon->GetWidth(),   icon->GetHeight()));
 
 		// "xN" counter, a child of the icon so it moves with it
 		string64 sub;
@@ -600,6 +602,22 @@ void CUIMainIngameWnd::UpdateQuickSlots()
 		r.x2 = pSettings->r_float(draw, "inv_grid_width")	* gw;
 		r.y2 = pSettings->r_float(draw, "inv_grid_height")	* gh;
 		r.rb.add(r.lt);
+		// 1024x768 UI space is stretched onto the screen non-uniformly, so the SQUARE 32x32 box the xml
+		// gives comes out wide and the icon stretched into it comes out wide with it (user 2026-08-29:
+		// quick-slot icons stretched sideways). Narrow the box by get_current_kx() -- the same correction
+		// UIPickUpItemIcon a few lines below already makes -- and follow the item's own grid proportion,
+		// so a 2x1 item still reads as twice as wide as it is tall. Height is never touched, and the icon
+		// stays centred on its authored position, so the row does not move. Clamped to the authored width
+		// so a wide item cannot spill into the next slot.
+		const Fvector4& box = m_quick_box[i];
+		const float gwc = pSettings->r_float(draw, "inv_grid_width");
+		const float ghc = pSettings->r_float(draw, "inv_grid_height");
+		float icon_w = box.z;
+		if (ghc > 0.f)	icon_w = box.w * (gwc / ghc) * UI()->get_current_kx();
+		if (icon_w > box.z)	icon_w = box.z;
+		icon->SetWndPos			(Fvector2().set(box.x + (box.z - icon_w) * 0.5f, box.y));
+		icon->SetWidth			(icon_w);
+
 		icon->SetOriginalRect	(r);
 		icon->TextureOn			();
 		icon->SetStretchTexture	(true);

@@ -145,6 +145,9 @@ protected:
 	// CoP quick-use slots on the hud: the icon of whatever section each slot holds, how many are
 	// left, and the key that fires it. Built only if the xml declares quick_slot0..3.
 	xr_vector<CUIStatic*>	m_quick_icons;
+	// the box each icon was authored with (x, y, w, h). UpdateQuickSlots narrows the WIDTH for the
+	// screen aspect every frame, so it needs the original to stay centred and not shrink cumulatively.
+	xr_vector<Fvector4>		m_quick_box;
 	xr_vector<CUIStatic*>	m_quick_counts;
 	xr_vector<CUIStatic*>	m_quick_keys;
 	void				InitQuickSlots	(CUIXml& uiXml);
