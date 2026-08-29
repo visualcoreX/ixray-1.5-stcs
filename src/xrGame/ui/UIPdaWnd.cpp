@@ -226,12 +226,31 @@ bool gwr_pda_rt_pass_now()
 float g_pda_map_kx = 0.87f;		// matched against the 2D PDA by eye; 0.75 = no compensation,
 								// 1.0 = fully undo the monitor correction (would be exact for a 4:3 screen)
 
+// Raised by CUIMapWnd::Draw for the length of the PDA map's own draw. The predicate above is true
+// for the WHOLE FRAME, and the ordinary HUD keeps drawing while the PDA is merely held in the hand
+// (indicators are hidden only once it is zoomed to the face -- see ShowGameIndicators below). So the
+// compensation was reaching every ROTATED CUICustomItem in that frame, not just the map's: the
+// minimap and the radiation needle both stretched ~16% horizontally the moment the PDA came out and
+// snapped back when it was put away (user 2026-08-29). Both draw through
+// CUICustomItem::Render(pos,color,angle), which is the one shared path that reads this factor.
+static int s_pda_map_draw = 0;
+
+void gwr_pda_map_draw_begin()	{ ++s_pda_map_draw; }
+void gwr_pda_map_draw_end()		{ if (s_pda_map_draw > 0) --s_pda_map_draw; }
+
 float gwr_pda_map_kx()
 {
 	// deliberately the whole-frame predicate, not gwr_pda_rt_pass_now(): GetAspectKX() is also
 	// asked during layout (OptimalFit / CalcOpenRect / scrolling), and a factor that differed
 	// between layout and draw would slide the icons against the terrain.
 	if (!gwr_pda_screen_active())		return 1.0f;
+	// ...but only for the PDA map's own content, or the HUD gets it too (see above). Both consumers
+	// of this factor are draw-time only -- CUICustomItem::Render and CUILevelMap::Draw -- so scoping
+	// it to the draw cannot reintroduce the layout-vs-draw mismatch the comment above guards against.
+	// (gwr_pda_map_body_kx, the CANVAS knob, is NOT scoped: CUIGlobalMap / CUILevelMap are PDA-only
+	// classes -- the minimap is a CUIMiniMap whose GetAspectKX is a flat 1.0f -- and that one really
+	// is asked during layout.)
+	if (!s_pda_map_draw)				return 1.0f;
 	float kx = UI()->get_current_kx();
 	if (kx < EPS_S)					return 1.0f;
 	return g_pda_map_kx / kx;

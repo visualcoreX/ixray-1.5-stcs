@@ -354,8 +354,21 @@ void CUIMapWnd::MoveMap( Fvector2 const& pos_delta )
 	HideCurHint();
 }
 
+// The 3D PDA's aspect compensation for map icons applies to what the PDA map itself draws and to
+// nothing else; see gwr_pda_map_kx in UIPdaWnd.cpp. Without this scope the HUD minimap and the
+// radiation needle picked it up as well and stretched while the PDA was in hand.
+extern void gwr_pda_map_draw_begin();
+extern void gwr_pda_map_draw_end();
+
+// RAII so an early return / exception inside the draw can never leave the counter raised.
+namespace { struct pda_map_draw_scope {
+	pda_map_draw_scope()	{ gwr_pda_map_draw_begin(); }
+	~pda_map_draw_scope()	{ gwr_pda_map_draw_end();   }
+}; }
+
 void CUIMapWnd::Draw()
 {
+	pda_map_draw_scope	pda_scope;
 	inherited::Draw();
 /*
 #ifdef DEBUG
