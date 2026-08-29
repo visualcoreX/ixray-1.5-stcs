@@ -173,6 +173,13 @@ void CWeapon::UpdateXForm	()
 		return;
 	}
 
+	// The ACTOR's active weapon is never the strapped one -- render_strapped() below is a separate
+	// path. Nothing clears the flag for him the way CObjectHandler::weapon_bones does every frame for
+	// a stalker, so without this a rifle taken OFF the back would keep m_StrapOffset once it reached
+	// the hands and hang behind the actor's shoulder while he shot with it.
+	if (E == (CEntityAlive*)Actor())
+		strapped_mode		(false);
+
 	const CInventoryOwner	*parent = smart_cast<const CInventoryOwner*>(E);
 	if (parent && parent->use_simplified_visual())
 		return;
@@ -1903,6 +1910,111 @@ void CWeapon::renderable_Render		()
 		RenderHud		(TRUE);
 
 	inherited::renderable_Render	();
+}
+
+// The weapon you are NOT holding, drawn on your back. Seats it on its own strap bones
+// (strap_bone0/strap_bone1 -- the same pair CObjectHandler::weapon_bones hands to a stalker) and
+// switches the offset to m_StrapOffset, then draws the WORLD model only: no hud model, because this
+// is not the item in your hands, and no muzzle light, because it is not being fired.
+// The bone maths is UpdateXForm's two-bone case verbatim, so a weapon whose strap pose was authored
+// for an NPC's back sits identically on the actor's.
+// Returns false and draws NOTHING when the weapon has no strap bones or the visual does not carry
+// them -- better an absent gun than one stuck at the owner's feet.
+bool CWeapon::render_strapped(bool mirrored)
+{
+	if (!m_can_be_strapped)					return false;
+	CEntityAlive* E = smart_cast<CEntityAlive*>(H_Parent());
+	if (!E)									return false;
+	IKinematics* V = smart_cast<IKinematics*>(E->Visual());
+	if (!V)									return false;
+
+	const u16 b0 = V->LL_BoneID(m_strap_bone0);
+	const u16 b1 = V->LL_BoneID(m_strap_bone1);
+	if (BI_NONE == b0 || BI_NONE == b1)		return false;
+
+	V->CalculateBones		();
+	const Fmatrix& mR		= V->LL_GetTransform(b0);
+	const Fmatrix& mL		= V->LL_GetTransform(b1);
+
+	Fmatrix					mRes;
+	Fvector					R, D, N;
+	D.sub					(mL.c, mR.c);
+	// The degenerate case (both strap bones in the same spot) has no axis to build a basis from, so it
+	// falls back to the owner's own orientation and is already in WORLD space -- nothing more is done
+	// to it, mirroring included: there is no meaningful side to move a gun that has no direction.
+	if (fis_zero(D.magnitude()))
+	{
+		mRes.set			(E->XFORM());
+		mRes.c.set			(mR.c);
+		strapped_mode		(true);
+		UpdatePosition		(mRes);
+		CGameObject::renderable_Render();
+		return				true;
+	}
+
+	D.normalize				();
+	R.crossproduct			(mR.j, D);
+	N.crossproduct			(D, R);
+	N.normalize				();
+	mRes.set				(R, N, D, mR.c);
+
+	mRes.mulA_43			(E->XFORM());
+	strapped_mode			(true);
+
+	if (!mirrored)
+		UpdatePosition		(mRes);
+	else
+	{
+		// The SECOND weapon goes on the other side of the back so the two do not sit inside each other.
+		//
+		// Mirror the OFFSET, not the bone frame. What actually places the gun is mRes * m_StrapOffset
+		// (see UpdatePosition): mRes is the spine bone, m_StrapOffset carries the gun from that bone to
+		// where it hangs, so the side it hangs on lives in the offset alone.
+		//
+		// THE AXES OF THE STRAP OFFSET ARE NOT THE WORLD AXES (user, 2026-08-29):
+		//     x = forward / back,   y = right / left,   z = up / down
+		// so the mirror is y, and only y. Getting this wrong is not subtle and cost two rounds in game:
+		// negating x moved the gun to the actor's chest, and negating z (with a rotateY on top, which
+		// turns about the BONE's y and therefore does not stand the gun up) left it there with the muzzle
+		// pointing at the sky. x and z are deliberately untouched: they are how far behind the shoulders
+		// and how high the gun hangs, and those should match the first weapon exactly.
+		// THE MIRROR POSE, WITHOUT A MIRROR.
+		//
+		// The pose we want is off * S, where S reflects the seat frame's y (y is left/right here). It looks
+		// exactly right -- and its determinant is NEGATIVE, which inverts triangle winding and rendered the
+		// pkm see-through on the back and nowhere else (user 2026-08-30).
+		//
+		// A reflection is never a rigid pose, so it can only be paid for with a SECOND reflection: two of
+		// them compose into a rotation. The second one has to be a plane the GUN ITSELF is symmetric about,
+		// or it shows. That plane is a property of the MODEL, not of its bounding box -- measuring the
+		// thinnest bbox axis (an earlier attempt) picks up bipods, drums and stacked barrels, which is why
+		// toz34 ended up in front of the actor while the pkm did not move at all. X-Ray weapon models put
+		// their local X across the gun, so that is the plane: F = diag(-1,1,1) in the gun's own space.
+		//
+		//     off'' = F * off * S       ->   det = (-1) * (+) * (-1) = positive
+		//
+		// In row-vector form F negates the whole i row, and S negates the y column. What is left over
+		// against a true mirror is only the gun's own chirality -- the bolt handle stays on the side the
+		// model was built with. No rigid transform can change that, and at this size it does not read.
+		Fmatrix	off			= m_StrapOffset;
+
+		off.i.x				= -off.i.x;		// F: reflect the gun across its own longitudinal plane
+		off.i.y				= -off.i.y;
+		off.i.z				= -off.i.z;
+
+		off.i.y				= -off.i.y;		// S: reflect the seat across the actor's sagittal plane
+		off.j.y				= -off.j.y;
+		off.k.y				= -off.k.y;
+		off.c.y				= -off.c.y;
+
+		Position().set		(mRes.c);
+		XFORM().mul			(mRes, off);
+	}
+	// CGameObject::renderable_Render explicitly, NOT inherited:: -- the classes in between add the
+	// held-item behaviour we do not want here, and any early-out in them would silently skip the draw.
+	// This is the same two lines the base does: set the transform, hand the visual to the renderer.
+	CGameObject::renderable_Render();
+	return true;
 }
 
 void CWeapon::signal_HideComplete()

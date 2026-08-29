@@ -525,6 +525,11 @@ public:
 			bool				IsSingleHanded		()	const		{	return m_bIsSingleHanded; }
 
 public:
+	// Draw this weapon on its owner's BACK instead of in his hands (see Weapon.cpp). Used for the
+	// weapon that sits in a slot while something else is being held; NPCs reach the same pose through
+	// CObjectHandler::weapon_bones, which swaps the bone pair under the ordinary render path.
+	// mirrored = seat it on the OTHER side of the back, for the second weapon slot.
+	bool					render_strapped		(bool mirrored = false);
 	IC		LPCSTR			strap_bone0			() const {return m_strap_bone0;}
 	IC		LPCSTR			strap_bone1			() const {return m_strap_bone1;}
 	IC		void			strapped_mode		(bool value) {m_strapped_mode = value;}

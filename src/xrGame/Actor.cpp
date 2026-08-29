@@ -42,6 +42,8 @@
 #include "ai_space.h"
 #include "trade.h"
 #include "inventory.h"
+#include "Weapon.h"				// CWeapon::render_strapped (rifle on the back)
+#include "inventory_space.h"	// RIFLE_SLOT
 #include "Physics.h"
 #include "level.h"
 #include "GamePersistent.h"
@@ -1573,6 +1575,27 @@ void CActor::renderable_Render	()
 	// "this is the shadow" test without plumbing the render phase into the game DLL.
 	if (inventory().ActiveItem())
 		inventory().ActiveItem()->renderable_Render();		// the held weapon belongs in the silhouette
+
+	// ...and the rifle you are NOT holding rides on your back. CInventoryOwner::renderable_Render draws
+	// ONLY the active item, so a weapon parked in the rifle slot while a pistol, a detector or nothing
+	// at all is in hand simply was not on the model -- neither in third person nor in the self-shadow.
+	// Draw it here, on its own strap bones. Weapons without strap_bone0/strap_bone1 in config (15 of
+	// ours still have the pair commented out) return false and are skipped, so this can only ever ADD
+	// a gun that was authored to sit on a back, never misplace one.
+	{
+		// Both weapon slots, not just the first: with interchangeable slots a rifle can sit in either.
+		// The second one is seated mirrored so the two do not end up inside each other. A weapon whose
+		// config has no strap pose (all our pistols still have the pair commented out) returns false and
+		// is simply not drawn, exactly as before.
+		const u32 slots[2]	= { RIFLE_SLOT, PISTOL_SLOT };
+		for (int s = 0; s < 2; ++s)
+		{
+			PIItem strapped = inventory().ItemFromSlot(slots[s]);
+			if (!strapped || strapped == inventory().ActiveItem())	continue;
+			CWeapon* w = smart_cast<CWeapon*>(strapped);
+			if (w)	w->render_strapped(s == 1);
+		}
+	}
 	if (!HUDview())
 		CAttachmentOwner::renderable_Render();				// third person: everything attached
 	else
