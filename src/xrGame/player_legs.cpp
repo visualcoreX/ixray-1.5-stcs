@@ -16,6 +16,10 @@
 // The direction the first one uses is the interesting part -- see update().
 float	g_legs_body_offset		= -0.5f;
 float	g_legs_fwd_offset		= 0.f;
+// How the first-person SHADOW follows the body: 0 off, 1 the whole legs transform, 2 position only.
+// See CActor::renderable_Render for what the difference costs.
+int		g_legs_shadow			= 2;	// 2 = position only: mode 1 dragged the planted-feet yaw lag into
+										// the shadow and it jerked when the player went diagonal
 float	g_legs_spine_offset_y	= 0.1f;		// lifts the spine so the waist does not poke into the lens
 BOOL	g_legs_attach_to_camera	= FALSE;	// see update(): the camera leans on Q/E and the body must not
 BOOL	g_legs_in_low_crouch	= TRUE;		// low crouch folds the body into the camera; still better

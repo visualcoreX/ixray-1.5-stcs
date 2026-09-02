@@ -31,6 +31,12 @@ public:
 	void			destroy					();
 
 	bool			is_active				() const { return m_model != NULL; }
+	// Where the legs model actually stands this frame, and whether it is being drawn at all. The
+	// SHADOW needs both: it comes from the real actor visual, which stays at the actor origin, while
+	// what the player SEES is this model parked behind the camera -- so the two have to be told to
+	// agree. Valid only right after update(); m_draw is per-frame.
+	bool			is_drawn				() const { return m_model && m_draw; }
+	const Fmatrix&	transform				() const { return m_legs_transform; }
 
 private:
 	bool			resolve_config			(CActor* actor, shared_str& sect, shared_str& model);

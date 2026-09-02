@@ -219,7 +219,7 @@ static bool	 s_hud_lock_saved	= false;
 static bool	 s_hud_draw_was		= true;
 static bool	 s_xhair_lock_saved	= false;
 static bool	 s_crosshair_was	= true;
-// hud_info ("Идентификация NPC") is drawn AT the crosshair and reads the target under it, so it goes
+// hud_info ("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ NPC") is drawn AT the crosshair and reads the target under it, so it goes
 // with the crosshair rather than with the rest of the interface -- same veteran threshold, own saved value.
 static bool	 s_info_lock_saved	= false;
 static bool	 s_hud_info_was		= true;
@@ -2389,6 +2389,9 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	// look right, and the offsets below are what you tune it with.
 	{
 		extern float	g_legs_fwd_offset;
+		// how the first-person shadow follows the body: 0 off, 1 whole transform, 2 position only
+		extern int		g_legs_shadow;
+		CMD4(CCC_Integer,	"g_legs_shadow",			&g_legs_shadow,				0, 2);
 		extern float	g_legs_spine_offset_y;
 		extern BOOL		g_legs_attach_to_camera;
 		extern BOOL		g_legs_in_low_crouch;
@@ -2414,6 +2417,15 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 		CMD4(CCC_Float,		"g_legs_spine_offset_y",	&g_legs_spine_offset_y,		-1.0f, 1.0f);
 		CMD4(CCC_Integer,	"g_legs_attach_to_camera",	&g_legs_attach_to_camera,	0, 1);
 		CMD4(CCC_Integer,	"g_legs_in_low_crouch",		&g_legs_in_low_crouch,		0, 1);
+
+		// ...and the same turn smoothing for the WORLD model in third person (Actor_Movement.cpp
+		// g_Orientate). Visual only -- movement still uses the instant heading.
+		extern BOOL		g_actor_yaw_smooth;
+		extern float	g_actor_yaw_speed;
+		extern float	g_actor_yaw_snap;
+		CMD4(CCC_Integer,	"g_actor_yaw_smooth",		&g_actor_yaw_smooth,		0, 1);
+		CMD4(CCC_Float,		"g_actor_yaw_speed",		&g_actor_yaw_speed,			10.f, 1440.f);
+		CMD4(CCC_Float,		"g_actor_yaw_snap",			&g_actor_yaw_snap,			10.f, 180.f);
 	}
 	// Top-left overlay for every playing hud blend: source .omf, motion name, time and state.
 	// Registered here rather than in the DEBUG block so it works in a Release build.

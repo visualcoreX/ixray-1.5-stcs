@@ -431,6 +431,12 @@ void CActor::g_cl_CheckControls(u32 mstate_wf, Fvector &vControlAccel, float &Ju
 
 #define ACTOR_ANIM_SECT "actor_animation"
 
+// Third-person turn smoothing for the actor's world model -- see g_Orientate. Defaults match the
+// first-person legs (player_legs.cpp g_legs_yaw_speed), which is the look being copied.
+BOOL	g_actor_yaw_smooth	= TRUE;
+float	g_actor_yaw_speed	= 240.f;	// degrees a second the drawn body turns to catch up
+float	g_actor_yaw_snap	= 100.f;	// bigger than this in one go = teleport, not a turn: jump to it
+
 #define ACTOR_LLOOKOUT_ANGLE	PI_DIV_4
 #define ACTOR_RLOOKOUT_ANGLE	PI_DIV_4
 
@@ -443,12 +449,25 @@ void CActor::g_Orientate	(u32 mstate_rl, float dt)
 	static float l_strafe_yaw		= deg2rad(pSettings->r_float(ACTOR_ANIM_SECT,	"l_strafe_yaw"));
 	static float r_strafe_yaw		= deg2rad(pSettings->r_float(ACTOR_ANIM_SECT,	"r_strafe_yaw"));
 
-	if(!g_Alive())return;
+	// Both early exits below leave XFORM to somebody else (the ladder code builds its own, a dead
+	// actor is ragdolled), so the smoothed heading has to be parked on the real one -- the torso
+	// callbacks read it every frame and a stale value would twist the upper body by the difference.
+	if(!g_Alive())
+	{
+		m_fModelYawVis			= angle_normalize(r_model_yaw + r_model_yaw_delta);
+		m_bModelYawVisValid		= false;
+		return;
+	}
 	// visual effect of "fwd+strafe" like motion
 	float calc_yaw = 0;
 	if(mstate_real&mcClimb)
 	{
-		if(g_LadderOrient()) return;
+		if(g_LadderOrient())
+		{
+			m_fModelYawVis		= angle_normalize(r_model_yaw + r_model_yaw_delta);
+			m_bModelYawVisValid	= false;
+			return;
+		}
 	}
 	switch(mstate_rl&mcAnyMove)
 	{
@@ -475,9 +494,36 @@ void CActor::g_Orientate	(u32 mstate_rl, float dt)
 	// lerp angle for "effect" and capture torso data from camera
 	angle_lerp		(r_model_yaw_delta,calc_yaw,PI_MUL_4,dt);
 
+	// ---- how fast the WORLD model may turn ---------------------------------------------------
+	// While moving, g_cl_Orientate snaps r_model_yaw straight onto the camera every frame, so in
+	// third person the whole body teleports into a new heading the moment the mouse moves. The
+	// first-person legs never did that (player_legs.cpp rate-limits their heading), which is the
+	// difference the eye picks up. Ease the DRAWN heading the same way, at the same default speed.
+	// r_model_yaw itself must stay instant: g_cl_Analyze rotates vControlAccel by it, so lagging it
+	// would curve the walk and make the controls feel loose. First person is left untouched --
+	// nothing of the actor is on screen there but his shadow, and the legs do their own smoothing.
+	const float model_yaw_target	= angle_normalize(r_model_yaw + r_model_yaw_delta);
+	if (g_actor_yaw_smooth && !HUDview())
+	{
+		// A cutscene teleport or set_actor_direction moves the heading by a lot in one frame; easing
+		// through that would show the actor spinning on the spot for the better part of a second.
+		if (!m_bModelYawVisValid || angle_difference(m_fModelYawVis, model_yaw_target) > deg2rad(g_actor_yaw_snap))
+		{
+			m_fModelYawVis		= model_yaw_target;
+			m_bModelYawVisValid	= true;
+		}
+		else
+			angle_lerp			(m_fModelYawVis, model_yaw_target, deg2rad(g_actor_yaw_speed), dt);
+	}
+	else
+	{
+		m_fModelYawVis			= model_yaw_target;
+		m_bModelYawVisValid		= false;
+	}
+
 	// build matrix
 	Fmatrix mXFORM;
-	mXFORM.rotateY	(-(r_model_yaw + r_model_yaw_delta));
+	mXFORM.rotateY	(-m_fModelYawVis);
 	mXFORM.c.set	(Position());
 	XFORM().set		(mXFORM);
 	VERIFY(_valid(XFORM()));

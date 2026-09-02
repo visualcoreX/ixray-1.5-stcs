@@ -209,7 +209,7 @@ void  CActor::Spin0Callback(CBoneInstance* B)
 	CActor*	A			= static_cast<CActor*>(B->callback_param());	VERIFY	(A);
 
 	Fmatrix				spin;
-	float				bone_yaw	= angle_normalize_signed(A->r_torso.yaw - A->r_model_yaw - A->r_model_yaw_delta)*y_spin0_factor*A->m_fTorsoFollowCam;
+	float				bone_yaw	= angle_normalize_signed(A->r_torso.yaw - A->m_fModelYawVis)*y_spin0_factor*A->m_fTorsoFollowCam;
 	float				bone_pitch	= angle_normalize_signed(A->r_torso.pitch)*p_spin0_factor*A->m_fTorsoFollowCamPitch;
 	float				bone_roll	= angle_normalize_signed(A->r_torso.roll)*r_spin0_factor;
 	Fvector c			= B->mTransform.c;
@@ -227,7 +227,7 @@ void  CActor::Spin1Callback(CBoneInstance* B)
 	// SIGN, established in game and not by derivation: a chest that sits N degrees too far round
 	// is straightened with bone_yaw -= N, so the [actor_torso_yaw] values are the measured offsets
 	// negated. Deriving it from setHPB/mul_43 gave the opposite answer and was wrong.
-	float				bone_yaw	= angle_normalize_signed(A->r_torso.yaw - A->r_model_yaw - A->r_model_yaw_delta)*y_spin1_factor*A->m_fTorsoFollowCam + A->m_fTorsoYawFix;
+	float				bone_yaw	= angle_normalize_signed(A->r_torso.yaw - A->m_fModelYawVis)*y_spin1_factor*A->m_fTorsoFollowCam + A->m_fTorsoYawFix;
 	float				bone_pitch	= angle_normalize_signed(A->r_torso.pitch)*p_spin1_factor*A->m_fTorsoFollowCamPitch;
 	float				bone_roll	= angle_normalize_signed(A->r_torso.roll)*r_spin1_factor;
 	Fvector c			= B->mTransform.c;
@@ -239,7 +239,7 @@ void  CActor::ShoulderCallback(CBoneInstance* B)
 {
 	CActor*	A			= static_cast<CActor*>(B->callback_param());	VERIFY	(A);
 	Fmatrix				spin;
-	float				bone_yaw	= angle_normalize_signed(A->r_torso.yaw - A->r_model_yaw - A->r_model_yaw_delta)*y_shoulder_factor*A->m_fTorsoFollowCam;
+	float				bone_yaw	= angle_normalize_signed(A->r_torso.yaw - A->m_fModelYawVis)*y_shoulder_factor*A->m_fTorsoFollowCam;
 	float				bone_pitch	= angle_normalize_signed(A->r_torso.pitch)*p_shoulder_factor*A->m_fTorsoFollowCamPitch;
 	float				bone_roll	= angle_normalize_signed(A->r_torso.roll)*r_shoulder_factor;
 	Fvector c			= B->mTransform.c;
@@ -251,7 +251,7 @@ void  CActor::HeadCallback(CBoneInstance* B)
 {
 	CActor*	A			= static_cast<CActor*>(B->callback_param());	VERIFY	(A);
 	Fmatrix				spin;
-	float				bone_yaw	= angle_normalize_signed(A->r_torso.yaw - A->r_model_yaw - A->r_model_yaw_delta)*y_head_factor*A->m_fTorsoFollowCam;
+	float				bone_yaw	= angle_normalize_signed(A->r_torso.yaw - A->m_fModelYawVis)*y_head_factor*A->m_fTorsoFollowCam;
 	float				bone_pitch	= angle_normalize_signed(A->r_torso.pitch)*p_head_factor*A->m_fTorsoFollowCamPitch;
 	float				bone_roll	= angle_normalize_signed(A->r_torso.roll)*r_head_factor;
 	Fvector c			= B->mTransform.c;

@@ -289,6 +289,16 @@ protected:
 	float					r_model_yaw_dest;
 	float					r_model_yaw;			// orientation of model
 	float					r_model_yaw_delta;		// effect on multiple "strafe"+"something"
+	// What the world model is actually DRAWN at: r_model_yaw+r_model_yaw_delta eased at a limited
+	// rate, so the body turns into a new heading instead of teleporting to it. r_model_yaw itself is
+	// left alone because movement rides on it (g_cl_Analyze rotates vControlAccel by it). See
+	// g_Orientate; the torso callbacks measure their twist against THIS value so they keep their
+	// lock on the camera while the feet catch up.
+	float					m_fModelYawVis;
+	bool					m_bModelYawVisValid;
+public:
+	IC		float			ModelYawVisual		() const	{ return m_fModelYawVis; }
+protected:
 	// Upper-body yaw correction for the torso set currently playing, radians, added in
 	// Spin1Callback. Zero = stock behaviour; see torso_yaw_fix() in ActorAnimation.cpp.
 	float					m_fTorsoYawFix;

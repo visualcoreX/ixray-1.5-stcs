@@ -236,6 +236,8 @@ CActor::CActor() : CEntityAlive()
 	r_model_yaw				= 0;
 	r_model_yaw_delta		= 0;
 	r_model_yaw_dest		= 0;
+	m_fModelYawVis			= 0;
+	m_bModelYawVisValid		= false;
 	m_fTorsoYawFix			= 0.f;
 	m_fNeckYawFix			= 0.f;
 	m_fTorsoFollowCam		= 1.f;
@@ -1567,6 +1569,41 @@ void CActor::RenderLegs()
 void CActor::renderable_Render	()
 {
 	VERIFY(_valid(XFORM()));
+
+	// FIRST-PERSON SHADOW HAS TO STAND WHERE THE BODY YOU SEE STANDS.
+	// The silhouette is cast by the REAL actor visual, which sits at the actor origin. What the player
+	// actually sees of himself is a different object: the legs model, parked behind the camera by
+	// g_legs_body_offset (and the sprint lean, and the pelvis anchor). So the shadow was cast from one
+	// place and the body drawn in another, and they did not line up. Borrow the legs transform for the
+	// length of this draw -- the weapon and the strapped guns are positioned from XFORM() too, so they
+	// follow the body instead of being left behind with it.
+	// Borrowing the whole transform rather than applying a fixed offset is deliberate: it carries the
+	// sprint lean, the planted-feet yaw lag and the pelvis anchor, none of which are constant, so a
+	// constant shift would match standing still and drift the moment the player ran or turned.
+	// Only while the legs are actually being drawn: in third person, on a ladder, in the low crouch and
+	// with g_legs off, m_draw is false and the actor keeps his own transform, exactly as before.
+	// g_legs_shadow: 0 off (the actor casts from his own place, as before this existed), 1 the whole
+	// legs transform, 2 its POSITION only with the actor's own heading kept. 2 exists because 1 drags
+	// the legs' own stabilisation into the shadow -- the planted-feet yaw lag and the direction vector
+	// that snaps when the movement direction changes -- and that reads as a jerk on the ground when the
+	// player goes diagonal (user 2026-08-30). Which one looks right is a judgement call, so it is a
+	// switch rather than a decision baked in here.
+	extern int g_legs_shadow;
+	const bool legs_shadow		= (0 != g_legs_shadow) && m_legs_controller.is_drawn();
+	const Fmatrix saved_xform	= XFORM();
+	if (legs_shadow)
+	{
+		if (1 == g_legs_shadow)	XFORM().set		(m_legs_controller.transform());
+		else					XFORM().c.set	(m_legs_controller.transform().c);
+
+		// The held weapon is seated from the OWNER's transform, but only once per frame and cached --
+		// so without dropping that cache it keeps the place it was given before the actor moved, and
+		// the gun's shadow stays behind while the body's moves (user 2026-08-30). The strapped guns
+		// need no such thing: render_strapped builds its transform on the spot, every call.
+		if (CWeapon* aw = smart_cast<CWeapon*>(inventory().ActiveItem()))
+			aw->invalidate_xform();
+	}
+
 	inherited::renderable_Render			();
 	// CInventoryOwner::renderable_Render() draws two different things -- the ACTIVE ITEM and the
 	// ATTACHMENTS -- and the self-shadow wants only the first, so they are split here.
@@ -1596,6 +1633,13 @@ void CActor::renderable_Render	()
 			if (w)	w->render_strapped(s == 1);
 		}
 	}
+	if (legs_shadow)
+	{
+		XFORM().set				(saved_xform);	// ...and hand the actor his own place back at once
+		if (CWeapon* aw = smart_cast<CWeapon*>(inventory().ActiveItem()))
+			aw->invalidate_xform();				// ...and let it be recomputed against that, too
+	}
+
 	if (!HUDview())
 		CAttachmentOwner::renderable_Render();				// third person: everything attached
 	else

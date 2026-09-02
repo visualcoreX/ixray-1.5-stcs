@@ -320,6 +320,12 @@ protected:
 	//����� ������� ��������� XFORM � FirePos
 	u32							dwFP_Frame;
 	u32							dwXF_Frame;
+public:
+	// CWeapon::UpdateXForm computes the world transform ONCE per frame and caches it against this.
+	// Anything that moves the OWNER after that point (the first-person shadow borrowing the legs
+	// transform) has to drop the cache, or the item keeps the seat it was given earlier in the frame.
+	void						invalidate_xform	()	{ dwXF_Frame = u32(-1); }
+protected:
 
 	u32							m_animation_slot;
 	shared_str					m_actor_anim_group;		// xrMPE `actor_anim_group`, empty when unused
