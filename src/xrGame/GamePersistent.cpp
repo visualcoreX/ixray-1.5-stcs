@@ -492,6 +492,17 @@ void CGamePersistent::update_logo_intro			()
 
 void CGamePersistent::start_game_intro		()
 {
+	// ...but NOT while the "press any key" gate has a claim on this load. The intro movie used to
+	// start behind the loading screen: invisible (the screen is still being drawn) and silent (master
+	// volume is held at 0 for the whole precache), yet its timer ran, so a player who took his time
+	// pressing a key came out the other side with the video already over -- and its function_on_stop
+	// (xr_effects.start_marsh_intro) had fired anyway.
+	// Testing g_bLoadWaitKey is NOT enough: that only comes up on the LAST precache frame, while the
+	// test below already lets the movie go at dwPrecacheFrame==2, a frame or two earlier. Hence the
+	// "pending" flag, which is up from the moment the load arms the gate.
+	if (g_bLoadWaitKey || g_bLoadWaitKeyPending)
+		return;
+
 	if (g_pGameLevel && g_pGameLevel->bReady && Device.dwPrecacheFrame<=2){
 		m_intro_event.bind		(this,&CGamePersistent::update_game_intro);
 		if (0==_stricmp(m_game_params.m_new_or_load,"new")){

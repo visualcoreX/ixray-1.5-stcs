@@ -254,6 +254,10 @@ extern	ENGINE_API xr_list<LOADING_EVENT>		g_loading_events;
 // table), so the engine never has to know a language.
 extern	ENGINE_API bool							g_bLoadWaitKey;
 extern	ENGINE_API string256					g_sLoadWaitKeyText;
+// ...and "this load is going to raise that gate", up from the moment PreCache arms it. g_bLoadWaitKey
+// itself only comes up on the LAST precache frame, which is too late for anything the game wants to
+// hold back for the whole precache.
+extern	ENGINE_API bool							g_bLoadWaitKeyPending;
 
 //#include	"R_Backend_Runtime.h"
 

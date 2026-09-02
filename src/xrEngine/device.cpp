@@ -109,6 +109,11 @@ extern void CheckPrivilegySlowdown();
 // ---------------------------------------------------------------------------------------------
 ENGINE_API bool			g_bLoadWaitKey		= false;
 ENGINE_API string256	g_sLoadWaitKeyText	= { 0 };
+// Raised the moment a load ARMS the gate, i.e. several precache frames before g_bLoadWaitKey itself
+// comes up on the last one. Game code needs the early warning: anything that keys off "the precache
+// is nearly over" (the intro movie starts at dwPrecacheFrame<=2) would otherwise run behind the
+// loading screen while the player has not pressed anything yet.
+ENGINE_API bool			g_bLoadWaitKeyPending	= false;
 
 static bool				s_wait_key_armed	= false;	// this load asked for the gate
 static bool				s_wait_key_open		= false;	// the gate is up, snapshot below is valid
@@ -166,6 +171,7 @@ static void				wait_key_close		()
 	s_wait_key_armed	= false;
 	s_wait_key_open		= false;
 	g_bLoadWaitKey		= false;
+	g_bLoadWaitKeyPending	= false;
 	Device.Pause		(FALSE, TRUE, FALSE, "load_wait_key");
 	bShowPauseString	= s_wait_pause_str;
 }
@@ -197,6 +203,10 @@ void CRenderDevice::End		(void)
 		pApp->load_draw_internal	();
 		if (0==dwPrecacheFrame)
 		{
+			// Safety net: the precache is over, so nothing is waiting on a key any more -- even if
+			// the gate never actually opened (dedicated server, a load with no precache frames).
+			// Whatever the game held back for it must be released here or it never runs.
+			g_bLoadWaitKeyPending	= false;
 
 #ifdef INGAME_EDITOR
 			load_finished			= true;
@@ -291,7 +301,7 @@ void CRenderDevice::PreCache	(u32 amount, bool wait_user_input)
 	// The gate needs a precache to hang off; with none (or none left) there is no loading screen
 	// to hold. Arming is a plain flag, so the two PreCache calls a single load makes still buy
 	// exactly one wait.
-	if (amount && wait_user_input && !s_wait_key_open)	s_wait_key_armed = true;
+	if (amount && wait_user_input && !s_wait_key_open)	s_wait_key_armed = g_bLoadWaitKeyPending = true;
 	dwPrecacheFrame	= dwPrecacheTotal = amount;
 	if (amount && !precache_light && g_pGameLevel && g_loading_events.empty()) {
 		precache_light					= ::Render->light_create();
