@@ -39,6 +39,7 @@ protected:
 	
 	CUIStatic*				m_caption;
 	shared_str				m_caption_const;
+	shared_str				m_caption_time;		// game clock shown in the caption, last value drawn
 	CUIAnimatedStatic*		m_anim_static;
 
 	// Текущий активный диалог

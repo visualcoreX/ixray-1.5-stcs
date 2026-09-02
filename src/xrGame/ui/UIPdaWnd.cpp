@@ -607,6 +607,16 @@ void CUIPdaWnd::Update()
 	// player moved. TryPlayBlowoutAnim latches (fires once) and only acts in eIdle, so polling it is safe.
 	if (hi)	hi->TryPlayBlowoutAnim();
 
+	// Keep the clock in the caption ticking while the PDA is open. Rebuilt only when the MINUTE
+	// actually changes -- SetActiveCaption walks the tab list, and there is no reason to do that
+	// every frame.
+	if ( g_pGameLevel && g_pGameLevel->bReady )
+	{
+		const shared_str now = InventoryUtilities::GetGameTimeAsString( InventoryUtilities::etpTimeToMinutes );
+		if ( now._get() != m_caption_time._get() )
+			SetActiveCaption();
+	}
+
 	if (g_pda_dbg && Device.dwTimeGlobal - s_pda_dbg_tm > 700)
 	{
 		s_pda_dbg_tm = Device.dwTimeGlobal;
@@ -739,6 +749,15 @@ void CUIPdaWnd::SetActiveSubdialog(const shared_str& section)
 
 void CUIPdaWnd::SetActiveCaption()
 {
+	// The caption used to be just "<m_caption_const><tab>", i.e. the fake device id from the XML
+	// (configs\ui\pda.xml, caption_static) glued to the tab name. The game clock now leads it:
+	//     21:37 \\ FFD@32-45\Tasks
+	// Update() re-runs this whenever the minute changes.
+	// Stamped BEFORE the loop on purpose: if the active section is not in the tab list the loop
+	// falls through, and leaving the stamp behind would have Update() call this every frame.
+	if ( g_pGameLevel && g_pGameLevel->bReady )
+		m_caption_time = InventoryUtilities::GetGameTimeAsString( InventoryUtilities::etpTimeToMinutes );
+
 	TABS_VECTOR*	btn_vec		= UITabControl->GetButtonsVector();
 	TABS_VECTOR::iterator it_b	= btn_vec->begin();
 	TABS_VECTOR::iterator it_e	= btn_vec->end();
@@ -747,8 +766,11 @@ void CUIPdaWnd::SetActiveCaption()
 		if ( (*it_b)->m_btn_id._get() == m_sActiveSection._get() )
 		{
 			LPCSTR cur = (*it_b)->GetText();
+			// c_str() on an empty shared_str is NULL, and strconcat would walk it
+			LPCSTR tm  = m_caption_time.size()  ? m_caption_time.c_str()  : "";
+			LPCSTR dev = m_caption_const.size() ? m_caption_const.c_str() : "";
 			string256 buf;
-			strconcat( sizeof(buf), buf, m_caption_const.c_str(), cur );
+			strconcat( sizeof(buf), buf, tm, " \\\\ ", dev, cur );
 			SetCaption( buf );
 			return;
 		}
