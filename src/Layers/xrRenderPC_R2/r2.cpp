@@ -92,6 +92,23 @@ extern ENGINE_API BOOL r2_sun_static;
 extern ENGINE_API BOOL r2_advanced_pp;	//	advanced post process and effects
 //////////////////////////////////////////////////////////////////////////
 // Just two static storage
+// Shadow map size. It is an options-menu setting now (r2_smapsize) rather than a -smapNNNN switch on
+// the shortcut, which means it has to be picked up at RESET as well as at create: vid_restart never
+// reaches create(), it goes through reset_begin/reset_end, and reset_end is where the render targets --
+// sized from o.smapsize -- are rebuilt. One helper keeps the two call sites from drifting apart.
+// The -smapNNNN switches still WIN for the run they are given on, so an existing shortcut behaves
+// exactly as before instead of being silently ignored.
+void CRender::gwr_apply_smapsize()
+{
+	o.smapsize			= ps_r_smapsize;
+	if (strstr(Core.Params,"-smap1536"))	o.smapsize	= 1536;
+	if (strstr(Core.Params,"-smap2048"))	o.smapsize	= 2048;
+	if (strstr(Core.Params,"-smap2560"))	o.smapsize	= 2560;
+	if (strstr(Core.Params,"-smap3072"))	o.smapsize	= 3072;
+	if (strstr(Core.Params,"-smap4096"))	o.smapsize	= 4096;
+	Msg					("* SMAP: %d", u32(o.smapsize));
+}
+
 void					CRender::create					()
 {
 	Device.seqFrame.Add	(this,REG_PRIORITY_HIGH+0x12345678);
@@ -218,12 +235,7 @@ void					CRender::create					()
 	o.nvdbt				= HW.support	((D3DFORMAT)MAKEFOURCC('N','V','D','B'), D3DRTYPE_SURFACE, 0);
 	if (o.nvdbt)		Msg	("* NV-DBT supported and used");
 
-	// options (smap-pool-size)
-	if (strstr(Core.Params,"-smap1536"))	o.smapsize	= 1536;
-	if (strstr(Core.Params,"-smap2048"))	o.smapsize	= 2048;
-	if (strstr(Core.Params,"-smap2560"))	o.smapsize	= 2560;
-	if (strstr(Core.Params,"-smap3072"))	o.smapsize	= 3072;
-	if (strstr(Core.Params,"-smap4096"))	o.smapsize	= 4096;
+	gwr_apply_smapsize	();
 
 	// gloss
 	char*	g			= strstr(Core.Params,"-gloss ");
@@ -327,6 +339,7 @@ void CRender::reset_begin()
 
 void CRender::reset_end()
 {
+	gwr_apply_smapsize			();	// vid_restart lands here, never in create()
 	//R_CHK						(HW.pDevice->CreateQuery(D3DQUERYTYPE_EVENT,&q_sync_point[0]));
 	//R_CHK						(HW.pDevice->CreateQuery(D3DQUERYTYPE_EVENT,&q_sync_point[1]));
 	for (u32 i=0; i<HW.Caps.iGPUNum; ++i)

@@ -12,6 +12,17 @@ extern ECORE_API	xr_token	qssao_token[];
 extern ECORE_API	u32			ps_r_sun_quality;	//	=	0;
 extern ECORE_API	xr_token	qsun_quality_token[];
 
+// Shadow map resolution. Used to be reachable only through the -smapNNNN command line switch, which
+// meant editing the shortcut; it is an ordinary option now. Needs a video restart -- the shadow render
+// targets are sized from it and SMAP_size is compiled into the shaders.
+extern ECORE_API	u32			ps_r_smapsize;		//	=	2048;
+extern ECORE_API	xr_token	qsmapsize_token[];
+
+// How far the three sun shadow cascades reach, as a multiple of the stock 15 / 40 / 160 metres.
+// Bigger = shadows further out for the same shadow map, i.e. fewer texels per metre -- it is the
+// natural partner of ps_r_smapsize, which buys those texels back.
+extern ECORE_API	float		ps_r_sun_cascade_scale;	//	=	1.0f;
+
 extern ECORE_API	u32			ps_r3_msaa;	//	=	0;
 extern ECORE_API	xr_token	qmsaa_token[];
 

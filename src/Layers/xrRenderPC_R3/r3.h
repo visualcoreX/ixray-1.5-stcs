@@ -246,6 +246,7 @@ public:
 
 	// Loading / Unloading
 	virtual void					create						();
+			void					gwr_apply_smapsize			();	// r2_smapsize -> o.smapsize (create + reset)
 	virtual void					destroy						();
 	virtual	void					reset_begin					();
 	virtual	void					reset_end					();

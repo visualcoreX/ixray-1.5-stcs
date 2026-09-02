@@ -41,6 +41,11 @@ Fvector3		wform	(Fmatrix& m, Fvector3 const& v)
 	return		r3;
 }
 
+// The scale the cascades were last built with. init_cacades runs from the CRender CONSTRUCTOR, once
+// per launch -- vid_restart does not rebuild CRender either -- so a changed setting would otherwise
+// need a full restart. render_sun_cascades compares against this and rebuilds when it moves.
+static float s_cascade_scale_applied = 1.0f;
+
 void CRender::init_cacades()
 {
 	u32 cascade_count = 3;
@@ -48,19 +53,30 @@ void CRender::init_cacades()
 
 	float fBias = -0.0000025f;
 
+	// r2_sun_cascade_scale: how far each cascade reaches, as a multiple of the stock extents (metres).
+	// Bigger pushes the shadows further out over the SAME shadow map, so each metre gets fewer texels
+	// and the shadows soften -- which is why it belongs next to r2_smapsize, that buys the texels back.
+	// The bias keeps tracking the size exactly as it did before.
+	const float k					= ps_r_sun_cascade_scale;
+	s_cascade_scale_applied			= k;
+
 	m_sun_cascades[0].reset_chain = true;
-	m_sun_cascades[0].size = 15;
+	m_sun_cascades[0].size = 15.f * k;
 	m_sun_cascades[0].bias = m_sun_cascades[0].size*fBias;
 
-	m_sun_cascades[1].size = 40;
+	m_sun_cascades[1].size = 40.f * k;
 	m_sun_cascades[1].bias = m_sun_cascades[1].size*fBias;
 
- 	m_sun_cascades[2].size = 160;
+ 	m_sun_cascades[2].size = 160.f * k;
  	m_sun_cascades[2].bias = m_sun_cascades[2].size*fBias;
 }
 
 void CRender::render_sun_cascades ( )
 {
+	// pick the setting up live -- see s_cascade_scale_applied above
+	if (!fsimilar(s_cascade_scale_applied, ps_r_sun_cascade_scale))
+		init_cacades			();
+
 	bool b_need_to_render_sunshafts = RImplementation.Target->need_to_render_sunshafts();
 	bool last_cascade_chain_mode = m_sun_cascades.back().reset_chain;
 	if ( b_need_to_render_sunshafts )

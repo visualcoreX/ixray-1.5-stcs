@@ -42,6 +42,20 @@ xr_token							qsun_quality_token							[ ]={
 	{ 0,							0												}
 };
 
+// Sizes are the token VALUES, so o.smapsize can take them straight. The names are plain numbers on
+// purpose: they read the same in every language and need no string table entry.
+u32			ps_r_smapsize			=	2048;
+xr_token							qsmapsize_token								[ ]={
+	{ "1536",						1536											},
+	{ "2048",						2048											},
+	{ "2560",						2560											},
+	{ "3072",						3072											},
+	{ "4096",						4096											},
+	{ 0,							0												}
+};
+
+float		ps_r_sun_cascade_scale	=	1.0f;
+
 u32			ps_r3_msaa				=	0;			//	=	0;
 xr_token							qmsaa_token							[ ]={
 	{ "st_opt_off",					0												},
@@ -787,6 +801,8 @@ void		xrRender_initconsole	()
 	// r2_hud_shadow* floats stay as the tuning knobs behind it.
 	CMD3(CCC_Mask, "r__hud_shadow", &ps_r__common_flags, RFLAG_HUD_SHADOW);
 	CMD3(CCC_Token,		"r2_sun_quality",				&ps_r_sun_quality,			qsun_quality_token);
+	CMD3(CCC_Token,		"r2_smapsize",					&ps_r_smapsize,				qsmapsize_token);
+	CMD4(CCC_Float,		"r2_sun_cascade_scale",			&ps_r_sun_cascade_scale,	0.25f,	4.0f);
 
 	//	Igor: need restart
 	CMD3(CCC_Mask,		"r2_soft_water",				&ps_r2_ls_flags,			R2FLAG_SOFT_WATER);
