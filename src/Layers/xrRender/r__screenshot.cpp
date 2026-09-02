@@ -407,8 +407,32 @@ _end_:
 
 #endif	//	USE_DX10
 
+// THE SAVE THUMBNAIL IS TAKEN AT THE END OF A FRAME, NOT AT THE START OF ONE.
+//
+// CMainMenu::OnFrame asks for it from the FRAME phase, before anything has been drawn, so grabbing
+// HW.pBaseRT there reads whatever the previous Present left behind. The swap chain is created with
+// DXGI_SWAP_EFFECT_DISCARD (dx10HW.cpp), and by spec the back buffer is UNDEFINED after a Present --
+// it merely used to survive in practice. In a borderless window the size of the screen Windows uses
+// direct flip, where it really does not survive, and every save thumbnail came out one flat colour
+// (user 2026-08-30; the saves from earlier the same day still have pictures).
+//
+// So the request is only remembered here and served from DoAsyncScreenshot below, which End() calls
+// after the frame is rendered and BEFORE the lens present-bridge overwrites the back buffer. The
+// one-frame delay CMainMenu already arranges is what makes there be a frame to capture at all.
+static bool			s_gamesave_ss_pending	= false;
+static bool			s_gamesave_ss_now		= false;	// re-entry guard: see DoAsyncScreenshot
+static string_path	s_gamesave_ss_name		= {0};
+
 void CRender::Screenshot(ScreenshotMode mode, LPCSTR name)
 {
+	// ScreenshotImpl is protected and DoAsyncScreenshot is a free function, so the deferred capture
+	// comes back through this same entry point -- the guard is what stops it deferring itself forever.
+	if (SM_FOR_GAMESAVE == mode && !s_gamesave_ss_now && name && name[0])
+	{
+		xr_strcpy				(s_gamesave_ss_name, name);
+		s_gamesave_ss_pending	= true;
+		return;
+	}
 	ScreenshotImpl(mode, name, NULL);
 }
 
@@ -552,4 +576,14 @@ void CRender::ScreenshotAsyncEnd(CMemoryWriter &memory_writer)
 void DoAsyncScreenshot()
 {
 	RImplementation.Target->DoAsyncScreenshot();
+
+	// ...and the deferred save thumbnail, for the reason spelled out at CRender::Screenshot. Here the
+	// back buffer holds the frame that was just drawn, which is the whole point.
+	if (s_gamesave_ss_pending)
+	{
+		s_gamesave_ss_pending	= false;
+		s_gamesave_ss_now		= true;
+		RImplementation.Screenshot(IRender_interface::SM_FOR_GAMESAVE, s_gamesave_ss_name);
+		s_gamesave_ss_now		= false;
+	}
 }
