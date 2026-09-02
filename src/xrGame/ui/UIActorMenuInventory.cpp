@@ -361,6 +361,14 @@ void CUIActorMenu::DetachAddon(LPCSTR addon_name)
 		CGameObject::u_EventSend				(P);
 	};
 	CurrentIItem()->Detach						(addon_name, true);
+
+	// CInventoryItem::Detach spawns the addon into whatever holds the WEAPON (ID_Parent =
+	// H_Parent()->ID()). Detach from a gun lying in the box or on the corpse and the addon lands
+	// THERE -- and that list is not event-driven (OnInventoryAction serves only the actor's lists),
+	// so it stayed invisible until the search screen was reopened. The spawn is a net round trip,
+	// so there is nothing to add by hand yet: arm the watch and let Update() re-read the container
+	// when it actually arrives. No-op outside mmDeadBodySearch.
+	WatchDeadBodyBag							();
 }
 
 void CUIActorMenu::InitCellForSlot( u32 slot_idx ) 
@@ -1011,8 +1019,31 @@ void CUIActorMenu::ProcessPropertiesBoxClicked( CUIWindow* w, void* d )
 			break;
 		}
 	case INVENTORY_ATTACH_ADDON:
-		AttachAddon( (PIItem)(m_UIPropertiesBox->GetClickedItem()->GetData()) );
-		break;
+		{
+			// The addon does not have to be in the actor's bag: the properties box is offered in
+			// mmDeadBodySearch too, so it may be lying in a BOX or on a corpse. Attaching DESTROYS
+			// the addon object, and nothing tells that list -- OnInventoryAction maintains only the
+			// ACTOR's lists -- so its cell went on pointing at freed memory and the very next mouse
+			// hover crashed in highlight_ammo_for_weapon: smart_cast is a virtual call, and it was
+			// made on a dead object (EIP jumped into garbage).
+			// Take the cell out here, by hand, and arm the watch so the container is re-read once
+			// the destroy has actually travelled through the net queue a frame or two later.
+			CUIDragDropListEx* const src_list = cell_item->OwnerList();
+			const bool foreign = (src_list && src_list == m_pDeadBodyBagList);
+
+			AttachAddon( (PIItem)(m_UIPropertiesBox->GetClickedItem()->GetData()) );
+
+			if ( foreign )
+			{
+				SetCurrentItem	(NULL);
+				// force_root = false: a stack of identical scopes pops ONE child, and PopChild swaps
+				// m_pData so the cell that stays keeps a live item.
+				CUICellItem* dying = src_list->RemoveItem( cell_item, false );
+				xr_delete		(dying);
+				WatchDeadBodyBag();
+			}
+			break;
+		}
 	case INVENTORY_DETACH_SCOPE_ADDON:
 		if ( weapon )
 		{
