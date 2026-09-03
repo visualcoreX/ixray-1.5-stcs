@@ -328,6 +328,53 @@ void STorsoWpn::Create(IKinematicsAnimated* K, LPCSTR base0, LPCSTR base1)
 	attack_zoom		= K->ID_Cycle_Safe(strconcat(sizeof(buf),buf,base0,"_torso",base1,"_attack_0"));
 	fire_idle		= K->ID_Cycle_Safe(strconcat(sizeof(buf),buf,base0,"_torso",base1,"_attack_1"));
 	fire_end		= K->ID_Cycle_Safe(strconcat(sizeof(buf),buf,base0,"_torso",base1,"_attack_2"));
+	// A second slip of the same kind, and the one behind "the head and arms run out of step with the
+	// body while sprinting with the detector out": norm_torso_0+detector_escape_0 is the ONLY motion
+	// of the pack's 961 _torso_ cycles whose def says bone_or_part = BI_NONE instead of the torso
+	// partition. CKinematicsAnimated::LL_PlayCycle treats BI_NONE as "every partition"
+	// (SkeletonAnimated.cpp:305) and unrolls the cycle onto legs, torso AND head, so the sprint
+	// cycle drove the legs over their own cycle and the head over head_idle_0 -- which reads exactly
+	// as the head swinging and the arms losing the body's rhythm. Only that one combination showed it:
+	// the set is the empty-hands one, so it needs the detector out and no weapon in hand, and escape_0
+	// is the sprint.
+	// Put the whole torso set back on the torso partition, taking the index from a member of this very
+	// set rather than hardcoding it. The _all_*_attack_* members below are NOT touched: they are the
+	// full-body throws, and BI_NONE is correct for them.
+	{
+		u16 torso_part = u16(1);					// the pack's torso partition; 961 motions agree
+		if (moving[eIdle])
+		{
+			CMotionDef* d0 = K->LL_GetMotionDef(moving[eIdle]);
+			if (d0 && BI_NONE != d0->bone_or_part)	torso_part = d0->bone_or_part;
+		}
+		MotionID* const set[] = {
+			&moving[eIdle], &moving[eWalk], &moving[eRun], &moving[eSprint],
+			&relaxed_moving[eIdle], &relaxed_moving[eWalk], &relaxed_moving[eRun], &relaxed_moving[eSprint],
+			&zoom, &holster, &draw, &draw_device, &holster_device, &draw_all, &holster_all,
+			&reload, &reload_1, &reload_2, &reload_half, &reload_half_1, &reload_half_2,
+			&drop, &attack, &attack_zoom, &fire_idle, &fire_end };
+		for (int i = 0; i < int(sizeof(set)/sizeof(set[0])); ++i)
+		{
+			if (!*set[i])	continue;
+			CMotionDef* d = K->LL_GetMotionDef(*set[i]);
+			if (d && d->bone_or_part != torso_part)		d->bone_or_part = torso_part;
+		}
+		// ...and the SAME motion is missing esmSyncPart, which is the other half of the report ("the
+		// head and arms run out of step with the rest"). That flag scrubs the torso blend to the LEGS'
+		// phase every frame; without it the upper body cycles at its own rate against the leg cycle and
+		// the two drift in and out of step -- a slow beat, which is why it looked fine some of the time.
+		// 175 of the pack's 176 locomotion torso cycles carry it, and 39 of its 40 *_escape_0; only the
+		// locomotion members are touched here, because that is where riding the legs' phase is the point.
+		MotionID* const loco[] = {
+			&moving[eIdle], &moving[eWalk], &moving[eRun], &moving[eSprint],
+			&relaxed_moving[eIdle], &relaxed_moving[eWalk], &relaxed_moving[eRun], &relaxed_moving[eSprint] };
+		for (int i = 0; i < int(sizeof(loco)/sizeof(loco[0])); ++i)
+		{
+			if (!*loco[i])	continue;
+			CMotionDef* d = K->LL_GetMotionDef(*loco[i]);
+			if (d && !(d->flags & esmSyncPart))		d->flags = u16(d->flags | esmSyncPart);
+		}
+	}
 	all_attack_0	= K->ID_Cycle_Safe(strconcat(sizeof(buf),buf,base0,"_all",base1,"_attack_0"));
 	all_attack_1	= K->ID_Cycle_Safe(strconcat(sizeof(buf),buf,base0,"_all",base1,"_attack_1"));
 	all_attack_2	= K->ID_Cycle_Safe(strconcat(sizeof(buf),buf,base0,"_all",base1,"_attack_2"));
@@ -733,6 +780,14 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 	// numeric slots, and it is read after that branch has exited. Declaring it inside left a
 	// dangling pointer -- named groups (shared_str) were fine, every numeric slot read garbage.
 	string16	slot_key;
+	// ...and the SAME trap, one indirection further: with a detector out TW_used points at the merged
+	// "<x>+detector" set, which used to be a local of the branch below. Reading a dead stack slot at
+	// the bottom of this function made the action match ("_run" / "_walk" / nothing) flip about from
+	// frame to frame, so the yaw correction eased toward a different target every frame and the whole
+	// upper body -- head included -- rocked left and right while running with the device out. Without
+	// a detector TW_used points into ST->m_torso[], which is a member and always valid, which is why
+	// only the detector showed it.
+	STorsoWpn	det_merged;
 	// ...and with nothing in hand the spine/head stop chasing the camera (xrMPE behaviour): the
 	// pack's empty-hands set animates the whole body, and the stock twist only fights it.
 	const float	follow_target	= inventory().ActiveItem() ? 1.f : g_actor_torso_follow_empty;
@@ -791,7 +846,6 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 		CWeapon			*W = smart_cast<CWeapon*>(_i);
 		CMissile		*M = smart_cast<CMissile*>(_i);
 		CArtefact		*A = smart_cast<CArtefact*>(_i);
-		STorsoWpn		det_merged;			// storage for the merged +detector set, used via TW below
 
 		if (H) {
 			VERIFY(H->animation_slot() <= _total_anim_slots_);
