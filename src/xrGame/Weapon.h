@@ -421,6 +421,30 @@ public:
 	u8		GetAddonsState						()		const		{return m_flagsAddOnState;};
 	void	SetAddonsState						(u8 st)	{m_flagsAddOnState=st;}//dont use!!! for buy menu only!!!
 
+	// ---- WHICH scope is attached, carried in the spare bits of the addon byte ----------------------
+	// The addon byte uses three bits (scope 0x01, launcher 0x02, silencer 0x04) and travels everywhere
+	// state has to survive: the spawn packet, the update packet, the savegame and all.spawn. m_cur_scope
+	// travelled in none of them -- it was only ever written into the client blob (CWeapon::save ->
+	// CSE_Abstract::client_data), and that blob is DROPPED the moment an object goes offline
+	// (CSE_ALifeDynamicObject::switch_offline). So a weapon left in a stash and revisited after a level
+	// change came back wearing whatever GetCurrentScopeSection's fallback picked, not the fitted scope.
+	// Four of the five spare bits carry the index instead: no format change anywhere.
+	// The field is index+1, so a ZERO (every old save, every all.spawn weapon) still means "unknown" and
+	// keeps the legacy fallback -- only weapons whose scope we actually saw attached carry a number.
+	// The silencer and the launcher need nothing of the sort -- a weapon has exactly one of each
+	// (silencer_name / grenade_launcher_name), so their flag bit already says all there is to know.
+	enum { eScopeIdxShift = 3, eScopeIdxMask = 0x78 };	// bits 3..6, holds 1..15 -> scopes 0..14
+	IC u8	ScopeIndexFromFlags					()		const
+	{
+		const u8 v = u8((m_flagsAddOnState & eScopeIdxMask) >> eScopeIdxShift);
+		return v ? u8(v - 1) : u8(0xFF);				// 0 = not recorded
+	}
+	IC void	StoreScopeIndexInFlags				(u8 idx)	// 0xFF clears the field
+	{
+		const u8 v = (idx < 15) ? u8(idx + 1) : u8(0);
+		m_flagsAddOnState = u8((m_flagsAddOnState & ~eScopeIdxMask) | (v << eScopeIdxShift));
+	}
+
 	bool bReloadKeyPressed;
 	bool bAmmotypeKeyPressed;
 

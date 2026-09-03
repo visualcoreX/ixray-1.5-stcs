@@ -1436,6 +1436,10 @@ BOOL CWeapon::net_Spawn		(CSE_Abstract* DC)
 	//iAmmoCurrent					= E->a_current;
 	iAmmoElapsed					= E->a_elapsed;
 	m_flagsAddOnState				= E->m_addon_flags.get();
+	// ...and with it, WHICH scope is on the gun -- see StoreScopeIndexInFlags in Weapon.h. Has to be
+	// read before InitAddons() below, which already asks m_cur_scope for the bones and the offsets.
+	m_cur_scope						= (m_flagsAddOnState & CSE_ALifeItemWeapon::eWeaponAddonScope)
+									? ScopeIndexFromFlags() : u8(0xFF);
 	m_ammoType						= E->ammo_type;
 	SetState						(E->wpn_state);
 	SetNextState					(E->wpn_state);
@@ -1514,6 +1518,8 @@ void CWeapon::net_Import(NET_Packet& P)
 	P.r_u8					(NewAddonState);
 
 	m_flagsAddOnState		= NewAddonState;
+	m_cur_scope				= (m_flagsAddOnState & CSE_ALifeItemWeapon::eWeaponAddonScope)
+							? ScopeIndexFromFlags() : u8(0xFF);
 	UpdateAddonsVisibility	();
 
 	u8 ammoType, wstate;

@@ -3350,6 +3350,9 @@ bool CWeaponMagazined::Attach(PIItem pIItem, bool b_send_event)
 		// GS multi-scope: remember WHICH scope this is so its section drives bones/offsets/zoom/lens.
 		int si = ScopeIndexByItem(pIItem->object().cNameSect().c_str());
 		m_cur_scope = (si >= 0) ? (u8)si : 0xFF;
+		// ...and into the addon byte, the only piece of this that reaches the server object and so
+		// survives the weapon going offline (see StoreScopeIndexInFlags in Weapon.h)
+		StoreScopeIndexInFlags(m_cur_scope);
 		// GS default_brightness_step: start the reticle/NV illumination at the scope's default level (night
 		// scopes start bright, not at the dim step 0).
 		ResetScopeIllumToDefault();
@@ -3403,6 +3406,7 @@ bool CWeaponMagazined::Detach(const char* item_section_name, bool b_spawn_item)
 	{
 		m_flagsAddOnState &= ~CSE_ALifeItemWeapon::eWeaponAddonScope;
 		m_cur_scope = 0xFF;		// GS multi-scope: no scope active
+		StoreScopeIndexInFlags(0xFF);	// ...and clear the index bits with it, so a bare gun carries none
 
 		UpdateAddonsVisibility();
 		InitAddons();
