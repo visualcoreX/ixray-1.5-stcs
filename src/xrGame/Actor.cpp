@@ -1591,10 +1591,21 @@ void CActor::renderable_Render	()
 	extern int g_legs_shadow;
 	const bool legs_shadow		= (0 != g_legs_shadow) && m_legs_controller.is_drawn();
 	const Fmatrix saved_xform	= XFORM();
+	Fmatrix att_delta;			att_delta.identity();	// the same move, for things seated on the body
 	if (legs_shadow)
 	{
 		if (1 == g_legs_shadow)	XFORM().set		(m_legs_controller.transform());
 		else					XFORM().c.set	(m_legs_controller.transform().c);
+
+		// ATTACHMENTS (the detector in the off hand, and anything else hung on a bone) are NOT
+		// positioned from XFORM() at draw time: AttachmentCallback seats them once per frame during
+		// the owner's bone update, world = owner * bone * offset, and caches that in the object. So
+		// moving the actor here never reached them and the detector went on casting its shadow from
+		// where the body is not -- the same miss the held weapon had, one indirection further out.
+		// Keep the move as a delta (borrowed after the actor's own is undone) and apply it to each
+		// attachment for the length of its draw, below.
+		Fmatrix inv_saved;		inv_saved.invert(saved_xform);
+		att_delta.mul_43		(XFORM(), inv_saved);
 
 		// The held weapon is seated from the OWNER's transform, but only once per frame and cached --
 		// so without dropping that cache it keeps the place it was given before the actor moved, and
@@ -1649,8 +1660,15 @@ void CActor::renderable_Render	()
 		// wholesale also took the DETECTOR out, which is why it cast none. Draw the rest.
 		const xr_vector<CAttachableItem*>& att = attached_objects();
 		for (xr_vector<CAttachableItem*>::const_iterator I = att.begin(); I != att.end(); ++I)
-			if (!smart_cast<CTorch*>(&(*I)->item().object()))
-				(*I)->renderable_Render();
+		{
+			CGameObject& o = (*I)->item().object();
+			if (smart_cast<CTorch*>(&o))	continue;
+			// ...moved onto the legs' body for the draw, exactly like the actor and his weapon above
+			const Fmatrix att_saved	= o.XFORM();
+			if (legs_shadow)		o.XFORM().mulA_43(att_delta);
+			(*I)->renderable_Render();
+			if (legs_shadow)		o.XFORM().set(att_saved);
+		}
 	}
 	VERIFY(_valid(XFORM()));
 }
