@@ -237,7 +237,9 @@ public:
 	// GS scope nightvision (collimator.pas:523 UpdateWeaponZoomPpe): `scope_nightvision` names an
 	// effector section whose PPE runs while aiming through the optic, at a strength set by the
 	// reticle-brightness step. The gauss buys it with its `nv` node.
-	shared_str		ScopeNVSection		() const;
+	shared_str		ScopeNVSectionKey	(LPCSTR key) const;
+	shared_str		ScopeNVSection		() const;	// scope_nightvision: runs whenever the optic is aimed
+	shared_str		ScopeNV2DSection	() const;	// scope_nightvision_2d: only while the 2D scope image is up
 	float			ScopeNVFactor		() const;
 	void			UpdateScopeNV		();
 	void			StopScopeNV			();

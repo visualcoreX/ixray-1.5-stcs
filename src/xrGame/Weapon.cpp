@@ -3370,18 +3370,27 @@ void CWeapon::LoadScopeIllumParams()
 // `scope_nightvision` names an effector section ([scope_nightvision_gauss] -> nightvision_gauss.ppe).
 // It sits on the ACTIVE SCOPE when one is attached, on the weapon for a permanent optic -- and for the
 // gauss it arrives with an UPGRADE, which is why the upgrade sections are asked before the weapon's own.
-shared_str CWeapon::ScopeNVSection() const
+// Two keys, because an optic can get its night vision from either of two places and they must not
+// stack: `scope_nightvision` runs whenever the optic is aimed (the gauss buys it with its `nv` upgrade
+// and its lens is a plain one, so the effector is that scope's only night vision, lens or no lens),
+// while `scope_nightvision_2d` runs ONLY while the vanilla 2D scope image is up. The 1PN93/PN-23
+// night scopes use the second: with the 3D lens on, the lens shader already draws the night picture
+// inside the optic, and a fullscreen tint over it is simply wrong.
+shared_str CWeapon::ScopeNVSectionKey(LPCSTR key) const
 {
 	shared_str sc = GetCurrentScopeSection();
-	if (IsScopeAttached() && sc.size() && pSettings->line_exist(*sc, "scope_nightvision"))
-		return pSettings->r_string(*sc, "scope_nightvision");
+	if (IsScopeAttached() && sc.size() && pSettings->line_exist(*sc, key))
+		return pSettings->r_string(*sc, key);
 
-	LPCSTR up = upgraded_string("scope_nightvision", NULL);
+	LPCSTR up = upgraded_string(key, NULL);
 	if (up)											return up;
-	if (pSettings->line_exist(cNameSect(), "scope_nightvision"))
-		return pSettings->r_string(cNameSect(), "scope_nightvision");
+	if (pSettings->line_exist(cNameSect(), key))
+		return pSettings->r_string(cNameSect(), key);
 	return shared_str();
 }
+
+shared_str CWeapon::ScopeNVSection() const		{ return ScopeNVSectionKey("scope_nightvision"); }
+shared_str CWeapon::ScopeNV2DSection() const	{ return ScopeNVSectionKey("scope_nightvision_2d"); }
 
 // GS: the reticle-brightness step drives the PPE strength between scope_nightvision_min_factor (step 0)
 // and full. A scope with no brightness steps at all runs the effect at full strength.
@@ -3407,7 +3416,19 @@ void CWeapon::UpdateScopeNV()
 	CActor* act = smart_cast<CActor*>(H_Parent());
 	// GS gates it on the weapon being the ACTOR's (a PPE is the player's screen, nothing else has one)
 	shared_str nv_sect;
-	if (act && act == Actor() && IsZoomed())	nv_sect = ScopeNVSection();
+	if (act && act == Actor() && IsZoomed())
+	{
+		// the always-on variant first (gauss `nv` upgrade)
+		nv_sect = ScopeNVSection();
+		// ...then the 2D-only one. WHEN it runs: GS (and the stock SoC engine under it) starts the
+		// effector on zoom-in, because a GS optic always shows its 3D lens and there is no second
+		// image to be out of step with. Our 2D scope is drawn by the UI only once the aim rotation
+		// has finished (CActor: IsZoomed() && !IsRotatingToZoom() && ZoomTexture()), so tying the
+		// effector to exactly that puts the tint on screen with the scope picture and takes it off
+		// with it -- and keeps it off entirely while the 3D lens is doing the night vision itself.
+		if (!nv_sect.size() && ZoomTexture() && !IsRotatingToZoom())
+			nv_sect = ScopeNV2DSection();
+	}
 	if (!nv_sect.size())
 	{
 		StopScopeNV();
