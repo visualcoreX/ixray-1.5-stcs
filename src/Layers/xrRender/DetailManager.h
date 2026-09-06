@@ -131,6 +131,9 @@ public:
 	Slot							cache_pool	[dm_cache_size];				// just memory for slots
 	int								cache_cx;
 	int								cache_cz;
+	// the r__detail_density the slots now in the cache were built with; cache_Update rebuilds
+	// them when the console value moves away from it
+	float							cache_density;
 
 	PSS								poolSI;										// pool из которого выдел€ютс€ SlotItem
 
@@ -182,6 +185,7 @@ public:
 	Slot*							cache_Query		(int sx, int sz);
 	void							cache_Decompress(Slot* D);
 	BOOL							cache_Validate	();
+	void							cache_Invalidate();
     // cache grid to world
 	int								cg2w_X			(int x)			{ return cache_cx-dm_size+x;					}
 	int								cg2w_Z			(int z)			{ return cache_cz-dm_size+(dm_cache_line-1-z);	}

@@ -6,6 +6,7 @@ void CDetailManager::cache_Initialize	()
 	// Centroid
 	cache_cx			= 0;
 	cache_cz			= 0;
+	cache_density		= ps_r__Detail_density;
 
 	// Initialize cache-grid
 	Slot*	slt 		= cache_pool;
@@ -69,6 +70,16 @@ void 	CDetailManager::cache_Task		(int gx, int gz, Slot* D)
 }
 
 
+// Re-task every slot in place: same grid, same centroid, same boxes -- only the unpacked
+// contents are dropped and rebuilt. cache_Task pushes each one onto cache_task unless it is
+// pending already, so nothing is queued twice and the queue cannot overflow.
+void	CDetailManager::cache_Invalidate()
+{
+	for (u32 z=0; z<dm_cache_line; z++)
+		for (u32 x=0; x<dm_cache_line; x++)
+			cache_Task	(x, z, cache[z][x]);
+}
+
 BOOL	CDetailManager::cache_Validate	()
 {
 	for (int z=0; z<dm_cache_line; z++)
@@ -88,6 +99,17 @@ BOOL	CDetailManager::cache_Validate	()
 
 void	CDetailManager::cache_Update	(int v_x, int v_z, Fvector& view, int limit)
 {
+	// The density is baked into a slot when it is unpacked, so a slot that is already in the
+	// cache keeps the value it was built with -- change the setting and the grass only differs
+	// where the player has not been yet. Catch the change here and rebuild the grid. The whole
+	// queue then unpacks in one go (see the bFullUnpack case below), which is the same work the
+	// level load does, so this costs one hitch on Apply rather than a wrong-looking world.
+	if (!fsimilar(cache_density, ps_r__Detail_density))
+	{
+		cache_density	= ps_r__Detail_density;
+		cache_Invalidate();
+	}
+
 	bool bNeedMegaUpdate	= (cache_cx!=v_x)||(cache_cz!=v_z);
 	// *****	Cache shift
 	while (cache_cx!=v_x)
