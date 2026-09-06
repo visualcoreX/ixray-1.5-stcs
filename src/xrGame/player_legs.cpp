@@ -2,6 +2,7 @@
 #include "player_legs.h"
 
 #include "Actor.h"
+#include "../xrEngine/CameraBase.h"	// cam_Active()->GetWorldYaw() for the body offset heading
 #include "Inventory.h"
 #include "inventory_item.h"
 #include "HudItem.h"
@@ -439,9 +440,14 @@ void player_legs_controller::update(CActor* actor)
 	// actor walks (the feet already slide) or while the camera is not pointed down at the body.
 	if (!fis_zero(g_legs_body_offset))
 	{
-		Fvector aim				= Device.vCameraDirection;
-		aim.y					= 0.f;
-		aim.normalize_safe		();
+		// The VIEW heading, read as the camera's own yaw instead of Device.vCameraDirection.
+		// That vector is the direction AFTER the effectors, so a camera .anm dragged the body
+		// with it; and looking straight down it is nearly (0,-1,0), whose horizontal part is
+		// almost nothing -- zeroing y and normalising there gives a direction that swings on any
+		// tremor. Both halves of the report. The yaw is a separate scalar: exact at any pitch,
+		// and no effector writes to it. setHPB to match the convention m_legs_transform uses.
+		Fmatrix aim_m;			aim_m.setHPB(actor->cam_Active()->GetWorldYaw(), 0.f, 0.f);
+		Fvector aim				= aim_m.k;
 
 		if (!m_offset_dir_valid)
 		{
