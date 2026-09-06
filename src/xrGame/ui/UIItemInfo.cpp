@@ -187,6 +187,20 @@ void CUIItemInfo::InitItemInfo(Fvector2 pos, Fvector2 size, LPCSTR xml_name)
 
 bool	IsGameTypeSingle();
 
+// GS layered icons: an installed upgrade can change the size of the picture -- a bayonet adds a
+// cell of width, an extended magazine a cell of height, a sawn-off takes cells away. The inventory
+// cell already grows its footprint for that (CUIWeaponCellItem ctor), but this panel used the
+// section's raw grid, so the extra layers landed outside the window and ClipperOn() cut them off.
+static Irect gwr_grown_grid_rect(CInventoryItem* itm)
+{
+	Irect r = itm->GetInvGridRect();
+	Ivector2 size_dt, lt_dt;
+	GWR_CalcGridResize(smart_cast<CWeapon*>(itm), size_dt, lt_dt);	// no-op unless it is a layered weapon
+	r.lt.x += lt_dt.x;		r.lt.y += lt_dt.y;		// rb holds the SIZE in cells, lt the atlas position
+	r.rb.x += size_dt.x;	r.rb.y += size_dt.y;
+	return r;
+}
+
 void CUIItemInfo::InitItem(CUICellItem* pCellItem, CInventoryItem* pCompareItem, u32 item_price, LPCSTR trade_tip)
 {
 	if(!pCellItem)
@@ -334,7 +348,7 @@ void CUIItemInfo::InitItem(CUICellItem* pCellItem, CInventoryItem* pCompareItem,
 		// Загружаем картинку
 		UIItemImage->SetShader				(InventoryUtilities::GetEquipmentIconsShader());
 
-		Irect item_grid_rect				= pInvItem->GetInvGridRect();
+		Irect item_grid_rect				= gwr_grown_grid_rect(pInvItem);
 		UIItemImage->GetUIStaticItem().SetOriginalRect(	float(item_grid_rect.x1*INV_GRID_WIDTH(GameConstants::GetUseHQ_Icons())), float(item_grid_rect.y1*INV_GRID_HEIGHT(GameConstants::GetUseHQ_Icons())),
 														float(item_grid_rect.x2*INV_GRID_WIDTH(GameConstants::GetUseHQ_Icons())),	float(item_grid_rect.y2*INV_GRID_HEIGHT(GameConstants::GetUseHQ_Icons())));
 		UIItemImage->TextureOn				();
@@ -453,7 +467,7 @@ void CUIItemInfo::InitItemUpgradeIcon(CInventoryItem* pInvItem)
 		// Загружаем картинку
 		UIItemImage->SetShader				(InventoryUtilities::GetEquipmentIconsShader());
 
-		Irect item_grid_rect				= pInvItem->GetInvGridRect();
+		Irect item_grid_rect				= gwr_grown_grid_rect(pInvItem);
 		UIItemImage->GetUIStaticItem().SetOriginalRect(	float(item_grid_rect.x1*INV_GRID_WIDTH(GameConstants::GetUseHQ_Icons())), float(item_grid_rect.y1*INV_GRID_HEIGHT(GameConstants::GetUseHQ_Icons())),
 														float(item_grid_rect.x2*INV_GRID_WIDTH(GameConstants::GetUseHQ_Icons())),	float(item_grid_rect.y2*INV_GRID_HEIGHT(GameConstants::GetUseHQ_Icons())));
 		UIItemImage->TextureOn				();
