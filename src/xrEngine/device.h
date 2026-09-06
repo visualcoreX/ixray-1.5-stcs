@@ -62,6 +62,10 @@ public:
 	// while another window has the focus, but a minimised window has no client area to draw into.
 	BOOL									b_is_Minimized;
 	void									OnWM_Activate(WPARAM wParam, LPARAM lParam);
+	// Re-apply (or drop) the pointer confinement from the CURRENT window rect. Called on
+	// activation and on WM_WINDOWPOSCHANGED -- at startup the first activation happens while the
+	// window is still the small default one, and a resize raises no activation of its own.
+	void									UpdateCursorClip();
 	// May a frame be drawn right now? Focused always; unfocused only with g_pause_on_minimize
 	// off; minimised never. Both the render loop and CGameFont ask this -- the font had its own
 	// b_is_Active test, which silently dropped every string while the rest of the frame drew.

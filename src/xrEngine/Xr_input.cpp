@@ -22,6 +22,21 @@ float stop_vibration_time				= flt_max;
 #define _KEYDOWN(name,key)		( name[key] & 0x80 )
 
 static bool g_exclusive	= true;
+
+// May the input devices be held EXCLUSIVELY? A DirectInput keyboard on DISCL_EXCLUSIVE takes
+// the Windows key and the media keys away from the whole system for as long as it is acquired,
+// and an exclusive mouse owns the pointer, so Windows needs an extra click to re-sync after
+// alt-tab. Both are a fair trade while the game owns the screen and the wrong one for a window
+// sharing the desktop -- borderless exists precisely so the rest of Windows stays usable.
+//
+// NOTE this cannot be evaluated once at construction: InitInput() runs at x_ray.cpp:686 and
+// InitConsole() only at :688, so user.ltx has not been read yet and psDeviceFlags still holds
+// the default from defines.cpp:12 -- which has rsFullscreen set. Hence acquire() re-applies the
+// cooperative level on every activation, and OnAppActivate goes through it.
+static bool input_exclusive_now(bool requested)
+{
+	return requested && psDeviceFlags.test(rsFullscreen);
+}
 static void on_error_dialog			(bool before)
 {
 #ifdef INGAME_EDITOR
@@ -64,10 +79,10 @@ CInput::CInput						( BOOL bExclusive, int deviceForInit)
 	if (!pDI) CHK_DX(DirectInput8Create( GetModuleHandle(NULL), DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&pDI, NULL ));
 
 //.	u32 kb_input_flags = ((bExclusive)?DISCL_EXCLUSIVE:DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND;
-	u32 kb_input_flags = ((bExclusive)?DISCL_EXCLUSIVE:DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND;
+	u32 kb_input_flags = (input_exclusive_now(!!bExclusive)?DISCL_EXCLUSIVE:DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND;
 	
 //.	u32 mouse_input_flags = ((bExclusive)?DISCL_EXCLUSIVE:DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND | DISCL_NOWINKEY,
-	u32 mouse_input_flags = ((bExclusive)?DISCL_EXCLUSIVE:DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND | DISCL_NOWINKEY;
+	u32 mouse_input_flags = (input_exclusive_now(!!bExclusive)?DISCL_EXCLUSIVE:DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND | DISCL_NOWINKEY;
 
 	// KEYBOARD
 	if (deviceForInit & keyboard_device_key)
@@ -477,7 +492,11 @@ void CInput::OnAppActivate		(void)
 	if (CurrentIR())
 		CurrentIR()->IR_OnActivate();
 
-	SetAllAcquire	( true );
+	// acquire(), not SetAllAcquire(): the latter only calls Acquire() and leaves the cooperative
+	// level at whatever was chosen before the config was loaded (see input_exclusive_now). Going
+	// through acquire() re-applies it from the CURRENT window mode, so switching modes in the
+	// options menu takes effect on the next activation as well.
+	acquire			( g_exclusive );
 	ZeroMemory		( mouseState,	sizeof(mouseState) );
 	ZeroMemory		( KBState,		sizeof(KBState) );
 	ZeroMemory		( timeStamp,	sizeof(timeStamp) );
@@ -528,7 +547,8 @@ void CInput::acquire				(const bool &exclusive)
 		Device.editor() ? Device.editor()->main_handle() : 
 #endif // #ifdef INGAME_EDITOR
 		Device.m_hWnd,
-		(exclusive ? DISCL_EXCLUSIVE : DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND
+		// window mode decides, not the caller alone -- see input_exclusive_now
+		(input_exclusive_now(exclusive) ? DISCL_EXCLUSIVE : DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND
 	);
 	pKeyboard->Acquire				();
 
@@ -537,7 +557,7 @@ void CInput::acquire				(const bool &exclusive)
 		Device.editor() ? Device.editor()->main_handle() :
 #endif // #ifdef INGAME_EDITOR
 		Device.m_hWnd,
-		(exclusive ? DISCL_EXCLUSIVE : DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND | DISCL_NOWINKEY
+		(input_exclusive_now(exclusive) ? DISCL_EXCLUSIVE : DISCL_NONEXCLUSIVE) | DISCL_FOREGROUND | DISCL_NOWINKEY
 	);
 	pMouse->Acquire					();
 }

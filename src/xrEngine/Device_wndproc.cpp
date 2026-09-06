@@ -42,6 +42,18 @@ bool CRenderDevice::on_message	(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			}
 			return			(false);
 		}
+		// A move or a resize does not raise an activation, and at startup the window is resized
+		// well after its first WM_ACTIVATE -- so without this the pointer stayed clipped to the
+		// small default window until an alt-tab forced a fresh activation. This one message
+		// covers both moves and resizes; DefWindowProc still gets it (we return false).
+		case WM_WINDOWPOSCHANGED : {
+#ifdef INGAME_EDITOR
+			if (editor())
+				break;
+#endif // #ifdef INGAME_EDITOR
+			Device.UpdateCursorClip();
+			return			(false);
+		}
 		case WM_CLOSE : {
 			Engine.Event.Defer("KERNEL:disconnect");
 			Engine.Event.Defer("KERNEL:quit");

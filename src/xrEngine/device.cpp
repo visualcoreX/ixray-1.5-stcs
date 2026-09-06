@@ -638,10 +638,42 @@ BOOL CRenderDevice::may_render() const
 	return (b_is_Active || (!b_is_Minimized && !psDeviceFlags.test(rsPauseOnMinimize)));
 }
 
+// Pointer confinement. The exclusive DirectInput mouse used to do this implicitly; in a window
+// it is no longer exclusive (that is what stopped Windows eating the first click after alt-tab),
+// so without a clip the pointer walks off onto a second monitor mid-game. Recomputed from the
+// current client rect every time, because the window it was first computed for -- the small
+// default one at startup -- is not the window that ends up on screen.
+void CRenderDevice::UpdateCursorClip()
+{
+#ifndef DEDICATED_SERVER
+	if (!b_is_Active || b_is_Minimized || !m_hWnd)	{ ClipCursor(NULL); return; }
+	RECT rc;
+	if (!GetClientRect(m_hWnd, &rc) || rc.right <= rc.left || rc.bottom <= rc.top)
+		{ ClipCursor(NULL); return; }
+	POINT tl = { rc.left,  rc.top    };
+	POINT br = { rc.right, rc.bottom };
+	ClientToScreen(m_hWnd, &tl);
+	ClientToScreen(m_hWnd, &br);
+	RECT scr = { tl.x, tl.y, br.x, br.y };
+	ClipCursor(&scr);
+#endif
+}
+
 void CRenderDevice::OnWM_Activate(WPARAM wParam, LPARAM lParam)
 {
 	u16 fActive						= LOWORD(wParam);
 	BOOL fMinimized					= (BOOL) HIWORD(wParam);
+	// ShowCursor keeps a COUNTER, not a flag: every FALSE decrements and every TRUE increments,
+	// and the pointer is drawn only while it is >= 0. Stepping it once per activate/deactivate
+	// assumes those arrive in exact pairs; alt-tabbing out of a borderless window does not
+	// oblige, and once the count has drifted to -2 a single TRUE leaves it at -1 -- no cursor
+	// until something else happens to nudge it. Drive it to the state we want instead.
+	struct win_cursor { static void show(bool bShow) {
+		int c;
+		if (bShow)	{ do { c = ShowCursor(TRUE);  } while (c <  0); }
+		else		{ do { c = ShowCursor(FALSE); } while (c >= 0); }
+	} };
+
 	Device.b_is_Minimized			= fMinimized;
 	BOOL bActive					= ((fActive!=WA_INACTIVE) && (!fMinimized))?TRUE:FALSE;
 	
@@ -656,12 +688,14 @@ void CRenderDevice::OnWM_Activate(WPARAM wParam, LPARAM lParam)
 #	ifdef INGAME_EDITOR
 			if (!editor())
 #	endif // #ifdef INGAME_EDITOR
-				ShowCursor			(FALSE);
+				win_cursor::show	(false);
 #endif // #ifndef DEDICATED_SERVER
+			Device.UpdateCursorClip	();
 		}else	
 		{
 			Device.seqAppDeactivate.Process(rp_AppDeactivate);
-			ShowCursor				(TRUE);
+			ClipCursor				(NULL);
+			win_cursor::show		(true);
 		}
 	}
 }
