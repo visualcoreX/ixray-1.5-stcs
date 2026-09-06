@@ -63,11 +63,38 @@ ALDeviceList::~ALDeviceList()
 }
 
 
+// OpenAL hands device names over as UTF-8, while the menu fonts and every config file in this
+// build are cp1251 -- so a Cyrillic endpoint name arrives as two bytes per letter and gets drawn
+// one glyph per byte. Convert for DISPLAY only; alcOpenDevice must get the original bytes back.
+// cp1251 flat rather than CP_ACP: the fonts are cp1251 whatever the machine's ANSI page is.
+static void	snd_utf8_to_ansi(LPCSTR src, string256& dst)
+{
+	xr_strcpy(dst, src);					// keep the original if any step below fails
+
+	wchar_t	wide[256];
+	if (0 == MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, src, -1, wide, 256))
+		return;								// not valid UTF-8 -- some other driver, leave it be
+
+	char	ansi[256];
+	if (0 == WideCharToMultiByte(1251, 0, wide, -1, ansi, sizeof(ansi), "?", nullptr))
+		return;
+
+	xr_strcpy(dst, ansi);
+}
+
+// "OpenAL Soft on Speakers (Realtek(R) Audio)" -> "Speakers (Realtek(R) Audio)". Every entry
+// carries the same prefix, so it is pure noise in a 217 px combo.
+static LPCSTR	snd_display_name(LPCSTR nm)
+{
+	static const char* pfx = "OpenAL Soft on ";
+	const size_t len = xr_strlen(pfx);
+	return (0 == strncmp(nm, pfx, len)) ? nm + len : nm;
+}
+
 void ALDeviceList::Enumerate()
 {
 	char				*devices;
-	int	ALmajor, ALminor, EFXmajor, EFXminor, index;
-	const char* actualDeviceName;
+	int	ALmajor, ALminor, EFXmajor, EFXminor;
 	
 	Msg("SOUND: OpenAL: enumerate devices...");
 	// have a set of vectors storing the device list, selection status, spec version #, and XRAM support status
@@ -75,19 +102,53 @@ void ALDeviceList::Enumerate()
 	m_devices.clear				();
 	
 	CoUninitialize();
-	// grab function pointers for 1.0-API functions, and if successful proceed to enumerate all devices
-	if (alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT"))
+
+	// OpenAL Soft answers ALC_DEVICE_SPECIFIER with exactly one name -- "OpenAL Soft", its own
+	// wrapper around whatever Windows currently calls the default endpoint. The real endpoints are
+	// behind ALC_ENUMERATE_ALL_EXT, so ask for those whenever the driver has them and keep the old
+	// list as the fallback for drivers that do not.
+	const bool	all_ext	= !!alcIsExtensionPresent(nullptr, "ALC_ENUMERATE_ALL_EXT");
+	const bool	one_ext	= !!alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT");
+
+	if (all_ext || one_ext)
 	{
-		Msg("SOUND: OpenAL: EnumerationExtension Present");
+		const ALCenum	e_list		= all_ext ? ALC_ALL_DEVICES_SPECIFIER		: ALC_DEVICE_SPECIFIER;
+		const ALCenum	e_default	= all_ext ? ALC_DEFAULT_ALL_DEVICES_SPECIFIER	: ALC_DEFAULT_DEVICE_SPECIFIER;
+		Msg("SOUND: OpenAL: %s present", all_ext ? "EnumerateAllExtension" : "EnumerationExtension");
 
-		devices = (char*)alcGetString(nullptr, ALC_DEVICE_SPECIFIER);
-		Msg					("devices %s",devices);
-		xr_strcpy(m_defaultDeviceName, (char*)alcGetString(nullptr, ALC_DEFAULT_DEVICE_SPECIFIER));
-		Msg("SOUND: OpenAL: system  default SndDevice name is %s", m_defaultDeviceName);
+		// kept raw: it is matched against ALDeviceDesc::name, which is raw too. Only the log line
+		// gets the readable form.
+		xr_strcpy(m_defaultDeviceName, (char*)alcGetString(nullptr, e_default));
+		string256	default_readable;	snd_utf8_to_ansi(m_defaultDeviceName, default_readable);
+		Msg("SOUND: OpenAL: system default SndDevice name is %s", default_readable);
 
-		index				= 0;
-		// go through device list (each device terminated with a single NULL, list terminated with double NULL)
-		while (*devices != '\0')
+		// First entry is not a device. It opens with nullptr -- "whatever the OS calls default right
+		// now" -- so it follows the player changing the default endpoint in Windows instead of pinning
+		// the one that happened to be default when they first ran the game. This is what a profile
+		// that has never chosen anything gets.
+		if (ALCdevice* def = alcOpenDevice(nullptr))
+		{
+			ALmajor = 1; ALminor = 1; EFXmajor = 0; EFXminor = 0;
+			if (ALCcontext* ctx = alcCreateContext(def, nullptr))
+			{
+				alcMakeContextCurrent(ctx);
+				alcGetIntegerv(def, ALC_MAJOR_VERSION, sizeof(int), &ALmajor);
+				alcGetIntegerv(def, ALC_MINOR_VERSION, sizeof(int), &ALminor);
+				alcGetIntegerv(def, ALC_EFX_MAJOR_VERSION, sizeof(int), &EFXmajor);
+				alcGetIntegerv(def, ALC_EFX_MINOR_VERSION, sizeof(int), &EFXminor);
+				alcMakeContextCurrent(nullptr);
+				alcDestroyContext(ctx);
+			}
+			alcCloseDevice(def);
+
+			ALDeviceDesc	desc(SND_DEVICE_DEFAULT, ALminor, ALmajor, EFXminor, EFXmajor);
+			desc.system_default	= true;
+			m_devices.push_back(desc);
+		}
+
+		devices = (char*)alcGetString(nullptr, e_list);
+		// each device terminated with a single NULL, list terminated with double NULL
+		while (devices && *devices != '\0')
 		{
 			ALCdevice *device		= alcOpenDevice(devices);
 			if (device) 
@@ -96,25 +157,25 @@ void ALDeviceList::Enumerate()
 				if (context) 
 				{
 					alcMakeContextCurrent(context);
-					// if new actual device name isn't already in the list, then add it...
-					actualDeviceName = alcGetString(device, ALC_DEVICE_SPECIFIER);
 
-					if ((actualDeviceName != nullptr) && xr_strlen(actualDeviceName) > 0)
-					{
-						alcGetIntegerv(device, ALC_MAJOR_VERSION, sizeof(int), &ALmajor);
-						alcGetIntegerv(device, ALC_MINOR_VERSION, sizeof(int), &ALminor);
+					alcGetIntegerv(device, ALC_MAJOR_VERSION, sizeof(int), &ALmajor);
+					alcGetIntegerv(device, ALC_MINOR_VERSION, sizeof(int), &ALminor);
 
-						alcGetIntegerv(device, ALC_EFX_MAJOR_VERSION, sizeof(int), &EFXmajor);
-						alcGetIntegerv(device, ALC_EFX_MINOR_VERSION, sizeof(int), &EFXminor);
+					alcGetIntegerv(device, ALC_EFX_MAJOR_VERSION, sizeof(int), &EFXmajor);
+					alcGetIntegerv(device, ALC_EFX_MINOR_VERSION, sizeof(int), &EFXminor);
 
-						m_devices.push_back(ALDeviceDesc(actualDeviceName, ALminor, ALmajor, EFXminor, EFXmajor));
+					// keep the ENUMERATED string, not what the opened device reports back: this is the
+					// one alcOpenDevice is known to accept when the player picks this entry later
+					ALDeviceDesc	desc(devices, ALminor, ALmajor, EFXminor, EFXmajor);
+					string256		readable;	snd_utf8_to_ansi(devices, readable);
+					xr_strcpy(desc.display, snd_display_name(readable));
+					m_devices.push_back(desc);
 
-						++index;
-					}
+					alcMakeContextCurrent(nullptr);	// destroying the CURRENT context is undefined
 					alcDestroyContext(context);
 				}else
 				{
-					Msg("SOUND: OpenAL: cant create context for %s",device);
+					Msg("SOUND: OpenAL: cant create context for %s",devices);
 				}
 				alcCloseDevice(device);
 			}else
@@ -125,7 +186,7 @@ void ALDeviceList::Enumerate()
 			devices		+= xr_strlen(devices) + 1;
 		}
 	}else
-		Msg("SOUND: OpenAL: EnumerationExtension NOT Present");
+		Msg("SOUND: OpenAL: no enumeration extension present");
 
 //make token
 	u32 _cnt								= GetNumDevices();
@@ -135,7 +196,8 @@ void ALDeviceList::Enumerate()
 	for(u32 i=0; i<_cnt;++i)
 	{
 		snd_devices_token[i].id				= i;
-		snd_devices_token[i].name			= xr_strdup(m_devices[i].name);
+		// the token name is both what the menu shows and what goes into user.ltx
+		snd_devices_token[i].name			= xr_strdup(m_devices[i].display);
 	}
 //--
 
@@ -164,31 +226,23 @@ LPCSTR ALDeviceList::GetDeviceName(u32 index)
 
 void ALDeviceList::SelectBestDevice()
 {
-	int best_majorVersion	= -1;
-	int best_minorVersion	= -1;
-	int ALmajorVersion;
-	int ALminorVersion;
-	int EFXmajorVersion;
-	int EFXminorVersion;
-	
+	// snd_device_id is u32(-1) when the profile has never chosen a device, and also when it named
+	// one that no longer exists -- CCC_Token leaves the value alone on a name it cannot match.
 	if(snd_device_id==u32(-1))
 	{
-		//select best
-		u32 new_device_id		= snd_device_id;
-		for (u32 i = 0; i < GetNumDevices(); ++i)
-		{
-			if(_stricmp(m_defaultDeviceName,GetDeviceName(i))!=0)
-				continue;
+		u32 new_device_id		= u32(-1);
 
-			GetDeviceVersion		(i, &ALmajorVersion, &ALminorVersion, &EFXmajorVersion, &EFXminorVersion);
-			if( (ALmajorVersion>best_majorVersion) ||
-				(ALmajorVersion==best_majorVersion && ALminorVersion>best_minorVersion) )
-			{
-				best_majorVersion		= ALmajorVersion;
-				best_minorVersion		= ALminorVersion;
-				new_device_id			= i;
-			}
-		}
+		// the "system default" stand-in, whenever probing it worked
+		for (u32 i = 0; i < GetNumDevices(); ++i)
+			if (m_devices[i].system_default)	{ new_device_id = i; break; }
+
+		// no stand-in: take the endpoint the driver itself calls default. (The old code picked the
+		// highest AL version among entries with that same name, which only ever mattered for the
+		// duplicate entries the Creative-era enumeration produced.)
+		if (new_device_id==u32(-1))
+			for (u32 i = 0; i < GetNumDevices(); ++i)
+				if (0==_stricmp(m_defaultDeviceName, m_devices[i].name))	{ new_device_id = i; break; }
+
 		if(new_device_id==u32(-1) )
 		{
 			R_ASSERT(GetNumDevices()!=0);

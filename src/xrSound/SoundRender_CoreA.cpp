@@ -159,8 +159,9 @@ void CSoundRender_CoreA::_initialize(int stage)
 	pDeviceList->SelectBestDevice	();
 	R_ASSERT						(snd_device_id>=0 && snd_device_id<pDeviceList->GetNumDevices());
 	const ALDeviceDesc& deviceDesc	= pDeviceList->GetDeviceDesc(snd_device_id);
-    // OpenAL device
-    pDevice						= alcOpenDevice		(deviceDesc.name);
+    // OpenAL device. nullptr means "whatever the OS calls default right now", which is exactly
+    // what the first entry of the list stands for -- see ALDeviceList::Enumerate.
+    pDevice						= alcOpenDevice		(deviceDesc.system_default ? nullptr : deviceDesc.name);
 	if (pDevice == nullptr)
 	{
 		CHECK_OR_EXIT			(0,"SOUND: OpenAL: Failed to create device.");
