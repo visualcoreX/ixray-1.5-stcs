@@ -292,7 +292,8 @@ void					CRender::create					()
 
 	//	MSAA option dependencies
 
-	o.dx10_msaa			= !!ps_r3_msaa;
+	// the mode list decides, not the sample count -- that one only says HOW MANY samples
+	o.dx10_msaa			= !!aa_msaa_enabled();
 	o.dx10_msaa_samples = (1 << ps_r3_msaa);
 
 	o.dx10_msaa_opt		= ps_r2_ls_flags.test(R3FLAG_MSAA_OPT);

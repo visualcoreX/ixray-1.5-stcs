@@ -23,7 +23,9 @@ extern ECORE_API	xr_token	qsmapsize_token[];
 // natural partner of ps_r_smapsize, which buys those texels back.
 extern ECORE_API	float		ps_r_sun_cascade_scale;	//	=	1.0f;
 
-extern ECORE_API	u32			ps_r3_msaa;	//	=	0;
+extern ECORE_API	u32			ps_r3_msaa;	//	=	0;	// sample count only -- see aa_msaa_enabled
+extern ECORE_API	u32			ps_r_aa_mode;				// off / fxaa / smaa / msaa, the menu's one choice
+extern ECORE_API	BOOL		aa_msaa_enabled();			// what the renderer asks instead of ps_r3_msaa
 extern ECORE_API	xr_token	qmsaa_token[];
 
 extern ECORE_API	u32			ps_r3_msaa_atest; //=	0;

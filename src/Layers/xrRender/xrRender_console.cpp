@@ -257,6 +257,64 @@ float		ps_r2_gloss_factor			= 3.0f;
 #include	"../../xrEngine/xr_ioconsole.h"
 #include	"../../xrEngine/xr_ioc_cmd.h"
 
+// One choice out of four for the menu, over the two variables that actually store it: ps_r2_aa_type
+// (the screen filters) and ps_r3_msaa (the sample count). Reading syncs from them, writing sets
+// both, so r2_type_aa and r3_msaa keep working from the console and from an existing user.ltx.
+// The token names double as string ids -- that is how the combo shows translated text (renderer_r2
+// does the same).
+// aam_unset: no r_aa_mode line has been seen yet, so the mode is whatever the two legacy variables
+// already say. That keeps an existing user.ltx (r3_msaa 4x and nothing else) working as before.
+enum { aam_off = 0, aam_fxaa = 1, aam_smaa = 2, aam_msaa = 3, aam_unset = 4 };
+u32 ps_r_aa_mode = aam_unset;
+
+u32	aa_mode_effective()
+{
+	if (aam_unset != ps_r_aa_mode)	return ps_r_aa_mode;
+	if (ps_r3_msaa)					return aam_msaa;
+	if (1 == ps_r2_aa_type)			return aam_fxaa;
+	if (2 == ps_r2_aa_type)			return aam_smaa;
+	return aam_off;
+}
+
+// The renderers ask this, not ps_r3_msaa: that one now only carries the QUALITY, and keeps carrying
+// it while another mode is selected, so the samples list never loses its selected item.
+BOOL aa_msaa_enabled()
+{
+	return (aam_msaa == aa_mode_effective()) && (0 != ps_r3_msaa);
+}
+xr_token							aa_mode_token						[ ]={
+	{ "ui_mm_aa_off",				aam_off											},
+	{ "ui_mm_aa_fxaa",				aam_fxaa										},
+	{ "ui_mm_aa_smaa",				aam_smaa										},
+	{ "ui_mm_aa_msaa",				aam_msaa										},
+	{ 0,							0												}
+};
+
+class CCC_AAMode : public CCC_Token
+{
+	typedef CCC_Token inherited;
+	void	resolve()	{ ps_r_aa_mode = aa_mode_effective(); }
+public:
+					CCC_AAMode(LPCSTR N) : inherited(N, &ps_r_aa_mode, aa_mode_token) {}
+
+	virtual void	Execute(LPCSTR args)
+	{
+		inherited::Execute(args);
+		// Only the screen filter is switched here. ps_r3_msaa is left alone on purpose -- it is the
+		// quality, not an on/off, and clearing it would pull the samples list off its selected item.
+		switch (ps_r_aa_mode)
+		{
+		case aam_fxaa:	ps_r2_aa_type = 1;	break;
+		case aam_smaa:	ps_r2_aa_type = 2;	break;
+			// a quality has to exist for MSAA to mean anything: 4x if the list was never touched
+		case aam_msaa:	ps_r2_aa_type = 0; if (!ps_r3_msaa) ps_r3_msaa = 2;	break;
+		default:		ps_r2_aa_type = 0;	break;
+		}
+	}
+	virtual void	Status(TStatus& S)	{ resolve(); inherited::Status(S); }
+	virtual void	Save(IWriter* F)	{ resolve(); inherited::Save(F); }
+};
+
 #ifdef	USE_DX10
 #include "../xrRenderDX10/StateManager/dx10SamplerStateCache.h"
 #endif	//	USE_DX10
@@ -810,6 +868,8 @@ void		xrRender_initconsole	()
 
 	//CMD3(CCC_Mask,		"r3_msaa",						&ps_r2_ls_flags,			R3FLAG_MSAA);
 	CMD3(CCC_Token,		"r3_msaa",						&ps_r3_msaa,				qmsaa_token);
+	// what the options list shows: off / fxaa / smaa / msaa, over the two above
+	CMD1(CCC_AAMode,	"r_aa_mode"														);
 	//CMD3(CCC_Mask,		"r3_msaa_hybrid",				&ps_r2_ls_flags,			R3FLAG_MSAA_HYBRID);
 	//CMD3(CCC_Mask,		"r3_msaa_opt",					&ps_r2_ls_flags,			R3FLAG_MSAA_OPT);
 	CMD3(CCC_Mask,		"r3_gbuffer_opt",				&ps_r2_ls_flags,			R3FLAG_GBUFFER_OPT);
