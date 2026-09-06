@@ -427,6 +427,20 @@ static void companion_strip(char* s, const char* sub)
 		memmove(p, p + sl, xr_strlen(p + sl) + 1);
 }
 
+// Hold our sprint until the weapon starts its own. With no weapon out we are the only hand and
+// there is nothing to wait for. The weapon's sprint motion reaches us through the PlayHUDMotion
+// companion hook (see PlayCompanionAction), and that is what releases the wait -- so both hands
+// enter on ONE event, the way they already do at a normal sprint start, and their loops are in
+// phase from the first frame. Nothing left for the phase lock in player_hud::update to correct.
+bool CCustomDetector::SprintAnimAllowedNow()
+{
+	attachable_hud_item* w0 = g_player_hud ? g_player_hud->attached_item(0) : NULL;
+	CHudItem* wi = (w0 && w0->m_parent_hud_item != this) ? w0->m_parent_hud_item : NULL;
+	if (!wi)	return true;
+	const shared_str& wm = wi->CurrentMotion();
+	return wm.size() && (NULL != strstr(wm.c_str(), "sprint"));
+}
+
 bool CCustomDetector::PlayCompanionAction(LPCSTR action, bool bRestart)
 {
 	// bRestart comes only from the weapon-side hook, i.e. the weapon just (re)started a motion -- so
@@ -440,7 +454,15 @@ bool CCustomDetector::PlayCompanionAction(LPCSTR action, bool bRestart)
 	// enter/loop/exit -- a single driver, reacting to the same actor movement events as the weapon, so no
 	// double enter/exit or phantom exit. The per-frame phase-lock in player_hud::update keeps the two
 	// sprint loops aligned. Returning false here makes PlayAnimIdle fall through to the own dispatch.
-	if (strstr(action, "sprint"))	return false;
+	if (strstr(action, "sprint"))
+	{
+		// The weapon just started a sprint motion. THIS is the shared event: re-select our idle now,
+		// so SprintAnimAllowedNow() lets us in and we enter on the same frame it did. Only on
+		// bRestart (the weapon-side hook); our own idle mirror passes false and must not recurse.
+		if (bRestart && !m_bStopAtEndAnimIsRunning)
+			PlayAnimIdle();
+		return false;
+	}
 	// Prefer the EXACT companion for the weapon's motion, so a weapon-state variant this detector
 	// actually has is mirrored as-is (empty mag: anm_dry_empty -> anm_wpn_dry_empty, the short dry -
 	// matching the weapon instead of playing the full one). Only when it has no such variant do we

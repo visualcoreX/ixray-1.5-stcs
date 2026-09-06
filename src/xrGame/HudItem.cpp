@@ -1020,11 +1020,29 @@ bool CHudItem::TryPlayAnimIdle()
 		{
 			CEntity::SEntityState st;
 			pActor->g_State(st);
-			if(st.bSprint)
+			// A companion hand holds off until the hand it follows starts its sprint (see
+			// SprintAnimAllowedNow). Falling through leaves the ordinary moving idle playing and
+			// clears m_bPrevSprint below, so the wait ends with a proper false->true edge and the
+			// enter transition plays -- both hands from the same event, in phase, nothing to correct.
+			if(st.bSprint && SprintAnimAllowedNow())
 			{
 				// false->true edge: sprint just began -> force the enter transition to play even if
 				// m_bSprintStarted was left set by the previous state (e.g. aiming out into a sprint).
 				if(!m_bPrevSprint)
+					m_bSprintStarted = false;
+				// ...and the same when the sprint never stopped but the idle slot was taken over in
+				// between: throw a bolt while running and the detector mirrors the throw, so it is not
+				// CONTINUING its sprint loop here, it is COMING BACK to it -- the enter is owed. The
+				// right hand gets this for free (CMissile::OnStateSwitch drops the flag on the throw
+				// states); without it the left hand jumped straight into the loop.
+				// Same predicate as the sprint-EXIT gate below: every sprint motion is built on
+				// SprintLoopBase() == "anm_idle_sprint" plus a class suffix, so the name carries
+				// "sprint" for the loop and for the enter transition alike.
+				// Do NOT do this when the companion STARTS instead: a throw is a SEQUENCE of mirrored
+				// motions, and clearing it there replayed the enter in the MIDDLE of the throw. Between
+				// two of them we never reach this line -- CCustomDetector::PlayAnimIdle mirrors the
+				// weapon first and returns; we only get here once the weapon is back on its sprint.
+				if(m_current_motion.size() && NULL == strstr(m_current_motion.c_str(), "sprint"))
 					m_bSprintStarted = false;
 				m_bPrevSprint = true;
 				m_bIdleMoving = true;
@@ -1034,9 +1052,22 @@ bool CHudItem::TryPlayAnimIdle()
 			m_bPrevSprint = false;
 			// just stopped sprinting -> play the one-shot exit transition once (its OnAnimationEnd
 			// routes back here, now with the flag cleared, to the normal moving/idle)
-			if(m_bSprintStarted)
+			// ...but ONLY while we are actually LEAVING a sprint motion. The idle slot can have been
+			// taken over in between -- the detector mirrors the bolt's throw as a companion -- and the
+			// exit is then owed to a sprint whose end nobody saw: it played on the LEFT hand alone,
+			// after the actor had long since stopped, while the right hand went straight to its idle.
+			// Clearing the debt without playing it is what the right hand does anyway
+			// (CMissile::OnStateSwitch drops the flag when a throw starts). Do NOT clear it when the
+			// companion STARTS instead: a throw is a sequence of mirrored motions and the detector
+			// passes back through here between them, so a cleared flag replayed the sprint ENTER in
+			// the middle of the throw. Still sprinting? The st.bSprint branch above wins first.
+			// Every sprint motion is built on SprintLoopBase() == "anm_idle_sprint" plus a class
+			// suffix, so both the loop and the enter transition carry "sprint" in the name.
+			const bool owed_sprint_end	= m_bSprintStarted && m_current_motion.size() &&
+											  (NULL != strstr(m_current_motion.c_str(), "sprint"));
+			m_bSprintStarted = false;
+			if(owed_sprint_end)
 			{
-				m_bSprintStarted = false;
 				string_path endnm;
 				MakeSprintVariant(SprintLoopBase(), "end", endnm);	// suffix-correct exit (GL / bm16 shell)
 				if(endnm[0] && isHUDAnimationExist(endnm))

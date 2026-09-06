@@ -170,6 +170,7 @@ public:
 	virtual void	OnAnimationEnd		(u32 state);
 	virtual void	PlayAnimIdle		();	// mirror an out weapon's aim (companion anim) instead of the own idle
 	virtual bool	PlayCompanionAction	(LPCSTR action, bool bRestart = false);	// play anm_wpn_<action> synced to the weapon's action; true if played
+	virtual bool	SprintAnimAllowedNow();	// wait for the weapon's sprint so both hands enter on one event
 	void			WeaponDetectorGesture(bool draw);	// tell an in-hand weapon to play its draw/prepare detector gesture
 	void			ShowAfterPrepare	();	// weapon's anm_prepare_detector finished -> actually show the detector now
 	virtual	void	UpdateXForm			();

@@ -149,6 +149,11 @@ public:
 	bool						TryPlayAnimIdle		();
 	bool						TryPlayBlowoutAnim	();		// GS emission glitch anim; safe to poll every frame (fires once, only in eIdle)
 	virtual bool				MovingAnimAllowedNow ()				{return true;}
+	// May this item START its sprint right now? A companion hand (the detector) says no while the
+	// weapon it follows has not started its own sprint motion yet: entering staggered is what puts
+	// the two sprint loops out of phase, and correcting phase afterwards is always either a click
+	// or a visible rate change. It waits, and the weapon's sprint motion starts it instead.
+	virtual bool				SprintAnimAllowedNow ()				{return true;}
 
 	virtual void				PlayAnimIdleMoving	();
 	virtual void				PlayAnimIdleSprint	();
