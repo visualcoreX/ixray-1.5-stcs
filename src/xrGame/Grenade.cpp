@@ -439,6 +439,14 @@ void CGrenade::UpdateCL()
 }
 
 
+// Orders grenade kinds for the kWPN_NEXT cycle. By SECTION NAME on purpose: any order derived
+// from the inventory changes as grenades move between the slot and the ruck, and an order that
+// changes under you is exactly what stops a cycle from being one.
+static bool grenade_kind_less(const CGrenade* a, const CGrenade* b)
+{
+	return xr_strcmp(a->cNameSect(), b->cNameSect()) < 0;
+}
+
 bool CGrenade::Action(s32 cmd, u32 flags) 
 {
 	if(inherited::Action(cmd, flags)) return true;
@@ -452,24 +460,48 @@ bool CGrenade::Action(s32 cmd, u32 flags)
 			{
 				if(m_pInventory)
 				{
+					// GS: the switch is a HOLSTER followed by a DRAW -- the current grenade goes away
+					// with its own animation and the next type is then taken out, instead of swapping
+					// in the hand instantly (vanilla did the inventory move right here, so only the
+					// draw was ever seen). The swap itself happens in OnAnimationEnd(eHiding).
+					if (GetState() != eIdle)	return true;	// mid gesture -- ignore
+
+					// One representative per distinct SECTION, ourselves included -- we are in the slot,
+					// not in the ruck, so we would otherwise be missing from our own cycle.
+					// This used to take the first ruck grenade of a different section and stop, which is
+					// not a cycle at all: the ruck order shifts every swap (the grenade we put away comes
+					// back into it at a new position), so with three types the sequence wandered --
+					// g1 -> g2 -> g1 -> g2 -> g3 -> g1. Ordering by section name makes it independent of
+					// that churn, so the same set of grenades always cycles the same way.
+					xr_vector<CGrenade*>	kinds;
+					kinds.push_back		(this);
+
 					TIItemContainer::iterator it = m_pInventory->m_ruck.begin();
 					TIItemContainer::iterator it_e = m_pInventory->m_ruck.end();
 					for(;it!=it_e;++it)
 					{
 						CGrenade *pGrenade = smart_cast<CGrenade*>(*it);
-						if(pGrenade && xr_strcmp(pGrenade->cNameSect(), cNameSect()))
-						{
-							// GS: the switch is a HOLSTER followed by a DRAW -- the current grenade
-							// goes away with its own animation and the next type is then taken out,
-							// instead of swapping in the hand instantly (vanilla did the inventory
-							// move right here, so only the draw was ever seen). The swap itself
-							// happens in OnAnimationEnd(eHiding).
-							if (GetState() != eIdle)	return true;	// mid gesture -- ignore
-							m_pending_next_id = pGrenade->ID();
-							SwitchState(eHiding);
-							return true;
-						}
+						if(!pGrenade)	continue;
+
+						bool seen = false;
+						for(u32 i=0; i<kinds.size(); ++i)
+							if(!xr_strcmp(kinds[i]->cNameSect(), pGrenade->cNameSect()))	{ seen = true; break; }
+						if(!seen)	kinds.push_back(pGrenade);
 					}
+
+					if(kinds.size() < 2)	return true;	// only our own type -- nothing to switch to
+
+					std::sort(kinds.begin(), kinds.end(), grenade_kind_less);
+
+					u32 cur = 0;
+					for(u32 i=0; i<kinds.size(); ++i)
+						if(kinds[i] == this)	{ cur = i; break; }
+
+					CGrenade* pNext = kinds[(cur + 1) % kinds.size()];
+					if(pNext == this)	return true;
+
+					m_pending_next_id = pNext->ID();
+					SwitchState(eHiding);
 					return true;
 				}
 			}
