@@ -51,7 +51,11 @@ void CCartridge::Load(LPCSTR section, u8 LocalAmmoType)
 
 	m_flags.set			(cfExplosive, pSettings->r_bool(section, "explosive"));
 
-	bullet_material_idx		=  GMLib.GetMaterialIdx(WEAPON_MATERIAL_NAME);
+	// `bullet_material` on the ammo section: the material belongs to what is fired, so this is its
+	// natural home. Absent -> the stock objects\bullet, exactly as before.
+	bullet_material_idx		= ResolveBulletMaterial(
+		READ_IF_EXISTS(pSettings, r_string, section, "bullet_material", WEAPON_MATERIAL_NAME),
+		GMLib.GetMaterialIdx(WEAPON_MATERIAL_NAME));
 	VERIFY	(u16(-1)!=bullet_material_idx);
 	VERIFY	(param_s.fWallmarkSize>0);
 
@@ -146,6 +150,20 @@ s32 CWeaponAmmo::Sort(PIItem pIItem)
 	else return -1;
 }
 */
+// Declared in ShootingObject.h. Lives here because GameMtlLib.h pulls in render types that do not
+// compile in every translation unit -- this one already has GMLib.
+u16 ResolveBulletMaterial(LPCSTR name, u16 fallback_idx)
+{
+	if (!name || !name[0])	return fallback_idx;
+	// GetMaterial(LPCSTR) is editor-only in this build; GetMaterialID is the public existence check.
+	if (GAMEMTL_NONE_ID == GMLib.GetMaterialID(name))
+	{
+		Msg("! bullet_material [%s] is not in the material library -- falling back", name);
+		return fallback_idx;
+	}
+	return GMLib.GetMaterialIdx(name);
+}
+
 bool CWeaponAmmo::Get(CCartridge &cartridge) 
 {
 	if(!m_boxCurr) return false;
@@ -154,7 +172,9 @@ bool CWeaponAmmo::Get(CCartridge &cartridge)
 	cartridge.param_s = cartridge_param;
 
 	cartridge.m_flags.set(CCartridge::cfTracer ,m_tracer);
-	cartridge.bullet_material_idx = GMLib.GetMaterialIdx(WEAPON_MATERIAL_NAME);
+	cartridge.bullet_material_idx = ResolveBulletMaterial(
+		READ_IF_EXISTS(pSettings, r_string, cNameSect().c_str(), "bullet_material", WEAPON_MATERIAL_NAME),
+		GMLib.GetMaterialIdx(WEAPON_MATERIAL_NAME));
 	cartridge.m_InvShortName = NameShort();
 	--m_boxCurr;
 	if(m_pInventory)m_pInventory->InvalidateState();

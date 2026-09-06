@@ -60,6 +60,15 @@ void CShootingObject::reinit()
 
 void CShootingObject::Load	(LPCSTR section)
 {
+	// Optional per-weapon bullet material. The engine looks up a material PAIR on impact
+	// (bullet x surface) and that pair decides the wallmark, the impact particles and the ricochet
+	// sound, so this is what lets one weapon mark a wall differently from another firing the same
+	// round. u16(-1) means "whatever the cartridge says", which is the case for every weapon that
+	// does not spell the key out.
+	m_bullet_material_idx	= u16(-1);
+	if (pSettings->line_exist(section, "bullet_material"))
+		m_bullet_material_idx = ResolveBulletMaterial(pSettings->r_string(section, "bullet_material"), u16(-1));
+
 	if(pSettings->line_exist(section,"light_disabled"))
 	{
 		m_bLightShotEnabled		= !pSettings->r_bool(section,"light_disabled");
@@ -559,13 +568,24 @@ void CShootingObject::FireBullet(const Fvector& pos,
 		l_fHitPowerCritical = fvHitPowerCritical[egdMaster];
 	}
 
+	// A weapon-level `bullet_material` overrides whatever the cartridge carries. Copied only when
+	// one is actually configured, so the ordinary path fires the cartridge untouched.
+	CCartridge			overridden;
+	const CCartridge*	pshot = &cartridge;
+	if (u16(-1) != m_bullet_material_idx)
+	{
+		overridden						= cartridge;
+		overridden.bullet_material_idx	= m_bullet_material_idx;
+		pshot							= &overridden;
+	}
+
 	Level().BulletManager().AddBullet( pos, dir,
 		m_fStartBulletSpeed * cur_silencer_koef.bullet_speed,
 		l_fHitPower * cur_silencer_koef.hit_power,
 		l_fHitPowerCritical,
 		fHitImpulse * cur_silencer_koef.hit_impulse,
 		parent_id, weapon_id,
-		ALife::eHitTypeFireWound, fireDistance, cartridge, send_hit, aim_bullet);
+		ALife::eHitTypeFireWound, fireDistance, *pshot, send_hit, aim_bullet);
 }
 
 void CShootingObject::FireStart	()

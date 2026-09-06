@@ -18,6 +18,11 @@ extern const Fvector zero_vel;
 
 #define WEAPON_MATERIAL_NAME "objects\\bullet"
 
+// Resolve a game-material name to its index, falling back (with a log line) when the name is not
+// in the library. GMLib.GetMaterialIdx VERIFYs on a miss -- acceptable for a compile-time
+// constant, not for a value read out of a config, so every config-sourced name comes through here.
+u16 ResolveBulletMaterial(LPCSTR name, u16 fallback_idx);
+
 class CShootingObject : public IAnticheatDumpable
 {
 protected:
@@ -32,6 +37,9 @@ protected:
 	Fvector		m_vCurrentShootPos;
 	//ID ��������� ������� ���������� ��������
 	u16			m_iCurrentParentID;
+	// Optional per-weapon override of the cartridge's bullet material, u16(-1) = keep the
+	// cartridge's own. Config key `bullet_material` on the weapon section.
+	u16			m_bullet_material_idx;
 
 
 //////////////////////////////////////////////////////////////////////////
