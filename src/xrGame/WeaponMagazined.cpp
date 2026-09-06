@@ -522,6 +522,8 @@ bool CWeaponMagazined::DeferForSprintExit(u8 action)
 void CWeaponMagazined::ResumeSprintDeferred(u8 action)
 {
 	if		(1 == action)	Reload();
+	else if	(3 == action)	OnNextFireMode();
+	else if	(4 == action)	OnPrevFireMode();
 	m_bSprintExitPlayed = false;
 }
 
@@ -4278,6 +4280,9 @@ void	CWeaponMagazined::OnNextFireMode		()
 {
 	if (!m_bHasDifferentFireModes) return;
 	if (GetState() != eIdle) return;
+	// out of the sprint pose first, like the reload and the launcher flip -- the selector is worked
+	// with the weapon down, and switching straight out of a run cut the pose
+	if (DeferForSprintExit(3)) return;
 	int oldMode = GetCurrentFireMode();
 	m_iCurFireMode = (m_iCurFireMode+1+m_aFireModes.size()) % m_aFireModes.size();
 	SetQueueSize(GetCurrentFireMode());
@@ -4288,6 +4293,7 @@ void	CWeaponMagazined::OnPrevFireMode		()
 {
 	if (!m_bHasDifferentFireModes) return;
 	if (GetState() != eIdle) return;
+	if (DeferForSprintExit(4)) return;
 	int oldMode = GetCurrentFireMode();
 	m_iCurFireMode = (m_iCurFireMode-1+m_aFireModes.size()) % m_aFireModes.size();
 	SetQueueSize(GetCurrentFireMode());
