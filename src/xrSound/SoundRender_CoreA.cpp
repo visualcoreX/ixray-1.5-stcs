@@ -89,7 +89,7 @@ void CSoundRender_CoreA::set_listener(const CSoundRender_Environment& env)
     A_CHK(alEffectf(effect, AL_EAXREVERB_DIFFUSION, env.EnvironmentDiffusion));
     A_CHK(alEffectf(effect, AL_EAXREVERB_GAIN, env.Room));
     A_CHK(alEffectf(effect, AL_EAXREVERB_GAINHF, env.RoomHF));
-    A_CHK(alEffectf(effect, AL_EAXREVERB_GAINHF, env.RoomLF));
+    A_CHK(alEffectf(effect, AL_EAXREVERB_GAINLF, env.RoomLF));
     A_CHK(alEffectf(effect, AL_EAXREVERB_DECAY_TIME, env.DecayTime));
     A_CHK(alEffectf(effect, AL_EAXREVERB_DECAY_HFRATIO, env.DecayHFRatio));
     A_CHK(alEffectf(effect, AL_EAXREVERB_DECAY_LFRATIO, env.DecayLFRatio));
@@ -116,7 +116,7 @@ void CSoundRender_CoreA::get_listener(CSoundRender_Environment& env)
     A_CHK(alGetEffectf(effect, AL_EAXREVERB_DIFFUSION, &env.EnvironmentDiffusion));
     A_CHK(alGetEffectf(effect, AL_EAXREVERB_GAIN, &env.Room));
     A_CHK(alGetEffectf(effect, AL_EAXREVERB_GAINHF, &env.RoomHF));
-    A_CHK(alGetEffectf(effect, AL_EAXREVERB_GAINHF, &env.RoomLF));
+    A_CHK(alGetEffectf(effect, AL_EAXREVERB_GAINLF, &env.RoomLF));
     A_CHK(alGetEffectf(effect, AL_EAXREVERB_DECAY_TIME, &env.DecayTime));
     A_CHK(alGetEffectf(effect, AL_EAXREVERB_DECAY_HFRATIO, &env.DecayHFRatio));
     A_CHK(alGetEffectf(effect, AL_EAXREVERB_DECAY_LFRATIO, &env.DecayLFRatio));
