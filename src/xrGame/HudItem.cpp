@@ -103,6 +103,7 @@ CHudItem::CHudItem()
 	m_dwSprintExitEndTm			= 0;
 	m_dwShootLockTm				= 0;
 	m_bIdleTransitionLock		= false;
+	m_bIdleMoving				= false;
 	m_bSuppressCompanion		= false;
 	m_bPdaCursorAnims			= false;
 	m_bBlowoutPlayed			= false;
@@ -402,6 +403,33 @@ void CHudItem::UpdateHudAdditonal		(Fmatrix& hud_trans)
 void CHudItem::UpdateCL()
 {
 	UpdateShowPPE();
+
+	// The moving<->standing idle swap is a SINGLE edge: CActor::g_SetAnimation sees mcAnyMove
+	// change and calls player_hud::OnMovementChanged once. OnMovementChanged is allowed to refuse
+	// it (not eIdle, an aim transition, a one-shot gesture in the idle slot) -- and then the
+	// notification is gone for good, because nothing re-evaluates the idle while the actor stands
+	// still. That is the walk animation that keeps running after a dialogue opens (CanMove() goes
+	// false on the very frame the talk window takes the input) and after anything else stops him
+	// from the outside. Re-check the one direction that gets stuck.
+	// Only from a moving idle to a standing one: the PDA cursor/aim idles never take the moving
+	// branch, so they leave the flag false and this can never fire on them. The flag is cleared
+	// BEFORE the re-play so a PlayAnimIdle override that returns without reaching TryPlayAnimIdle
+	// (the detector mirroring its companion) cannot turn this into a per-frame loop.
+	if(m_bIdleMoving && GetState()==eIdle && !IsPending() &&
+	   !m_bIdleTransitionLock && !m_bStopAtEndAnimIsRunning)
+	{
+		CActor* pIdleActor = smart_cast<CActor*>(object().H_Parent());
+		if(pIdleActor && pIdleActor==Level().CurrentViewEntity())
+		{
+			CEntity::SEntityState st;
+			pIdleActor->g_State(st);
+			if(!pIdleActor->AnyMove() && !st.bSprint)
+			{
+				m_bIdleMoving = false;
+				PlayAnimIdle();
+			}
+		}
+	}
 
 	if (m_pending_dof_alias.size())
 	{
@@ -946,6 +974,9 @@ bool CHudItem::TryPlayBlowoutAnim()
 
 bool CHudItem::TryPlayAnimIdle()
 {
+	// re-decided below; only the walk/sprint branches raise it again (see m_bIdleMoving)
+	m_bIdleMoving = false;
+
 	if (TryPlayBlowoutAnim())	return true;
 
 	// 3D PDA: the cursor drives the idle. While it's off-centre we play anm_idle[_aim]<dir> and ignore
@@ -996,6 +1027,7 @@ bool CHudItem::TryPlayAnimIdle()
 				if(!m_bPrevSprint)
 					m_bSprintStarted = false;
 				m_bPrevSprint = true;
+				m_bIdleMoving = true;
 				PlayAnimIdleSprint();
 				return true;
 			}
@@ -1046,6 +1078,7 @@ bool CHudItem::TryPlayAnimIdle()
 					m_bStepCrouch = true;
 				}
 				m_bStepSlow   = !accel;
+				m_bIdleMoving = true;
 				PlayAnimIdleMoving();
 				m_bStepSlow   = false;
 				m_bStepCrouch = false;

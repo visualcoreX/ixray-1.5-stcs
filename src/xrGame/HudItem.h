@@ -217,6 +217,11 @@ public:
 	// set while an aim in/out transition (an eIdle-owned motion) is playing so the
 	// movement refresh does not cut it short; cleared when that motion ends.
 	bool						m_bIdleTransitionLock;
+	// what the last idle selection settled on: true = a moving (walk/sprint) idle is running.
+	// The moving<->standing swap arrives as a SINGLE edge (CActor::g_SetAnimation ->
+	// player_hud::OnMovementChanged), which OnMovementChanged may refuse; this lets UpdateCL
+	// notice afterwards that the edge never landed and the walk cycle is still running.
+	bool						m_bIdleMoving;
 
 	virtual void				UpdateCL			();
 	virtual void				renderable_Render	();
