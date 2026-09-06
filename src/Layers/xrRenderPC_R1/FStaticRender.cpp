@@ -512,6 +512,13 @@ void CRender::Calculate				()
 		if (g_pGamePersistent && (phase==PHASE_NORMAL))
 		{
 			set_Object										(g_pGameLevel->CurrentViewEntity());
+			// ...but NOT the shadow generator. R1 has no shadow-map pass: CLightShadows builds its
+			// casters right here, from whatever is drawn while an object is current, so the legs --
+			// a stand-in body with the head branch collapsed -- were casting a headless silhouette,
+			// and casting it with r__actor_shadow off. The real first-person shadow is the one
+			// Render_First puts in above, from the actor's own visual, under that flag. The caster
+			// set_Object just pushed is left empty, and calculate() skips empty casters.
+			if (L_Shadows)	L_Shadows->set_object		(0);
 			g_pGamePersistent->RenderFirstPersonLegs		();
 			set_Object										(0);
 		}
