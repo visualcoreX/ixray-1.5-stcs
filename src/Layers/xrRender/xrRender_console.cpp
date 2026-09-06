@@ -315,6 +315,46 @@ public:
 	virtual void	Save(IWriter* F)	{ resolve(); inherited::Save(F); }
 };
 
+// Which SSAO algorithm, as ONE choice for the menu over the two mask bits that store it. r3.cpp
+// already resolves the pair with HDAO winning, so the bits are exclusive there; this stops them
+// from being set independently in the first place. ssaom_unset behaves like aam_unset above: until
+// an r_ssao_mode line is seen, the mode is read back out of the flags an existing user.ltx carries.
+// R2 has no HDAO at all (no o.ssao_hdao field), which the menu handles by dropping that entry.
+enum { ssaom_classic = 0, ssaom_hbao = 1, ssaom_hdao = 2, ssaom_unset = 3 };
+u32 ps_r_ssao_mode = ssaom_unset;
+
+u32	ssao_mode_effective()
+{
+	if (ssaom_unset != ps_r_ssao_mode)					return ps_r_ssao_mode;
+	if (ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_HDAO))	return ssaom_hdao;
+	if (ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_HBAO))	return ssaom_hbao;
+	return ssaom_classic;
+}
+
+xr_token							ssao_mode_token						[ ]={
+	{ "ui_mm_ssao_classic",			ssaom_classic									},
+	{ "ui_mm_ssao_hbao",			ssaom_hbao										},
+	{ "ui_mm_ssao_hdao",			ssaom_hdao										},
+	{ 0,							0												}
+};
+
+class CCC_SSAOMode : public CCC_Token
+{
+	typedef CCC_Token inherited;
+	void	resolve()	{ ps_r_ssao_mode = ssao_mode_effective(); }
+public:
+					CCC_SSAOMode(LPCSTR N) : inherited(N, &ps_r_ssao_mode, ssao_mode_token) {}
+
+	virtual void	Execute(LPCSTR args)
+	{
+		inherited::Execute(args);
+		ps_r2_ls_flags_ext.set(R2FLAGEXT_SSAO_HBAO, ssaom_hbao == ps_r_ssao_mode);
+		ps_r2_ls_flags_ext.set(R2FLAGEXT_SSAO_HDAO, ssaom_hdao == ps_r_ssao_mode);
+	}
+	virtual void	Status(TStatus& S)	{ resolve(); inherited::Status(S); }
+	virtual void	Save(IWriter* F)	{ resolve(); inherited::Save(F); }
+};
+
 #ifdef	USE_DX10
 #include "../xrRenderDX10/StateManager/dx10SamplerStateCache.h"
 #endif	//	USE_DX10
@@ -851,6 +891,8 @@ void		xrRender_initconsole	()
 	CMD3(CCC_Mask,		"r2_ssao_half_data",			&ps_r2_ls_flags_ext,		R2FLAGEXT_SSAO_HALF_DATA);//Need restart
 	CMD3(CCC_Mask,		"r2_ssao_hbao",					&ps_r2_ls_flags_ext,		R2FLAGEXT_SSAO_HBAO);//Need restart
 	CMD3(CCC_Mask,		"r2_ssao_hdao",					&ps_r2_ls_flags_ext,		R2FLAGEXT_SSAO_HDAO);//Need restart
+	// what the options list shows: classic / HBAO / HDAO, over the two masks above
+	CMD1(CCC_SSAOMode,	"r_ssao_mode"														);
 	CMD3(CCC_Mask,		"r2_steep_parallax",			&ps_r2_ls_flags,			R2FLAG_STEEP_PARALLAX);
 	CMD3(CCC_Mask,		"r2_detail_bump",				&ps_r2_ls_flags,			R2FLAG_DETAIL_BUMP);
 	CMD3(CCC_Mask, "r2_use_bump", &ps_r__common_flags, R2FLAG_USE_BUMP);
