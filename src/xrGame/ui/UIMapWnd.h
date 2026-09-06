@@ -46,6 +46,7 @@ private:
 	CMapActionPlanner*			m_ActionPlanner;
 //	CUIFrameLineWnd*			UIMainMapHeader;
 	CUIMapLocationHint*			m_map_location_hint;
+	Frect						m_task_hint_rect;	// bounds for task hints: the PDA screen
 
 #ifdef DEBUG
 //	CUIStatic*					m_dbg_text_hint;
@@ -133,6 +134,9 @@ public:
 			void				ShowHintStr				(CUIWindow* parent, LPCSTR text);
 			void				ShowHintSpot			(CMapSpot* spot);
 			void				ShowHintTask			(CGameTask* task, CUIWindow* owner);
+			// Task hints belong INSIDE the PDA. Without a rect they were bounded by the whole screen
+			// (0,0,1024,768) and slid off the device: measured x1=27 with the PDA starting at x=85.
+			void				ShowHintTask			(CGameTask* task, CUIWindow* owner, Frect const& vis_rect);
 
 			void				SpotSelected			(CUIWindow* spot);
 

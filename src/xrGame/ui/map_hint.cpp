@@ -82,6 +82,13 @@ void CUIMapLocationHint::SetInfoStr(LPCSTR text)
 
 	float new_h				= _max(64.0f, S->GetWndPos().y+S->GetWndSize().y+20.0f);
 	SetWndSize				(Fvector2().set(new_w, new_h));
+	// CUIFrameRect::UpdateSize refuses to go below the sum of the frame corners and silently
+	// enlarges ITSELF, leaving the window rect at the smaller value we just asked for. fit_in_rect
+	// then places the hint by that stale, too-small size and the drawn box hangs over the screen
+	// edge. UpdateSize() syncs the window back to what will actually be drawn (UIHint::set_text
+	// does the same for its own background).
+	UpdateSize();
+
 }
 
 void CUIMapLocationHint::SetInfoMSpot(CMapSpot* spot)
@@ -195,4 +202,11 @@ void CUIMapLocationHint::SetInfoTask(CGameTask* task)
 	pos.x = m_info["t_hint_text"]->GetWndPos().x + m_info["t_hint_text"]->GetWndSize().x + 20.0f;
 	pos.y = m_info["t_hint_text"]->GetWndPos().y + m_info["t_hint_text"]->GetWndSize().y + 20.0f;
 	SetWndSize( pos );
+	// CUIFrameRect::UpdateSize refuses to go below the sum of the frame corners and silently
+	// enlarges ITSELF, leaving the window rect at the smaller value we just asked for. fit_in_rect
+	// then places the hint by that stale, too-small size and the drawn box hangs over the screen
+	// edge. UpdateSize() syncs the window back to what will actually be drawn (UIHint::set_text
+	// does the same for its own background).
+	UpdateSize();
+
 }

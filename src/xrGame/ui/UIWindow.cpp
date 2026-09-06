@@ -656,6 +656,20 @@ bool fit_in_rect(CUIWindow* w, Frect const& vis_rect, float border, float dx16po
 	if ( !is_in( vis_rect, rect ) ) {	rect.sub( 0.0f                 , yn                     );	}
 	if ( !is_in( vis_rect, rect ) ) {	rect.sub( rect.width() - border, 0.0f                   );	}
 
+	// The four candidates above are TRIED, not guaranteed: is_in() wants strict containment, so a
+	// hint taller than vis_rect (a long PDA task description) matches none of them and the code fell
+	// through with whatever the last attempt left -- which is how these popups climbed over the top
+	// and the side edge. Clamp as a final step. Right/bottom first, then left/top, so an oversized
+	// hint stays anchored to the top-left corner instead of hanging off the screen.
+	{
+		Fvector2 sz;	sz.set( rect.width(), rect.height() );
+		if ( rect.x2 > vis_rect.x2 - border )	rect.x1 = vis_rect.x2 - border - sz.x;
+		if ( rect.y2 > vis_rect.y2 - border )	rect.y1 = vis_rect.y2 - border - sz.y;
+		if ( rect.x1 < vis_rect.x1 + border )	rect.x1 = vis_rect.x1 + border;
+		if ( rect.y1 < vis_rect.y1 + border )	rect.y1 = vis_rect.y1 + border;
+		rect.x2 = rect.x1 + sz.x;	rect.y2 = rect.y1 + sz.y;
+	}
+
 	w->SetWndPos( rect.lt );
 	return true;
 }

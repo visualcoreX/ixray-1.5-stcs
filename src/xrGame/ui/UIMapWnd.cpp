@@ -40,6 +40,7 @@ CUIMapWnd::CUIMapWnd()
 	m_prev_actor_pos.set	(0,0);
 	m_currentZoom			= 1.0f;
 	m_map_location_hint		= NULL;
+	m_task_hint_rect.set	(0.0f, 0.0f, UI_BASE_WIDTH, UI_BASE_HEIGHT);
 	m_map_move_step			= 10.0f;
 /*
 #ifdef DEBUG
@@ -716,6 +717,12 @@ void CUIMapWnd::ShowHintSpot( CMapSpot* spot )
 	}
 }
 
+void CUIMapWnd::ShowHintTask( CGameTask* task, CUIWindow* owner, Frect const& vis_rect )
+{
+	m_task_hint_rect = vis_rect;
+	ShowHintTask( task, owner );
+}
+
 void CUIMapWnd::ShowHintTask( CGameTask* task, CUIWindow* owner )
 {
 	if ( task )
@@ -733,7 +740,7 @@ void CUIMapWnd::ShowHint( bool extra )
 	Frect vis_rect;
 	if ( extra )
 	{
-		vis_rect.set( Frect().set( 0.0f, 0.0f, UI_BASE_WIDTH, UI_BASE_HEIGHT ) );
+		vis_rect = m_task_hint_rect;		// the PDA screen, not the monitor
 	} 
 	else
 	{

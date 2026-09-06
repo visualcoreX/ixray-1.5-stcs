@@ -108,13 +108,45 @@ void CUITaskWnd::Update()
 
 	if ( m_pStoryLineTaskItem->show_hint && m_pStoryLineTaskItem->OwnerTask() )
 	{
-		m_pMapWnd->ShowHintTask( m_pStoryLineTaskItem->OwnerTask(), m_pStoryLineTaskItem );
+		// Keep the hint on the PDA screen: this window IS the device area, and the top is pushed
+		// below the tab row (the storyline row sits right under it) so the hint stops covering it.
+		Frect hr;	GetAbsoluteRect( hr );
+		// Horizontal bounds = the tab content column. Every panel of this tab (the task header
+		// background, the centre strip, the map) is inset by the same 29 from the window, so the map
+		// window carries exactly that column and needs no constant here. The window rect itself is
+		// too wide (it includes the device bezel) and the task ROW is 6 further in, which read as the
+		// hint stopping short of the edge. Top = the first task row, i.e. just under the tab strip.
+		{	Frect mr;	m_pMapWnd->GetAbsoluteRect( mr );
+			// The visible edge of the PDA screen is BETWEEN the two rects we can ask for: the window
+			// (85) is the whole device and overflowed slightly, the content column (114, shared by the
+			// map and the task panel) left a visible gap. The device frame lives in the background
+			// texture and no window describes it, so split the inset -- that lands on the glass.
+			hr.x1 += ( mr.x1 - hr.x1 ) * 0.75f;
+			hr.x2 -= ( hr.x2 - mr.x2 ) * 0.75f;
+			Frect ir;	m_pStoryLineTaskItem->GetAbsoluteRect( ir );	hr.y1 = ir.y1;	}
+		m_pMapWnd->ShowHintTask( m_pStoryLineTaskItem->OwnerTask(), m_pStoryLineTaskItem, hr );
 		//ReloadTaskInfo();
 	}
 	else if ( m_pSecondaryTaskItem->show_hint && m_pSecondaryTaskItem->OwnerTask() )
 	{
 		m_pStoryLineTaskItem->show_hint = false;
-		m_pMapWnd->ShowHintTask( m_pSecondaryTaskItem->OwnerTask(), m_pSecondaryTaskItem );
+		// Keep the hint on the PDA screen: this window IS the device area, and the top is pushed
+		// below the tab row (the storyline row sits right under it) so the hint stops covering it.
+		Frect hr;	GetAbsoluteRect( hr );
+		// Horizontal bounds = the tab content column. Every panel of this tab (the task header
+		// background, the centre strip, the map) is inset by the same 29 from the window, so the map
+		// window carries exactly that column and needs no constant here. The window rect itself is
+		// too wide (it includes the device bezel) and the task ROW is 6 further in, which read as the
+		// hint stopping short of the edge. Top = the first task row, i.e. just under the tab strip.
+		{	Frect mr;	m_pMapWnd->GetAbsoluteRect( mr );
+			// The visible edge of the PDA screen is BETWEEN the two rects we can ask for: the window
+			// (85) is the whole device and overflowed slightly, the content column (114, shared by the
+			// map and the task panel) left a visible gap. The device frame lives in the background
+			// texture and no window describes it, so split the inset -- that lands on the glass.
+			hr.x1 += ( mr.x1 - hr.x1 ) * 0.75f;
+			hr.x2 -= ( hr.x2 - mr.x2 ) * 0.75f;
+			Frect ir;	m_pStoryLineTaskItem->GetAbsoluteRect( ir );	hr.y1 = ir.y1;	}
+		m_pMapWnd->ShowHintTask( m_pSecondaryTaskItem->OwnerTask(), m_pSecondaryTaskItem, hr );
 		//ReloadTaskInfo();
 	}
 	else
