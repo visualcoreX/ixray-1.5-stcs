@@ -313,6 +313,8 @@ protected:
 	MotionID				m_current_larm;		// detector pose playing on the left-arm partition (see ActorAnimation.cpp)
 	MotionID				m_torso_item_anim;	// one-shot item-use gesture now playing (actor_torso_anim)
 	bool					m_torso_item_done;	// ...and it has already run to its end
+	bool					m_torso_item_replay;	// the gesture was re-triggered: replay it even though the motion is unchanged
+	u32						m_torso_item_end;	// MotionEndTm() of the hud motion it was armed for; a new stamp = the item played it again
 	float					m_torso_sync_k;		// torso/hud length factor, captured once when the motion starts
 
 

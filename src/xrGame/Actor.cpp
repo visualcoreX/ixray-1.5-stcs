@@ -243,6 +243,8 @@ CActor::CActor() : CEntityAlive()
 	m_fTorsoFollowCam		= 1.f;
 	m_fTorsoFollowCamPitch	= 1.f;
 	m_torso_item_done		= false;
+	m_torso_item_end		= 0;
+	m_torso_item_replay		= false;
 	m_torso_sync_k			= 0.f;
 
 	b_DropActivated			= 0;

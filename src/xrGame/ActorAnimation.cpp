@@ -1069,7 +1069,19 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 				// ONCE, not looped: these carry esmStopAtEnd, so the blend stops at timeTotal and we
 				// let go of the torso there. Keeping the override on would freeze the last frame;
 				// stripping the flag would loop it for as long as the phantom lives. Neither is right.
-				if (m_torso_item_anim != mi)	{ m_torso_item_anim = mi; m_torso_item_done = false; }
+				// Re-arm on a new HUD motion as well as on a new motion id. Strike a knife twice and the
+				// second gesture is the SAME mi, so keying on that alone left the latch set from the first
+				// strike and the third-person animation played exactly once. MotionEndTm() is stamped
+				// afresh by every hud motion; 0 means none is running, and re-arming on the way back to 0
+				// would restart the gesture instead of letting it end.
+				const u32 mend = HI->MotionEndTm();
+				if (m_torso_item_anim != mi || (mend && mend != m_torso_item_end))
+				{
+					m_torso_item_anim = mi;
+					m_torso_item_end  = mend;
+					m_torso_item_done = false;
+					m_torso_item_replay = true;
+				}
 				if (!m_torso_item_done)
 				{
 					if (m_current_torso == mi && m_current_torso_blend &&
@@ -1138,7 +1150,11 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 		m_fNeckYawFix		+= (neck_fix_target - m_fNeckYawFix) * wy;
 	}
 
-	if (m_current_torso!=M_torso){
+	// A one-shot gesture stops on its last frame and stays m_current_torso, so striking again
+	// selects the SAME motion and this comparison alone would never replay it. m_torso_item_replay
+	// is raised when the gesture re-triggers and is consumed here.
+	if (m_current_torso!=M_torso || m_torso_item_replay){
+		m_torso_item_replay = false;
 		if (m_bAnimTorsoPlayed)		m_current_torso_blend = smart_cast<IKinematicsAnimated*>	(Visual())->PlayCycle(M_torso,TRUE,AnimTorsoPlayCallBack,this);
 		else						/**/m_current_torso_blend = /**/smart_cast<IKinematicsAnimated*>	(Visual())->PlayCycle(M_torso);
 
