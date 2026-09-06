@@ -73,6 +73,16 @@ int CSoundRender_CoreA::load_reverb(ALuint effect_, const EFXEAXREVERBPROPERTIES
     return 1;
 }
 
+ALuint CSoundRender_CoreA::get_efx_slot() const
+{
+    // m_is_supported says the slot and the effect were created; snd_efx is the player's switch,
+    // which until now nothing in xrSound read. Gating the send here is enough to turn the
+    // reverb off completely -- with no source feeding it, the slot has nothing to process.
+    if (!m_is_supported)                return AL_EFFECTSLOT_NULL;
+    if (!psSoundFlags.test(ss_EFX))     return AL_EFFECTSLOT_NULL;
+    return slot;
+}
+
 void CSoundRender_CoreA::commit()
 {
     // Tell the effect slot to use the loaded effect object. Note that this

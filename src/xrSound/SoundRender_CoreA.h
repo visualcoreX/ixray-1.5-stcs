@@ -90,6 +90,10 @@ public:
 
 	virtual const Fvector&	listener_position		( ){return Listener.position;}
 
+	// The slot a source has to send to for the reverb to be heard at all, or AL_EFFECTSLOT_NULL
+	// when EFX is unsupported or switched off. See CSoundRender_TargetA::fill_parameters.
+	ALuint					get_efx_slot			() const;
+
 	// EFX listener
 	void set_listener(const CSoundRender_Environment& env);
 	void get_listener(CSoundRender_Environment& env);

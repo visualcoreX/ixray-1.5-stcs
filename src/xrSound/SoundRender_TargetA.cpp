@@ -11,6 +11,7 @@ CSoundRender_TargetA::CSoundRender_TargetA():CSoundRender_Target()
 {
     cache_gain			= 0.f;
     cache_pitch			= 1.f;
+    cache_efx_slot		= ALuint(-1);
     pSource				= 0;
 }
 
@@ -31,6 +32,8 @@ BOOL	CSoundRender_TargetA::_initialize		()
         A_CHK(alSourcef	(pSource, AL_MAX_GAIN, 1.f));
         A_CHK(alSourcef	(pSource, AL_GAIN, 	cache_gain));
         A_CHK(alSourcef	(pSource, AL_PITCH,	cache_pitch));
+		// a brand new source sends nowhere; _restart comes through here too
+        cache_efx_slot	= ALuint(-1);
         return			TRUE;
     }else{
     	Msg				("! sound: OpenAL: Can't create source. Error: %s.",(LPCSTR)alGetString(error_));
@@ -146,6 +149,16 @@ void	CSoundRender_TargetA::fill_parameters()
     A_CHK(alSourcei	(pSource, AL_SOURCE_RELATIVE,		m_pEmitter->b2D));
 
 	A_CHK(alSourcef	(pSource, AL_ROLLOFF_FACTOR,		psSoundRolloff));
+
+	// Feed the reverb. Everything else was already in place -- the auxiliary slot, the EAXREVERB
+	// effect and the environment written into it every frame -- but a slot only hears what sources
+	// SEND to it, and nothing in xrSound ever set this. That is why the whole EFX chain was silent.
+	const ALuint _aux = SoundRenderA ? SoundRenderA->get_efx_slot() : AL_EFFECTSLOT_NULL;
+	if (_aux != cache_efx_slot)
+	{
+		cache_efx_slot	= _aux;
+		A_CHK(alSource3i(pSource, AL_AUXILIARY_SEND_FILTER, _aux, 0, AL_FILTER_NULL));
+	}
 
 	VERIFY2(m_pEmitter,SE->source()->file_name());
     float	_gain	= m_pEmitter->smooth_volume;			clamp	(_gain,EPS_S,1.f);

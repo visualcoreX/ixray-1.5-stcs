@@ -45,7 +45,17 @@ void CSoundRender_Environment::set_default	()
 
 void CSoundRender_Environment::set_identity	()
 {
+	// "No environment": what the listener gets outdoors, and anywhere the downward ray in
+	// CSoundRender_Core::get_environment misses the level's sound-environment geometry. This
+	// used to be set_default() alone, i.e. reverbs[0] == EFX_REVERB_PRESET_GENERIC -- open
+	// terrain rendered as a generic room. It went unheard only because nothing was sending to
+	// the reverb slot yet; the moment the aux send was wired up it turned into echo outdoors.
+	// Room is AL_EAXREVERB_GAIN, the master wet gain that both the reflections and the late
+	// reverb are relative to, so zeroing it silences the effect completely. Everything else
+	// keeps the preset values: lerp() walks every parameter from here into a real room, and it
+	// should travel through sane delays and densities rather than through zeros.
 	set_default				();
+	Room					= 0.f;
 	clamp				  	();
 }
 
