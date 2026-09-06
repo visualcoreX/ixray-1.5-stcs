@@ -289,6 +289,10 @@ public:
 	// runtime toggles (scope on/off, laser, flashlight, bayonet) reach the world model without re-reading
 	// the whole config every frame for every weapon in the level.
 			void gwr_UpdateWorldBones	(IKinematics* K, bool force = true);
+	// Re-apply the world model an installed upgrade asks for (`visual` in the upgrade's effect
+	// section). install_upgrade_impl does it when the upgrade is bought; this is for every respawn
+	// after that, where the object's own spawn sets the stock visual back -- see net_Spawn.
+			void gwr_ApplyUpgradeVisual	();
 			// parse a comma-separated bone list without touching any model (so callers can tell which bones
 			// an upgrade explicitly named and undo the recursive show_bones collateral)
 	static	void gwr_CollectBoneNames	(LPCSTR csv, xr_vector<shared_str>& out);

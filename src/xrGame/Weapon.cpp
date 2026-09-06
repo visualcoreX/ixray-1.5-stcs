@@ -1452,6 +1452,13 @@ BOOL CWeapon::net_Spawn		(CSE_Abstract* DC)
 			m_magazine.push_back(m_DefaultCartridge);
 	}
 
+	// LAST, after everything that sets a visual: CGameObject::net_Spawn takes it from the server
+	// object, and for a launcher-capable weapon the upgrades were installed BEFORE that (see
+	// CWeaponMagazinedWGrenade::net_Spawn), so an upgrade's own model was overwritten on every
+	// respawn -- save-load, level change -- and the weapon came back wearing the stock body with its
+	// attachment bones visible but no geometry on them.
+	gwr_ApplyUpgradeVisual();
+
 	UpdateAddonsVisibility();
 	InitAddons();
 
@@ -2646,6 +2653,19 @@ void CWeapon::gwr_UpdateWorldBones(IKinematics* K, bool force)
 			| (IsBayonetActive()						? 16u : 0u)
 			| (IsGrenadeLauncherAttached()				? 32u : 0u)		// def_hide_bones_override_when_gl_attached
 			| (u32(cur_scope.size() ? cur_scope._get()->dwCRC : 0) << 6);
+	// ...and the two things the pass READS that used to be outside it. The upgrade list is where
+	// every show_bones comes from, and the model is what they are written to: if this ever runs with
+	// the list still empty, or against a visual that is replaced afterwards, def_hide_bones takes the
+	// attachment bones off and the recorded signature stops anyone from ever putting them back. That
+	// is what a level change did -- the launcher, the laser and the tactical grip stayed hidden on
+	// the third-person model until an unrelated flip (aiming, the torch) happened to change the
+	// signature.
+	u32 up_crc = 0;
+	for (const shared_str& u : m_upgrades)
+		if (u.size())	up_crc ^= u._get()->dwCRC;
+	sig ^= up_crc * 2654435761u;					// Knuth's mixer, we only need "did it change"
+	sig ^= u32((uintptr_t)K) * 2246822519u;			// a new model instance is a new set of bones
+
 	if (!force && sig == m_gwr_world_bones_sig)	return;
 	m_gwr_world_bones_sig = sig;
 
@@ -2783,6 +2803,25 @@ int CWeapon::GetScopeY()
 	if (s.size() && pSettings->line_exist(*s, "scope_y"))
 		return pSettings->r_s32(*s, "scope_y") * (GameConstants::GetUseHQ_Icons() ? 2 : 1);
 	return m_iScopeY;
+}
+
+// The `visual` of every installed upgrade, applied in install order (the last one wins, exactly as
+// when they are bought one after another). Silent when no upgrade names a model.
+void CWeapon::gwr_ApplyUpgradeVisual()
+{
+	for (const shared_str& up : m_upgrades)
+	{
+		if (!up.size())	continue;
+		shared_str esect = pSettings->line_exist(up, "section") ? (shared_str)pSettings->r_string(up, "section") : up;
+		const shared_str srcs[2] = { esect, up };
+		for (const shared_str& s : srcs)
+		{
+			if (!s.size())									continue;
+			if (!pSettings->line_exist(s, "visual"))		continue;
+			shared_str v = pSettings->r_string(s, "visual");
+			if (v.size() && v != cNameVisual())				cNameVisual_set(v);
+		}
+	}
 }
 
 void CWeapon::UpdateAddonsVisibility()
