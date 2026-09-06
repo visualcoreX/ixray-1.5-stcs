@@ -45,3 +45,7 @@ temp/
 gamedata_origin/
 patch/
 *.log
+
+# Python bytecode from the tools
+__pycache__/
+*.pyc
