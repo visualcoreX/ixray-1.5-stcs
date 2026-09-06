@@ -381,6 +381,41 @@ public:
 	}
 };
 
+// The two flags above are the storage; the menu wants ONE choice out of three. This is a token
+// facade over them: reading syncs from the flags, writing sets both, so rs_fullscreen /
+// rs_borderless keep working from the console and from an existing user.ltx, and whichever line
+// is replayed last still leaves the same pair of bits.
+enum { wm_windowed = 0, wm_borderless = 1, wm_fullscreen = 2 };
+static u32 s_window_mode = wm_fullscreen;
+xr_token window_mode_token[] =
+{
+	{ "ui_mm_wm_windowed",		wm_windowed		},
+	{ "ui_mm_wm_borderless",	wm_borderless	},
+	{ "ui_mm_wm_fullscreen",	wm_fullscreen	},
+	{ 0,						0				}
+};
+
+class CCC_WindowMode : public CCC_Token
+{
+	typedef CCC_Token inherited;
+	void	sync_from_flags()
+	{
+		s_window_mode = psDeviceFlags.test(rsFullscreen) ? (u32)wm_fullscreen :
+						psDeviceFlags.test(rsBorderless) ? (u32)wm_borderless : (u32)wm_windowed;
+	}
+public:
+					CCC_WindowMode(LPCSTR N) : inherited(N, &s_window_mode, window_mode_token) {}
+
+	virtual void	Execute(LPCSTR args)
+	{
+		inherited::Execute(args);
+		psDeviceFlags.set(rsFullscreen, s_window_mode == wm_fullscreen);
+		psDeviceFlags.set(rsBorderless, s_window_mode == wm_borderless);
+	}
+	virtual void	Status(TStatus& S)	{ sync_from_flags(); inherited::Status(S); }
+	virtual void	Save(IWriter* F)	{ sync_from_flags(); inherited::Save(F); }
+};
+
 class CCC_VidMode : public CCC_Token
 {
 	u32		_dummy;
@@ -739,6 +774,8 @@ void CCC_Register()
 	// wins and takes the other down. Both take effect on the next vid_restart.
 	CMD4(CCC_ExclusiveMask,	"rs_fullscreen",	&psDeviceFlags,	rsFullscreen,	rsBorderless	);
 	CMD4(CCC_ExclusiveMask,	"rs_borderless",	&psDeviceFlags,	rsBorderless,	rsFullscreen	);
+	// what the options menu actually shows: windowed / borderless / fullscreen in one list
+	CMD1(CCC_WindowMode,	"rs_window_mode"												);
 	CMD3(CCC_Mask,		"g_pause_on_minimize",	&psDeviceFlags,	rsPauseOnMinimize	);
 	CMD3(CCC_Mask,		"rs_refresh_60hz",		&psDeviceFlags,		rsRefresh60hz			);
 	CMD3(CCC_Mask,		"rs_stats",				&psDeviceFlags,		rsStatistic				);
