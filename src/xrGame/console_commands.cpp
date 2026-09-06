@@ -2427,6 +2427,13 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	  Console->AddCommand(&x_show_quick_slots); }
 	// "Discord Rich Presence" checkbox in the video options (see discord_rpc.cpp).
 	CMD3(CCC_Mask,			"discord_rpc",		&psActorFlags,	AF_DISCORD_RPC);
+	// GS medicine intoxication, the checkbox of that name in the gameplay options. OFF by
+	// default, i.e. the vanilla behaviour: a medkit has no aftermath at all. Setting it turns on
+	// the Gunslinger rules, where medicine taken in a hurry poisons the actor. Nothing in the
+	// engine reads this -- gunsl_peredoz.script asks the console for it, the same way the rest of
+	// the Gunslinger script systems take their switches.
+	psActorFlags.set(AF_INTOXICATION, false);
+	CMD3(CCC_Mask,			"g_intoxication",	&psActorFlags,	AF_INTOXICATION);
 	// "First-person body" checkbox in the ADVANCED video options. OFF by default.
 	psActorFlags.set(AF_LEGS, false);
 	CMD3(CCC_Mask,			"g_legs",			&psActorFlags,	AF_LEGS);
@@ -2676,6 +2683,11 @@ extern BOOL dbg_moving_bones_snd_player;
 	// --- runtime-only debug toggles (not saved to user.ltx) ---
 	{	extern int g_dbg_zoom_hide_crosshair;		// -1=per-weapon config, 0=force show crosshair while aiming, 1=force hide (all weapons)
 		static CCC_DbgInteger cc_xhair("dbg_zoom_hide_crosshair", &g_dbg_zoom_hide_crosshair, -1, 1);	Console->AddCommand(&cc_xhair);	}
+
+	// Medicine intoxication: print the level once a second while it is above zero, and every
+	// dose as it lands. Read by gunsl_peredoz.script, not by anything here.
+	{	static int g_intoxication_dbg = 0;
+		static CCC_DbgInteger cc_intox("g_intoxication_dbg", &g_intoxication_dbg, 0, 1);	Console->AddCommand(&cc_intox);	}
 
 #ifdef DEBUG
 	CMD4(CCC_Float,		"ai_smart_cover_animation_speed_factor",	&g_smart_cover_animation_speed_factor,	.1f, 10.f);

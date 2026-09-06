@@ -46,6 +46,12 @@ enum{
 	// OFF by default. On the mask rather than an int cvar because an options-menu checkbox
 	// binds to a CCC_Mask bit. See player_legs.cpp.
 	AF_LEGS				=(1<<19),
+	// GS medicine intoxication (gunsl_peredoz.script): every medkit, antirad and drug leaves a
+	// toxicity level behind, and taking them one after another poisons the actor. OFF by default;
+	// with the bit clear it behaves as vanilla does, where medicine has no aftermath at all.
+	// The mechanic itself is script-side -- this bit is only the switch the Lua asks for, and it
+	// lives on the mask because an options-menu checkbox binds to a CCC_Mask bit.
+	AF_INTOXICATION		=(1<<20),
 };
 
 extern Flags32 psActorFlags;
