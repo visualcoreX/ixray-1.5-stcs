@@ -65,10 +65,22 @@ xr_token							qmsaa_token							[ ]={
 	{ 0,							0												}
 };
 
+
 u32			ps_r3_msaa_atest		=	0;			//	=	0;
 xr_token							qmsaa__atest_token					[ ]={
 	{ "st_opt_off",					0												},
 	{ "st_opt_atest_msaa_dx10_0",	1												},
+	// Not offered, and this is deliberate. Upstream commented it out in 426483b2 without saying
+	// why; the why is that the native per-sample test reads MIPPED alpha, so anything the mip had
+	// blurred failed the reference at every sample at once and vanished outright -- lamp grates
+	// went see-through. deffer_base_aref_flat/bump.ps, lod.ps and deffer_particle.ps now OR that
+	// mask with the ATOC coverage, which does cure the vanishing (foliage comes out denser than
+	// on the ATOC mode, not thinner). What it does NOT cure is a dark fringe around the canopy:
+	// the obvious suspect was the colour always being taken from tap 0 while any tap may grant
+	// the coverage, but sourcing the colour from the tap that granted it changed nothing on
+	// screen, so the darkening comes from somewhere else and is still unexplained. ATOC stays
+	// the only mode on offer. Uncomment to get this one back -- the value is unreachable any
+	// other way, CCC_Token only accepts names present in this table.
 //	{ "st_opt_atest_msaa_dx10_1",	2												},
 	{ 0,							0												}
 };
