@@ -479,6 +479,12 @@ public:
 	virtual void			IR_OnKeyboardPress		(int dik);
 	virtual void			IR_OnKeyboardRelease	(int dik);
 	virtual void			IR_OnKeyboardHold		(int dik);
+	// GS sprint mode (AF_GS_SPRINT): may a sprint start this frame? Asks the item in the hands
+	// (CHudItem::CanSprintNow), which is where Gunslinger asks it too.
+			bool			CanSprintNow			();
+	// Drop the sprint from outside the input code (a reload does it when the option says so).
+	// mstate_wishful is protected, and the next movement update carries it into mstate_real.
+			void			StopSprint				()	{ mstate_wishful &= ~mcSprint; }
 	virtual void			IR_OnMouseWheel			(int direction);
 	virtual	float			GetLookFactor			();
 

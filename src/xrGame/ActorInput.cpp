@@ -23,6 +23,8 @@
 #include "HudManager.h"
 #include "UIGameSP.h"
 #include "inventory.h"
+#include "HudItem.h"
+#include "actor_flags.h"
 #include "level.h"
 #include "game_cl_base.h"
 #include "xr_level_controller.h"
@@ -206,12 +208,18 @@ void CActor::IR_OnKeyboardPress(int cmd)
 				mstate_wishful |= mcCrouch;
 
 		}break;
-	case kSPRINT_TOGGLE:	
+	case kSPRINT_TOGGLE:
 		{
-			if (mstate_wishful & mcSprint)
+			// GS mode: the key is HELD, so a press only asks for the sprint and the hold below
+			// keeps asking. Handled here too, so a tap is not a frame late.
+			if (psActorFlags.test(AF_GS_SPRINT))
+			{
+				if (CanSprintNow())	mstate_wishful |= mcSprint;
+			}
+			else if (mstate_wishful & mcSprint)
 				mstate_wishful &=~mcSprint;
 			else
-				mstate_wishful |= mcSprint;					
+				mstate_wishful |= mcSprint;
 		}break;
 	case kCAM_1:	cam_Set			(eacFirstEye);				break;
 	case kCAM_2:	cam_Set			(eacLookAt);				break;
@@ -513,7 +521,12 @@ void CActor::IR_OnKeyboardRelease(int cmd)
 		{
 		case kJUMP:		mstate_wishful &=~mcJump;		break;
 		case kDROP:		if(GAME_PHASE_INPROGRESS == Game().Phase()) g_PerformDrop();				break;
-		case kCROUCH:	g_bAutoClearCrouch = true;
+		case kCROUCH:	g_bAutoClearCrouch = true;		break;
+		// GS mode only: letting go of the key ends the sprint. In the stock toggle mode the
+		// release must do nothing, or a toggle would last exactly as long as the press.
+		case kSPRINT_TOGGLE:
+			if (psActorFlags.test(AF_GS_SPRINT))	mstate_wishful &=~mcSprint;
+			break;
 		}
 	}
 }
@@ -554,8 +567,30 @@ void CActor::IR_OnKeyboardHold(int cmd)
 	case kBACK:		mstate_wishful |= mcBack;									break;
 	case kCROUCH:	mstate_wishful |= mcCrouch;									break;
 
+	// GS sprint, ActorUtils.pas:1557: while the key is down the sprint is re-asserted every
+	// frame, and dropped on any frame the hands refuse it. That is what lets firing or aiming
+	// out of a sprint work with the key still held -- the sprint gives way to the action and
+	// comes back by itself once the hands are idle, instead of staying lost until the key is
+	// pressed anew.
+	case kSPRINT_TOGGLE:
+		// While the key is down the sprint is (re)started on any frame the hands allow it. It is NOT
+		// cleared here: stopping a sprint belongs to whoever had a reason to -- the fire/aim keys,
+		// the action hook behind "Перезарядка во время спринта", the actor's own limits. A poll that
+		// cleared it too made the hold option answer for all of that as well.
+		if (psActorFlags.test(AF_GS_SPRINT) && !(mstate_wishful & mcSprint) && CanSprintNow())
+			mstate_wishful |= mcSprint;
+		break;
+
 
 	}
+}
+
+// GS asks CanSprintNow(wpn) about the item in the hands (ActorUtils.pas:1558), so with empty
+// hands there is nothing to refuse and a sprint always starts.
+bool CActor::CanSprintNow()
+{
+	CHudItem* hi = smart_cast<CHudItem*>(inventory().ActiveItem());
+	return (!hi) || hi->CanSprintNow();
 }
 
 void CActor::IR_OnMouseMove(int dx, int dy)

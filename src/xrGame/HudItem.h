@@ -154,6 +154,23 @@ public:
 	// the two sprint loops out of phase, and correcting phase afterwards is always either a click
 	// or a visible rate change. It waits, and the weapon's sprint motion starts it instead.
 	virtual bool				SprintAnimAllowedNow ()				{return true;}
+	// GS CanSprintNow (WeaponAdditionalBuffer.pas:884): may a sprint START while THIS item is in
+	// the hands? Only asked in the GS sprint mode, where the key is held rather than toggled, and
+	// only about the item the actor is holding -- so it is a question about the hands, not about
+	// the actor. Blocked while the sprint-out transition is playing (that is the point of the
+	// mode), and equally while anything that is not a plain idle owns the hands: a shot, a reload,
+	// a gesture, an aim. Without that last part a held key would re-arm the sprint on the very
+	// next frame after firing cleared it, and the shot would never get its animation.
+	virtual bool				CanSprintNow		() const;
+	// Is a reload running -- or already asked for? CHudItem knows nothing of eReload (a weapon
+	// state), and the answer has to cover the frame between the request and the state landing:
+	// SwitchState only sends GE_WPN_STATE_CHANGE, so the reload animation starts a frame after
+	// TryReload has set the item pending. Judging a reload by the motion name alone leaves that
+	// frame looking like "busy with something else", which is enough to drop a sprint.
+	virtual bool				IsReloadingNow		() const	{ return false; }
+	// Is an action waiting for the sprint-out transition to finish (a shot or an aim whose key
+	// cleared the sprint)? While one is, a held sprint key must not put the sprint back.
+	virtual bool				SprintActionPending	() const	{ return false; }
 
 	virtual void				PlayAnimIdleMoving	();
 	virtual void				PlayAnimIdleSprint	();
@@ -180,6 +197,11 @@ public:
 	// build "anm_idle_sprint_<which><suffix>" from a loop base "anm_idle_sprint<suffix>"
 	void						MakeSprintVariant	(LPCSTR loop_base, LPCSTR which, string_path& out);
 	bool						HasSprintExitAnim	();	// the item has a (suffix-correct) sprint-exit anim
+	// Play the sprint-out transition and arm the lock that says when the next action may start
+	// (lock_time_anm_idle_sprint_end, counted from the START of the motion -- Gunslinger's own key).
+	// Used by the idle machinery when the actor stops sprinting, and by a reload that wants the
+	// hands to step out of the sprint pose first. false = this item has no such animation.
+	bool						PlaySprintExitAnim	();
 
 	// walk_slow: when the actor is walking (not running) inserts "_slow" after the
 	// "anm_idle_moving" prefix of any moving-anim name, falling back to the plain

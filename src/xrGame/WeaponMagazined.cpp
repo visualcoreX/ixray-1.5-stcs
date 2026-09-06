@@ -80,6 +80,8 @@ CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 	m_bZoomPendingMisfire		= false;
 	m_bZoomPendingMisfireIn		= false;
 	m_bFirePendingSprint		= false;
+	m_sprint_pending_action		= 0;
+	m_bSprintExitPlayed			= false;
 	m_bDetectorDrawPending		= false;
 	m_bSuicideShot				= false;
 	m_bNeedFirstShootAnims		= false;
@@ -491,6 +493,38 @@ void CWeaponMagazined::FireEnd()
 // SEPARATE from Reload() because CWeaponShotgun's tri-state path does not go through CWeaponMagazined::
 // Reload at all: without this the whole aim-out blend was simply missing on every pump shotgun, which is
 // exactly how it went unnoticed (user 2026-08-05: "не работает на дробовики").
+// The hands step OUT of the sprint pose before an action, whichever way the reload option is set:
+// the animation exists for exactly this, and skipping it is what made the magazine change (or the
+// launcher flip) look like a cut. What the option decides is the LEGS -- with it off the actor
+// leaves the sprint as well, like firing or aiming out of one; with it on he keeps running.
+// The action itself is re-issued from UpdateCL on the exit lock. Only when there IS an exit
+// animation: with nothing to play there is nothing to wait for.
+// Once per request, not once per attempt -- with the option ON the actor is still sprinting when the
+// deferred action comes back through here, and without the marker it would be deferred again,
+// replaying the exit for as long as the sprint key was held.
+bool CWeaponMagazined::DeferForSprintExit(u8 action)
+{
+	if (!IsActorSprinting() || !HasSprintExitAnim() || m_bSprintExitPlayed)	return false;
+
+	if (!psActorFlags.test(AF_RELOAD_IN_SPRINT))
+	{
+		if (CActor* pA = smart_cast<CActor*>(H_Parent()))	pA->StopSprint();
+	}
+	if (!PlaySprintExitAnim())	return false;
+
+	m_bSprintExitPlayed			= true;
+	m_sprint_pending_action		= action;
+	return true;
+}
+
+// The marker is dropped AFTER the call: the action re-enters its own gate on the way in, and has to
+// find it still set or it would be deferred a second time.
+void CWeaponMagazined::ResumeSprintDeferred(u8 action)
+{
+	if		(1 == action)	Reload();
+	m_bSprintExitPlayed = false;
+}
+
 bool CWeaponMagazined::ReloadGate()
 {
 	// Consumed here, before any of the early exits below: the flag is set by UpdateCL immediately
@@ -503,6 +537,8 @@ bool CWeaponMagazined::ReloadGate()
 	// controller scene, which is what stops the victim reloading, aiming or switching his way out of
 	// it. Reload is the one that would actually rescue him -- an empty weapon ends the scene.
 	if (SuicideBlocksFire())	return false;
+
+	if (DeferForSprintExit(1))	return false;
 
 	// the jam (misfire) inspect gesture must play out fully before the jam can be cleared:
 	// block reload while it's on screen. The empty-mag dry-fire (not a misfire) stays reloadable.
@@ -861,12 +897,26 @@ void CWeaponMagazined::OnStateSwitch	(u32 S)
 	// transition (anm_idle_sprint_start) replays instead of snapping straight into the loop.
 	if (S==eReload || S==eActionAnim || S==eFireModeSwitch)
 	{
+		// "Перезарядка во время спринта" off: the reload ends the sprint. Done here rather than on the
+		// key, so an auto-reload counts too, and it covers the stock toggle mode -- the GS hold mode
+		// has the per-frame poll (CHudItem::CanSprintNow) refuse the sprint for as long as the reload
+		// motion plays, and this is what stops it in the mode that has no poll.
 		m_bSprintStarted = false;
 		// ...and drop any pending dry-fire/jam-inspect: a reload (or other action) supersedes it. Otherwise
 		// the flag set by an empty-click/misfire survives the reload and the NEXT switch2_Idle (e.g. when you
 		// start moving) spuriously plays anm_fakeshoot[_jammed] right after reloading.
 		m_bDryFirePending = false;
 	}
+	// "Перезарядка во время спринта" off: an action ENDS the sprint -- a reload, a weapon being put
+	// away or drawn, a gesture, a fire-mode switch. Keyed on the STATE rather than on a key press, so
+	// an action nobody pressed a key for (an auto-reload, a scripted gesture) counts as well. Set,
+	// none of this touches the legs and the actor runs through it.
+	if (!psActorFlags.test(AF_RELOAD_IN_SPRINT) &&
+		(S==eReload || S==eShowing || S==eHiding || S==eActionAnim || S==eFireModeSwitch))
+	{
+		if (CActor* pA = smart_cast<CActor*>(H_Parent()))	pA->StopSprint();
+	}
+
 	switch (S)
 	{
 	case eIdle:
@@ -1720,6 +1770,20 @@ void CWeaponMagazined::UpdateCL			()
 		else							{ if (IsZoomed())	OnZoomOut(); }
 	}
 
+	// The deferred reload is released by the sprint-exit lock alone. It cannot ride on the handoff
+	// below, which also waits for the sprint to be OVER: that is right for fire and aim, which the
+	// player pressed in order to leave the sprint, but a reload allowed to run during one leaves the
+	// actor still sprinting -- and would wait for a sprint that has no reason to end.
+	if (m_bSprintExitPlayed && !IsActorSprinting() && !m_sprint_pending_action)
+		m_bSprintExitPlayed = false;
+
+	if (m_sprint_pending_action && m_dwSprintExitEndTm && Device.dwTimeGlobal >= m_dwSprintExitEndTm)
+	{
+		const u8 a = m_sprint_pending_action;
+		m_sprint_pending_action = 0;
+		ResumeSprintDeferred(a);
+	}
+
 	// sprint-exit handoff: fire/aim pressed during sprint played the sprint-out anim; when it's
 	// (almost) done, resume the deferred action - fire if the trigger is still held, aim if the aim
 	// press is still pending. Unlike the aim-transition handoff this IS user-requested (the player
@@ -1739,6 +1803,24 @@ void CWeaponMagazined::UpdateCL			()
 		}
 		else
 			m_bFirePendingSprint = false;
+	}
+
+	// FALLBACK for the same deferred reload. The release above is the normal one -- it runs on the
+	// sprint-exit lock, exactly like the deferred shot. This one only catches the case where that
+	// timer never got armed because the exit animation never started (nothing to wait for, and the
+	// weapon would otherwise sit on a reload that never comes -- unlike a held trigger, a reload
+	// press does not re-arm itself). Any sprint motion still on screen keeps it waiting; a
+	// non-sprinting actor always comes back to an ordinary idle, so it does end.
+	if (m_sprint_pending_action)
+	{
+		const shared_str& cm = CurrentMotion();
+		const bool sprint_anim = cm.size() && (NULL != strstr(cm.c_str(), "sprint"));
+		if (!IsActorSprinting() && !sprint_anim && GetState()==eIdle && GetNextState()==eIdle && !IsPending())
+		{
+			const u8 a = m_sprint_pending_action;
+			m_sprint_pending_action = 0;
+			ResumeSprintDeferred(a);
+		}
 	}
 
 	// A DEFERRED AIM-OUT MUST NOT WAIT OUT THE COOLDOWN. Releasing the aim key while firing sets
@@ -2869,6 +2951,8 @@ void CWeaponMagazined::SuicideShoot()
 	SetShootLock	(0);
 	m_dwAimFireLockTm	= 0;
 	m_dwSprintExitEndTm	= 0;
+	m_sprint_pending_action	= 0;
+	m_bSprintExitPlayed = false;
 	// FireStart ONLY: the round leaves in state_Fire on a later update, so calling FireEnd here (as I
 	// first did) cancelled the shot before it ever happened and the actor just dropped dead silently.
 	// GS does the same -- virtual_CShootingObject_FireStart and nothing else; the trigger is released

@@ -52,6 +52,16 @@ enum{
 	// The mechanic itself is script-side -- this bit is only the switch the Lua asks for, and it
 	// lives on the mask because an options-menu checkbox binds to a CCC_Mask bit.
 	AF_INTOXICATION		=(1<<20),
+	// GS sprint (console: g_sprint_on_hold, checkbox in the gameplay options). OFF by default =
+	// the stock behaviour, where the key toggles sprint on and off. Set, the key is HELD to sprint
+	// and a fresh sprint is refused while the sprint-out animation is still playing -- Gunslinger's
+	// ActorUtils.pas:1557 poll plus its CanSprintNow (WeaponAdditionalBuffer.pas:884).
+	AF_GS_SPRINT		=(1<<21),
+	// May a reload run while the actor keeps sprinting? ON by default, which is what the game has
+	// always done here -- the hands leave the sprint idle for the reload animation and the legs go
+	// on running. Clear it and a reload ends the sprint, the way Gunslinger has it (its CanSprintNow
+	// refuses any state but idle). Console: g_reload_in_sprint.
+	AF_RELOAD_IN_SPRINT	=(1<<22),
 };
 
 extern Flags32 psActorFlags;

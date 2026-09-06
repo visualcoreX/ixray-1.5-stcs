@@ -132,6 +132,8 @@ public:
 
 	BOOL					AutoSpawnAmmo		() const		{ return m_bAutoSpawnAmmo; };
 	bool					IsTriStateReload	() const		{ return m_bTriStateReload;}
+	// see CHudItem::IsReloadingNow -- the requested state counts, not only the current one
+	virtual bool			IsReloadingNow		() const		{ return GetState()==eReload || GetNextState()==eReload; }
 	EWeaponSubStates		GetReloadState		() const		{ return (EWeaponSubStates)m_sub_state;}
 protected:
 	bool					m_bTriStateReload;

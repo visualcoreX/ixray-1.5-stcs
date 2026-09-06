@@ -85,6 +85,13 @@ protected:
 	void			DetachFireSelectorBone	();
 	void			SampleFireSelectorAutoPose();	// derive the auto selector pose from the anim's last frame
 	bool			IsActorSprinting		();	// parent actor currently in the sprint movement state
+	// ...and a reload that is only WAITING for the sprint-out animation counts as one too: while it
+	// waits, CHudItem::CanSprintNow must keep answering about a reload, or the held sprint key would
+	// re-arm the sprint the moment the exit ends and the reload would never get its turn.
+	virtual bool	IsReloadingNow			() const	{ return inherited::IsReloadingNow() || 1 == m_sprint_pending_action; }
+	// fire and aim only: a reload waiting for the same transition does NOT block the sprint, because
+	// with "Перезарядка во время спринта" set the actor is meant to keep running through it
+	virtual bool	SprintActionPending		() const	{ return m_bFirePendingSprint || m_bZoomPendingSprint; }
 	bool			DetectorCompanionOut	();	// a detector is out in the left hand (hud idx 1)
 public:
 	// play the "take out / put away the detector" hand gesture on the weapon (anm_draw_detector /
@@ -450,6 +457,19 @@ protected:
 	bool			m_bAimLockFirePressed;	// fire pressed DURING the aim fire-lock -> autoshoot when it ends (robust vs m_bTriggerHeld)
 	bool			m_bZoomPendingSprint;	// aim pressed during sprint: aim-in once the sprint-exit anim is (almost) done
 	bool			m_bFirePendingSprint;	// fire pressed during sprint: fire once the sprint-exit anim is (almost) done
+	// One action may be waiting for the sprint-out transition: 0 none, 1 a reload, 2 a
+	// grenade-launcher switch (the launcher subclass adds that one). Both are re-issued from
+	// UpdateCL on the exit lock; ResumeSprintDeferred does the re-issuing.
+	u8				m_sprint_pending_action;
+	bool			m_bSprintExitPlayed;	// that exit was played for it -- once per request, not per attempt
+	// Which world reload motion is playing, decided once when the reload starts. The magazine fills
+	// up mid-animation, so reading iAmmoElapsed every frame swaps the motion under the animation.
+	bool			m_bWorldReloadActive;
+	bool			m_bWorldReloadEmpty;
+	// Hold an action back until the hands have stepped out of the sprint pose. true = deferred and
+	// the caller must return; the action comes back through ResumeSprintDeferred.
+	bool			DeferForSprintExit		(u8 action);
+	virtual void	ResumeSprintDeferred	(u8 action);
 	// aiming is blocked during a light-misfire strike (task): an aim press/release that arrives while the
 	// click gesture plays is remembered here and replayed by UpdateCL once the strike ends (like the sprint defer).
 	bool			m_bZoomPendingMisfire;	// an aim press/release was deferred past a light-misfire strike

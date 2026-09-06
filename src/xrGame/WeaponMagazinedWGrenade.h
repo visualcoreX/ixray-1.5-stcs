@@ -58,6 +58,8 @@ public:
 
 	//������������ � ����� �������������
 	virtual bool	SwitchMode		();
+	// slot 2 of the sprint-exit wait is the launcher flip; anything else is the base class's
+	virtual void	ResumeSprintDeferred(u8 action);
 	void			PerformSwitchGL	();
 	void			OnAnimationEnd	(u32 state);
 

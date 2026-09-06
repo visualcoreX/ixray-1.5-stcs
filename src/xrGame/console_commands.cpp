@@ -2434,6 +2434,14 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	// the Gunslinger script systems take their switches.
 	psActorFlags.set(AF_INTOXICATION, false);
 	CMD3(CCC_Mask,			"g_intoxication",	&psActorFlags,	AF_INTOXICATION);
+	// GS sprint: hold the key instead of toggling it, and no new sprint until the sprint-out
+	// animation ends. OFF by default -- the stock toggle. See CActor::IR_OnKeyboardHold.
+	psActorFlags.set(AF_GS_SPRINT, false);
+	CMD3(CCC_Mask,			"g_sprint_on_hold",	&psActorFlags,	AF_GS_SPRINT);
+	// Reload while sprinting. ON by default = what the game already did; clearing it makes a reload
+	// end the sprint. Independent of the mode above: it answers in both.
+	psActorFlags.set(AF_RELOAD_IN_SPRINT, true);
+	CMD3(CCC_Mask,			"g_reload_in_sprint",	&psActorFlags,	AF_RELOAD_IN_SPRINT);
 	// "First-person body" checkbox in the ADVANCED video options. OFF by default.
 	psActorFlags.set(AF_LEGS, false);
 	CMD3(CCC_Mask,			"g_legs",			&psActorFlags,	AF_LEGS);

@@ -3,6 +3,7 @@
 #include "Weapon.h"
 #include "physic_item.h"
 #include "actor.h"
+#include "actor_flags.h"
 #include "actoreffector.h"
 #include "Missile.h"
 #include "xrmessages.h"
@@ -972,6 +973,67 @@ bool CHudItem::TryPlayBlowoutAnim()
 	return true;
 }
 
+// May a sprint START right now? Asked once a frame by the hold mode's poll, and about the item in
+// the hands only -- the actor's own reasons (stamina, load, wounds) live in CActor::CanSprint.
+bool CHudItem::CanSprintNow() const
+{
+	const shared_str& m = CurrentMotion();
+
+	// 1. The hold option's own rule, and its only one: no fresh sprint while the sprint-out
+	//    transition is on screen. It is a START gate -- a sprint already running is not touched,
+	//    which is what lets the hands step out of the pose for a reload while the legs keep going.
+	if (m.size() && NULL != strstr(m.c_str(), "sprint_end"))	return false;
+
+	// 2. An action that is WAITING for that transition (a shot or an aim: their key cleared the
+	//    sprint and they resume on the exit lock). Re-arming the sprint under a held key would
+	//    leave them waiting for a sprint that never ends, so they are refused whatever the options
+	//    say -- this is not "an action stops the sprint", it is the sprint not undoing a stop.
+	if (SprintActionPending())						return false;
+
+	// 3. Everything else the hands may be busy with -- a reload, a weapon change, a gesture, a
+	//    fire-mode switch -- belongs to "Перезарядка во время спринта". Set, those run with the
+	//    actor still sprinting; clear, they refuse the sprint here and end it in OnStateSwitch.
+	if (psActorFlags.test(AF_RELOAD_IN_SPRINT))		return true;
+
+	if (GetState() != eIdle || const_cast<CHudItem*>(this)->IsPending())	return false;
+	if (!m.size())									return true;	// nothing playing yet
+	if (NULL == strstr(m.c_str(), "anm_idle"))		return false;	// a shot finishing, a bore, a gesture
+	if (NULL != strstr(m.c_str(), "anm_idle_aim"))	return false;	// an aim idle is a different pose
+	return true;
+}
+
+// The sprint-out transition, played on demand. Also arms m_dwSprintExitEndTm: fire, aim and a
+// deferred reload all resume off that deadline.
+bool CHudItem::PlaySprintExitAnim()
+{
+	string_path endnm;
+	MakeSprintVariant(SprintLoopBase(), "end", endnm);	// suffix-correct exit (GL / bm16 shell)
+	if(!endnm[0] || !isHUDAnimationExist(endnm))	return false;
+
+	PlayHUDMotion(endnm, TRUE, this, GetState());
+	// block fire/aim until this exit anim is almost done, then FireStart/OnZoomIn resume.
+	// Config `lock_time_anm_idle_sprint_end` (seconds from the anim start, Gunslinger-style)
+	// tunes how many end frames are cut for responsiveness.
+	u32 now = Device.dwTimeGlobal;
+	// GS reads `lock_time_<FULLY RESOLVED anim name>` (WeaponAdditionalBuffer.pas:1059
+	// builds anm_name through ModifierAlterSprint/ModifierStd first), so a weapon whose
+	// sprint anims are numbered variants keys them per variant: the bm16 and the toz34
+	// have lock_time_anm_idle_sprint_end_0/_1/_2 and NO base key at all. Asking for the
+	// base name only found nothing there and dropped us into the fallback below.
+	string128 lk;
+	xr_sprintf(lk, "lock_time_%s", endnm);
+	float lt = READ_IF_EXISTS(pSettings, r_float, HudSection(), lk, -1.f);
+	if (lt < 0.f)
+		lt = READ_IF_EXISTS(pSettings, r_float, HudSection(), "lock_time_anm_idle_sprint_end", -1.f);
+	// No key at all = no lock, which is what GS does (MakeLockByConfigParam only acts
+	// `if game_ini_line_exist`). The old fallback held fire for the whole motion minus
+	// 130 ms -- on the bm16 that was 637 ms of a dead trigger and read as "the lock
+	// system doesn't work here". Still set the deadline (to now) rather than 0: the
+	// UpdateCL handoff needs a non-zero value to release an action deferred mid-sprint.
+	m_dwSprintExitEndTm = (lt >= 0.f) ? (now + (u32)(lt * 1000.f)) : now;
+	return true;
+}
+
 bool CHudItem::TryPlayAnimIdle()
 {
 	// re-decided below; only the walk/sprint branches raise it again (see m_bIdleMoving)
@@ -1066,36 +1128,8 @@ bool CHudItem::TryPlayAnimIdle()
 			const bool owed_sprint_end	= m_bSprintStarted && m_current_motion.size() &&
 											  (NULL != strstr(m_current_motion.c_str(), "sprint"));
 			m_bSprintStarted = false;
-			if(owed_sprint_end)
-			{
-				string_path endnm;
-				MakeSprintVariant(SprintLoopBase(), "end", endnm);	// suffix-correct exit (GL / bm16 shell)
-				if(endnm[0] && isHUDAnimationExist(endnm))
-				{
-					PlayHUDMotion(endnm, TRUE, this, GetState());
-					// block fire/aim until this exit anim is almost done, then FireStart/OnZoomIn resume.
-					// Config `lock_time_anm_idle_sprint_end` (seconds from the anim start, Gunslinger-style)
-					// tunes how many end frames are cut for responsiveness; default = full length - 130ms.
-					u32 now = Device.dwTimeGlobal;
-					// GS reads `lock_time_<FULLY RESOLVED anim name>` (WeaponAdditionalBuffer.pas:1059
-					// builds anm_name through ModifierAlterSprint/ModifierStd first), so a weapon whose
-					// sprint anims are numbered variants keys them per variant: the bm16 and the toz34
-					// have lock_time_anm_idle_sprint_end_0/_1/_2 and NO base key at all. Asking for the
-					// base name only found nothing there and dropped us into the fallback below.
-					string128 lk;
-					xr_sprintf(lk, "lock_time_%s", endnm);
-					float lt = READ_IF_EXISTS(pSettings, r_float, HudSection(), lk, -1.f);
-					if (lt < 0.f)
-						lt = READ_IF_EXISTS(pSettings, r_float, HudSection(), "lock_time_anm_idle_sprint_end", -1.f);
-					// No key at all = no lock, which is what GS does (MakeLockByConfigParam only acts
-					// `if game_ini_line_exist`). The old fallback held fire for the whole motion minus
-					// 130 ms -- on the bm16 that was 637 ms of a dead trigger and read as "the lock
-					// system doesn't work here". Still set the deadline (to now) rather than 0: the
-					// UpdateCL handoff needs a non-zero value to release a shot deferred mid-sprint.
-					m_dwSprintExitEndTm = (lt >= 0.f) ? (now + (u32)(lt * 1000.f)) : now;
-					return true;
-				}
-			}
+			if(owed_sprint_end && PlaySprintExitAnim())
+				return true;
 			if(pActor->AnyMove())
 			{
 				// not accelerated (walk) -> slow variant; standing: walk<->walk_slow,

@@ -321,11 +321,29 @@ bool CWeaponMagazinedWGrenade::SwitchMode()
 	if (!bUsefulStateToSwitch)
 		return false;
 
+	// ...and out of the sprint pose first, exactly like a reload: the flip has its own animation and
+	// starting it straight out of the sprint loop reads as a cut. Comes back through
+	// ResumeSprintDeferred(2) once the exit lock expires.
+	if (DeferForSprintExit(2))	return true;
+
 	SwitchState(eSwitch);
 
 	m_dwAmmoCurrentCalcFrame = 0;
 
 	return true;
+}
+
+// Slot 2 of the sprint-exit wait is the launcher flip. The marker is dropped after the call for
+// the same reason the base class does it: SwitchMode re-enters its own gate on the way in.
+void CWeaponMagazinedWGrenade::ResumeSprintDeferred(u8 action)
+{
+	if (2 == action)
+	{
+		SwitchMode();
+		m_bSprintExitPlayed = false;
+		return;
+	}
+	inherited::ResumeSprintDeferred(action);
 }
 
 void CWeaponMagazinedWGrenade::switch2_SwitchMode()
