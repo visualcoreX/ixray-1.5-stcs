@@ -194,33 +194,46 @@ void CUICharacterInfo::InitCharacter(u16 id)
 	if ( m_icons[eIcon            ] ) { m_icons[eIcon            ]->InitTexture( m_texture_name.c_str()     ); }
 	if ( m_icons[eRankIcon        ] ) { m_icons[eRankIcon        ]->InitTexture( chInfo.Rank().id().c_str() ); }
 	
-	if ( Actor()->ID() != m_ownerID && !ignore_community( comm_id ) )
+	// Somebody else: his own faction emblem -- unless his community is listed in
+	// [ignore_icons_communities] (zombied, monster, actor), which means "no emblem at all".
+	// That case MUST NOT reach the actor branch below: it draws OUR faction, and the player would
+	// see his own logo on a zombie. Stock CS hid it here only by accident -- the actor branch used
+	// to bail out while the player belonged to no faction, and once it learned to draw actor_icon
+	// the accident stopped covering this. Falls through to the hide block at the bottom instead.
+	if ( Actor()->ID() != m_ownerID )
 	{
-		if ( m_icons[eCommunityIcon   ] ) { m_icons[eCommunityIcon   ]->InitTexture( community1 ); }
-		if ( m_icons[eCommunityBigIcon] ) { m_icons[eCommunityBigIcon]->InitTexture( community2 ); }
-		return;
-	}
-
-	shared_str our_comm, enemy;
-	if ( CUICharacterInfo::get_actor_community( &our_comm, &enemy ) )
-	{
-		// Stock CS hid the faction logo while the actor belonged to no faction (community "actor"),
-		// leaving an empty plate in the inventory. The texture descriptor DOES carry actor_icon /
-		// actor_wide, so draw them like any other community and let the config decide what they show
-		// (ui_pda2_noice.xml points them at the mercenary art).
+		if ( !ignore_community( comm_id ) )
 		{
-			xr_strcpy( community1, sizeof(community1), our_comm.c_str() );
-			xr_strcat( community1, sizeof(community1), "_icon" );
-
-			xr_strcpy( community2, sizeof(community2), our_comm.c_str() );
-			xr_strcat( community2, sizeof(community2), "_wide" );
-
 			if ( m_icons[eCommunityIcon   ] ) { m_icons[eCommunityIcon   ]->InitTexture( community1 ); }
 			if ( m_icons[eCommunityBigIcon] ) { m_icons[eCommunityBigIcon]->InitTexture( community2 ); }
 			return;
 		}
 	}
+	else
+	{
+		shared_str our_comm, enemy;
+		if ( CUICharacterInfo::get_actor_community( &our_comm, &enemy ) )
+		{
+			// Stock CS hid the faction logo while the actor belonged to no faction (community "actor"),
+			// leaving an empty plate in the inventory. The texture descriptor DOES carry actor_icon /
+			// actor_wide, so draw them like any other community and let the config decide what they show
+			// (ui_pda2_noice.xml points them at the mercenary art).
+			{
+				xr_strcpy( community1, sizeof(community1), our_comm.c_str() );
+				xr_strcat( community1, sizeof(community1), "_icon" );
 
+				xr_strcpy( community2, sizeof(community2), our_comm.c_str() );
+				xr_strcat( community2, sizeof(community2), "_wide" );
+
+				if ( m_icons[eCommunityIcon   ] ) { m_icons[eCommunityIcon   ]->InitTexture( community1 ); }
+				if ( m_icons[eCommunityBigIcon] ) { m_icons[eCommunityBigIcon]->InitTexture( community2 ); }
+				return;
+			}
+		}
+	}
+
+	// nothing to draw here: the actor has no faction, or this character's community is one of the
+	// ignored ones
 	if ( m_icons[eCommunityIcon   ]     ) { m_icons[eCommunityIcon]->Show( false ); }
 	if ( m_icons[eCommunityBigIcon]     ) { m_icons[eCommunityBigIcon]->Show( false ); }
 	if ( m_icons[eCommunityIconOver   ] ) { m_icons[eCommunityIconOver]->Show( false ); }
