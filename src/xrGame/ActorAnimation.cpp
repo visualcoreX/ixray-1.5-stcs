@@ -946,6 +946,38 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 						}
 						else
 						{
+							// Latch the half/full reload choice for the length of the reload -- see
+							// m_torso_reload_active. Asked per frame it changes under the animation.
+							if (W->GetState() != CWeapon::eReload)
+								m_torso_reload_active = false;
+							else if (!m_torso_reload_active)
+							{
+								m_torso_reload_active	= true;
+								m_torso_reload_half		= (W->GetAmmoElapsed() > 0);
+							}
+
+							// An action that repeats WITHOUT leaving its state keeps the same torso
+							// motion throughout, so the identity test below never fires again and the
+							// body freezes on the last frame it reached. A tri-state reload feeds shells
+							// one at a time that way, and so does firing: click a pistol or a shotgun as
+							// fast as it goes and the state stays pinned on eFire between shots, so the
+							// recoil played once and never again. The weapon re-stamps its motion on
+							// every shell and every shot -- that is the "it started again" signal, and
+							// it is stamped in third person too (PlayHUDMotion_noCB takes the length
+							// from g_player_hud when there is no HUD item).
+							const u32 wpn_st = W->GetState();
+							if (wpn_st == CWeapon::eReload || wpn_st == CWeapon::eFire || wpn_st == CWeapon::eFire2)
+							{
+								const u32 stamp = W->MotionEndTm();
+								if (stamp && stamp != m_torso_action_stamp)
+								{
+									m_torso_action_stamp	= stamp;
+									m_torso_item_replay		= true;		// force one replay past the identity test
+								}
+							}
+							else
+								m_torso_action_stamp = 0;
+
 							switch (W->GetState()){
 							case CWeapon::eIdle:		M_torso	= W->IsZoomed()?TW->zoom:TW->Moving(moving_idx, bRelaxed);	break;
 							case CWeapon::eFire:		M_torso	= W->IsZoomed()?TW->attack_zoom:TW->attack;				break;
@@ -956,7 +988,9 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 								// animations offer one. Same test the weapon's own world animation uses
 								// for its `_empty` suffix (CWeaponMagazined::gwr_UpdateWorldAnim), read
 								// the other way round. Without the motion this is the old behaviour.
-								const bool half = (W->GetAmmoElapsed() > 0);
+								// Taken from the latch, not re-tested: the magazine is refilled part-way
+								// through the reload and the answer would change under the animation.
+								const bool half = m_torso_reload_half;
 								if(!R3)
 									M_torso	= (half && TW->reload_half) ? TW->reload_half : TW->reload;
 								else{

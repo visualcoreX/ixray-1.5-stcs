@@ -314,6 +314,14 @@ protected:
 	MotionID				m_torso_item_anim;	// one-shot item-use gesture now playing (actor_torso_anim)
 	bool					m_torso_item_done;	// ...and it has already run to its end
 	bool					m_torso_item_replay;	// the gesture was re-triggered: replay it even though the motion is unchanged
+	// Which reload the torso is playing, decided once when the reload starts. The magazine fills up
+	// mid-animation (ReloadMagazine at the insert mark), so asking "are there rounds left" every
+	// frame flips the answer part-way through and restarts the torso on the other motion.
+	bool					m_torso_reload_active;	// a reload is running and the choice below is made
+	bool					m_torso_reload_half;	// ...and it is the partial one
+	u32						m_torso_action_stamp;	// the weapon's motion stamp the torso action was started for:
+													// a tri-state reload repeats the SAME motion per shell, and a
+													// new stamp is the only sign that it began again
 	u32						m_torso_item_end;	// MotionEndTm() of the hud motion it was armed for; a new stamp = the item played it again
 	float					m_torso_sync_k;		// torso/hud length factor, captured once when the motion starts
 

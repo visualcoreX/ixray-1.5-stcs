@@ -226,6 +226,8 @@ public:
 			void	gwr_WorldAnimSuffix		(const shared_str& sect, LPCSTR suffix, string128& anm);
 	shared_str		m_sLastWorldAnim;		// last motion played on the world model (replay only on change)
 	u32				m_dwLastWorldAnimState;	// and the state it was picked for (so a re-fire restarts it)
+	u32				m_dwLastWorldAnimStamp;	// ...and the item's motion stamp, so a repeat of the SAME motion
+											// (each shell of a tri-state reload, each shot) restarts it too
 
 	int				m_gwr_bones_state[6];	// last {ammo, ammotype, firemode, misfire, gl_state, valid}
 	u8				m_gwr_last_fired_type;	// ammo type of the last round fired (chamber-first: the ejecting

@@ -82,6 +82,9 @@ CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 	m_bFirePendingSprint		= false;
 	m_sprint_pending_action		= 0;
 	m_bSprintExitPlayed			= false;
+	m_bWorldReloadActive		= false;
+	m_bWorldReloadEmpty			= false;
+	m_dwLastWorldAnimStamp		= 0;
 	m_bDetectorDrawPending		= false;
 	m_bSuicideShot				= false;
 	m_bNeedFirstShootAnims		= false;
@@ -1033,6 +1036,19 @@ void CWeaponMagazined::gwr_UpdateWorldAnims()
 	if (!KA)	return;
 
 	u32 st = GetState();
+
+	// Latch the empty/partial choice for the length of the reload. ReloadMagazine runs at the insert
+	// mark, not at the end, so a reload that started on an empty magazine finds rounds in it half-way
+	// through -- and this function, which runs every frame, would swap wanm_reload_empty for
+	// wanm_reload and restart the world model on the partial motion.
+	if (st != eReload)					m_bWorldReloadActive = false;
+	else if (!m_bWorldReloadActive)
+	{
+		m_bWorldReloadActive	= true;
+		m_bWorldReloadEmpty		= (iAmmoElapsed <= 0);
+	}
+	const bool mag_empty = (st == eReload) ? m_bWorldReloadEmpty : (iAmmoElapsed <= 0);
+
 	string128 anm;
 	switch (st)
 	{
@@ -1049,7 +1065,7 @@ void CWeaponMagazined::gwr_UpdateWorldAnims()
 	if (!pSettings->line_exist(sect, anm))		xr_strcpy(anm, "wanm_idle");
 
 	if (IsMisfire())							gwr_WorldAnimSuffix(sect, "_jammed", anm);
-	else if (iAmmoElapsed <= 0 && st != eFire)	gwr_WorldAnimSuffix(sect, "_empty", anm);
+	else if (mag_empty && st != eFire)			gwr_WorldAnimSuffix(sect, "_empty", anm);
 	// NOTE: GS also has a `_first` variant (IsFirstShotAnimationNeeded && IsJustAfterReload); we have no
 	// equivalent flag, and since the suffix is only taken when its key exists, omitting it is harmless.
 
@@ -1072,21 +1088,30 @@ void CWeaponMagazined::gwr_UpdateWorldAnims()
 	if (!pSettings->line_exist(sect, anm))	return;
 	shared_str motion = pSettings->r_string(sect, anm);
 	if (!motion.size())						return;
-	// GS gates the replay on its force-reassign flag (set on state change); equivalently, replay when the
-	// resolved motion changes OR the state does -- the latter so re-entering eFire restarts the shot cycle.
-	if (motion == m_sLastWorldAnim && st == m_dwLastWorldAnimState)	return;
+	// GS gates the replay on its force-reassign flag (set on state change); equivalently, replay when
+	// the resolved motion changes OR the state does -- the latter so re-entering eFire restarts the
+	// shot cycle. Neither is enough for a repeat of the SAME motion inside one state: a tri-state
+	// shotgun reload inserts shell after shell with the state on eReload and the name on wanm_reload,
+	// so the cycle played once and the model stood still for the rest of it. The item's motion stamp
+	// is re-taken by every PlayHUDMotion -- once per shell, once per shot -- so it carries exactly
+	// that "it started again" signal.
+	if (motion == m_sLastWorldAnim && st == m_dwLastWorldAnimState
+		&& m_dwMotionStartTm == m_dwLastWorldAnimStamp)					return;
 
 	MotionID M = KA->ID_Cycle_Safe(*motion);
 	if (!M.valid())							return;
 	KA->PlayCycle(M, TRUE);
 	m_sLastWorldAnim		= motion;
 	m_dwLastWorldAnimState	= st;
+	m_dwLastWorldAnimStamp	= m_dwMotionStartTm;
 }
 
 void CWeaponMagazined::gwr_UpdateBones(bool force)
 {
 	if (!GetHUDmode())			return;			// first-person model only
 	if (!HudItemData())			return;
+
+
 	const shared_str& sect = HudSection();
 
 	// ---- per-barrel ammo state, with reload phasing (GS's reload state machine, distilled) ----
