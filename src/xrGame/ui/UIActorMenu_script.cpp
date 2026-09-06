@@ -7,6 +7,7 @@
 
 #include "pch_script.h"
 #include "UIActorMenu.h"
+#include "UICellItem.h"	// UpdateConditionProgressBar after a repair
 
 #include "../actor.h"
 #include "../inventory_item.h"
@@ -68,6 +69,16 @@ void CUIActorMenu::RepairEffect_CurItem()
 	funct( item_name, item->GetCondition() );
 
 	item->SetCondition( 1.0f );
+
+	// Nothing redraws the wear bar by itself: CUICellItem fills it in once, when the cell joins a
+	// list (SetOwnerList), and never looks at the item again -- so a repaired weapon kept showing
+	// its old condition until the inventory happened to be rebuilt. The debug condition keys in
+	// OnKeyboardAction already refresh it exactly like this.
+	// The info panel is deliberately NOT refreshed here: in this menu it IS the hover tooltip and
+	// InfoCurItem ends by placing it at the cursor, so calling it popped the description up on
+	// its own after every repair. It is rebuilt on the next hover anyway.
+	if ( m_pCurrentCellItem )
+		m_pCurrentCellItem->UpdateConditionProgressBar();
 }
 
 bool CUIActorMenu::CanUpgradeItem( PIItem item )
