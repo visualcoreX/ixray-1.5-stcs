@@ -20,6 +20,10 @@
 #define		r2_RT_generic1		"$user$generic1"		// ---
 #define		r2_RT_generic2		"$user$generic2"		// ---	//	Igor: for volumetric lights
 
+// SMAA, same two intermediate targets R3 uses and the same names
+#define		r2_RT_smaa_edgetex	"$user$edgetex"			// --- 32bit, edges in rg
+#define		r2_RT_smaa_blendtex	"$user$blendtex"		// --- 32bit, blend weights
+
 // 3D PDA (Gunslinger-style): the PDA window is rendered into this RT before the scene, and the PDA
 // hud model's screen material samples it -- that's how the UI lands ON the model's screen instead
 // of over the whole viewport. Same name/idea as Gunslinger's $user$ui (its CRT.pas).

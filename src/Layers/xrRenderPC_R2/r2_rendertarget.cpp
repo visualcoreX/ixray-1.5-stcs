@@ -12,6 +12,7 @@
 #include "blender_ssao.h"
 #include "blender_hud_shadow.h"
 #include "../xrRender/blender_fxaa.h"
+#include "../xrRender/blender_smaa.h"
 
 #include "../xrRender/dxRenderDeviceRender.h"
 
@@ -212,6 +213,7 @@ CRenderTarget::CRenderTarget		()
 	b_luminance						= xr_new<CBlender_luminance>			();
 	b_combine						= xr_new<CBlender_combine>				();
 	b_fxaa = xr_new<CBlender_FXAA>();
+	b_smaa = xr_new<CBlender_SMAA>();
 
 	//	NORMAL
 	{
@@ -374,6 +376,16 @@ CRenderTarget::CRenderTarget		()
 	//FXAA
 	s_fxaa.create(b_fxaa, "r2\\fxaa");
 	g_fxaa.create(FVF::F_V, RCache.Vertex.Buffer(), RCache.QuadIB);
+
+	//SMAA -- built unconditionally, like FXAA above: the filter costs nothing while
+	//ps_r2_aa_type does not select it, and this way the mode can be switched without a restart
+	{
+		u32		w = Device.dwWidth, h = Device.dwHeight;
+		rt_smaa_edgetex.create		(r2_RT_smaa_edgetex,	w, h, D3DFMT_A8R8G8B8);
+		rt_smaa_blendtex.create		(r2_RT_smaa_blendtex,	w, h, D3DFMT_A8R8G8B8);
+		s_smaa.create				(b_smaa, "r2\\smaa");
+		g_smaa.create				(FVF::F_V, RCache.Vertex.Buffer(), RCache.QuadIB);
+	}
 
 	// TONEMAP
 	{
@@ -638,6 +650,7 @@ CRenderTarget::~CRenderTarget	()
 	xr_delete					(b_ssao					);
 	xr_delete					(b_hud_shadow			);
 	xr_delete(b_fxaa);
+	xr_delete(b_smaa);
 	xr_delete					(b_accum_reflected		);
 	xr_delete					(b_accum_spot			);
 	xr_delete					(b_accum_point			);

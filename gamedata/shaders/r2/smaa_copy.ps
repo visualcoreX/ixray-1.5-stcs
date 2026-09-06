@@ -1,0 +1,33 @@
+/*
+------------------------------------------------------------------
+SMAA scene snapshot, pixel -- DX9 (SMAA_HLSL_3)
+------------------------------------------------------------------
+References:
+https://github.com/iryoku/smaa
+------------------------------------------------------------------
+*/
+
+#include "common.h"
+
+#define SMAA_HLSL_3
+#define SMAA_PRESET_ULTRA
+#define SMAA_INCLUDE_VS 0
+#define SMAA_INCLUDE_PS 0
+
+uniform float4 screen_res;			// x=width, y=height, z=1/width, w=1/height
+#define SMAA_RT_METRICS screen_res.zwxy
+
+#include "smaa.h"
+
+uniform sampler2D	s_smaa_image;
+
+struct v2p
+{
+	float2	tc0			: TEXCOORD0;
+	float4	HPos		: POSITION;
+};
+
+float4 main(v2p I) : COLOR
+{
+	return tex2D(s_smaa_image, I.tc0);
+}

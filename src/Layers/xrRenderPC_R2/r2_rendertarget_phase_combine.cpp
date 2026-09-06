@@ -223,6 +223,23 @@ void	CRenderTarget::phase_combine	()
 		phase_fxaa(1);
 		RCache.set_Stencil(FALSE);
 	}
+	else if (ps_r2_aa_type == 2) {
+		// SMAA. generic1 is free here -- the distortion mask below is the next thing to touch it --
+		// so the scene goes there first and the last pass writes generic0 back in place.
+		u_setrt(rt_Generic_1, 0, 0, 0);
+		phase_smaa(0);
+		// Both intermediates must be cleared. The edge pass discards pixels it finds no edge on,
+		// so last frame's edges would otherwise survive into this one and be blended again.
+		u_setrt(rt_smaa_edgetex, 0, 0, 0);
+		CHK_DX(HW.pDevice->Clear(0L, NULL, D3DCLEAR_TARGET, color_rgba(0, 0, 0, 0), 1.0f, 0L));
+		phase_smaa(1);
+		u_setrt(rt_smaa_blendtex, 0, 0, 0);
+		CHK_DX(HW.pDevice->Clear(0L, NULL, D3DCLEAR_TARGET, color_rgba(0, 0, 0, 0), 1.0f, 0L));
+		phase_smaa(2);
+		u_setrt(rt_Generic_0, 0, 0, 0);
+		phase_smaa(3);
+		RCache.set_Stencil(FALSE);
+	}
 
 	// Distortion filter
 	BOOL	bDistort	= RImplementation.o.distortion_enabled;				// This can be modified

@@ -1,0 +1,38 @@
+/*
+------------------------------------------------------------------
+SMAA blend weight calculation, pixel -- DX9 (SMAA_HLSL_3)
+------------------------------------------------------------------
+References:
+https://github.com/iryoku/smaa
+------------------------------------------------------------------
+*/
+
+#include "common.h"
+
+#define SMAA_HLSL_3
+#define SMAA_PRESET_ULTRA
+#define SMAA_INCLUDE_VS 0
+#define SMAA_INCLUDE_PS 1
+
+uniform float4 screen_res;			// x=width, y=height, z=1/width, w=1/height
+#define SMAA_RT_METRICS screen_res.zwxy
+
+#include "smaa.h"
+
+uniform sampler2D	s_edgetex;
+uniform sampler2D	s_areatex;		// smaa_area_tex_dx9: SMAA_HLSL_3 reads this one as .ra
+uniform sampler2D	s_searchtex;
+
+struct v2p_smaa
+{
+	float2	tc0			: TEXCOORD0;
+	float2	pixcoord	: TEXCOORD1;
+	float4	offset[3]	: TEXCOORD2;
+	float4	HPos		: POSITION;
+};
+
+float4 main(v2p_smaa I) : COLOR
+{
+	// last argument is the subsample index, which only means something with temporal SMAA
+	return SMAABlendingWeightCalculationPS(I.tc0, I.pixcoord, I.offset, s_edgetex, s_areatex, s_searchtex, 0.0f);
+}
