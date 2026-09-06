@@ -2031,10 +2031,52 @@ public:
 	virtual void Save(IWriter*) {}		// debug-only: not persisted
 };
 
+// Where am I, and what am I looking at? Prints the camera position and the point where the crosshair
+// meets STATIC geometry. Compiled levels keep no object names -- only geometry -- so a world position
+// is the only address a level surface has: it is what the level tools take to pick the visual out of
+// level/level.geom (baked hemi patching, see the black-surface work).
+class CCC_LookAt : public IConsole_Command
+{
+public:
+	CCC_LookAt(LPCSTR N) : IConsole_Command(N) { bEmptyArgsHandled = true; }
+	virtual void Save(IWriter*)	{}		// a diagnostic has no business being written into user.ltx and replayed at startup
+	virtual void Execute(LPCSTR)
+	{
+		// g_pGameLevel first: user.ltx is replayed at startup, long before a level exists, and
+		// Level() would dereference nothing.
+		if (!g_pGameLevel || !Level().bReady || !Actor())	{ Msg("~ look_at: no level"); return; }
+		const Fvector& P = Device.vCameraPosition;
+		const Fvector& D = Device.vCameraDirection;
+		// BOTH kinds, and say which: a black object under the crosshair may well be a dynamic one,
+		// and those take no part in the level's baked lighting -- they are lit through the hemi cube
+		// / light track instead, so pointing the level tools at the static surface behind them is a
+		// wild goose chase (it happened once).
+		collide::rq_result	RQ;
+		// ...ignoring the actor: the camera sits inside his own collision, so every trace would end
+		// on him at 0.00 m otherwise.
+		if (Level().ObjectSpace.RayPick(P, D, 500.f, collide::rqtBoth, RQ, Actor()))
+		{
+			Fvector hit;	hit.mad(P, D, RQ.range);
+			CGameObject* GO = smart_cast<CGameObject*>(RQ.O);
+			Msg("~ look_at: hit (%.2f, %.2f, %.2f)  dist %.2f m  %s%s%s   camera (%.2f, %.2f, %.2f)  actor (%.2f, %.2f, %.2f)",
+				hit.x, hit.y, hit.z, RQ.range,
+				RQ.O ? "DYNAMIC " : "static geometry",
+				GO ? GO->cName().c_str() : (RQ.O ? "<object>" : ""),
+				GO ? GO->cNameSect().c_str() : "",
+				P.x, P.y, P.z,
+				Actor()->Position().x, Actor()->Position().y, Actor()->Position().z);
+		}
+		else
+			Msg("~ look_at: nothing within 500 m; camera (%.2f, %.2f, %.2f)", P.x, P.y, P.z);
+	}
+};
+
 void CCC_RegisterCommands()
 {
 	// options
 	g_OptConCom.Init();
+
+	CMD1(CCC_LookAt,	"look_at");
 
 	CMD1(CCC_SetWeather, "set_weather");
 	CMD1(CCC_ReceiveInfo, "g_info");
