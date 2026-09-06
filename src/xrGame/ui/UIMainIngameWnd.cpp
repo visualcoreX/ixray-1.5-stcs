@@ -18,7 +18,7 @@
 #include "../weaponmagazined.h"
 #include "UICellCustomItems.h"		// GWR_CollectIconLayers: layered weapon icon (pickup indicator)
 #include "../missile.h"
-#include "../Actor_Flags.h"			// AF_HIDE_QUICK_SLOTS: hud quick-slot icons on/off
+#include "../Actor_Flags.h"			// AF_SHOW_QUICK_SLOTS: hud quick-slot icons on/off
 #include "../Grenade.h"
 #include "../xrServerEntities/xrServer_objects_ALife.h"
 #include "../alife_simulator.h"
@@ -550,10 +550,11 @@ void CUIMainIngameWnd::UpdateQuickSlots()
 {
 	if (m_quick_icons.empty())	return;
 
-	// Options checkbox / `hud_hide_quick_slots`: take the whole display off the hud. Done here rather
-	// than by skipping the draw so the key labels and counters go with it, and so turning it back on
-	// needs nothing but the next frame. The slots themselves are untouched -- the keys still work.
-	if (psActorFlags.test(AF_HIDE_QUICK_SLOTS))
+	// Options checkbox / `hud_show_quick_slots`: with it clear the whole display comes off the hud.
+	// Done here rather than by skipping the draw so the key labels and counters go with it, and so
+	// turning it back on needs nothing but the next frame. The slots themselves are untouched --
+	// the keys still work.
+	if (!psActorFlags.test(AF_SHOW_QUICK_SLOTS))
 	{
 		for (u32 i = 0; i < m_quick_icons.size(); ++i)
 		{

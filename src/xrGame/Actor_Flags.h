@@ -34,10 +34,10 @@ enum{
 		// GS npc_lasers: an NPC-carried weapon keeps its laser beam lit. ON by default. Was the int
 		// cvar g_npc_lasers; moved onto a mask bit so the options menu can bind a checkbox to it.
 		AF_NPC_LASERS		=(1<<16),
-		// Hide the quick-use slot icons (and their counters / key labels) on the hud. OFF by default
-		// = they are drawn, as before. The slots keep working either way -- this is display only.
-		// See CUIMainIngameWnd::UpdateQuickSlots.
-		AF_HIDE_QUICK_SLOTS	=(1<<17),
+		// Draw the quick-use slot icons (with their counters and key labels) on the hud. ON by default.
+		// The slots keep working either way -- this is display only, and on master the hud has none of
+		// it whatever the bit says. See CUIMainIngameWnd::UpdateQuickSlots.
+		AF_SHOW_QUICK_SLOTS	=(1<<17),
 	// Discord Rich Presence: level, faction and active task shown to the player's friends.
 	// ON by default; the checkbox lives in the video options. Clearing the bit disconnects
 	// from Discord instead of merely freezing the last state. See discord_rpc.cpp.

@@ -223,11 +223,11 @@ static bool	 s_crosshair_was	= true;
 // with the crosshair rather than with the rest of the interface -- same veteran threshold, own saved value.
 static bool	 s_info_lock_saved	= false;
 static bool	 s_hud_info_was		= true;
-// The quick-slot panel is interface, so it follows hud_draw at master -- but this flag is INVERTED
-// ("hide the slots"), so the lock pins it ON, not off: on master the slots really are gone, and the
-// greyed checkbox has to say so. It also lives on psActorFlags, not psHUD_Flags.
+// The quick-slot panel is interface, so it follows hud_draw at master: the lock holds the flag
+// CLEAR there, the slots really are gone, and the greyed checkbox has to say so. It lives on
+// psActorFlags, not psHUD_Flags.
 static bool	 s_qslots_lock_saved		= false;
-static bool	 s_hide_quick_slots_was		= false;
+static bool	 s_show_quick_slots_was		= true;
 
 bool gwr_hud_locked_by_difficulty()
 {
@@ -271,19 +271,20 @@ static void gwr_apply_hud_lock()
 		s_xhair_lock_saved = false;
 	}
 
-	// Quick slots: master, and pinned ON (see above) -- the only lock in here that forces a flag SET.
+	// Quick slots: master plays with no interface at all, so the icons are held OFF there and the
+	// player's own choice is put aside until a lower difficulty.
 	if (gwr_hud_locked_by_difficulty())
 	{
 		if (!s_qslots_lock_saved)
 		{
-			s_hide_quick_slots_was	= !!psActorFlags.test(AF_HIDE_QUICK_SLOTS);
+			s_show_quick_slots_was	= !!psActorFlags.test(AF_SHOW_QUICK_SLOTS);
 			s_qslots_lock_saved		= true;
 		}
-		psActorFlags.set	(AF_HIDE_QUICK_SLOTS,	TRUE);
+		psActorFlags.set	(AF_SHOW_QUICK_SLOTS,	FALSE);
 	}
 	else if (s_qslots_lock_saved)
 	{
-		psActorFlags.set	(AF_HIDE_QUICK_SLOTS,	s_hide_quick_slots_was	? TRUE : FALSE);
+		psActorFlags.set	(AF_SHOW_QUICK_SLOTS,	s_show_quick_slots_was	? TRUE : FALSE);
 		s_qslots_lock_saved = false;
 	}
 
@@ -2418,10 +2419,12 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 		extern int g_smartcover_dbg;
 		CMD4(CCC_Integer, "smartcover_dbg", &g_smartcover_dbg, 0, 1);
 	}
-	// Hide the quick-use slot icons on the hud. Display only -- the slots keep working.
-	{ static CCC_HudMask x_hide_quick_slots("hud_hide_quick_slots", &psActorFlags, AF_HIDE_QUICK_SLOTS,
-											&s_hide_quick_slots_was, gwr_hud_locked_by_difficulty);
-	  Console->AddCommand(&x_hide_quick_slots); }
+	// Show the quick-use slot icons on the hud. Display only -- the slots keep working either way.
+	// ON by default, which is what the hud has always looked like.
+	psActorFlags.set(AF_SHOW_QUICK_SLOTS, true);
+	{ static CCC_HudMask x_show_quick_slots("hud_show_quick_slots", &psActorFlags, AF_SHOW_QUICK_SLOTS,
+											&s_show_quick_slots_was, gwr_hud_locked_by_difficulty);
+	  Console->AddCommand(&x_show_quick_slots); }
 	// "Discord Rich Presence" checkbox in the video options (see discord_rpc.cpp).
 	CMD3(CCC_Mask,			"discord_rpc",		&psActorFlags,	AF_DISCORD_RPC);
 	// "First-person body" checkbox in the ADVANCED video options. OFF by default.
