@@ -329,6 +329,37 @@ void CShootingObject::OnShellDrop	(const Fvector& play_pos,
 
 
 //�������� ����
+extern ENGINE_API float psHUD_FOV;	// hud fov as a fraction of the world fov
+
+// The muzzle FLAME is a hud particle and the SMOKE is a world one (see StartSmokeParticles), so the
+// same muzzle position goes through two different projections and the two effects come apart on
+// screen -- the smoke reading as sitting out in front of the barrel.
+// Remap the point so that, drawn in the WORLD projection, it appears where the HUD projection draws
+// it. A point's screen offset is perp / (along * tan(fov/2)), so the depth along the view axis is
+// kept (occlusion and sorting unchanged) and only the camera-perpendicular part is scaled by
+// tan(world/2) / tan(hud/2). The world fov is the wider one, so the point moves further off axis.
+// Same correction as LaserCorrectPointWorldToHud in Weapon.cpp, which exists for the same reason.
+// NOTE scaling the camera->muzzle DISTANCE instead does nothing for this: it leaves the direction
+// from the camera untouched, so the point keeps the very screen position that was wrong.
+static void SmokePointWorldToHud(Fvector& p)
+{
+	const float t_hud = tanf(deg2rad(0.5f * psHUD_FOV * Device.fFOV));
+	const float t_wld = tanf(deg2rad(0.5f * Device.fFOV));
+	if (t_hud <= EPS_L || t_wld <= EPS_L)	return;
+
+	const Fvector& cpos = Device.vCameraPosition;
+	const Fvector& cdir = Device.vCameraDirection;
+	Fvector v;		v.sub(p, cpos);
+	const float along = v.dotproduct(cdir);
+	if (along <= EPS_L)	return;				// behind the camera: leave it alone
+
+	Fvector par;	par.mul(cdir, along);	// depth component, preserved
+	Fvector perp;	perp.sub(v, par);		// screen-plane component, rescaled
+	perp.mul		(t_wld / t_hud);
+	p.add			(cpos, par);
+	p.add			(perp);
+}
+
 void CShootingObject::StartSmokeParticles	(const Fvector& play_pos,
 											const Fvector& parent_vel)
 {
@@ -336,7 +367,11 @@ void CShootingObject::StartSmokeParticles	(const Fvector& play_pos,
 	// World effect, not a hud one: powder smoke hangs in the air where the shot happened. As a hud
 	// particle it was drawn in the hud viewport -- scaled by hud_fov and swinging with every camera
 	// move, as if the cloud were glued to the screen.
-	StartParticles(pSmokeParticles, *m_sSmokeParticlesCurrent, play_pos, parent_vel, true, true);
+	Fvector pos = play_pos;
+	// Only the player's own weapon is drawn as a hud, and only there do the two projections differ.
+	// An NPC's weapon, a car, a helicopter and a mounted gun are world-rendered throughout.
+	if (IsHudModeNow())	SmokePointWorldToHud(pos);
+	StartParticles(pSmokeParticles, *m_sSmokeParticlesCurrent, pos, parent_vel, true, true);
 }
 
 
