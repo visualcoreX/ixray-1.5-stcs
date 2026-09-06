@@ -142,6 +142,9 @@ void CWeaponMagazinedWGrenade::Load	(LPCSTR section)
 
 	//// Sounds
 	m_sounds.LoadSound(section,"snd_shoot_grenade"	, "sndShotG"		, false, m_eSoundShot);
+	// the launcher's shot as its own shooter hears it, same deal as the rifle's (see CHudItem::PlaySound)
+	if (pSettings->line_exist(section, "snd_shoot_grenade_1p"))
+		m_sounds.LoadSound(section,"snd_shoot_grenade_1p", "sndShotG1P"	, false, m_eSoundShot);
 	m_sounds.LoadSound(section,"snd_reload_grenade"	, "sndReloadG"	, true, m_eSoundReload);
 	// dedicated grenade-type-change sound (GS snd_change_grenade); falls back to sndReloadG if absent
 	if (pSettings->line_exist(section, "snd_change_grenade"))
@@ -1292,6 +1295,10 @@ bool CWeaponMagazinedWGrenade::install_upgrade_impl( LPCSTR section, bool test )
 
 	result2 = process_if_exists_set( section, "snd_shoot_grenade", &CInifile::r_string, str, test );
 	if ( result2 && !test ) { m_sounds.LoadSound( section, "snd_shoot_grenade", "sndShotG", false, m_eSoundShot );	}
+	result |= result2;
+
+	result2 = process_if_exists_set( section, "snd_shoot_grenade_1p", &CInifile::r_string, str, test );
+	if ( result2 && !test ) { m_sounds.LoadSound( section, "snd_shoot_grenade_1p", "sndShotG1P", false, m_eSoundShot );	}
 	result |= result2;
 
 	result2 = process_if_exists_set( section, "snd_reload_grenade", &CInifile::r_string, str, test );

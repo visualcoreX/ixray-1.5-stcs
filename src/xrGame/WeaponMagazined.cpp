@@ -205,6 +205,10 @@ void CWeaponMagazined::Load	(LPCSTR section)
 	m_sounds.LoadSound(section,"snd_draw", "sndShow"		, false, m_eSoundShow		);
 	m_sounds.LoadSound(section,"snd_holster", "sndHide"		, false, m_eSoundHide		);
 	m_sounds.LoadSound(section,"snd_shoot", "sndShot"		, false, m_eSoundShot		);
+	// ...and the same shot as its own shooter hears it (CHudItem::PlaySound picks it while someone is
+	// looking through this weapon). Optional: without it both views keep the one recording.
+	if (WeaponSoundExist(section, "snd_shoot_1p"))
+		m_sounds.LoadSound(section, "snd_shoot_1p", "sndShot1P", false, m_eSoundShot);
 	m_sounds.LoadSound(section,"snd_empty", "sndEmptyClick"	, false, m_eSoundEmptyClick	);
 	// GS snd_jammed_click: a JAM (клин) clicks with its own sound, NOT the empty-magazine click. Optional --
 	// if a weapon doesn't define it, a jam stays silent (GS pistols do exactly this), never the empty click.
@@ -294,6 +298,8 @@ void CWeaponMagazined::Load	(LPCSTR section)
 			m_sSilencerSmokeParticles = pSettings->r_string(section, "silencer_smoke_particles");
 
 		m_sounds.LoadSound(section,"snd_silncer_shot", "sndSilencerShot", false, m_eSoundShot);
+		if (WeaponSoundExist(section, "snd_silncer_shot_1p"))
+			m_sounds.LoadSound(section, "snd_silncer_shot_1p", "sndSilencerShot1P", false, m_eSoundShot);
 	}
 
 	if (pSettings->line_exist(section, "dispersion_start"))
@@ -4551,6 +4557,10 @@ bool CWeaponMagazined::install_upgrade_impl( LPCSTR section, bool test )
 	if ( result2 && !test ) { m_sounds.LoadSound( section, "snd_shoot"	, "sndShot"		, false, m_eSoundShot		);	}
 	result |= result2;
 
+	result2 = process_if_exists_set( section, "snd_shoot_1p", &CInifile::r_string, str, test );
+	if ( result2 && !test ) { m_sounds.LoadSound( section, "snd_shoot_1p", "sndShot1P"	, false, m_eSoundShot		);	}
+	result |= result2;
+
 	result2 = process_if_exists_set( section, "snd_empty", &CInifile::r_string, str, test );
 	if ( result2 && !test ) { m_sounds.LoadSound( section, "snd_empty"	, "sndEmptyClick"	, false, m_eSoundEmptyClick);	}
 	result |= result2;
@@ -4570,6 +4580,10 @@ bool CWeaponMagazined::install_upgrade_impl( LPCSTR section, bool test )
 
 		result2 = process_if_exists_set( section, "snd_silncer_shot", &CInifile::r_string, str, test );
 		if ( result2 && !test ) { m_sounds.LoadSound( section, "snd_silncer_shot"	, "sndSilencerShot", false, m_eSoundShot	);	}
+		result |= result2;
+
+		result2 = process_if_exists_set( section, "snd_silncer_shot_1p", &CInifile::r_string, str, test );
+		if ( result2 && !test ) { m_sounds.LoadSound( section, "snd_silncer_shot_1p", "sndSilencerShot1P", false, m_eSoundShot);	}
 		result |= result2;
 	}
 

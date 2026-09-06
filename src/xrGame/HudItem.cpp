@@ -230,7 +230,22 @@ InertionData& CHudItem::CurrentInertionData()
 
 void CHudItem::PlaySound(LPCSTR alias, const Fvector& position, bool b_force_unlock)
 {
-	m_sounds.PlaySound	(alias, position, object().H_Root(), !!GetHUDmode(), false, u8(-1), b_force_unlock);
+	const bool	hud_mode = !!GetHUDmode();
+
+	// First-person sounds. A shot heard through one's own weapon is not the shot a bystander hears, so
+	// a config may give the key its "_1p" twin; it is loaded under "<alias>1P" and used only while
+	// someone is looking through this weapon. The base key stays what everyone else hears -- every NPC's
+	// gun, and the actor's own in third person -- so nothing loaded under the twin name (every mechanical
+	// sound, and any weapon whose config was not given one) plays the one recording, exactly as before.
+	string64	own;
+	if (hud_mode)
+	{
+		strconcat				(sizeof(own), own, alias, "1P");
+		if (m_sounds.FindSoundItem(own, false))
+			alias				= own;
+	}
+
+	m_sounds.PlaySound	(alias, position, object().H_Root(), hud_mode, false, u8(-1), b_force_unlock);
 }
 
 void CHudItem::renderable_Render()
