@@ -88,10 +88,17 @@ BOOL CLevel::Load_GameSpecific_After()
 		m_level_sound_manager->Load			();
 
 		// loading sound environment
+		// DIAGNOSTIC: without this file geom_ENV stays NULL, the downward ray in
+		// CSoundRender_Core::get_environment hits nothing, and every position on the level -- indoors
+		// included -- falls back to the identity environment. That is indistinguishable from "the
+		// reverb does not work", so say which of the two it is.
 		if ( FS.exist(fn_game, "$level$", "level.snd_env")) {
 			IReader *F				= FS.r_open	(fn_game);
 			::Sound->set_geometry_env(F);
 			FS.r_close				(F);
+			Msg						("SOUND: level.snd_env loaded -- sound zones are active");
+		} else {
+			Msg						("! SOUND: level.snd_env MISSING -- no sound zones, every position uses the identity environment");
 		}
 		// loading SOM
 		if (FS.exist(fn_game, "$level$", "level.som")) {

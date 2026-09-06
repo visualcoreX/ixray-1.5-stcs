@@ -117,6 +117,12 @@ void CSoundRender_Core::env_load	()
 	{
 		s_environment				= xr_new<SoundEnvironment_LIB>();
 		s_environment->Load			(fn);
+		Msg							("SOUND: env library loaded: %s", fn);
+	}
+	else
+	{
+		// DIAGNOSTIC: with no library the zone ids read off the geometry cannot be resolved at all
+		Msg							("! SOUND: env library NOT FOUND (%s) -- no reverb zones", SNDENV_FILENAME);
 	}
 
 	// Load geometry
