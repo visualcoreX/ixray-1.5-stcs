@@ -399,6 +399,13 @@ void CTorch::UpdateCL()
 	CBoneInstance			&BI = smart_cast<IKinematics*>(Visual())->LL_GetBoneInstance(guid_bone);
 	Fmatrix					M;
 
+	// Keeping the actor out of the shadow map is only right for HIS OWN headlamp, which sits on his
+	// head. The ctor cannot know that -- it runs before the torch has an owner -- and it is shared by
+	// every torch in the game, so the blanket set_actor_shadow(false) there also silenced NPC lamps
+	// and dropped ones: an ordinary world light a metre away that refused to cast the player. Decide
+	// it here, where the owner is known; a torch with no parent (dropped, still lit) counts as world.
+	light_render->set_actor_shadow(smart_cast<CActor*>(H_Parent()) == NULL);
+
 	if (H_Parent()) 
 	{
 		CActor*			actor = smart_cast<CActor*>(H_Parent());
