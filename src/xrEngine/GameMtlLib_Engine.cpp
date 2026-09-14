@@ -26,7 +26,12 @@ void DestroyPSs(PSVec& lst)
 void CreateSounds(SoundVec& lst, LPCSTR buf)
 {
 	string128 tmp;
-	int cnt			=	_GetItemCount(buf);	R_ASSERT(cnt<=GAMEMTL_SUBITEM_COUNT+2);
+	// The stock library tops out at six sounds in a list, hence the original +2 -- but eight-variant
+	// step and collide sets are ordinary in newer material libraries, and such a file killed the game
+	// on startup with nothing but this assert to go on. Nothing here is sized by the count (the list
+	// is a vector), so the check is only here to catch a garbage string: keep it, at a ceiling that
+	// does not fight legitimate content.
+	int cnt			=	_GetItemCount(buf);	R_ASSERT2(cnt<=GAMEMTL_SUBITEM_COUNT*4, buf);
 	lst.resize		(cnt);
 	for (int k=0; k<cnt; ++k)
 		lst[k].create	(_GetItem(buf,k,tmp),st_Effect,sg_SourceType);
