@@ -32,6 +32,7 @@
 #include "stalker_animation_data.h"
 #include "inventory_item.h"
 #include "Weapon.h"
+#include "Inventory.h"
 #include "animation_movement_controller.h"
 #include "visual_memory_manager.h"
 
@@ -322,6 +323,12 @@ void loophole_reload::select_animation	(shared_str &result)
 {
 	inherited::select_animation	(result);
 	object().set_goal			(eObjectActionAimForceFull1,object().best_weapon());
+
+	// A cover asks for a reload whenever ReadyToKill is false -- including for an NPC who has no rounds for
+	// his weapon at all, and then has no best weapon either, so the object planner never gets to its own
+	// reload action. Make infinite ammo hold here as well (see CObjectHandler::ensure_infinite_ammo).
+	object().ensure_infinite_ammo	(object().inventory().ItemFromSlot(RIFLE_SLOT));
+	object().ensure_infinite_ammo	(object().inventory().ItemFromSlot(PISTOL_SLOT));
 }
 
 //////////////////////////////////////////////////////////////////////////

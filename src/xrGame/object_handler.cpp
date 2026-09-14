@@ -127,6 +127,29 @@ void CObjectHandler::OnItemDrop		(CInventoryItem *inventory_item)
 	switch_torch				(inventory_item,false);
 }
 
+// Stalkers are infinite-ammo by default (CSE_ALifeHumanStalker ctor), but the stock mechanism only ever
+// REPLACES a box: OnItemDrop respawns the type that was dropped, try_advance_ammo tops up a box still
+// there. An NPC whose supplies carry no round his weapon accepts (GSC's kat_cs_soldier_default3: LR-300
+// with 5.45 AP), or who burnt the last box of every accepted type, has nothing to replace -- he runs dry,
+// and a smart cover then asks him to reload forever. Hand him a box of the weapon's first type.
+// Pistol/rifle slots only: the knife and the binoculars carry a junk ammo_class.
+void CObjectHandler::ensure_infinite_ammo(CInventoryItem *item)
+{
+	if (!item || !m_infinite_ammo || !planner().object().g_Alive())	return;
+	if (item->GetSlot() != PISTOL_SLOT && item->GetSlot() != RIFLE_SLOT)	return;
+	CWeapon*			weapon = smart_cast<CWeapon*>(item);
+	if (!weapon || weapon->m_ammoTypes.empty())	return;
+	if (m_item_to_spawn.size())					return;		// a box is already on its way (OnItemTake clears it)
+	if (weapon->GetAmmoElapsed() >= weapon->GetAmmoMagSize())	return;
+	for (u32 i = 0; i < weapon->m_ammoTypes.size(); ++i)
+		if (inventory().GetAny(weapon->m_ammoTypes[i].c_str()))	return;	// something to reload from
+
+	LPCSTR				sect = weapon->m_ammoTypes[0].c_str();
+	Level().spawn_item	(sect, planner().object().Position(), planner().object().ai_location().level_vertex_id(), planner().object().ID());
+	m_item_to_spawn			= sect;
+	m_ammo_in_box_to_spawn	= (decltype(m_ammo_in_box_to_spawn))READ_IF_EXISTS(pSettings, r_u32, sect, "box_size", 30);
+}
+
 CInventoryItem *CObjectHandler::best_weapon() const
 {
 	if (!planner().object().g_Alive())

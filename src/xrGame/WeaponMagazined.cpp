@@ -761,7 +761,10 @@ bool CWeaponMagazined::TryReload()
 		// GS DISABLE_AUTOAMMOCHANGE: don't auto-switch to another ammo type while the gun still holds rounds
 		// and no explicit type change was requested -- pressing reload then does nothing (only an explicit
 		// ammo-type change reloads). An empty gun, or a requested change, still searches for any ammo.
-		else if (m_set_next_ammoType_on_reload != u32(-1) || iAmmoElapsed == 0)
+		// PLAYER ONLY. An NPC has no key to ask for the change: with the loaded type gone from his inventory
+		// and a round still chambered he never reloaded again, and a smart cover (which will not let him
+		// fire at <= 6 rounds) then asked him to reload forever. NPCs keep vanilla's search.
+		else if (!ParentIsActor() || m_set_next_ammoType_on_reload != u32(-1) || iAmmoElapsed == 0)
 			for(u32 i = 0; i < m_ammoTypes.size(); ++i)
 			{
 				m_pAmmo = smart_cast<CWeaponAmmo*>(m_pInventory->GetAny( *m_ammoTypes[i] ));

@@ -70,6 +70,8 @@ public:
 			bool					goal_reached			();
 	IC		bool					hammer_is_clutched		() const;
 	IC		bool const&				inifinite_ammo			() const;
+			// infinite ammo that really is: a box of the weapon's first type when none of its types is left
+			void					ensure_infinite_ammo	(CInventoryItem *item);
 	IC		CObjectHandlerPlanner	&planner				() const;
 			void					weapon_bones			(int &b0, int &b1, int &b2) const;
 			bool					weapon_strapped			() const;

@@ -165,7 +165,8 @@ void CObjectActionReload::initialize		()
 	if (object().inifinite_ammo()) {
 		CWeapon*				weapon = smart_cast<CWeapon*>(&m_item->object());
 		VERIFY					(weapon);
-		try_advance_ammo		(*weapon);
+		if (!try_advance_ammo(*weapon))
+			object().ensure_infinite_ammo(m_item);	// no box of any accepted type at all -> give one
 	}
 
 	object().inventory().Action	(kWPN_RELOAD,	CMD_START);
