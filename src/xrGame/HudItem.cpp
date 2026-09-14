@@ -1021,6 +1021,20 @@ bool CHudItem::CanSprintNow() const
 // deferred reload all resume off that deadline.
 bool CHudItem::PlaySprintExitAnim()
 {
+	// Never twice over. An exit already on screen must not be restarted -- that is the stutter two
+	// callers can produce between them (the reload/selector deferral in DeferForSprintExit and the
+	// "owed" one in TryPlayAnimIdle). The sprint ENTER is deliberately NOT refused: stopping before it
+	// has finished is exactly when the exit is owed, and blocking it there dropped the player straight
+	// into the idle with no transition at all.
+	if (m_current_motion.size() && NULL != strstr(m_current_motion.c_str(), "sprint_end"))
+		return false;
+
+	// The enter, if any, ends here -- the exit blends over it. Leaving the flag up made everything that
+	// waits for the sprint to be over (CWeaponMagazined::SprintTransitionNow) treat the EXIT motion as
+	// a sprint still in progress, so the deferred aim-in was pushed back again and again and the exit
+	// played to its last frame instead of handing over at its lock time.
+	m_bSprintStartRunning = false;
+
 	string_path endnm;
 	MakeSprintVariant(SprintLoopBase(), "end", endnm);	// suffix-correct exit (GL / bm16 shell)
 	if(!endnm[0] || !isHUDAnimationExist(endnm))	return false;
@@ -1293,7 +1307,28 @@ void CHudItem::OnMovementChanged(ACTOR_DEFS::EMoveCommand cmd)
 	// never fired, so the dry-fire flag stayed set and firing stuck). It refreshes to the right
 	// (moving) idle itself when it ends.
 	if(m_bStopAtEndAnimIsRunning)
+	{
+		// ...with ONE exception: the sprint ENTER, when the sprint it starts has already ended. This
+		// notification is a single edge (player_hud::OnMovementChanged), so returning here dropped the
+		// only chance to react -- the enter ran to its last frame and the exit followed afterwards,
+		// which is what tapping aim right after starting to run looked like. Blend the exit in now.
+		if(m_bSprintStartRunning && m_bSprintStarted)
+		{
+			CActor* pA = smart_cast<CActor*>(object().H_Parent());
+			CEntity::SEntityState st;
+			if(pA)	pA->g_State(st);
+			if(pA && !st.bSprint)
+			{
+				m_bSprintStarted = false;
+				if(PlaySprintExitAnim())
+				{
+					ResetSubStateTime	();
+					return;
+				}
+			}
+		}
 		return;
+	}
 
 	// Items with a movement-dependent idle (slow-walk, or directional aim-walk on
 	// weapons) re-play IMMEDIATELY on any speed/direction change so the right variant

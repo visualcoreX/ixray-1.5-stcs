@@ -345,6 +345,15 @@ void CWeaponMagazined::Load	(LPCSTR section)
 	LoadSilencerKoeffs();
 }
 
+// Sprinting, or still playing the one-shot that starts it. The actor's own sprint flag is dropped by
+// the input handler the moment an action key is pressed, so anything that has to wait for the sprint
+// to be over must look at the ANIMATION as well, or it acts in the gap between the two.
+bool CWeaponMagazined::SprintTransitionNow()
+{
+	if (IsActorSprinting())		return true;
+	return m_bSprintStartRunning && m_dwMotionEndTm && Device.dwTimeGlobal < m_dwMotionEndTm;
+}
+
 bool CWeaponMagazined::IsActorSprinting()
 {
 	CActor* a = smart_cast<CActor*>(H_Parent());
@@ -513,7 +522,34 @@ void CWeaponMagazined::FireEnd()
 // replaying the exit for as long as the sprint key was held.
 bool CWeaponMagazined::DeferForSprintExit(u8 action)
 {
-	if (!IsActorSprinting() || !HasSprintExitAnim() || m_bSprintExitPlayed)	return false;
+	// A request is ALREADY in flight -- the exit is on screen, or it has finished and its action is
+	// waiting on the lock. Swallow the press (keeping the newest action) instead of asking for another
+	// exit. This is the one that mattered for a key being mashed: m_bSprintExitPlayed is dropped the
+	// moment the deferred action resumes, and the player holding the sprint key is running again by
+	// then, so every further press walked straight back in here and started the exit over.
+	if (m_sprint_pending_action)
+	{
+		m_sprint_pending_action	= action;
+		return					true;
+	}
+
+	if (!SprintTransitionNow() || !HasSprintExitAnim() || m_bSprintExitPlayed)	return false;
+
+	// The exit is ALREADY on screen for an earlier press: take the newest action and swallow this one
+	// instead of starting the animation over. m_bSprintExitPlayed alone does not cover this -- it is
+	// dropped the moment the deferred action resumes, and with reload_in_sprint the actor is still
+	// running then, so every further press came back in here and restarted the exit.
+	if (m_dwSprintExitEndTm && Device.dwTimeGlobal < m_dwSprintExitEndTm)
+	{
+		m_sprint_pending_action	= action;
+		return					true;
+	}
+
+	// ...and there is nothing to leave the sprint FOR while the action it was left for is still
+	// running. A reload key held down (or mashed) during its own reload would otherwise play the exit
+	// again on every press, on top of the reload -- which is exactly what "the sprint-out animation
+	// repeats several times" looked like.
+	if (eReload == GetState())	return false;
 
 	if (!psActorFlags.test(AF_RELOAD_IN_SPRINT))
 	{
@@ -4191,8 +4227,13 @@ void CWeaponMagazined::OnZoomIn			()
 	// exiting sprint: pressing aim clears the actor's sprint (ActorInput) and the weapon plays the
 	// sprint-out anim first; defer the aim-in until it's (almost) done, then the UpdateCL handoff
 	// re-triggers OnZoomIn. Only when the weapon has an exit anim (else nothing to defer to).
+	// SprintTransitionNow(), not IsActorSprinting(): pressing aim clears the actor's sprint in
+	// ActorInput BEFORE the weapon sees the key, so a press landing during the sprint ENTER found
+	// "not sprinting any more" and aimed in on the spot -- the enter was cut and no exit ever played.
+	// From the sprint LOOP the same press was deferred correctly, which is why only the early tap
+	// looked broken.
 	if ((m_dwSprintExitEndTm && Device.dwTimeGlobal < m_dwSprintExitEndTm)
-		|| (IsActorSprinting() && HasSprintExitAnim()))
+		|| (SprintTransitionNow() && HasSprintExitAnim()))
 	{
 		m_bZoomPendingSprint = true;
 		return;

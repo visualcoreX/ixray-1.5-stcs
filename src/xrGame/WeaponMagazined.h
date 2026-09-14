@@ -85,6 +85,7 @@ protected:
 	void			DetachFireSelectorBone	();
 	void			SampleFireSelectorAutoPose();	// derive the auto selector pose from the anim's last frame
 	bool			IsActorSprinting		();	// parent actor currently in the sprint movement state
+	bool			SprintTransitionNow		();	// ...or the sprint-enter one-shot is still on screen
 	// ...and a reload that is only WAITING for the sprint-out animation counts as one too: while it
 	// waits, CHudItem::CanSprintNow must keep answering about a reload, or the held sprint key would
 	// re-arm the sprint the moment the exit ends and the reload would never get its turn.
