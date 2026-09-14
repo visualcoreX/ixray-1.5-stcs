@@ -12,6 +12,9 @@ class                   = S_ACTOR
 money                                        = 15000;
 rank                                        = 3;
 script_binding                        = bind_stalker.actor_init
+; the four quick-use slots a NEW GAME starts with, in F1..F4 order (empty entry = free slot).
+; a saved game keeps whatever the player put there; sections that do not exist are skipped.
+quick_use_default                       = medkit, bandage, energy_drink, antirad
 visual                            = actors\stalker_hero\stalker_hero_1.ogf
 destroyed_vis_name                = dynamics\Dead_Body\skelet_crash
 

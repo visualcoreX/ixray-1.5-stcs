@@ -537,6 +537,12 @@ BOOL CActor::net_Spawn		(CSE_Abstract* DC)
 	game_news_registry->registry().init(ID());
 
 
+	// The starting set for the quick slots. It goes BEFORE the base spawn on purpose: that one
+	// reads the actor's saved client data (CActor::load), which overwrites the four slots with
+	// whatever the player had -- deliberately emptied ones included. So this fills a new game
+	// only, and never fights a save.
+	ACTOR_DEFS::quick_use_defaults();
+
 	if (!CInventoryOwner::net_Spawn(DC)) return FALSE;
 	if (!inherited::net_Spawn(DC))	return FALSE;
 

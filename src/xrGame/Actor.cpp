@@ -101,6 +101,29 @@ Flags32			psActorFlags={/*AF_DYNAMIC_MUSIC|*/AF_GODMODE_RT};
 
 string32 ACTOR_DEFS::g_quick_use_slots[4] = { "", "", "", "" };
 
+void ACTOR_DEFS::quick_use_defaults()
+{
+	for (int i=0; i<4; ++i)		g_quick_use_slots[i][0] = 0;
+
+	LPCSTR list = READ_IF_EXISTS(pSettings, r_string, "actor", "quick_use_default", (LPCSTR)0);
+	if (!list)					return;
+
+	const int count = _min(4, (int)_GetItemCount(list));
+	for (int i=0; i<count; ++i)
+	{
+		string64	sect;
+		_GetItem	(list, i, sect);
+		// a typo in the config must not leave a slot pointing at nothing: the hud and the menu
+		// would then draw a cell that no key can ever fire
+		if (!xr_strlen(sect) || !pSettings->section_exist(sect))
+		{
+			Msg		("! [actor] quick_use_default: no such section [%s], slot %d left empty", sect, i+1);
+			continue;
+		}
+		xr_strcpy	(g_quick_use_slots[i], sizeof(g_quick_use_slots[i]), sect);
+	}
+}
+
 void CActor::StartPsiBlockade(u32 ms)
 {
 	const u32 cap = u32(1000.f * READ_IF_EXISTS(pSettings, r_float, "gunslinger_base",

@@ -24,6 +24,9 @@ CInventoryItem*	quick_use_resolve(CInventory& inv, LPCSTR section);
 // ...and how many drinks the slot is worth in total: a sealed bottle and a half-drunk one are two
 // different sections but still two uses.
 u32				quick_use_count(CInventory& inv, LPCSTR section);
+// The set a new game starts with, from [actor] quick_use_default. Called on every actor spawn, so a
+// saved layout (read right after, in CActor::load) always wins -- this only fills the blank.
+void			quick_use_defaults();
 
 
 enum ESoundCcount {
