@@ -117,7 +117,12 @@ void CUIActorMenu::WatchDeadBodyBag()
 {
 	if ( m_currMenuMode != mmDeadBodySearch )						return;
 
-	m_dead_body_state		= DeadBodyStateStamp();
+	// NOT the current stamp: this is called AFTER the unload, and rounds that merged into an ammo box
+	// already lying there changed it synchronously -- sampling here would record the new state as the
+	// baseline and the merge would never be drawn (the count only appeared after re-entering the
+	// corpse). Store a value that cannot match, so the very next Update rebuilds once, and keep the
+	// window open for the rounds that arrive later as a freshly spawned box.
+	m_dead_body_state		= ~DeadBodyStateStamp();
 	m_dead_body_watch_until	= Device.dwTimeGlobal + 2000;	// the spawn is a round trip, not instant
 }
 
@@ -278,37 +283,36 @@ void CUIActorMenu::TakeAllFromPartner(CUIWindow* w, void* d)
 		return;
 	}
 
-	u32 const cnt = m_pDeadBodyBagList->ItemsCount();
-	for ( u32 i = 0; i < cnt; ++i )
-	{
-		CUICellItem* ci = m_pDeadBodyBagList->GetItemIdx(i);
-		for ( u32 j = 0; j < ci->ChildsCount(); ++j )
-		{
-			PIItem j_item = (PIItem)(ci->Child(j)->m_pData);
-			move_item_check( j_item, m_pPartnerInvOwner, m_pActorInvOwner, false );
-		}
-		PIItem item = (PIItem)(ci->m_pData);
-		move_item_check( item, m_pPartnerInvOwner, m_pActorInvOwner, false );
-	}//for i
+	// TAKE WHAT THE CORPSE IS HOLDING, not what the list happens to be showing. The cells are a view
+	// built at one moment: unloading a weapon inside the corpse tops up an ammo box already lying there
+	// and spawns the leftover rounds as a SECOND box a frame or two later, over the network -- which is
+	// why WatchDeadBodyBag exists at all. Walking the cells meant anything the list had not caught up
+	// with yet was simply not taken, and the rebuild then put it back on screen: the "one pack stays in
+	// the corpse". A pistol shows it most often -- its magazine is small enough that the merge usually
+	// fills the box on the ground and leaves a little over for a new one.
+	TIItemContainer items;
+	m_pPartnerInvOwner->inventory().AddAvailableItems( items, false );	// the same source the list uses
+	TIItemContainer::iterator it = items.begin();
+	for ( ; it != items.end(); ++it )
+		move_item_check( *it, m_pPartnerInvOwner, m_pActorInvOwner, false );
+
 	m_pDeadBodyBagList->ClearAll( true ); // false
+	// ...and watch for a beat: the transfers themselves go through the network, and a box that spawns
+	// right after the click has to come back on screen rather than vanish with the cleared list.
+	WatchDeadBodyBag();
 }
 
 void CUIActorMenu::TakeAllFromInventoryBox()
 {
 	u16 actor_id = m_pActorInvOwner->object_id();
 
-	u32 const cnt = m_pDeadBodyBagList->ItemsCount();
-	for ( u32 i = 0; i < cnt; ++i )
-	{
-		CUICellItem* ci = m_pDeadBodyBagList->GetItemIdx(i);
-		for ( u32 j = 0; j < ci->ChildsCount(); ++j )
-		{
-			PIItem j_item = (PIItem)(ci->Child(j)->m_pData);
-			move_item_from_to( m_pInvBox->ID(), actor_id, j_item->object_id() );
-		}
+	// Same as the corpse above: from the box itself, not from the cells drawn for it.
+	TIItemContainer items;
+	m_pInvBox->AddAvailableItems( items );
+	TIItemContainer::iterator it = items.begin();
+	for ( ; it != items.end(); ++it )
+		move_item_from_to( m_pInvBox->ID(), actor_id, (*it)->object_id() );
 
-		PIItem item = (PIItem)(ci->m_pData);
-		move_item_from_to( m_pInvBox->ID(), actor_id, item->object_id() );
-	}//for i
 	m_pDeadBodyBagList->ClearAll( true ); // false
+	WatchDeadBodyBag();
 }
