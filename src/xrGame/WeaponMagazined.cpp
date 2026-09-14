@@ -3080,6 +3080,44 @@ void CWeaponMagazined::SuicideAbort()
 		PlaySound	("sndStopSuicide", Position());
 }
 
+// The quick melee stab (ActorInput kWPN_KICK, bayonet branch) may cut a reload or a jam short -- user
+// request, the same set item use and the quick grenade may interrupt (gwr_weapon_action_interruptible).
+// GS does NOT do this: it queues the stab behind the reload. The cut is done in place, straight into
+// eActionAnim, so the stab plays on this weapon instead of falling back to the knife phantom.
+//   rounds: DoReloadInsert runs only from the insert timer while GetState()==eReload, or from
+//           OnAnimationEnd(eReload) -- leave eReload first and nothing is moved (GL included).
+//   flags:  what the normal reload end clears, plus the jam-inspect gesture.
+//   sound:  the reload sound would otherwise run on under the stab.
+// Tri-state reloads are left alone (own phase/insert timers and substate; shotguns carry no bayonet).
+bool CWeaponMagazined::PlayHudActionAnimInterrupting(LPCSTR base)
+{
+	const u32 st = GetState();
+	if (st == eIdle && !IsPending())	return PlayHudActionAnim(base);
+
+	const bool reload		= (st == eReload && !IsTriStateReload());
+	const bool jam			= (st == eMisfire) || (st == eIdle && IsJamInspectPlaying());
+	if (!reload && !jam)	return false;
+
+	string_path anim;
+	SelectActionAnim	(base, anim);
+	if (!anim[0])		return false;					// no such gesture -> caller falls back, nothing was cut
+
+	if (reload)
+	{
+		m_dwReloadInsertTm	= 0;						// not seated yet -> the rounds stay in the backpack
+		bReloadKeyPressed	= false;
+		bAmmotypeKeyPressed	= false;
+	}
+	m_bDryFirePlaying	= false;							// jam inspect / dry-fire gesture
+	m_bDryFirePending	= false;
+	m_sounds.StopAllSounds	();							// the reload / jam sound must not run on under the stab
+
+	m_action_anim		= anim;
+	SetPending			(FALSE);
+	SwitchState			(eActionAnim);					// switch2_ActionAnim re-arms pending for the stab
+	return true;
+}
+
 bool CWeaponMagazined::PlayHudActionAnim(LPCSTR base)
 {
 	if (GetState() != eIdle || IsPending())	return false;	// don't interrupt reload/fire/switch

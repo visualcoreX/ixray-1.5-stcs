@@ -49,6 +49,9 @@ public:
 	// false (so the caller can fall back to the generic left-hand animator) if the weapon is
 	// busy or the config has no matching anm_* alias. Declared on CWeapon -- the knife plays these too.
 	virtual bool	PlayHudActionAnim	(LPCSTR base);
+	// Same, but a reload (not tri-state), a jam (eMisfire) or the jam inspect is cut short first instead
+	// of refusing -- the quick melee stab is allowed to interrupt those. Anything else still refuses.
+	bool			PlayHudActionAnimInterrupting	(LPCSTR base);
 
 	// --- GS controller suicide (wpnpatch ControllerMonster.pas). The actor drives the sequence
 	// (CActor::StartControllerSuicide); the weapon only says whether it can be used for it and

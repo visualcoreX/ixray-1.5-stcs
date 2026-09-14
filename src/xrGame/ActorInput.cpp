@@ -265,7 +265,9 @@ void CActor::IR_OnKeyboardPress(int cmd)
 				inventory().Action(kWPN_FIRE, CMD_START);
 				inventory().Action(kWPN_FIRE, CMD_STOP);	// single stab (press+release)
 			}
-			else if (wmk && wmk->IsBayonetActive() && wmk->PlayHudActionAnim("anm_kick"))
+			// ...Interrupting: a reload or a jam no longer refuses the stab -- it is cut short and the bayonet
+			// stab plays at once (user request; GS queues it behind the reload instead).
+			else if (wmk && wmk->IsBayonetActive() && wmk->PlayHudActionAnimInterrupting("anm_kick"))
 			{
 				// bayonet-equipped weapon (ak74), barrel clear of a silencer/GL: stab with ITS OWN anm_kick
 				// (=ak74_bayonet), no knife phantom. If a silencer/GL is on, IsBayonetActive()==false -> falls
