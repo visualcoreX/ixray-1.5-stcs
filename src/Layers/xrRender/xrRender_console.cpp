@@ -703,8 +703,14 @@ public:
 #endif	//	RENDER == R_R3
 
 //-----------------------------------------------------------------------
+// A 3D PiP lens frame is not presented at all (Gunslinger's own behaviour). 0 falls back to showing
+// the previous frame in its place, which is what this port did before -- use it if a driver flickers.
+int		ps_lens_skip_present	= 1;
+
 void		xrRender_initconsole	()
 {
+	CMD4(CCC_Integer,	"lens_skip_present",	&ps_lens_skip_present,	0,	1);
+
 	CMD3(CCC_Preset,	"_preset",				&ps_Preset,	qpreset_token	);
 
 	CMD4(CCC_Integer,	"rs_skeleton_update",	&psSkeletonUpdate,	2,		128	);

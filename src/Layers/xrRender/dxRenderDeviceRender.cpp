@@ -396,6 +396,13 @@ void dxRenderDeviceRender::End()
 	// world with this frame's UI drawn over it, and that -- not the world-only copy -- is what an electronic
 	// optic samples ($user$scopeui). Must run BEFORE the bridge below overwrites the backbuffer.
 	RImplementation.CaptureLensUIToRT();
+	// ...and then the frame simply is not presented: it was rendered for the capture, not for the
+	// screen, which keeps what it last got. Gunslinger does exactly this. Presenting the previous
+	// frame instead (the bridge below) also works, but it counts as a shown frame everywhere Present
+	// is counted -- and a lens frame is quick, so aiming appeared to RAISE the framerate.
+	extern int ps_lens_skip_present;
+	if (ps_lens_skip_present && g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow)
+		return;
 	RImplementation.PresentBridgeLens();
 
 #ifdef	USE_DX10
