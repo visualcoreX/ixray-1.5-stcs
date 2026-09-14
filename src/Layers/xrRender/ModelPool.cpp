@@ -486,6 +486,12 @@ u32	CModelPool::Trim()
 		Models.erase	(Models.begin()+i);
 	}
 
+	// Pass 3: the animations those bases were holding. A motion set sits in the global
+	// g_pMotionsContainer refcounted by the CKinematicsAnimated that loaded it, and releasing the
+	// last base that used it only takes the count to zero -- nothing erases it. clean(false) is what
+	// erases it, and until this call its only caller was CModelPool::Destroy, at shutdown.
+	g_pMotionsContainer->clean	(false);
+
 	// What is left, and why
 	u32	in_use = 0, pinned_cnt = 0;
 	for (xr_vector<ModelDef>::iterator I=Models.begin(); I!=Models.end(); I++)

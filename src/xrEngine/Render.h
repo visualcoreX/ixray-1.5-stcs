@@ -280,6 +280,10 @@ public:
 	virtual void					model_Logging			(BOOL bEnable)								= 0;
 	virtual void					models_Prefetch			()											= 0;
 	virtual void					models_Clear			(BOOL b_complete)							= 0;
+	// Free every cached base model nothing references any more. models_Clear() alone does not:
+	// it drops the instances and leaves the bases, and a base owns its shaders and therefore its
+	// textures. Call this when a level goes away, or the next level's textures pile on top.
+	virtual void					models_Trim				()											= 0;
 
 	// Occlusion culling
 	virtual BOOL					occ_visible				(vis_data&	V)								= 0;

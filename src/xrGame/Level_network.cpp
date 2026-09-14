@@ -75,6 +75,13 @@ void CLevel::remove_objects	()
 	
 	VERIFY										(Render);
 	Render->models_Clear						(FALSE);
+	// Every object is gone by now (remove_objects above) and models_Clear has just emptied the
+	// instance pool, so every base model this level pulled in is sitting at zero references --
+	// holding its shaders, and through them its textures. Without this sweep they survive into the
+	// next level and the one after that: 571 MB of textures on military, still 849 MB with the level
+	// torn down, 1700 MB once red_forest was in, and then out of memory. Anything still referenced
+	// (the HUD's own visuals) has refs>0 and is not touched.
+	Render->models_Trim							();
 	
 	Render->clear_static_wallmarks				();
 

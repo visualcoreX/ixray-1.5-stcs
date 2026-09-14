@@ -191,6 +191,7 @@ public:
 	virtual void					model_Logging			(BOOL bEnable)				{ Models->Logging(bEnable);	}
 	virtual void					models_Prefetch			();
 	virtual void					models_Clear			(BOOL b_complete);
+	virtual void					models_Trim			();
 	
 	// Occlusion culling
 	virtual BOOL					occ_visible				(vis_data&	V);

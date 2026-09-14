@@ -37,6 +37,11 @@ IGame_Level::~IGame_Level	()
 
 	// Render-level unload
 	Render->level_Unload		();
+	// ~CLevel has already run, so g_player_hud and its weapon pool are gone along with every object:
+	// the base models they were holding are at zero references now, which they were NOT at the
+	// earlier sweep in CLevel::remove_objects. Without this the HUD's weapons -- and the full addon
+	// wardrobe baked into each of them -- stay resident for the rest of the session.
+	Render->models_Trim			();
 	xr_delete					(m_pCameras);
 	// Unregister
 	Device.seqRender.Remove		(this);
