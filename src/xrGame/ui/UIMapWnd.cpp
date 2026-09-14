@@ -234,12 +234,29 @@ void CUIMapWnd::Show(bool status)
 	{
 		m_GlobalMap->Show			(true);
 		m_GlobalMap->SetClipRect	(ActiveMapRect());
+		CUICustomMap*		on_top	= NULL;
 		GameMaps::iterator	it_		= m_GameMaps.begin();
 		for(;it_!=m_GameMaps.end();++it_){
+			// An underground level draws its own map only while the player is down there (see
+			// CUILevelMap::m_local_only): it has no honest place on the world map, and putting it
+			// there permanently would leave a fragment floating over the surface level it lies under.
+			CUILevelMap* lm_		= smart_cast<CUILevelMap*>(it_->second);
+			if (lm_ && lm_->LocalOnly() && !lm_->IsCurrentLevel())
+			{
+				it_->second->Show	(false);
+				continue;
+			}
 			m_GlobalMap->AttachChild(it_->second);
 			it_->second->Show		(true);
 			it_->second->SetClipRect	(ActiveMapRect());
+			if (lm_ && lm_->LocalOnly())	on_top = it_->second;
 		}
+		// ...and it has to be drawn ON TOP of the level it lies under, which is the whole point of
+		// placing it there. Attach order decides that, and m_GameMaps is keyed by shared_str -- ordered
+		// by the string's ADDRESS, not its text -- so the underground came up under Agroprom as often
+		// as over it. Put it at the end of the child list explicitly.
+		if (on_top)
+			m_GlobalMap->BringToTop	(on_top);
 
 		if(	m_view_actor )
 		{

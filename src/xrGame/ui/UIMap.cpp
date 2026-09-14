@@ -383,7 +383,14 @@ float CUIGlobalMap::CalcOpenRect(const Fvector2& center_point, Frect& map_desire
 CUILevelMap::CUILevelMap(CUIMapWnd* p)
 {
 	m_mapWnd			= p;
+	m_local_only		= false;
 	Show				(false);
+}
+
+// Is this the level the player is standing on? Only these are shown for a `local_map_only` map.
+bool CUILevelMap::IsCurrentLevel()
+{
+	return g_pGameLevel && (0 == xr_strcmp(MapName(), g_pGameLevel->name()));
 }
 
 CUILevelMap::~CUILevelMap()
@@ -450,6 +457,9 @@ void CUILevelMap::Init_internal	(const shared_str& name, CInifile& pLtx, const s
 	inherited::Init_internal(name, pLtx, sect_name, sh_name);
 	Fvector4 tmp			= pGameIni->r_fvector4(MapName(),"global_rect");
 	m_GlobalRect.set		(tmp.x, tmp.y, tmp.z, tmp.w);
+	// see m_local_only. The global rect is still required (everything here is expressed on the global
+	// map, zoom included) -- it just decides WHERE the level sits while it is being shown.
+	m_local_only			= !!READ_IF_EXISTS(pGameIni, r_bool, MapName(), "local_map_only", FALSE);
 
 #ifdef DEBUG
 	float kw = m_GlobalRect.width	()	/	BoundRect().width	();
@@ -508,6 +518,14 @@ void CUILevelMap::Show( bool status )
 
 void CUILevelMap::Update()
 {
+	// An underground map away from its own level: keep it off the world map entirely (no rect, no
+	// spots, no hint) -- CUIMapWnd::Show does not attach it either, this is the second half of that.
+	if (m_local_only && !IsCurrentLevel())
+	{
+		Show						(false);
+		return;
+	}
+
 	CUIGlobalMap*	w				= MapWnd()->GlobalMap();
 	Frect			rect;
 	Fvector2		tmp;

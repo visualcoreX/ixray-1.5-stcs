@@ -103,6 +103,11 @@ class CUILevelMap: public CUICustomMap
 
 	CUIMapWnd*					m_mapWnd;
 	Frect						m_GlobalRect;			// virtual map size (meters)
+	// `local_map_only` in game_maps_single: an underground/indoor level that has its own map picture
+	// but no place on the world map. It is put on the global map ONLY while the player is standing on
+	// that level -- so the PDA shows the underground instead of the world map down there, and the world
+	// map is not littered with a floating fragment the rest of the time.
+	bool						m_local_only;
 								CUILevelMap			(const CUILevelMap &obj) {}
 
 			CUILevelMap			&operator=			(const CUILevelMap &obj) {}
@@ -110,6 +115,8 @@ public:
 								CUILevelMap			(CUIMapWnd*);
 	virtual						~CUILevelMap		();
 	const Frect&				GlobalRect			() const								{return m_GlobalRect;}
+	bool						LocalOnly			() const								{return m_local_only;}
+	bool						IsCurrentLevel		();
 	virtual float				GetAspectKX			() const;
 	virtual void				Draw				();
 	virtual void				Show				(bool status);
