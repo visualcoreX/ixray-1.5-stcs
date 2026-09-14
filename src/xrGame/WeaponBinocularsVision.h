@@ -6,6 +6,13 @@ class CObject;
 enum{
 	flVisObjNotValid		=(1<<0),
 	flTargetLocked			=(1<<1),
+	// 2D eyepiece clipping (CWeapon's scope detector): which corners sit inside the glass, and whether
+	// the found sound is still owed (it waits for the frame to first appear inside the glass)
+	flCornerLT				=(1<<2),
+	flCornerLB				=(1<<3),
+	flCornerRT				=(1<<4),
+	flCornerRB				=(1<<5),
+	flFoundSndPending		=(1<<6),
 };
 struct SBinocVisibleObj{
 							SBinocVisibleObj		()					{};
@@ -20,7 +27,7 @@ struct SBinocVisibleObj{
 	Flags8					m_flags;
 	void					create_default			(u32 color);
 	void					Draw					();
-	void					Update					();
+	void					Update					(bool eyepiece);
 	bool					operator <				(const SBinocVisibleObj& other) const{ return  m_flags.test(flVisObjNotValid) < other.m_flags.test(flVisObjNotValid);} //move non-actual to tail
 };
 
@@ -35,6 +42,9 @@ public:
 	void	Update				();
 	void	Draw				();
 	void	remove_links		(CObject *object);
+	// true = the frames are seen through a 2D scope's eyepiece (see SBinocVisibleObj::Update); the
+	// binoculars never set it
+	void	SetEyepiece			(bool on)	{ m_bEyepiece = on; }
 
 protected :
 	Fcolor						m_frame_color;
@@ -45,4 +55,5 @@ protected :
 	// target (found_snd = "something is there", catch_snd = "locked"). Optional -- silent if the
 	// params section has no catch_snd.
 	ref_sound					m_snd_catch;
+	bool						m_bEyepiece = false;
 };

@@ -52,23 +52,71 @@ void SBinocVisibleObj::create_default(u32 color)
 	cur_rect.set	(0,0, UI_BASE_WIDTH,UI_BASE_HEIGHT);
 
 	m_flags.zero	();
+
+	m_flags.set	(flCornerLT|flCornerLB|flCornerRT|flCornerRB, TRUE);
+}
+
+// THE 2D EYEPIECE MAGNIFIES THE WORLD A SECOND TIME. The camera renders only its share of the optic's
+// power (CWeapon::Scope2DCameraFOV) and the post-process stretches the picture inside the glass by the rest,
+// bending the outer ring as well (postprocess.ps pp_zoom_uv: a displayed point d samples the world at
+// s = d*k(d)/z about the screen centre, k = 1 - w*t^2 past PP_DIST_R0 of the glass radius). A frame
+// projected with the camera alone therefore sat off its target by that factor. This is the inverse, in NDC:
+// d = s*z/k(d), solved by a few fixed-point steps (k stays close to 1, so it settles at once).
+// zc = pp_zoom_circle (xy = glass radii in screen uv, z = factor), w = pp_scope_shadow.w (the distortion).
+static const float EYEPIECE_DIST_R0 = 0.45f;	// postprocess.ps PP_DIST_R0
+static void eyepiece_map(Fvector2& p, const Fvector4& zc, float w)
+{
+	const float rx = 2.f * zc.x, ry = 2.f * zc.y;	// uv radii -> NDC
+	const float z  = _max(zc.z, 1.f);
+	Fvector2 d; d.set(p.x * z, p.y * z);
+	for (int i = 0; i < 4; ++i)
+	{
+		const float rr	= _sqrt(_sqr(d.x / rx) + _sqr(d.y / ry));
+		float t			= (rr - EYEPIECE_DIST_R0) / (1.f - EYEPIECE_DIST_R0);
+		clamp			(t, 0.f, 1.f);
+		float k			= 1.f - w * t * t;
+		if (k < 0.05f)	k = 0.05f;
+		d.set			(p.x * z / k, p.y * z / k);
+	}
+	p = d;
+}
+
+static bool eyepiece_inside(const Fvector2& ndc, const Fvector4& zc)
+{
+	return _sqr(ndc.x / (2.f * zc.x)) + _sqr(ndc.y / (2.f * zc.y)) <= 1.f;
+}
+
+static Fvector2 ui_to_ndc(const Fvector2& ui)
+{
+	return Fvector2().set(ui.x / UI_BASE_WIDTH * 2.f - 1.f, 1.f - ui.y / UI_BASE_HEIGHT * 2.f);
 }
 
 void SBinocVisibleObj::Draw()
 {
 	if(m_flags.test(flVisObjNotValid)) return;
 
-	m_lt.Draw			();
-	m_lb.Draw			();
-	m_rt.Draw			();
-	m_rb.Draw			();
+	if (m_flags.test(flCornerLT))	m_lt.Draw();
+	if (m_flags.test(flCornerLB))	m_lb.Draw();
+	if (m_flags.test(flCornerRT))	m_rt.Draw();
+	if (m_flags.test(flCornerRB))	m_rb.Draw();
 }
 
-void SBinocVisibleObj::Update()
+void SBinocVisibleObj::Update(bool eyepiece)
 {
 	m_flags.set		(	flVisObjNotValid,TRUE);
 
 	if (!m_object->Visual())	return;		// GS parity: an object without a visual has no box to frame
+
+	// the eyepiece is only there while the scope publishes its circle (a lens frame or an optic that is not
+	// up yet clears it) -- without one the frames project exactly as before
+	Fvector4	zc;		zc.set(0.f, 0.f, 1.f, 0.f);
+	float		zw		= 0.f;
+	if (eyepiece && g_pGamePersistent && g_pGamePersistent->pp_zoom_circle.x > 0.f)
+	{
+		zc	= g_pGamePersistent->pp_zoom_circle;
+		zw	= g_pGamePersistent->pp_scope_shadow.w;
+	}
+	const bool mapped = zc.x > 0.f && zc.y > 0.f;
 
 	Fbox		b		= m_object->Visual()->getVisData().box;
 
@@ -80,10 +128,12 @@ void SBinocVisibleObj::Update()
 		Fvector p;
 		b.getpoint		(k,p);
 		xform.transform	(p);
-		mn.x			= _min(mn.x,p.x);
-		mn.y			= _min(mn.y,p.y);
-		mx.x			= _max(mx.x,p.x);
-		mx.y			= _max(mx.y,p.y);
+		Fvector2 q;		q.set(p.x, p.y);
+		if (mapped)		eyepiece_map(q, zc, zw);
+		mn.x			= _min(mn.x,q.x);
+		mn.y			= _min(mn.y,q.y);
+		mx.x			= _max(mx.x,q.x);
+		mx.y			= _max(mx.y,q.y);
 	}
 	static Frect screen_rect={-1.0f, -1.0f, 1.0f, 1.0f};
 
@@ -93,6 +143,9 @@ void SBinocVisibleObj::Update()
 
 	if( FALSE == screen_rect.intersected(new_rect) ) return;
 	if( new_rect.in(screen_rect.lt) && new_rect.in(screen_rect.rb) ) return;
+	// through an eyepiece only what is IN the glass is seen: a target whose frame centre lies on the scope
+	// body is not framed at all
+	if (mapped && !eyepiece_inside(Fvector2().set((mn.x + mx.x) * 0.5f, (mn.y + mx.y) * 0.5f), zc))	return;
 	
 	std::swap	(mn.y,mx.y);
 	mn.x		= (1.f + mn.x)/2.f * UI_BASE_WIDTH;
@@ -177,6 +230,12 @@ void SBinocVisibleObj::Update()
 	m_rt.SetWndPos		( Fvector2().set((cur_rect.rb.x)-14,	(cur_rect.lt.y)+2) );
 	m_rb.SetWndPos		( Fvector2().set((cur_rect.rb.x)-14,	(cur_rect.rb.y)-14) );
 
+	// ...and of a framed target, only the corners that fall inside the glass are drawn
+	m_flags.set			(flCornerLT, !mapped || eyepiece_inside(ui_to_ndc(cur_rect.lt), zc));
+	m_flags.set			(flCornerLB, !mapped || eyepiece_inside(ui_to_ndc(Fvector2().set(cur_rect.lt.x, cur_rect.rb.y)), zc));
+	m_flags.set			(flCornerRT, !mapped || eyepiece_inside(ui_to_ndc(Fvector2().set(cur_rect.rb.x, cur_rect.lt.y)), zc));
+	m_flags.set			(flCornerRB, !mapped || eyepiece_inside(ui_to_ndc(cur_rect.rb), zc));
+
 	m_flags.set			(flVisObjNotValid, FALSE);
 }
 
@@ -244,7 +303,11 @@ void CBinocularsVision::Update()
 			new_vis_obj->m_object			= object_;
 			new_vis_obj->create_default		(m_frame_color.get());
 			new_vis_obj->m_upd_speed			= m_rotating_speed;
-			if(NULL==m_snd_found._feedback())
+			// through an eyepiece the target may be outside the glass: announce it only once its frame first shows
+			// up inside (below). The binoculars keep announcing on sight.
+			if (m_bEyepiece)
+				new_vis_obj->m_flags.set	(flFoundSndPending, TRUE);
+			else if(NULL==m_snd_found._feedback())
 				m_snd_found.play_at_pos			(0,Fvector().set(0,0,0),sm_2D);
 		}
 	}
@@ -261,7 +324,13 @@ void CBinocularsVision::Update()
 		// GS/CoP: the frame crawls onto the target and then LOCKS -- that transition is what catch_snd
 		// announces (and what turns the corners opaque + relation-coloured, see SBinocVisibleObj::Update).
 		const bool was_locked = !!(*it)->m_flags.test(flTargetLocked);
-		(*it)->Update						();
+		(*it)->Update						(m_bEyepiece);
+		if ((*it)->m_flags.test(flFoundSndPending) && !(*it)->m_flags.test(flVisObjNotValid))
+		{
+			(*it)->m_flags.set				(flFoundSndPending, FALSE);
+			if (NULL==m_snd_found._feedback())
+				m_snd_found.play_at_pos		(0,Fvector().set(0,0,0),sm_2D);
+		}
 		if (!was_locked && (*it)->m_flags.test(flTargetLocked) && m_snd_catch._handle())
 			m_snd_catch.play_at_pos			(0, Fvector().set(0,0,0), sm_2D);
 	}

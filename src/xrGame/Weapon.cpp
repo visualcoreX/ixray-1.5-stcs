@@ -3692,6 +3692,7 @@ void CWeapon::UpdateScopeDetector()
 	// image the frames will land in.
 	if (IsLensedScope())	return;
 
+	m_pScopeVision->SetEyepiece(!IsLensedScope());	// 2D: frames mapped through the eyepiece and kept to its glass
 	m_pScopeVision->Update();
 }
 
