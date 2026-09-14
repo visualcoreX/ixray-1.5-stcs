@@ -3,6 +3,14 @@
 
 #include "ParticleEffect.h"
 
+#ifndef _EDITOR
+#	include "light.h"
+#	include "Blender_Particle.h"
+#	include "ResourceManager.h"
+#	include "dxRenderDeviceRender.h"
+#	include "../../xrEngine/Environment.h"
+#endif
+
 using namespace PAPI;
 using namespace PS;
 
@@ -278,6 +286,158 @@ IC void FillSprite	(FVF::LIT*& pv, const Fvector& pos, const Fvector& dir, const
 }
 
 extern ENGINE_API float		psHUD_FOV;
+
+#ifndef _EDITOR
+//////////////////////////////////////////////////////////////////////////////////////////
+// Particle lighting.
+//
+// A particle carries no lighting of its own: vanilla X-Ray draws a puff of dust exactly as bright at
+// midnight as at noon, and a torch shining through it changes nothing. Both halves are folded into
+// the per-particle vertex colour here, on the CPU -- the sprite already has a colour to modulate, so
+// this needs no extra vertex channel, no shader constant and no per-renderer shader work.
+//
+//  * ambient -- the environment's hemisphere colour, i.e. how bright the sky is at this moment,
+//    normalised so that noon comes out at 1.0 and nothing changes in the daytime picture;
+//  * local lights -- every dynamic point/spot light that reaches the particle: NPC and player
+//    torches, muzzle flashes, lamps carried by the anomalies. Static lights are skipped, they are
+//    baked into the level lightmaps. There is no shadowing here: a torch lights the dust it points
+//    at, and a wall in between is not consulted -- their range is short enough for that to pass.
+//
+// Only the BLEND pass is lit (oBlend==1: smoke, dust, steam). Additive effects -- fire, sparks, the
+// muzzle flash itself -- are self-luminous and must stay untouched, MUL ones darken by design, and
+// SET particles go through the deferred path where the engine lights them already.
+static const float	PARTICLE_LIGHT_REACH	= 25.f;		// how far out lights are looked for, meters
+static const float	PARTICLE_SUN_WEIGHT		= 0.7f;		// how much of the sun counts towards the ambient
+static const float	PARTICLE_LIGHT_NOON		= 0.96f;	// the same sum at noon in the stock clear weather
+static const float	PARTICLE_AMBIENT_FLOOR	= 0.13f;	// the night level, kept where it was tuned by eye:
+															// the sun weight above must not drag it down with it
+
+class particle_lighting
+{
+	struct	src	{
+		Fvector		P;			// world position
+		Fvector		D;			// spot direction (unit)
+		float		range2;
+		float		cos_half;	// spot: cosine of the half-angle; -2 for a point light
+		float		r,g,b;
+		float		weight;		// how much this one is worth at the centre of the effect
+	};
+	enum					{ max_lights = 6 };
+	svector<src,max_lights>	m_lights;
+	float					m_ambient;
+public:
+							particle_lighting	() : m_ambient(1.f)	{}
+	void					begin				(const Fvector& C, float R);
+	u32						apply				(u32 clr, const Fvector& P) const;
+};
+
+void	particle_lighting::begin	(const Fvector& C, float R)
+{
+	m_lights.clear	();
+
+	// The hemisphere colour alone does not separate an overcast day from a sunny one -- the weather
+	// files hold a HIGHER hemisphere in the clouds (0.45 against 0.39 at noon), which is honest: an
+	// overcast sky is one big soft lamp. What the rain takes away is the sun, so the sun colour is
+	// weighed in alongside it. Normalised by the clear-noon sum, so full daylight still comes out at
+	// 1.0 and the daytime picture does not change.
+	CEnvDescriptor&	E	= *g_pGamePersistent->Environment().CurrentEnv;
+	float	hemi		= (E.hemi_color.x + E.hemi_color.y + E.hemi_color.z) / 3.f;
+	float	sun			= (E.sun_color.x  + E.sun_color.y  + E.sun_color.z ) / 3.f;
+	float	k			= (hemi + PARTICLE_SUN_WEIGHT*sun) / PARTICLE_LIGHT_NOON;
+	clamp				(k, 0.f, 1.f);
+	m_ambient			= _max(k, PARTICLE_AMBIENT_FLOOR);
+
+	static xr_vector<ISpatial*>	q;
+	q.clear			();
+	g_SpatialSpace->q_sphere	(q, 0, STYPE_LIGHTSOURCE, C, R + PARTICLE_LIGHT_REACH);
+	for (u32 it=0; it<q.size(); it++)
+	{
+		light*	L	= (light*)(q[it]->dcast_Light());
+		if (0==L)													continue;
+		if (!L->flags.bActive || L->range<EPS_L)					continue;
+		if (IRender_Light::SPOT!=L->flags.type && IRender_Light::POINT!=L->flags.type)	continue;
+		// Static lights are kept: they are baked into the level lightmaps, and a particle has no
+		// lightmap at all -- without them a puff of dust under a lamp or over a campfire stays black.
+		float	d	= C.distance_to(L->position);
+		if (d > L->range + R)										continue;
+
+		src		s;
+		s.P		= L->position;
+		s.range2= L->range * L->range;
+		s.r		= L->color.r;	s.g = L->color.g;	s.b = L->color.b;
+		if (IRender_Light::SPOT==L->flags.type)
+		{
+			// NOTE: normalize_safe(v) ASSIGNS v -- it is not a fallback argument.
+			s.D		= L->direction;
+			if (s.D.square_magnitude() < EPS_S)	s.D.set(0.f,-1.f,0.f);
+			else								s.D.normalize();
+			s.cos_half	= _cos(_min(L->cone, PI-EPS_S) * 0.5f);
+		}
+		else
+		{
+			s.D.set		(0.f,-1.f,0.f);
+			s.cos_half	= -2.f;			// no cone test for a point light
+		}
+
+		// Keep the six that matter most: brightness at the centre of the effect, so a lamp right
+		// next to the smoke wins over a torch at the far end of the query sphere.
+		float	att		= _max(0.f, 1.f - (d*d)/s.range2);
+		s.weight		= att * (s.r + s.g + s.b);
+		if (s.weight < EPS_S)										continue;
+		if (m_lights.size() < max_lights)	m_lights.push_back(s);
+		else
+		{
+			u32	worst	= 0;
+			for (u32 k=1; k<m_lights.size(); k++)
+				if (m_lights[k].weight < m_lights[worst].weight)	worst = k;
+			if (m_lights[worst].weight < s.weight)	m_lights[worst] = s;
+		}
+	}
+}
+
+u32		particle_lighting::apply	(u32 clr, const Fvector& P) const
+{
+	float	sr = m_ambient, sg = m_ambient, sb = m_ambient;
+	for (u32 it=0; it<m_lights.size(); it++)
+	{
+		const src&	s	= m_lights[it];
+		Fvector		D;	D.sub	(P, s.P);
+		float		d2	= D.square_magnitude();
+		if (d2 >= s.range2)											continue;
+		float		att	= 1.f - d2 / s.range2;						// same falloff the deferred lights use
+		if (s.cos_half > -1.f)										// spot: fade out towards the cone edge
+		{
+			float	d	= _sqrt(d2);
+			if (d > EPS_S)
+			{
+				D.div		(d);
+				float	c	= D.dotproduct(s.D);
+				if (c <= s.cos_half)								continue;
+				att			*= (c - s.cos_half) / (1.f - s.cos_half);
+			}
+		}
+		sr += s.r*att;	sg += s.g*att;	sb += s.b*att;
+	}
+	clamp	(sr, 0.f, 1.f);	clamp (sg, 0.f, 1.f);	clamp (sb, 0.f, 1.f);
+	return	color_rgba	(iFloor(color_get_R(clr)*sr), iFloor(color_get_G(clr)*sg),
+						 iFloor(color_get_B(clr)*sb), color_get_A(clr));
+}
+
+// Resolved once per particle definition: is this effect drawn with the BLEND pass?
+IC BOOL		particle_is_lit		(CPEDef* def)
+{
+	if (0==def)								return FALSE;
+	if (def->m_LitBlend < 0)
+	{
+		def->m_LitBlend		= 0;
+		IBlender* B			= DEV->_FindBlender(def->m_ShaderName.c_str());
+		CBlender_Particle* P= dynamic_cast<CBlender_Particle*>(B);
+		if (P && 1==P->getBlendMode())	def->m_LitBlend = 1;
+	}
+	return	def->m_LitBlend > 0;
+}
+#endif	// _EDITOR
+
 void CParticleEffect::Render(float )
 {
 	u32			dwOffset,dwCount;
@@ -291,8 +451,31 @@ void CParticleEffect::Render(float )
 			FVF::LIT* pv_start	= (FVF::LIT*)RCache.Vertex.Lock(p_cnt*4*4,geom->vb_stride,dwOffset);
 			FVF::LIT* pv		= pv_start;
 
+#ifndef _EDITOR
+			// ambient + every dynamic light that reaches this effect, gathered once for the whole puff
+			particle_lighting	PL;
+			BOOL				bLit	= particle_is_lit(m_Def);
+			if (bLit)
+			{
+				Fvector	C	= vis.sphere.P;
+				if (m_RT_Flags.is(flRT_XFORM))	m_XFORM.transform_tiny(C);
+				PL.begin	(C, vis.sphere.R);
+			}
+#endif
+
 			for(u32 i = 0; i < p_cnt; i++){
 				PAPI::Particle &m = particles[i];
+
+				u32		p_clr	= m.color;
+#ifndef _EDITOR
+				if (bLit)
+				{
+					Fvector	wp;
+					if (m_RT_Flags.is(flRT_XFORM))	m_XFORM.transform_tiny	(wp, (Fvector&)m.pos);
+					else							wp.set					((Fvector&)m.pos);
+					p_clr	= PL.apply	(m.color, wp);
+				}
+#endif
 
 				Fvector2 lt,rb;
 				lt.set			(0.f,0.f);
@@ -314,9 +497,9 @@ void CParticleEffect::Render(float )
                             Fvector p;
                             m_XFORM.transform_tiny(p,m.pos);
 	                        M.mulA_43		(m_XFORM);
-                            FillSprite		(pv,M.k,M.i,p,lt,rb,r_x,r_y,m.color,m.rot.x);
+                            FillSprite		(pv,M.k,M.i,p,lt,rb,r_x,r_y,p_clr,m.rot.x);
                         }else{
-                            FillSprite		(pv,M.k,M.i,m.pos,lt,rb,r_x,r_y,m.color,m.rot.x);
+                            FillSprite		(pv,M.k,M.i,m.pos,lt,rb,r_x,r_y,p_clr,m.rot.x);
                         }
                     }else if ((speed>=EPS_S)&&m_Def->m_Flags.is(CPEDef::dfFaceAlign)){
                     	Fmatrix	M;  		M.identity();
@@ -328,9 +511,9 @@ void CParticleEffect::Render(float )
                             Fvector p;
                             m_XFORM.transform_tiny(p,m.pos);
 	                        M.mulA_43		(m_XFORM);
-                            FillSprite		(pv,M.j,M.i,p,lt,rb,r_x,r_y,m.color,m.rot.x);
+                            FillSprite		(pv,M.j,M.i,p,lt,rb,r_x,r_y,p_clr,m.rot.x);
                         }else{
-                            FillSprite		(pv,M.j,M.i,m.pos,lt,rb,r_x,r_y,m.color,m.rot.x);
+                            FillSprite		(pv,M.j,M.i,m.pos,lt,rb,r_x,r_y,p_clr,m.rot.x);
                         }
                     }else{
 						Fvector 			dir;
@@ -340,18 +523,18 @@ void CParticleEffect::Render(float )
                             Fvector p,d;
                             m_XFORM.transform_tiny	(p,m.pos);
                             m_XFORM.transform_dir	(d,dir);
-                            FillSprite	(pv,p,d,lt,rb,r_x,r_y,m.color,m.rot.x);
+                            FillSprite	(pv,p,d,lt,rb,r_x,r_y,p_clr,m.rot.x);
                         }else{
-                            FillSprite	(pv,m.pos,dir,lt,rb,r_x,r_y,m.color,m.rot.x);
+                            FillSprite	(pv,m.pos,dir,lt,rb,r_x,r_y,p_clr,m.rot.x);
                         }
                     }
 				}else{
 					if (m_RT_Flags.is(flRT_XFORM)){
 						Fvector p;
 						m_XFORM.transform_tiny	(p,m.pos);
-						FillSprite	(pv,Device.vCameraTop,Device.vCameraRight,p,lt,rb,r_x,r_y,m.color,m.rot.x);
+						FillSprite	(pv,Device.vCameraTop,Device.vCameraRight,p,lt,rb,r_x,r_y,p_clr,m.rot.x);
 					}else{
-						FillSprite	(pv,Device.vCameraTop,Device.vCameraRight,m.pos,lt,rb,r_x,r_y,m.color,m.rot.x);
+						FillSprite	(pv,Device.vCameraTop,Device.vCameraRight,m.pos,lt,rb,r_x,r_y,p_clr,m.rot.x);
 					}
 				}
 			}

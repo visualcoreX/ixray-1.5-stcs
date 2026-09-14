@@ -12,6 +12,10 @@ class CBlender_Particle		: public IBlender
 	xrP_Integer	oAREF;
 	xrP_BOOL	oClamp;
 public:
+	// Which of the six blend modes this particle shader was authored with. The renderer needs it
+	// outside Compile(): only mode 1 (BLEND -- smoke, dust, steam) may be lit, see CParticleEffect.
+	IC			u32			getBlendMode() const	{ return oBlend.IDselected; }
+
 	virtual		LPCSTR		getComment()	{ return "particles";	}
 	virtual		BOOL		canBeLMAPped()	{ return FALSE;			}
 	

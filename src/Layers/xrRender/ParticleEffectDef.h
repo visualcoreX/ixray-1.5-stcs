@@ -78,6 +78,8 @@ namespace PS
 		shared_str		  	m_ShaderName;
 		shared_str		  	m_TextureName;
 		ref_shader			m_CachedShader;
+		int					m_LitBlend;				// -1 = not resolved yet, else "may this effect be lit"
+
 		SFrame				m_Frame;
 	// compiled actions
         CMemoryWriter		m_Actions;

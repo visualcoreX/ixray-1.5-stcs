@@ -22,6 +22,7 @@ CPEDef::CPEDef()
     m_Frame.InitDefault	();
     m_MaxParticles		= 0;
 	m_CachedShader		= 0;
+	m_LitBlend			= -1;
 	m_fTimeLimit		= 0.f;
     // collision
     m_fCollideOneMinusFriction 	= 1.f;
