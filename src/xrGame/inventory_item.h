@@ -160,11 +160,22 @@ public:
 			void				ChangeCondition		(float fDeltaCondition);
 
 			u32					GetSlot				()  const					{return m_slot;}
-			void				SetSlot				(u32 s)						{m_slot = s;}
+			// Writing the slot outright also drops any parked request -- an explicit placement wins over
+			// a wish left over from a transfer that never landed.
+			void				SetSlot				(u32 s)						{m_slot = s; m_slot_request = NO_ACTIVE_SLOT;}
 			// The set of inventory slots this item may occupy. Normally just {GetSlot()}; for weapons
 			// the actor's pistol + primary slots are interchangeable, so both are listed (see Load).
 			const xr_vector<u16>&	AllowedSlots	()  const					{return m_slots_allowed;}
 			bool				CanGoInSlot			(u32 s) const;
+			// Which slot the player ASKED for, for an item that is not his yet (dropped straight from a
+			// corpse or a box onto a weapon slot). SetSlot cannot be used there: every removal path
+			// clears m_slots[GetSlot()] and InSlot() tests the same index, so re-pointing the slot while
+			// the item still sits in somebody else's slot array leaves THAT owner holding a stale
+			// pointer -- the corpse went on listing a shotgun it no longer had. The wish is parked here
+			// and honoured by CInventory::Slot once the item has actually changed hands.
+			void				RequestSlot			(u32 s)						{m_slot_request = s;}
+			u32					SlotRequest			()  const					{return m_slot_request;}
+			void				ClearSlotRequest	()							{m_slot_request = NO_ACTIVE_SLOT;}
 
 			bool				Belt				()							{return !!m_flags.test(Fbelt);}
 			void				Belt				(bool on_belt)				{m_flags.set(Fbelt,on_belt);}
@@ -183,6 +194,7 @@ public:
 protected:
 	u32							m_slot;
 	xr_vector<u16>				m_slots_allowed;	// slots this item may occupy (see Load); m_slot is the current one
+	u32							m_slot_request;		// transient: the slot the UI asked for before the item was ours
 	u32							m_cost;
 	float						m_weight;
 	float						m_fCondition;

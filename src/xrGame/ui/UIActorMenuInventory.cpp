@@ -478,6 +478,13 @@ bool CUIActorMenu::ToSlot(CUICellItem* itm, bool force_place)
 
 	bool b_own_item							= (iitem->parent_id()==m_pActorInvOwner->object_id());
 
+	// An item still owned by a corpse/box carries its target slot as a REQUEST (its own m_slot must not
+	// be touched while the other owner's slot array still points at it -- see CInventoryItem::RequestSlot).
+	// Slot() is not called for such an item here either, so the request is also what says which list the
+	// cell belongs in; the engine puts it in that very slot when the transfer lands.
+	if (!b_own_item && iitem->SlotRequest() != NO_ACTIVE_SLOT && iitem->CanGoInSlot(iitem->SlotRequest()))
+		_slot								= iitem->SlotRequest();
+
 	if(m_pActorInvOwner->inventory().CanPutInSlot(iitem))
 	{
 		if ( _slot == GRENADE_SLOT || !GetSlotList(_slot) )
@@ -490,7 +497,9 @@ bool CUIActorMenu::ToSlot(CUICellItem* itm, bool force_place)
 
 		// Slot() may have resolved a weapon to the OTHER interchangeable slot (pistol<->primary) when
 		// the configured one was taken, so read the actual slot back before touching the UI lists.
-		_slot								= iitem->GetSlot();
+		// A foreign item never went through Slot() here -- keep the requested slot picked above.
+		if (b_own_item)
+			_slot							= iitem->GetSlot();
 		CUIDragDropListEx* new_owner		= GetSlotList(_slot);
 		VERIFY								(new_owner);
 

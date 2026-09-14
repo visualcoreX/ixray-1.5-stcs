@@ -41,6 +41,7 @@ CInventoryItem::CInventoryItem()
 {
 	m_net_updateData	= NULL;
 	m_slot				= NO_ACTIVE_SLOT;
+	m_slot_request		= NO_ACTIVE_SLOT;
 	m_flags.set			(Fbelt,FALSE);
 	m_flags.set			(Fruck,TRUE);
 	m_flags.set			(FRuckDefault,TRUE);

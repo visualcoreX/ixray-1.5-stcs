@@ -196,7 +196,17 @@ bool CUIActorMenu::OnItemDrop(CUICellItem* itm)
 				}
 				else
 				{
-					dropped->SetSlot(tgt_slot);			// place it in the slot the player dropped onto
+					// Place it in the slot the player dropped onto -- but only WRITE the slot when the
+					// item is already ours. While it belongs to a corpse or a box it still sits in that
+					// owner's slot array, and every removal path there clears m_slots[GetSlot()]: moving
+					// the index behind its back left the corpse pointing at a weapon it had given away
+					// (it kept listing it, and taking that ghost duplicated the item on screen) and, worse,
+					// could null the corpse's OTHER weapon slot instead. Park the wish; CInventory::Slot
+					// applies it the moment the item has actually changed hands.
+					if (dropped->parent_id() == m_pActorInvOwner->object_id())
+						dropped->SetSlot		(tgt_slot);
+					else
+						dropped->RequestSlot	(tgt_slot);
 					ToSlot	(itm, true);
 				}
 			}

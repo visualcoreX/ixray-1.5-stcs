@@ -315,8 +315,20 @@ bool CInventory::Slot(PIItem pIItem, bool bNotActivate, bool strict_placement)
 	// auto-placement leaves it at the configured default; otherwise take the first free allowed slot
 	// (this is what fills the second weapon slot on pickup and on save-load when the default is taken).
 	// Single-slot items skip this entirely and behave exactly as before.
+	// The item may have been dropped on a particular slot while it still belonged to a corpse / a box:
+	// the wish was parked instead of written (see CInventoryItem::RequestSlot). It has changed hands by
+	// now -- the old owner cleared its own slot array with the index it still knew -- so it is safe to
+	// point the item at what the player actually asked for. Taken (and dropped) on any placement, so a
+	// transfer that never landed cannot steer a later one.
+	const u32 slot_req = pIItem->SlotRequest();
+	pIItem->ClearSlotRequest();
+
 	if (pIItem->AllowedSlots().size() > 1)
 	{
+		if (slot_req != NO_ACTIVE_SLOT && slot_req < m_slots.size() &&
+			m_slots[slot_req].m_pIItem == NULL && pIItem->CanGoInSlot(slot_req))
+			pIItem->SetSlot(slot_req);
+
 		u32 cur = pIItem->GetSlot();
 		bool already = (cur < m_slots.size() && m_slots[cur].m_pIItem == pIItem);
 		if (!already)
