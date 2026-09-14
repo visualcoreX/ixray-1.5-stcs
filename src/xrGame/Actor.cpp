@@ -1768,8 +1768,13 @@ void CActor::g_PerformDrop	( )
 		if (smart_cast<CPda*>(pItem))	return;
 	}
 
+	// A persistent slot is one the player is not supposed to empty -- the knife, the bolt, the
+	// binoculars. The GRENADE slot is marked persistent too (system.ltx slot_persistent_4), but only
+	// so it refills itself from the ruck: grenades are ordinary consumables, and DROP refusing to
+	// throw one on the ground while it happily drops any weapon is just this flag catching the wrong
+	// case. CInventory::AddAvailableItems already carries exactly this exception.
 	u32 s					= inventory().GetActiveSlot();
-	if(inventory().m_slots[s].m_bPersistent)	return;
+	if(inventory().m_slots[s].m_bPersistent && s != (u32)GRENADE_SLOT)	return;
 
 	pItem->SetDropManual	(TRUE);
 }
