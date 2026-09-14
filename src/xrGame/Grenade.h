@@ -56,7 +56,6 @@ protected:
 protected:
 	ESoundTypes				m_eSoundCheckout;
 private:
-	float					m_grenade_detonation_threshold_hit;
 	bool					m_thrown;
 
 	// ---- GS impact grenades, ported from wpnpatch Throwable.pas (RGN / RGO use all of this).
@@ -68,15 +67,10 @@ private:
 	bool					m_bDeactivateOnMinSpeed;	// deactivate_on_minimal_speed_contact
 	u32						m_dwSafeTime;				// safe_time  (ms after the throw: contact = dud)
 	u32						m_dwDelayTime;				// delay_time (ms after the throw: contact ignored)
-	// HIT fuse (CheckGrenadeExplosionByHit): detonate when damaged, by hit type
-	bool					m_bExplosionOnHit;			// explosion_on_hit
-	bool					m_bExplosiveWhileNotActivated;	// explosive_while_not_activated
-	bool					m_bHasExplosiveWhileKey;
-	bool					m_bHelpExplosiveInfo;		// help_explosive_info (log every hit, for tuning)
-	xr_vector<u32>			m_ExplosionHitTypes;		// explosion_hit_types (empty = explosion only)
+	// HIT fuse (CheckGrenadeExplosionByHit): detonate when damaged, by hit type. It lives on
+	// CExplosive now -- underbarrel rounds are CWeaponAmmo and want the same rule.
 	static void				ImpactContactCallback	(bool& do_colide, bool bo1, dContact& c,
 													 SGameMtl* material_1, SGameMtl* material_2);
-			bool			CheckExplosionByHit		(const SHit* pHDS) const;
 public:
 	virtual void			activate_physic_shell	();
 private:

@@ -64,6 +64,7 @@ void CCartridge::Load(LPCSTR section, u8 LocalAmmoType)
 
 CWeaponAmmo::CWeaponAmmo(void) 
 {
+	m_bExplosiveRound	= false;
 }
 
 CWeaponAmmo::~CWeaponAmmo(void)
@@ -95,6 +96,17 @@ void CWeaponAmmo::Load(LPCSTR section)
 
 	m_boxSize				= (u16)pSettings->r_s32(section, "box_size");
 	m_boxCurr				= m_boxSize;	
+
+	// GS's "shoot it and it goes off" rule, which used to reach hand grenades only. A round opts in with
+	// explosion_on_hit; its blast comes from the fake missile it launches (that section already carries
+	// every figure CExplosive::Load wants), so a VOG-25 on the ground makes the same bang as a fired one.
+	if (READ_IF_EXISTS(pSettings, r_bool, section, "explosion_on_hit", FALSE) &&
+		pSettings->line_exist(section, "fake_grenade_name"))
+	{
+		CExplosive::Load				(pSettings, pSettings->r_string(section, "fake_grenade_name"));
+		CExplosive::LoadExplosionByHit	(section, flt_max);
+		m_bExplosiveRound				= true;
+	}
 }
 
 BOOL CWeaponAmmo::net_Spawn(CSE_Abstract* DC) 
@@ -112,6 +124,7 @@ BOOL CWeaponAmmo::net_Spawn(CSE_Abstract* DC)
 
 void CWeaponAmmo::net_Destroy() 
 {
+	if (m_bExplosiveRound)	CExplosive::net_Destroy();
 	inherited::net_Destroy	();
 }
 
@@ -189,6 +202,8 @@ void CWeaponAmmo::renderable_Render()
 
 void CWeaponAmmo::UpdateCL() 
 {
+	// drives the explosion once it has been started (light, particles, the blast wave)
+	if (m_bExplosiveRound)	CExplosive::UpdateCL();
 	VERIFY2								(_valid(renderable.xform),*cName());
 	inherited::UpdateCL	();
 	VERIFY2								(_valid(renderable.xform),*cName());
@@ -198,6 +213,35 @@ void CWeaponAmmo::UpdateCL()
 
 	VERIFY2								(_valid(renderable.xform),*cName());
 
+}
+
+
+void CWeaponAmmo::net_Relcase(CObject* O)
+{
+	if (m_bExplosiveRound)	CExplosive::net_Relcase(O);
+	inherited::net_Relcase(O);
+}
+
+void CWeaponAmmo::OnEvent(NET_Packet& P, u16 type)
+{
+	// GE_GRENADE_EXPLODE arrives here -- this is what turns the queued event into an actual blast
+	if (m_bExplosiveRound)	CExplosive::OnEvent(P, type);
+	inherited::OnEvent(P, type);
+}
+
+// Shot while lying in the world -> cook off, on exactly the terms a hand grenade uses (CGrenade::Hit).
+// The guard is CExplosive::Useful() spelled out: this class has a Useful() of its own about the box
+// count, and a second hit in the same frame must not queue the explode event twice.
+void CWeaponAmmo::Hit(SHit* pHDS)
+{
+	if (m_bExplosiveRound && CExplosive::Useful() && pHDS->who && CheckExplosionByHit(pHDS))
+	{
+		CExplosive::SetCurrentParentID	(pHDS->who->ID());
+		Fvector normal;
+		CExplosive::FindNormal			(normal);
+		CExplosive::GenExplodeEvent		(Position(), normal);
+	}
+	inherited::Hit(pHDS);
 }
 
 void CWeaponAmmo::net_Export(NET_Packet& P) 

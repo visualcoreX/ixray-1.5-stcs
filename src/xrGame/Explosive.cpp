@@ -41,6 +41,11 @@ const float	exp_dist_extinction_factor=3.f;//(>1.f, 1.f -means no dist change of
 
 CExplosive::CExplosive(void) 
 {
+	m_fDetonationThresholdHit	= flt_max;	// nothing can reach it -> never detonates by hit
+	m_bExplosionOnHit			= false;
+	m_bExplosiveWhileNotActivated= false;
+	m_bHasExplosiveWhileKey		= false;
+	m_bHelpExplosiveInfo		= false;
 	m_fBlastHit				= 50.0f;
 	m_fBlastRadius			= 10.0f;
 	m_iFragsNum				= 20;
@@ -85,6 +90,49 @@ void CExplosive::LightDestroy()
 CExplosive::~CExplosive(void) 
 {
 	sndExplode.destroy		();
+}
+
+
+// GS `help_explosive_info` / `explosion_on_hit` family, read off any section that cares to carry them.
+// Called explicitly rather than from CExplosive::Load, because the two are not always the same section:
+// an underbarrel round keeps its blast figures in the fake-missile section it launches, and these keys
+// on the round itself.
+void CExplosive::LoadExplosionByHit(LPCSTR section, float default_threshold)
+{
+	m_fDetonationThresholdHit = READ_IF_EXISTS(pSettings, r_float, section, "detonation_threshold_hit", default_threshold);
+	m_bExplosionOnHit         = !!READ_IF_EXISTS(pSettings, r_bool, section, "explosion_on_hit", FALSE);
+	m_bHasExplosiveWhileKey   = !!pSettings->line_exist(section, "explosive_while_not_activated");
+	m_bExplosiveWhileNotActivated = m_bHasExplosiveWhileKey
+								&& !!pSettings->r_bool(section, "explosive_while_not_activated");
+	m_bHelpExplosiveInfo      = !!READ_IF_EXISTS(pSettings, r_bool, section, "help_explosive_info", FALSE);
+	m_ExplosionHitTypes.clear();
+	if (pSettings->line_exist(section, "explosion_hit_types"))
+	{
+		LPCSTR s = pSettings->r_string(section, "explosion_hit_types");
+		string64 tmp;
+		for (int i = 0, n = _GetItemCount(s); i < n; ++i)
+			m_ExplosionHitTypes.push_back(u32(atoi(_GetItem(s, i, tmp))));
+	}
+}
+
+bool CExplosive::CheckExplosionByHit(const SHit* pHDS) const
+{
+	// GS `help_explosive_info`: opt-in per section, off everywhere unless you are tuning the
+	// threshold -- it only fires when the object is actually hit, so it is not a hot path.
+	if (m_bHelpExplosiveInfo)
+		Msg("~ [explosive %s] hit type %d, power %f, impulse %f, threshold %f",
+			const_cast<CExplosive*>(this)->cast_game_object()->cNameSect().c_str(),
+			int(pHDS->hit_type), pHDS->damage(), pHDS->phys_impulse(), m_fDetonationThresholdHit);
+
+	if (!m_bExplosionOnHit)								return false;
+	if (m_fDetonationThresholdHit >= pHDS->damage())	return false;
+	// an armed (thrown) grenade always cooks off; one still lying around only if the config says so
+	if (CExplosive::Useful() && m_bHasExplosiveWhileKey && !m_bExplosiveWhileNotActivated)	return false;
+	if (m_ExplosionHitTypes.empty())
+		return ALife::eHitTypeExplosion == pHDS->hit_type;
+	for (u32 t : m_ExplosionHitTypes)
+		if (t == u32(pHDS->hit_type))	return true;
+	return false;
 }
 
 void CExplosive::Load(LPCSTR section) 

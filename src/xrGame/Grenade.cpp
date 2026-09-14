@@ -25,10 +25,6 @@ CGrenade::CGrenade(void)
 	m_bDeactivateOnMinSpeed		= false;
 	m_dwSafeTime				= 0;
 	m_dwDelayTime				= 0;
-	m_bExplosionOnHit			= false;
-	m_bExplosiveWhileNotActivated = false;
-	m_bHasExplosiveWhileKey		= false;
-	m_bHelpExplosiveInfo		= false;
 	m_pending_next_id			= u16(-1);
 }
 
@@ -58,7 +54,6 @@ void CGrenade::Load(LPCSTR section)
 		m_dwGrenadeRemoveTime = pSettings->r_u32(section,"grenade_remove_time");
 	else
 		m_dwGrenadeRemoveTime = GRENADE_REMOVE_TIME;
-	m_grenade_detonation_threshold_hit=READ_IF_EXISTS(pSettings,r_float,section,"detonation_threshold_hit",default_grenade_detonation_threshold_hit);
 	// ---- GS impact grenades (wpnpatch Throwable.pas). All opt-in: a section without these keys
 	// behaves exactly as before, which is why F1/RGD5 are unaffected.
 	m_bExplosionOnKick		= !!READ_IF_EXISTS(pSettings, r_bool,  section, "explosion_on_kick", FALSE);
@@ -67,19 +62,7 @@ void CGrenade::Load(LPCSTR section)
 	m_dwSafeTime			=   READ_IF_EXISTS(pSettings, r_u32,   section, "safe_time",  0);
 	m_dwDelayTime			=   READ_IF_EXISTS(pSettings, r_u32,   section, "delay_time", 0);
 
-	m_bExplosionOnHit		= !!READ_IF_EXISTS(pSettings, r_bool,  section, "explosion_on_hit", FALSE);
-	m_bHasExplosiveWhileKey	= !!pSettings->line_exist(section, "explosive_while_not_activated");
-	m_bExplosiveWhileNotActivated = m_bHasExplosiveWhileKey
-								&& !!pSettings->r_bool(section, "explosive_while_not_activated");
-	m_bHelpExplosiveInfo	= !!READ_IF_EXISTS(pSettings, r_bool,  section, "help_explosive_info", FALSE);
-	m_ExplosionHitTypes.clear();
-	if (pSettings->line_exist(section, "explosion_hit_types"))
-	{
-		LPCSTR s = pSettings->r_string(section, "explosion_hit_types");
-		string64 tmp;
-		for (int i = 0, n = _GetItemCount(s); i < n; ++i)
-			m_ExplosionHitTypes.push_back(u32(atoi(_GetItem(s, i, tmp))));
-	}
+	CExplosive::LoadExplosionByHit(section, default_grenade_detonation_threshold_hit);
 }
 
 // The object that actually flies is the spawned copy (CMissile::spawn_fake_missile) and CMissile
@@ -138,26 +121,6 @@ void CGrenade::ImpactContactCallback(bool& /*do_colide*/, bool /*bo1*/, dContact
 
 // GS CheckGrenadeExplosionByHit: a damaged grenade cooks off, by hit TYPE rather than only by the
 // explosion type the stock check hardcodes.
-bool CGrenade::CheckExplosionByHit(const SHit* pHDS) const
-{
-	// GS `help_explosive_info`: opt-in per section, off everywhere unless you are tuning the
-	// threshold -- it only fires when the grenade is actually hit, so it is not a hot path.
-	if (m_bHelpExplosiveInfo)
-		Msg("~ [grenade %s] hit type %d, power %f, impulse %f, threshold %f",
-			cNameSect().c_str(), int(pHDS->hit_type), pHDS->damage(), pHDS->phys_impulse(),
-			m_grenade_detonation_threshold_hit);
-
-	if (!m_bExplosionOnHit)								return false;
-	if (m_grenade_detonation_threshold_hit >= pHDS->damage())	return false;
-	// an armed (thrown) grenade always cooks off; one still lying around only if the config says so
-	if (Useful() && m_bHasExplosiveWhileKey && !m_bExplosiveWhileNotActivated)	return false;
-	if (m_ExplosionHitTypes.empty())
-		return ALife::eHitTypeExplosion == pHDS->hit_type;
-	for (u32 t : m_ExplosionHitTypes)
-		if (t == u32(pHDS->hit_type))	return true;
-	return false;
-}
-
 void CGrenade::Hit					(SHit* pHDS)
 {
 	// GS CGrenade__OnHit_CanExplode_Patch REPLACES the stock condition rather than extending it, and

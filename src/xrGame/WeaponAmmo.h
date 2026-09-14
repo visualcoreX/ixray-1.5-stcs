@@ -1,5 +1,6 @@
 #pragma once
 #include "inventory_item_object.h"
+#include "Explosive.h"
 #include "anticheat_dumpable_object.h"
 
 struct SCartridgeParam
@@ -48,7 +49,12 @@ public:
 	virtual shared_str const 	GetAnticheatSectionName	() const { return m_ammoSect; };
 };
 
-class CWeaponAmmo :	public CInventoryItemObject {
+// A box of ammunition -- and, when its section asks for it, an explosive one. Underbarrel and
+// rocket rounds carry a live warhead whether they are in a launcher or on the ground, so they
+// detonate when shot, exactly like a hand grenade (CExplosive's hit fuse). Ammunition that does
+// not opt in never touches any of it: cast_explosive() returns nothing, so nothing in the game --
+// the AI's explosive-danger sense included -- treats a box of rifle rounds as a bomb.
+class CWeaponAmmo :	public CInventoryItemObject, public CExplosive {
 	typedef CInventoryItemObject		inherited;
 public:
 									CWeaponAmmo			(void);
@@ -64,6 +70,14 @@ public:
 	virtual void					OnH_B_Independent	(bool just_before_destroy);
 	virtual void					UpdateCL			();
 	virtual void					renderable_Render	();
+	virtual void					net_Relcase			(CObject* O);
+	virtual void					OnEvent				(NET_Packet& P, u16 type);
+	virtual	void					Hit					(SHit* pHDS);
+
+	virtual CGameObject				*cast_game_object	()	{return this;}
+	// nothing but a live round answers this -- see the note on the class
+	virtual CExplosive				*cast_explosive		()	{return m_bExplosiveRound ? this : NULL;}
+	virtual IDamageSource			*cast_IDamageSource	()	{return CExplosive::cast_IDamageSource();}
 
 	virtual bool					Useful				() const;
 	virtual float					Weight				();
@@ -72,6 +86,9 @@ public:
 
 	SCartridgeParam cartridge_param;
 
+	// TRUE once CExplosive has been loaded for this section (an underbarrel or rocket round).
+	// Everything explosive about this object is gated on it.
+	bool		m_bExplosiveRound;
 	u16			m_boxSize;
 	u16			m_boxCurr;
 	bool		m_tracer;

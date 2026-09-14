@@ -65,6 +65,22 @@ public:
 	virtual void				ActivateExplosionBox	(const Fvector &size,Fvector &in_out_pos);
 			void				SetExplosionSize		(const Fvector &new_size);
 	virtual bool				Useful					() const;
+
+	// ---- HIT FUSE (GS CheckGrenadeExplosionByHit). Damage the thing hard enough, with the right
+	// kind of damage, and it goes off. This lives here rather than on CGrenade because it is not a
+	// property of hand grenades -- anything explosive that can lie around waiting to be shot wants
+	// it, and underbarrel rounds are CWeaponAmmo, a class that shares nothing with CGrenade but
+	// this. All opt-in: a section without `explosion_on_hit` behaves exactly as it did.
+			void				LoadExplosionByHit		(LPCSTR section, float default_threshold);
+			bool				CheckExplosionByHit		(const SHit* pHDS) const;
+protected:
+	float						m_fDetonationThresholdHit;	// detonation_threshold_hit
+	bool						m_bExplosionOnHit;			// explosion_on_hit
+	bool						m_bExplosiveWhileNotActivated;	// explosive_while_not_activated
+	bool						m_bHasExplosiveWhileKey;
+	bool						m_bHelpExplosiveInfo;		// help_explosive_info (log every hit, for tuning)
+	xr_vector<u32>				m_ExplosionHitTypes;		// explosion_hit_types (empty = explosion only)
+public:
 protected:
 			bool				IsSoundPlaying			(){return !!sndExplode._feedback();}
 			bool				IsExploded				(){return !!m_explosion_flags.test(flExploded);}
