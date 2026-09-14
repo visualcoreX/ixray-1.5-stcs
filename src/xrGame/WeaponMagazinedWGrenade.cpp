@@ -792,6 +792,19 @@ bool CWeaponMagazinedWGrenade::Detach(LPCSTR item_section_name, bool b_spawn_ite
 			UnloadMagazine();
 			PerformSwitchGL();
 		}
+		else if(m_magazine2.size())
+		{
+			// Taking a LOADED launcher off while the rifle is in bullet mode. The grenade is not in the
+			// active magazine then -- PerformSwitchGL keeps it in the stored one -- so the unload above
+			// never saw it and the round simply stayed inside a weapon that no longer has a launcher.
+			// It is the ordinary case now that the Groza detaches the launcher by itself when a silencer
+			// goes on (GwrEnforceGLSilExclusion): the grenade vanished with it. Swap the launcher's
+			// magazine in, hand the grenade back the usual way, swap the rifle rounds back.
+			PerformSwitchGL();
+			UnloadMagazine();
+			PerformSwitchGL();
+		}
+		iAmmoElapsed2 = (int)m_magazine2.size();
 
 		UpdateAddonsVisibility();
 
