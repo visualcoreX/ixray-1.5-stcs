@@ -202,11 +202,6 @@ void	CRenderTarget::phase_combine	()
 		if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_main()	;	// PP-UI
 	}
 
-	// 3D PiP scope: snapshot the combined scene into $user$scope AFTER render_forward, so rt_Generic_0 now
-	// includes the forward/sorted geometry -- particles, tracers, rain -- as well as the deferred world. On a
-	// LENS frame the HUD is off, so there is no weapon/lens here -> no mirror. (No-op unless it's a lens frame.)
-	RImplementation.RenderScopeToRT	();
-
 	//	Igor: for volumetric lights
 	//	combine light volume here
 	if (m_bHasActiveVolumetric)
@@ -255,6 +250,14 @@ void	CRenderTarget::phase_combine	()
 			if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_PP()	;	// PP-UI
 		}
 	}
+
+	// 3D PiP scope: snapshot the scene into $user$scope. It sits HERE, after render_forward (so the
+	// capture has the particles, tracers and rain in it, not just the deferred world) and after the
+	// distortion mask (so phase_scope_capture can warp the picture by it -- air distortion is applied
+	// by the combine below, which the capture has to run ahead of, and without this the world inside
+	// a scope stood still while the same anomaly rippled around it).
+	// On a LENS frame the HUD is off, so there is no weapon/lens here -> no mirror. (No-op otherwise.)
+	phase_scope_capture	(bDistort);
 
 	// PP enabled ?
 	//	Render to RT texture to be able to copy RT even in windowed mode.

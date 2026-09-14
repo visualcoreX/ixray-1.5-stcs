@@ -1,0 +1,23 @@
+#include "common.h"
+
+// Air distortion for the 3D PiP scope capture. The combine pass applies the anomaly heat haze while
+// writing the final image, but the scope capture is taken BEFORE it (it has to be: the lens picture is
+// drawn back as scene geometry next frame and gets combined then, so anything baked in here would be
+// tonemapped twice). This pass therefore does the one thing the capture is missing -- the same warp,
+// from the same mask, and nothing else.
+//
+// Two things the combine also does are deliberately left out. Its depth rejection, which discards an
+// offset that would pull in a surface NEARER than the pixel it replaces: the mask itself is already
+// depth-tested when it is drawn, so what remains is a second-order edge artefact. And its lerp towards
+// the bloom target by distort.z, which is the soft-focus half of the effect: bloom is not part of this
+// capture at all, and the lens picture gets the frame's own bloom later.
+
+uniform Texture2D s_distort;        // xy = screen offset, biased so 127/255 means "no offset"
+
+float4 main(v2p_aa_AA I) : SV_Target
+{
+    float4 distort = s_distort.Sample(smp_nofilter, I.Tex0);
+    float2 offset = (distort.xy - (127.0f / 255.0f)) * def_distort;
+
+    return float4(s_image.Sample(smp_rtlinear, I.Tex0 + offset).rgb, 1.0f);
+}

@@ -230,6 +230,7 @@
     <ClInclude Include="..\xrRender\Blender_Editor_Selection.h" />
     <ClInclude Include="..\xrRender\Blender_Editor_Wire.h" />
     <ClInclude Include="..\xrRender\blender_fxaa.h" />
+    <ClInclude Include="..\xrRender\blender_scope_distort.h" />
     <ClInclude Include="..\xrRender\Blender_Lm(EbB).h" />
     <ClInclude Include="..\xrRender\Blender_Model_EbB.h" />
     <ClInclude Include="..\xrRender\Blender_Particle.h" />
@@ -519,6 +520,7 @@
     <ClCompile Include="blender_deffer_flat.cpp" />
     <ClCompile Include="blender_deffer_model.cpp" />
     <ClCompile Include="blender_fxaa.cpp" />
+    <ClCompile Include="blender_scope_distort.cpp" />
     <ClCompile Include="blender_light_direct.cpp" />
     <ClCompile Include="blender_light_mask.cpp" />
     <ClCompile Include="blender_light_occq.cpp" />

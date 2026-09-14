@@ -1,0 +1,16 @@
+#include "common.h"
+
+// Air distortion for the 3D PiP scope capture -- the DX9 half of shaders\r3\scope_distort.ps, see the
+// long comment there. Short version: the combine pass warps the image by the anomaly mask while it
+// writes the final frame, but the scope capture is taken before that, so the inside of the lens showed
+// a world with no heat haze in it. This pass applies the same warp to the captured picture alone.
+
+uniform sampler2D s_distort;        // xy = screen offset, biased so 127/255 means "no offset"
+
+float4 main(float2 tc : TEXCOORD0) : COLOR
+{
+    float4 distort = tex2D(s_distort, tc);
+    float2 offset = (distort.xy - (127.0f / 255.0f)) * def_distort;
+
+    return float4(tex2D(s_image, tc + offset).rgb, 1.0f);
+}

@@ -16,6 +16,7 @@
 #include "../xrRenderDX10/DX10 Rain/dx10RainBlender.h"
 #include "../xrRender/blender_fxaa.h"
 #include "../xrRender/blender_smaa.h"
+#include "../xrRender/blender_scope_distort.h"
 #include "../xrRender/dxRenderDeviceRender.h"
 
 void	CRenderTarget::u_setrt			(const ref_rt& _1, const ref_rt& _2, const ref_rt& _3, ID3DDepthStencilView* zb)
@@ -419,6 +420,12 @@ CRenderTarget::CRenderTarget		()
 
 		b_fxaa = xr_new<CBlender_FXAA>();
 		s_fxaa.create(b_fxaa);
+	}
+
+	// 3D PiP scope: the pass that puts anomaly heat haze into the lens capture
+	{
+		b_scope_distort = xr_new<CBlender_ScopeDistort>();
+		s_scope_distort.create(b_scope_distort);
 	}
 
 	// SMAA
@@ -1020,6 +1027,7 @@ CRenderTarget::~CRenderTarget	()
 	xr_delete					(b_hud_shadow			);
 	xr_delete(b_fxaa);
 	xr_delete(b_smaa);
+	xr_delete(b_scope_distort);
 
    if( RImplementation.o.dx10_msaa )
    {
@@ -1149,6 +1157,90 @@ void CRender::RenderPdaUIToRT()
 
 	if (g_pda_dbg_r3)	Msg("~ pda_rt(R3): captured %dx%d msaa=%d", rt->dwWidth, rt->dwHeight, RImplementation.o.dx10_msaa);
 	_RELEASE(pBuffer);
+}
+
+// 3D PiP scope: take the lens capture, and put the anomaly heat haze into it.
+// phase_combine calls this AFTER the distortion mask has been drawn (it used to take the capture well
+// before that), so the world inside the lens finally ripples the way the world around it does. Air
+// distortion is applied by the COMBINE pass, which the capture deliberately runs ahead of: the lens
+// picture is drawn back as scene geometry next frame and gets combined then, so anything baked in here
+// would be tonemapped twice. Hence a pass of its own that does the warp and nothing else.
+// `distorted` is phase_combine's bDistort -- with no distorting object in view there is no mask, and
+// the plain copy is both correct and cheaper.
+void CRenderTarget::phase_scope_capture(BOOL distorted)
+{
+	if (!g_pGamePersistent || !g_pGamePersistent->m_bLensFrameNow)	return;
+	CRT* rt = rt_scope._get();
+	if (!rt || !rt->pSurface)										return;
+
+	if (!distorted || !s_scope_distort)
+	{
+		RImplementation.RenderScopeToRT();		// nothing to warp by -- straight copy
+		return;
+	}
+
+	// The mask has just been drawn into the MSAA rt_Generic_1. phase_combine's own resolve into
+	// rt_Generic_1_r happened earlier, before the mask existed, so redo it here -- one resolve per lens
+	// frame, and only while a lensed scope is aimed. (The shader then needs no MSAA variant.)
+	if (RImplementation.o.dx10_msaa)
+		HW.pDevice->ResolveSubresource(rt_Generic_1_r->pTexture->surface_get(), 0,
+			rt_Generic_1->pTexture->surface_get(), 0, DXGI_FORMAT_R8G8B8A8_UNORM);
+
+	u32 Offset = 0;
+	Fvector2 p0, p1;
+
+	struct v_aa
+	{
+		Fvector4 p;
+		Fvector2 uv0;
+		Fvector2 uv1;
+		Fvector2 uv2;
+		Fvector2 uv3;
+		Fvector2 uv4;
+		Fvector4 uv5;
+		Fvector4 uv6;
+	};
+
+	float _w = float(Device.dwWidth);
+	float _h = float(Device.dwHeight);
+	float ddw = 1.f / _w;
+	float ddh = 1.f / _h;
+
+	p0.set(.5f / _w, .5f / _h);
+	p1.set((_w + .5f) / _w, (_h + .5f) / _h);
+
+	u_setrt(rt_scope, nullptr, nullptr, nullptr);
+	RCache.set_CullMode(CULL_NONE);
+	RCache.set_Stencil(FALSE);
+
+	// only uv0 is read by the shader; the rest of the aa_AA vertex is filled the way the neighbouring
+	// full-screen passes fill it so the format stays the one the stub vertex shader declares
+	v_aa* pv = (v_aa*)RCache.Vertex.Lock(4, g_aa_AA->vb_stride, Offset);
+	pv->p.set(EPS, float(_h + EPS), EPS, 1.f);
+	pv->uv0.set(p0.x, p1.y); pv->uv1.set(p0.x - ddw, p1.y - ddh); pv->uv2.set(p0.x + ddw, p1.y + ddh);
+	pv->uv3.set(p0.x + ddw, p1.y - ddh); pv->uv4.set(p0.x - ddw, p1.y + ddh);
+	pv->uv5.set(p0.x - ddw, p1.y, p1.y, p0.x + ddw); pv->uv6.set(p0.x, p1.y - ddh, p1.y + ddh, p0.x);
+	pv++;
+	pv->p.set(EPS, EPS, EPS, 1.f);
+	pv->uv0.set(p0.x, p0.y); pv->uv1.set(p0.x - ddw, p0.y - ddh); pv->uv2.set(p0.x + ddw, p0.y + ddh);
+	pv->uv3.set(p0.x + ddw, p0.y - ddh); pv->uv4.set(p0.x - ddw, p0.y + ddh);
+	pv->uv5.set(p0.x - ddw, p0.y, p0.y, p0.x + ddw); pv->uv6.set(p0.x, p0.y - ddh, p0.y + ddh, p0.x);
+	pv++;
+	pv->p.set(float(_w + EPS), float(_h + EPS), EPS, 1.f);
+	pv->uv0.set(p1.x, p1.y); pv->uv1.set(p1.x - ddw, p1.y - ddh); pv->uv2.set(p1.x + ddw, p1.y + ddh);
+	pv->uv3.set(p1.x + ddw, p1.y - ddh); pv->uv4.set(p1.x - ddw, p1.y + ddh);
+	pv->uv5.set(p1.x - ddw, p1.y, p1.y, p1.x + ddw); pv->uv6.set(p1.x, p1.y - ddh, p1.y + ddh, p1.x);
+	pv++;
+	pv->p.set(float(_w + EPS), EPS, EPS, 1.f);
+	pv->uv0.set(p1.x, p0.y); pv->uv1.set(p1.x - ddw, p0.y - ddh); pv->uv2.set(p1.x + ddw, p0.y + ddh);
+	pv->uv3.set(p1.x + ddw, p0.y - ddh); pv->uv4.set(p1.x - ddw, p0.y + ddh);
+	pv->uv5.set(p1.x - ddw, p0.y, p0.y, p1.x + ddw); pv->uv6.set(p1.x, p0.y - ddh, p0.y + ddh, p1.x);
+	pv++;
+	RCache.Vertex.Unlock(4, g_aa_AA->vb_stride);
+
+	RCache.set_Element(s_scope_distort->E[0]);
+	RCache.set_Geometry(g_aa_AA);
+	RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
 }
 
 // 3D PiP scope: snapshot the scene into $user$scope (the scope lens material models\zoom samples it).

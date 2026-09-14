@@ -29,6 +29,7 @@ public:
 	IBlender*					b_hud_shadow;
 	IBlender* b_fxaa;
 	IBlender* b_smaa;
+	IBlender* b_scope_distort;
 	IBlender*					b_luminance;
 	IBlender*					b_combine;
 #ifdef DEBUG
@@ -134,6 +135,7 @@ private:
 	//FXAA
 	ref_shader s_fxaa;
 	ref_geom g_fxaa;
+	ref_shader s_scope_distort;
 
 	//SMAA
 	ref_shader					s_smaa;
@@ -216,6 +218,8 @@ public:
 	void						phase_hud_shadow		(light* L = nullptr);	// nullptr == the sun
 	void phase_fxaa(u32 pass);
 	void phase_smaa(u32 pass);
+	// 3D PiP scope: take the lens capture, warped by the distortion mask when there is one.
+	void phase_scope_capture(BOOL distorted);
 	void						phase_downsamp			();
 	void						phase_scene_prepare		();
 	void						phase_scene_begin		();

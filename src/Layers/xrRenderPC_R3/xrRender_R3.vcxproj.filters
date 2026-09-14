@@ -720,6 +720,9 @@
     <ClInclude Include="..\xrRender\blender_fxaa.h">
       <Filter>Shading templates</Filter>
     </ClInclude>
+    <ClInclude Include="..\xrRender\blender_scope_distort.h">
+      <Filter>Shading templates</Filter>
+    </ClInclude>
     <ClInclude Include="..\xrRender\blender_smaa.h">
       <Filter>Shading templates</Filter>
     </ClInclude>
@@ -1314,6 +1317,9 @@
       <Filter>Core_Target</Filter>
     </ClCompile>
     <ClCompile Include="blender_fxaa.cpp">
+      <Filter>Shading templates</Filter>
+    </ClCompile>
+    <ClCompile Include="blender_scope_distort.cpp">
       <Filter>Shading templates</Filter>
     </ClCompile>
     <ClCompile Include="blender_smaa.cpp">

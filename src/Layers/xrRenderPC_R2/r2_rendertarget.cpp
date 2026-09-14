@@ -13,6 +13,7 @@
 #include "blender_hud_shadow.h"
 #include "../xrRender/blender_fxaa.h"
 #include "../xrRender/blender_smaa.h"
+#include "../xrRender/blender_scope_distort.h"
 
 #include "../xrRender/dxRenderDeviceRender.h"
 
@@ -214,6 +215,7 @@ CRenderTarget::CRenderTarget		()
 	b_combine						= xr_new<CBlender_combine>				();
 	b_fxaa = xr_new<CBlender_FXAA>();
 	b_smaa = xr_new<CBlender_SMAA>();
+	b_scope_distort = xr_new<CBlender_ScopeDistort>();
 
 	//	NORMAL
 	{
@@ -376,6 +378,10 @@ CRenderTarget::CRenderTarget		()
 	//FXAA
 	s_fxaa.create(b_fxaa, "r2\\fxaa");
 	g_fxaa.create(FVF::F_V, RCache.Vertex.Buffer(), RCache.QuadIB);
+
+	// 3D PiP scope: the pass that puts anomaly heat haze into the lens capture. It draws the same
+	// screen quad as FXAA, so it borrows g_fxaa rather than making a second one.
+	s_scope_distort.create(b_scope_distort, "r2\\scope_distort");
 
 	//SMAA -- built unconditionally, like FXAA above: the filter costs nothing while
 	//ps_r2_aa_type does not select it, and this way the mode can be switched without a restart
@@ -651,6 +657,7 @@ CRenderTarget::~CRenderTarget	()
 	xr_delete					(b_hud_shadow			);
 	xr_delete(b_fxaa);
 	xr_delete(b_smaa);
+	xr_delete(b_scope_distort);
 	xr_delete					(b_accum_reflected		);
 	xr_delete					(b_accum_spot			);
 	xr_delete					(b_accum_point			);
@@ -748,6 +755,53 @@ void CRender::RenderPdaUIToRT()
 
 	HRESULT hr = D3DXLoadSurfaceFromSurface(rt->pRT, NULL, NULL, HW.pBaseRT, NULL, NULL, D3DX_DEFAULT, 0);
 	if (g_pda_dbg)	Msg("~ pda_rt: drew + blit hr=0x%08x rt=%dx%d", hr, rt->dwWidth, rt->dwHeight);
+}
+
+// 3D PiP scope: take the lens capture, and put the anomaly heat haze into it.
+// phase_combine calls this AFTER the distortion mask has been drawn (it used to take the capture well
+// before that), so the world inside the lens finally ripples the way the world around it does. Air
+// distortion is applied by the COMBINE pass, which the capture deliberately runs ahead of: the lens
+// picture is drawn back as scene geometry next frame and gets combined then, so anything baked in here
+// would be tonemapped twice. Hence a pass of its own that does the warp and nothing else.
+// `distorted` is phase_combine's bDistort -- with no distorting object in view there is no mask, and
+// the plain copy is both correct and cheaper.
+void CRenderTarget::phase_scope_capture(BOOL distorted)
+{
+	if (!g_pGamePersistent || !g_pGamePersistent->m_bLensFrameNow)	return;
+	CRT* rt = rt_scope._get();
+	if (!rt || !rt->pRT)											return;
+
+	if (!distorted || !s_scope_distort)
+	{
+		RImplementation.RenderScopeToRT();		// nothing to warp by -- straight copy
+		return;
+	}
+
+	u32 Offset = 0;
+	float _w = float(Device.dwWidth);
+	float _h = float(Device.dwHeight);
+	float ddw = 1.0f / _w;
+	float ddh = 1.0f / _h;
+
+	u_setrt(rt_scope, 0, 0, 0);
+	RCache.set_CullMode(CULL_NONE);
+	RCache.set_Stencil(FALSE);
+
+	// the same half-texel-corrected screen quad FXAA draws, and the same geometry object
+	FVF::V* pv = (FVF::V*)RCache.Vertex.Lock(4, g_fxaa->vb_stride, Offset);
+	pv->set(ddw - 0.5f, ddh + _h - 0.5f, 0.0f, 0.0f, 1.0f);
+	pv++;
+	pv->set(ddw - 0.5f, ddh - 0.5f, 0.0f, 0.0f, 0.0f);
+	pv++;
+	pv->set(ddw + _w - 0.5f, ddh + _h - 0.5f, 0.0f, 1.0f, 1.0f);
+	pv++;
+	pv->set(ddw + _w - 0.5f, ddh - 0.5f, 0.0f, 1.0f, 0.0f);
+	pv++;
+	RCache.Vertex.Unlock(4, g_fxaa->vb_stride);
+
+	RCache.set_Element(s_scope_distort->E[0]);
+	RCache.set_Geometry(g_fxaa);
+	RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
 }
 
 // 3D PiP scope: fill $user$scope with the scene so the scope lens (models\zoom) can sample+magnify it.

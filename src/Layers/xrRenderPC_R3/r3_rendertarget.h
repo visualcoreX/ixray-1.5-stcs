@@ -50,6 +50,7 @@ public:
 
 	IBlender* b_fxaa;
 	IBlender* b_smaa;
+	IBlender* b_scope_distort;
 
 #ifdef DEBUG
 	struct		dbg_line_t		{
@@ -120,6 +121,7 @@ public:
 private:
 	ref_shader s_fxaa;
 	ref_shader s_smaa;
+	ref_shader s_scope_distort;
 
 	// OCCq
 	ref_shader					s_occq;
@@ -256,6 +258,8 @@ public:
 
 	void phase_fxaa();
 	void phase_smaa();
+	// 3D PiP scope: take the lens capture, warped by the distortion mask when there is one.
+	void phase_scope_capture(BOOL distorted);
 	void						phase_scene_prepare		();
 	void						phase_scene_begin		();
 	void						phase_scene_end			();
