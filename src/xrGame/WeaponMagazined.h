@@ -343,6 +343,7 @@ protected:
 	//только разных типов патронов
 	bool m_bLockType;
 	bool m_bAmmoInChamber;	// Gunslinger ammo_in_chamber: cfg mag_size = real mag + 1 (chambered round)
+	bool m_bReloadChamberCut;	// this reload starts with nothing chambered: ReloadMagazine loads capacity-1
 	int  m_iMaxQueueSize;	// GS max_queue_size: hard cap of rounds per trigger pull (0 = none)
 	float m_fRechargeTime;	// GS recharge_time (sec): minimum gap between shots on top of rpm (gauss capacitor); upgradeable
 	bool m_bNoJamFire;		// GS no_jam_fire (hud section): the jam is a DUD rolled BEFORE the shot -- the

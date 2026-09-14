@@ -2408,6 +2408,33 @@ int CWeapon::GetAmmoCountByType(u32 type) const
 	return cnt;
 }
 
+// GS ammo_mag_size_for_type_<N> (HudItemUtils.pas GetMagCapacity): an ammo type may fill the magazine to
+// its own count instead of ammo_mag_size -- the gauss takes 10+1 ordinary cells but only 6+1 cardan, one
+// pack. Counted like ammo_mag_size (with ammo_in_chamber the chambered round is included). Read from the
+// weapon section; an installed upgrade's effect section then SETS it, the last one that has the key wins
+// (GS FindIntValueInUpgradesDef). No key anywhere = ammo_mag_size as upgraded. Grenade mode has none.
+int CWeapon::GetMagSizeForType(u32 type) const
+{
+	int res = iMagazineSize;
+	if (IsGrenadeMode() || type >= m_ammoTypes.size())	return res;
+	string64 key;
+	xr_sprintf(key, "ammo_mag_size_for_type_%u", type);
+	res = READ_IF_EXISTS(pSettings, r_s32, cNameSect(), key, res);
+	for (const shared_str& up : m_upgrades)
+	{
+		if (!up.size())	continue;
+		LPCSTR es = pSettings->line_exist(up, "section") ? pSettings->r_string(up, "section") : up.c_str();
+		if (pSettings->line_exist(es, key))	res = pSettings->r_s32(es, key);
+	}
+	return res;
+}
+
+// The AI's "is the weapon full" tests: the type that is actually in the magazine decides.
+int CWeapon::GetAmmoMagSize() const
+{
+	return GetMagSizeForType(m_magazine.empty() ? u32(m_ammoType) : u32(m_magazine.back().m_LocalAmmoType));
+}
+
 float CWeapon::GetConditionMisfireProbability() const
 {
 	// Gunslinger model: no jams while condition is above misfireStartCondition; below it, the jam chance ramps

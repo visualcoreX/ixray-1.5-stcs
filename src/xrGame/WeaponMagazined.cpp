@@ -100,6 +100,7 @@ CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 	m_bShotQueue						= true;
 	m_iQueueSize				= WEAPON_ININITE_QUEUE;
 	m_bLockType					= false;
+	m_bReloadChamberCut			= false;
 	m_bAmmoInChamber			= false;
 	m_bNoJamFire				= false;
 	m_dwReloadInsertTm			= 0;
@@ -898,6 +899,18 @@ void CWeaponMagazined::ReloadMagazine()
 	//нет патронов для перезарядки
 	if(!m_pAmmo && !unlimited_ammo() ) return;
 
+	// GS GetMagCapacity: the capacity belongs to the type being LOADED, known only now (the requested type,
+	// or the fallback the search above picked) -- see CWeapon::GetMagSizeForType. Top-level call only: the
+	// recursive top-up below runs with m_bLockType and keeps what this call set. The ammo_in_chamber cut
+	// (empty weapon, nothing chambered) comes off the typed capacity, as GS mod_magsize = def_magsize-1.
+	const int  saved_mag_size	= iMagazineSize;
+	const bool own_mag_size		= !m_bLockType;
+	if (own_mag_size)
+	{
+		iMagazineSize = GetMagSizeForType(m_ammoType);
+		if (m_bReloadChamberCut && iMagazineSize > 0)	iMagazineSize -= 1;
+	}
+
 	//разрядить магазин, если загружаем патронами другого типа
 	const bool typechange = !m_bLockType && !m_magazine.empty() &&
 		(!m_pAmmo || xr_strcmp(m_pAmmo->cNameSect(), *m_magazine.back().m_ammoSect));
@@ -953,6 +966,9 @@ void CWeaponMagazined::ReloadMagazine()
 	// new-type rounds have all been loaded (incl. the recursive top-up above).
 	if (save_chamber && m_magazine.size() >= 2)
 		std::swap(m_magazine.front(), m_magazine.back());
+
+	if (own_mag_size)
+		iMagazineSize = saved_mag_size;
 
 	VERIFY((u32)iAmmoElapsed == m_magazine.size());
 }
@@ -1260,7 +1276,7 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 		const bool typechange = !m_magazine.empty() && (reload_type != (u32)m_magazine.back().m_LocalAmmoType);
 		gwr_kept = typechange ? 0 : (int)m_magazine.size();
 		gwr_new  = GetAmmoCountByType(reload_type);
-		const int room = iMagazineSize - gwr_kept;
+		const int room = GetMagSizeForType(reload_type) - gwr_kept;
 		if (gwr_new > room)	gwr_new = room;
 		if (gwr_new < 0)	gwr_new = 0;
 	}
@@ -1268,7 +1284,7 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 	// came back FULL, so reloading a pistol with a single round left in the pouch drew a full stack of
 	// bullets (user 2026-08-25, on the PM: load one round and the magazine shows all of them). Predict the
 	// real fill the way ReloadMagazine performs it: what survives the reload, plus what is actually on hand.
-	int gwr_reload_total = iMagazineSize;
+	int gwr_reload_total = reloading ? GetMagSizeForType(reload_type) : iMagazineSize;
 	if (reloading && !per_barrel && !unlimited_ammo())
 	{
 		// A type change ejects the whole magazine, except for the one old-type round that
@@ -1281,7 +1297,7 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 		int        fresh = GetAmmoCountByType(reload_type);		// inventory only, magazine excluded
 		if (fresh < 0)	fresh = 0;
 		gwr_reload_total = kept + fresh;
-		if (gwr_reload_total > iMagazineSize)	gwr_reload_total = iMagazineSize;
+		if (gwr_reload_total > GetMagSizeForType(reload_type))	gwr_reload_total = GetMagSizeForType(reload_type);
 	}
 	// Spent-casing colour for the empty barrels BEFORE the insert mark. For an empty magazine last_type falls
 	// back to m_ammoType -- but an ammo change (old type exhausted) or a re-selected type has already flipped
@@ -2856,11 +2872,11 @@ void CWeaponMagazined::DoReloadInsert()
 	// is still the pre-reload count. Temporarily lower the capacity for the empty case (GS SetMagCapacity).
 	// ...but NOT in grenade-launcher mode: the GL holds exactly iMagazineSize (1) grenades with no
 	// chamber concept, so the -1 here would make it reload to 0 (anim plays, nothing loads).
-	const int saved_mag = iMagazineSize;
-	if (m_bAmmoInChamber && !IsGrenadeMode() && iAmmoElapsed == 0 && iMagazineSize > 0)
-		iMagazineSize -= 1;
+	// The cut is applied inside ReloadMagazine now, to the capacity of the type actually loaded
+	// (ammo_mag_size_for_type_N) -- that type is not known here yet.
+	m_bReloadChamberCut = m_bAmmoInChamber && !IsGrenadeMode() && iAmmoElapsed == 0;
 	ReloadMagazine();
-	iMagazineSize = saved_mag;
+	m_bReloadChamberCut = false;
 }
 
 // GS MakeLockByConfigParam for the reload: `lock_time_start_<alias>` = when the rounds actually go in
@@ -3454,7 +3470,7 @@ bool CWeaponMagazined::Action(s32 cmd, u32 flags)
 	case kWPN_RELOAD:
 		{
 			if(flags&CMD_START) 
-				if (iAmmoElapsed < iMagazineSize || IsMisfire())
+				if (iAmmoElapsed < GetMagSizeForType(m_ammoType) || IsMisfire())	// full = full for the loaded type
 				{
 					if (!bReloadKeyPressed || !bAmmotypeKeyPressed)
 						bReloadKeyPressed = true;

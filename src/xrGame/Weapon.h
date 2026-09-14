@@ -791,7 +791,8 @@ protected:
 
 public:
 	IC int					GetAmmoElapsed		()	const		{	return /*int(m_magazine.size())*/iAmmoElapsed;}
-	IC int					GetAmmoMagSize		()	const		{	return iMagazineSize;						}
+	int						GetAmmoMagSize		()	const;	// capacity for the LOADED ammo type (ammo_mag_size_for_type_N)
+	int						GetMagSizeForType	(u32 type) const;	// GS GetMagCapacity: ammo_mag_size, or that type's own count
 	int						GetSuitableAmmoTotal		(bool use_item_to_spawn = false)  const;
 	int						GetCurrentTypeAmmoTotal		()  const;
 	int						GetAmmoCountByType			(u32 type) const;	// rounds of a SPECIFIC ammo-type index available in the inventory (belt+ruck), excluding the magazine
