@@ -816,12 +816,15 @@ bool CGamePersistent::OnRenderScopeActive()
 // $user$scope becomes a true optical zoom. Every other frame is a lens frame (rendered but not presented);
 // the frames in between are the normal view. -> screen + lens each refresh at ~half rate while scoped.
 // GS lens_render_factor (gunsl_config.pas:1177, NeedLensFrameNow = frame mod (GPUs*factor) == 0):
+// ours counts the same way -- the value is doubled where the frame is picked, exactly as GS doubles
+// by the GPU count (always 2 in X-Ray), so 1 means "a lens frame every second frame", which is as
+// often as the lens can possibly be redrawn.
 // one lens frame out of every N. Bigger N = the main view keeps more of its frames (smoother) and the
 // lens image refreshes more rarely. GS allows 1; we cannot, because our lens frame IS the frame -- the
 // screen re-presents the last normal one -- so N=1 would never produce a normal frame to present.
 // Console-only (`lens_render_factor`): unlike GS, where a lens frame is an extra scene render, ours
 // costs the same at any N, so this changes smoothness, never the framerate. See console_commands.cpp.
-int g_lens_render_factor = 2;
+int g_lens_render_factor = 1;
 
 // A 2D optic magnifies by narrowing the WORLD fov, and psHUD_FOV would drag the weapon in hand along
 // with it: the gun grows into the screen as the aim goes in, then vanishes behind the scope picture.
@@ -925,7 +928,9 @@ bool CGamePersistent::ComputeLensFrame(float& out_fov)
 	// GS LensConditions: with the alter pose engaged the lens is off, so stop paying for (and stop
 	// showing) the magnified double-render -- the main view stays on the base FOV like any 1x sight.
 	const bool lens_on = (w->LensVisibility() > 0.001f);
-	const u32  lens_mod = (u32)_max(2, g_lens_render_factor);
+	// x2: a lens frame is not presented, so every frame cannot be one -- there would be nothing left
+	// to show. 1 -> every second frame, 2 -> every fourth, and so on.
+	const u32  lens_mod = (u32)_max(1, g_lens_render_factor) * 2;
 	if (aiming && lens_on && m_bLensSaveValid && (Device.dwFrame % lens_mod) == 0)	// 1 frame in N + aiming + valid save = lens frame
 	{
 		out_fov = w->GetLensFOV();

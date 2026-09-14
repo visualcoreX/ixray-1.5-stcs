@@ -2283,7 +2283,7 @@ void CCC_RegisterCommands()
 		// main-view smoothness against lens refresh rate. Left here for tuning.
 		CMD3(CCC_Mask,			"lens_enabled",			&psActorFlags,	AF_LENS_3D);
 		extern int g_lens_render_factor;
-		CMD4(CCC_Integer,		"lens_render_factor",	&g_lens_render_factor,	2, 6);
+		CMD4(CCC_Integer,		"lens_render_factor",	&g_lens_render_factor,	1, 4);
 		// how close the 3D PDA is held: lowered / at the face. 0 = use the config value.
 		// SMALLER = narrower hud fov = the PDA looks BIGGER (engine default is 0.45)
 		extern float g_pda_hud_fov;
