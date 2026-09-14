@@ -2496,6 +2496,24 @@ void CWeaponMagazined::state_Fire(float dt)
 	else
 	{
 		fShotTimeCounter			-=	dt;
+
+		// The shot's own animation is over but the weapon still sits out the gap to the next round -- the
+		// gauss's recharge_time is 3 s, far longer than its shot motion. Staying in eFire for that held the
+		// hands on the motion's LAST FRAME and kept every other animation (idle, aim, walk, sprint) away
+		// until the gap ran out. When this pull has no further round coming, leave the fire state now: the
+		// gap keeps draining in eIdle (UpdateCL), the reload gate reads the shot time, not the state, and a
+		// new pull inside the gap still goes through FireStart's shot_queue test. A held automatic trigger
+		// has rounds coming and is not touched. Actor only: an NPC has no hud motion to wait for.
+		const bool more_rounds = (IsWorking() || m_bFireSingleShot) && !m_magazine.empty()
+			&& (m_iQueueSize < 0 || m_iShotNum < m_iQueueSize)
+			&& (m_iMaxQueueSize <= 0 || m_iShotNum < m_iMaxQueueSize);
+		const bool shot_anim_over = !m_dwShootAnimEndTm || Device.dwTimeGlobal >= m_dwShootAnimEndTm;
+		if (!more_rounds && shot_anim_over && ParentIsActor())
+		{
+			if (iAmmoElapsed == 0)
+				OnMagazineEmpty();
+			StopShooting();
+		}
 	}
 }
 
