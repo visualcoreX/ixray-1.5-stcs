@@ -469,7 +469,12 @@ void CMissile::OnAnimationEnd(u32 state)
 	{
 	case eHiding:
 		{
-			setVisible(FALSE);
+			// ...but only while it is still IN somebody's hands. Dropping the grenade rejects the
+			// object (it flies off with its own physics shell) and only then does the hide animation
+			// finish -- so this used to blank a grenade already lying on the ground: invisible, yet
+			// still there to trip over. The eHidden branch in State() has always had this guard.
+			if (H_Parent())
+				setVisible(FALSE);
 			SwitchState(eHidden);
 		} break;
 	case eShowing:
@@ -807,7 +812,23 @@ void  CMissile::UpdateFireDependencies_internal	()
 void CMissile::activate_physic_shell()
 {
 	if (!smart_cast<CMissile*>(H_Parent())) {
-		inherited::activate_physic_shell();
+		// A DROPPED grenade (not the fake one a throw spawns). CInventoryItem::activate_physic_shell
+		// builds the launch from UpdateXForm(), and CPhysicsShellHolder::activate_physic_shell throws
+		// the item along that transform's +k -- which for a hand-held item is the axis spanning the two
+		// hand bones. On a rifle that runs down the barrel, so a dropped weapon lands in front of you;
+		// a grenade is held in ONE hand, so the same axis points across the body and it flew BACKWARDS.
+		// Keep the position UpdateXForm gives (the hand) and take the direction from the owner.
+		CEntityAlive	*E = smart_cast<CEntityAlive*>(H_Parent());
+		if (E) {
+			UpdateXForm			();
+			Fvector				k = E->XFORM().k, j, i;
+			Fvector::generate_orthonormal_basis	(k, j, i);
+			XFORM().set			(i, j, k, XFORM().c);
+			CPhysicsShellHolder::activate_physic_shell	();
+		}
+		else
+			inherited::activate_physic_shell();
+
 		if(m_pPhysicsShell&&m_pPhysicsShell->isActive()&&!IsGameTypeSingle())
 		{
 				m_pPhysicsShell->add_ObjectContactCallback		(ExitContactCallback);
