@@ -374,6 +374,8 @@ protected:
 	void					camUpdateLadder			(float dt);
 	void					cam_SetLadder			();
 	void					cam_UnsetLadder			();
+	// GS fov_factor: the world-fov multiplier from the section of the item in hand (see Actor.cpp)
+	float					gwr_ItemFovFactor	();
 	float					currentFOV				();
 
 	// Cameras

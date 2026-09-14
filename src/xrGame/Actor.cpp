@@ -967,8 +967,31 @@ float g_fov = 75.0f;
 
 extern void gwr_update_burning(CActor* actor);		// ActorInput.cpp
 
+// GS fov_factor (ActorUtils.pas UpdateFOV): the section of the item in hand scales the WORLD fov --
+// the weapon's, or the active detector's when the hands are otherwise empty. Absent = 1.0. This is
+// what makes raising the PDA (or a detector, or a particular weapon) change the view in Gunslinger:
+// the key simply lives on those sections.
+float CActor::gwr_ItemFovFactor()
+{
+	CInventoryItem* it = inventory().ActiveItem();
+	if (!it)
+	{
+		PIItem det = inventory().ItemFromSlot(DETECTOR_SLOT);
+		if (!det)	return 1.f;
+		it = det;
+	}
+	const shared_str& sect = it->object().cNameSect();
+	if (!sect.size())	return 1.f;
+	float f = READ_IF_EXISTS(pSettings, r_float, *sect, "fov_factor", 1.f);
+	clamp(f, 0.1f, 4.f);
+	return f;
+}
+
 float CActor::currentFOV()
 {
+	// every branch below works from this, not from g_fov itself -- including the ones that return the
+	// base outright, which is where the item's own factor has to bite
+	const float g_fov = ::g_fov * gwr_ItemFovFactor();
 	if (!psHUD_Flags.is(HUD_WEAPON|HUD_WEAPON_RT|HUD_WEAPON_RT2))
 		return g_fov;
 
