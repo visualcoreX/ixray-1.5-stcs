@@ -267,6 +267,26 @@ void CMovementManager::move_along_path		(CPHMovementControl *movement_control, F
 	Device.Statistic->Physics.Begin	();
 
 	// получить физ. объекты в радиусе
+	// Has this one been going nowhere? Position, not velocity: a capsule shoving another capsule has
+	// a perfectly healthy desired speed and covers no ground. Three seconds of that and it walks the
+	// next second and a half the way a LONE monster always does -- position set along the detail path,
+	// character collision off (the else branch below) -- which unwedges a pile on a narrow stair instead
+	// of waiting for the player to reload the save or talk to them, which is what unwedges it today.
+	{
+		const Fvector	&cur_pos = object().Position();
+		if ((m_phys_stuck_pos.x == flt_max) || (cur_pos.distance_to(m_phys_stuck_pos) > .3f)) {
+			m_phys_stuck_pos	= cur_pos;
+			m_phys_stuck_since	= Device.dwTimeGlobal;
+		}
+		else
+			if (Device.dwTimeGlobal - m_phys_stuck_since > 3000) {
+				m_phys_glide_until	= Device.dwTimeGlobal + 1500;
+				m_phys_stuck_pos	= cur_pos;
+				m_phys_stuck_since	= Device.dwTimeGlobal;
+			}
+	}
+	const bool			glide_through = (Device.dwTimeGlobal < m_phys_glide_until);
+
 	m_nearest_objects.clear();
 	Level().ObjectSpace.GetNearest		(m_nearest_objects,dest_position,DISTANCE_PHISICS_ENABLE_CHARACTERS + (movement_control->IsCharacterEnabled() ? 0.5f : 0.f),&object()); 
 
@@ -289,7 +309,7 @@ void CMovementManager::move_along_path		(CPHMovementControl *movement_control, F
 	if(!movement_control->PhyssicsOnlyMode())
 		movement_control->SetCharacterVelocity(velocity);
 
-	if (DBG_PH_MOVE_CONDITIONS(ph_dbg_draw_mask.test(phDbgNeverUseAiPhMove)||!ph_dbg_draw_mask.test(phDbgAlwaysUseAiPhMove)&&)!(m_nearest_objects.empty())) {  //  физ. объект
+	if (DBG_PH_MOVE_CONDITIONS(ph_dbg_draw_mask.test(phDbgNeverUseAiPhMove)||!ph_dbg_draw_mask.test(phDbgAlwaysUseAiPhMove)&&)!(m_nearest_objects.empty()) && !glide_through) {  //  физ. объект
 		
 		if(DBG_PH_MOVE_CONDITIONS(!ph_dbg_draw_mask.test(phDbgNeverUseAiPhMove)&&) !movement_control->TryPosition(dest_position)) {
 			movement_control->GetPosition	(dest_position);

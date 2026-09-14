@@ -36,6 +36,9 @@ CMovementManager::CMovementManager	(CCustomMonster *object)
 {
 	VERIFY						(object);
 	m_object					= object;
+	m_phys_stuck_pos.set		(flt_max,flt_max,flt_max);
+	m_phys_stuck_since			= 0;
+	m_phys_glide_until			= 0;
 }
 
 CMovementManager::~CMovementManager	()

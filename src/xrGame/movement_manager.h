@@ -145,6 +145,15 @@ protected:
 
 protected:
 	NEAREST_OBJECTS			m_nearest_objects;
+	// Wedged-in-a-crowd watchdog, see CMovementManager::move_along_path. A monster/stalker with nobody
+	// around is moved by SETTING its position along the detail path (physics off); only when somebody
+	// is near does it walk physically -- and in a crowd on a narrow stair that means shoving capsules
+	// against geometry until nobody moves at all. If one stops advancing for a few seconds it gets the
+	// lone-walker treatment for a moment, which is exactly what the player sees when a stuck stalker is
+	// distracted (or the save is reloaded) and suddenly slips through.
+	Fvector					m_phys_stuck_pos;
+	u32						m_phys_stuck_since;
+	u32						m_phys_glide_until;
 
 protected:
 	float					m_speed;
