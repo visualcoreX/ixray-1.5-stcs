@@ -245,6 +245,12 @@ static Fvector2 RayDeltas[CLensFlare::MAX_RAYS] =
 };
 void CLensFlare::OnFrame(shared_str id)
 {
+	// Not on a 3D PiP lens frame. The sun gradient below is decided from where the sun falls in
+	// Device.mFullTransform, and on a lens frame that is the scope's: the sun leaves the picture,
+	// the halo is zeroed, and the value stands until the next recompute -- so the shown frame after
+	// it loses the halo. Keeping the last values leaves the glare to the frames that are shown.
+	if (g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow)	return;
+
 	if (dwFrame==Device.dwFrame)return;
 #ifndef _EDITOR
 	if (!g_pGameLevel)			return;
