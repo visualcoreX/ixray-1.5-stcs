@@ -494,6 +494,11 @@ void CWeaponMagazined::FireEnd()
 {
 	m_bTriggerHeld = false;	// trigger released
 	m_bFirePendingSprint = false;	// releasing fire cancels a sprint-deferred shot (set before any shot, so it clears cleanly)
+	// ...and it cancels a shot queued inside the aim fire-lock the same way. A press during the aim-in
+	// is replayed as FireStart when the lock ends, which OPENS the trigger -- if the player had already
+	// let go, no FireEnd was ever coming to close it and the weapon fired on by itself, exactly like a
+	// stuck key. Held through the transition it still fires the moment the lock lifts, as intended.
+	m_bAimLockFirePressed = false;
 	inherited::FireEnd();
 
 	if (psActorFlags.test(AF_AUTORELOAD))
