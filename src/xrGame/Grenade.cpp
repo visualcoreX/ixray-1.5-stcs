@@ -333,15 +333,35 @@ void CGrenade::PutNextToSlot()
 		// GS CMissile__PutNextToSlot: a QUICK throw goes back to whatever was in your hands, it does
 		// not leave you standing there holding the next grenade. The next one is still slotted above
 		// (so the following quick throw has something to pull), it just never gets drawn.
+		bool chained = false;
 		if (m_quick_throw_ret_slot != NO_ACTIVE_SLOT)
 		{
-			const u32 ret			= m_quick_throw_ret_slot;
+			const u32  ret			= m_quick_throw_ret_slot;
+			const bool det			= m_quick_throw_had_det;
 			m_quick_throw_ret_slot	= NO_ACTIVE_SLOT;
-			if (m_pInventory->ItemFromSlot(ret))		// the slot was active when the key was pressed
+			// The key was pressed again while this one was still in the air: throw the grenade that was
+			// just slotted above instead of giving the hands back. GS gets the same chain by holding the
+			// grenade SLOT key (Throwable.pas:543 keeps the grenade active instead of returning to the
+			// previous slot); ours is one press per throw, like the quick knife. The return slot and the
+			// detector flag are handed on, so the weapon -- and the detector -- only come back when the
+			// player stops asking for grenades.
+			const bool repeat		= QuickThrowRepeatWanted();
+			ClearQuickThrowRepeat	();
+			CMissile* nxt			= smart_cast<CMissile*>(m_pInventory->ItemFromSlot(GRENADE_SLOT));
+			if (repeat && nxt && nxt != this &&
+				READ_IF_EXISTS(pSettings, r_bool, nxt->cNameSect().c_str(), "supports_quick_throw", FALSE))
+			{
+				m_quick_throw_had_det	= false;	// handed to the next throw, not consumed here
+				ArmQuickThrow			(ret, det);	// the slot stays on the grenade; the next one claims it
+				chained					= true;
+			}
+			else if (m_pInventory->ItemFromSlot(ret))	// the slot was active when the key was pressed
 				m_pInventory->Activate	(ret);
 		}
-		// hands are handed back -- release the slot lock the key raised (see CMissile::QuickThrowBusy)
-		ClearQuickThrowBusy();
+		// hands are handed back -- release the slot lock the key raised (see CMissile::QuickThrowBusy).
+		// Not on a chained throw: that one is still running and ArmQuickThrow has just refreshed it.
+		if (!chained)
+			ClearQuickThrowBusy();
 		// GS RestoreLastActorDetector, called from the same place: drawing the grenade made the
 		// detector incompatible and CheckCompatibility holstered it, which clears m_bNeedActivation --
 		// so nothing remembered to bring it back. A quick throw is not a deliberate switch away from

@@ -54,6 +54,10 @@ static bool	s_quick_throw_had_det	= false;
 // simply cancelled. The deadline is a safety net only: nothing should hold the hands this long, and
 // a throw that dies somewhere unexpected must not lock the player out of his weapons for good.
 static bool	s_quick_throw_busy		= false;
+// ...and "the key was pressed again while that throw was still running": PutNextToSlot then arms the
+// grenade it just slotted instead of handing the hands back, which is what makes a chain of throws
+// read as one continuous action with no weapon draw in between (see CGrenade::PutNextToSlot).
+static bool	s_quick_throw_repeat	= false;
 static u32	s_quick_throw_busy_until= 0;
 #define QUICK_THROW_BUSY_MAX_MS		4000
 
@@ -71,12 +75,16 @@ bool CMissile::QuickThrowBusy()
 	if (Device.dwTimeGlobal >= s_quick_throw_busy_until)	{ s_quick_throw_busy = false; return false; }
 	return true;
 }
-void CMissile::ClearQuickThrowBusy()	{ s_quick_throw_busy = false; s_quick_throw_busy_until = 0; }
+void CMissile::ClearQuickThrowBusy()	{ s_quick_throw_busy = false; s_quick_throw_busy_until = 0;
+											  s_quick_throw_repeat = false; }
+void CMissile::RequestQuickThrowRepeat()	{ s_quick_throw_repeat = true; }
+bool CMissile::QuickThrowRepeatWanted()		{ return s_quick_throw_repeat; }
+void CMissile::ClearQuickThrowRepeat()		{ s_quick_throw_repeat = false; }
 bool CMissile::QuickThrowArmed()			{ return s_quick_throw_armed; }
 u32  CMissile::QuickThrowReturnSlot()		{ return s_quick_throw_ret_slot; }
 bool CMissile::QuickThrowHadDetector()		{ return s_quick_throw_had_det; }
 void CMissile::ResetQuickThrow()			{ s_quick_throw_armed = false; s_quick_throw_ret_slot = NO_ACTIVE_SLOT;
-											  s_quick_throw_had_det = false; }
+											  s_quick_throw_had_det = false; s_quick_throw_repeat = false; }
 
 CMissile::CMissile(void)
 {

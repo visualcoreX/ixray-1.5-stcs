@@ -347,8 +347,17 @@ void CActor::IR_OnKeyboardPress(int cmd)
 			// (anm_throw_quick, force_const) and the weapon we came from is drawn back afterwards.
 			// Opt-in per grenade: `supports_quick_throw`.
 			if (!IsGameTypeSingle())							break;
-			if (inventory().GetActiveSlot() == (u32)GRENADE_SLOT)	break;	// it is already in hand
 			if (!g_Alive())										break;
+			if (inventory().GetActiveSlot() == (u32)GRENADE_SLOT)
+			{
+				// Already holding one. If that is a quick throw still running, the press is not lost:
+				// it asks for ANOTHER one, and PutNextToSlot then lobs the grenade it slots instead of
+				// drawing the weapon back -- grenades chain like the quick knife stabs. A grenade drawn
+				// the ordinary way (the slot key) is left alone.
+				CMissile* am = smart_cast<CMissile*>(inventory().ActiveItem());
+				if (am && am->IsQuickThrowing())	CMissile::RequestQuickThrowRepeat();
+				break;
+			}
 
 			// Same gate the quick stab got: a no-weapon zone (sr_no_weapon -> hide_weapon) blocks
 			// every slot but the artefact one, so Activate(GRENADE_SLOT) below would refuse and no

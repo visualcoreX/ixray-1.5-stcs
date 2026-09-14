@@ -103,6 +103,14 @@ public:
 	static	u32				QuickThrowReturnSlot();
 	static	bool			QuickThrowHadDetector();
 			bool			IsQuickThrow		() const { return m_bQuickThrow; }
+	// True for the WHOLE quick sequence, animation and hand-back alike: m_bQuickThrow is dropped when
+	// anm_throw_quick ends, the return slot only when the hands are given back in PutNextToSlot.
+			bool			IsQuickThrowing		() const { return m_bQuickThrow || m_quick_throw_ret_slot != NO_ACTIVE_SLOT; }
+	// Key pressed again mid-throw: lob the grenade that gets slotted next instead of drawing the
+	// weapon back, so they can be thrown one after another like the quick knife stabs.
+	static	void			RequestQuickThrowRepeat	();
+	static	bool			QuickThrowRepeatWanted	();
+	static	void			ClearQuickThrowRepeat	();
 			u32				QuickThrowRetSlot	() const { return m_quick_throw_ret_slot; }
 	// True from the moment the key arms a throw until PutNextToSlot has handed the hands back.
 	// Purely an INPUT gate (see CActor::IR_OnKeyboardPress / IR_OnMouseWheel): the throw drives
