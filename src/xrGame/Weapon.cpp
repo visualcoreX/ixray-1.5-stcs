@@ -898,6 +898,14 @@ void CWeapon::UpdateLaserDot()
 		m_dwLaserToggleAt	= 0;
 	}
 	if (!m_bLaserInstalled || !m_bLaserEnabled || m_LaserParticles.empty() || !m_sLaserBone.size())	{ StopLaserDot(); return; }
+	// Control taken away -- a scripted cutscene (level.disable_input) or the intro's osoznanie talk.
+	// These lights hang off the HUD item transform, which is rebuilt from the camera every frame, so a
+	// fly-through drags the beam along and sweeps the level from wherever the camera went. Nobody is
+	// holding a weapon at that point. This is the same decision the self-shadow and the first-person
+	// legs already make, and it is made in ONE place -- CActor::UpdateCL -- so read the result rather
+	// than testing the game state a third time; the 500 ms tail comes with it. m_bFlashEnabled is left
+	// alone, so the light comes back by itself when the scene ends.
+	if (g_pGamePersistent && g_pGamePersistent->m_bSuppressActorShadow)	{ StopLaserDot(); return; }
 	// GS ProcessLaserdot (WeaponUpdate.pas ~127): during an emission the laser DOT is suppressed while the
 	// actor's electronics-problems level is high -- the laser stays ENABLED (m_bLaserEnabled untouched), only
 	// the projected dot is hidden, so it returns by itself after the surge. Solid off at the peak (prob=1
@@ -1266,6 +1274,14 @@ void CWeapon::UpdateFlashlight()
 		m_dwFlashToggleAt	= 0;
 	}
 	if (!m_bFlashInstalled || !m_bFlashEnabled)							{ StopFlashlight(); return; }
+	// Control taken away -- a scripted cutscene (level.disable_input) or the intro's osoznanie talk.
+	// These lights hang off the HUD item transform, which is rebuilt from the camera every frame, so a
+	// fly-through drags the beam along and sweeps the level from wherever the camera went. Nobody is
+	// holding a weapon at that point. This is the same decision the self-shadow and the first-person
+	// legs already make, and it is made in ONE place -- CActor::UpdateCL -- so read the result rather
+	// than testing the game state a third time; the 500 ms tail comes with it. m_bFlashEnabled is left
+	// alone, so the light comes back by itself when the scene ends.
+	if (g_pGamePersistent && g_pGamePersistent->m_bSuppressActorShadow)	{ StopFlashlight(); return; }
 
 	// GS WeaponAdditionalBuffer.pas:1490 -- three cases:
 	//  1. the ACTOR owns it but it isn't the active item -> light off (it stays `enabled`, just not shining)
