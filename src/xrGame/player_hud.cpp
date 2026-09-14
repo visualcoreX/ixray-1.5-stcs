@@ -420,6 +420,7 @@ u32 attachable_hud_item::anim_play(const shared_str& anm_name_b, BOOL bMixIn, co
 
 	R_ASSERT2		(m_parent_hud_item, "parent hud item is NULL");
 	CPhysicItem&	parent_object = m_parent_hud_item->object();
+
 	//R_ASSERT2		(parent_object, "object has no parent actor");
 	//CObject*		parent_object = static_cast_checked<CObject*>(&m_parent_hud_item->object());
 
@@ -433,12 +434,32 @@ u32 attachable_hud_item::anim_play(const shared_str& anm_name_b, BOOL bMixIn, co
 		string_path			anm_name;
 		strconcat			(sizeof(anm_name),anm_name,"camera_effects\\weapon\\", M.name.c_str(),".anm");
 
+		// The name above is the HANDS motion. For a single-token alias that is also the item motion, so
+		// every weapon (anm_show = ak74_draw) resolves either way -- but a two-token alias names the
+		// hands first and the item second, and the shipped camera files are named after the ITEM:
+		//     anm_show_fastzoom = pda_aim_draw_1stpart, pda_draw   ->   pda_draw.anm
+		// Without this fallback the PDA's at-face draw asked for pda_aim_draw_1stpart.anm, found
+		// nothing, and moved no camera at all. Hands name first so nothing that already works changes.
+		shared_str			cam_motion = M.name;
+		if (anm->m_additional_name != anm->m_base_name &&
+			!FS.exist(ce_path, "$game_anims$", anm_name))
+		{
+			string_path		alt_name;
+			strconcat		(sizeof(alt_name), alt_name, "camera_effects\\weapon\\",
+							 anm->m_additional_name.c_str(), ".anm");
+			if (FS.exist(ce_path, "$game_anims$", alt_name))
+			{
+				xr_strcpy	(anm_name, sizeof(anm_name), alt_name);
+				cam_motion	= anm->m_additional_name;
+			}
+		}
+
 		// BASE motion name = M.name minus any trailing digits. A looping idle picks RANDOM numbered
 		// variants each cycle (Gunslinger's burn idle alternates "fire_on_the_hand" / "fire_on_the_hand1",
 		// each with its own camera anm), so keying suppression on the exact name re-fired the camera on
 		// every switch. Comparing bases makes all variants of one gesture count as the same.
 		string_path			cam_base;
-		xr_strcpy			(cam_base, M.name.c_str());
+		xr_strcpy			(cam_base, cam_motion.c_str());
 		{ int n = (int)xr_strlen(cam_base); while (n > 0 && cam_base[n-1] >= '0' && cam_base[n-1] <= '9') cam_base[--n] = 0; }
 
 		// Fire the weapon-action camera ONCE per gesture. A motion reused for the action AND the idle/hide
