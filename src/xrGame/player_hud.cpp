@@ -489,8 +489,10 @@ u32 attachable_hud_item::anim_play(const shared_str& anm_name_b, BOOL bMixIn, co
 				bool	has_from = false;
 				if(cur)	{ from_offset = cur->OffsetXForm(); has_from = true; }
 
-				if(ec)
-					current_actor->Cameras().RemoveCamEffector(eCEWeaponAction);
+				// NO early RemoveCamEffector here: AddCamEffector below only QUEUES, and CCameraManager::Update
+				// processes effectors and applies the device BEFORE UpdateDeffered swaps the queue in -- so removing
+				// now rendered one frame with no weapon effector (camera at its neutral pose, then back = a torn
+				// frame mid-reload). UpdateDeffered removes the same type itself, at the same point: atomic swap.
 
 				CAnimatorCamEffector* e		= xr_new<CAnimatorCamEffector>();
 				e->SetType					(eCEWeaponAction);
