@@ -170,6 +170,7 @@ public:
 	bool IsLensedScope() const;
 	bool IsLensedScopeCfg() const;	// same, but ignoring the AF_LENS_3D option (zoom still follows the lens)
 	float AlterZoomFOV() const;		// GS alter_scope_zoom_factor -> world FOV for the backup sight
+	float AimBaseFOV() const;		// world FOV an optic aims at with NO magnification of its own (see Weapon.cpp)
 	bool ZoomHideUI() const;		// GS zoom_hide_ui: this optic blanks the indicators while aimed
 	// Gunslinger `collimator`: the THIRD scope mode. A red-dot/collimator has its reticle on the MODEL, so
 	// it must neither hide the weapon behind a 2D scope texture nor spin up the PiP lens -- and being 1x it

@@ -890,11 +890,32 @@ bool CGamePersistent::ComputeLensFrame(float& out_fov)
 	}
 	else											// presented normal frame (also the first aim frame)
 	{
-		// Same alter_scope_zoom_factor rule with the lens ON: the alter pose fades the lens out
-		// (lens_on false), and the backup sight's own magnification -- 1.0/none by default -- is what
-		// the world FOV should follow, not the base FOV by accident.
-		out_fov = (aiming && !lens_on && w->IsAlterZoom() && w->GetZoomRotationFactor() > 0.999f)
-					? w->AlterZoomFOV() : g_fov;
+		// The alter pose fades the lens out (lens_on false) and the backup sight's own magnification --
+		// 1.0/none by default -- is what the world FOV should follow.
+		if (aiming && !lens_on && w->IsAlterZoom())
+		{
+			const float base = w->AimBaseFOV();
+			const float alt  = w->AlterZoomFOV();
+			// A backup sight with no magnification of its own has NOTHING to override: the aim fov it wants
+			// is the one CActor::currentFOV is already asking for, and the camera's first-order fov filter
+			// (CCameraManager::Update) is easing into it. Taking the frame over at the end of the aim-in
+			// jumped straight to the final value and skipped whatever travel the filter had left -- the fov
+			// clicked at the end of an aim that went straight into the alter pose, while the same aim into
+			// the normal pose (which never overrides) was smooth. Hand the frame back to the camera.
+			if (fsimilar(alt, base, 0.01f))				return false;
+			// It DOES magnify: ride the aim factor from the fov the main optic holds, so the override is
+			// continuous from the very first aim frame instead of appearing at a threshold, and eased by
+			// the pose blend (alter_zoom_time) when the player flips to it mid-aim.
+			float f = w->GetZoomRotationFactor();
+			clamp(f, 0.f, 1.f);
+			const float from = g_fov + (base - g_fov) * f;
+			out_fov = from + (alt - from) * f * w->AlterZoomBlend();
+			return true;
+		}
+		// Otherwise leave the camera alone, as GS does on its non-lens frames: CActor::currentFOV has
+		// already decided the aim FOV, and overriding it here with the base was the second half of what
+		// froze the view when a scoped weapon was shouldered.
+		return false;
 	}
 	return true;
 }

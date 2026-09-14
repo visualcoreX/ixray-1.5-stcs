@@ -985,7 +985,16 @@ float CActor::currentFOV()
 	// scope_zoom_factor path must stay out of the way here in BOTH modes -- otherwise the last frame
 	// of the aim-in ramp briefly shows the stock zoom before the override takes over.
 	if (pWeapon->IsLensedScopeCfg() || pWeapon->IsCollimatorScope())
-		return g_fov;
+	{
+		// ...but not by standing still: GS's lensed scope sections all carry scope_zoom_factor 1.02, so
+		// the world narrows by two per cent as the weapon comes up. Returning the base outright made
+		// shouldering a scoped weapon change nothing at all, while iron sights still moved. The scope's
+		// own factor stays out of it -- that magnification belongs to the lens. CWeapon::AimBaseFOV is
+		// where that target lives, shared with the alter (backup) sight so the two never disagree.
+		float f = pWeapon->GetZoomRotationFactor();
+		clamp(f, 0.f, 1.f);
+		return g_fov + (pWeapon->AimBaseFOV() - g_fov) * f;
+	}
 
 	// Gunslinger: aiming the GL (grenade mode) never zooms the WORLD -- it uses its own HUD fov
 	// (hud_fov_gl_zoom_factor), so the scope's zoom must not leak onto GL aiming (ActorUtils.pas grenade branch).

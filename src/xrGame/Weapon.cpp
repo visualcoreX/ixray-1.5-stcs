@@ -3095,6 +3095,18 @@ float CWeapon::GetLensFOV() const
 	return rad2deg(2.0f * atanf(tanf(half) / factor));
 }
 
+// The world FOV a scoped weapon settles on when the optic itself adds NO magnification. GS's lensed
+// scope sections all carry scope_zoom_factor 1.02, so shouldering one still narrows the world by two
+// per cent -- the small "the world comes closer" cue every sight gives. Everything that decides the
+// world fov for an optic goes through here (CActor::currentFOV, the alter/backup sight below), or the
+// two disagree by that two per cent and the view visibly clicks when one hands over to the other --
+// which is exactly what flipping to the backup sight used to do.
+float CWeapon::AimBaseFOV() const
+{
+	extern float g_fov;
+	return g_fov / 1.02f;
+}
+
 // GS alter_scope_zoom_factor (collimator.pas:28, GetAlterScopeZoomFactor): the magnification of the
 // BACKUP sight -- the ELCAN's 1x notch you flip to with the alter key. A GS-scale multiplier, default
 // 1.0 = no world zoom at all, fed through the same fov = 2*atan(tan(base/2)/factor) as the lens.
@@ -3108,8 +3120,12 @@ float CWeapon::AlterZoomFOV() const
 		factor = pSettings->r_float(*sc, "alter_scope_zoom_factor");
 	else
 		factor = READ_IF_EXISTS(pSettings, r_float, cNameSect(), "alter_scope_zoom_factor", 1.0f);
-	if (factor <= 1.0f)		return g_fov;		// 1x -- leave the world FOV alone
-	float half = deg2rad(g_fov) * 0.5f;
+	// 1x backup sight: no magnification of its OWN, but it is still an aimed sight -- hand back the same
+	// fov the main optic aims at, not the raw base. Returning g_fov here dropped the aim zoom the moment
+	// the alter pose engaged (and put it back on the way out): "fov resets when switching to them".
+	const float base = AimBaseFOV();
+	if (factor <= 1.0f)		return base;
+	float half = deg2rad(base) * 0.5f;
 	return rad2deg(2.0f * atanf(tanf(half) / factor));
 }
 
