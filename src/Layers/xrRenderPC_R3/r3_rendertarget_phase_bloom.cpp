@@ -125,7 +125,10 @@ void CRenderTarget::phase_bloom	()
 	}
 
 	// Capture luminance values
-	phase_luminance					( );
+	// ...but a lens frame does not measure the scene: its view is the scope's, and feeding that into
+	// the adaptation would expose the shown frames for a zoomed picture (see phase_luminance).
+	if (!(g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow))
+		phase_luminance				( );
 
 	if (ps_r2_ls_flags.test(R2FLAG_FASTBLOOM))
 	{

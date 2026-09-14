@@ -44,7 +44,10 @@ void	CRenderTarget::phase_combine	()
 	Fvector2	p0,p1;
 
 	//*** exposure-pipeline
-	u32			gpu_id	= Device.dwFrame%HW.Caps.iGPUNum;
+	// Counts frames that were shown; a lens frame does not take a turn in this cycle. This is
+	// GS's _buffer_index, which it patches into these same two places.
+	extern u32	g_frame_shown;
+	u32			gpu_id	= g_frame_shown%HW.Caps.iGPUNum;
 	{
 		t_LUM_src->surface_set		(rt_LUM_pool[gpu_id*2+0]->pSurface);
 		t_LUM_dest->surface_set		(rt_LUM_pool[gpu_id*2+1]->pSurface);
@@ -437,10 +440,9 @@ void	CRenderTarget::phase_combine	()
 
 	//*** exposure-pipeline-clear
 	{
-		// 3D PiP: don't ping-pong the exposure pool while aiming a lensed scope (phase_luminance frozen) -- keeps
-		// world brightness steady across aim-in/out. See R2 note.
-		if (!(g_pGamePersistent && g_pGamePersistent->m_bLensAimActive))
-			std::swap				(rt_LUM_pool[gpu_id*2+0],rt_LUM_pool[gpu_id*2+1]);
+		// ...and it does not advance the chain either: nothing was measured this frame
+		if (!(g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow))
+			std::swap			(rt_LUM_pool[gpu_id*2+0],rt_LUM_pool[gpu_id*2+1]);
 		t_LUM_src->surface_set		(NULL);
 		t_LUM_dest->surface_set		(NULL);
 	}
