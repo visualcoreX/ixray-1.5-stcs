@@ -1001,10 +1001,21 @@ float CActor::currentFOV()
 	if (pWeapon->IsGrenadeMode())
 		return g_fov;
 
-	// PDA held up: only the HUD model comes to the face (hud_fov_aim), the world FOV stays put --
-	// zooming it would be wrong on its own, and doubly so because our HUD FOV is a FRACTION of it
+	// PDA held up. GS keeps the world fov on its own key (ActorUtils.pas UpdateFOV multiplies the base
+	// by the item section's fov_factor) -- a constant that would snap the view the moment the phantom is
+	// drawn, so ours rides the SAME aim factor the hud fov does and the world pushes in together with the
+	// screen coming to the face. fov_zoom_factor sits in the PDA HUD section next to hud_fov/hud_fov_aim;
+	// missing or 1.0 leaves the world exactly where it was. NB our hud fov is a FRACTION of this, so the
+	// PDA model narrows by the same factor on top of hud_fov_aim -- re-tune that key if it should not.
 	if (pWeapon->UsesPdaCursorAnims())
-		return g_fov;
+	{
+		float k = READ_IF_EXISTS(pSettings, r_float, pWeapon->HudSection().c_str(), "fov_zoom_factor", 1.f);
+		clamp(k, 0.3f, 2.f);
+		if (fsimilar(k, 1.f))	return g_fov;
+		float f = pWeapon->GetZoomRotationFactor();
+		clamp(f, 0.f, 1.f);
+		return g_fov + (g_fov * k - g_fov) * f;
+	}
 
 	if (pWeapon->ZoomTexture())
 	{
