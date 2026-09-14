@@ -42,7 +42,7 @@ void CRenderTarget::accum_spot	(light* L)
 		Pold				= Device.mProject;
 		FTold				= Device.mFullTransform;
 		Device.mProject.build_projection(
-			deg2rad(psHUD_FOV*Device.fFOV /* *Device.fASPECT*/ ),
+			deg2rad(psHUD_FOV*Device.fFOV_HUD /* *Device.fASPECT*/ ),
 			Device.fASPECT, VIEWPORT_NEAR,
 			g_pGamePersistent->Environment().CurrentEnv->far_plane);
 

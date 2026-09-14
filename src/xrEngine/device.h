@@ -131,6 +131,10 @@ public:
 	Fmatrix									mFullTransform_saved;
 
 	float									fFOV;
+	// The fov the FIRST-PERSON HUD is drawn with (before psHUD_FOV scales it). Normally the same as
+	// fFOV, but a 2D scope magnifies the WORLD without magnifying the weapon: see
+	// CCameraManager::ApplyDevice and IGame_Persistent::HudFovBase.
+	float									fFOV_HUD;
 	float									fASPECT;
 	
 	CRenderDevice			()

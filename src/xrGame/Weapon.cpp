@@ -880,7 +880,7 @@ static void LaserCorrectPointWorldToHud(Fvector& p, float koef)
 	Fvector perp;	perp.sub(v, par);						// perpendicular (screen-plane) component
 	// HUD is drawn with fov = psHUD_FOV*fFOV (narrower). cos(hud)/cos(world) > 1 pushes the point further off the
 	// view axis so the world sprite appears where the magnified HUD weapon draws the bone.
-	float ratio = _cos(deg2rad(0.5f*psHUD_FOV*Device.fFOV)) / _cos(deg2rad(0.5f*Device.fFOV));
+	float ratio = _cos(deg2rad(0.5f*psHUD_FOV*Device.fFOV_HUD)) / _cos(deg2rad(0.5f*Device.fFOV));
 	float s = 1.f + (ratio - 1.f) * koef;
 	perp.mul(s);
 	p.add(cpos, par);	p.add(perp);

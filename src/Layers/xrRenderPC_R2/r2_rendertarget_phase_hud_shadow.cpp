@@ -108,7 +108,7 @@ void CRenderTarget::phase_hud_shadow	(light* L)
 	Fmatrix	m_hud;
 	extern ENGINE_API float		psHUD_FOV;
 	m_hud.build_projection		(
-		deg2rad(psHUD_FOV*Device.fFOV),
+		deg2rad(psHUD_FOV*Device.fFOV_HUD),
 		Device.fASPECT, VIEWPORT_NEAR,
 		g_pGamePersistent->Environment().CurrentEnv->far_plane);
 

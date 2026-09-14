@@ -359,6 +359,17 @@ void CCameraManager::ApplyDevice (float _viewport_near)
 	if (g_pGamePersistent && g_pGamePersistent->ComputeLensFrame(lens_fov))
 		fov_now					= lens_fov;
 
+	// THE HUD DOES NOT HAVE TO FOLLOW THE WORLD. psHUD_FOV is a FRACTION of the fov the world is drawn
+	// with, so anything that magnifies the world magnifies the weapon in hand with it -- and a 2D scope
+	// magnifies the world a great deal. The 3D lens never had that problem: its magnification lives
+	// inside the lens texture and the presented frame stays at the base fov, which is why the weapon
+	// holds still there. This gives the flat scope the same deal -- the game hands back the fov the HUD
+	// should keep, and the override is left to the world alone.
+	float hud_fov_base;
+	Device.fFOV_HUD				= (g_pGamePersistent && g_pGamePersistent->HudFovBase(hud_fov_base) && hud_fov_base > EPS_S)
+								? hud_fov_base
+								: fov_now;
+
 	// projection
 	Device.fFOV					= fov_now;
 	Device.fASPECT				= m_cam_info.fAspect;

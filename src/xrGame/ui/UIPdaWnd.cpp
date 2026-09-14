@@ -631,7 +631,7 @@ void CUIPdaWnd::Update()
 		{
 			CWeapon* w = smart_cast<CWeapon*>(hi);
 			Msg("~ pda: zoomed=%d  GetHudFov=%.3f  psHUD_FOV=%.3f  Device.fFOV=%.1f  -> hud %.1f deg",
-				w ? (int)w->IsZoomed() : -1, hi->GetHudFov(), psHUD_FOV, Device.fFOV, psHUD_FOV*Device.fFOV);
+				w ? (int)w->IsZoomed() : -1, hi->GetHudFov(), psHUD_FOV, Device.fFOV, psHUD_FOV*Device.fFOV_HUD);
 		}
 	}
 

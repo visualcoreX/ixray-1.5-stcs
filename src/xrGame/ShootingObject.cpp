@@ -352,7 +352,7 @@ extern ENGINE_API float psHUD_FOV;	// hud fov as a fraction of the world fov
 // from the camera untouched, so the point keeps the very screen position that was wrong.
 static void SmokePointWorldToHud(Fvector& p)
 {
-	const float t_hud = tanf(deg2rad(0.5f * psHUD_FOV * Device.fFOV));
+	const float t_hud = tanf(deg2rad(0.5f * psHUD_FOV * Device.fFOV_HUD));
 	const float t_wld = tanf(deg2rad(0.5f * Device.fFOV));
 	if (t_hud <= EPS_L || t_wld <= EPS_L)	return;
 

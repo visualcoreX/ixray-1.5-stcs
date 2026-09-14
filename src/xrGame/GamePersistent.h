@@ -87,6 +87,7 @@ public:
 	virtual void		RenderFirstPersonLegs	();	// g_legs: the invisible actor's stand-in body
 	virtual bool		OnRenderScopeActive		();	// 3D PiP scope: true while aiming through a lensed scope
 	virtual bool		ComputeLensFrame		(float& out_fov);	// 3D PiP double-render: decide lens frame + magnified FOV
+	virtual bool		HudFovBase				(float& out_fov);	// 2D scope: the fov the WEAPON keeps while the world zooms
 	virtual	void		LoadTitle				(LPCSTR str);
 
 	virtual bool		CanBePaused				();

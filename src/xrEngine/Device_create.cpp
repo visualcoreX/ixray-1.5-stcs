@@ -138,6 +138,7 @@ void CRenderDevice::Create	()
 	fWidth_2			= float(dwWidth/2)			;
 	fHeight_2			= float(dwHeight/2)			;
 	fFOV				= 90.f;
+	fFOV_HUD			= 90.f;
 	fASPECT				= 1.f;
 
 	string_path			fname; 
@@ -181,6 +182,7 @@ void CRenderDevice::Create	()
 #endif // #ifdef _EDITOR
 
 	fFOV				= 90.f;
+	fFOV_HUD			= 90.f;
 	fASPECT				= 1.f;
 	m_pRender->Create	(
 		m_hWnd,

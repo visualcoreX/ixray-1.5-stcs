@@ -174,6 +174,9 @@ public:
 	// if so, output the magnified scope FOV (degrees) to render the world at. Sets m_bLensFrameNow. The engine
 	// calls this at camera-apply (CCameraManager::ApplyDevice) and overrides the scene FOV with out_fov.
 	virtual bool					ComputeLensFrame	(float& out_fov) { out_fov = 0.f; return false; }
+	// The fov the HUD (the weapon in hand) is to be drawn with, when it must NOT follow the world's.
+	// false = follow the camera as usual. See CCameraManager::ApplyDevice.
+	virtual bool					HudFovBase			(float& out_fov) { out_fov = 0.f; return false; }
 
 	// Actor self-shadow suppression. The shadow is cast by drawing the view entity into the shadow map
 	// (r__dsgraph_render), and the renderer has no way to ask the GAME whether a cutscene is running --

@@ -823,6 +823,25 @@ bool CGamePersistent::OnRenderScopeActive()
 // costs the same at any N, so this changes smoothness, never the framerate. See console_commands.cpp.
 int g_lens_render_factor = 2;
 
+// A 2D optic magnifies by narrowing the WORLD fov, and psHUD_FOV would drag the weapon in hand along
+// with it: the gun grows into the screen as the aim goes in, then vanishes behind the scope picture.
+// Aiming a 3D lens never does that (the presented frame is never magnified), and that is the behaviour
+// asked for here -- so while a flat scope is being aimed, the HUD keeps the base fov and only the world
+// moves. Iron sights are deliberately left alone: their modest zoom carrying the weapon with it IS the
+// stock ADS look.
+bool CGamePersistent::HudFovBase(float& out_fov)
+{
+	if (!g_pGameLevel || !Level().bReady)					return false;
+	CActor* a = smart_cast<CActor*>(Level().CurrentControlEntity());
+	if (!a || a->cam_ActiveStyle() != eacFirstEye)			return false;
+	CWeapon* w = smart_cast<CWeapon*>(a->inventory().ActiveItem());
+	if (!w || !w->UseScopeTexture() || !w->IsScopeAttached())	return false;
+	if (!w->IsZoomed() && w->ScopeFadeFactor() <= 0.f)		return false;
+	extern float g_fov;
+	out_fov = g_fov;
+	return true;
+}
+
 bool CGamePersistent::ComputeLensFrame(float& out_fov)
 {
 	m_bLensFrameNow = false;
