@@ -130,7 +130,17 @@ void  TContactShotMark(CDB::TRI* T,dContactGeom* c)
 						if(!mtl_pair->CollideSounds.empty())
 						{
 							float volume=collide_volume_min+vel_cret*(collide_volume_max-collide_volume_min)/(_sqrt(mass_limit)*default_l_limit-Pars::vel_cret_sound);
-							GET_RANDOM(mtl_pair->CollideSounds).play_no_feedback(0,0,0,((Fvector*)c->pos),&volume);
+							// A falling object touches down on several contact points, and a contact is
+							// generated per point per frame, so play_no_feedback let ONE dropped weapon
+							// fire a whole chorus of clatter at once. Route it through the object's own
+							// sound player, which holds exactly one collision sound at a time (the same
+							// rule the passable-material branch below has always used). Nothing owns the
+							// contact (no ph_ref_object) -> the old fire-and-forget path, unchanged.
+							CPHSoundPlayer* sp = data->ph_ref_object ? data->ph_ref_object->ph_sound_player() : NULL;
+							if(sp)
+								sp->Play(mtl_pair,*(Fvector*)c->pos,volume);
+							else
+								GET_RANDOM(mtl_pair->CollideSounds).play_no_feedback(0,0,0,((Fvector*)c->pos),&volume);
 						}
 					}
 				}

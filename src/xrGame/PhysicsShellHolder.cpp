@@ -18,6 +18,7 @@
 #include "physics_shell_animated.h"
 
 #include "../xrEngine/iphysicsshell.h"
+#include "PHSoundPlayer.h"
 
 CPhysicsShellHolder::CPhysicsShellHolder()
 {
@@ -123,6 +124,22 @@ void CPhysicsShellHolder::init			()
 {
 	m_pPhysicsShell				=	NULL		;
 	b_sheduled					=	false		;
+	m_collide_sound_player		=	NULL		;
+}
+
+CPhysicsShellHolder::~CPhysicsShellHolder()
+{
+	xr_delete					(m_collide_sound_player);
+}
+
+// The collision-sound slot of this object. One sound at a time lives in it, which is what stops a
+// dropped weapon (several contact points, a contact each frame) from firing a chorus of clatter.
+CPHSoundPlayer* CPhysicsShellHolder::ph_sound_player()
+{
+	if(!m_collide_sound_player)
+		m_collide_sound_player = xr_new<CPHSoundPlayer>(this);
+
+	return m_collide_sound_player;
 }
 bool	 CPhysicsShellHolder::has_shell_collision_place( const CPhysicsShellHolder* obj ) const
 {

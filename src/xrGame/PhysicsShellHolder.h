@@ -55,6 +55,7 @@ public:
 
 
 	CPhysicsShellHolder							();
+	virtual										~CPhysicsShellHolder	();
 
 
 
@@ -77,7 +78,11 @@ public:
 	virtual CPhysicsShellHolder			*cast_physics_shell_holder	()							{return this;}
 	virtual CParticlesPlayer			*cast_particles_player		()							{return this;}
 	virtual IDamageSource				*cast_IDamageSource			()							{return NULL;}
-	virtual CPHSoundPlayer				*ph_sound_player			()  						{return NULL;}
+	// Every physical object gets one, not just the living ones: it is what keeps a single object to a
+	// single collision sound at a time (see CPHSoundPlayer::Play). Built on first use -- most objects
+	// in a level never collide with anything audible. CEntityAlive overrides this with the one its
+	// character support owns.
+	virtual CPHSoundPlayer				*ph_sound_player			()							;
 	virtual	CCharacterPhysicsSupport	*character_physics_support	()							{return NULL;}
 	virtual	const CCharacterPhysicsSupport	*character_physics_support	() const					{return NULL;}
 	virtual	CIKLimbsController			*character_ik_controller	()							{return NULL;}
@@ -112,6 +117,9 @@ public:
 	virtual void			save				(NET_Packet &output_packet);
 	virtual void			load				(IReader &input_packet);
 			void			init				();
+private:
+	CPHSoundPlayer					*m_collide_sound_player;	// see ph_sound_player()
+public:
 
 	virtual void			OnChangeVisual		();
 	//для наследования CParticlesPlayer
