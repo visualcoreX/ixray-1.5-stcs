@@ -241,6 +241,18 @@ class cl_zoom_deviation : public R_constant_setup {
 };
 static cl_zoom_deviation	binder_zoom_deviation;
 
+// The eye-relief crescent, the same constant the post-process pass uses for a flat scope: xy = how far
+// the exit pupil has drifted off the axis in units of the glass radius, z = how soft that edge is.
+// model_scope_lense.ps shades the lens with it so a 3D optic darkens exactly like the 2D one.
+class cl_scope_shadow : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent)	RCache.set_c (C, g_pGamePersistent->pp_scope_shadow);
+		else					RCache.set_c (C, 0.f, 0.f, 0.f, 0.f);
+	}
+};
+static cl_scope_shadow	binder_scope_shadow;
+
 // Gunslinger m_digiclock (r_constants.pas binder_digiclock_setup): the in-game clock drawn on electronic
 // weapon displays -- the gauss MUI's digit screens (models_digiclock_{hh,hl,mh,ml}_screen). Each channel is
 // one digit as an atlas offset 0.0..0.9; the digit shader samples s_base at digit + tc.x*0.1.
@@ -351,6 +363,7 @@ class cl_hemi_color	: public R_constant_setup {
 		RCache.set_c	(C,result);
 	}
 };	static cl_hemi_color		binder_hemi_color;
+
 #endif
 
 static class cl_screen_res : public R_constant_setup		
@@ -408,6 +421,7 @@ void	CBlender_Compile::SetMapping	()
 	// Gunslinger 3D PiP scope lens shader constants
 	r_Constant				("m_hud_params",	&binder_hud_params);
 	r_Constant				("m_zoom_deviation",&binder_zoom_deviation);
+	r_Constant				("m_scope_shadow",	&binder_scope_shadow);
 	r_Constant				("m_digiclock",		&binder_digiclock);
 
 	// eye-params

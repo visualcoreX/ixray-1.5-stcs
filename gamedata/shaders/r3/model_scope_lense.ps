@@ -3,6 +3,52 @@
 uniform	float4 		m_hud_params;
 uniform	float4 		m_zoom_deviation;
 
+// EYE RELIEF, from the same constant the flat scope's post-process reads (postprocess.ps
+// pp_scope_shadow): xy = how far the exit pupil has drifted off the optic's axis, in units of the glass
+// radius, z = how soft that edge is. The lens draws its picture on the ocular itself, so the crescent
+// has to be shaded HERE -- while a 3D optic is up the pp pass has no eyepiece circle to work inside.
+uniform	float4 		m_scope_shadow;
+#define LENS_REST_RIM 0.875f		// where the shading sits with the eye centred (1.0 = none at all)
+// The VISIBLE aperture, in the mesh's own uv. The lens quad is square and its uv runs the full 0..1, but
+// the hole you actually look through is smaller -- the ocular ring covers the rest. Measured off the
+// reticle texture's alpha (it is what the shader composites the ring with): on the G36 the art is still
+// clear at 0.40 and fully opaque by 0.475, and the ELCAN and PSO close at the same place. Taking the
+// quad's inscribed circle (0.5) instead put the whole falloff outside the hole -- the crescent was
+// computed, and never reached a pixel anyone could see.
+#define LENS_GLASS_R  0.44f
+#define LENS_DIST_R0  0.45f		// the middle of the glass this distortion does not touch at all
+
+// The GLASS CURVATURE, the same shape the flat scope gets (postprocess.ps pp_zoom_uv): the middle of the
+// field is left flat -- that is the part you aim with -- and the rim is pulled OUT, sampling from further
+// in so what sits there is stretched. The radius is measured in the ocular's own uv; what gets bent is
+// the coordinate the capture is sampled with. m_scope_shadow.w carries the strength (0 = a flat lens),
+// the same scope_2d_distortion the 2D picture uses -- it describes the glass, not the mode.
+
+// 1 = lit, 0 = in the shadow. uv is the ocular's own space: after the aspect correction the disc is
+// 0..1 on both axes, so its centre is 0.5 and its radius 0.5.
+float2 lens_warp_uv(float2 uv, float2 glass)
+{
+	if (m_scope_shadow.w <= 0.0001f)	return uv;
+	float r = length(glass - 0.5f) / LENS_GLASS_R;		// 0 at the centre, 1 at the aperture
+	float t = saturate((r - LENS_DIST_R0) / (1.0f - LENS_DIST_R0));
+	float k = 1.0f - m_scope_shadow.w * t * t;
+	return 0.5f + (uv - 0.5f) * k;
+}
+
+float lens_scope_shadow(float2 uv)
+{
+	// Nothing published -- the eye is off this optic (the alter sight, a holstered weapon). Without this
+	// the softness fell to zero and the falloff became a hard edge: a black ring snapped onto the rim of
+	// the glass the moment the backup sight came up. The flat scope's pp_scope_shadow has the same guard.
+	if (m_scope_shadow.z <= 0.0f)		return 1.0f;
+	float  soft	= max(m_scope_shadow.z, 0.01f);
+	float2 pupil= 0.5f + m_scope_shadow.xy * LENS_GLASS_R;	// where the eye is looking from
+	float  rad	= LENS_GLASS_R * LENS_REST_RIM / (1.0f - soft);	// ...and how much of the glass it still sees
+	float  d	= length(uv - pupil) / rad;
+	return 1.0f - smoothstep(1.0f - soft, 1.0f, d);
+}
+
+
 struct 	v2p
 {
  	float2 	tc0: 		TEXCOORD0;	// base
@@ -33,31 +79,67 @@ float random(float2 co)
 
 float4 main( v2p I ) : SV_Target
 {
+	// the ocular's own uv, before the sway and the aspect squeeze below: the glass is 0..1 here
+	float2 uv_glass = I.tc0.xy;
 	if (m_hud_params.y * m_hud_params.a < 0.0001) return float4 (0,0,0,0);
-	
-	float4	t_base 		= s_base.Sample		( smp_base, I.tc0);		// Текстура сетки	
-	
-	//сдвиг от состояния оружия
-	I.tc0.x	= I.tc0.x+m_zoom_deviation.x;
-	I.tc0.y	= I.tc0.y+m_zoom_deviation.y;	
-	
-	// Растягиваем картинку в линзе так, чтобы на любом разрешении экрана были правильные пропорции
-	I.tc0.x = resize(I.tc0.x, screen_res.x/screen_res.y, 0);
-	
-	float4	t_vp2	 = s_vp2.Sample	( smp_base, I.tc0);  			// Изображение со второго вьюпорта
 
-	float2 offset = distance(I.tc0, float2( .5f, .5f ))*float2(m_hud_params.z, m_hud_params.z);
-	
-	t_vp2.r = s_vp2.Sample	( smp_base, I.tc0+offset).r;
-	t_vp2.b = s_vp2.Sample	( smp_base, I.tc0-offset).b;
-	
+	float4	t_base 		= s_base.Sample		( smp_base, I.tc0);		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+
+	//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+	I.tc0.x	= I.tc0.x+m_zoom_deviation.x;
+	I.tc0.y	= I.tc0.y+m_zoom_deviation.y;
+
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	I.tc0.x = resize(I.tc0.x, screen_res.x/screen_res.y, 0);
+	I.tc0 = lens_warp_uv(I.tc0, uv_glass);	// the glass bends what it looks at
+
+	float4	t_vp2	 = s_vp2.Sample	( smp_base, I.tc0);  			// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+
+	float  dist   = distance(I.tc0, float2( .5f, .5f ));
+	float2 offset = dist*float2(m_hud_params.z, m_hud_params.z)*0.5f;
+	float2 blur   = offset*0.5f;
+
+	t_vp2.r = ( s_vp2.Sample	( smp_base, I.tc0+offset-blur).r
+	          + s_vp2.Sample	( smp_base, I.tc0+offset).r
+	          + s_vp2.Sample	( smp_base, I.tc0+offset+blur).r ) / 3.0f;
+	t_vp2.g = ( s_vp2.Sample	( smp_base, I.tc0-blur).g
+	          + t_vp2.g
+	          + s_vp2.Sample	( smp_base, I.tc0+blur).g ) / 3.0f;
+	t_vp2.b = ( s_vp2.Sample	( smp_base, I.tc0-offset-blur).b
+	          + s_vp2.Sample	( smp_base, I.tc0-offset).b
+	          + s_vp2.Sample	( smp_base, I.tc0-offset+blur).b ) / 3.0f;
+
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (purple fringing) пїЅ пїЅпїЅпїЅпїЅпїЅ bloom-пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅ lighten), пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+	float edge_amount   = 0.2f;
+	float luma          = dot(t_vp2.rgb, float3(0.299f, 0.587f, 0.114f));
+
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ) - пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (bloom)
+	const float2 glow_r  = float2(0.004f, 0.0f);
+	const float2 glow_u  = float2(0.0f, 0.004f);
+	float3 n0            = s_vp2.Sample	( smp_base, I.tc0+glow_r).rgb;
+	float3 n1            = s_vp2.Sample	( smp_base, I.tc0-glow_r).rgb;
+	float3 n2            = s_vp2.Sample	( smp_base, I.tc0+glow_u).rgb;
+	float3 n3            = s_vp2.Sample	( smp_base, I.tc0-glow_u).rgb;
+	float  neighbor_luma = max( max( dot(n0, float3(0.299f,0.587f,0.114f)), dot(n1, float3(0.299f,0.587f,0.114f)) ),
+	                            max( dot(n2, float3(0.299f,0.587f,0.114f)), dot(n3, float3(0.299f,0.587f,0.114f)) ) );
+
+	float glow          = saturate((neighbor_luma-0.4f) * 3.5f);	// пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	float dark          = saturate(0.65f - luma);					// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+	float fringe_amount = edge_amount * glow * dark;
+
+	t_vp2.r = saturate(t_vp2.r + fringe_amount*0.15f);
+	t_vp2.g = t_vp2.g * (1.0f - fringe_amount*0.25f);
+	t_vp2.b = saturate(t_vp2.b + fringe_amount*0.65f);
+
 	float3	final	 = float3(0, 0, 0);
 	
-	float3 	base	= lerp	(t_vp2, t_base, t_base.a);		// Сетку с вьюпортом
+	float3 	base	= lerp	(t_vp2, t_base, t_base.a);		// пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	final	= base;
 
-		
-	
+	// ...and the eye drifts off the axis: darken the far side of the glass. Applied to the finished
+	// image, so the reticle rides on it exactly as it does behind the flat scope's crescent.
+	final	*= lens_scope_shadow(uv_glass);
+
 	// out
 	return  float4	(final.r, final.g, final.b, min(m_hud_params.y, m_hud_params.a));
 }
