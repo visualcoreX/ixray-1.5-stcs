@@ -38,6 +38,7 @@ void	CRenderTarget::phase_smap_direct		(light* L, u32 sub_phase)
 			(unsigned int) (L->X.D.maxY - L->X.D.minY) ,
 			0,1 };
 		//CHK_DX								(HW.pDevice->SetViewport(&VP));
+	RCache.set_Scissor(NULL);	// shadow-map space -- a screen rectangle means nothing here
 		HW.pDevice->RSSetViewports(1, &VP);
 	}
 

@@ -638,12 +638,26 @@ void					CRender::rmFar				()
 	HW.pDevice->RSSetViewports(1, &VP);
 	//CHK_DX				(HW.pDevice->SetViewport(&VP));
 }
+// A 3D PiP lens frame is only ever looked at through the lens, which shows a centred square of it
+// (model_scope_lense.ps compresses x by the aspect). CRender::Render works out that rectangle and
+// clears it afterwards; everything outside it is rendered and discarded, so it is not drawn at all.
+Irect	g_lens_scissor;
+bool	g_lens_scissor_on	= false;
+// Frames the player was actually shown. The luminance and combine buffers are cycled by frame
+// number, so a lens frame -- rendered at the scope FOV and never presented -- would take its turn
+// in that cycle and hand the next shown frame an exposure adapted to a zoomed view.
+u32		g_frame_shown		= 0;
+
+
 void					CRender::rmNormal			()
 {
 	IRender_Target* T	=	getTarget	();
 	D3D_VIEWPORT VP		= {0,0,T->get_width(),T->get_height(),0,1.f };
 
 	HW.pDevice->RSSetViewports(1, &VP);
+	// back on the screen viewport -- so this is where the lens rectangle goes back on, after every
+	// shadow or light phase that cleared it
+	if (g_lens_scissor_on)	RCache.set_Scissor(&g_lens_scissor);
 	//CHK_DX				(HW.pDevice->SetViewport(&VP));
 }
 

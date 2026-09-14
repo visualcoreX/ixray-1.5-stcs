@@ -214,6 +214,34 @@ void CRender::Render		()
 	g_r						= 1;
 	VERIFY					(0==mapDistort.size());
 
+	// On a lens frame, draw only what the lens shows: a centred square of side = screen height, moved
+	// by the sway the shader adds before sampling (m_zoom_deviation -- dev * height in pixels on both
+	// axes, since it divides x by the aspect), widened for the chromatic taps and a few pixels so
+	// filtering never reaches an unrendered edge.
+	{
+		extern Irect	g_lens_scissor;
+		extern bool		g_lens_scissor_on;
+		g_lens_scissor_on = (g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow);
+		extern u32	g_frame_shown;
+		if (!g_lens_scissor_on)	g_frame_shown++;	// this one reaches the screen; a lens frame does not
+		if (g_lens_scissor_on)
+		{
+			const int w = (int)Device.dwWidth, h = (int)Device.dwHeight;
+			const int side = (h < w) ? h : w;
+			const float fh = float(h);
+			const int dx = iFloor(g_pGamePersistent->hud_zoom_deviation.x * fh + 0.5f);
+			const int dy = iFloor(g_pGamePersistent->hud_zoom_deviation.y * fh + 0.5f);
+			const int m  = iFloor(_abs(g_pGamePersistent->hud_scope_params.z) * fh + 0.5f) + 4;
+			int x0 = (w-side)/2 + dx - m, x1 = (w+side)/2 + dx + m;
+			int y0 = (h-side)/2 + dy - m, y1 = (h+side)/2 + dy + m;
+			clamp(x0, 0, w);  clamp(x1, 0, w);
+			clamp(y0, 0, h);  clamp(y1, 0, h);
+			if (x1 <= x0 || y1 <= y0)	g_lens_scissor_on = false;	// nothing to clip to -- draw it all
+			else						g_lens_scissor.set(x0, y0, x1, y1);
+		}
+		if (!g_lens_scissor_on)	RCache.set_Scissor(NULL);
+	}
+
 	rmNormal();
 
 	bool	_menu_pp		= g_pGamePersistent?g_pGamePersistent->OnRenderPPUI_query():false;

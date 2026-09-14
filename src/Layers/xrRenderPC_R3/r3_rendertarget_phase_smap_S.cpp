@@ -20,6 +20,7 @@ void	CRenderTarget::phase_smap_spot		(light* L)
 	else								VERIFY(!"Use HW SMap only for DX10!");
 	D3D_VIEWPORT VP					=	{ (int) L->X.S.posX, (int) L->X.S.posY,L->X.S.size,L->X.S.size,0,1 };
 	//CHK_DX								(HW.pDevice->SetViewport(&VP));
+	RCache.set_Scissor(NULL);	// shadow-map space -- a screen rectangle means nothing here
 	HW.pDevice->RSSetViewports(1, &VP);
 
 	// Misc		- draw only front-faces //back-faces
