@@ -10,6 +10,8 @@
 #include "../xrEngine/fdemorecord.h"
 #include "level.h"
 #include "xr_level_controller.h"
+#include "actor.h"
+#include "actor_flags.h"
 #include "game_cl_base.h"
 #include "stalker_movement_manager_smart_cover.h"
 #include "Inventory.h"
@@ -506,12 +508,14 @@ void CLevel::IR_OnActivate()
 {
 	if(!pInput) return;
 	int i;
+	bool sprint_key_held = false;
 	for (i = 0; i < CInput::COUNT_KB_BUTTONS; i++ )
 	{
 		if(IR_GetKeyState(i))
 		{
 
 			EGameActions action = get_binded_action(i);
+			if (action == kSPRINT_TOGGLE)	sprint_key_held = true;
 			switch (action){
 			case kFWD			:
 			case kBACK			:
@@ -531,6 +535,20 @@ void CLevel::IR_OnActivate()
 				}break;
 			};
 		};
+	}
+
+	// "Sprint on hold": while a window owns the input the key's RELEASE is delivered to that window,
+	// and CActor::IR_OnKeyboardRelease -- the only place that clears mcSprint in this mode -- never
+	// hears it. Open the inventory mid-run, let go, close it, and the actor was still sprinting.
+	// Input has just come back, so the state can simply be re-read: the key is either still down, in
+	// which case the per-frame hold poll keeps the sprint going by itself, or it is not, and the
+	// sprint ends now. The loop above deliberately leaves kSPRINT_TOGGLE out of its re-press list --
+	// in toggle mode a re-press would flip the sprint OFF -- so only this direction is handled, and
+	// only in hold mode, where letting go is what stopping means.
+	if (!sprint_key_held && psActorFlags.test(AF_GS_SPRINT))
+	{
+		if (CActor* pA = smart_cast<CActor*>(CurrentEntity()))
+			pA->StopSprint();
 	}
 }
 
