@@ -79,6 +79,13 @@ void CWeaponKnife::OnStateSwitch	(u32 S)
 	case eHidden:
 		switch2_Hidden	();
 		break;
+	case eActionAnim:
+		// A plain one-shot over the idle pose, fire-locked until it ends -- the deal
+		// CWeaponMagazined::switch2_ActionAnim makes, minus the reload/detector bookkeeping.
+		SetPending		(TRUE);
+		if (m_action_anim.size())
+			PlayHUDMotion(m_action_anim, TRUE, this, S);
+		break;
 	case eFire:
 		{
 			//-------------------------------------------
@@ -189,6 +196,15 @@ void CWeaponKnife::OnMotionMark(u32 state, const motion_marks& M)
 	}
 }
 
+bool CWeaponKnife::PlayHudActionAnim(LPCSTR base)
+{
+	if (GetState() != eIdle || IsPending())		return false;	// not over a strike, a draw or a suicide
+	if (!isHUDAnimationExist(base))				return false;	// no such alias -> let the caller fall back
+	m_action_anim	= base;
+	SwitchState		(eActionAnim);
+	return true;
+}
+
 void CWeaponKnife::OnAnimationEnd(u32 state)
 {
 	// GS CWeaponKnife__OnAnimationEnd: the cut is lethal the moment its animation ends
@@ -215,6 +231,8 @@ void CWeaponKnife::OnAnimationEnd(u32 state)
 
 	case eShowing:
 	case eIdle:		SwitchState(eIdle);		break;	
+
+	case eActionAnim:	SwitchState(eIdle);	break;	// gesture over -> idle clears pending
 
 	default:		inherited::OnAnimationEnd(state);
 	}

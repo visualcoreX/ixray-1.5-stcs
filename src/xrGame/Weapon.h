@@ -563,6 +563,11 @@ public:
 	// this ramp instead. Reads 0 the moment aim is released (the way out is unchanged).
 			float			ScopeFadeFactor		() const;
 public:
+	// One-shot fire-locked HUD gesture (the headlamp / night-vision toggles). Every weapon inherits the
+	// eActionAnim state, but the machinery behind it lives in the subclasses -- CWeaponMagazined has its
+	// own, CWeaponKnife has a three-line version. Anything else says "not mine" and the caller falls
+	// back to the generic left-hand animator.
+	virtual bool	PlayHudActionAnim	(LPCSTR base)	{ return false; }
 	// The 2D scope picture is on screen (and the weapon behind it hidden). The aim rotation factor
 	// hits 1 before the hands have finished coming up, so this waits scope_2d_show_delay past it.
 	bool			Scope2DReady		() const;

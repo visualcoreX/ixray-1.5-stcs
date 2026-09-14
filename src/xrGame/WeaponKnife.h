@@ -17,6 +17,13 @@ protected:
 
 	virtual void		OnAnimationEnd				(u32 state);
 public:
+	// The headlamp / night-vision gestures (anm_headlamp_on/off, anm_nv_on/off -> knife_headflash in
+	// [wpn_knife_hud]). The knife inherits eActionAnim from CWeapon but none of CWeaponMagazined's
+	// machinery, which is why the toggles used to leave the hand standing still with a knife out.
+	virtual bool		PlayHudActionAnim			(LPCSTR base);
+protected:
+	shared_str			m_action_anim;				// the gesture eActionAnim is playing
+public:
 	// --- GS controller suicide, knife branch (ControllerMonster + WeaponEvents CWeaponKnife hooks):
 	// anm_prepare_suicide (blade to the throat) -> anm_selfkill (cut) -> the actor dies when THAT
 	// animation ends. anm_stop_suicide lowers it again when the grab breaks. Returns the gesture's

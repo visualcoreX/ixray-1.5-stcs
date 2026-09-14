@@ -1232,6 +1232,8 @@ void CActor::SwitchNightVision()
 	CCustomDetector* det = gwr_active_detector();
 	CWeaponMagazined* wpn = smart_cast<CWeaponMagazined*>(ai);
 	CMissile* msl = smart_cast<CMissile*>(ai);
+	CWeapon* hnd = (!wpn && !msl && ai) ? smart_cast<CWeapon*>(ai) : NULL;	// the knife, and anything like it
+
 	CHudItem* pda = gwr_pda_device_gesture(ai, base);				// PDA phantom plays its own gesture (skips the phantom)
 	// GS OnActorSwithesSmth (ActorUtils.pas:871): the gesture is played on the ITEM IN HAND, and the
 	// detector only MIRRORS it through the companion table (its anm_lefthand_<det>_wpn_nv_on = our
@@ -1241,10 +1243,17 @@ void CActor::SwitchNightVision()
 	bool played = (pda != NULL);
 	if (!played && wpn)	{ played = wpn->PlayHudActionAnim(base);	if (played) gesture = wpn; }	// weapon in the right hand
 	if (!played && msl)	{ played = msl->PlayHudActionAnim(base);	if (played) gesture = msl; }	// bolt/grenade in the right hand
+	// ...and anything ELSE held in the right hand that carries the gesture. The knife does -- its hud
+	// section names all four (anm_headlamp_on/off, anm_nv_on/off = knife_headflash) -- but a knife is a
+	// CWeapon, not a CWeaponMagazined, so the two casts above walked straight past it and the device
+	// toggled with the hand standing still. Anything without the alias returns false and falls through.
+	bool hand_played = false;
+	if (!played && hnd)	{ played = hnd->PlayHudActionAnim(base);	hand_played = played;
+						  if (played) gesture = hnd; }									// knife/binoculars/...
 	if (!played && det)	{ det->PlayHudActionAnim(base);				gesture = det; }			// detector alone (or the item has no gesture)
 	// generic left-hand headflash for empty hands OR a non-weapon item (knife/grenade/bolt/binoc);
 	// never over a real (magazined) weapon, an out detector, or the PDA (it plays its own)
-	gwr_call_action_animator("gwr_eatable.on_nv_switch", desired, det == NULL && wpn == NULL && pda == NULL);
+	gwr_call_action_animator("gwr_eatable.on_nv_switch", desired, det == NULL && wpn == NULL && pda == NULL && !hand_played);
 
 	// GS NVCallback: the goggles flip at lock_time_start_<gesture>, not on the keypress
 	const u32 nv_delay = gwr_gesture_lock_start(gesture, base, (g_torch_switch_delay > 0) ? (u32)g_torch_switch_delay : 0);
@@ -1299,6 +1308,8 @@ void CActor::SwitchTorch()
 	CCustomDetector* det = gwr_active_detector();
 	CWeaponMagazined* wpn = smart_cast<CWeaponMagazined*>(ai);
 	CMissile* msl = smart_cast<CMissile*>(ai);
+	CWeapon* hnd = (!wpn && !msl && ai) ? smart_cast<CWeapon*>(ai) : NULL;	// the knife, and anything like it
+
 	CHudItem* pda = gwr_pda_device_gesture(ai, base);				// PDA phantom plays its own gesture (skips the phantom)
 	// Same as the NV toggle above (GS OnActorSwithesSmth): the WEAPON plays anm_headlamp_on/off and the
 	// detector mirrors it as a companion, instead of the detector taking the gesture and the right hand
@@ -1307,10 +1318,17 @@ void CActor::SwitchTorch()
 	bool played = (pda != NULL);
 	if (!played && wpn)	{ played = wpn->PlayHudActionAnim(base);	if (played) gesture = wpn; }	// weapon in the right hand
 	if (!played && msl)	{ played = msl->PlayHudActionAnim(base);	if (played) gesture = msl; }	// bolt/grenade in the right hand
+	// ...and anything ELSE held in the right hand that carries the gesture. The knife does -- its hud
+	// section names all four (anm_headlamp_on/off, anm_nv_on/off = knife_headflash) -- but a knife is a
+	// CWeapon, not a CWeaponMagazined, so the two casts above walked straight past it and the device
+	// toggled with the hand standing still. Anything without the alias returns false and falls through.
+	bool hand_played = false;
+	if (!played && hnd)	{ played = hnd->PlayHudActionAnim(base);	hand_played = played;
+						  if (played) gesture = hnd; }									// knife/binoculars/...
 	if (!played && det)	{ det->PlayHudActionAnim(base);				gesture = det; }			// detector alone (or the item has no gesture)
 	// generic left-hand headflash for empty hands OR a non-weapon item (knife/grenade/bolt/binoc);
 	// never over a real (magazined) weapon, an out detector, or the PDA (it plays its own)
-	gwr_call_action_animator("gwr_eatable.on_headlamp_switch", desired, det == NULL && wpn == NULL && pda == NULL);
+	gwr_call_action_animator("gwr_eatable.on_headlamp_switch", desired, det == NULL && wpn == NULL && pda == NULL && !hand_played);
 
 	// GS HeadlampCallback: the lamp flips at lock_time_start_<gesture> (the ak74 keys 0.58 s, well past
 	// our old flat 350 ms), so the light comes on as the hand reaches the switch

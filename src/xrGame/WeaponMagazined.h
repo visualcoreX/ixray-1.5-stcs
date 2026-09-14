@@ -47,7 +47,7 @@ protected:
 public:
 	// Play a one-shot fire-locked HUD gesture (headlamp/NV toggle) on this weapon. Returns
 	// false (so the caller can fall back to the generic left-hand animator) if the weapon is
-	// busy or the config has no matching anm_* alias.
+	// busy or the config has no matching anm_* alias. Declared on CWeapon -- the knife plays these too.
 	virtual bool	PlayHudActionAnim	(LPCSTR base);
 
 	// --- GS controller suicide (wpnpatch ControllerMonster.pas). The actor drives the sequence
