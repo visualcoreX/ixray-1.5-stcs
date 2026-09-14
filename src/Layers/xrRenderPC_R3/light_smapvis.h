@@ -27,6 +27,10 @@ public:
 	void			flushoccq	();			// should be called when no rendering of light is supposed
 
 	void			resetoccq	();
+	// Give back a query whose result nobody will read -- the light moved (spatial_move -> invalidate)
+	// or is going away. flushoccq() cannot do it: by then state/testQ_V have already been cleared and
+	// it returns at the first line, leaving the slot lost until the next vid_restart.
+	void			dropoccq	();
 
 	IC	bool		sleep		()			{ return Device.dwFrame > frame_sleep; }
 

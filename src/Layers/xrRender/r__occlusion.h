@@ -41,4 +41,8 @@ public:
 	u32				occq_begin		(u32&	ID		);	// returns 'order'
 	void			occq_end		(u32&	ID		);
 	occq_result		occq_get		(u32&	ID		);
+	// Hand a query back WITHOUT reading it: its owner is gone (a light destroyed or switched off
+	// while its test was still pending) and nobody will ever call occq_get for this ID. Leaked
+	// slots never return to the pool until the next vid_restart.
+	void			occq_cancel	(u32&	ID		);
 };

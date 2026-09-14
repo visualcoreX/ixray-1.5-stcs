@@ -4,6 +4,10 @@
 
 		smapvis::smapvis	()
 {
+	// before invalidate(): it now calls dropoccq(), which reads these
+	testQ_V					= 0;
+	testQ_id				= 0;
+	testQ_frame				= 0;
 	invalidate				();
 	frame_sleep				= 0;
 }
@@ -14,6 +18,9 @@
 }
 void	smapvis::invalidate	()
 {
+	// Called from light::spatial_move(), i.e. whenever the light moves. Dropping state and testQ_V
+	// here is what makes the next flushoccq() a no-op, so the query in flight has to go back NOW.
+	dropoccq	();
 	state		=	state_counting;
 	testQ_V		=	0;
 	frame_sleep	=	Device.dwFrame + ps_r__LightSleepFrames;
@@ -29,6 +36,7 @@ void	smapvis::begin		()
 		break;
 	case state_working:
 		// mark already known to be invisible visuals, set breakpoint
+		dropoccq						();		// normally nothing to do: the flush block ran first
 		testQ_V							= 0;
 		testQ_id						= 0;
 		mark							();
@@ -99,6 +107,15 @@ void	smapvis::flushoccq	()
 		if (state==state_working)	state	= state_usingTC;
 	}
 }
+void	smapvis::dropoccq	()
+{
+	// testQ_V is non-null exactly while a query issued by end() is outstanding: end() issues only
+	// when it is set, and flushoccq() clears it right after occq_get.
+	if (0==testQ_V)					return;
+	RImplementation.occq_cancel		(testQ_id);
+	testQ_V							= 0;
+}
+
 void	smapvis::resetoccq	()
 {
 	if (testQ_frame==(Device.dwFrame+1))		testQ_frame--;

@@ -124,6 +124,18 @@ void light::set_active		(bool a)
 	{
 		if (!flags.bActive)					return;
 		flags.bActive						= false;
+#if (RENDER==R_R2) || (RENDER==R_R3)
+		// An occlusion test still in flight belongs to a light that is about to stop being rendered:
+		// vis_update will never run for it, so the query has to go back now. The destructor comes
+		// through here too. Leaking these is what drains the 1536-slot pool over a session and ends
+		// in "Too many occlusion queries were issued" -- with vid_restart as the only cure, since it
+		// rebuilds the pool from scratch.
+		if (vis.pending)
+		{
+			RImplementation.occq_cancel		(vis.query_id);
+			vis.pending						= false;
+		}
+#endif
 		spatial_move						();
 		spatial_unregister					();
 		//Msg								("!!! L-unregister: %X",u32(this));

@@ -80,6 +80,30 @@ void	R_occlusion::occq_end		(u32&	ID		)
 	//CHK_DX			(used[ID].Q->Issue	(D3DISSUE_END));
 	CHK_DX			(EndQuery(used[ID].Q));
 }
+// Reclaim a slot whose result nobody will read. Same bookkeeping as the tail of occq_get -- the query
+// goes back into the pool in decreasing-order position and the id is freed -- minus the GetData wait,
+// which would block for up to half a second on a result being thrown away. Re-issuing BeginQuery on a
+// query that was never read is legal; the driver restarts it.
+void	R_occlusion::occq_cancel	(u32&	ID		)
+{
+	if (!enabled)					return;
+	if (ID == iInvalidHandle)		return;
+	if (ID >= used.size())			return;
+	if (0 == used[ID].Q)			return;
+
+	_Q&		Q			= used[ID];
+	if (pool.empty())	pool.push_back(Q);
+	else	{
+		int		it		= int(pool.size())-1;
+		while	((it>=0) && (pool[it].order < Q.order))	it--;
+		pool.insert		(pool.begin()+it+1,Q);
+	}
+
+	used[ID].Q			= 0;
+	fids.push_back		(ID);
+	ID					= 0;
+}
+
 R_occlusion::occq_result R_occlusion::occq_get		(u32&	ID		)
 {
 	if (!enabled)		return 0xffffffff;
