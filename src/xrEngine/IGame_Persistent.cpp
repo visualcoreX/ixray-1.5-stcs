@@ -36,6 +36,9 @@ IGame_Persistent::IGame_Persistent	()
 	hud_actor_params.set			(1.f, 1.f, 1.f, 1.f);	// default "healthy" until CActor updates it
 	hud_affects.set					(0.f, 0.f, 0.f, 0.f);	// no exo electronics problems -> clean screen
 	hud_scope_params.set			(1.f, 0.f, 0.f, 0.f);	// no aim -> lens hidden (alpha 0) until CActor updates it
+	pp_mask_circle.set			(0.5f, 0.5f, 0.f, 0.f);	// no mask until a scope asks for one
+	pp_zoom_circle.set			(0.f, 0.f, 1.f, 0.f);	// no digital zoom until a scope asks
+	pp_scope_shadow.set			(0.f, 0.f, 0.f, 0.f);	// ...and the eye is on the axis
 	hud_zoom_deviation.set			(0.f, 0.f, 0.f, 0.f);	// centred, static lens
 	m_bLensFrameNow					= false;
 	m_bLensAimActive				= false;

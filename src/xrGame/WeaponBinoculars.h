@@ -9,6 +9,11 @@ class CBinocularsVision;
 
 class CWeaponBinoculars: public CWeaponCustomPistol
 {
+public:
+	// The whole magnification stays in the world fov here -- see CWeapon::Scope2DEyepieceAllowed. The
+	// mask is still published, so the tint, the rim shading and the glass distortion keep to the eyepiece.
+	virtual bool	Scope2DEyepieceAllowed	() const override	{ return false; }
+
 private:
 	typedef CWeaponCustomPistol inherited;
 protected:

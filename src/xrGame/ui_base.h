@@ -58,7 +58,6 @@ class ui_core: public CDeviceResetNotifier
 	Fvector2		m_pp_scale_;
 	Fvector2		m_scale_;
 	Fvector2*		m_current_scale;
-
 	IC float		ClientToScreenScaledX			(float left)				{return left * m_current_scale->x;};
 	IC float		ClientToScreenScaledY			(float top)					{return top * m_current_scale->y;};
 public:
@@ -68,6 +67,10 @@ public:
 					~ui_core						();
 	CFontManager*	Font							()							{return m_pFontManager;}
 	CUICursor*		GetUICursor						()							{return m_pUICursor;}
+
+	// How much wider than the design aspect (16:9) the display is: 1 at or below it. Art that is cut for
+	// that aspect and has to keep its shape -- the 2D scope picture -- is drawn 1/this as wide.
+	static float	design_aspect_scale				();
 
 	void			ClientToScreenScaled			(Fvector2& dest, float left, float top);
 	void			ClientToScreenScaled			(Fvector2& src_and_dest);

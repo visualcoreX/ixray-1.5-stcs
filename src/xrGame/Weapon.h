@@ -246,6 +246,23 @@ public:
 	float			ScopeNVFactor		() const;
 	void			UpdateScopeNV		();
 	void			StopScopeNV			();
+	void			ClearScopeNVMask	();
+	void			UpdateScopePPZoom	();
+	// The eye-relief crescent: drift from the swing/walk/shot, lag-filtered, into pp_scope_shadow.
+	// Shared by the flat picture (read by the pp pass) and the 3D lens (read by model_scope_lense.ps).
+	void			UpdateScopeShadow	(CActor* act, const Fvector& prev_dir, float dist, float strength = 1.f);
+	float		Scope2DDigitalZoom	() const;	// the share the eyepiece resamples
+	float		Scope2DTotalZoom	() const;
+	float		Scope2DPeakZoom		() const;	// ...at its STRONGEST setting: what fixes the camera's share
+	float		Scope2DPipMatch		() const;	// what the 3D lens ACTUALLY shows, as a share of scope_lens_factor
+	float		Scope2DWorldShare	() const;	// how much of it the CAMERA renders for real (linear factor)	// what the optic magnifies altogether
+	float		Scope2DCameraFOV	() const;	// ...and the world fov the camera takes for its share
+	bool		Scope2DModeActive	() const;	// the eyepiece mode applies to this optic right now
+	// Whether this sight's magnification may live in the EYEPIECE at all. Binoculars say no: they have
+	// no body to hide a narrowed world behind and their own zoom is stepped, so the world fov is theirs
+	// to move. Everything else splits camera and eyepiece as usual.
+	virtual bool	Scope2DEyepieceAllowed	() const	{ return true; }
+	float		Scope2DGlassRadius	() const;	// the glass, as a share of screen height
 	// scope_alive_detector: the vanilla binoculars vision on an optic (the gauss's `detector` node)
 	shared_str		ScopeDetectorSection() const;
 	void			UpdateScopeDetector	();
@@ -507,6 +524,17 @@ protected:
 	} m_zoom_params;
 	
 	CUIWindow*				m_UIScope;
+	bool					m_bScopeFadeActive;	// the optic is (or was, until the aim was released) being looked through
+	bool					m_bScopeNVMaskSet;	// ...and this one published the pp eyepiece mask
+	u32						m_dwScope2DReadyAt;	// when the 2D picture may come up (0 = not aiming)
+	Fvector					m_scope_prev_cam_dir;	// camera aim last frame, for the scope-shadow drift
+	Fvector2				m_scope_shadow_shift;	// ...and the smoothed drift itself
+	u32						m_dwScopeKickAt;		// when the last shot jolted the optic
+	Fvector2				m_scope_kick_dir;		// which way it threw the eye (random per shot)
+	float					m_scope_kick_zoom;		// ...and how much closer the picture jumped
+	xr_vector<Frect>		m_scope_ui_base;		// the picture's rects before any jolt
+	CUIWindow*				m_scope_ui_base_for;	// which window those rects belong to
+	bool					m_bScope2DZoomSet;	// ...and the digital-zoom circle
 
 	InertionData	m_base_inertion;
 	InertionData	m_zoom_inertion;
@@ -530,6 +558,21 @@ public:
 	IC		bool			IsZoomKeyHeld		()	const		{return m_bZoomKeyHeld;}	// aim key physically held (CMD_START..CMD_STOP)
 	virtual bool			IsHudItemZoomed		()				{return IsZoomed();}	// see CHudItem
 	CUIWindow*				ZoomTexture			();	
+	// 0..1 over the TAIL of the aim-in rotation: the 2D scope picture used to appear -- and its
+	// magnification to arrive -- in a single frame, the instant the rotation ended. Both now ride
+	// this ramp instead. Reads 0 the moment aim is released (the way out is unchanged).
+			float			ScopeFadeFactor		() const;
+public:
+	// The 2D scope picture is on screen (and the weapon behind it hidden). The aim rotation factor
+	// hits 1 before the hands have finished coming up, so this waits scope_2d_show_delay past it.
+	bool			Scope2DReady		() const;
+	// A shot knocks the eye off the optic and jolts the picture. Called from the fire code.
+	void			OnScopeShotKick		();
+	float			ScopeKickFactor		() const;	// 1 right after the shot, 0 once it has settled
+	void			ApplyScopeUIMotion	();			// moves/scales the 2D picture: the shot, and the walk
+		void			UpdateScopeFade		();
+	// Look-sensitivity multiplier for the optic being aimed (1.0 = leave the look alone).
+		float			AimSenseScale		() const;
 
 
 			bool			ZoomHideCrosshair	()				{

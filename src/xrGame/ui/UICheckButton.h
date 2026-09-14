@@ -57,6 +57,7 @@ public:
 	// sub-options (pda_3d owns pda_autozoom + pda_savezoomstate).
 	void SetDependControl(CUIWindow* pWnd);
 	void AddDependControl(CUIWindow* pWnd);
+	void			AddDependControlInv		(CUIWindow* pWnd);
 
 	// Options that cannot both be on (fullscreen / borderless window): ticking this one clears the
 	// others. Wire it BOTH ways -- each side names the other -- and whichever the player clicks last
@@ -67,6 +68,8 @@ private:
 	bool			b_backup_val;
 	void InitTexture2				(LPCSTR texture_name);
 	xr_vector<CUIWindow*>	m_depend_controls;
+	// ...and the ones that work the other way round: enabled only while this box is UNticked
+	xr_vector<CUIWindow*>	m_depend_controls_inv;
 	xr_vector<CUICheckButton*>	m_exclusive_controls;
 
 protected:

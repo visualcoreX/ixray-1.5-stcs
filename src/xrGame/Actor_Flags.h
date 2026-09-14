@@ -62,6 +62,11 @@ enum{
 	// on running. Clear it and a reload ends the sprint, the way Gunslinger has it (its CanSprintNow
 	// refuses any state but idle). Console: g_reload_in_sprint.
 	AF_RELOAD_IN_SPRINT	=(1<<22),
+
+	// 2D scope: magnify inside the eyepiece (a resample of the frame already drawn) instead of
+	// narrowing the camera for the whole screen. Only meaningful with the 3D lens switched off --
+	// a lensed optic gets its magnification from its own second render.
+	AF_SCOPE_2D_ZOOM	=(1<<23),	// RETIRED: the eyepiece magnification is how a 2D scope works now, not an option
 };
 
 extern Flags32 psActorFlags;

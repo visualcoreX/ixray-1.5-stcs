@@ -136,6 +136,22 @@ void CRenderTarget::phase_pp		()
 	RCache.Vertex.Unlock										(4,g_postprocess.stride());
 
 	// Actual rendering
+	// Scope night-vision mask: the eyepiece circle the game published this frame (xy centre, zw
+	// radii, all in screen uv; z = 0 means no mask and the shader grades everything, as before).
+	// Set by NAME here rather than through a constant binder -- the binder runs but its write never
+	// reaches this pass's $Globals, while c_brightness right below proves this path does.
+	static	shared_str	s_pp_mask		= "m_pp_mask";
+	{
+		Fvector4 m = g_pGamePersistent ? g_pGamePersistent->pp_mask_circle : Fvector4().set(0.5f,0.5f,0.f,0.f);
+		RCache.set_c		(s_pp_mask, m.x, m.y, m.z, m.w);
+		// TEST: the same eyepiece, with a digital magnification factor in z (<=1 = off)
+		static	shared_str	s_pp_zoom		= "m_pp_zoom";
+		Fvector4 zc = g_pGamePersistent ? g_pGamePersistent->pp_zoom_circle : Fvector4().set(0.f,0.f,1.f,0.f);
+		RCache.set_c		(s_pp_zoom, zc.x, zc.y, zc.z, zc.w);
+		static	shared_str	s_pp_shadow		= "m_pp_shadow";
+		Fvector4 sh = g_pGamePersistent ? g_pGamePersistent->pp_scope_shadow : Fvector4().set(0.f,0.f,0.f,0.f);
+		RCache.set_c		(s_pp_shadow, sh.x, sh.y, sh.z, sh.w);
+	}
 	static	shared_str	s_brightness	= "c_brightness";
 	RCache.set_c		( s_brightness, p_brightness.x, p_brightness.y, p_brightness.z, 0 );
 	RCache.set_Geometry	(g_postprocess);

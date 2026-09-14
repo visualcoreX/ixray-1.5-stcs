@@ -30,6 +30,14 @@ void CUICheckButton::AddDependControl(CUIWindow* pWnd){
 		m_depend_controls.push_back(pWnd);
 }
 
+// The mirror image of AddDependControl: these are usable only while the box is OFF. The 2D-scope
+// magnification is exactly that case -- it exists to replace the 3D lens, so it means nothing while
+// the lens is on.
+void CUICheckButton::AddDependControlInv(CUIWindow* pWnd){
+	if (pWnd)
+		m_depend_controls_inv.push_back(pWnd);
+}
+
 void CUICheckButton::AddExclusiveControl(CUICheckButton* pBtn){
 	if (pBtn && pBtn != this)
 		m_exclusive_controls.push_back(pBtn);
@@ -43,10 +51,20 @@ void CUICheckButton::Update(){
 	{
 		// GetCheck() is the PENDING value, not the saved one, so the dependants grey out the moment
 		// the master is clicked and come back if the player cancels out of the options.
-		const bool on = GetCheck();
+		// IsEnabled() matters because this runs every frame: a master that is itself greyed out by
+		// a precondition (the 3D lens on the static renderer) would otherwise keep switching its
+		// dependants back on, right over the precondition that had just disabled them.
+		const bool on = GetCheck() && IsEnabled();
 		xr_vector<CUIWindow*>::iterator it = m_depend_controls.begin();
 		for (; it != m_depend_controls.end(); ++it)
 			(*it)->Enable(on);
+	}
+	if (!m_depend_controls_inv.empty())
+	{
+		const bool off = !GetCheck() && IsEnabled();
+		xr_vector<CUIWindow*>::iterator it = m_depend_controls_inv.begin();
+		for (; it != m_depend_controls_inv.end(); ++it)
+			(*it)->Enable(off);
 	}
 }
 

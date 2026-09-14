@@ -65,6 +65,15 @@ public:
 	//                   lens output alpha = min(y,w) -> the lens fades in with aim and hides when not aiming
 	// m_zoom_deviation: x,y=lens image offset (sway/recoil), z=brightness, w=jitter (0 = static centred lens)
 	Fvector4						hud_scope_params;
+	// Post-process mask: xy = centre in screen uv, zw = x/y radii (screen uv, so the circle stays
+	// round on any aspect). z <= 0 = no mask, the pp pass grades the whole screen as it always did.
+	Fvector4						pp_mask_circle;
+	// Digital magnification inside that same circle -- xy = x/y radii in
+	// screen uv, z = factor (<=1 means off). The centre is the screen centre, as the eyepiece is.
+	Fvector4						pp_zoom_circle;
+	// Scope shadow: the eye sitting off the optic's axis. xy = where the exit pupil has drifted, in
+	// units of the eyepiece radius; z = how soft/deep the darkening is (0 = no shadow at all).
+	Fvector4						pp_scope_shadow;
 	Fvector4						hud_zoom_deviation;
 
 	// Gunslinger 3D PiP double-render: true on a "lens frame" -- the whole scene is rendered at the

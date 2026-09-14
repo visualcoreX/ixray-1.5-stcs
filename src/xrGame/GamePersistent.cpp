@@ -850,18 +850,43 @@ bool CGamePersistent::ComputeLensFrame(float& out_fov)
 		// for IsLensedScopeCfg. So the un-overridden fov IS the base fov -- there is nothing to ramp
 		// between, and an added lerp only fights the camera's own smoothing.
 		if (!w->IsLensedScopeCfg())					return false;
-		// IsZoomed() FIRST, and it is not redundant with the rotation factor below. CWeapon::OnZoomOut
-		// clears m_bAlterZoom and m_bIsZoomModeNow together, in one call, while m_fZoomRotationFactor
-		// only starts DECAYING (by dt/zoom_rotate_time). At a high framerate dt is tiny, so for the first
-		// frame or two after release the factor is still above 0.999 while the alter flag has already
-		// gone -- and this branch would fire GetLensFOV() for exactly one frame: the momentary fov click
-		// on aim-out, most visible leaving the alter pose (which otherwise never changes the fov at all).
-		// Keying on IsZoomed() closes that window because it flips in the very same call as the flag.
-		if (!w->IsZoomed())							return false;
-		if (w->IsAlterZoom())						return false;
-		if (w->GetZoomRotationFactor() <= 0.999f)	return false;
-		out_fov = w->GetLensFOV();
-		return (out_fov > 0.f);
+		// WHERE THIS OVERRIDE LETS GO, THE CAMERA FALLS BACK TO CActor::currentFOV -- and for a lensed-cfg
+		// optic that is not g_fov but the shoulder ramp g_fov -> AimBaseFOV (scope_zoom_factor 1.02, ~2%)
+		// running LINEARLY on the raw aim factor. The fade reaches zero at SCOPE_FADE_START, i.e. while that
+		// ramp is still a quarter of the way in, so interpolating from g_fov made the view step ~0.5% narrower
+		// right at the end of the aim-out and then widen again. Interpolate from the fallback itself and the
+		// two curves meet at exactly the same value, in both directions.
+		extern float g_fov;
+		float aim_rf = w->GetZoomRotationFactor();
+		clamp(aim_rf, 0.f, 1.f);
+		const float base_fov = g_fov + (w->AimBaseFOV() - g_fov) * aim_rf;
+		// The eyepiece takes a share of the magnification, so this override is left with the rest instead
+		// of the whole of it -- otherwise the two would multiply.
+		if (w->UseScopeTexture())
+		{
+			const float cam_fov = w->Scope2DCameraFOV();
+			if (cam_fov <= 0.f)						return false;
+			const float k2 = w->ScopeFadeFactor();
+			if (k2 <= 0.f)							return false;
+			out_fov = base_fov + (cam_fov - base_fov) * k2;
+			return true;
+		}
+		// The zoom flag and the alter flag both live inside ScopeFadeFactor now: it returns 0 for the
+		// alter (backup 1x) pose and for an optic that was never actually looked through, and it keeps
+		// running after the aim is released -- which is what carries the magnification back OUT on the
+		// same curve it came in on. The old gate could not do that: OnZoomOut clears both flags in one
+		// call while the rotation factor is still ~1, so reading the factor blind there would have pushed
+		// the magnified fov in for one frame (the aim-out click) instead of easing it away.
+		// GS flips this on at aim factor > 0.999: the whole magnification lands in ONE frame, which is
+		// the "the 2D scope snaps in" everybody sees. Ease it over the tail of the aim rotation instead
+		// (CWeapon::ScopeFadeFactor) -- same value, same moment at the end, but the view grows into the
+		// optic.
+		const float k = w->ScopeFadeFactor();
+		if (k <= 0.f)					return false;
+		const float lens = w->GetLensFOV();
+		if (lens <= 0.f)				return false;
+		out_fov = base_fov + (lens - base_fov) * k;
+		return true;
 	}
 
 	// The world FOV is OVERRIDDEN on EVERY frame while a lensed scope is in hand (this runs in ApplyDevice,

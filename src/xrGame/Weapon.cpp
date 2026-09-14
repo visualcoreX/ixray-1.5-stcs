@@ -2,6 +2,7 @@
 #include "Weapon.h"
 #include "ParticlesObject.h"
 #include "HUDManager.h"
+#include "ui_base.h"			// UI()->push_design_aspect: the 2D scope keeps its shape on a wide display
 #include "entity_alive.h"
 #include "inventory_item_impl.h"
 #include "inventory.h"
@@ -25,6 +26,8 @@
 #include "static_cast_checked.hpp"
 #include "clsid_game.h"
 #include "ui/UIWindow.h"
+#include "ui/UIStatic.h"
+#include "CharacterPhysicsSupport.h"	// actor speed for the scope-shadow wander
 #include "IXRayGameConstants.h"
 #include "../xrEngine/gamemtllib.h"
 
@@ -115,6 +118,16 @@ CWeapon::CWeapon()
 
 	m_zoom_params.m_fCurrentZoomFactor			= g_fov;
 	m_zoom_params.m_fZoomRotationFactor			= 0.f;
+	m_bScopeFadeActive							= false;
+	m_bScopeNVMaskSet							= false;
+	m_dwScope2DReadyAt							= 0;
+	m_scope_prev_cam_dir.set					(0.f, 0.f, 0.f);
+	m_scope_shadow_shift.set					(0.f, 0.f);
+	m_dwScopeKickAt								= 0;
+	m_scope_kick_dir.set						(0.f, 0.f);
+	m_scope_kick_zoom							= 0.f;
+	m_scope_ui_base_for							= NULL;
+	m_bScope2DZoomSet							= false;
 
 	m_pAmmo					= NULL;
 
@@ -1766,8 +1779,10 @@ void CWeapon::UpdateCL		()
 	inherited::UpdateCL		();
 	UpdateHUDAddonsVisibility();
 	UpdateAlterZoomBlend	(Device.fTimeDelta);	// GS alter zoom: eased ramp between the two aim poses
+	UpdateScopeFade		();		// arms/disarms the zoom-in/out easing (ScopeFadeFactor)
 	UpdateLensTravel		(Device.fTimeDelta);	// GS lens_speed: magnification walks toward the picked step
 	UpdateScopeNV			();						// GS scope_nightvision: the optic's own PPE while aiming
+	UpdateScopePPZoom	();		// TEST: digital magnification inside the eyepiece
 	UpdateScopeDetector		();						// scope_alive_detector: the binoculars vision on an optic
 	// world-model attachment bones (scope / reticle illum / laser ray / bayonet / flashlight lens): these
 	// toggle at runtime and UpdateAddonsVisibility only fires on addon+upgrade events, so track them here.
@@ -1903,7 +1918,7 @@ bool  CWeapon::need_renderable()
 	// no gun, just the world. In the alter pose you are looking at the backup sight ON the weapon, so
 	// the weapon has to be there.
 	if (IsAlterZoom())	return true;
-	return !( IsZoomed() && ZoomTexture() && !IsRotatingToZoom() );
+	return !( IsZoomed() && ZoomTexture() && Scope2DReady() );
 }
 
 void CWeapon::renderable_Render		()
@@ -1917,7 +1932,7 @@ void CWeapon::renderable_Render		()
 	//если мы в режиме снайперки, то сам HUD рисовать не надо
 	// ...unless the alter (backup) sight is up -- same exemption as need_renderable above, or the object
 	// renders but its HUD model does not, which looks identical to the weapon being gone.
-	if(IsZoomed() && !IsRotatingToZoom() && ZoomTexture() && !IsAlterZoom())
+	if(IsZoomed() && Scope2DReady() && ZoomTexture() && !IsAlterZoom())
 		RenderHud		(FALSE);
 	else
 		RenderHud		(TRUE);
@@ -3007,6 +3022,120 @@ void CWeapon::OnZoomOut()
 	ResetSubStateTime					();
 }
 
+// Where in the aim rotation the magnification starts arriving. Lower = the view begins growing into
+// the optic earlier and the whole move is longer: at 0.25 of a ~0.25s zoom_rotate_time it spans some
+// 190ms. It still ENDS exactly where it always did, at the top of the rotation.
+static const float SCOPE_FADE_START = 0.25f;
+
+// 0..1 along that stretch, SMOOTHERSTEP (6k^5-15k^4+10k^3), not the usual smoothstep. Both are flat in
+// VALUE at the ends, but smoothstep's acceleration is still -6 the instant it lands: the fov decelerates
+// and then that deceleration itself stops dead, which is the "it halts abruptly at the end" you feel on a
+// ramp this short. Smootherstep zeroes the second derivative too, so the move eases out of its own
+// braking -- at both ends, hence the exit gets it for free.
+// Runs in BOTH directions: m_fZoomRotationFactor decays back to 0 after the aim is released, so the
+// same curve carries the zoom out. m_bScopeFadeActive is what keeps that honest -- see UpdateScopeFade.
+float CWeapon::ScopeFadeFactor() const
+{
+	// The backup 1x sight magnifies nothing -- but it does not arrive instantly either. m_bAlterZoom
+	// flips on the keypress while the weapon spends alter_zoom_time travelling between the two aim
+	// poses, so reading the flag dropped the whole magnification in one frame and put it back the same
+	// way. Ride the pose blend instead: the world zoom leaves as the eye leaves the optic and comes
+	// back as it returns, which is also what puts it in step with the 2D picture.
+	const float alter = AlterZoomBlend();
+	if (alter >= 1.f)				return 0.f;
+	if (!IsZoomed() && !m_bScopeFadeActive)	return 0.f;	// never got in: there is nothing to ease out
+	const float f = m_zoom_params.m_fZoomRotationFactor;
+	if (f <= SCOPE_FADE_START)			return 0.f;
+	float k = (f - SCOPE_FADE_START) / (1.f - SCOPE_FADE_START);
+	clamp						(k, 0.f, 1.f);
+	return k * k * k * (k * (k * 6.f - 15.f) + 10.f) * (1.f - alter);	// smootherstep
+}
+
+// The aim rotation factor alone cannot tell an aim-out apart from the frame the ALTER pose is entered
+// or left -- OnZoomOut clears the alter flag and the zoom flag in one call while the factor is still
+// ~1. Reading it blind there would push the magnified fov in for a frame and then decay it: exactly
+// the aim-out click the old `factor > 0.999` gate existed to avoid. So the fade is armed only while
+// the optic is genuinely being looked through, and disarmed the moment it is not.
+// The 2D picture used to appear the very frame m_fZoomRotationFactor reached 1. That factor runs on
+// zoom_rotate_time, which is usually shorter than the aim-in animation, so the scope -- and the
+// weapon vanishing behind it -- arrived while the hands were visibly still moving. Hold it for a
+// short beat after the ramp ends; scope_2d_show_delay (seconds, scope section first) tunes it.
+bool CWeapon::Scope2DReady() const
+{
+	return m_dwScope2DReadyAt && Device.dwTimeGlobal >= m_dwScope2DReadyAt;
+}
+
+void CWeapon::UpdateScopeFade()
+{
+	{
+		// The ALTER pose counts as a rotation of its own. Flipping back to the main optic clears
+		// m_bAlterZoom at once, but the weapon is still travelling between the two aim poses for
+		// alter_zoom_time -- and the picture used to be back on screen for all of it, because the delay
+		// had been armed long ago and Scope2DReady was still true. A 3D lens has no such seam: it rides
+		// the pose home and only then fills the tube. Hold the arming until the blend is fully out
+		// past HALFWAY (the eased blend, so it is half of what the eye sees and not half of a raw timer)
+		// and the usual scope_2d_show_delay then runs from THERE: the optic is most of the way back
+		// before anything is drawn in it, without waiting out the whole travel.
+		if (IsZoomed() && !IsRotatingToZoom() && !IsAlterZoom() && AlterZoomBlend() <= 0.5f)
+		{
+			if (!m_dwScope2DReadyAt)
+			{
+				shared_str sc = GetCurrentScopeSection();
+				float d = (sc.size() && pSettings->line_exist(*sc, "scope_2d_show_delay"))
+						? pSettings->r_float(*sc, "scope_2d_show_delay")
+						: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_2d_show_delay", 0.04f);
+				clamp			(d, 0.f, 1.f);
+				m_dwScope2DReadyAt = Device.dwTimeGlobal + u32(1000.f * d);
+			}
+		}
+		else
+			m_dwScope2DReadyAt = 0;
+	}
+
+	const float f = m_zoom_params.m_fZoomRotationFactor;
+	if (IsAlterZoom())					m_bScopeFadeActive = false;
+	else if (IsZoomed() && f > SCOPE_FADE_START)	m_bScopeFadeActive = true;
+	else if (f <= SCOPE_FADE_START)			m_bScopeFadeActive = false;
+}
+
+// How much the look must slow down while aiming THIS optic.
+float CWeapon::AimSenseScale() const
+{
+	// A plain 2D scope or iron sights zoom the camera itself, and IR_OnMouseMove's own f_fov/g_fov
+	// term already carries exactly that ratio -- there is nothing to add here.
+	// With the camera left wide of the optic's full power the engine's f_fov/g_fov term is short, so the
+	// slowdown has to come from the eyepiece factor instead.
+	{
+		const float dz = Scope2DDigitalZoom();
+		if (dz > 1.001f)
+		{
+			// The camera's share is already in IR_OnMouseMove's f_fov/g_fov term for a plain 2D scope,
+			// so only the eyepiece's share is left to apply. An optic with a lens config gets its share
+			// through the late fov override, which that term never sees -- there the whole thing is
+			// ours to apply.
+			return IsLensedScopeCfg() ? (1.f / Scope2DTotalZoom()) : (1.f / dz);
+		}
+	}
+	if (!IsZoomed() || !IsLensedScopeCfg())		return 1.f;
+	// The alter (backup 1x) pose magnifies nothing, and ZoomMouseSenseKoef already falls back to the
+	// weapon's own value there.
+	if (IsAlterZoom())				return ZoomMouseSenseKoef();
+	// 3D lens ON: the main view stays wide (all the magnification lives in the lens), so f_fov/g_fov is
+	// ~1 and the configured koef is the whole slowdown -- the case GS tuned its numbers for.
+	if (IsLensedScope())				return ZoomMouseSenseKoef();
+	// Lens OFF: the same optic magnifies the WHOLE SCREEN instead, through the late fov override in
+	// CGamePersistent::ComputeLensFrame -- which the camera's f_fov never sees, so the mouse code has no
+	// idea the world just got 8x bigger and the koef alone (0.3 on the G36) is far too weak. Use the real
+	// fov ratio, on the same ramp the override follows, so the slowdown arrives together with the
+	// magnification instead of stepping in after it.
+	const float lens = GetLensFOV();
+	if (lens <= 0.f)				return ZoomMouseSenseKoef();
+	extern float g_fov;
+	if (g_fov <= 0.f)				return 1.f;
+	const float cur = g_fov + (lens - g_fov) * ScopeFadeFactor();
+	return cur / g_fov;
+}
+
 CUIWindow* CWeapon::ZoomTexture()
 {
 	if (UseScopeTexture())
@@ -3471,6 +3600,7 @@ void CWeapon::UpdateScopeNV()
 	CActor* act = smart_cast<CActor*>(H_Parent());
 	// GS gates it on the weapon being the ACTOR's (a PPE is the player's screen, nothing else has one)
 	shared_str nv_sect;
+	bool nv_2d = false;					// the tint came from the 2D-only key -> it gets the eyepiece mask
 	if (act && act == Actor() && IsZoomed())
 	{
 		// the always-on variant first (gauss `nv` upgrade)
@@ -3481,8 +3611,8 @@ void CWeapon::UpdateScopeNV()
 		// has finished (CActor: IsZoomed() && !IsRotatingToZoom() && ZoomTexture()), so tying the
 		// effector to exactly that puts the tint on screen with the scope picture and takes it off
 		// with it -- and keeps it off entirely while the 3D lens is doing the night vision itself.
-		if (!nv_sect.size() && ZoomTexture() && !IsRotatingToZoom())
-			nv_sect = ScopeNV2DSection();
+		if (!nv_sect.size() && ZoomTexture() && Scope2DReady() && !IsAlterZoom())
+			{ nv_sect = ScopeNV2DSection(); nv_2d = nv_sect.size() > 0; }
 	}
 	if (!nv_sect.size())
 	{
@@ -3501,6 +3631,27 @@ void CWeapon::UpdateScopeNV()
 	}
 	// re-applied every frame: the brightness keys change it live, exactly as in GS
 	if (pp)	pp->SetCurrentFactor(ScopeNVFactor());
+
+	// The tint belongs INSIDE the optic. A 2D scope paints a round eyepiece over the middle of the
+	// screen and the world is only visible through it, so the full-screen effector used to smear the
+	// green over the black surround as well. Hand the pp pass the eyepiece circle; the radius is a
+	// fraction of screen HEIGHT and can be overridden per scope with scope_nv_mask_radius.
+	// It is deliberately WIDER than the eyepiece itself (the stock 1PN93/PN23 art measures ~0.25):
+	// everything past the glass is opaque black, so the overshoot and the soft edge hide under the
+	// scope body while the whole visible circle stays evenly lit -- a mask cut exactly to the hole
+	// leaves a dim rim, which is what "the area is too small" looked like. The 3D lens does its night vision in its own shader, and the gauss has no 2D picture at
+	// all -- neither wants a mask, so only the 2D case sets one.
+	if (nv_2d)
+	{
+		// a little over the glass: the tint must cover the whole window, and its soft edge is meant to
+		// land under the scope body rather than inside the picture.
+		const float r = Scope2DGlassRadius() * 1.15f;
+		const float aspect = (Device.fHeight_2 > 0.f) ? (Device.fWidth_2 / Device.fHeight_2) : 1.f;
+		g_pGamePersistent->pp_mask_circle.set(0.5f, 0.5f, r / aspect, r);
+		m_bScopeNVMaskSet = true;
+	}
+	else
+		ClearScopeNVMask();
 }
 
 // `scope_alive_detector` names a PARAMS section ([scope_detector]: vis_frame_speed / vis_frame_color /
@@ -3555,8 +3706,509 @@ void CWeapon::net_Relcase(CObject* O)
 	if (m_pScopeVision)		m_pScopeVision->remove_links(O);
 }
 
+// The eyepiece mask is ONE global, and UpdateScopeNV runs for every weapon being processed, not
+// just the one in the actor's hands. A weapon that never published a mask must not wipe the one
+// the actor's scope did -- that is exactly what kept the render reading zeroes from the very
+// address the game had written a moment earlier.
+// A 2D scope used to narrow the CAMERA alone, so the whole screen magnified and the optic's black
+// surround showed a zoomed world it had no business showing. Now the camera takes a fixed share and the
+// pp pass magnifies the already-rendered image inside the eyepiece circle for the rest. This was an
+// option (g_scope_2d_zoom) while it was being built; it is simply how a flat scope works now.
+// It is a resample -- upscaled pixels, no new detail -- so the factor is capped; a truthful magnified
+// picture needs the second render the 3D lens does.
+
+// The optic this weapon would magnify by, as a plain ratio (1 = none). Derived from the scope's own
+// zoom factor: the fov it asks for against the base one.
+// Does the eyepiece mode apply to this optic at all: the vanilla 2D picture only, since a lensed or
+// collimator optic has none (UseScopeTexture) and it is that picture which provides the black surround
+// the trick hides its edges behind. Says nothing about WHEN -- see Scope2DReady.
+bool CWeapon::Scope2DModeActive() const
+{
+	if (!Scope2DEyepieceAllowed())							return false;
+	// ...and it stays applicable while the aim is easing back OUT (m_bScopeFadeActive), so the camera's
+	// share leaves on the same curve it arrived on instead of snapping to the base fov the frame the
+	// aim key is released. ScopeFadeFactor is what actually walks it down to zero.
+	if (!IsZoomed() && !m_bScopeFadeActive)					return false;
+	// The alter (backup 1x) pose takes the eye OFF the optic, and everything drawn inside the glass goes
+	// with the picture (UpdateScopePPZoom drops the circle on the flag, at once). The camera's SHARE of
+	// the magnification must not: dropping it here the frame m_bAlterZoom flips left ComputeLensFrame
+	// with nothing to return, so the world fov fell back to the plain aim ramp in one step while the
+	// weapon was still travelling between the two poses -- the zoom-out clicked instead of easing.
+	// Stay applicable until the pose has fully arrived; ScopeFadeFactor rides the same blend and is what
+	// actually walks the share down to zero over alter_zoom_time.
+	if (AlterZoomBlend() >= 1.f)							return false;
+	return m_UIScope && !IsLensedScope() && !IsCollimatorScope();
+}
+
+// HOW MUCH THE WORLD ITSELF NARROWS when the eye comes to a 2D optic -- the SAME amount for every
+// scope, whatever its power. A LENS FACTOR, read in the same convention as min_lens_factor /
+// scope_lens_factor and applied through the same fov = 2*atan(tan(base/2)/factor). It sits BETWEEN the
+// ELCAN's two settings (min_lens_factor 1.8, max_lens_factor 10), nearer the low one: the ELCAN's own
+// 1.8 was too little for the strong scopes -- everything past the share falls to the eyepiece, and a 15x
+// had to be resampled more than eight times to get there, which is what made those optics look like a
+// smeared crop. The figure is a BALANCE, and it is the only knob between two things that pull opposite
+// ways: raise it and the strong sights sharpen (the camera renders more of their magnification for
+// real), lower it and a variable optic keeps more of its wide notch (see Scope2DPeakZoom -- a notch
+// weaker than this share cannot be shown as weaker). At 2.7 the ELCAN reads as 2.7x <-> 10x and the
+// 15x sights are left with 5.5x of glass instead of 8.3x.
+// Everything above it belongs to the optic, and the optic is the circle: the eyepiece resamples it, the
+// world outside the glass does not move. So shouldering a 4x and a 15x change the view by exactly as
+// much, and what tells them apart is what you see inside the tube. An optic WEAKER than this share
+// hands the camera only what it has and keeps nothing back.
+static const float SCOPE_2D_WORLD_ZOOM = 2.7f;
+
+float CWeapon::Scope2DDigitalZoom() const
+{
+	if (!Scope2DModeActive())				return 1.f;
+	// Exactly when the 2D picture is on screen -- not a moment earlier. The picture appears at the end
+	// of the aim rotation (render_item_ui_query), and a circle magnifying the world before it is there
+	// has nothing to sit in.
+	if (!Scope2DReady())					return 1.f;
+
+	const float t = Scope2DTotalZoom();
+	if (t <= 1.001f)						return 1.f;
+	// The camera's share is FIXED (see Scope2DCameraFOV), so the eyepiece is left with all the rest --
+	// powers multiply, hence a ratio and not a difference. Never below 1: on a step weaker than that
+	// share there is nothing left for the glass to do, and a circle showing a WIDER field than the world
+	// around it would read as a hole, not as an optic.
+	float z = t / Scope2DWorldShare();
+	clamp						(z, 1.f, 8.f);	// sanity rail; the resampling gets soft long before it
+	return z;
+}
+
+// The whole magnification the optic is set to right now, as a LINEAR factor -- a ratio of TANGENTS,
+// not of fovs. That is the convention the configs are written in (scope_lens_factor, min/max_lens_factor
+// go through fov = 2*atan(tan(base/2)/factor)) and it is also the honest answer to "how many times
+// bigger is the target drawn", which is what the eyepiece has to reproduce by resampling.
+// A ratio of FOVS is a DIFFERENT number and mixing the two is what made the world move between the
+// ELCAN's two settings: at a 67.5 deg base its 1.8x aims at 40.7 deg, i.e. a fov ratio of 1.66 -- below
+// the fixed world share, so the low step handed the camera 1.66 and the high step 1.8, and the view
+// outside the tube stepped every time the magnification was changed.
+// For an optic with a lens config this follows the variable-power step (the ELCAN's 1.8x..10x and its
+// travel); everything else uses its plain zoom factor.
+float CWeapon::Scope2DTotalZoom() const
+{
+	extern float g_fov;
+	const float aim_fov = IsLensedScopeCfg() ? GetLensFOV() : (GetZoomFactor() * 0.75f);
+	if (aim_fov <= 0.1f || g_fov <= 0.f)			return 1.f;
+	const float t_base = tanf(deg2rad(g_fov)   * 0.5f);
+	const float t_aim  = tanf(deg2rad(aim_fov) * 0.5f);
+	if (t_aim <= EPS_S)								return 1.f;
+	return (t_base / t_aim) * Scope2DPipMatch();
+}
+
+// WHAT THE 3D LENS ACTUALLY PUTS IN FRONT OF THE EYE, as a share of scope_lens_factor.
+// The lens is not a window cut into the world: GS renders the whole scene into $user$scope at the
+// magnified fov and the ocular mesh samples that capture ACROSS ITS OWN DISC, so the entire frame ends
+// up squeezed into the glass. A 8x capture inside a disc covering a fifth of the screen height reads as
+// 8 * 0.21 = 1.7x to the eye -- which is exactly what the G36 looks like through its little porthole,
+// and why the flat scope (a true 8x on screen) came out several times stronger than the lens beside it.
+// The glass diameter in screen HEIGHTS is that share, and we already measure it for the mask and the
+// eyepiece (scope_nv_mask_radius, per scope).
+float CWeapon::Scope2DPipMatch() const
+{
+	// The DISC OF THE MESH, not the hole you can see through it. Measured off a side-by-side (aim at one
+	// mark with the lens on and off, compare how much of the ocular the target covers): on the G36 the
+	// visible window is 0.19 of screen height but the lens behaves as 0.07, because the ocular ring hides
+	// the rim of a much larger disc. That cannot be derived from the configs, so it is a key --
+	// scope_2d_pip_match on the scope section, then the weapon. Left out, it falls back to the geometric
+	// guess (the glass diameter), which is right only for an optic whose mesh disc IS its window.
+	shared_str sc = GetCurrentScopeSection();
+	float d = (sc.size() && pSettings->line_exist(*sc, "scope_2d_pip_match"))
+			? pSettings->r_float(*sc, "scope_2d_pip_match")
+			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_2d_pip_match", 2.f * Scope2DGlassRadius());
+	clamp	(d, 0.02f, 4.f);
+	return d;
+}
+
+// The magnification of this optic AT ITS STRONGEST SETTING. The camera's share has to be keyed off
+// THIS and not off the current power: a variable optic (the ELCAN, 1.8x..10x) would otherwise hand the
+// camera 1.8 on its low notch and 4.0 on its high one, and the world outside the tube would jump every
+// time the magnification is stepped -- which is the whole thing this split exists to avoid. The price
+// is that a notch weaker than the fixed share cannot be shown as weaker: the ELCAN's 1.8x reads as the
+// 4x the camera is already rendering, and its wheel becomes 4x <-> 10x.
+float CWeapon::Scope2DPeakZoom() const
+{
+	// x Scope2DPipMatch, because this has to be in the SAME units as Scope2DTotalZoom -- what the eye
+	// gets, not what the config says. Handing back the raw max_lens_factor made the camera's share be
+	// computed from a number several times too big: the G36's 15.0 asked for half of 15 = 7.5x of world
+	// zoom against a total of 3.0, the eyepiece was clamped to 1 (it cannot shrink), and the flat scope
+	// came out at 7.5x beside a 3.0x lens.
+	if (m_lens_steps > 0 && m_lens_max > 1.01f)		return m_lens_max * Scope2DPipMatch();
+	return Scope2DTotalZoom();
+}
+
+// HOW MUCH OF THAT THE CAMERA RENDERS FOR REAL, as a linear factor. The rest is the eyepiece's.
+// A VARIABLE optic gets the shared constant, and nothing else will do: its share must be the same on
+// every notch or the world jumps as the wheel is turned (Scope2DPeakZoom).
+// A FIXED optic cannot step its magnification, so nothing can move the world under it -- and there the
+// constant is simply left behind by the strong sights, which then hand the glass everything above it (a
+// 15x resampled 5.5 times). Those get HALF their power rendered for real instead, which pins the
+// eyepiece at 2x no matter how strong the sight is: 15x -> 7.5x of camera, 10x -> 5x, 6x -> 3x. The
+// shared constant stays the floor (a 4x still gets 2.7), and the optic's own power stays the ceiling --
+// a sight weaker than the floor hands over what it has and no more, or the world would end up magnified
+// past what the sight can actually see.
+float CWeapon::Scope2DWorldShare() const
+{
+	const float peak = Scope2DPeakZoom();
+	// "Variable" is min != max, NOT the mere presence of a step count. The G36 carries the whole GS lens
+	// block -- lens_factor_levels_count 1 with min_lens_factor == max_lens_factor == 8 -- so it declares a
+	// step it cannot actually take. Reading the step count alone filed it with the ELCAN and left it on
+	// the shared 2.7, i.e. 3x of resampling inside that little porthole, when nothing about it can ever
+	// move the world.
+	if (m_lens_steps > 0 && m_lens_max > m_lens_min * 1.001f)
+	{
+		// scope_2d_fov_follows_lens (scope section, then the weapon): the opposite trade, by request for the
+		// gauss's `zoom` node (5x..30x). The WORLD follows the wheel: the camera's share is the fixed-optic
+		// split taken at the strongest notch, scaled down with the current power, so the eyepiece keeps one
+		// constant ratio on every notch and the view outside the tube narrows in proportion to the step.
+		// It travels with lens_speed, because Scope2DTotalZoom reads the travelling position. Floored just
+		// above 1: at exactly 1 Scope2DCameraFOV reports "no share" and CActor::currentFOV would hand the
+		// world the whole scope_zoom_factor instead.
+		shared_str sc = GetCurrentScopeSection();
+		const bool follows = (sc.size() && pSettings->line_exist(*sc, "scope_2d_fov_follows_lens"))
+			? !!pSettings->r_bool(*sc, "scope_2d_fov_follows_lens")
+			: !!READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "scope_2d_fov_follows_lens", FALSE);
+		if (follows && peak > 1.001f)
+		{
+			const float peak_share	= _min(peak, _max(SCOPE_2D_WORLD_ZOOM, peak * 0.5f));
+			float share				= peak_share * Scope2DTotalZoom() / peak;
+			clamp					(share, 1.01f, peak_share);
+			return share;
+		}
+		return _min(SCOPE_2D_WORLD_ZOOM, peak);
+	}
+	return _min(peak, _max(SCOPE_2D_WORLD_ZOOM, peak * 0.5f));
+}
+
+// The world fov for the camera's share of that magnification (0 = the eyepiece mode is not running,
+// leave the fov alone).
+// Deliberately keyed on the mode and NOT on Scope2DReady: the camera's share has to ease in with the
+// aim rotation, the way the full zoom always did. Waiting for the picture meant it arrived at a moment
+// when the ramp was already at 1 -- the whole share in a single frame, i.e. the fov snapping in.
+float CWeapon::Scope2DCameraFOV() const
+{
+	extern float g_fov;
+	if (!Scope2DModeActive())						return 0.f;
+	if (Scope2DPeakZoom() <= 1.001f)				return 0.f;	// nothing to magnify at all
+	const float cam = Scope2DWorldShare();			// fixed per optic, unless scope_2d_fov_follows_lens
+	if (cam <= 1.001f)								return 0.f;
+	return rad2deg(2.f * atanf(tanf(deg2rad(g_fov) * 0.5f) / cam));
+}
+
+// How far the exit pupil may drift, in units of the eyepiece radius, and how soft the crescent's edge
+// is. Small numbers on purpose: the shadow should read as the eye shifting, not as a closing iris.
+static const float SCOPE_SHADOW_MAX  = 0.25f;	// how far a swing may take the eye off the axis
+static const float SCOPE_SHADOW_SOFT = 0.35f;
+static const float SCOPE_SHADOW_WALK = 0.12f;	// the wander walking adds, at full speed
+static const float SCOPE_SHADOW_SHOT = 0.45f;	// ...and the punch a shot gives it
+static const u32   SCOPE_KICK_MS     = 140;		// how long that punch takes to settle
+static const float SCOPE_KICK_OFS    = 4.0f;	// how far the picture jumps, in the 1024x768 ui space
+static const float SCOPE_WALK_OFS    = 2.5f;	// ...and how far it rides while walking, at full speed
+// The optic has mass. Swing the rifle and the sight picture does not arrive with the camera: it drags a
+// little and settles back once the turn stops. In units of m_scope_shadow_shift, which is already the
+// lag-filtered swing the eye-relief crescent rides -- so the drag and the shadow agree by construction
+// instead of being two guesses about the same movement. At the shift's ceiling (0.25) this is ~3 units of
+// the 1024x768 ui space, a third of what the overscan allows, so the picture's edge never comes into view.
+static const float SCOPE_SWING_OFS   = 12.0f;
+// The picture is authored to cover the screen exactly, so ANY shift would drag its edge into view --
+// which is the black body ending in mid-air at the top and bottom. It is therefore drawn slightly
+// oversized, and the motion is capped at the slack that overscan buys.
+static const float SCOPE_UI_OVERSCAN = 1.015f;
+// A shot throws the eye off the optic and shoves the whole sight picture: the scope comes back at the
+// face, so it reads as bigger for an instant, and never twice the same way. Everything is randomised
+// per shot -- direction, and how much closer it jumps -- so a burst does not pulse mechanically.
+void CWeapon::OnScopeShotKick()
+{
+	m_dwScopeKickAt = Device.dwTimeGlobal;
+	float a = ::Random.randF(0.f, PI_MUL_2);
+	m_scope_kick_dir.set(_cos(a), _sin(a) * 0.7f);		// flatter vertically: the rifle rises, the eye slides
+	m_scope_kick_zoom = ::Random.randF(0.02f, 0.05f);	// 2..5% closer
+}
+
+float CWeapon::ScopeKickFactor() const
+{
+	if (!m_dwScopeKickAt)								return 0.f;
+	const u32 dt = Device.dwTimeGlobal - m_dwScopeKickAt;
+	if (dt >= SCOPE_KICK_MS)							return 0.f;
+	const float k = 1.f - float(dt) / float(SCOPE_KICK_MS);
+	return k * k;										// snaps out, then eases back
+}
+
+// The picture is a UI window whose children sit in its own 1024x768 space, so the motion is applied to
+// their rects: scaled about the CENTRE of that space (the optic coming at the eye) and shifted. The
+// untouched rects are kept, or the transform would compound frame after frame.
+//
+// Two things move it. A SHOT throws it a random way and briefly closer; WALKING rides it gently, on
+// the same two frequencies the eye's own wander uses, so the picture and the crescent at its rim move
+// as one thing rather than two.
+void CWeapon::ApplyScopeUIMotion()
+{
+	if (!m_UIScope)										return;
+	auto& lst = m_UIScope->GetChildWndList();
+	if (m_scope_ui_base_for != m_UIScope || m_scope_ui_base.size() != lst.size())
+	{
+		m_scope_ui_base.clear();
+		for (auto it = lst.begin(); it != lst.end(); ++it)
+			m_scope_ui_base.push_back((*it)->GetWndRect());
+		m_scope_ui_base_for = m_UIScope;
+	}
+
+	const float k = ScopeKickFactor();
+	const float s = SCOPE_UI_OVERSCAN + m_scope_kick_zoom * k;
+	float ox = m_scope_kick_dir.x * SCOPE_KICK_OFS * k;
+	float oy = m_scope_kick_dir.y * SCOPE_KICK_OFS * k;
+
+	CActor* act = smart_cast<CActor*>(H_Parent());
+	if (act && act->character_physics_support() && act->character_physics_support()->movement())
+	{
+		float sp = act->character_physics_support()->movement()->GetVelocityActual();
+		clamp		(sp, 0.f, 4.f);
+		sp /= 4.f;
+		if (sp > 0.01f)
+		{
+			const float t = Device.fTimeGlobal;
+			ox += SCOPE_WALK_OFS * sp * _sin(t * 6.2f);
+			oy += SCOPE_WALK_OFS * sp * _cos(t * 3.1f) * 0.6f;
+		}
+	}
+	// ...and the swing drags it. MINUS because the shift is signed the way the EYE leaves the axis, while
+	// the sight itself is what falls behind: turn right and the picture is still a touch to the left of
+	// where the camera already is. The lag filter behind m_scope_shadow_shift is what makes it settle
+	// rather than snap back the moment the mouse stops.
+	ox -= m_scope_shadow_shift.x * SCOPE_SWING_OFS;
+	oy -= m_scope_shadow_shift.y * SCOPE_SWING_OFS;
+
+	const float cx = 512.f, cy = 384.f;					// the ui space the scope windows are authored in
+	// never past the overscan, or the edge shows again
+	const float mx = (s - 1.f) * cx, my = (s - 1.f) * cy;
+	clamp	(ox, -mx, mx);
+	clamp	(oy, -my, my);
+
+	// ULTRA-WIDE. The 1024x768 canvas is stretched to the display on each axis separately, so the shape
+	// of everything drawn IS the display's aspect: past 16:9 -- what this art is cut for -- the eyepiece
+	// is pulled into an oval and the body with it. Undo exactly that much width here, in ui units, where
+	// a rectangle means one thing: the picture keeps its height and is drawn 1/k as wide about the
+	// centre, so it stays centred and round, and the world shows past its sides. 1 at or below 16:9, so
+	// nothing on an ordinary display changes by a single pixel.
+	// It is NOT done by offsetting the ui->screen transform: CUIStaticItem::Render converts the position
+	// and CUICustomItem::Render converts the rect's own corners with the SAME call before adding them
+	// together, so an additive term there lands twice and the picture walks sideways.
+	const float wide_k = 1.f / ui_core::design_aspect_scale();
+
+	u32 i = 0;
+	for (auto it = lst.begin(); it != lst.end() && i < m_scope_ui_base.size(); ++it, ++i)
+	{
+		const Frect& b = m_scope_ui_base[i];
+		Frect r;
+		r.x1 = cx + ((b.x1 - cx) * s + ox) * wide_k;
+		r.x2 = cx + ((b.x2 - cx) * s + ox) * wide_k;
+		r.y1 = cy + (b.y1 - cy) * s + oy;	r.y2 = cy + (b.y2 - cy) * s + oy;
+		(*it)->SetWndRect(r);
+	}
+}
+
+
+// The radius of the glass, as a fraction of screen HEIGHT: the attached scope's section first, then
+// the weapon's.
+float CWeapon::Scope2DGlassRadius() const
+{
+	shared_str sc = GetCurrentScopeSection();
+	float r = (sc.size() && pSettings->line_exist(*sc, "scope_nv_mask_radius"))
+			? pSettings->r_float(*sc, "scope_nv_mask_radius")
+			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_nv_mask_radius", 0.40f);
+	clamp	(r, 0.02f, 1.f);
+	return r;
+}
+
+// Publishes both the eyepiece circle and that factor. Same ownership rule as the night-vision mask:
+// UpdateCL runs for every weapon, so only the one that published may clear.
+void CWeapon::UpdateScopePPZoom()
+{
+	CActor* act = smart_cast<CActor*>(H_Parent());
+	// !IsAlterZoom: the backup 1x sight takes the eye OFF the optic, so everything drawn inside the
+	// glass -- the magnification, the distortion, the aberration, the shadow -- has to go with the
+	// picture instead of hanging over the backup notch. The eyepiece factor alone was not enough of a
+	// guard: it is 1 in that pose, but the circle carries the other three regardless of it, and the
+	// distortion stopped being keyed to the factor when the glass was made to bend at every power.
+	const bool on_2d = act && act == Actor() && IsZoomed() && Scope2DReady()
+					&& m_UIScope && !IsLensedScope() && !IsCollimatorScope() && !IsAlterZoom();
+	// The eye leaves the optic's axis whether the picture is a flat texture or the 3D lens, so the
+	// crescent belongs to both. The LENS gets the drift only -- there is no eyepiece circle to publish
+	// (the pp pass has nothing to draw inside; model_scope_lense.ps shades the glass itself, in its own
+	// uv, where the disc is simply 0..1).
+	// ...and it rides the lens's OWN fade rather than a flag. The shader draws the glass with
+	// alpha = min(aim factor, LensVisibility) -- the second of which is 1 - AlterZoomBlend -- so the
+	// picture dissolves over alter_zoom_time when the backup sight comes up. Killing the drift and the
+	// glass curvature on the flag instead meant the image visibly un-bent one frame into a transition
+	// that still had a quarter of a second to run. Publish through the fade and scale by it, and the
+	// two go out together.
+	float lens_fade = 0.f;
+	if (act && act == Actor() && IsLensedScope() && !IsCollimatorScope())
+	{
+		float rf = GetZoomRotationFactor();
+		clamp		(rf, 0.f, 1.f);
+		if (IsZoomed() || rf > 0.01f)
+			lens_fade = _min(rf, 1.f - AlterZoomBlend());
+	}
+	const bool on_lens = lens_fade > 0.001f;
+
+	// The camera reference is refreshed FIRST, whatever happens below. It used to live inside the
+	// publishing branch, so after a scope change or a save load the first frame with a picture on
+	// screen compared against a direction from seconds ago -- the drift started from a bogus value and
+	// the lag filter needed a moment to walk it back. That was the "the effect turns up late" report.
+	const Fvector prev_dir = m_scope_prev_cam_dir;
+	m_scope_prev_cam_dir   = Device.vCameraDirection;
+
+	if (!on_2d && !on_lens)
+	{
+		if (m_bScope2DZoomSet && g_pGamePersistent)
+		{
+			g_pGamePersistent->pp_zoom_circle.set(0.f, 0.f, 1.f, 0.f);
+			g_pGamePersistent->pp_scope_shadow.set(0.f, 0.f, 0.f, 0.f);
+		}
+		m_bScope2DZoomSet = false;
+		m_scope_shadow_shift.set(0.f, 0.f);
+		return;
+	}
+
+	if (!on_2d)
+	{
+		// A lens frame: no flat picture, so the eyepiece circle must stay cleared -- pp_scope_shadow
+		// below is read by the lens shader instead of the pp pass, and the pp pass keys off this circle.
+		if (m_bScope2DZoomSet && g_pGamePersistent)
+			g_pGamePersistent->pp_zoom_circle.set(0.f, 0.f, 1.f, 0.f);
+		// ...and the glass curvature goes with it: scope_2d_distortion describes the GLASS, so the lens
+		// bends its picture by exactly what the flat scope bends by (model_scope_lense.ps lens_warp_uv).
+		shared_str lsc = GetCurrentScopeSection();
+		float ldist = (lsc.size() && pSettings->line_exist(*lsc, "scope_2d_distortion"))
+					? pSettings->r_float(*lsc, "scope_2d_distortion")
+					: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_2d_distortion", 0.12f);
+		clamp	(ldist, 0.f, 0.6f);
+		UpdateScopeShadow(act, prev_dir, ldist * lens_fade, lens_fade);
+		m_bScope2DZoomSet = true;		// we own the shared slot now -- so we are the one allowed to clear it
+		return;
+	}
+
+	// The circle goes out for EVERY 2D picture, not only when something wants to magnify or split the
+	// colours: the scope shadow needs those radii too, and an optic with no aberration in its config
+	// used to get no shadow at all.
+	//
+	// scope_nv_mask_radius is the GLASS -- the window in the scope picture (~0.35 of screen height for
+	// the stock art, 0.085 for the G36's little porthole). Measuring it off the texture's alpha
+	// UNDERSHOOTS: on most of this art the window is not fully transparent but a tinted pane, so an
+	// alpha threshold finds only its clear core. The figures here are read off the rendered picture. The
+	// margins are added where each user wants one: the night-vision mask deliberately overshoots so
+	// its soft edge hides under the body, while everything that has to line up with what the player
+	// actually sees -- the magnification, the aberration, the shadow -- uses the glass as it is. It
+	// used to hold the INFLATED figure, and the shadow's rim then sat outside the glass entirely,
+	// which is why a still player saw nothing at all.
+	shared_str sc = GetCurrentScopeSection();
+	const float r = Scope2DGlassRadius();
+
+	const float z = Scope2DDigitalZoom();
+	// the very key the 3D lens uses (CActor feeds it to m_hud_params.z): the attached scope's section
+	// first, then the weapon, read live so an upgrade counts
+	float ab = (sc.size() && pSettings->line_exist(*sc, "scope_abberation"))
+			? pSettings->r_float(*sc, "scope_abberation")
+			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_abberation", 0.f);
+	ab = upgraded_float("scope_abberation", ab);
+
+	const float aspect = (Device.fHeight_2 > 0.f) ? (Device.fWidth_2 / Device.fHeight_2) : 1.f;
+	// The radii are fractions of screen HEIGHT, and the picture keeps its height on every display -- an
+	// ultra-wide one only takes width away from it (ui_core::push_design_aspect) -- so the glass stays
+	// exactly this size and the circle needs no correction of its own. Dividing x by the aspect is
+	// already what makes it round on screen.
+	if (g_pGamePersistent)	g_pGamePersistent->pp_zoom_circle.set(r / aspect, r, z, ab);
+	m_bScope2DZoomSet = true;
+
+	{
+		float dist = (sc.size() && pSettings->line_exist(*sc, "scope_2d_distortion"))
+					? pSettings->r_float(*sc, "scope_2d_distortion")
+					: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_2d_distortion", 0.12f);
+		clamp	(dist, 0.f, 0.6f);
+		UpdateScopeShadow(act, prev_dir, dist);
+	}
+}
+
+// SCOPE SHADOW. Look through a real optic while swinging the rifle and the eye leaves its axis: the
+// exit pupil drifts to one side and a dark crescent creeps in from the other. Three things move it
+// -- the swing, the walk, and the shot -- and a lag filter eases the result, so a steady hold shows
+// no crescent at all. `dist` is the glass distortion that rides in the same constant's .w and means
+// nothing to the lens (its own shader bends the image), so that path passes 0.
+void CWeapon::UpdateScopeShadow(CActor* act, const Fvector& prev_dir, float dist, float strength)
+{
+	{
+		const float shadow_k = READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_2d_shadow_k", 1.f);
+		Fvector2 tgt; tgt.set(0.f, 0.f);
+		if (!prev_dir.similar(Fvector().set(0.f, 0.f, 0.f)) && Device.fTimeDelta > EPS)
+		{
+			Fvector dd; dd.sub(Device.vCameraDirection, prev_dir);
+			const float inv_dt = 1.f / Device.fTimeDelta;
+			// x is NOT negated and y is: the shift is applied in screen uv, where x runs the same way as
+			// the camera's right but y runs DOWN, opposite to its up.
+			tgt.set( dd.dotproduct(Device.vCameraRight) * inv_dt,
+					-dd.dotproduct(Device.vCameraTop)   * inv_dt);
+			tgt.mul(SCOPE_SHADOW_MAX * shadow_k / 1.5f);	// full drift at ~1.5 rad/s of swing
+			const float len = tgt.magnitude();
+			if (len > SCOPE_SHADOW_MAX * shadow_k)	tgt.mul((SCOPE_SHADOW_MAX * shadow_k) / len);
+		}
+
+		// Walking adds its own small wander: the head rides up and down against a rifle that does not,
+		// so the eye keeps stepping off the axis and back. Amplitude follows how fast the actor really
+		// moves, and the two frequencies are deliberately unequal so the drift traces a slow figure
+		// rather than a clean circle.
+		if (act->character_physics_support() && act->character_physics_support()->movement())
+		{
+			float sp = act->character_physics_support()->movement()->GetVelocityActual();
+			clamp		(sp, 0.f, 4.f);
+			sp /= 4.f;
+			if (sp > 0.01f)
+			{
+				const float t = Device.fTimeGlobal;
+				tgt.x += SCOPE_SHADOW_WALK * shadow_k * sp * _sin(t * 6.2f);
+				tgt.y += SCOPE_SHADOW_WALK * shadow_k * sp * _cos(t * 3.1f) * 0.6f;
+			}
+		}
+
+		// ...and a shot on top of all that
+		const float kick = ScopeKickFactor();
+		if (kick > 0.f)
+		{
+			tgt.x += m_scope_kick_dir.x * SCOPE_SHADOW_SHOT * shadow_k * kick;
+			tgt.y += m_scope_kick_dir.y * SCOPE_SHADOW_SHOT * shadow_k * kick;
+		}
+
+		const float lag = _min(1.f, Device.fTimeDelta * 10.f);
+		m_scope_shadow_shift.x += (tgt.x - m_scope_shadow_shift.x) * lag;
+		m_scope_shadow_shift.y += (tgt.y - m_scope_shadow_shift.y) * lag;
+		// .w is the lens distortion: how far the glass pulls the image OUT towards its rim (the middle
+		// of the field is left flat -- see pp_zoom_uv). It goes out for every 2D picture, not only when
+		// the eyepiece happens to be magnifying: the curvature is a property of the GLASS, so it must
+		// not appear and vanish as the optic is stepped between its powers -- at the ELCAN's low
+		// setting the eyepiece factor is exactly 1 and the lens used to go dead flat there.
+		// `strength` fades the DRIFT (and, at the call site, the curvature) with the picture they belong
+		// to: 1 for the flat scope, the lens's own visibility for a 3D one. The softness is deliberately
+		// NOT scaled -- shrinking it would sharpen the falloff on the way out instead of easing it away.
+		// The drift itself keeps running underneath; only what is published is scaled, so coming back out
+		// of the backup sight picks up where it left off.
+		if (g_pGamePersistent)
+			g_pGamePersistent->pp_scope_shadow.set(m_scope_shadow_shift.x * strength,
+													m_scope_shadow_shift.y * strength,
+													SCOPE_SHADOW_SOFT, dist);
+	}
+}
+
+void CWeapon::ClearScopeNVMask()
+{
+	if (!m_bScopeNVMaskSet)	return;
+	m_bScopeNVMaskSet = false;
+	if (g_pGamePersistent)	g_pGamePersistent->pp_mask_circle.set(0.5f, 0.5f, 0.f, 0.f);
+}
+
 void CWeapon::StopScopeNV()
 {
+	ClearScopeNVMask();
 	if (!m_bScopeNVActive)	return;
 	m_bScopeNVActive = false;
 	CActor* act = Actor();
@@ -4112,7 +4764,9 @@ bool CWeapon::render_item_ui_query()
 	// of the scope. Ours kept painting the scope over the alter pose, which is only invisible while the
 	// 3D lens is on (a lensed optic has no 2D picture to paint).
 	if (IsAlterZoom())	return false;
-	bool res = b_is_active_item && IsZoomed() && ZoomHideCrosshair() && ZoomTexture() && !IsRotatingToZoom();
+	// The picture comes off the moment the aim is released, even though the magnification is still
+	// easing out behind it (ScopeFadeFactor keeps running): the eye leaves the optic first.
+	bool res = b_is_active_item && IsZoomed() && ZoomHideCrosshair() && ZoomTexture() && Scope2DReady();
 	// The alive detector draws through this same hook, and it must work on a weapon that has NO 2D scope
 	// picture -- a PiP/lensed optic deliberately returns ZoomTexture() == NULL (see UseScopeTexture), which
 	// is exactly the gauss's case. On a LENSED optic the frames belong to the LENS frame only: drawn there
@@ -4139,6 +4793,7 @@ void CWeapon::render_item_ui()
 		m_pScopeVision->Draw();
 	}
 	if (!ZoomTexture())		return;					// lensed/collimator optic: no 2D picture to draw
+	ApplyScopeUIMotion		();						// the shot and the walk shove the sight picture about
 	ZoomTexture()->Update	();
 	ZoomTexture()->Draw		();
 }

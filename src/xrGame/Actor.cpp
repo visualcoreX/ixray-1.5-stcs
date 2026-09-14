@@ -1008,10 +1008,24 @@ float CActor::currentFOV()
 
 	if (pWeapon->ZoomTexture())
 	{
-		// scoped weapons: full zoom FOV only once fully rotated in (unchanged)
-		if (pWeapon->IsZoomed() && !pWeapon->IsRotatingToZoom())
-			return pWeapon->GetZoomFactor() * (0.75f);
-		return g_fov;
+		// Scoped weapons: the magnification used to arrive in one frame together with the scope
+		// picture. Both now ease in over the same short ramp (CWeapon::ScopeFadeFactor, the tail of
+		// the aim rotation), so the view grows into the optic instead of jumping into it. At the end
+		// of the rotation the value is exactly the old one, and aim-OUT is untouched.
+		// The optic's magnification is SPLIT -- the eyepiece resamples its share and the camera renders
+		// the rest, so the world outside the scope narrows only part of the way and the picture inside
+		// is stretched that much less.
+		const float k = pWeapon->ScopeFadeFactor();
+		if (k <= 0.f)	return g_fov;
+		{
+			const float cam_fov = pWeapon->Scope2DCameraFOV();
+			if (cam_fov > 0.f)	return g_fov + (cam_fov - g_fov) * k;
+			// ...and if the eyepiece is taking no share at all (binoculars, or an optic too weak to
+			// split), fall through: the world gets the whole zoom, exactly as it did before the split
+			// existed. Returning the base fov here left the binoculars with no magnification whatever.
+		}
+		const float zoomed = pWeapon->GetZoomFactor() * (0.75f);
+		return g_fov + (zoomed - g_fov) * k;
 	}
 
 	// iron sights: ease the FOV with the aim-in/out rotation (m_fZoomRotationFactor

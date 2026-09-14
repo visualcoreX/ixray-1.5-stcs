@@ -621,17 +621,13 @@ void CActor::IR_OnMouseMove(int dx, int dy)
 	CCameraBase* C	= cameras	[cam_active];
 	float scale		= (C->f_fov/g_fov)*psMouseSens * psMouseSensScale/50.f  / LookFactor;
 
-	// Gunslinger zoom_mouse_sense_koef: slow the look while aiming a PiP lensed scope. Its world FOV stays wide
-	// (all magnification is in the lens), so the f_fov/g_fov term above is ~1 and gives no slowdown -- the koef
-	// supplies it, matching the strong lens zoom (lower koef for higher magnification).
+	// A lensed (PiP) optic keeps the world FOV wide, so the f_fov/g_fov term above gives no slowdown at
+	// all and the weapon has to supply one -- from the configured koef with the lens on, from the real
+	// magnification with it off. CWeapon::AimSenseScale picks; it returns 1.0 for everything else.
 	{
-		// IsLensedScopeCfg, not IsLensedScope: with the 3D lens switched off the magnification arrives as a
-		// late FOV override in CCameraManager::ApplyDevice, which `C->f_fov` above never sees (currentFOV
-		// returns the base fov for this optic in BOTH modes) -- so the f_fov/g_fov term is still 1 and the
-		// koef is the ONLY thing slowing the look. Gating it on the option left 2D scopes at full speed.
 		CWeapon* pWpn = smart_cast<CWeapon*>(inventory().ActiveItem());
-		if (pWpn && pWpn->IsZoomed() && pWpn->IsLensedScopeCfg())
-			scale *= pWpn->ZoomMouseSenseKoef();
+		if (pWpn && pWpn->IsZoomed())
+			scale *= pWpn->AimSenseScale();
 	}
 
 	if (dx){

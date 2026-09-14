@@ -2452,6 +2452,8 @@ void CWeaponMagazined::SetDefaults	()
 
 void CWeaponMagazined::OnShot()
 {
+	OnScopeShotKick				();		// the 2D sight picture and the eye behind it take the punch
+
 	// remember the round we're about to fire (still at the back; FireTrace pops it AFTER OnShot). Its type
 	// colours the ejecting shell for the eject/pump window, so a chamber-first pump ejects the fired shell's
 	// colour and not the next chambered round's.

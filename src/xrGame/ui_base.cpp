@@ -97,6 +97,21 @@ sPoly2D* C2DFrustum::ClipPoly	(sPoly2D& S, sPoly2D& D) const
 	return dest;
 }
 
+// The aspect the UI art is drawn for. The layout files are _16 and the scope pictures are cut to fill a
+// 16:9 screen; anything wider stretches them, because the 1024x768 canvas is mapped to the screen on each
+// axis on its own (Sx = W/1024, Sy = H/768), so Sx/Sy -- and with it the shape of everything drawn -- is
+// the display's aspect. Nothing below 16:9 is touched.
+static const float UI_DESIGN_ASPECT = 16.0f/9.0f;
+
+float ui_core::design_aspect_scale()
+{
+	const float h = float(Device.dwHeight);
+	if (h <= 0.0f)								return 1.0f;
+	const float a = float(Device.dwWidth) / h;
+	if (a <= UI_DESIGN_ASPECT + 0.01f)			return 1.0f;
+	return a / UI_DESIGN_ASPECT;
+}
+
 void ui_core::OnDeviceReset()
 {
 	m_scale_.set		( float(Device.dwWidth)/UI_BASE_WIDTH, float(Device.dwHeight)/UI_BASE_HEIGHT );
@@ -216,7 +231,7 @@ ui_core::ui_core()
 		m_pFontManager				= NULL;
 	}
 	m_bPostprocess				= false;
-	
+
 	OnDeviceReset				();
 
 	m_current_scale				= &m_scale_;
