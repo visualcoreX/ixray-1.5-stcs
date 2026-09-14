@@ -199,7 +199,18 @@ void CDetailManager::UpdateVisibleM()
 	fade_limit					= fade_limit*fade_limit;
 	float fade_start			= 1.f;		fade_start=fade_start*fade_start;
 	float fade_range			= fade_limit-fade_start;
-	float		r_ssaCHEAP		= 16*r_ssaDISCARD;
+	// The size thresholds are FOV-dependent (r_ssaDISCARD = ssaDISCARD^2 / (screen * (90/fov)^2)) and the
+	// renderer recomputes that global EVERY frame. With the 3D lens the frames alternate between the lens fov
+	// (a few degrees) and the base view (~75), while each slot re-picks its items only every 15-30 frames
+	// (S.frame below) -- on whichever of the two it happens to land. So the far, faded clumps were thrown
+	// away on one refresh and kept on the next, and in the lens they visibly popped in and out. The slot
+	// selection now uses ONE fov: the lens one while a lensed scope is aimed (recorded in Render on the
+	// lens frames), the frame's own otherwise -- which is exactly what the global gave before.
+	const float	ssa_fov			= (m_ssa_fov > 1.f) ? m_ssa_fov : Device.fFOV;
+	IRender_Target* ssa_T		= RImplementation.getTarget();
+	const float	ssa_screen		= float(ssa_T->get_width()*ssa_T->get_height()) * _sqr(90.f/ssa_fov) * (EPS_S+ps_r__LOD);
+	const float	ssa_discard		= _sqr(ps_r__ssaDISCARD) / ssa_screen;
+	float		r_ssaCHEAP		= 16*ssa_discard;
 
 	for (u8 i = 0; i != 3; i++) {
 		auto& list = m_visibles[i];
@@ -261,7 +272,7 @@ void CDetailManager::UpdateVisibleM()
 							SlotItem& Item			= *(*siIT);
 							float   scale			= Item.scale_calculated	= Item.scale*alpha_i;
 							float	ssa				= scale*scale*Rq_drcp;
-							if (ssa < r_ssaDISCARD) continue;
+							if (ssa < ssa_discard) continue;
 							u32		vis_id			= 0;
 							if (ssa > r_ssaCHEAP)	vis_id = Item.vis_ID;
 							
@@ -289,6 +300,15 @@ void CDetailManager::Render	()
 #ifndef _EDITOR
 	if (0==dtFS)						return;
 	if (!psDeviceFlags.is(rsDetails))	return;
+#endif
+
+#ifndef _EDITOR
+	// the fov UpdateVisibleM sizes the grass at: a lens frame's own, and kept through the normal frames in
+	// between while the lens is aimed (they would otherwise flip it back every other frame)
+	if (!g_pGamePersistent->m_bLensAimActive || g_pGamePersistent->m_bLensFrameNow)
+		m_ssa_fov			= Device.fFOV;
+#else
+	m_ssa_fov				= Device.fFOV;
 #endif
 
 	// MT

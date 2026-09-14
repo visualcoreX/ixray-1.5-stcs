@@ -201,6 +201,8 @@ public:
 	xrCriticalSection				MT;
 	volatile u32					m_frame_calc;
 	volatile u32					m_frame_rendered;
+	// the FOV the size thresholds (ssaDISCARD / ssaCHEAP) are taken at -- see UpdateVisibleM
+	volatile float					m_ssa_fov = 0.f;
 
 	void	__stdcall				MT_CALC			() ;
 	ICF	void						MT_SYNC			() {
