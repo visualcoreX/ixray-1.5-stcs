@@ -106,13 +106,26 @@ void CStats::Show()
 	}
 
 	// calc FPS & TPS
-	if (Device.fTimeDelta>EPS_S) {
-		float fps  = 1.f/Device.fTimeDelta;
+	// A 3D PiP lens frame is rendered and never shown -- the screen keeps the previous image while
+	// the scope capture is taken. So it is not a frame the player was given: its time is carried
+	// over into the next shown one instead of being counted as a frame of its own, and the number
+	// becomes the rate the view really refreshes at. RFPS below is left as it was: it measures
+	// render throughput, and a lens frame is real work.
+	static float s_unshown_time = 0.f;
+	const bool   frame_shown = !(g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow);
+	if (!frame_shown)	s_unshown_time += Device.fTimeDelta;
+
+	if (frame_shown && (Device.fTimeDelta + s_unshown_time)>EPS_S) {
+		float fps  = 1.f/(Device.fTimeDelta + s_unshown_time);
+		s_unshown_time = 0.f;
 		//if (Engine.External.tune_enabled)	vtune.update	(fps);
 		float fOne = 0.3f;
 		float fInv = 1.f-fOne;
 		fFPS = fInv*fFPS + fOne*fps;
 
+	}
+	if (Device.fTimeDelta>EPS_S) {
+		float fOne = 0.3f, fInv = 1.f-fOne;
 		if (RenderTOTAL.result>EPS_S) {
 			u32	rendered_polies = Device.m_pRender->GetCacheStatPolys();
 			fTPS = fInv*fTPS + fOne*float(rendered_polies)/(RenderTOTAL.result*1000.f);
