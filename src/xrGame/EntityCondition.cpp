@@ -521,11 +521,19 @@ CWound* CEntityCondition::ConditionHit(SHit* pHDS)
 		// always puts itself there.
 		{
 			CObject*	hit_source	= pHDS->who;
-			bool		from_zone	= (smart_cast<CCustomZone*>(hit_source) != NULL);
-			if (!from_zone && pHDS->weaponID && (pHDS->weaponID != u16(-1)))
-				from_zone	= (smart_cast<CCustomZone*>(Level().Objects.net_Find(pHDS->weaponID)) != NULL);
+			CCustomZone* zone		= smart_cast<CCustomZone*>(hit_source);
+			if (!zone && pHDS->weaponID && (pHDS->weaponID != u16(-1)))
+				zone	= smart_cast<CCustomZone*>(Level().Objects.net_Find(pHDS->weaponID));
 
-			float		min_power	= from_zone ? gwr_burn_wound_min_power() : gwr_burn_wound_min_power_direct();
+			float		min_power	= zone ? gwr_burn_wound_min_power() : gwr_burn_wound_min_power_direct();
+			// A FRACTION OF *THIS* ANOMALY'S OWN PEAK, not an absolute number. The zone hits with
+			// max_start_power * RelativePower(dist), so a share of max_start_power is what actually means
+			// "how close to the flame" -- which is what this gate is for. Held as an absolute it silently
+			// depended on the anomaly being a full-strength one: the WEAK thermal mines
+			// (mar_zone_mine_thermal_weak, and the other _weak variants) never reach 0.5 anywhere inside
+			// them, not even dead centre, so they could not set the actor alight at all.
+			if (zone && zone->GetMaxPower() > EPS_S)
+				min_power	*= zone->GetMaxPower();
 
 			bAddWound		=  (gwr_burn_wound_factor() > 0.0f) && (smart_cast<CActor*>(m_object) != NULL)
 							&& (hit_power_org >= min_power);
