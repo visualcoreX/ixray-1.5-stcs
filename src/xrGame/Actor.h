@@ -750,6 +750,10 @@ public:
 	virtual	bool				InventoryAllowSprint			();
 	virtual void				OnNextWeaponSlot				();
 	virtual void				OnPrevWeaponSlot				();
+			// A device toggle pressed mid-sprint waits for the hands to step out of the sprint pose,
+			// exactly like a reload does: true = the press was handed to the active weapon and the
+			// caller must return, it comes back once the exit animation is done.
+			bool				DeferDeviceForSprintExit		(u8 action);
 			void				SwitchNightVision				();
 			void				SwitchTorch						();
 			void				SwitchWeaponLaser				();	// GS: toggle the active weapon's laser designator (kWPN_LASER)

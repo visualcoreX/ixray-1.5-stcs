@@ -461,17 +461,22 @@ protected:
 	bool			m_bZoomPendingSprint;	// aim pressed during sprint: aim-in once the sprint-exit anim is (almost) done
 	bool			m_bFirePendingSprint;	// fire pressed during sprint: fire once the sprint-exit anim is (almost) done
 	// One action may be waiting for the sprint-out transition: 0 none, 1 a reload, 2 a
-	// grenade-launcher switch (the launcher subclass adds that one). Both are re-issued from
-	// UpdateCL on the exit lock; ResumeSprintDeferred does the re-issuing.
+	// grenade-launcher switch (the launcher subclass adds that one), 3/4 a fire-mode step, 5..8 the
+	// device toggles the ACTOR owns -- headlamp, night vision, weapon laser, weapon flashlight. All
+	// are re-issued from UpdateCL on the exit lock; ResumeSprintDeferred does the re-issuing.
 	u8				m_sprint_pending_action;
 	bool			m_bSprintExitPlayed;	// that exit was played for it -- once per request, not per attempt
 	// Which world reload motion is playing, decided once when the reload starts. The magazine fills
 	// up mid-animation, so reading iAmmoElapsed every frame swaps the motion under the animation.
 	bool			m_bWorldReloadActive;
 	bool			m_bWorldReloadEmpty;
+public:
 	// Hold an action back until the hands have stepped out of the sprint pose. true = deferred and
-	// the caller must return; the action comes back through ResumeSprintDeferred.
+	// the caller must return; the action comes back through ResumeSprintDeferred. Public because the
+	// device toggles (headlamp/NV/laser/weapon light) are the ACTOR's keys, not the weapon's, and
+	// they wait on the same transition -- see CActor::DeferDeviceForSprintExit.
 	bool			DeferForSprintExit		(u8 action);
+protected:
 	virtual void	ResumeSprintDeferred	(u8 action);
 	// aiming is blocked during a light-misfire strike (task): an aim press/release that arrives while the
 	// click gesture plays is remembered here and replayed by UpdateCL once the strike ends (like the sprint defer).

@@ -569,6 +569,19 @@ void CWeaponMagazined::ResumeSprintDeferred(u8 action)
 	if		(1 == action)	Reload();
 	else if	(3 == action)	OnNextFireMode();
 	else if	(4 == action)	OnPrevFireMode();
+	else if	(action >= 5 && action <= 8)
+	{
+		// The device toggles belong to the actor -- the weapon only held the request while the hands
+		// left the sprint pose. Each Switch* re-enters its own gate, where m_bSprintExitPlayed (still
+		// set, it is dropped below) tells it the exit has already been played for this press.
+		if (CActor* pA = smart_cast<CActor*>(H_Parent()))
+		{
+			if		(5 == action)	pA->SwitchTorch();
+			else if	(6 == action)	pA->SwitchNightVision();
+			else if	(7 == action)	pA->SwitchWeaponLaser();
+			else					pA->SwitchWeaponFlashlight();
+		}
+	}
 	m_bSprintExitPlayed = false;
 }
 

@@ -1188,6 +1188,15 @@ static CHudItem* gwr_pda_device_gesture(PIItem ai, LPCSTR base)
 	return wm;
 }
 
+// Codes 5..8 of the weapon's sprint-exit queue (WeaponMagazined.h): headlamp, night vision, weapon
+// laser, weapon flashlight. With no magazined weapon in hand there is no sprint-exit animation to
+// wait for -- the same reason a reload does not wait either -- so the toggle just goes through.
+bool CActor::DeferDeviceForSprintExit(u8 action)
+{
+	CWeaponMagazined* wm = smart_cast<CWeaponMagazined*>(inventory().ActiveItem());
+	return wm && wm->DeferForSprintExit(action);
+}
+
 void CActor::SwitchNightVision()
 {
 	{	CWeapon* aw = smart_cast<CWeapon*>(inventory().ActiveItem());
@@ -1212,6 +1221,10 @@ void CActor::SwitchNightVision()
 	// otherwise ignore the key entirely -- no toggle, no animation, no sound
 	CCustomOutfit* outfit = GetOutfit();
 	if (!outfit || outfit->m_NightVisionSect.size() == 0)	return;
+
+	// Deferred only once everything above has agreed the toggle can actually happen: leaving the
+	// sprint for a key that does nothing would be an animation out of nowhere.
+	if (DeferDeviceForSprintExit(6))	return;
 
 	bool desired = !torch->GetNightVisionStatus();				// what it WILL become after the (deferred) toggle
 	LPCSTR base = desired ? "anm_nv_on" : "anm_nv_off";
@@ -1278,6 +1291,8 @@ void CActor::SwitchTorch()
 		if (!outfit || !outfit->m_bTorch)	return;
 	}
 
+	if (DeferDeviceForSprintExit(5))	return;
+
 	bool desired = !torch->torch_active();
 	LPCSTR base = desired ? "anm_headlamp_on" : "anm_headlamp_off";
 	PIItem ai = inventory().ActiveItem();
@@ -1314,6 +1329,7 @@ void CActor::SwitchWeaponLaser()
 	CWeapon* wpn = smart_cast<CWeapon*>(inventory().ActiveItem());
 	if (!wpn || !wpn->IsLaserInstalled())	return;
 	if (wpn->IsZoomed())	return;					// like torch/NV: lower the weapon first
+	if (DeferDeviceForSprintExit(7))	return;		// out of the sprint pose first, like a reload
 
 	bool desired	= !wpn->IsLaserEnabled();
 	LPCSTR base		= desired ? "anm_laser_on" : "anm_laser_off";
@@ -1340,6 +1356,7 @@ void CActor::SwitchWeaponFlashlight()
 	CWeapon* wpn = smart_cast<CWeapon*>(inventory().ActiveItem());
 	if (!wpn || !wpn->IsFlashlightInstalled())	return;
 	if (wpn->IsZoomed())	return;
+	if (DeferDeviceForSprintExit(8))	return;
 
 	bool desired	= !wpn->IsFlashlightEnabled();
 	LPCSTR base		= desired ? "anm_torch_on" : "anm_torch_off";
