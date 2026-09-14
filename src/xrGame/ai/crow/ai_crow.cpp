@@ -93,6 +93,7 @@ void CAI_Crow::init		()
 {
 	st_current			= eUndef;
 	st_target			= eFlyIdle;
+	o_workload_time		= 0;
 	vGoalDir.set		(10.0f*(Random.randF()-Random.randF()),10.0f*(Random.randF()-Random.randF()),10.0f*(Random.randF()-Random.randF()));
 	vCurrentDir.set		(0,0,1);
 	vHPB.set			(0,0,0);
@@ -269,6 +270,21 @@ void CAI_Crow::UpdateWorkload	(float fdt)
 {
 	if (o_workload_frame	==	Device.dwFrame)	return;
 	o_workload_frame		=	Device.dwFrame	;
+
+	// Step by the time since THIS crow last stepped, not by whatever delta the caller happens to be
+	// holding. The two callers measure different things -- renderable_Render passes one frame,
+	// shedule_Update a whole scheduler tick -- and the schedule one stands aside only while the crow
+	// was drawn on the immediately PREVIOUS frame. The 3D scope lens breaks that test: a lens frame
+	// renders the scene at the magnified fov and is never presented, so a crow outside the narrow lens
+	// view is culled on it, the "drawn last frame" check fails on the next scheduler tick, and the bird
+	// is advanced a SECOND time by the full tick -- which is the visible jerking. Reading the clock
+	// makes both callers agree on how much time has actually passed for this bird.
+	const u32	now		= Device.dwTimeGlobal;
+	if (o_workload_time && now > o_workload_time)
+		fdt					= float(now - o_workload_time) / 1000.f;
+	o_workload_time		=	now;
+	clamp					(fdt, 0.f, 0.5f);	// off screen for a while: catch up, never teleport
+
 	switch (st_current)		{
 	case eFlyIdle	:
 	case eFlyUp		:

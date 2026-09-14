@@ -103,6 +103,7 @@ protected:
 public:						
 	u32				o_workload_frame	;
 	u32				o_workload_rframe	;
+	u32				o_workload_time		;	// when this crow last integrated its flight, ms
 public:
 					CAI_Crow();
 	virtual			~CAI_Crow();
