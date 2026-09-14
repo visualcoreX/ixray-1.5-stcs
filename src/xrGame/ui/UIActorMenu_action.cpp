@@ -22,14 +22,25 @@
 #include "UIPropertiesBox.h"
 #include "UIDialogWnd.h"
 #include "../../xrEngine/xr_input.h"
+#include "../xr_level_controller.h"	// g_key_bindings: the stack modifier follows the WALK key
 
 #ifdef DEBUG
 #include <dinput.h>
 #endif
 
+// The WALK key ("accel" in the controls, Shift out of the box) is what drags a whole stack. Reading
+// the BINDING rather than Shift itself means a player who moved walking onto another key gets the
+// stack modifier there too -- and does not lose it, which is what hard-coding Shift did.
+// Both slots of the binding are checked (the controls screen offers a primary and an alternate one);
+// an empty slot leaves nothing to press, so the feature is simply off if walking is unbound.
 bool CUIActorMenu::StackKeyPressed()
 {
-	return	(!!pInput->iGetAsyncKeyState(DIK_LSHIFT) || !!pInput->iGetAsyncKeyState(DIK_RSHIFT));
+	const _binding* b = &g_key_bindings[kACCEL];
+	for (int i = 0; i < 2; ++i)
+		if (b->m_keyboard[i] && pInput->iGetAsyncKeyState(b->m_keyboard[i]->dik))
+			return true;
+
+	return false;
 }
 
 // One move takes a single item off a grouped cell: RemoveItem pops a child and PopChild swaps the
