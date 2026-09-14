@@ -2161,8 +2161,16 @@ bool CWeapon::Action(s32 cmd, u32 flags)
 							OnZoomIn	();
 						}
 					}else
-						if(IsZoomed())
-							OnZoomOut	();
+					{
+						// Hold aim: the release must be honoured even when the aim never got off the
+						// ground. Pressing aim during a sprint only QUEUES the aim-in (it waits for the
+						// sprint-exit animation, CWeaponMagazined::OnZoomIn), and testing IsZoomed()
+						// here dropped the key-up on the floor -- the queued aim-in then started long
+						// after the key was let go and the weapon stayed at the sights with nothing
+						// left to lower them. OnZoomOut guards on IsZoomed() itself for the real
+						// aim-out work, so calling it unconditionally only cancels what is pending.
+						OnZoomOut	();
+					}
 				}
 				return true;
 			}else 

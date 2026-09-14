@@ -4326,7 +4326,14 @@ void CWeaponMagazined::OnZoomOut		()
 	m_bZoomPendingSprint = false;	// releasing aim cancels a sprint-deferred aim-in
 
 	if(!IsZoomed())
+	{
+		// Released before the sights ever came up: drop everything queued to raise them, or it fires
+		// later on its own and leaves a held-aim weapon aimed with no key held.
+		m_bAimInPending			= false;
+		if (m_bZoomPendingMisfireIn)
+			m_bZoomPendingMisfire	= false;
 		return;
+	}
 
 	// task: a light-misfire strike blocks the aim-out too -- defer it so it doesn't run on top of the
 	// click gesture; UpdateCL replays it when the strike ends.
