@@ -134,9 +134,36 @@ void stalker_movement_manager_obstacles::build_level_path					()
 		m_dynamic_obstacles.inactive_query().copy		(m_dynamic_obstacles.active_query());
 #endif // MASTER_GOLD
 
+	// Cap on the rebuild loop below. Every turn of it is a FULL A* over the level graph, and the loop
+	// only ends when the simulated walk reaches the end of the path without meeting a new obstacle --
+	// so two obstacles that keep re-routing the path into each other spin here for ever. This runs on
+	// the SECONDARY thread, and the main one waits for it in mt_csEnter (device.cpp mt_Thread), so the
+	// whole game stops dead: no crash, no log, the loading screen frozen on "Client: synchronising".
+	// That is what killed a save on 2026-09-08, found in a hang dump -- mt_Thread -> build_level_path
+	// -> CGraphEngine::search. Give up after a few tries the same way a failed query does: keep the
+	// path we already had and let the stalker walk it. A frame of clumsy navigation beats a freeze.
+	u32								rebuild_count = 0;
+	const u32						max_rebuild_count = 8;
+
 	do {
 		if (m_failed_to_build_path)
 			break;
+
+		if (++rebuild_count > max_rebuild_count) {
+			// Give up AVOIDING, not walking. The obstacles that do not converge are almost always other
+			// stalkers (moving_objects::fill_nearest_list takes everything with is_ai_obstacle, people
+			// included), and a crowd in a narrow place is a deadlock by construction: each one re-routes
+			// around the others, who are re-routing around him. Standing there for ever is the worst of
+			// the possible answers -- vanilla simply walked into people and pushed through, which is
+			// also what the player sees when a stuck stalker is distracted by a dialogue and then gets
+			// out. So drop the obstacle border and take a plain path, exactly as the failed-search
+			// branch below does, and go with it.
+			m_static_obstacles.clear		();
+			m_saved_current_iteration.clear	();
+			level_path().invalidate_failed_info	();
+			inherited::build_level_path		();
+			break;
+		}
 
 		inherited::build_level_path	();
 
