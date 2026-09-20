@@ -1250,7 +1250,12 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 	// are the same most of the time, and differ exactly while the chamber holds a case of another type:
 	// a jam, or the brief eject window after a shot.
 	u32 mag_type;
-	if (m_magazine.empty())													mag_type = m_ammoType;
+	// An EMPTY magazine has no round to read its type from, and m_ammoType is no answer during a reload:
+	// when the loaded type ran out, TryReload's fallback switches m_ammoType to the type found in the
+	// inventory the moment reload is pressed -- so the magazine model (the gauss's mag vs mag_handmade)
+	// changed at the START of the animation instead of when the new magazine goes in. Until the insert
+	// mark the hands still hold the old magazine: show the type it last held.
+	if (m_magazine.empty())													mag_type = (reloading && !inserted) ? (u32)m_gwr_last_mag_type : m_ammoType;
 	else if (GwrChamberAtBack() && m_magazine.size() >= 2 && GetState() == eReload)
 																			mag_type = (u32)m_magazine[m_magazine.size()-2].m_LocalAmmoType;	// chamber-first reload: chamber pinned at back, so the round being loaded is one before it
 	else																	mag_type = (u32)m_magazine.back().m_LocalAmmoType;		// idle: back() = fires-next (winchester chamber / spas12 last-loaded LIFO)
