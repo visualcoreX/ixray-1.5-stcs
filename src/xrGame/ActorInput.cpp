@@ -1829,6 +1829,25 @@ bool CActor::StartControllerSuicide()
 	return true;
 }
 
+// GS ActivateActorSlot(KNIFE_SLOT). The grab raises `g_block_wpn_switch` for its whole length itself
+// (controller_psy_hit.cpp: "keep the weapon in hand, block only slot switching"), and CInventory::Activate
+// has refused to cross that flag ever since the item-use animations taught it to -- so the scene's own
+// knife activation was being dropped on the floor: the useless weapon was thrown away and the victim then
+// just stood there empty-handed under the grab. The scene has to cross the block it raised, the same
+// exception PerformDropForced already makes for the drop.
+// Lowering the flag around the call rather than passing bForce=true: force ALSO skips the holster
+// (SendDeactivateItem) of whatever is still in hand -- which the PDA branch needs, it puts the device away
+// instead of dropping it -- and it re-runs the whole activation on every 300 ms planning pulse while the
+// draw is already on its way.
+void CActor::SuicideActivateKnife()
+{
+	extern int g_block_wpn_switch;
+	const int saved		= g_block_wpn_switch;
+	g_block_wpn_switch	= 0;
+	inventory().Activate(KNIFE_SLOT);
+	g_block_wpn_switch	= saved;
+}
+
 // GS PsiEffects does the drop RIGHT IN THE BRANCH (`PerformDrop(act); exit;`) -- it never leaves the
 // weapon in hand for a later state to deal with. Deferring it to eSuicidePlanning meant a weapon that
 // still passed CanSuicide (a loaded launcher does, and so does a rifle in GL mode) took the "it was
@@ -1859,7 +1878,7 @@ bool CActor::SuicideDropAndTakeKnife()
 		m_bSuicideDropped = true;
 		PerformDropForced();
 	}
-	inventory().Activate(KNIFE_SLOT);
+	SuicideActivateKnife();
 
 	m_eSuicideState		= eSuicidePlanning;		// the knife takes over as soon as it is out
 	m_dwSuicideNextTm	= 0;
@@ -2034,7 +2053,7 @@ void CActor::UpdateControllerSuicide()
 										// the scene raises that flag itself, so the weapon was only
 										// holstered by the knife activation below instead of thrown
 		}
-		inventory().Activate(KNIFE_SLOT);
+		SuicideActivateKnife();
 		return;
 	}
 

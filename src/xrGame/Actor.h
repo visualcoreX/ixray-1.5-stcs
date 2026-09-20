@@ -798,6 +798,7 @@ public:
 										 || m_eSuicideState == eSuicideNoAnim; }
 			void				SuicideHudOffsetArrived			();
 			bool				SuicideDropAndTakeKnife			();	// GS PerformDrop, right in the branch
+			void				SuicideActivateKnife			();	// GS ActivateActorSlot(KNIFE_SLOT)
 			void				SetControllerDist				(float d) { m_fCtrlDist = d; }	// GS re-reads it per pulse
 public:
 			// Wall-clock tick of the actor's last shot (0 = has not fired this session). Scripts have
