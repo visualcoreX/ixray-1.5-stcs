@@ -16,6 +16,7 @@
 #include "../actor.h"
 #include "../../xrServerEntities/script_process.h"
 #include "../inventory.h"
+#include "../Weapon.h"
 
 #include "ai_space.h"
 #include "alife_simulator.h"
@@ -48,6 +49,8 @@ CUIInventoryUpgradeWnd::CUIInventoryUpgradeWnd()
 {
 	m_inv_item       = NULL;
 	m_cur_upgrade_id = NULL;
+	m_lamp_hover     = NULL;
+	m_lamp_hover_frame = 0;
 	m_current_scheme = NULL;
 	m_btn_repair     = NULL;
 }
@@ -200,6 +203,11 @@ bool CUIInventoryUpgradeWnd::install_item( CInventoryItem& inv_item, bool can_up
 	}
 
 	SetCurScheme( scheme_name );
+
+	// Weapons show their upgrade state the Call of Pripyat way (a lamp beside the icon), outfits keep
+	// Clear Sky's colour wash. Decided per item: the scheme cells are shared between the two.
+	const bool lamp_mode = ( smart_cast<CWeapon*>( &inv_item ) != NULL );
+	m_lamp_hover = NULL;
 	
 	UI_Upgrades_type::iterator ib = m_current_scheme->cells.begin();
 	UI_Upgrades_type::iterator ie = m_current_scheme->cells.end();
@@ -227,6 +235,7 @@ bool CUIInventoryUpgradeWnd::install_item( CInventoryItem& inv_item, bool can_up
 		}
 
 		m_scheme_wnd->AttachChild( ui_item );
+		ui_item->set_lamp_mode( lamp_mode );
 		ui_item->init_upgrade( upgrade_name, inv_item );
 
 		Property_type* prop_p = get_manager().get_property( upgrade_p->get_property_name() );
@@ -320,6 +329,19 @@ void CUIInventoryUpgradeWnd::ResetHighlight()
 {
 	UpdateAllUpgrades();
 	get_manager().reset_highlight( *m_inv_item );
+}
+
+// The hovered cell reports itself every frame it is under the cursor; the others read it back. A one-frame
+// grace covers the cells that update before the hovered one within the same frame.
+void CUIInventoryUpgradeWnd::set_lamp_hover( Upgrade_type* upgr )
+{
+	m_lamp_hover		= upgr;
+	m_lamp_hover_frame	= Device.dwFrame;
+}
+
+CUIInventoryUpgradeWnd::Upgrade_type* CUIInventoryUpgradeWnd::lamp_hover_upgrade() const
+{
+	return ( m_lamp_hover && m_lamp_hover_frame + 1 >= Device.dwFrame ) ? m_lamp_hover : NULL;
 }
 
 void CUIInventoryUpgradeWnd::set_info_cur_upgrade( Upgrade_type* upgrade )

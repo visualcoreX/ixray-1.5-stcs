@@ -76,6 +76,10 @@ private:
 	CUIStatic*		m_color;
 	CUIStatic*		m_border;
 	CUIStatic*		m_ink;
+	// CoP state lamp: a thin strip down the icon's left edge (weapons only, see set_lamp_mode)
+	CUIStatic*		m_lamp;
+	bool			m_lamp_mode;
+	LPCSTR			m_lamp_shown;	// the lamp texture currently on m_lamp (NULL = hidden)
 
 //	CUIStatic*		m_prop;
 
@@ -102,6 +106,10 @@ public:
 			void		load_from_xml( CUIXml& ui_xml, int i_column, int i_cell, Frect const& t_cell_border, Frect const& t_cell_item );
 			void		init_property( Fvector2 const& pos, Fvector2 const& size );
 			void		set_texture( Layer layer, LPCSTR texture );
+			// Call of Pripyat look: the state shows as a lamp beside the icon (and a dimmed icon) instead of
+			// Clear Sky's colour wash over the whole cell. The window turns it on for weapons only.
+			void		set_lamp_mode( bool on );
+			void		refresh_lamp();
 			
 	virtual	void		Draw();
 	virtual	void		Update();

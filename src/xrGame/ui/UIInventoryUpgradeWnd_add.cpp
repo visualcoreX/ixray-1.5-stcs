@@ -30,6 +30,10 @@ void CUIInventoryUpgradeWnd::LoadCellsBacks( CUIXml& uiXml )
 		LPCSTR txr   = uiXml.Read( "back_texture", 0, NULL );
 		u32    color = CUIXmlInit::GetColor( uiXml, "item_color", 0, 0 );
 		LoadCellStates( type, txr, color );
+		// CoP lamp beside the icon for this state (weapons only); optional, absent = no lamp
+		LPCSTR lamp  = uiXml.Read( "lamp_texture", 0, NULL );
+		if ( lamp && lamp[0] )
+			m_lamp_textures[SelectCellState( type )] = lamp;
 
 		uiXml.SetLocalRoot( node );
 	}

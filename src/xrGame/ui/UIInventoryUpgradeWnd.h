@@ -56,6 +56,8 @@ public: // func
 
 	IC CInventoryItem const*	get_inventory() const { return m_inv_item; }
 	IC LPCSTR				get_cell_texture( UIUpgrade::ViewState state ) const { return m_cell_textures[state].c_str(); }
+	// the CoP lamp for a state (<lamp_texture> in <cell_states>), NULL = no lamp in that state
+	IC LPCSTR				get_lamp_texture( UIUpgrade::ViewState state ) const { return m_lamp_textures[state].size() ? m_lamp_textures[state].c_str() : NULL; }
 //	IC u32					get_cell_color(   UIUpgrade::ViewState state ) const { return m_cell_colors[state]; }
 //-	   u32					get_cell_color2(  UIUpgrade::ViewState state ) const;
 
@@ -72,6 +74,9 @@ public: // func
 			void			ResetHighlight();
 			void			set_info_cur_upgrade( Upgrade_type* upgrade );
 	UIUpgrade*				FindUIUpgrade( Upgrade_type const* upgr );
+	// weapon lamps: the installable upgrade under the cursor, so its group mates can show red (see refresh_lamp)
+			void			set_lamp_hover( Upgrade_type* upgr );
+			Upgrade_type*	lamp_hover_upgrade() const;
 
 private:
 			void			LoadCellsBacks( CUIXml& uiXml );
@@ -95,6 +100,7 @@ protected:
 	CInventoryItem*			m_inv_item;
 
 	shared_str				m_cell_textures[UIUpgrade::STATE_COUNT];
+	shared_str				m_lamp_textures[UIUpgrade::STATE_COUNT];
 //	u32						m_cell_colors[UIUpgrade::STATE_COUNT];
 	shared_str				m_border_texture;
 	shared_str				m_ink_texture;
@@ -103,6 +109,8 @@ protected:
 	Scheme*					m_current_scheme;
 	LPCSTR					m_cur_upgrade_id;
 	CUIWindow*				m_scheme_wnd;
+	Upgrade_type*			m_lamp_hover;		// see set_lamp_hover
+	u32						m_lamp_hover_frame;
 
 }; // class CUIInventoryUpgradeWnd
 
