@@ -15,10 +15,10 @@ class CWeaponShotEffector
 {
 protected:
 	CameraRecoil	m_cam_recoil;
-	
+
 	float			m_angle_vert;
 	float			m_angle_horz;
-	
+
 	float			m_prev_angle_vert;
 	float			m_prev_angle_horz;
 
@@ -29,9 +29,52 @@ protected:
 	bool			m_shot_end;
 	bool			m_first_shot;
 //	float			m_first_shot_pos;
-	
+
 	bool			m_actived;
 	bool			m_single_shot;
+
+	// Recoil is driven as two eased animation phases layered over m_angle_vert/m_angle_horz above
+	// (see EffectorShot.cpp for the curves): a per-shot "rise" toward the angle the shot kicked to,
+	// then -- if the weapon returns at all -- a "relax" that only gives back cam_relax_amount of
+	// THAT shot's own kick, never the full accumulated recoil. Horizontal only ever rises; it has no
+	// relax phase (see the header comment on m_angle_horz_target).
+	enum EPhase
+	{
+		ePhaseIdle = 0,
+		ePhaseRising,
+		ePhaseRelaxing,
+	};
+
+	EPhase			m_phase;
+
+	// Logical (pre-interpolation) recoil level: what Shot2() would have set m_angle_vert/horz to
+	// instantly under the old model. Next shot's kick is added on top of this, NOT on top of the
+	// currently visible mid-animation value, so the burst-climb math stays independent of frame rate.
+	float			m_angle_vert_target;
+	float			m_angle_horz_target;
+
+	// Where the visible angle was when the current rise phase started, and how far into it we are.
+	float			m_angle_vert_from;
+	float			m_angle_horz_from;
+	float			m_rise_elapsed;
+
+	// The relax phase eases from m_relax_from down to m_relax_floor (never all the way to 0).
+	float			m_relax_from;
+	float			m_relax_floor;
+	float			m_relax_elapsed;
+	float			m_relax_duration;
+
+	// Vertical delta this shot's rise actually contributed (post max-angle clamp) -- cam_relax_amount
+	// is applied against this, not the total accumulated angle.
+	float			m_last_kick_vert;
+
+	// Roll (Z-axis) shake: one full damped sine cycle per shot, amplitude cam_roll_amount (or
+	// cam_dispersion*0.5 as a fallback), duration cam_rise_time*1.25 -- see GetRoll(). Each shot
+	// starts its OWN independent wave instead of restarting a shared timer, so overlapping shots
+	// (fast RPM) sum together instead of snapping the camera when the previous wave hadn't finished.
+	enum { MAX_ROLL_INSTANCES = 16 };
+	float			m_roll_elapsed[MAX_ROLL_INSTANCES];
+	int				m_roll_count;
 
 private:
 	CRandom			m_Random;
@@ -44,7 +87,9 @@ public:
 		void	Initialize			(const CameraRecoil& cam_recoil);
 		void	Reset				();
 
-	IC	bool	IsActive			(){return m_actived;}
+	// Also true while a roll wave from an already-finished burst is still decaying, so the camera
+	// effector isn't torn down (and the roll cut off mid-wave) before it reaches 0 on its own.
+	IC	bool	IsActive			(){return m_actived || m_roll_count > 0;}
 //		void	SetActive			(bool Active)		{			m_actived = Active;		}
 	IC	void	StopShoting			()	{ m_shot_end = true; }
 
@@ -58,9 +103,10 @@ public:
 		void	GetDeltaAngle		(Fvector& angle);
 		void	GetLastDelta		(Fvector& delta_angle);
 		void	ChangeHP			(float* pitch, float* yaw);
+		float	GetRoll				() const;
 
 protected:
-		void	Relax				();
+		void	BeginRelax			();
 };
 
 class CCameraShotEffector : public CWeaponShotEffector, public CEffectorCam

@@ -444,6 +444,22 @@ void CWeapon::Load		(LPCSTR section)
 	
 	cam_recoil.DispersionFrac	= _abs( READ_IF_EXISTS( pSettings, r_float, section, "cam_dispersion_frac", 0.7f ) );
 
+	// Duration of the eased rise to a shot's kick angle. Was briefly derived from the weapon's own
+	// rate of fire (60/rpm), but that fell apart on semi-auto weapons with an artificially low rpm
+	// (their long inter-shot gap doesn't mean the recoil itself should rise slowly) -- back to one
+	// fixed default for every weapon.
+	cam_recoil.RiseTime		= _abs( READ_IF_EXISTS( pSettings, r_float, section, "cam_rise_time",    0.075f ) );
+	// How much of THAT shot's own kick the relax phase gives back afterwards (0.5 = camera settles
+	// back down only halfway to where it was before the shot). Optional -- absent configs fall back
+	// to the CameraRecoil ctor default.
+	cam_recoil.RelaxAmount	= clampr( READ_IF_EXISTS( pSettings, r_float, section, "cam_relax_amount", 0.5f ), 0.0f, 1.0f );
+
+	// Peak roll-shake angle. No default here on purpose: absent from the ltx means "keep falling
+	// back to Dispersion*0.75" (the negative sentinel), which is what GetRoll() does at runtime.
+	cam_recoil.RollAmount = pSettings->line_exist( section, "cam_roll_amount" )
+		? _abs( deg2rad( pSettings->r_float( section, "cam_roll_amount" ) ) )
+		: -1.0f;
+
 	//подбрасывание камеры во время отдачи в режиме zoom ==> ironsight or scope
 	//zoom_cam_recoil.Clone( cam_recoil ); ==== нельзя !!!!!!!!!!
 	zoom_cam_recoil.RelaxSpeed		= cam_recoil.RelaxSpeed;
@@ -452,6 +468,9 @@ void CWeapon::Load		(LPCSTR section)
 	zoom_cam_recoil.MaxAngleVert	= cam_recoil.MaxAngleVert;
 	zoom_cam_recoil.MaxAngleHorz	= cam_recoil.MaxAngleHorz;
 	zoom_cam_recoil.StepAngleHorz	= cam_recoil.StepAngleHorz;
+	zoom_cam_recoil.RiseTime		= cam_recoil.RiseTime;
+	zoom_cam_recoil.RelaxAmount		= cam_recoil.RelaxAmount;
+	zoom_cam_recoil.RollAmount		= cam_recoil.RollAmount;
 
 	zoom_cam_recoil.ReturnMode		= cam_recoil.ReturnMode;
 	zoom_cam_recoil.StopReturn		= cam_recoil.StopReturn;
@@ -498,6 +517,15 @@ void CWeapon::Load		(LPCSTR section)
 	}
 	if ( pSettings->line_exist( section, "zoom_cam_dispersion_frac" ) )	{
 		zoom_cam_recoil.DispersionFrac	= _abs( pSettings->r_float( section, "zoom_cam_dispersion_frac" ) );
+	}
+	if ( pSettings->line_exist( section, "zoom_cam_rise_time" ) )	{
+		zoom_cam_recoil.RiseTime		= _abs( pSettings->r_float( section, "zoom_cam_rise_time" ) );
+	}
+	if ( pSettings->line_exist( section, "zoom_cam_relax_amount" ) )	{
+		zoom_cam_recoil.RelaxAmount		= clampr( pSettings->r_float( section, "zoom_cam_relax_amount" ), 0.0f, 1.0f );
+	}
+	if ( pSettings->line_exist( section, "zoom_cam_roll_amount" ) )	{
+		zoom_cam_recoil.RollAmount		= _abs( deg2rad( pSettings->r_float( section, "zoom_cam_roll_amount" ) ) );
 	}
 
 	m_pdm.m_fPDM_disp_base			= pSettings->r_float( section, "PDM_disp_base"			);
