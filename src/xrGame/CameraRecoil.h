@@ -8,7 +8,7 @@
 #ifndef CAMERA_RECOIL_H_INCLUDED
 #define CAMERA_RECOIL_H_INCLUDED
 
-//отдача при стрельбе 
+//пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 
 struct CameraRecoil
 {
 	float		RelaxSpeed;
@@ -23,6 +23,19 @@ struct CameraRecoil
 	bool		ReturnMode;
 	bool		StopReturn;
 
+	// Duration (seconds) of the eased rise from the current camera offset up to the angle a shot
+	// just kicked it to -- see cam_rise_time. 0 reproduces the old instant "snap".
+	float		RiseTime;
+	// Fraction of the LAST shot's own kick that the relax phase is allowed to undo -- see
+	// cam_relax_amount. 1.0 fully undoes that shot's kick (old-style return-to-base); smaller values
+	// leave more of it standing so a burst climbs instead of fighting the relax every frame.
+	float		RelaxAmount;
+
+	// Peak angle (radians) of the per-shot roll shake -- see cam_roll_amount and
+	// CWeaponShotEffector::GetRoll(). Negative means "not set in the ltx": the effector then falls
+	// back to Dispersion*0.75.
+	float		RollAmount;
+
 	CameraRecoil():
 		MaxAngleVert	( EPS   ),
 		MaxAngleVert_AI	( EPS   ),
@@ -34,7 +47,10 @@ struct CameraRecoil
 		MaxAngleHorz	( EPS   ),
 		StepAngleHorz	( 0.0f  ),
 		ReturnMode		( false ),
-		StopReturn		( false )
+		StopReturn		( false ),
+		RiseTime		( 0.075f ),
+		RelaxAmount		( 0.5f  ),
+		RollAmount		( -1.0f )
 	{};
 
 	CameraRecoil( const CameraRecoil& clone )		{	Clone( clone );	}
@@ -54,7 +70,11 @@ struct CameraRecoil
 
 		ReturnMode		= clone.ReturnMode;
 		StopReturn		= clone.StopReturn;
-		
+
+		RiseTime		= clone.RiseTime;
+		RelaxAmount		= clone.RelaxAmount;
+		RollAmount		= clone.RollAmount;
+
 		VERIFY( !fis_zero(RelaxSpeed)    );
 		VERIFY( !fis_zero(RelaxSpeed_AI) );
 		VERIFY( !fis_zero(MaxAngleVert)  );

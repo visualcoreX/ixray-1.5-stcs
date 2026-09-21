@@ -18,12 +18,16 @@ void CWeapon::DumpActiveParams(shared_str const & section_name, CInifile & dst_i
 	dst_ini.w_float	(section_name.c_str(), "cam_max_angle_horz",		cam_recoil.MaxAngleHorz);
 	dst_ini.w_float	(section_name.c_str(), "cam_step_angle_horz",		cam_recoil.StepAngleHorz);
 	dst_ini.w_float	(section_name.c_str(), "cam_dispersion_frac",		cam_recoil.DispersionFrac);
+	dst_ini.w_float	(section_name.c_str(), "cam_rise_time",			cam_recoil.RiseTime);
+	dst_ini.w_float	(section_name.c_str(), "cam_relax_amount",		cam_recoil.RelaxAmount);
 
 	dst_ini.w_float	(section_name.c_str(), "zoom_cam_relax_speed",		zoom_cam_recoil.RelaxSpeed);
 	dst_ini.w_float	(section_name.c_str(), "zoom_cam_max_angle",		zoom_cam_recoil.MaxAngleVert);
 	dst_ini.w_float	(section_name.c_str(), "zoom_cam_max_angle_horz",	zoom_cam_recoil.MaxAngleHorz);
 	dst_ini.w_float	(section_name.c_str(), "zoom_cam_step_angle_horz",	zoom_cam_recoil.StepAngleHorz);
 	dst_ini.w_float	(section_name.c_str(), "zoom_cam_dispersion_frac",	zoom_cam_recoil.DispersionFrac);
+	dst_ini.w_float	(section_name.c_str(), "zoom_cam_rise_time",		zoom_cam_recoil.RiseTime);
+	dst_ini.w_float	(section_name.c_str(), "zoom_cam_relax_amount",	zoom_cam_recoil.RelaxAmount);
 
 	dst_ini.w_float	(section_name.c_str(), "cam_dispersion",			cam_recoil.Dispersion);
 	dst_ini.w_float	(section_name.c_str(), "cam_dispersion_inc",		cam_recoil.DispersionInc);
