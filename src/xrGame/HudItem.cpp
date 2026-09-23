@@ -244,6 +244,23 @@ void CHudItem::PlaySound(LPCSTR alias, const Fvector& position, bool b_force_unl
 		if (m_sounds.FindSoundItem(own, false))
 			alias				= own;
 	}
+	else
+	{
+		// Distant twin: a key may also have "_dist", loaded under "<alias>Dist" with the distances it
+		// takes over at. Heard from afar the two are crossfaded by distance (see DistantSoundBlend);
+		// without the twin the plain sound plays at any range, as before.
+		string64			far_alias;
+		strconcat			(sizeof(far_alias), far_alias, alias, "Dist");
+		if (HUD_SOUND_ITEM* far_snd = m_sounds.FindSoundItem(far_alias, false))
+		{
+			const float	k	= DistantSoundBlend(position, far_snd->m_blend_dist_start, far_snd->m_blend_dist_end);
+			if (k < 1.0f)
+				m_sounds.PlaySound	(alias, position, object().H_Root(), false, false, u8(-1), b_force_unlock, 1.0f - k);
+			if (k > 0.0f)
+				m_sounds.PlaySound	(far_alias, position, object().H_Root(), false, false, u8(-1), b_force_unlock, k);
+			return;
+		}
+	}
 
 	m_sounds.PlaySound	(alias, position, object().H_Root(), hud_mode, false, u8(-1), b_force_unlock);
 }

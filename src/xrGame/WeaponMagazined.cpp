@@ -210,6 +210,14 @@ void CWeaponMagazined::Load	(LPCSTR section)
 	// looking through this weapon). Optional: without it both views keep the one recording.
 	if (WeaponSoundExist(section, "snd_shoot_1p"))
 		m_sounds.LoadSound(section, "snd_shoot_1p", "sndShot1P", false, m_eSoundShot);
+	// ...and as it is heard from afar (CHudItem::PlaySound crossfades the two by distance). Optional too.
+	if (WeaponSoundExist(section, "snd_shoot_dist"))
+	{
+		m_sounds.LoadSound(section, "snd_shoot_dist", "sndShotDist", false, m_eSoundShot);
+		HUD_SOUND_ITEM* far_snd		= m_sounds.FindSoundItem("sndShotDist", true);
+		far_snd->m_blend_dist_start	= READ_IF_EXISTS(pSettings, r_float, section, "snd_shoot_blend_dist_start", DISTANT_SND_BLEND_START_DEF);
+		far_snd->m_blend_dist_end	= READ_IF_EXISTS(pSettings, r_float, section, "snd_shoot_blend_dist_end", DISTANT_SND_BLEND_END_DEF);
+	}
 	m_sounds.LoadSound(section,"snd_empty", "sndEmptyClick"	, false, m_eSoundEmptyClick	);
 	// GS snd_jammed_click: a JAM (клин) clicks with its own sound, NOT the empty-magazine click. Optional --
 	// if a weapon doesn't define it, a jam stays silent (GS pistols do exactly this), never the empty click.
