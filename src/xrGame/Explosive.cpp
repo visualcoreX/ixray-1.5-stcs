@@ -89,7 +89,8 @@ void CExplosive::LightDestroy()
 
 CExplosive::~CExplosive(void) 
 {
-	sndExplode.destroy		();
+	HUD_SOUND_ITEM::DestroySound	(sndExplode);
+	HUD_SOUND_ITEM::DestroySound	(sndExplodeDist);
 }
 
 
@@ -170,8 +171,11 @@ void CExplosive::Load(CInifile *ini,LPCSTR section)
 	//трассы для разлета осколков
 	m_fFragmentSpeed			= ini->r_float	(section,"fragment_speed"				);
 
-	LPCSTR	snd_name		= ini->r_string(section,"snd_explode");
-	sndExplode.create		(snd_name, st_Effect,m_eSoundExplode);
+	R_ASSERT3				(ini->line_exist(section,"snd_explode"), "no snd_explode in", section);
+	HUD_SOUND_ITEM::LoadSound	(section, "snd_explode", sndExplode, m_eSoundExplode, ini);
+	HUD_SOUND_ITEM::LoadSound	(section, "snd_explode_dist", sndExplodeDist, m_eSoundExplode, ini);	// empty if absent
+	sndExplodeDist.m_blend_dist_start	= READ_IF_EXISTS(ini, r_float, section, "snd_explode_blend_dist_start", DISTANT_SND_BLEND_START_DEF);
+	sndExplodeDist.m_blend_dist_end		= READ_IF_EXISTS(ini, r_float, section, "snd_explode_blend_dist_end", DISTANT_SND_BLEND_END_DEF);
 
 	m_fExplodeDurationMax	= ini->r_float(section, "explode_duration");
 
@@ -381,7 +385,14 @@ void CExplosive::Explode()
 //	Msg("---------CExplosive Explode [%d] frame[%d]",cast_game_object()->ID(), Device.dwFrame);
 	OnBeforeExplosion();
 	//играем звук взрыва
-	Sound->play_at_pos(sndExplode, 0, pos, false);
+	// near and far recordings crossfaded by the distance to the listener (DistantSoundBlend); without
+	// snd_explode_dist the near one plays at full volume at any range
+	const float	far_k		= sndExplodeDist.sounds.empty() ? 0.0f :
+		DistantSoundBlend(pos, sndExplodeDist.m_blend_dist_start, sndExplodeDist.m_blend_dist_end);
+	if (far_k < 1.0f)
+		HUD_SOUND_ITEM::PlaySound	(sndExplode, pos, NULL, false, false, u8(-1), false, 1.0f - far_k);
+	if (far_k > 0.0f)
+		HUD_SOUND_ITEM::PlaySound	(sndExplodeDist, pos, NULL, false, false, u8(-1), false, far_k);
 	
 	//показываем эффекты
 

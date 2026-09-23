@@ -12,6 +12,7 @@
 #include "DamageSource.h"
 #include "wallmark_manager.h"
 #include "ParticlesObject.h"
+#include "HudSound.h"
 class IRender_Light;
 
 using BLASTED_OBJECTS_V = xr_vector<CPhysicsShellHolder*>;
@@ -82,7 +83,7 @@ protected:
 	xr_vector<u32>				m_ExplosionHitTypes;		// explosion_hit_types (empty = explosion only)
 public:
 protected:
-			bool				IsSoundPlaying			(){return !!sndExplode._feedback();}
+			bool				IsSoundPlaying			(){return !!sndExplode.playing() || !!sndExplodeDist.playing();}
 			bool				IsExploded				(){return !!m_explosion_flags.test(flExploded);}
 public:
 			bool				IsExploding				(){return !!m_explosion_flags.test(flExploding);}
@@ -155,7 +156,10 @@ protected:
 	float						m_fFragmentSpeed;
 	
 	//звуки
-	ref_sound					sndExplode;
+	// snd_explode[N] and the optional snd_explode_dist[N] (the blast heard from afar, crossfaded with
+	// the near one by distance). Numbered variants are picked at random, the same as a weapon's shot.
+	HUD_SOUND_ITEM				sndExplode;
+	HUD_SOUND_ITEM				sndExplodeDist;
 	ESoundTypes					m_eSoundExplode;
 
 	//размер отметки на стенах

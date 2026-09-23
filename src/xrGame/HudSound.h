@@ -1,20 +1,33 @@
 #pragma once
 
 
+// Distant-sound crossfade. A shot or a blast may have a second recording of how it sounds from afar
+// (snd_shoot_dist / snd_explode_dist); the two are mixed linearly by the distance to the listener:
+// only the near one up to <start> metres, only the far one past <end>, both in between. Returns the far
+// sound's share (0..1); the near one gets the rest.
+#define DISTANT_SND_BLEND_START_DEF		40.f
+#define DISTANT_SND_BLEND_END_DEF		60.f
+float	DistantSoundBlend	(const Fvector& position, float start, float end);
+
 struct HUD_SOUND_ITEM
 {
-	HUD_SOUND_ITEM():m_activeSnd(NULL),m_b_exclusive(false),m_volume(1.0f)		{}
+	HUD_SOUND_ITEM():m_activeSnd(NULL),m_b_exclusive(false),m_volume(1.0f),
+		m_blend_dist_start(DISTANT_SND_BLEND_START_DEF),m_blend_dist_end(DISTANT_SND_BLEND_END_DEF)	{}
 
 	static void		LoadSound		(	LPCSTR section, LPCSTR line,
 										ref_sound& hud_snd,
 										int type = sg_SourceType,
 										float* unlock_freq = NULL,
-										float* delay = NULL);
+										float* delay = NULL,
+										CInifile* ini = NULL);
 
+	// ini: where the section lives, pSettings when NULL (a car's or a heli's explosion comes from the
+	// model's user data)
 	static void		LoadSound		(	LPCSTR section, 
 										LPCSTR line,
 										HUD_SOUND_ITEM& hud_snd,  
-										int type = sg_SourceType);
+										int type = sg_SourceType,
+										CInifile* ini = NULL);
 
 	static void		DestroySound	(	HUD_SOUND_ITEM& hud_snd);
 
@@ -26,7 +39,8 @@ struct HUD_SOUND_ITEM
 										bool hud_mode,
 										bool looped = false,
 										u8 index=u8(-1),
-										bool b_force_unlock = false);
+										bool b_force_unlock = false,
+										float volume_k = 1.0f);
 
 	static void		StopSound		(	HUD_SOUND_ITEM& snd);
 
@@ -57,6 +71,9 @@ struct HUD_SOUND_ITEM
 	SSnd*			m_activeSnd;
 	bool			m_b_exclusive;
 	float			m_volume;	// real volume, from the "volume_<line>" key (percent); 1.0 if absent
+	// only meaningful on a "<alias>Dist" item: where it starts and finishes taking over from <alias>
+	float			m_blend_dist_start;
+	float			m_blend_dist_end;
 	xr_vector<SSnd> sounds;
 
 	bool operator == (LPCSTR alias) const{return 0==_stricmp(m_alias.c_str(),alias);}
@@ -74,7 +91,8 @@ public:
 													bool hud_mode,
 													bool looped = false,
 													u8 index=u8(-1),
-													bool b_force_unlock = false);
+													bool b_force_unlock = false,
+													float volume_k = 1.0f);
 
 	void						StopSound		(	LPCSTR alias);
 
