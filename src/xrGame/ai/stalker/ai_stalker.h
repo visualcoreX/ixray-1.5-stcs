@@ -200,6 +200,7 @@ public:
 
 	virtual void						g_WeaponBones						(int &L, int &R1, int &R2);
 	virtual void						g_fireParams						(const CHudItem* pHudItem, Fvector& P, Fvector& D);
+			Fvector						fire_origin							();
 	virtual void						HitSignal							(float P,	Fvector& vLocalDir, CObject* who, s16 element);
 	virtual void						Die									(CObject* who);
 

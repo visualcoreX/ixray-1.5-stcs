@@ -96,6 +96,24 @@ float CAI_Stalker::GetWeaponAccuracy	() const
 			return			(base*m_disp_stand_crouch_zoom);
 }
 
+// The point a live stalker's bullet leaves from, as g_fireParams below picks it: the head bone when
+// standing still or crouching, the body centre lifted by half a metre when moving upright. The sight
+// code has to aim from here -- it used to aim from the body centre, and since the shot takes the
+// aim's direction but starts higher, every bullet flew parallel to the sight line and 0.3-0.5 m
+// above it. Invisible against humans (chest hits turn into head hits), a clean miss over a dog.
+// The half metre forward in g_fireParams lies along the shot line, so it does not change the angle.
+Fvector CAI_Stalker::fire_origin()
+{
+	if (movement().body_state() == eBodyStateStand && movement().movement_type() != eMovementTypeStand) {
+		Fvector			result;
+		Center			(result);
+		result.y		+= .50f;
+		return			(result);
+	}
+
+	return				(eye_matrix.c);
+}
+
 void CAI_Stalker::g_fireParams(const CHudItem* pHudItem, Fvector& P, Fvector& D)
 {
 //.	VERIFY				(inventory().ActiveItem());

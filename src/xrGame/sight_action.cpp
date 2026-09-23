@@ -159,9 +159,8 @@ void CSightAction::execute_object				()
 		look_pos.x			= m_object_to_look->Position().x;
 		look_pos.z			= m_object_to_look->Position().z;
 
-		m_object->Center	(my_position);
-		my_position.x		= m_object->eye_matrix.c.x;
-		my_position.z		= m_object->eye_matrix.c.z;
+		// aim from where the bullet actually starts (was: body centre height at the eye's x/z)
+		my_position			= m_object->fire_origin();
 	}
 
 	if (m_torso_look)
