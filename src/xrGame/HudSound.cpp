@@ -10,33 +10,42 @@ void InitHudSoundSettings()
 
 // GS (wpnpatch, WeaponSoundLoader.pas) moved the real volume out of the sound line and into a
 // separate per-alias key, in percent: "volume_snd_silncer_shot = 80". Absent = full volume.
-static float LoadSndVolume(LPCSTR section, LPCSTR line)
+static float LoadSndVolume(CInifile* ini, LPCSTR section, LPCSTR line)
 {
 	string256					volume_line;
 	strconcat					(sizeof(volume_line),volume_line,"volume_",line);
-	if (!pSettings->line_exist(section,volume_line))
+	if (!ini->line_exist(section,volume_line))
 		return					(1.0f);
 
-	int							volume = pSettings->r_s32(section,volume_line);
+	int							volume = ini->r_s32(section,volume_line);
 	clamp						(volume, 0, 200);
 	return						(float(volume) / 100.0f);
 }
 
-void HUD_SOUND_ITEM::LoadSound(	LPCSTR section, LPCSTR line,
-							HUD_SOUND_ITEM& hud_snd, int type)
+float DistantSoundBlend(const Fvector& position, float start, float end)
 {
+	const float	dist		= Device.vCameraPosition.distance_to(position);
+	if (dist <= start)		return 0.0f;
+	if (dist >= end)		return 1.0f;
+	return					(dist - start) / (end - start);
+}
+
+void HUD_SOUND_ITEM::LoadSound(	LPCSTR section, LPCSTR line,
+							HUD_SOUND_ITEM& hud_snd, int type, CInifile* ini)
+{
+	if (!ini)	ini = pSettings;
 	hud_snd.m_activeSnd		= NULL;
 	hud_snd.sounds.clear	();
-	hud_snd.m_volume		= LoadSndVolume(section, line);
+	hud_snd.m_volume		= LoadSndVolume(ini, section, line);
 
 	string256	sound_line;
 	xr_strcpy		(sound_line,line);
 	int k=0;
-	while( pSettings->line_exist(section, sound_line) ){
+	while( ini->line_exist(section, sound_line) ){
 		hud_snd.sounds.push_back( SSnd() );
 		SSnd& s = hud_snd.sounds.back();
 
-		LoadSound	(section, sound_line, s.snd, type, &s.unlock_freq, &s.delay);
+		LoadSound	(section, sound_line, s.snd, type, &s.unlock_freq, &s.delay, ini);
 		xr_sprintf		(sound_line,"%s%d",line,++k);
 	}//while
 }
@@ -46,9 +55,10 @@ void  HUD_SOUND_ITEM::LoadSound(LPCSTR section,
 								ref_sound& snd,
 								int type,
 								float* unlock_freq,
-								float* delay)
+								float* delay,
+								CInifile* ini)
 {
-	LPCSTR str = pSettings->r_string(section, line);
+	LPCSTR str = (ini ? ini : pSettings)->r_string(section, line);
 	string256 buf_str;
 
 	int	count = _GetItemCount	(str);
@@ -97,7 +107,8 @@ void HUD_SOUND_ITEM::PlaySound(	HUD_SOUND_ITEM&		hud_snd,
 								bool			b_hud_mode,
 								bool			looped,
 								u8 index,
-								bool			b_force_unlock)
+								bool			b_force_unlock,
+								float			volume_k)
 {
 	if (hud_snd.sounds.empty())	return;
 
@@ -126,7 +137,7 @@ void HUD_SOUND_ITEM::PlaySound(	HUD_SOUND_ITEM&		hud_snd,
 		freq				= 1.0f + Random.randF(-delta, delta);
 	}
 
-	float		volume		= hud_snd.m_volume * (b_hud_mode?psHUDSoundVolume:1.0f);
+	float		volume		= hud_snd.m_volume * (b_hud_mode?psHUDSoundVolume:1.0f) * volume_k;
 
 	// A locked sound keeps the one shared object per alias: it can be stopped, moved and re-tuned
 	// afterwards, but starting it again cuts whatever it was playing -- which is why a burst used to
@@ -196,7 +207,8 @@ void HUD_SOUND_COLLECTION::PlaySound(	LPCSTR alias,
 										bool hud_mode,
 										bool looped,
 										u8 index,
-										bool b_force_unlock)
+										bool b_force_unlock,
+										float volume_k)
 {
 	xr_vector<HUD_SOUND_ITEM>::iterator it		= m_sound_items.begin();
 	xr_vector<HUD_SOUND_ITEM>::iterator it_e	= m_sound_items.end();
@@ -208,7 +220,7 @@ void HUD_SOUND_COLLECTION::PlaySound(	LPCSTR alias,
 
 
 	HUD_SOUND_ITEM* snd_item		= FindSoundItem(alias, true);
-	HUD_SOUND_ITEM::PlaySound		(*snd_item, position, parent, hud_mode, looped, index, b_force_unlock);
+	HUD_SOUND_ITEM::PlaySound		(*snd_item, position, parent, hud_mode, looped, index, b_force_unlock, volume_k);
 }
 
 void HUD_SOUND_COLLECTION::StopSound(LPCSTR alias)
