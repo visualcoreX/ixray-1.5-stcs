@@ -105,6 +105,10 @@ public:
 	xr_vector<CCartridge>	m_magazine2;
 	bool					m_bGrenadeMode;
 	virtual bool			InertionGrenadeModeNow	() const	{ return m_bGrenadeMode; }
+	// World zoom while aiming the launcher's ladder sight: the weapon's own iron-sight factor, the one it
+	// has with NO optic on. m_fIronSightZoomFactor cannot serve -- InitAddons swaps it for the (default 50)
+	// ironsight_zoom_factor the moment a scope goes on, which made the scope change the GL zoom.
+	float					m_fGLZoomFactor;
 
 	CCartridge				m_DefaultCartridge2;
 	int						iAmmoElapsed2;

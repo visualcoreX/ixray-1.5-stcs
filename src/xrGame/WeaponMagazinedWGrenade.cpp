@@ -24,6 +24,7 @@ CWeaponMagazinedWGrenade::CWeaponMagazinedWGrenade(ESoundTypes eSoundType) : CWe
 {
 	m_ammoType2 = 0;
     m_bGrenadeMode = false;
+	m_fGLZoomFactor = 50.0f;
 }
 
 CWeaponMagazinedWGrenade::~CWeaponMagazinedWGrenade()
@@ -821,6 +822,13 @@ void CWeaponMagazinedWGrenade::InitAddons()
 {	
 	inherited::InitAddons();
 
+	// The iron-sight factor exactly as CWeaponMagazined::InitAddons picks it with no optic attached:
+	// the weapon section's scope_zoom_factor when the weapon can zoom, else ironsight_zoom_factor.
+	// Read from the config every time, so whatever sits on the rail never enters into it.
+	m_fGLZoomFactor = READ_IF_EXISTS(pSettings, r_float, cNameSect(), "ironsight_zoom_factor", 50.0f);
+	if (IsZoomEnabled() && pSettings->line_exist(cNameSect(), "scope_zoom_factor"))
+		m_fGLZoomFactor = pSettings->r_float(cNameSect(), "scope_zoom_factor");
+
 	if(GrenadeLauncherAttachable())
 	{
 		if(IsGrenadeLauncherAttached())
@@ -840,7 +848,7 @@ bool	CWeaponMagazinedWGrenade::UseScopeTexture()
 
 float	CWeaponMagazinedWGrenade::CurrentZoomFactor	()
 {
-	if (IsGrenadeLauncherAttached() && m_bGrenadeMode) return m_zoom_params.m_fIronSightZoomFactor;
+	if (IsGrenadeLauncherAttached() && m_bGrenadeMode) return m_fGLZoomFactor;	// not the scope-dependent iron-sight one
 	return inherited::CurrentZoomFactor();
 }
 
