@@ -3817,6 +3817,10 @@ bool CWeapon::Scope2DModeActive() const
 	// Stay applicable until the pose has fully arrived; ScopeFadeFactor rides the same blend and is what
 	// actually walks the share down to zero over alter_zoom_time.
 	if (AlterZoomBlend() >= 1.f)							return false;
+	// Aiming the launcher's ladder sight is not looking through the optic. IsLensedScope and
+	// IsCollimatorScope both read false in grenade mode, so without this a lensed scope counted as a
+	// 2D one here -- CWeaponMagazinedWGrenade::UseScopeTexture says the same, but that one is not const.
+	if (IsGrenadeMode())									return false;
 	return m_UIScope && !IsLensedScope() && !IsCollimatorScope();
 }
 
@@ -4111,8 +4115,12 @@ void CWeapon::UpdateScopePPZoom()
 	// picture instead of hanging over the backup notch. The eyepiece factor alone was not enough of a
 	// guard: it is 1 in that pose, but the circle carries the other three regardless of it, and the
 	// distortion stopped being keyed to the factor when the glass was made to bend at every power.
+	// ZoomTexture(), not a hand-built "m_UIScope && !lensed && !collimator": UseScopeTexture is virtual and
+	// the GL weapon's override is what says "not while aiming the launcher". IsLensedScope/IsCollimatorScope
+	// both read false in grenade mode, so the hand-built test took a lensed optic in GL mode for a 2D scope
+	// and put the eyepiece mask over the ladder sight.
 	const bool on_2d = act && act == Actor() && IsZoomed() && Scope2DReady()
-					&& m_UIScope && !IsLensedScope() && !IsCollimatorScope() && !IsAlterZoom();
+					&& ZoomTexture() && !IsAlterZoom();
 	// The eye leaves the optic's axis whether the picture is a flat texture or the 3D lens, so the
 	// crescent belongs to both. The LENS gets the drift only -- there is no eyepiece circle to publish
 	// (the pp pass has nothing to draw inside; model_scope_lense.ps shades the glass itself, in its own
