@@ -38,6 +38,10 @@ public:
 	virtual void	InitAddons				();
 	virtual bool	UseScopeTexture			();
 	virtual	float	CurrentZoomFactor		();
+protected:
+	virtual void	ResumeDeferredFire		();		// grenade mode: the launch, not a rifle shot
+			void	FireGrenadeLauncher		();		// what a GL trigger pull does: launch, or reload/click when empty
+public:
 	virtual	u8		GetCurrentHudOffsetIdx	();
 	virtual void	FireEnd					();
 			void	LaunchGrenade			();

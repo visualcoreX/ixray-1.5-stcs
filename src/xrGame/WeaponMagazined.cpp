@@ -364,6 +364,23 @@ bool CWeaponMagazined::IsActorSprinting()
 	return !!st.bSprint;
 }
 
+// exiting sprint: pressing fire clears the actor's sprint (ActorInput) and the weapon plays the
+// sprint-out anim first; hold the shot until that exit is (almost) done, then the UpdateCL handoff
+// resumes it through ResumeDeferredFire (m_bFirePendingSprint - a dedicated flag, NOT m_bTriggerHeld which
+// sticks true on pistols and caused a self-fire on every later sprint-exit). Only when the weapon has an
+// exit anim. true = deferred, the caller must not shoot. Every way of firing has to ask this -- the GL's
+// launch goes around FireStart entirely, and it fired straight through the transition until it did too.
+bool CWeaponMagazined::DeferFireForSprint()
+{
+	if ((m_dwSprintExitEndTm && Device.dwTimeGlobal < m_dwSprintExitEndTm)
+		|| (IsActorSprinting() && HasSprintExitAnim()))
+	{
+		m_bFirePendingSprint = true;
+		return true;
+	}
+	return false;
+}
+
 void CWeaponMagazined::FireStart		()
 {
 	// GS OnShoot_CanShootNow: the victim's own trigger is dead for the whole controller scene; only
@@ -411,16 +428,7 @@ void CWeaponMagazined::FireStart		()
 		return;
 	}
 
-	// exiting sprint: pressing fire clears the actor's sprint (ActorInput) and the weapon plays the
-	// sprint-out anim first; hold the shot until that exit is (almost) done, then the UpdateCL handoff
-	// resumes it (m_bFirePendingSprint - a dedicated flag, NOT m_bTriggerHeld which sticks true on
-	// pistols and caused a self-fire on every later sprint-exit). Only when the weapon has an exit anim.
-	if ((m_dwSprintExitEndTm && Device.dwTimeGlobal < m_dwSprintExitEndTm)
-		|| (IsActorSprinting() && HasSprintExitAnim()))
-	{
-		m_bFirePendingSprint = true;
-		return;
-	}
+	if (DeferFireForSprint())	return;
 
 	// Past the fire lock now: a real shot -- or a jam dry-fire -- is about to be issued, and it cuts any
 	// aim in/out transition still on screen. Clear the deferred transition handoff so switch2_Idle won't
@@ -1910,7 +1918,7 @@ void CWeaponMagazined::UpdateCL			()
 		else if (m_bFirePendingSprint && GetState()==eIdle)
 		{
 			m_bFirePendingSprint = false;
-			FireStart();
+			ResumeDeferredFire();
 		}
 		else
 			m_bFirePendingSprint = false;

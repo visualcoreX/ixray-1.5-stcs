@@ -482,6 +482,10 @@ public:
 	bool			DeferForSprintExit		(u8 action);
 protected:
 	virtual void	ResumeSprintDeferred	(u8 action);
+	// the sprint-exit fire gate (see FireStart) and how the shot it held back comes back out: FireStart by
+	// default, the launcher's own launch on a GL weapon in grenade mode
+	bool			DeferFireForSprint		();
+	virtual void	ResumeDeferredFire		()	{ FireStart(); }
 	// aiming is blocked during a light-misfire strike (task): an aim press/release that arrives while the
 	// click gesture plays is remembered here and replayed by UpdateCL once the strike ends (like the sprint defer).
 	bool			m_bZoomPendingMisfire;	// an aim press/release was deferred past a light-misfire strike

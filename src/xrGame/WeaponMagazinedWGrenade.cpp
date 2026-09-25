@@ -407,16 +407,15 @@ bool CWeaponMagazinedWGrenade::Action(s32 cmd, u32 flags)
 
 		if(flags&CMD_START)
 		{
-			if(iAmmoElapsed)
-				LaunchGrenade();
-			else
-			{
-				if (psActorFlags.test(AF_AUTORELOAD))
-					Reload();
-				else
-					OnEmptyClick();
-			}
+			// The launch skips FireStart and with it the sprint-exit gate every other shot waits on, so a
+			// round left mid-transition the moment the key went down. Ask the same gate; the held-back
+			// launch comes back through ResumeDeferredFire.
+			if (DeferFireForSprint())
+				return			true;
+			FireGrenadeLauncher	();
 		}
+		else
+			m_bFirePendingSprint = false;	// letting go cancels a held-back launch, as FireEnd does for a shot
 		return					true;
 	}
 	if(inherited::Action(cmd, flags))
@@ -435,9 +434,29 @@ bool CWeaponMagazinedWGrenade::Action(s32 cmd, u32 flags)
 	return false;
 }
 
+void CWeaponMagazinedWGrenade::FireGrenadeLauncher()
+{
+	if(iAmmoElapsed)
+		LaunchGrenade();
+	else
+	{
+		if (psActorFlags.test(AF_AUTORELOAD))
+			Reload();
+		else
+			OnEmptyClick();
+	}
+}
+
+void CWeaponMagazinedWGrenade::ResumeDeferredFire()
+{
+	if (!m_bGrenadeMode)	{ inherited::ResumeDeferredFire(); return; }
+	if (IsPending())		return;		// the same test the key press makes
+	FireGrenadeLauncher		();
+}
+
 #include "inventory.h"
 #include "inventoryOwner.h"
-void CWeaponMagazinedWGrenade::state_Fire(float dt) 
+void CWeaponMagazinedWGrenade::state_Fire(float dt)
 {
 	VERIFY(fOneShotTime>0.f);
 

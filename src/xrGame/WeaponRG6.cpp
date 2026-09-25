@@ -77,7 +77,13 @@ void CWeaponRG6::FireStart ()
 	if(GetState() == eIdle	&& getRocketCount() )
 	{
 		inheritedSG::FireStart ();
-	
+		// Launch only if that actually started a shot. FireStart has plenty of reasons to hold one back
+		// -- the sprint-exit gate above all, which only remembers the press -- and the launch below used
+		// to go out regardless: a grenade flew, but no eFire ever ran to spend the round, so every press
+		// during a sprint transition was another free shot. A held-back press comes back through
+		// ResumeDeferredFire -> FireStart and launches then.
+		if (GetNextState() != eFire)	return;
+
 		Fvector p1, d; 
 		p1.set(get_LastFP()); 
 		d.set(get_LastFD());
