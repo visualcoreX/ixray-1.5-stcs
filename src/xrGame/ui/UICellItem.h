@@ -40,6 +40,8 @@ protected:
 	Fvector2				m_upgrade_pos;
 
 	virtual void			UpdateItemText			();
+			// size the count's backing plate to its text instead of the fixed xml width
+			void			FitItemText				();
 			void			init					();
 public:
 							CUICellItem				();
