@@ -4724,11 +4724,59 @@ static bool read_scope_aim_offset(LPCSTR scope_sect, LPCSTR hud_sect, bool wide,
 	return false;
 }
 
+// Where the weapon SITS (not aims) while a scope is on it: scoped_hud_offset_pos/rot (+_16x9), same units
+// as aim_hud_offset_*. A big optic can fill a third of the screen at the hip; this lowers or pulls the gun
+// back for that scope only. Read from the attached scope's section first, then the weapon HUD section
+// (applies to every scope on that gun). The aim offset is added to the same base, so this one fades out
+// as the weapon comes up -- the aimed pose is exactly what aim_hud_offset_* says, with or without it.
+static bool read_scoped_hud_offset(LPCSTR scope_sect, LPCSTR hud_sect, bool wide, Fvector& pos, Fvector& rot)
+{
+	LPCSTR sects[2] = { scope_sect, hud_sect };
+	for (LPCSTR s : sects)
+	{
+		if (!s || !s[0] || !pSettings->section_exist(s))	continue;
+		LPCSTR pk = (wide && pSettings->line_exist(s, "scoped_hud_offset_pos_16x9")) ? "scoped_hud_offset_pos_16x9" : "scoped_hud_offset_pos";
+		LPCSTR rk = (wide && pSettings->line_exist(s, "scoped_hud_offset_rot_16x9")) ? "scoped_hud_offset_rot_16x9" : "scoped_hud_offset_rot";
+		const bool has_p = pSettings->line_exist(s, pk), has_r = pSettings->line_exist(s, rk);
+		if (!has_p && !has_r)	continue;
+		pos = has_p ? pSettings->r_fvector3(s, pk) : Fvector().set(0.f, 0.f, 0.f);
+		rot = has_r ? pSettings->r_fvector3(s, rk) : Fvector().set(0.f, 0.f, 0.f);
+		return true;
+	}
+	return false;
+}
+
+static void apply_hud_offset(Fmatrix& trans, const Fvector& offs, const Fvector& rot)
+{
+	Fmatrix m, r;
+	m.identity();	m.rotateX(rot.x);
+	r.identity();	r.rotateY(rot.y);	m.mulA_43(r);
+	r.identity();	r.rotateZ(rot.z);	m.mulA_43(r);
+	m.translate_over(offs);
+	trans.mulB_43(m);
+}
+
 void CWeapon::UpdateHudAdditonal		(Fmatrix& trans)
 {
 	CActor* pActor	= smart_cast<CActor*>(H_Parent());
 	if(!pActor)		return;
 
+	if (IsScopeAttached())
+	{
+		attachable_hud_item* hi = HudItemData();
+		const float k = 1.f - _max(0.f, _min(1.f, m_zoom_params.m_fZoomRotationFactor));
+		if (hi && k > 0.f)
+		{
+			const bool wide = hi->m_measures.m_prop_flags.test(hud_item_measures::e_16x9_mode_now);
+			shared_str sc = GetCurrentScopeSection();
+			Fvector spos, srot;
+			if (read_scoped_hud_offset(sc.size() ? *sc : nullptr, *hi->m_sect_name, wide, spos, srot))
+			{
+				spos.mul(k);	srot.mul(k);
+				apply_hud_offset(trans, spos, srot);
+			}
+		}
+	}
 
 	if(		(IsZoomed() && m_zoom_params.m_fZoomRotationFactor<=1.f) ||
 			(!IsZoomed() && m_zoom_params.m_fZoomRotationFactor>0.f))
