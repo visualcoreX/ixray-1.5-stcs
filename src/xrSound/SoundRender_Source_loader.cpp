@@ -117,6 +117,22 @@ void CSoundRender_Source::load(LPCSTR name)
 
 	LoadWave			(fn);
 	SoundRender->cache.cat_create	(CAT, dwBytesTotal);
+
+	// the curve's own distances, when it gives them, win over the ogg comment's (AI hearing range stays)
+	if (const CSoundRender_Attenuation* A = SoundRender->atten_find(*fname))
+	{
+		const float	min_d		= (A->min_distance>=0.f) ? A->min_distance : m_fMinDist;
+		const float	max_d		= (A->max_distance>0.f)  ? A->max_distance : m_fMaxDist;
+		if (max_d>min_d)
+		{
+			m_bCustomAttenuation= true;
+			m_Attenuation		= *A;
+			m_fMinDist			= min_d;
+			m_fMaxDist			= max_d;
+		}
+		else
+			Msg					("! SOUND: [%s] max_distance %.1f <= min_distance %.1f for '%s', curve ignored", *A->profile, max_d, min_d, *fname);
+	}
 }
 
 void CSoundRender_Source::unload()

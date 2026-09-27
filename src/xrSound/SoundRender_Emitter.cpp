@@ -32,6 +32,11 @@ CSoundRender_Emitter::CSoundRender_Emitter(void)
 	smooth_volume				= 1.f;
 	occluder_volume				= 1.f;
 	fade_volume					= 1.f;
+	curve_volume				= 1.f;
+	envelope_volume				= 1.f;
+	fade_out.start				= 0.f;
+	fade_out.end				= 0.f;
+	fade_out.db					= 0.f;
 	occluder[0].set				(0,0,0);
 	occluder[1].set				(0,0,0);
 	occluder[2].set				(0,0,0);
@@ -86,6 +91,44 @@ void CSoundRender_Emitter::Event_Propagade	()
 
 	// Inform objects
 	SoundRender->s_events.push_back	(std::make_pair(owner_data,range));
+}
+
+void CSoundRender_Emitter::set_fade_out(const sound_fade_out& fade)
+{
+	fade_out					= fade;
+	if (!_valid(fade_out.start) || !_valid(fade_out.end) || !_valid(fade_out.db))
+		fade_out.end			= 0.f;
+	fade_out.start				= _max(fade_out.start, 0.f);
+	if (fade_out.end<fade_out.start+EPS_L)	// no ramp: a hard cut at <end>
+		fade_out.start			= _max(fade_out.end, 0.f);
+}
+
+// Seconds are the instance's own play time, so a delayed or paused sound fades from where it really is.
+bool CSoundRender_Emitter::update_fade_out()
+{
+	envelope_volume				= 1.f;
+	if (fade_out.end<=0.f)		return true;
+
+	switch (m_current_state)
+	{
+	case stPlaying: case stPlayingLooped: case stSimulating: case stSimulatingLooped: break;
+	default:					return true;		// not started yet
+	}
+
+	const float	t				= SoundRender->fTimer_Value-fTimeStarted;
+	if (t>=fade_out.end)		{ envelope_volume = 0.f; return false; }
+	if (t<=fade_out.start)		return true;
+
+	const float	x				= (t-fade_out.start)/(fade_out.end-fade_out.start);
+	if (fade_out.db<=0.f)
+		envelope_volume			= 1.f-x;
+	else
+	{
+		const float	floor_g		= powf(10.f, -fade_out.db/20.f);
+		envelope_volume			= (powf(10.f, -fade_out.db*x/20.f)-floor_g)/(1.f-floor_g);
+	}
+	clamp						(envelope_volume, 0.f, 1.f);
+	return						true;
 }
 
 void CSoundRender_Emitter::switch_to_2D()

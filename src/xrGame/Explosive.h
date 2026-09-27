@@ -83,7 +83,7 @@ protected:
 	xr_vector<u32>				m_ExplosionHitTypes;		// explosion_hit_types (empty = explosion only)
 public:
 protected:
-			bool				IsSoundPlaying			(){return !!sndExplode.playing() || !!sndExplodeDist.playing();}
+			bool				IsSoundPlaying			(){return !!sndExplode.playing() || !!sndExplodeDist.playing() || !!sndExplodeIndoor.playing();}
 			bool				IsExploded				(){return !!m_explosion_flags.test(flExploded);}
 public:
 			bool				IsExploding				(){return !!m_explosion_flags.test(flExploding);}
@@ -160,6 +160,7 @@ protected:
 	// the near one by distance). Numbered variants are picked at random, the same as a weapon's shot.
 	HUD_SOUND_ITEM				sndExplode;
 	HUD_SOUND_ITEM				sndExplodeDist;
+	HUD_SOUND_ITEM				sndExplodeIndoor;		// snd_explode_indoor[N]: the reverb tail of a blast in a room
 	ESoundTypes					m_eSoundExplode;
 
 	//размер отметки на стенах
@@ -180,6 +181,29 @@ protected:
 	BOOL						m_bDynamicParticles;
 	CParticlesObject*			m_pExpParticle;
 	virtual void				UpdateExplosionParticles ();	
+
+	// ---- GORE. gore_particles (one name or a comma list, picked at random) is played on the torso
+	// of an NPC or mutant that was alive when the blast wave reached it within gore_radius
+	// (default 2 m) and is dead by the end of the explosion -- the same way a body is torn apart in an
+	// anomaly. The hit itself arrives through the event queue, so the kill is checked each frame
+	// rather than at the moment the hit is sent. Opt-in: no gore_particles, nothing changes.
+	// HEAVY GORE: a creature heavier than heavy_gore_mass (default 150 kg) inside heavy_gore_radius
+	// (default = gore_radius) gets heavy_gore_particles instead; a lighter one, or one outside that
+	// radius but inside gore_radius, still gets the ordinary effect. The weight is the creature's
+	// ph_mass, or the summed mass of its collision bones if the section has none.
+	struct SGoreCandidate
+	{
+		u16						id;							// not a pointer: a body can be released at any time
+		bool					heavy;
+	};
+	xr_vector<shared_str>		m_GoreParticles;
+	xr_vector<shared_str>		m_HeavyGoreParticles;
+	float						m_fGoreRadius;
+	float						m_fHeavyGoreRadius;
+	float						m_fHeavyGoreMass;
+	xr_vector<SGoreCandidate>	m_GoreCandidates;
+			void				AddGoreCandidate		(CPhysicsShellHolder* obj, const Fvector& obj_center);
+			void				UpdateGore				();
 
 	// эффектор
 	struct {

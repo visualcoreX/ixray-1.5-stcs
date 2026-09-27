@@ -11,6 +11,7 @@ CSoundRender_Source::CSoundRender_Source	()
 	m_fMaxAIDist	= 300.f;
 	m_fBaseVolume	= 1.f;
 	m_uGameType		= 0;
+	m_bCustomAttenuation	= false;
 	fname			= 0;
     CAT.table		= 0;
 	CAT.size		= 0;
@@ -19,6 +20,31 @@ CSoundRender_Source::CSoundRender_Source	()
 CSoundRender_Source::~CSoundRender_Source	()
 {
 	unload			();
+}
+
+float CSoundRender_Attenuation::gain(float dist, float min_d, float max_d) const
+{
+	if (dist<=min_d)		return 1.f;
+	if (dist>=max_d)		return 0.f;
+
+	const float	span		= max_d-min_d;
+	float		t			= (dist-min_d)/span;
+
+	// shoulder: a quadratic run-in whose slope meets the straight part at t=k, so the curve leaves the
+	// plateau flat and bends into the decay smoothly; renormalised so that t still ends at 1
+	const float	k			= _min(shoulder/span, 0.95f);
+	if (k>EPS_S)
+	{
+		t					= (t<k) ? (t*t/(2.f*k)) : (t-0.5f*k);
+		t					/= (1.f-0.5f*k);
+	}
+
+	// flat in dB = exponential in amplitude; minus the level it would still have at max_distance,
+	// rescaled, so it lands on zero there instead of being cut off
+	if (falloff_db<0.01f)	return 1.f-t;
+	const float	floor_g		= powf(10.f, -falloff_db/20.f);
+	const float	g			= powf(10.f, -falloff_db*t/20.f);
+	return					(g-floor_g)/(1.f-floor_g);
 }
 
 bool ov_error(int res)

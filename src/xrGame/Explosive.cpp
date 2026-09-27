@@ -15,6 +15,7 @@
 #include "Weapon.h"
 
 #include "actor.h"
+#include "CustomMonster.h"
 #include "actoreffector.h"
 #include "level.h"
 #include "level_bullet_manager.h"
@@ -74,6 +75,9 @@ CExplosive::CExplosive(void)
 	m_fExplodeHideDurationMax = 0;
 	m_bDynamicParticles		= FALSE;
 	m_pExpParticle			= NULL;
+	m_fGoreRadius			= 2.f;
+	m_fHeavyGoreRadius		= 2.f;
+	m_fHeavyGoreMass		= 150.f;
 }
 
 void CExplosive::LightCreate()
@@ -91,6 +95,7 @@ CExplosive::~CExplosive(void)
 {
 	HUD_SOUND_ITEM::DestroySound	(sndExplode);
 	HUD_SOUND_ITEM::DestroySound	(sndExplodeDist);
+	HUD_SOUND_ITEM::DestroySound	(sndExplodeIndoor);
 }
 
 
@@ -141,6 +146,18 @@ void CExplosive::Load(LPCSTR section)
 	Load				(pSettings,section);
 }
 
+// a comma list of particle names; empty items are skipped, a missing key leaves the list empty
+static void load_particles_list(CInifile* ini, LPCSTR section, LPCSTR key, xr_vector<shared_str>& out)
+{
+	out.clear();
+	if (!ini->line_exist(section, key))	return;
+	LPCSTR s = ini->r_string(section, key);
+	string256 tmp;
+	for (int i = 0, n = _GetItemCount(s); i < n; ++i)
+		if (xr_strlen(_Trim(_GetItem(s, i, tmp))))
+			out.push_back(tmp);
+}
+
 void CExplosive::Load(CInifile *ini,LPCSTR section)
 {
 	m_fBlastHit			= ini->r_float(section,"blast");
@@ -174,6 +191,7 @@ void CExplosive::Load(CInifile *ini,LPCSTR section)
 	R_ASSERT3				(ini->line_exist(section,"snd_explode"), "no snd_explode in", section);
 	HUD_SOUND_ITEM::LoadSound	(section, "snd_explode", sndExplode, m_eSoundExplode, ini);
 	HUD_SOUND_ITEM::LoadSound	(section, "snd_explode_dist", sndExplodeDist, m_eSoundExplode, ini);	// empty if absent
+	HUD_SOUND_ITEM::LoadIndoorSound	(section, "snd_explode", sndExplode, sndExplodeIndoor, m_eSoundExplode, ini);	// the same
 	sndExplodeDist.m_blend_dist_start	= READ_IF_EXISTS(ini, r_float, section, "snd_explode_blend_dist_start", DISTANT_SND_BLEND_START_DEF);
 	sndExplodeDist.m_blend_dist_end		= READ_IF_EXISTS(ini, r_float, section, "snd_explode_blend_dist_end", DISTANT_SND_BLEND_END_DEF);
 
@@ -200,11 +218,18 @@ void CExplosive::Load(CInifile *ini,LPCSTR section)
 	m_bDynamicParticles	 = FALSE;
 	if (ini->line_exist(section, "dynamic_explosion_particles"))
 		m_bDynamicParticles = ini->r_bool(section, "dynamic_explosion_particles");
+
+	load_particles_list	(ini, section, "gore_particles", m_GoreParticles);
+	load_particles_list	(ini, section, "heavy_gore_particles", m_HeavyGoreParticles);
+	m_fGoreRadius		= READ_IF_EXISTS(ini, r_float, section, "gore_radius", 2.f);
+	m_fHeavyGoreRadius	= READ_IF_EXISTS(ini, r_float, section, "heavy_gore_radius", m_fGoreRadius);
+	m_fHeavyGoreMass	= READ_IF_EXISTS(ini, r_float, section, "heavy_gore_mass", 150.f);
 }
 
 void CExplosive::net_Destroy	()
 {
 	m_blasted_objects.clear		();
+	m_GoreCandidates.clear		();
 	StopLight					();
 	m_explosion_flags.assign	(0);
 }
@@ -389,8 +414,14 @@ void CExplosive::Explode()
 	// snd_explode_dist the near one plays at full volume at any range
 	const float	far_k		= sndExplodeDist.sounds.empty() ? 0.0f :
 		DistantSoundBlend(pos, sndExplodeDist.m_blend_dist_start, sndExplodeDist.m_blend_dist_end);
+	// indoors the near one is faded out under its reverb tail (snd_explode_indoor); the far one never is
 	if (far_k < 1.0f)
-		HUD_SOUND_ITEM::PlaySound	(sndExplode, pos, NULL, false, false, u8(-1), false, 1.0f - far_k);
+	{
+		const bool	indoor	= !sndExplodeIndoor.sounds.empty() && IndoorSoundTest(Fvector().mad(pos, Fvector().set(0.f,1.f,0.f), 0.3f));
+		HUD_SOUND_ITEM::PlaySound	(sndExplode, pos, NULL, false, false, u8(-1), false, 1.0f - far_k, indoor ? &sndExplode.m_indoor_fade : NULL);
+		if (indoor)
+			HUD_SOUND_ITEM::PlaySound	(sndExplodeIndoor, pos, NULL, false, false, u8(-1), false, 1.0f - far_k);
+	}
 	if (far_k > 0.0f)
 		HUD_SOUND_ITEM::PlaySound	(sndExplodeDist, pos, NULL, false, false, u8(-1), false, far_k);
 	
@@ -458,6 +489,7 @@ void CExplosive::Explode()
 	g_SpatialSpace->q_sphere(ISpatialResult,0,STYPE_COLLIDEABLE,pos,m_fBlastRadius);
 
 	m_blasted_objects.clear	();
+	m_GoreCandidates.clear	();
 	for (u32 o_it=0; o_it<ISpatialResult.size(); o_it++)
 	{
 		ISpatial*		spatial	= ISpatialResult[o_it];
@@ -532,6 +564,8 @@ void CExplosive::UpdateCL()
 		CGameObject* go=cast_game_object();
 		go->processing_deactivate();
 		m_explosion_flags.set(flExploding,FALSE);//m_bExploding = false;
+		UpdateGore();					// a hit sent on the last wave frame lands by now
+		m_GoreCandidates.clear();
 		OnAfterExplosion();
 		return;
 	}
@@ -560,6 +594,7 @@ void CExplosive::UpdateCL()
 		UpdateExplosionPos();
 		UpdateExplosionParticles();
 		ExplodeWaveProcess();
+		UpdateGore();
 		//обновить подсветку взрыва
 		if(m_pLight && m_pLight->get_active() && m_fLightTime>0)
 		{
@@ -742,6 +777,7 @@ void CExplosive::ExplodeWaveProcessObject(collide::rq_results& storage, CPhysics
 
 	if(l_impuls > .001f||l_hit> 0.001) 
 	{
+		AddGoreCandidate(l_pGO, l_goPos);	// before the hit is sent: only the living count
 	
 		Fvector l_dir;l_dir.sub(l_goPos,m_vExplodePos);
 		
@@ -790,6 +826,84 @@ void CExplosive::ExplodeWaveProcess()
 		m_blasted_objects.pop_back	();
 		--i;
 	}	
+}
+
+// The creature's weight: ph_mass, the figure its section declares and the character controller moves.
+// Only if the section has none, the summed mass of the model's collision bones -- the same bones and
+// masses the ragdoll is built from (CPHShell::AddElementRecursive).
+static float gore_body_mass(CCustomMonster* M, float* bones_mass)
+{
+	float bones = 0.f;
+	if (IKinematics* K = smart_cast<IKinematics*>(M->Visual()))
+		for (u16 i = 0, n = K->LL_BoneCount(); i < n; ++i)
+		{
+			const CBoneData& B = K->LL_GetData(i);
+			if (B.shape.type != SBoneShape::stNone && !B.shape.flags.test(SBoneShape::sfNoPhysics))
+				bones += B.mass;
+		}
+	if (bones_mass)	*bones_mass = bones;
+	return READ_IF_EXISTS(pSettings, r_float, M->cNameSect().c_str(), "ph_mass", bones);
+}
+
+// remember who was alive and close enough to be torn apart, should this hit kill them
+void CExplosive::AddGoreCandidate(CPhysicsShellHolder* obj, const Fvector& obj_center)
+{
+	if (m_GoreParticles.empty() && m_HeavyGoreParticles.empty())	return;
+	const float dist = obj_center.distance_to(m_vExplodePos);
+	if (dist >= _max(m_fGoreRadius, m_fHeavyGoreRadius))			return;
+	CCustomMonster* M = smart_cast<CCustomMonster*>(obj);			// stalkers and mutants, not the actor
+	if (!M || !M->g_Alive())										return;
+	for (const SGoreCandidate& c : m_GoreCandidates)
+		if (c.id == M->ID())										return;
+
+	float bones_mass;
+	const float mass	= gore_body_mass(M, &bones_mass);
+	SGoreCandidate c;
+	c.id				= M->ID();
+	c.heavy				= !m_HeavyGoreParticles.empty() && dist < m_fHeavyGoreRadius && mass > m_fHeavyGoreMass;
+	const bool normal	= !m_GoreParticles.empty() && dist < m_fGoreRadius;
+	if (m_bHelpExplosiveInfo)
+		Msg("~ [explosive %s] gore candidate %s: dist %.2f, mass %.1f (collision bones %.1f) -> %s",
+			cast_game_object()->cNameSect().c_str(), M->cName().c_str(), dist, mass, bones_mass,
+			c.heavy ? "heavy" : normal ? "normal" : "none");
+	if (c.heavy || normal)
+		m_GoreCandidates.push_back(c);
+}
+
+void CExplosive::UpdateGore()
+{
+	for (u32 i = 0; i < m_GoreCandidates.size(); )
+	{
+		const SGoreCandidate& C = m_GoreCandidates[i];
+		CCustomMonster* M = smart_cast<CCustomMonster*>(Level().Objects.net_Find(C.id));
+		if (M && !M->getDestroy() && M->g_Alive())
+		{
+			++i;							// still standing -- may yet die of this blast
+			continue;
+		}
+		if (M && !M->getDestroy())
+		{
+			IKinematics* K = smart_cast<IKinematics*>(M->Visual());
+			if (K)
+			{
+				// Not the root bone: CParticlesPlayer only plays on the model's [particle_bones] and walks up
+				// the hierarchy to find one -- stalkers and mutants list torso and limbs there, not the root,
+				// so the root finds nothing and the call silently does nothing. Start from the spine instead
+				// (it climbs to the nearest listed bone), and take any listed bone if even that fails.
+				u16 bone = K->LL_BoneID("bip01_spine");
+				if (BI_NONE == bone)							bone = K->LL_GetBoneRoot();
+				if (!M->get_nearest_bone_info(K, bone))			bone = M->GetRandomBone();
+				if (BI_NONE != bone)
+				{
+					const xr_vector<shared_str>& list = C.heavy ? m_HeavyGoreParticles : m_GoreParticles;
+					const shared_str& ps = list[::Random.randI(list.size())];
+					M->StartParticles(ps, bone, Fvector().set(0.f, 1.f, 0.f), cast_game_object()->ID());
+				}
+			}
+		}
+		m_GoreCandidates[i] = m_GoreCandidates.back();
+		m_GoreCandidates.pop_back();
+	}
 }
 
 void CExplosive::GetExplosionBox(Fvector	&size)
@@ -853,4 +967,4 @@ void CExplosive::UpdateExplosionParticles ()
 bool CExplosive::Useful() const
 {
 	return m_explosion_flags.flags == 0;
-}
+}

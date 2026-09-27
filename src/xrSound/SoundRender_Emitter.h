@@ -43,6 +43,9 @@ public:
 	float						smooth_volume;
 	float 						occluder_volume;		// USER
 	float						fade_volume;
+	float						curve_volume;			// the source's own distance curve, applied by us into AL_GAIN; 1 with OpenAL rolloff
+	float						envelope_volume;		// the fade-out laid over this instance (set_fade_out), into AL_GAIN; 1 without one
+	sound_fade_out				fade_out;				// end <= 0: none
 	Fvector						occluder	[3];
 
 	State						m_current_state;
@@ -81,17 +84,21 @@ public:
 	virtual void				set_range				(float min, float max)	{ VERIFY(_valid(min)&&_valid(max));	p_source.min_distance=min; p_source.max_distance=max;}
 	virtual void				set_volume				(float vol)				{ if(!_valid(vol)) vol=0.0f;		p_source.volume=vol;}
 	virtual void				set_priority			(float p)				{ priority_scale = p;									}
+	virtual void				set_fade_out			(const sound_fade_out& fade);
 	virtual	const CSound_params* get_params				()						{ return &p_source;										}
 
 	void						fill_block				(void*	ptr, u32 size);
 	void						fill_data				(u8*	ptr, u32 offset, u32 size);
 
 	float						priority				();
+	float						distance_attenuation	(float dist);
+	bool						custom_attenuation		();
 	void						start					(ref_sound* _owner, BOOL _loop, float delay);
 	void						cancel					();						// manager forces out of rendering
 	void						update					(float dt);
 	BOOL						update_culling			(float dt);
 	void						update_environment		(float dt);
+	bool						update_fade_out			();		// false: faded out, stop now
 	void						rewind					();
 	virtual void				stop					(BOOL bDeffered);
 	void						pause					(BOOL bVal, int id);

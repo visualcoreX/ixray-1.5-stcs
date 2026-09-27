@@ -237,6 +237,7 @@ void CHudItem::PlaySound(LPCSTR alias, const Fvector& position, bool b_force_unl
 	// someone is looking through this weapon. The base key stays what everyone else hears -- every NPC's
 	// gun, and the actor's own in third person -- so nothing loaded under the twin name (every mechanical
 	// sound, and any weapon whose config was not given one) plays the one recording, exactly as before.
+	LPCSTR		base	= alias;
 	string64	own;
 	if (hud_mode)
 	{
@@ -248,21 +249,59 @@ void CHudItem::PlaySound(LPCSTR alias, const Fvector& position, bool b_force_unl
 	{
 		// Distant twin: a key may also have "_dist", loaded under "<alias>Dist" with the distances it
 		// takes over at. Heard from afar the two are crossfaded by distance (see DistantSoundBlend);
-		// without the twin the plain sound plays at any range, as before.
+		// without the twin the plain sound plays at any range, as before. The far recording is never
+		// touched by the indoor handling below: from afar it stands in for the shot and its echo both.
 		string64			far_alias;
 		strconcat			(sizeof(far_alias), far_alias, alias, "Dist");
 		if (HUD_SOUND_ITEM* far_snd = m_sounds.FindSoundItem(far_alias, false))
 		{
 			const float	k	= DistantSoundBlend(position, far_snd->m_blend_dist_start, far_snd->m_blend_dist_end);
 			if (k < 1.0f)
-				m_sounds.PlaySound	(alias, position, object().H_Root(), false, false, u8(-1), b_force_unlock, 1.0f - k);
+				PlayNearSound		(alias, base, position, false, b_force_unlock, 1.0f - k);
 			if (k > 0.0f)
 				m_sounds.PlaySound	(far_alias, position, object().H_Root(), false, false, u8(-1), b_force_unlock, k);
 			return;
 		}
 	}
 
-	m_sounds.PlaySound	(alias, position, object().H_Root(), hud_mode, false, u8(-1), b_force_unlock);
+	PlayNearSound		(alias, base, position, hud_mode, b_force_unlock, 1.0f);
+}
+
+// <alias> as heard up close, <base> being the key it stands for (they differ for a "1P" twin). Indoors,
+// a key with an "_indoor" twin is faded out and the twin -- its reverb tail -- is played alongside at the
+// same volume; the 1P twin may have a tail of its own and otherwise shares the base key's.
+void CHudItem::PlayNearSound(LPCSTR alias, LPCSTR base, const Fvector& position, bool hud_mode, bool b_force_unlock, float volume_k)
+{
+	HUD_SOUND_ITEM*	snd		= m_sounds.FindSoundItem(alias, true);
+	HUD_SOUND_ITEM*	owner	= snd->m_indoor ? snd : m_sounds.FindSoundItem(base, false);
+	HUD_SOUND_ITEM*	tail	= NULL;
+	if (owner && owner->m_indoor)
+	{
+		string64			tail_alias;
+		strconcat			(sizeof(tail_alias), tail_alias, *owner->m_alias, "Indoor");
+		tail				= m_sounds.FindSoundItem(tail_alias, false);
+	}
+
+	if (tail && IndoorSoundTest(IndoorTestPoint(position)))
+	{
+		m_sounds.PlaySound	(alias, position, object().H_Root(), hud_mode, false, u8(-1), b_force_unlock, volume_k, &owner->m_indoor_fade);
+		m_sounds.PlaySound	(*tail->m_alias, position, object().H_Root(), hud_mode, false, u8(-1), b_force_unlock, volume_k);
+		return;
+	}
+
+	m_sounds.PlaySound		(alias, position, object().H_Root(), hud_mode, false, u8(-1), b_force_unlock, volume_k);
+}
+
+// Where to test for a room: the one holding the item rather than the muzzle, which pokes through a wall
+// the shooter leans against.
+Fvector CHudItem::IndoorTestPoint(const Fvector& position)
+{
+	CObject*	root		= object().H_Root();
+	if (!root || root==&object())
+		return				position;
+	Fvector		c;
+	root->Center			(c);
+	return					c;
 }
 
 void CHudItem::renderable_Render()

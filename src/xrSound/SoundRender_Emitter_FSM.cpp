@@ -199,6 +199,10 @@ void CSoundRender_Emitter::update(float dt)
 	if (bStopping&&fis_zero(fade_volume)) 
 		i_stop();
 
+	// a fade-out that has reached silence frees the voice instead of playing the rest of the file mute
+	if (m_current_state!=stStopped && !update_fade_out())
+		i_stop();
+
 	VERIFY2(!!(owner_data) || (!(owner_data)&&(m_current_state==stStopped)),"owner");
 	VERIFY2(owner_data?*(int*)(owner_data->feedback):1,"owner");
 
@@ -244,6 +248,7 @@ BOOL CSoundRender_Emitter::update_culling(float dt)
 	if (b2D)
 	{
 		occluder_volume		= 1.f;
+		curve_volume		= 1.f;
 		fade_volume			+= dt*10.f*(bStopping?-1.f:1.f);
 	}else{
 		// Check range
@@ -251,7 +256,8 @@ BOOL CSoundRender_Emitter::update_culling(float dt)
 		if (dist>p_source.max_distance)										{ smooth_volume = 0; return FALSE; }
 
 		// Calc attenuated volume
-		float att			= p_source.min_distance/(psSoundRolloff*dist);	clamp(att,0.f,1.f);
+		float att			= distance_attenuation(dist);
+		curve_volume		= custom_attenuation() ? att : 1.f;
 		float fade_scale	= bStopping||(att*p_source.base_volume*p_source.volume*master_volume<cull)?-1.f:1.f;
 		fade_volume			+=	dt*10.f*fade_scale;
 
@@ -274,8 +280,24 @@ BOOL CSoundRender_Emitter::update_culling(float dt)
 float CSoundRender_Emitter::priority()
 {
 	float	dist		= SoundRender->listener_position().distance_to	(p_source.position);
-	float	att			= p_source.min_distance/(psSoundRolloff*dist);	clamp(att,0.f,1.f);
+	float	att			= distance_attenuation(dist);
 	return	smooth_volume*att*priority_scale;
+}
+
+bool CSoundRender_Emitter::custom_attenuation()
+{
+	return				source()->m_bCustomAttenuation;
+}
+
+// How loud the distance leaves the sound, for culling and priority. A source with a curve of its own
+// gets exactly that (and it is what reaches AL_GAIN); the rest keep the old estimate of OpenAL's rolloff.
+float CSoundRender_Emitter::distance_attenuation(float dist)
+{
+	if (custom_attenuation())
+		return			b2D ? 1.f : source()->m_Attenuation.gain(dist, p_source.min_distance, p_source.max_distance);
+
+	float	att			= p_source.min_distance/(psSoundRolloff*dist);	clamp(att,0.f,1.f);
+	return	att;
 }
 
 void CSoundRender_Emitter::update_environment(float dt)

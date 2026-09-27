@@ -68,6 +68,7 @@ struct SBullet
 	u32				m_dwID				;
 	ref_sound		m_whine_snd			;
 	ref_sound		m_mtl_snd			;
+	const xr_vector<ref_sound>* whine_sounds = nullptr;	// whine pool of the cartridge (ammo section override or bullet_manager default)
 	//---------------------------------
 	u16				targetID			;
 	//---------------------------------
@@ -134,7 +135,9 @@ private:
 	};
 	static void CalculateNewVelocity(Fvector & dest_new_vel, Fvector const & old_velocity, float ar, float life_time);
 protected:
-	SoundVec				m_WhineSounds		;
+	SoundVec				m_WhineSounds		;	// default pool from [bullet_manager]
+	xr_map<shared_str, SoundVec>		m_AmmoWhineSounds	;	// pools from ammo sections that override whine_sounds
+	xr_map<shared_str, const SoundVec*>	m_WhineSoundsCache	;	// ammo section -> pool to use (override or default)
 	RStringVec				m_ExplodeParticles	;
 
 	//������ ���� ����������� � ������ ������ �� ������
@@ -175,6 +178,8 @@ protected:
 	float 					m_fTracerLengthMin;
 	float 					m_fTracerMinFlyDist;	// min bullet fly distance from muzzle before its tracer draws
 protected:
+	static void				LoadWhineSounds		(SoundVec& dest, LPCSTR sounds);
+	const SoundVec*			GetWhineSounds		(const shared_str& ammo_sect);
 	void					PlayWhineSound		(SBullet* bullet, CObject* object, const Fvector& pos);
 	void					PlayExplodePS		(const Fmatrix& xf);
 	//������� ��������� ����� ��������
