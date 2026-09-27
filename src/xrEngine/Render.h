@@ -225,6 +225,9 @@ public:
 
 	// Information
 	virtual	void					Statistics				(CGameFont* F	)							{};
+	// A bullet flew from 'from' to 'to' this frame: volumetric smoke (R3) parts along that path. May be
+	// called from the bullet manager's worker (seqParallel), not only the main thread.
+	virtual	void					fluid_bullet_wake		(const Fvector& from, const Fvector& to)	{};
 
 	virtual LPCSTR					getShaderPath			()											= 0;
 //	virtual ref_shader				getShader				(int id)									= 0;

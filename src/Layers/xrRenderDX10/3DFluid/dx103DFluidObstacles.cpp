@@ -226,7 +226,28 @@ void dx103DFluidObstacles::ProcessDynamicObstacles( const dx103DFluidData &Fluid
 		}
 	}
 
-	if (! (m_lstShells.size() || m_lstElements.size()))
+	// bullet wakes crossing this volume (dx103DFluidManager::AddBulletWake)
+	m_lstWakes.clear();
+	{
+		xr_vector<dx103DFluidManager::SBulletWake> all;
+		FluidManager.GetBulletWakes(all);
+		Fbox	vbox;
+		vbox.min = Fvector3().set(-0.5f, -0.5f, -0.5f);
+		vbox.max = Fvector3().set( 0.5f,  0.5f,  0.5f);
+		vbox.xform(FluidData.GetTransform());
+		for (u32 i=0; i<all.size(); ++i)
+		{
+			Fbox seg;
+			seg.invalidate();
+			seg.modify(all[i].from);
+			seg.modify(all[i].to);
+			seg.grow(0.3f);
+			if (seg.intersect(vbox))
+				m_lstWakes.push_back(all[i]);
+		}
+	}
+
+	if (! (m_lstShells.size() || m_lstElements.size() || m_lstWakes.size()))
 		return;
 
 	RCache.set_Element(m_ObstacleTechnique[OS_DynamicOOBB]);
@@ -234,8 +255,10 @@ void dx103DFluidObstacles::ProcessDynamicObstacles( const dx103DFluidData &Fluid
 	Fmatrix	FluidToWorld;
 	FluidToWorld.invert(WorldToFluid);
 
-	RCache.set_c(strWorldToLocal, WorldToFluid);	
+	RCache.set_c(strWorldToLocal, WorldToFluid);
 	RCache.set_c(strLocalToWorld, FluidToWorld);
+
+	RenderBulletWakes( FluidData, WorldToFluid, timestep );
 
 	int iShellsNum = m_lstShells.size();
 	for (int i=0; i<iShellsNum; ++i)
@@ -398,6 +421,61 @@ void dx103DFluidObstacles::RenderDynamicOOBB( const IPhysicsGeometry &Geometry, 
 	Fmatrix OOBBTransform;
 	Geometry.get_Box( OOBBTransform, BoxSize );
 
+	RenderOOBB( OOBBTransform, BoxSize, WorldToFluid );
+}
+
+// Bullet wakes: each is a thin box along the bullet's path, moving along it. Its inside clears the smoke
+// (advection zeroes obstacle cells) and its boundary drags the flow along the path, so the smoke opens up
+// around the bullet in a small circle and closes behind it once the wake expires.
+void dx103DFluidObstacles::RenderBulletWakes( const dx103DFluidData &FluidData, const Fmatrix &WorldToFluid, float timestep )
+{
+	if (m_lstWakes.empty())	return;
+
+	// No thinner than about one voxel, or the grid never sees it: the voxel is the volume's size over the grid.
+	const Fmatrix &T	= FluidData.GetTransform();
+	const float voxel	= _max( T.i.magnitude() / m_vGridDim.x, _max( T.j.magnitude() / m_vGridDim.y, T.k.magnitude() / m_vGridDim.z ) );
+	const float radius	= _max( 0.1f, voxel * 1.2f );
+
+	// Same velocity units as RenderPhysicsElement (per-step, emphasised x6). The drag is a modest fixed
+	// speed along the path, not the bullet's own ~800 m/s, which would blast the whole volume.
+	const float WAKE_SPEED	= 4.0f;		// m/s
+	VERIFY(timestep!=0);
+	const float fVelocityScale = (1.0f/timestep) / (30.0f * 2.0f) * 6.0f;
+
+	for (u32 i=0; i<m_lstWakes.size(); ++i)
+	{
+		const dx103DFluidManager::SBulletWake &w = m_lstWakes[i];
+		Fvector dir; dir.sub(w.to, w.from);
+		const float len = dir.magnitude();
+		if (len < EPS_L)	continue;
+		dir.div(len);
+
+		Fmatrix	OOBBTransform;
+		OOBBTransform.k.set(dir);
+		Fvector::generate_orthonormal_basis(OOBBTransform.k, OOBBTransform.j, OOBBTransform.i);
+		// right-handed like every engine matrix (i = j x k): a mirrored basis flips the box's clip planes
+		// inside out and the obstacle would draw nothing
+		OOBBTransform.i.crossproduct(OOBBTransform.j, OOBBTransform.k);
+		OOBBTransform._14_ = OOBBTransform._24_ = OOBBTransform._34_ = 0.f;
+		OOBBTransform.c.add(w.from, w.to).mul(0.5f);
+		OOBBTransform._44_ = 1.f;
+
+		Fvector4 MassCenter, AngularVelocity, TranslationVelocity;
+		MassCenter.set( OOBBTransform.c.x, OOBBTransform.c.y, OOBBTransform.c.z, 0.0f );
+		AngularVelocity.set( 0, 0, 0, 0 );
+		TranslationVelocity.set( dir.x, dir.y, dir.z, 0.0f );
+		TranslationVelocity.mul( WAKE_SPEED * fVelocityScale );
+		RCache.set_c(strMassCenter, MassCenter);
+		RCache.set_c(strOOBBWorldAngularVelocity, AngularVelocity);
+		RCache.set_c(strOOBBWorldTranslationVelocity, TranslationVelocity);
+
+		RenderOOBB( OOBBTransform, Fvector3().set(2.f*radius, 2.f*radius, len), WorldToFluid );
+	}
+}
+
+void dx103DFluidObstacles::RenderOOBB( const Fmatrix &OOBBTransform, const Fvector3 &BoxSize, const Fmatrix &WorldToFluid )
+{
+	Fmatrix Transform;
 	Transform.mul(WorldToFluid, OOBBTransform);
 
 	//	Shader must be already set up!
