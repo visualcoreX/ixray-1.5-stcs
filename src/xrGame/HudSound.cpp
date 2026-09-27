@@ -8,6 +8,10 @@
 static struct SIndoorSoundParams
 {
 	float		ray_up;			// how high a roof may be
+	int			roof_rays;		// rays up, tilted off the vertical and spread evenly around it
+	float		roof_angle;		// their tilt, radians
+	float		roof_hits;		// share of them that must hit a roof
+	shared_str	ignore_materials;	// hit through these, as through passable ones (tree trunks)
 	float		ray_side;		// how far a wall may be
 	int			side_rays;		// horizontal rays, spread evenly around
 	float		side_hits;		// share of them that must hit a wall
@@ -21,20 +25,51 @@ void InitHudSoundSettings()
 	psHUDSoundVolume		= pSettings->r_float("hud_sound", "hud_sound_vol_k");
 
 	s_indoor.ray_up			= READ_IF_EXISTS(pSettings, r_float, "indoor_sound", "ray_up",		25.f);
+	s_indoor.roof_rays		= READ_IF_EXISTS(pSettings, r_s32,	 "indoor_sound", "roof_rays",	3);
+	s_indoor.roof_angle		= deg2rad(READ_IF_EXISTS(pSettings, r_float, "indoor_sound", "roof_angle", 35.f));
+	s_indoor.roof_hits		= READ_IF_EXISTS(pSettings, r_float, "indoor_sound", "roof_hits",	1.0f);
+	s_indoor.ignore_materials	= READ_IF_EXISTS(pSettings, r_string, "indoor_sound", "ignore_materials", "materials\tree_trunk");
 	s_indoor.ray_side		= READ_IF_EXISTS(pSettings, r_float, "indoor_sound", "ray_side",	25.f);
 	s_indoor.side_rays		= READ_IF_EXISTS(pSettings, r_s32,	 "indoor_sound", "side_rays",	8);
 	s_indoor.side_hits		= READ_IF_EXISTS(pSettings, r_float, "indoor_sound", "side_hits",	0.6f);
 	s_indoor.cache_time		= READ_IF_EXISTS(pSettings, r_float, "indoor_sound", "cache_time",	0.5f);
 	s_indoor.cache_dist		= READ_IF_EXISTS(pSettings, r_float, "indoor_sound", "cache_dist",	1.0f);
+	clamp					(s_indoor.roof_rays, 1, 16);
+	clamp					(s_indoor.roof_angle, 0.f, deg2rad(80.f));
+	clamp					(s_indoor.roof_hits, 0.f, 1.f);
 	clamp					(s_indoor.side_rays, 0, 32);
 	clamp					(s_indoor.side_hits, 0.f, 1.f);
 }
 
-// the first solid triangle ends the ray; bushes, nets and the like let sound through and are skipped
+// ignore_materials by material index, built on the first test (the material library is loaded by then)
+static xr_vector<bool>		s_indoor_ignored;
+
+static void indoor_resolve_materials()
+{
+	s_indoor_ignored.assign	(GMLib.CountMaterial(), false);
+	LPCSTR		list		= s_indoor.ignore_materials.c_str();
+	if (!list)				return;
+	string256				name;
+	for (int i=0, n=_GetItemCount(list); i<n; ++i)
+	{
+		_GetItem			(list, i, name);
+		if (!name[0])		continue;
+		GameMtlIt	it		= GMLib.GetMaterialIt(name);
+		if (it==GMLib.LastMaterial())
+			Msg				("! [indoor_sound] ignore_materials: no material '%s'", name);
+		else
+			s_indoor_ignored[it-GMLib.FirstMaterial()] = true;
+	}
+}
+
+// the first solid triangle ends the ray; bushes, nets and the like let sound through and are skipped,
+// and so is whatever ignore_materials lists -- a tree overhead is not a roof
 static BOOL indoor_ray_callback(collide::rq_result& result, LPVOID params)
 {
 	CDB::TRI*	T			= Level().ObjectSpace.GetStaticTris()+result.element;
 	if (GMLib.GetMaterialByIdx(T->material)->Flags.is(SGameMtl::flPassable))
+		return				TRUE;
+	if (T->material<s_indoor_ignored.size() && s_indoor_ignored[T->material])
 		return				TRUE;
 	*(bool*)params			= true;
 	return					FALSE;
@@ -49,9 +84,11 @@ static bool indoor_ray(const Fvector& from, const Fvector& dir, float range)
 	return					hit;
 }
 
-// Indoors = a roof straight above AND walls in most directions around. The roof alone is a shed or
-// an awning, and walls alone a yard between buildings; either still sounds like the open air. Only
-// the static level geometry counts, so neither actors nor dropped items make a room.
+// Indoors = a roof above AND walls in most directions around. The roof alone is a shed or an awning,
+// and walls alone a yard between buildings; either still sounds like the open air. The roof is looked
+// for by a cone of rays -- three at 35 degrees off the vertical by default -- that must all hit, so a
+// beam or a pipe right overhead is not taken for one. Only the static level geometry counts, so neither
+// actors nor dropped items make a room.
 bool IndoorSoundTest(const Fvector& pos)
 {
 	if (!g_pGameLevel)		return false;
@@ -67,7 +104,25 @@ bool IndoorSoundTest(const Fvector& pos)
 			return			e.indoor;
 	}
 
-	bool					indoor = indoor_ray(pos, Fvector().set(0.f,1.f,0.f), s_indoor.ray_up);
+	if (s_indoor_ignored.size()!=GMLib.CountMaterial())
+		indoor_resolve_materials();
+
+	bool					indoor;
+	{
+		const int			need = _max(1, iCeil(s_indoor.roof_hits*float(s_indoor.roof_rays)-EPS_L));
+		const float			range = s_indoor.ray_up/_cos(s_indoor.roof_angle);	// the same height, slanted
+		const float			s = _sin(s_indoor.roof_angle), c = _cos(s_indoor.roof_angle);
+		int					hits = 0;
+		for (int i=0; i<s_indoor.roof_rays; ++i)
+		{
+			const float		a = PI_MUL_2*float(i)/float(s_indoor.roof_rays);
+			if (indoor_ray(pos, Fvector().set(s*_cos(a),c,s*_sin(a)), range))
+				++hits;
+			if (hits>=need || hits+(s_indoor.roof_rays-1-i)<need)
+				break;
+		}
+		indoor				= (hits>=need);
+	}
 	if (indoor && s_indoor.side_rays>0)
 	{
 		const int			need = iCeil(s_indoor.side_hits*float(s_indoor.side_rays)-EPS_L);
