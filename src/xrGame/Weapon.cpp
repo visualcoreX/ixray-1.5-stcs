@@ -3257,7 +3257,8 @@ bool CWeapon::IsLensedScope() const
 	// R1 has no render target to put the lens picture in: $user$scope is created by CRenderTarget in
 	// the R2/R3 trees only, so on R1 the lens material sampled nothing and the optic went black.
 	// Force the stock 2D scope there -- same test the options menu already applies to the checkbox.
-	if (0==psDeviceFlags.test(rsR2|rsR3))	return false;
+	extern bool gwr_render_is_r1();
+	if (gwr_render_is_r1())					return false;
 	return !!psActorFlags.test(AF_LENS_3D) && IsLensedScopeCfg();
 }
 

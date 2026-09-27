@@ -823,6 +823,14 @@ u32 render_get_dx_level()
 {
 	return ::Render->get_dx_level();
 }
+
+// The RUNNING renderer (the options menu greys the R2/R3-only boxes by it: a renderer picked in the
+// list only starts after a restart, so its value must not decide what works right now).
+extern bool gwr_render_is_r1();
+bool render_is_r1()
+{
+	return gwr_render_is_r1();
+}
 #pragma optimize("s",on)
 void CLevel::script_register(lua_State *L)
 {
@@ -958,7 +966,8 @@ void CLevel::script_register(lua_State *L)
 		def("command_line",						&command_line),
 		def("IsGameTypeSingle",					&IsGameTypeSingle),
 		def("IsDynamicMusic",					&IsDynamicMusic),
-		def("render_get_dx_level",				&render_get_dx_level)
+		def("render_get_dx_level",				&render_get_dx_level),
+		def("render_is_r1",					&render_is_r1)
 	];
 
 	module(L,"relation_registry")

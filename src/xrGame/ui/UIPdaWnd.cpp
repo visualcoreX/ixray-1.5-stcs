@@ -407,9 +407,16 @@ static const u32 PDA_SPAWN_GRACE = 2000;
 // Everything that used to read AF_PDA_3D directly must come through here, or R1 gets a half-enabled
 // PDA: the phantom spawns and plays anm_show in your hands with a dead screen, while the flat window
 // draws over it. See CWeapon::IsLensedScope for the same rule on the scope lens.
+// The RUNNING renderer, not psDeviceFlags: the options menu flips those the moment another renderer is
+// picked, while the switch itself only happens after a restart.
+bool gwr_render_is_r1()
+{
+	return	::Render->get_generation() == IRender_interface::GENERATION_R1;
+}
+
 bool gwr_pda_3d_enabled()
 {
-	return	psDeviceFlags.test(rsR2|rsR3) && !!psActorFlags.test(AF_PDA_3D);
+	return	!gwr_render_is_r1() && !!psActorFlags.test(AF_PDA_3D);
 }
 
 bool gwr_pda_screen_active()
