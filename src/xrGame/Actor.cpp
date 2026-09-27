@@ -1083,7 +1083,7 @@ float CActor::currentFOV()
 			// split), fall through: the world gets the whole zoom, exactly as it did before the split
 			// existed. Returning the base fov here left the binoculars with no magnification whatever.
 		}
-		const float zoomed = pWeapon->GetZoomFactor() * (0.75f);
+		const float zoomed = CWeapon::ZoomFactorFOV(pWeapon->GetZoomFactor(), g_fov);
 		return g_fov + (zoomed - g_fov) * k;
 	}
 
@@ -1094,7 +1094,8 @@ float CActor::currentFOV()
 	clamp(f, 0.f, 1.f);
 	if (f <= 0.f)
 		return g_fov;
-	float target = pWeapon->CurrentZoomFactor() * (0.75f);
+	// relative to the player's fov, not an absolute angle -- see CWeapon::ZoomFactorFOV
+	float target = CWeapon::ZoomFactorFOV(pWeapon->CurrentZoomFactor(), g_fov);
 	return g_fov + (target - g_fov) * f;
 }
 

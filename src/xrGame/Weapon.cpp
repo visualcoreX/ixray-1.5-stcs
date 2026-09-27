@@ -3315,6 +3315,21 @@ float CWeapon::AimBaseFOV() const
 	return g_fov / 1.02f;
 }
 
+// scope_zoom_factor / ironsight_zoom_factor are ABSOLUTE in the configs: the aim fov is factor * 0.75,
+// tuned against the default 75 deg base (98 -> 73.5, a two-per-cent push). Taken literally, a player
+// fov of 55 made that 73.5 a zoom OUT. So the factor now means the magnification it gives at 75, and
+// that magnification is applied to whatever base the player runs -- at 75 nothing changes.
+float CWeapon::ZoomFactorFOV(float zoom_factor, float base_fov)
+{
+	const float ref_fov	= 75.f;
+	const float aim_fov	= zoom_factor * 0.75f;
+	if (aim_fov <= 0.1f || base_fov <= 0.f)	return base_fov;
+	const float t_aim	= tanf(deg2rad(aim_fov) * 0.5f);
+	if (t_aim <= EPS_S)						return base_fov;
+	const float mag		= tanf(deg2rad(ref_fov) * 0.5f) / t_aim;
+	return rad2deg(2.0f * atanf(tanf(deg2rad(base_fov) * 0.5f) / mag));
+}
+
 // GS alter_scope_zoom_factor (collimator.pas:28, GetAlterScopeZoomFactor): the magnification of the
 // BACKUP sight -- the ELCAN's 1x notch you flip to with the alter key. A GS-scale multiplier, default
 // 1.0 = no world zoom at all, fed through the same fov = 2*atan(tan(base/2)/factor) as the lens.
@@ -3873,7 +3888,7 @@ float CWeapon::Scope2DDigitalZoom() const
 float CWeapon::Scope2DTotalZoom() const
 {
 	extern float g_fov;
-	const float aim_fov = IsLensedScopeCfg() ? GetLensFOV() : (GetZoomFactor() * 0.75f);
+	const float aim_fov = IsLensedScopeCfg() ? GetLensFOV() : ZoomFactorFOV(GetZoomFactor(), g_fov);
 	if (aim_fov <= 0.1f || g_fov <= 0.f)			return 1.f;
 	const float t_base = tanf(deg2rad(g_fov)   * 0.5f);
 	const float t_aim  = tanf(deg2rad(aim_fov) * 0.5f);
