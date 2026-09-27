@@ -5,6 +5,7 @@
 #include "SoundRender.h"
 #include "SoundRender_Environment.h"
 #include "SoundRender_Cache.h"
+#include "SoundRender_Source.h"
 
 class CSoundRender_Core					: public CSound_manager_interface
 {
@@ -51,6 +52,14 @@ protected:
 	CSoundRender_Environment			s_user_environment;
 
 	int									m_iPauseCounter;
+
+	// configs\sound_attenuation.ltx: a sound path (or the start of one) -> its distance curve; longest first
+	struct atten_rule
+	{
+		xr_string						prefix;
+		CSoundRender_Attenuation		curve;
+	};
+	xr_vector<atten_rule>				s_atten_rules;
 public:
 	// Cache
 	CSoundRender_Cache					cache;
@@ -77,7 +86,7 @@ public:
 
 	virtual void						play					( ref_sound& S, CObject* O,								u32 flags=0, float delay=0.f);
 	virtual void						play_at_pos				( ref_sound& S, CObject* O,		const Fvector &pos,		u32 flags=0, float delay=0.f);
-	virtual void						play_no_feedback		( ref_sound& S, CObject* O,	u32 flags=0, float delay=0.f, Fvector* pos=0, float* vol=0, float* freq=0, Fvector2* range=0);
+	virtual void						play_no_feedback		( ref_sound& S, CObject* O,	u32 flags=0, float delay=0.f, Fvector* pos=0, float* vol=0, float* freq=0, Fvector2* range=0, const sound_fade_out* fade=0);
 	virtual void						set_master_volume		( float			f )=0;
 	virtual void						set_geometry_env		( IReader*		I );
 	virtual void						set_geometry_som		( IReader*		I );
@@ -123,6 +132,9 @@ public:
 	void								env_load				();
 	void								env_unload				();
 	void								env_apply				();
+
+	void								atten_load				();
+	const CSoundRender_Attenuation*		atten_find				( LPCSTR fname ) const;
 };
 extern CSoundRender_Core* SoundRender;
 #endif

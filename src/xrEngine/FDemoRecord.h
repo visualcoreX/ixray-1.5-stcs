@@ -56,8 +56,13 @@ public:
 
 	virtual void IR_OnKeyboardPress		(int dik);
 	virtual void IR_OnKeyboardHold		(int dik);
+	virtual void IR_OnKeyboardRelease	(int dik);
 	virtual void IR_OnMouseMove			(int dx, int dy);
 	virtual void IR_OnMouseHold			(int btn);
+	virtual void IR_OnMousePress			(int btn);
+	virtual void IR_OnMouseRelease		(int btn);
+	virtual void IR_OnMouseWheel			(int direction);
+	virtual void IR_OnMouseStop			(int dx, int dy);
 	
 	virtual BOOL ProcessCam				(SCamEffectorInfo& info);
 	static	void SetGlobalPosition		( const Fvector &p ) { g_position.p.set(p), g_position.set_position= true; }

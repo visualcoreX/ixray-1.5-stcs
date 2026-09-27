@@ -62,6 +62,7 @@ void CSoundRender_Core::_initialize(int stage)
 
     // load environment
 	env_load					();
+	atten_load					();
 
 	bPresent					= TRUE;
 
@@ -128,6 +129,74 @@ void CSoundRender_Core::env_load	()
 	// Load geometry
 
 	// Assosiate geometry
+}
+
+#define SNDATTEN_FILENAME	"sound_attenuation.ltx"
+#define SNDATTEN_SECTION	"sound_attenuation"
+
+// [sound_attenuation] maps sound paths to curve sections, e.g. "weapons\ak74\ak74_shoot = atten_shot".
+// The path is matched against the start of the file name (no extension, relative to $game_sounds$),
+// so one line covers every numbered variant or a whole folder; the longest match wins.
+void CSoundRender_Core::atten_load	()
+{
+	s_atten_rules.clear			();
+
+	string_path					fn;
+	if (!FS.path_exist("$game_config$") || !FS.exist(fn,"$game_config$",SNDATTEN_FILENAME))
+		return;
+
+	CInifile					ini(fn);
+	if (!ini.section_exist(SNDATTEN_SECTION))
+	{
+		Msg						("! SOUND: %s has no [%s] section", SNDATTEN_FILENAME, SNDATTEN_SECTION);
+		return;
+	}
+
+	CInifile::Sect& S			= ini.r_section(SNDATTEN_SECTION);
+	for (CInifile::SectCIt it=S.Data.begin(); it!=S.Data.end(); ++it)
+	{
+		LPCSTR profile			= *it->second;
+		if (!profile || !ini.section_exist(profile))
+		{
+			Msg					("! SOUND: %s: '%s' refers to a missing section '%s'", SNDATTEN_FILENAME, *it->first, profile?profile:"");
+			continue;
+		}
+
+		atten_rule				r;
+		string_path				prefix;
+		xr_strcpy				(prefix, *it->first);
+		_strlwr					(prefix);
+		for (char* c=prefix; *c; ++c)
+			if (*c=='/')		*c = '\\';
+		if (strext(prefix))		*strext(prefix) = 0;
+		r.prefix				= prefix;
+
+		CSoundRender_Attenuation& C = r.curve;
+		C.profile				= profile;
+		if (ini.line_exist(profile,"min_distance"))	C.min_distance	= ini.r_float(profile,"min_distance");
+		if (ini.line_exist(profile,"max_distance"))	C.max_distance	= ini.r_float(profile,"max_distance");
+		if (ini.line_exist(profile,"falloff_db"))	C.falloff_db	= ini.r_float(profile,"falloff_db");
+		if (ini.line_exist(profile,"shoulder"))		C.shoulder		= ini.r_float(profile,"shoulder");
+		clamp					(C.falloff_db, 0.f, 120.f);
+		C.shoulder				= _max(C.shoulder, 0.f);
+
+		s_atten_rules.push_back	(r);
+	}
+
+	struct longer_first { bool operator() (const atten_rule& a, const atten_rule& b) const { return a.prefix.size()>b.prefix.size(); } };
+	std::stable_sort			(s_atten_rules.begin(), s_atten_rules.end(), longer_first());
+	Msg							("SOUND: %d custom attenuation rule(s) loaded from %s", s_atten_rules.size(), SNDATTEN_FILENAME);
+}
+
+const CSoundRender_Attenuation* CSoundRender_Core::atten_find	(LPCSTR fname) const
+{
+	for (u32 it=0; it<s_atten_rules.size(); it++)
+	{
+		const xr_string& p		= s_atten_rules[it].prefix;
+		if (0==strncmp(fname, p.c_str(), p.size()))
+			return				&s_atten_rules[it].curve;
+	}
+	return						NULL;
 }
 
 void CSoundRender_Core::env_unload	()
@@ -324,7 +393,7 @@ void	CSoundRender_Core::play					( ref_sound& S, CObject* O, u32 flags, float de
 		S._feedback()->switch_to_2D();
 }
 
-void	CSoundRender_Core::play_no_feedback		( ref_sound& S, CObject* O, u32 flags, float delay, Fvector* pos, float* vol, float* freq, Fvector2* range)
+void	CSoundRender_Core::play_no_feedback		( ref_sound& S, CObject* O, u32 flags, float delay, Fvector* pos, float* vol, float* freq, Fvector2* range, const sound_fade_out* fade)
 {
 	if (!bPresent || (0 == S._handle())) return;
 	ref_sound_data_ptr	orig = S._p;
@@ -346,6 +415,7 @@ void	CSoundRender_Core::play_no_feedback		( ref_sound& S, CObject* O, u32 flags,
 	if (freq)			S._feedback()->set_frequency(*freq);
 	if (range)			S._feedback()->set_range   	((*range)[0],(*range)[1]);
 	if (vol)			S._feedback()->set_volume   (*vol);
+	if (fade)			S._feedback()->set_fade_out	(*fade);
 	S._p				= orig;
 }
 

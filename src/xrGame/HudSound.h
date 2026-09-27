@@ -1,22 +1,63 @@
 #pragma once
 
 
+// Distant-sound crossfade. A shot or a blast may have a second recording of how it sounds from afar
+// (snd_shoot_dist / snd_explode_dist); the two are mixed linearly by the distance to the listener:
+// only the near one up to <start> metres, only the far one past <end>, both in between. Returns the far
+// sound's share (0..1); the near one gets the rest.
+#define DISTANT_SND_BLEND_START_DEF		40.f
+#define DISTANT_SND_BLEND_END_DEF		60.f
+float	DistantSoundBlend	(const Fvector& position, float start, float end);
+
+// Indoor shots. A key may have an "_indoor" twin -- the reverb tail of the same shot fired in a room
+// (snd_shoot_indoor, snd_explode_indoor ...), loaded under "<alias>Indoor". When the sound is made
+// indoors (IndoorSoundTest) the plain recording is faded out over snd_indoor_fadeout_start..end seconds,
+// its own outdoor echo cut short, and the tail is played with it. Without the twin nothing changes.
+#define INDOOR_SND_FADE_START_DEF		0.1f
+#define INDOOR_SND_FADE_END_DEF			0.4f
+// Under a roof and walled in on most sides, by rays from <pos> through the level's static geometry
+// (the [indoor_sound] section of system.ltx sets them up). Answers are cached for a moment by position,
+// so a burst costs one test.
+bool	IndoorSoundTest		(const Fvector& pos);
+
 struct HUD_SOUND_ITEM
 {
-	HUD_SOUND_ITEM():m_activeSnd(NULL),m_b_exclusive(false),m_volume(1.0f)		{}
+	HUD_SOUND_ITEM():m_activeSnd(NULL),m_b_exclusive(false),m_volume(1.0f),
+		m_blend_dist_start(DISTANT_SND_BLEND_START_DEF),m_blend_dist_end(DISTANT_SND_BLEND_END_DEF),m_indoor(false)
+	{
+		m_indoor_fade.start	= INDOOR_SND_FADE_START_DEF;
+		m_indoor_fade.end	= INDOOR_SND_FADE_END_DEF;
+		m_indoor_fade.db	= 0.f;
+	}
 
 	static void		LoadSound		(	LPCSTR section, LPCSTR line,
 										ref_sound& hud_snd,
 										int type = sg_SourceType,
 										float* unlock_freq = NULL,
-										float* delay = NULL);
+										float* delay = NULL,
+										CInifile* ini = NULL);
 
+	// ini: where the section lives, pSettings when NULL (a car's or a heli's explosion comes from the
+	// model's user data)
 	static void		LoadSound		(	LPCSTR section, 
 										LPCSTR line,
 										HUD_SOUND_ITEM& hud_snd,  
-										int type = sg_SourceType);
+										int type = sg_SourceType,
+										CInifile* ini = NULL);
 
 	static void		DestroySound	(	HUD_SOUND_ITEM& hud_snd);
+
+	// The "_indoor" twin of <line>: loads it into <tail> and, when it exists, marks <hud_snd> as having
+	// one and reads its fade. Returns whether it exists.
+	static bool		LoadIndoorSound	(	LPCSTR section,
+										LPCSTR line,
+										HUD_SOUND_ITEM& hud_snd,
+										HUD_SOUND_ITEM& tail,
+										int type = sg_SourceType,
+										CInifile* ini = NULL);
+	// the fade of <line>'s indoor variant: "<line>_indoor_fadeout_*", else the section-wide
+	// "snd_indoor_fadeout_*", else the defaults; _db > 0 makes it exponential (see sound_fade_out)
+	void			LoadIndoorFade	(	LPCSTR section, LPCSTR line, CInifile* ini = NULL);
 
 	// b_force_unlock: treat the sound as unlocked even if the config did not ask for it (GS has the
 	// same thing as a global console mask). An exclusive or looped sound is never unlocked.
@@ -26,7 +67,9 @@ struct HUD_SOUND_ITEM
 										bool hud_mode,
 										bool looped = false,
 										u8 index=u8(-1),
-										bool b_force_unlock = false);
+										bool b_force_unlock = false,
+										float volume_k = 1.0f,
+										const sound_fade_out* fade = NULL);
 
 	static void		StopSound		(	HUD_SOUND_ITEM& snd);
 
@@ -57,6 +100,12 @@ struct HUD_SOUND_ITEM
 	SSnd*			m_activeSnd;
 	bool			m_b_exclusive;
 	float			m_volume;	// real volume, from the "volume_<line>" key (percent); 1.0 if absent
+	// only meaningful on a "<alias>Dist" item: where it starts and finishes taking over from <alias>
+	float			m_blend_dist_start;
+	float			m_blend_dist_end;
+	// has an "_indoor" twin; if so, indoors it is faded out by m_indoor_fade while the twin plays
+	bool			m_indoor;
+	sound_fade_out	m_indoor_fade;
 	xr_vector<SSnd> sounds;
 
 	bool operator == (LPCSTR alias) const{return 0==_stricmp(m_alias.c_str(),alias);}
@@ -74,7 +123,9 @@ public:
 													bool hud_mode,
 													bool looped = false,
 													u8 index=u8(-1),
-													bool b_force_unlock = false);
+													bool b_force_unlock = false,
+													float volume_k = 1.0f,
+													const sound_fade_out* fade = NULL);
 
 	void						StopSound		(	LPCSTR alias);
 

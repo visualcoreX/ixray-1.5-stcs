@@ -493,6 +493,37 @@ void CDemoRecord::IR_OnMouseHold		(int btn)
 	update_whith_timescale( m_vT, vT_delta );
 }
 
+// the demo camera only uses the press/hold/move events itself, the rest just go
+// through to the level when input is redirected (Numpad *)
+void CDemoRecord::IR_OnMousePress		(int btn)
+{
+	if(m_b_redirect_input_to_level)
+		g_pGameLevel->IR_OnMousePress(btn);
+}
+
+// releases always reach the level, so a button held while toggling the redirect does not stick
+void CDemoRecord::IR_OnMouseRelease		(int btn)
+{
+	g_pGameLevel->IR_OnMouseRelease(btn);
+}
+
+void CDemoRecord::IR_OnMouseWheel		(int direction)
+{
+	if(m_b_redirect_input_to_level)
+		g_pGameLevel->IR_OnMouseWheel(direction);
+}
+
+void CDemoRecord::IR_OnMouseStop		(int dx, int dy)
+{
+	if(m_b_redirect_input_to_level)
+		g_pGameLevel->IR_OnMouseStop(dx, dy);
+}
+
+void CDemoRecord::IR_OnKeyboardRelease	(int dik)
+{
+	g_pGameLevel->IR_OnKeyboardRelease(dik);
+}
+
 void CDemoRecord::RecordKey			()
 {
 	Fmatrix			g_matView;

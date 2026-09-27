@@ -73,6 +73,17 @@ enum esound_type{
 
 class CSound_UserDataVisitor;
 
+// A fade-out laid over one playing instance, in seconds of its own play time: full volume up to <start>,
+// silence at <end>, where the emitter stops and frees its voice. db <= 0 fades linearly in amplitude;
+// db > 0 fades linearly in decibels (that many dB down across start..end -- a natural decay), pulled
+// down to exactly zero at <end> the same way sound_attenuation.ltx curves are.
+struct sound_fade_out
+{
+	float					start;
+	float					end;
+	float					db;
+};
+
 class CSound_UserData	: public xr_resource		{
 public:
 	virtual							~CSound_UserData()							{}
@@ -131,7 +142,7 @@ public:
 
 	IC void					play					( CObject* O, u32 flags=0, float delay=0.f);
 	IC void					play_at_pos				( CObject* O, const Fvector &pos ,	u32 flags=0, float delay=0.f);
-	IC void					play_no_feedback		( CObject* O, u32 flags=0, float delay=0.f, Fvector* pos=0, float* vol=0, float* freq=0, Fvector2* range=0);
+	IC void					play_no_feedback		( CObject* O, u32 flags=0, float delay=0.f, Fvector* pos=0, float* vol=0, float* freq=0, Fvector2* range=0, const sound_fade_out* fade=0);
 
 	IC void					stop 					( );
 	IC void					stop_deffered			( );
@@ -140,6 +151,7 @@ public:
 	IC void					set_range				( float min, float max );
 	IC void					set_volume				( float vol );
 	IC void					set_priority			( float vol );
+	IC void					set_fade_out			( const sound_fade_out& fade );
 
 	IC const CSound_params*	get_params				( );
     IC void					set_params				( CSound_params* p );
@@ -191,6 +203,7 @@ public:
 	virtual void					stop					(BOOL bDeffered)											= 0;
 	virtual	const CSound_params*	get_params				( )															= 0;
 	virtual u32						play_time				( )															= 0;
+	virtual void					set_fade_out			(const sound_fade_out& fade)								= 0;
 };
 
 /// definition (Sound Stream Interface)
@@ -266,7 +279,7 @@ public:
 
 	virtual void					play					( ref_sound& S, CObject* O,						u32 flags=0, float delay=0.f)			= 0;
 	virtual void					play_at_pos				( ref_sound& S, CObject* O,	const Fvector &pos,	u32 flags=0, float delay=0.f)			= 0;
-	virtual void					play_no_feedback		( ref_sound& S, CObject* O,						u32 flags=0, float delay=0.f, Fvector* pos=0, float* vol=0, float* freq=0, Fvector2* range=0)= 0;
+	virtual void					play_no_feedback		( ref_sound& S, CObject* O,						u32 flags=0, float delay=0.f, Fvector* pos=0, float* vol=0, float* freq=0, Fvector2* range=0, const sound_fade_out* fade=0)= 0;
 
 	virtual void					set_master_volume		( float f=1.f )																			= 0;
 	virtual void					set_geometry_env		( IReader* I )																			= 0;
@@ -305,12 +318,13 @@ IC void	ref_sound::clone						( const ref_sound& from,esound_type sound_type, in
 IC void	ref_sound::destroy						( )														{	VERIFY(!::Sound->i_locked()); 	::Sound->destroy	(*this);													}
 IC void	ref_sound::play							( CObject* O,						u32 flags, float d)	{	VERIFY(!::Sound->i_locked()); 	::Sound->play		(*this,O,flags,d);											}
 IC void	ref_sound::play_at_pos					( CObject* O, const Fvector &pos,	u32 flags, float d)	{	VERIFY(!::Sound->i_locked()); 	::Sound->play_at_pos(*this,O,pos,flags,d);										}
-IC void	ref_sound::play_no_feedback				( CObject* O, u32 flags, float d, Fvector* pos, float* vol, float* freq, Fvector2* range){	VERIFY(!::Sound->i_locked()); ::Sound->play_no_feedback(*this,O,flags,d,pos,vol,freq,range);	}
+IC void	ref_sound::play_no_feedback				( CObject* O, u32 flags, float d, Fvector* pos, float* vol, float* freq, Fvector2* range, const sound_fade_out* fade){	VERIFY(!::Sound->i_locked()); ::Sound->play_no_feedback(*this,O,flags,d,pos,vol,freq,range,fade);	}
 IC void	ref_sound::set_position					( const Fvector &pos)									{	VERIFY(!::Sound->i_locked()); 	VERIFY(_feedback());_feedback()->set_position(pos);								}
 IC void	ref_sound::set_frequency				( float freq)											{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	_feedback()->set_frequency(freq);							}
 IC void	ref_sound::set_range					( float min, float max )								{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	_feedback()->set_range(min,max);							}
 IC void	ref_sound::set_volume					( float vol )											{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	_feedback()->set_volume(vol);								}
 IC void	ref_sound::set_priority					( float p )												{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	_feedback()->set_priority(p);								}
+IC void	ref_sound::set_fade_out				( const sound_fade_out& f )								{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	_feedback()->set_fade_out(f);								}
 IC void	ref_sound::stop							( )														{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	_feedback()->stop(FALSE);									}
 IC void	ref_sound::stop_deffered				( )														{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	_feedback()->stop(TRUE);									}
 IC const CSound_params*	ref_sound::get_params	( )														{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	return _feedback()->get_params(); else return NULL;			}

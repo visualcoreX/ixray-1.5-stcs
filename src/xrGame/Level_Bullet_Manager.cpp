@@ -117,6 +117,8 @@ CBulletManager::CBulletManager()
 CBulletManager::~CBulletManager()
 {
 	m_Bullets.clear			();
+	m_WhineSoundsCache.clear();
+	m_AmmoWhineSounds.clear	();
 	m_WhineSounds.clear		();
 	m_Events.clear			();
 }
@@ -137,17 +139,11 @@ void CBulletManager::Load		()
 
 	m_fHPMaxDist			= pSettings->r_float("bullet_manager", "hit_probability_max_dist");
 
-	LPCSTR whine_sounds		= pSettings->r_string("bullet_manager", "whine_sounds");
-	int cnt					= _GetItemCount(whine_sounds);
-	xr_string tmp;
-	for (int k=0; k<cnt; ++k)
-	{
-		m_WhineSounds.push_back	(ref_sound());
-		m_WhineSounds.back().create(_GetItem(whine_sounds,k,tmp),st_Effect,sg_SourceType);
-	}
+	LoadWhineSounds			(m_WhineSounds, pSettings->r_string("bullet_manager", "whine_sounds"));
 
+	xr_string tmp;
 	LPCSTR explode_particles= pSettings->r_string("bullet_manager", "explode_particles");
-	cnt						= _GetItemCount(explode_particles);
+	int cnt					= _GetItemCount(explode_particles);
 	for (int k=0; k<cnt; ++k)
 		m_ExplodeParticles.push_back	(_GetItem(explode_particles,k,tmp));
 }
@@ -163,13 +159,47 @@ void CBulletManager::PlayExplodePS( const Fmatrix& xf )
 	GamePersistent().ps_needtoplay.push_back(ps);
 }
 
+void CBulletManager::LoadWhineSounds(SoundVec& dest, LPCSTR sounds)
+{
+	int cnt					= _GetItemCount(sounds);
+	xr_string tmp;
+	for (int k=0; k<cnt; ++k)
+	{
+		dest.push_back		(ref_sound());
+		dest.back().create	(_GetItem(sounds,k,tmp),st_Effect,sg_SourceType);
+	}
+}
+
+// whine pool for the ammo section: its own whine_sounds if the line exists (an empty value mutes
+// the whine for that ammo), otherwise the [bullet_manager] default. Cached per section.
+const CBulletManager::SoundVec* CBulletManager::GetWhineSounds(const shared_str& ammo_sect)
+{
+	if (!ammo_sect.size())
+		return &m_WhineSounds;
+
+	auto it = m_WhineSoundsCache.find(ammo_sect);
+	if (it != m_WhineSoundsCache.end())
+		return it->second;
+
+	const SoundVec* pool	= &m_WhineSounds;
+	if (pSettings->line_exist(ammo_sect, "whine_sounds"))
+	{
+		SoundVec& sounds	= m_AmmoWhineSounds[ammo_sect];
+		LoadWhineSounds		(sounds, pSettings->r_string(ammo_sect, "whine_sounds"));
+		pool				= &sounds;
+	}
+	m_WhineSoundsCache.emplace(ammo_sect, pool);
+	return pool;
+}
+
 void CBulletManager::PlayWhineSound(SBullet* bullet, CObject* object, const Fvector& pos)
 {
-	if (m_WhineSounds.empty())						return;
+	const SoundVec& pool = bullet->whine_sounds ? *bullet->whine_sounds : m_WhineSounds;
+	if (pool.empty())								return;
 	if (bullet->m_whine_snd._feedback() != NULL)	return;
 	if(bullet->hit_type!=ALife::eHitTypeFireWound ) return;
 
-	bullet->m_whine_snd								= m_WhineSounds[Random.randI(0, m_WhineSounds.size())];
+	bullet->m_whine_snd								= pool[Random.randI(0, pool.size())];
 	bullet->m_whine_snd.play_at_pos					(object,pos);
 }
 
@@ -204,6 +234,7 @@ void CBulletManager::AddBullet(const Fvector& position,
 	bullet.Init					(position, direction, starting_speed, power, power_critical, impulse, sender_id, sendersweapon_id, e_hit_type, maximum_distance, cartridge, SendHit);
 //	bullet.frame_num			= Device.dwFrame;
 	bullet.flags.aim_bullet		= AimBullet;
+	bullet.whine_sounds			= GetWhineSounds(cartridge.m_ammoSect);
 	if (SendHit && !IsGameTypeSingle())
 		Game().m_WeaponUsageStatistic->OnBullet_Fire(&bullet, cartridge);
 

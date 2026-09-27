@@ -6,6 +6,23 @@
 
 #include <vorbis\vorbisfile.h>
 
+// A distance curve of our own, given to the sound files listed in configs\sound_attenuation.ltx; every
+// other file keeps OpenAL's inverse-distance rolloff untouched. Full volume up to min_distance, then a
+// decay that is linear in dB (falloff_db decibels across the whole min..max span, so a smaller value
+// means a flatter curve) and is pulled down to exactly zero at max_distance. The first <shoulder>
+// metres past min_distance round the plateau off into the slope instead of breaking it at a corner.
+struct CSoundRender_Attenuation
+{
+	shared_str				profile;
+	float					min_distance;			// < 0: keep the one from the ogg comment
+	float					max_distance;			// < 0: keep the one from the ogg comment
+	float					falloff_db;
+	float					shoulder;
+
+	CSoundRender_Attenuation() : min_distance(-1.f), max_distance(-1.f), falloff_db(20.f), shoulder(0.f) {}
+	float					gain					(float dist, float min_d, float max_d) const;
+};
+
 class XRSOUND_EDITOR_API 	CSoundRender_Source	: public CSound_source
 {
 public:
@@ -23,6 +40,9 @@ public:
 	float					m_fMaxDist;
 	float					m_fMaxAIDist;
 	u32						m_uGameType;
+
+	bool					m_bCustomAttenuation;	// m_Attenuation is in effect, OpenAL rolloff is off
+	CSoundRender_Attenuation m_Attenuation;
 private:
 	OggVorbis_File			m_ovf;
 	IReader*				m_wave;

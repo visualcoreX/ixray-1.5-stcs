@@ -1,42 +1,189 @@
 #include "stdafx.h"
 
 #include "HudSound.h"
+#include "Level.h"
+#include "../xrEngine/gamemtllib.h"
+
+// [indoor_sound] in system.ltx; every key optional
+static struct SIndoorSoundParams
+{
+	float		ray_up;			// how high a roof may be
+	int			roof_rays;		// rays up, tilted off the vertical and spread evenly around it
+	float		roof_angle;		// their tilt, radians
+	float		roof_hits;		// share of them that must hit a roof
+	shared_str	ignore_materials;	// hit through these, as through passable ones (tree trunks)
+	float		ray_side;		// how far a wall may be
+	int			side_rays;		// horizontal rays, spread evenly around
+	float		side_hits;		// share of them that must hit a wall
+	float		cache_time;		// seconds an answer is reused for...
+	float		cache_dist;		// ...by a sound made this close
+} s_indoor;
 
 float psHUDSoundVolume			= 1.0f;
 void InitHudSoundSettings()
 {
 	psHUDSoundVolume		= pSettings->r_float("hud_sound", "hud_sound_vol_k");
+
+	s_indoor.ray_up			= READ_IF_EXISTS(pSettings, r_float, "indoor_sound", "ray_up",		25.f);
+	s_indoor.roof_rays		= READ_IF_EXISTS(pSettings, r_s32,	 "indoor_sound", "roof_rays",	3);
+	s_indoor.roof_angle		= deg2rad(READ_IF_EXISTS(pSettings, r_float, "indoor_sound", "roof_angle", 35.f));
+	s_indoor.roof_hits		= READ_IF_EXISTS(pSettings, r_float, "indoor_sound", "roof_hits",	1.0f);
+	s_indoor.ignore_materials	= READ_IF_EXISTS(pSettings, r_string, "indoor_sound", "ignore_materials", "materials\tree_trunk");
+	s_indoor.ray_side		= READ_IF_EXISTS(pSettings, r_float, "indoor_sound", "ray_side",	25.f);
+	s_indoor.side_rays		= READ_IF_EXISTS(pSettings, r_s32,	 "indoor_sound", "side_rays",	8);
+	s_indoor.side_hits		= READ_IF_EXISTS(pSettings, r_float, "indoor_sound", "side_hits",	0.6f);
+	s_indoor.cache_time		= READ_IF_EXISTS(pSettings, r_float, "indoor_sound", "cache_time",	0.5f);
+	s_indoor.cache_dist		= READ_IF_EXISTS(pSettings, r_float, "indoor_sound", "cache_dist",	1.0f);
+	clamp					(s_indoor.roof_rays, 1, 16);
+	clamp					(s_indoor.roof_angle, 0.f, deg2rad(80.f));
+	clamp					(s_indoor.roof_hits, 0.f, 1.f);
+	clamp					(s_indoor.side_rays, 0, 32);
+	clamp					(s_indoor.side_hits, 0.f, 1.f);
+}
+
+// ignore_materials by material index, built on the first test (the material library is loaded by then)
+static xr_vector<bool>		s_indoor_ignored;
+
+static void indoor_resolve_materials()
+{
+	s_indoor_ignored.assign	(GMLib.CountMaterial(), false);
+	LPCSTR		list		= s_indoor.ignore_materials.c_str();
+	if (!list)				return;
+	string256				name;
+	for (int i=0, n=_GetItemCount(list); i<n; ++i)
+	{
+		_GetItem			(list, i, name);
+		if (!name[0])		continue;
+		GameMtlIt	it		= GMLib.GetMaterialIt(name);
+		if (it==GMLib.LastMaterial())
+			Msg				("! [indoor_sound] ignore_materials: no material '%s'", name);
+		else
+			s_indoor_ignored[it-GMLib.FirstMaterial()] = true;
+	}
+}
+
+// the first solid triangle ends the ray; bushes, nets and the like let sound through and are skipped,
+// and so is whatever ignore_materials lists -- a tree overhead is not a roof
+static BOOL indoor_ray_callback(collide::rq_result& result, LPVOID params)
+{
+	CDB::TRI*	T			= Level().ObjectSpace.GetStaticTris()+result.element;
+	if (GMLib.GetMaterialByIdx(T->material)->Flags.is(SGameMtl::flPassable))
+		return				TRUE;
+	if (T->material<s_indoor_ignored.size() && s_indoor_ignored[T->material])
+		return				TRUE;
+	*(bool*)params			= true;
+	return					FALSE;
+}
+
+static bool indoor_ray(const Fvector& from, const Fvector& dir, float range)
+{
+	bool					hit = false;
+	collide::ray_defs		RD(from, dir, range, 0, collide::rqtStatic);	// both faces: a roof may be single-sided
+	collide::rq_results		RQR;
+	Level().ObjectSpace.RayQuery(RQR, RD, indoor_ray_callback, &hit, NULL, NULL);
+	return					hit;
+}
+
+// Indoors = a roof above AND walls in most directions around. The roof alone is a shed or an awning,
+// and walls alone a yard between buildings; either still sounds like the open air. The roof is looked
+// for by a cone of rays -- three at 35 degrees off the vertical by default -- that must all hit, so a
+// beam or a pipe right overhead is not taken for one. Only the static level geometry counts, so neither
+// actors nor dropped items make a room.
+bool IndoorSoundTest(const Fvector& pos)
+{
+	if (!g_pGameLevel)		return false;
+
+	struct SEntry { Fvector pos; float time; bool indoor; };
+	static SEntry			cache[8];
+	static u32				cache_next = 0;
+	const float				now = Device.fTimeGlobal;
+	for (u32 i=0; i<8; ++i)
+	{
+		const SEntry& e		= cache[i];
+		if (e.time>0.f && now>=e.time && now-e.time<s_indoor.cache_time && e.pos.distance_to_sqr(pos)<_sqr(s_indoor.cache_dist))
+			return			e.indoor;
+	}
+
+	if (s_indoor_ignored.size()!=GMLib.CountMaterial())
+		indoor_resolve_materials();
+
+	bool					indoor;
+	{
+		const int			need = _max(1, iCeil(s_indoor.roof_hits*float(s_indoor.roof_rays)-EPS_L));
+		const float			range = s_indoor.ray_up/_cos(s_indoor.roof_angle);	// the same height, slanted
+		const float			s = _sin(s_indoor.roof_angle), c = _cos(s_indoor.roof_angle);
+		int					hits = 0;
+		for (int i=0; i<s_indoor.roof_rays; ++i)
+		{
+			const float		a = PI_MUL_2*float(i)/float(s_indoor.roof_rays);
+			if (indoor_ray(pos, Fvector().set(s*_cos(a),c,s*_sin(a)), range))
+				++hits;
+			if (hits>=need || hits+(s_indoor.roof_rays-1-i)<need)
+				break;
+		}
+		indoor				= (hits>=need);
+	}
+	if (indoor && s_indoor.side_rays>0)
+	{
+		const int			need = iCeil(s_indoor.side_hits*float(s_indoor.side_rays)-EPS_L);
+		int					hits = 0;
+		for (int i=0; i<s_indoor.side_rays; ++i)
+		{
+			const float		a = PI_MUL_2*float(i)/float(s_indoor.side_rays);
+			if (indoor_ray(pos, Fvector().set(_cos(a),0.f,_sin(a)), s_indoor.ray_side))
+				++hits;
+			if (hits>=need || hits+(s_indoor.side_rays-1-i)<need)	// decided either way
+				break;
+		}
+		indoor				= (hits>=need);
+	}
+
+	SEntry& e				= cache[cache_next];
+	cache_next				= (cache_next+1)%8;
+	e.pos					= pos;
+	e.time					= now;
+	e.indoor				= indoor;
+	return					indoor;
 }
 
 // GS (wpnpatch, WeaponSoundLoader.pas) moved the real volume out of the sound line and into a
 // separate per-alias key, in percent: "volume_snd_silncer_shot = 80". Absent = full volume.
-static float LoadSndVolume(LPCSTR section, LPCSTR line)
+static float LoadSndVolume(CInifile* ini, LPCSTR section, LPCSTR line)
 {
 	string256					volume_line;
 	strconcat					(sizeof(volume_line),volume_line,"volume_",line);
-	if (!pSettings->line_exist(section,volume_line))
+	if (!ini->line_exist(section,volume_line))
 		return					(1.0f);
 
-	int							volume = pSettings->r_s32(section,volume_line);
+	int							volume = ini->r_s32(section,volume_line);
 	clamp						(volume, 0, 200);
 	return						(float(volume) / 100.0f);
 }
 
-void HUD_SOUND_ITEM::LoadSound(	LPCSTR section, LPCSTR line,
-							HUD_SOUND_ITEM& hud_snd, int type)
+float DistantSoundBlend(const Fvector& position, float start, float end)
 {
+	const float	dist		= Device.vCameraPosition.distance_to(position);
+	if (dist <= start)		return 0.0f;
+	if (dist >= end)		return 1.0f;
+	return					(dist - start) / (end - start);
+}
+
+void HUD_SOUND_ITEM::LoadSound(	LPCSTR section, LPCSTR line,
+							HUD_SOUND_ITEM& hud_snd, int type, CInifile* ini)
+{
+	if (!ini)	ini = pSettings;
 	hud_snd.m_activeSnd		= NULL;
 	hud_snd.sounds.clear	();
-	hud_snd.m_volume		= LoadSndVolume(section, line);
+	hud_snd.m_volume		= LoadSndVolume(ini, section, line);
 
 	string256	sound_line;
 	xr_strcpy		(sound_line,line);
 	int k=0;
-	while( pSettings->line_exist(section, sound_line) ){
+	while( ini->line_exist(section, sound_line) ){
 		hud_snd.sounds.push_back( SSnd() );
 		SSnd& s = hud_snd.sounds.back();
 
-		LoadSound	(section, sound_line, s.snd, type, &s.unlock_freq, &s.delay);
+		LoadSound	(section, sound_line, s.snd, type, &s.unlock_freq, &s.delay, ini);
 		xr_sprintf		(sound_line,"%s%d",line,++k);
 	}//while
 }
@@ -46,9 +193,10 @@ void  HUD_SOUND_ITEM::LoadSound(LPCSTR section,
 								ref_sound& snd,
 								int type,
 								float* unlock_freq,
-								float* delay)
+								float* delay,
+								CInifile* ini)
 {
-	LPCSTR str = pSettings->r_string(section, line);
+	LPCSTR str = (ini ? ini : pSettings)->r_string(section, line);
 	string256 buf_str;
 
 	int	count = _GetItemCount	(str);
@@ -81,6 +229,37 @@ void  HUD_SOUND_ITEM::LoadSound(LPCSTR section,
 	}
 }
 
+bool HUD_SOUND_ITEM::LoadIndoorSound(	LPCSTR section, LPCSTR line,
+									HUD_SOUND_ITEM& hud_snd, HUD_SOUND_ITEM& tail, int type, CInifile* ini)
+{
+	if (!ini)	ini = pSettings;
+	string256					tail_line;
+	strconcat					(sizeof(tail_line), tail_line, line, "_indoor");
+	hud_snd.m_indoor			= !!ini->line_exist(section, tail_line);
+	if (!hud_snd.m_indoor)		return false;
+
+	LoadSound					(section, tail_line, tail, type, ini);
+	hud_snd.LoadIndoorFade		(section, line, ini);
+	return						true;
+}
+
+void HUD_SOUND_ITEM::LoadIndoorFade(LPCSTR section, LPCSTR line, CInifile* ini)
+{
+	if (!ini)	ini = pSettings;
+	static LPCSTR const	keys[3]	= { "fadeout_start", "fadeout_end", "fadeout_db" };
+	float* const		dst[3]	= { &m_indoor_fade.start, &m_indoor_fade.end, &m_indoor_fade.db };
+	for (int i=0; i<3; ++i)
+	{
+		string256				own, common;
+		xr_sprintf				(own, "%s_indoor_%s", line, keys[i]);
+		xr_sprintf				(common, "snd_indoor_%s", keys[i]);
+		if (ini->line_exist(section, own))			*dst[i] = ini->r_float(section, own);
+		else if (ini->line_exist(section, common))	*dst[i] = ini->r_float(section, common);
+	}
+	m_indoor_fade.start			= _max(m_indoor_fade.start, 0.f);
+	m_indoor_fade.end			= _max(m_indoor_fade.end, m_indoor_fade.start);
+}
+
 void HUD_SOUND_ITEM::DestroySound(HUD_SOUND_ITEM& hud_snd)
 {
 	xr_vector<SSnd>::iterator it = hud_snd.sounds.begin();
@@ -97,7 +276,9 @@ void HUD_SOUND_ITEM::PlaySound(	HUD_SOUND_ITEM&		hud_snd,
 								bool			b_hud_mode,
 								bool			looped,
 								u8 index,
-								bool			b_force_unlock)
+								bool			b_force_unlock,
+								float			volume_k,
+								const sound_fade_out* fade)
 {
 	if (hud_snd.sounds.empty())	return;
 
@@ -126,7 +307,7 @@ void HUD_SOUND_ITEM::PlaySound(	HUD_SOUND_ITEM&		hud_snd,
 		freq				= 1.0f + Random.randF(-delta, delta);
 	}
 
-	float		volume		= hud_snd.m_volume * (b_hud_mode?psHUDSoundVolume:1.0f);
+	float		volume		= hud_snd.m_volume * (b_hud_mode?psHUDSoundVolume:1.0f) * volume_k;
 
 	// A locked sound keeps the one shared object per alias: it can be stopped, moved and re-tuned
 	// afterwards, but starting it again cuts whatever it was playing -- which is why a burst used to
@@ -147,11 +328,13 @@ void HUD_SOUND_ITEM::PlaySound(	HUD_SOUND_ITEM&		hud_snd,
 		s.snd.set_volume		(volume);
 		if (vary_freq)
 			s.snd.set_frequency	(freq);
+		if (fade)
+			s.snd.set_fade_out	(*fade);
 	}
 	else
 	{
 		Fvector	pos				= (flags&sm_2D) ? Fvector().set(0,0,0) : position;
-		s.snd.play_no_feedback	(const_cast<CObject*>(parent), flags, s.delay, &pos, &volume, vary_freq?&freq:NULL);
+		s.snd.play_no_feedback	(const_cast<CObject*>(parent), flags, s.delay, &pos, &volume, vary_freq?&freq:NULL, NULL, fade);
 	}
 }
 
@@ -196,7 +379,9 @@ void HUD_SOUND_COLLECTION::PlaySound(	LPCSTR alias,
 										bool hud_mode,
 										bool looped,
 										u8 index,
-										bool b_force_unlock)
+										bool b_force_unlock,
+										float volume_k,
+										const sound_fade_out* fade)
 {
 	xr_vector<HUD_SOUND_ITEM>::iterator it		= m_sound_items.begin();
 	xr_vector<HUD_SOUND_ITEM>::iterator it_e	= m_sound_items.end();
@@ -208,7 +393,7 @@ void HUD_SOUND_COLLECTION::PlaySound(	LPCSTR alias,
 
 
 	HUD_SOUND_ITEM* snd_item		= FindSoundItem(alias, true);
-	HUD_SOUND_ITEM::PlaySound		(*snd_item, position, parent, hud_mode, looped, index, b_force_unlock);
+	HUD_SOUND_ITEM::PlaySound		(*snd_item, position, parent, hud_mode, looped, index, b_force_unlock, volume_k, fade);
 }
 
 void HUD_SOUND_COLLECTION::StopSound(LPCSTR alias)
@@ -263,4 +448,24 @@ void HUD_SOUND_COLLECTION::LoadSound(	LPCSTR section,
 	HUD_SOUND_ITEM::LoadSound	(section, line, snd_item, type);
 	snd_item.m_alias			= alias;
 	snd_item.m_b_exclusive		= exclusive;
+
+	// the "_indoor" twin rides along under "<alias>Indoor" (re-loaded with its key on an upgrade)
+	string256					tail_line;
+	strconcat					(sizeof(tail_line), tail_line, line, "_indoor");
+	if (!pSettings->line_exist(section, tail_line))
+		return;
+
+	string64					tail_alias;
+	strconcat					(sizeof(tail_alias), tail_alias, alias, "Indoor");
+	HUD_SOUND_ITEM* tail		= FindSoundItem(tail_alias, false);
+	if (!tail)
+	{
+		m_sound_items.resize	(m_sound_items.size()+1);			// invalidates snd_item
+		tail					= &m_sound_items.back();
+		tail->m_alias			= tail_alias;
+	}
+	else
+		HUD_SOUND_ITEM::StopSound	(*tail);
+	HUD_SOUND_ITEM::LoadIndoorSound	(section, line, *FindSoundItem(alias, true), *tail, type);
+	tail->m_b_exclusive		= false;
 }

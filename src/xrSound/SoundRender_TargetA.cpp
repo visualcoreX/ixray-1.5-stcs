@@ -106,26 +106,25 @@ void	CSoundRender_TargetA::update			()
     // Get status
     A_CHK			(alGetSourcei(pSource, AL_BUFFERS_PROCESSED, &processed));
 
-    if (processed > 0)
+    while (processed > 0)
 	{
-        while (processed)
-		{
-			ALuint			BufferID;
-            A_CHK			(alSourceUnqueueBuffers(pSource, 1, &BufferID));
-            fill_block		(BufferID);
-            A_CHK			(alSourceQueueBuffers(pSource, 1, &BufferID));
-            --processed;
-        }
-    }else{ 
-    	// processed == 0
-        // check play status -- if stopped then queue is not being filled fast enough
-        ALint		state;
-	    A_CHK		(alGetSourcei(pSource, AL_SOURCE_STATE, &state));
-        if (state != AL_PLAYING)
-		{
-//			Log		("Queuing underrun detected.");
-			A_CHK	(alSourcePlay(pSource));
-        }
+		ALuint			BufferID;
+        A_CHK			(alSourceUnqueueBuffers(pSource, 1, &BufferID));
+        fill_block		(BufferID);
+        A_CHK			(alSourceQueueBuffers(pSource, 1, &BufferID));
+        --processed;
+    }
+
+    // check play status -- if stopped then queue was not being filled fast enough.
+    // On underrun the source goes AL_STOPPED and OpenAL marks ALL its buffers processed, so this
+    // must run after the refill too, not only when processed == 0 -- otherwise it never restarts.
+    // The engine never pauses sources (no alSourcePause), so any non-playing source is an underrun.
+    ALint		state;
+    A_CHK		(alGetSourcei(pSource, AL_SOURCE_STATE, &state));
+    if (state != AL_PLAYING)
+	{
+//		Log		("Queuing underrun detected.");
+		A_CHK	(alSourcePlay(pSource));
     }
 }
 
@@ -148,7 +147,9 @@ void	CSoundRender_TargetA::fill_parameters()
 	VERIFY2(m_pEmitter,SE->source()->file_name());
     A_CHK(alSourcei	(pSource, AL_SOURCE_RELATIVE,		m_pEmitter->b2D));
 
-	A_CHK(alSourcef	(pSource, AL_ROLLOFF_FACTOR,		psSoundRolloff));
+	// a source with its own curve is attenuated by us (curve_volume, folded into the gain below), so
+	// OpenAL must not roll it off a second time
+	A_CHK(alSourcef	(pSource, AL_ROLLOFF_FACTOR,		m_pEmitter->custom_attenuation() ? 0.f : psSoundRolloff));
 
 	// Feed the reverb. Everything else was already in place -- the auxiliary slot, the EAXREVERB
 	// effect and the environment written into it every frame -- but a slot only hears what sources
@@ -161,7 +162,7 @@ void	CSoundRender_TargetA::fill_parameters()
 	}
 
 	VERIFY2(m_pEmitter,SE->source()->file_name());
-    float	_gain	= m_pEmitter->smooth_volume;			clamp	(_gain,EPS_S,1.f);
+    float	_gain	= m_pEmitter->smooth_volume*m_pEmitter->curve_volume*m_pEmitter->envelope_volume;	clamp	(_gain,EPS_S,1.f);
     if (!fsimilar(_gain,cache_gain, 0.01f))
 	{
         cache_gain	= _gain;

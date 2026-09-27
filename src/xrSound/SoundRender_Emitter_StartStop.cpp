@@ -29,6 +29,9 @@ void CSoundRender_Emitter::start(ref_sound* _owner, BOOL _loop, float delay)
 	}
 	bStopping				=	FALSE;
 	bRewind					=	FALSE;
+	// a fade-out belongs to one play; whoever wants one sets it after starting
+	fade_out.end			=	0.f;
+	envelope_volume			=	1.f;
 }
 
 void CSoundRender_Emitter::i_stop()

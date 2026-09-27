@@ -189,6 +189,14 @@ void CLevel::IR_OnKeyboardPress	(int key)
 		return;
 	}
 
+	// free camera (demo_record) is available in every build, not only in debug ones
+	if (key == DIK_NUMPAD5 && IsGameTypeSingle() && !pInput->iGetAsyncKeyState(DIK_LSHIFT))
+	{
+		Console->Hide		();
+		Console->Execute	("demo_record 1");
+		return;
+	}
+
 #ifndef MASTER_GOLD
 	switch (key) {
 	case DIK_F7: {
@@ -217,21 +225,6 @@ void CLevel::IR_OnKeyboardPress	(int key)
 		SetEnvironmentGameTimeFactor(GetEnvironmentGameTime(), 1000.f);
 		break;
 	}
-	case DIK_NUMPAD5: 
-		{
-			if (GameID()!=eGameIDSingle) 
-			{
-				Msg("For this game type Demo Record is disabled.");
-///				return;
-			};
-			if(!pInput->iGetAsyncKeyState(DIK_LSHIFT))
-			{
-				Console->Hide	();
-				Console->Execute("demo_record 1");
-			}
-		}
-		break;
-
 #ifdef DEBUG
 
 	// Lain: added TEMP!!!

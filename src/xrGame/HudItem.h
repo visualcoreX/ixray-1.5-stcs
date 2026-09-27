@@ -101,6 +101,8 @@ public:
 	virtual void				OnH_A_Independent	();
 	
 	virtual void				PlaySound			(LPCSTR alias, const Fvector& position, bool b_force_unlock = false);
+			void				PlayNearSound		(LPCSTR alias, LPCSTR base, const Fvector& position, bool hud_mode, bool b_force_unlock, float volume_k);
+			Fvector				IndoorTestPoint		(const Fvector& position);
 
 	virtual bool				Action				(s32 cmd, u32 flags)			{return false;}
 			void				OnMovementChanged	(ACTOR_DEFS::EMoveCommand cmd)	;
