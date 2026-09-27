@@ -46,9 +46,18 @@ private:
 		RS_NumShaders
 	};
 
-	struct FogLighting 
+public:
+	struct FogLighting
 	{
-		Fvector3	m_vLightIntencity;
+		Fvector3	m_vLightIntencity;		// the part lighting the whole volume evenly: hemi + ambient (+ overflow lights)
+
+		// Dynamic lights shaded per ray sample (fluid_common_render.h), so a torch lights the smoke where its
+		// beam goes instead of tinting the entire volume.
+		enum { MAX_LIGHTS = 4 };
+		u32			m_iNumLights;
+		Fvector4	m_vLightPos[MAX_LIGHTS];	// xyz world position, w range
+		Fvector4	m_vLightColor[MAX_LIGHTS];	// rgb colour (already scaled like the old uniform term), w 1 = spot
+		Fvector4	m_vLightDir[MAX_LIGHTS];	// xyz direction (spot), w cos(half cone)
 
 		void Reset() { ZeroMemory(this, sizeof(*this));}
 	};
