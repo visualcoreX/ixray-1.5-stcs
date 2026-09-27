@@ -36,9 +36,19 @@ public:
 	void	Destroy();
 	void	SetScreenSize( int width, int height ) {if (m_bInited) m_pRenderer->SetScreenSize( width, height ); }
 
-	//		Interface for fluid volume 
+	//		Interface for fluid volume
 	void	Update( dx103DFluidData &FluidData, float timestep );
 	void	RenderFluid( dx103DFluidData &FluidData );
+
+	//		Bullet wakes: a bullet's path this frame, kept for a couple of simulation steps and drawn into
+	//		every volume it crosses as a thin moving obstacle, so the smoke parts around it.
+	struct SBulletWake
+	{
+		Fvector	from, to;
+		float	expire;			// Device.fTimeGlobal
+	};
+	void	AddBulletWake( const Fvector &from, const Fvector &to );		// any thread
+	void	GetBulletWakes( xr_vector<SBulletWake> &out );					// live ones, expired dropped
 
 	//		Interface for blenders
 	int		GetTextureWidth() const { return m_iTextureWidth; }
@@ -130,6 +140,10 @@ private:
 	float	m_fImpulseSize;
 	float	m_fConfinementScale;
 	float	m_fDecay;
+
+	//	Bullet wakes (filled by the bullet manager's worker, read by the render thread)
+	xr_vector<SBulletWake>	m_BulletWakes;
+	xrCriticalSection		m_BulletWakesLock;
 
 	//	Volume textures dimensions
 	int		m_iTextureWidth;

@@ -24,6 +24,7 @@ CWeaponMagazinedWGrenade::CWeaponMagazinedWGrenade(ESoundTypes eSoundType) : CWe
 {
 	m_ammoType2 = 0;
     m_bGrenadeMode = false;
+	m_fGLZoomFactor = 50.0f;
 }
 
 CWeaponMagazinedWGrenade::~CWeaponMagazinedWGrenade()
@@ -406,16 +407,15 @@ bool CWeaponMagazinedWGrenade::Action(s32 cmd, u32 flags)
 
 		if(flags&CMD_START)
 		{
-			if(iAmmoElapsed)
-				LaunchGrenade();
-			else
-			{
-				if (psActorFlags.test(AF_AUTORELOAD))
-					Reload();
-				else
-					OnEmptyClick();
-			}
+			// The launch skips FireStart and with it the sprint-exit gate every other shot waits on, so a
+			// round left mid-transition the moment the key went down. Ask the same gate; the held-back
+			// launch comes back through ResumeDeferredFire.
+			if (DeferFireForSprint())
+				return			true;
+			FireGrenadeLauncher	();
 		}
+		else
+			m_bFirePendingSprint = false;	// letting go cancels a held-back launch, as FireEnd does for a shot
 		return					true;
 	}
 	if(inherited::Action(cmd, flags))
@@ -434,9 +434,29 @@ bool CWeaponMagazinedWGrenade::Action(s32 cmd, u32 flags)
 	return false;
 }
 
+void CWeaponMagazinedWGrenade::FireGrenadeLauncher()
+{
+	if(iAmmoElapsed)
+		LaunchGrenade();
+	else
+	{
+		if (psActorFlags.test(AF_AUTORELOAD))
+			Reload();
+		else
+			OnEmptyClick();
+	}
+}
+
+void CWeaponMagazinedWGrenade::ResumeDeferredFire()
+{
+	if (!m_bGrenadeMode)	{ inherited::ResumeDeferredFire(); return; }
+	if (IsPending())		return;		// the same test the key press makes
+	FireGrenadeLauncher		();
+}
+
 #include "inventory.h"
 #include "inventoryOwner.h"
-void CWeaponMagazinedWGrenade::state_Fire(float dt) 
+void CWeaponMagazinedWGrenade::state_Fire(float dt)
 {
 	VERIFY(fOneShotTime>0.f);
 
@@ -821,6 +841,13 @@ void CWeaponMagazinedWGrenade::InitAddons()
 {	
 	inherited::InitAddons();
 
+	// The iron-sight factor exactly as CWeaponMagazined::InitAddons picks it with no optic attached:
+	// the weapon section's scope_zoom_factor when the weapon can zoom, else ironsight_zoom_factor.
+	// Read from the config every time, so whatever sits on the rail never enters into it.
+	m_fGLZoomFactor = READ_IF_EXISTS(pSettings, r_float, cNameSect(), "ironsight_zoom_factor", 50.0f);
+	if (IsZoomEnabled() && pSettings->line_exist(cNameSect(), "scope_zoom_factor"))
+		m_fGLZoomFactor = pSettings->r_float(cNameSect(), "scope_zoom_factor");
+
 	if(GrenadeLauncherAttachable())
 	{
 		if(IsGrenadeLauncherAttached())
@@ -840,7 +867,7 @@ bool	CWeaponMagazinedWGrenade::UseScopeTexture()
 
 float	CWeaponMagazinedWGrenade::CurrentZoomFactor	()
 {
-	if (IsGrenadeLauncherAttached() && m_bGrenadeMode) return m_zoom_params.m_fIronSightZoomFactor;
+	if (IsGrenadeLauncherAttached() && m_bGrenadeMode) return m_fGLZoomFactor;	// not the scope-dependent iron-sight one
 	return inherited::CurrentZoomFactor();
 }
 

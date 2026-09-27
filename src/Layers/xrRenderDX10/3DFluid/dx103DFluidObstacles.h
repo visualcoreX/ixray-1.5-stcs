@@ -2,6 +2,8 @@
 #define	dx103DFluidObstacles_included
 #pragma once
 
+#include "dx103DFluidManager.h"	// SBulletWake
+
 class dx103DFluidGrid;
 class dx103DFluidData;
 class IPhysicsShell;
@@ -38,7 +40,10 @@ private:
 	void	RenderStaticOOBB( const Fmatrix &Transform);
 	//void	RenderDynamicOOBB( const IPhysicsElement &Element, const Fmatrix &WorldToFluid, float timestep);
 	void	RenderDynamicOOBB( const IPhysicsGeometry &Geometry, const Fmatrix &WorldToFluid, float timestep);
-	
+	// the box part of RenderDynamicOOBB: OOBBTransform = box frame in world, BoxSize = full edge lengths
+	void	RenderOOBB( const Fmatrix &OOBBTransform, const Fvector3 &BoxSize, const Fmatrix &WorldToFluid );
+	void	RenderBulletWakes( const dx103DFluidData &FluidData, const Fmatrix &WorldToFluid, float timestep );
+
 private:
 	Fvector3	m_vGridDim;
 
@@ -51,6 +56,7 @@ private:
 	xr_vector<ISpatial*>		m_lstRenderables;
 	xr_vector<const IPhysicsShell*>	m_lstShells;
 	xr_vector<const IPhysicsElement*>	m_lstElements;
+	xr_vector<dx103DFluidManager::SBulletWake>	m_lstWakes;
 };
 
 #endif	//	dx103DFluidObstacles_included

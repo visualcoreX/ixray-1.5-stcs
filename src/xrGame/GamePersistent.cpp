@@ -884,7 +884,8 @@ bool CGamePersistent::ComputeLensFrame(float& out_fov)
 		const float base_fov = g_fov + (w->AimBaseFOV() - g_fov) * aim_rf;
 		// The eyepiece takes a share of the magnification, so this override is left with the rest instead
 		// of the whole of it -- otherwise the two would multiply.
-		if (w->UseScopeTexture())
+		// No eyepiece (binoculars): nothing to split, the lens magnification below goes to the world.
+		if (w->UseScopeTexture() && w->Scope2DEyepieceAllowed())
 		{
 			const float cam_fov = w->Scope2DCameraFOV();
 			if (cam_fov <= 0.f)						return false;

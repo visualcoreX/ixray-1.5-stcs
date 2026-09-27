@@ -38,6 +38,24 @@ namespace
 	shared_str	strRTHeight("RTHeight");
 
 	shared_str	strDiffuseLight("DiffuseLight");
+
+	shared_str	strGridToWorld("GridToWorld");
+	shared_str	strFluidLightPos[]		= { "FluidLightPos0",	"FluidLightPos1",	"FluidLightPos2",	"FluidLightPos3" };
+	shared_str	strFluidLightColor[]	= { "FluidLightColor0",	"FluidLightColor1",	"FluidLightColor2",	"FluidLightColor3" };
+	shared_str	strFluidLightDir[]		= { "FluidLightDir0",	"FluidLightDir1",	"FluidLightDir2",	"FluidLightDir3" };
+
+	// Per-sample light data for the current element (constants belong to the element set just before).
+	void SetFluidLightConstants(const dx103DFluidRenderer::FogLighting& L, const Fmatrix& GridToWorld)
+	{
+		RCache.set_c(strGridToWorld, GridToWorld);
+		for (u32 i = 0; i < dx103DFluidRenderer::FogLighting::MAX_LIGHTS; ++i)
+		{
+			const bool used = i < L.m_iNumLights;
+			RCache.set_c(strFluidLightPos[i],	used ? L.m_vLightPos[i]		: Fvector4().set(0, 0, 0, 1));
+			RCache.set_c(strFluidLightColor[i],	used ? L.m_vLightColor[i]	: Fvector4().set(0, 0, 0, 0));
+			RCache.set_c(strFluidLightDir[i],	used ? L.m_vLightDir[i]		: Fvector4().set(0, 0, 1, -1));
+		}
+	}
 }
 
 LPCSTR			dx103DFluidRenderer::m_pRTNames[ RRT_NumRT ] = 
@@ -440,6 +458,10 @@ void dx103DFluidRenderer::CalculateRenderTextureSize(int screenWidth, int screen
 {
 	int maxProjectedSide = int(3.0 * _sqrt(3.0)*m_fMaxDim);
 	int maxScreenDim = _max(screenWidth, screenHeight);
+	// The smoke interior is raycast into this texture and stretched over the screen (only its edges are
+	// raycast again at full res). Sized from the 70-voxel grid it came to ~363 px on the long side --
+	// 363x204 at 16:9, the "low resolution" smoke. Never go below half the screen.
+	maxProjectedSide = _max(maxProjectedSide, maxScreenDim / 2);
 
 	float screenAspectRatio = ((float)screenWidth)/screenHeight;
 
@@ -601,6 +623,11 @@ void dx103DFluidRenderer::Draw(const dx103DFluidData &FluidData)
 	WorldView = m_gridMatrix * WorldView;
 	//WorldView.mulB_44(m_gridMatrix);
 
+	// Grid space (the 0..1 texture space the ray samples are taken in) -> world, for per-sample lighting.
+	// Same chain as WorldView without the view, and handed over the same way as InvWorldViewProjection.
+	Fmatrix GridToWorldM {};
+	XMStoreFloat4x4(reinterpret_cast<XMFLOAT4X4*>(&GridToWorldM), m_gridMatrix * gridWorld);
+
 //	Fmatrix temp;
 //	temp = transform;
 //	temp.mulB_44(m_gridMatrix);
@@ -684,6 +711,13 @@ void dx103DFluidRenderer::Draw(const dx103DFluidData &FluidData)
 	//pRTHeightVar->SetFloat((float)renderTextureHeight);
 	RCache.set_c(strRTHeight, (float)m_iRenderTextureHeight);
 
+	// the smoke raycast now lights every sample itself (even part + per-sample lights)
+	if (!bRenderFire)
+	{
+		RCache.set_c(strDiffuseLight, LightData.m_vLightIntencity.x, LightData.m_vLightIntencity.y, LightData.m_vLightIntencity.z, 1.0f);
+		SetFluidLightConstants(LightData, GridToWorldM);
+	}
+
 	//pRayDataSmallVar->SetResource(pRayDataSmallSRV);
 
 	DrawScreenQuad();
@@ -717,6 +751,8 @@ void dx103DFluidRenderer::Draw(const dx103DFluidData &FluidData)
 	RCache.set_c(strRTHeight, (float)Device.dwHeight);
 
 	RCache.set_c(strDiffuseLight, LightData.m_vLightIntencity.x, LightData.m_vLightIntencity.y, LightData.m_vLightIntencity.z, 1.0f);
+	if (!bRenderFire)
+		SetFluidLightConstants(LightData, GridToWorldM);	// the copy pass re-raycasts the edges at full res
 
 	//pRayCastVar->SetResource(pRayCastSRV);
 	//pEdgeVar->SetResource(pEdgeSRV);
@@ -868,6 +904,7 @@ void dx103DFluidRenderer::CalculateLighting(const dx103DFluidData &FluidData, Fo
 		);
 
 	u32 iNumRenderables = m_lstRenderables.size();
+	float light_weight_at_center[FogLighting::MAX_LIGHTS] = {};	// the old even weight, for evicting to it
 	// Determine visibility for dynamic part of scene
 	for (u32 i=0; i<iNumRenderables; ++i)
 	{
@@ -897,9 +934,46 @@ void dx103DFluidRenderer::CalculateLighting(const dx103DFluidData &FluidData, Fo
 		float	r	=	pLight->range;
 		float	a	=	clampr(1.f - d/(r+EPS),0.f,1.f)*(pLight->flags.bStatic?1.f:2.f);
 
-		LightIntencity.mul(a);
+		// This light used to be folded into ONE colour for the whole volume ("a" measured at the volume's
+		// centre), so a torch touching the box lit all of the smoke. Hand it to the shader instead, which
+		// weighs it per ray sample by the distance (the same 1 - d/r ramp, same x2 for dynamic lights) and,
+		// for a spot, by the cone. Beyond MAX_LIGHTS the weakest keep the old even contribution.
+		const float	scale	= pLight->flags.bStatic ? 1.f : 2.f;
+		const bool	spot	= pLight->flags.type == IRender_Light::SPOT;
+		Fvector4	pos, col, dir;
+		pos.set(pLight->position.x, pLight->position.y, pLight->position.z, r + EPS);
+		col.set(pLight->color.r * scale, pLight->color.g * scale, pLight->color.b * scale, spot ? 1.f : 0.f);
+		dir.set(pLight->direction.x, pLight->direction.y, pLight->direction.z, spot ? _cos(pLight->cone * 0.5f) : -1.f);
+		const float strength = a * (pLight->color.r + pLight->color.g + pLight->color.b);
 
-		LightData.m_vLightIntencity.add(LightIntencity);
+		u32 slot = LightData.m_iNumLights;
+		if (slot >= FogLighting::MAX_LIGHTS)
+		{
+			// full: replace the weakest if this one is stronger, and let the loser light the volume evenly
+			u32 weakest = 0; float wv = flt_max;
+			for (u32 k = 0; k < FogLighting::MAX_LIGHTS; ++k)
+			{
+				const Fvector4& c = LightData.m_vLightColor[k];
+				const float v = (c.x + c.y + c.z) * light_weight_at_center[k];
+				if (v < wv) { wv = v; weakest = k; }
+			}
+			if (strength <= wv)
+			{
+				LightIntencity.mul(a);
+				LightData.m_vLightIntencity.add(LightIntencity);
+				continue;
+			}
+			const Fvector4& c = LightData.m_vLightColor[weakest];
+			LightData.m_vLightIntencity.add(Fvector3().set(c.x, c.y, c.z).mul(light_weight_at_center[weakest]));
+			slot = weakest;
+		}
+		else
+			++LightData.m_iNumLights;
+
+		LightData.m_vLightPos[slot]		= pos;
+		LightData.m_vLightColor[slot]	= col;
+		LightData.m_vLightDir[slot]		= dir;
+		light_weight_at_center[slot]	= clampr(1.f - d/(r+EPS),0.f,1.f);
 	}
 
 	//LightData.m_vLightIntencity.set( 1.0f, 0.5f, 0.0f);

@@ -4,6 +4,7 @@
 #include "dx103DFluidManager.h"
 
 dx103DFluidVolume::dx103DFluidVolume()
+	: m_fSimAccum(0.f), m_dwSimFrame(u32(-1))
 {
 }
 
@@ -174,8 +175,28 @@ void dx103DFluidVolume::Render( float LOD )		// LOD - Level Of Detail  [0.0f - m
 	//float fTimeStep = Device.fTimeDelta*30*2.0f;
 	const float fTimeStep = 2.0f;
 
-	//FluidManager.Update( m_FluidData, 2.0f);
-	FluidManager.Update( m_FluidData, fTimeStep);
+	// The simulation used to take one fixed step of 2.0 per RENDERED frame, so the smoke ran as fast as
+	// the frame rate: tuned for 30 fps, four times too fast at 120. A variable step (the commented-out
+	// fTimeDelta*30*2 above) is not enough either -- the decay ("modulate"), the emitters' injection and
+	// the confinement all act PER STEP, so the smoke would still thicken and fade with the fps. Keep the
+	// original step and run it at the rate it was tuned for, 30 steps per second of game time: exactly
+	// the vanilla look at 30 fps, at any fps. Advanced once per frame even if the volume is drawn in more
+	// than one pass; at most two catch-up steps, so a hitch drops time instead of fast-forwarding.
+	const float	fSimInterval	= 1.0f / 30.0f;
+	const u32	uMaxSteps		= 2;
+	if (m_dwSimFrame != Device.dwFrame)
+	{
+		m_dwSimFrame	= Device.dwFrame;
+		m_fSimAccum		+= Device.fTimeDelta;
+		u32 steps		= 0;
+		while (m_fSimAccum >= fSimInterval && steps < uMaxSteps)
+		{
+			FluidManager.Update( m_FluidData, fTimeStep);
+			m_fSimAccum	-= fSimInterval;
+			++steps;
+		}
+		if (m_fSimAccum >= fSimInterval)	m_fSimAccum = 0.f;
+	}
 	FluidManager.RenderFluid( m_FluidData );
 }
 

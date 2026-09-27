@@ -3257,7 +3257,8 @@ bool CWeapon::IsLensedScope() const
 	// R1 has no render target to put the lens picture in: $user$scope is created by CRenderTarget in
 	// the R2/R3 trees only, so on R1 the lens material sampled nothing and the optic went black.
 	// Force the stock 2D scope there -- same test the options menu already applies to the checkbox.
-	if (0==psDeviceFlags.test(rsR2|rsR3))	return false;
+	extern bool gwr_render_is_r1();
+	if (gwr_render_is_r1())					return false;
 	return !!psActorFlags.test(AF_LENS_3D) && IsLensedScopeCfg();
 }
 
@@ -3313,6 +3314,21 @@ float CWeapon::AimBaseFOV() const
 {
 	extern float g_fov;
 	return g_fov / 1.02f;
+}
+
+// scope_zoom_factor / ironsight_zoom_factor are ABSOLUTE in the configs: the aim fov is factor * 0.75,
+// tuned against the default 75 deg base (98 -> 73.5, a two-per-cent push). Taken literally, a player
+// fov of 55 made that 73.5 a zoom OUT. So the factor now means the magnification it gives at 75, and
+// that magnification is applied to whatever base the player runs -- at 75 nothing changes.
+float CWeapon::ZoomFactorFOV(float zoom_factor, float base_fov)
+{
+	const float ref_fov	= 75.f;
+	const float aim_fov	= zoom_factor * 0.75f;
+	if (aim_fov <= 0.1f || base_fov <= 0.f)	return base_fov;
+	const float t_aim	= tanf(deg2rad(aim_fov) * 0.5f);
+	if (t_aim <= EPS_S)						return base_fov;
+	const float mag		= tanf(deg2rad(ref_fov) * 0.5f) / t_aim;
+	return rad2deg(2.0f * atanf(tanf(deg2rad(base_fov) * 0.5f) / mag));
 }
 
 // GS alter_scope_zoom_factor (collimator.pas:28, GetAlterScopeZoomFactor): the magnification of the
@@ -3817,6 +3833,10 @@ bool CWeapon::Scope2DModeActive() const
 	// Stay applicable until the pose has fully arrived; ScopeFadeFactor rides the same blend and is what
 	// actually walks the share down to zero over alter_zoom_time.
 	if (AlterZoomBlend() >= 1.f)							return false;
+	// Aiming the launcher's ladder sight is not looking through the optic. IsLensedScope and
+	// IsCollimatorScope both read false in grenade mode, so without this a lensed scope counted as a
+	// 2D one here -- CWeaponMagazinedWGrenade::UseScopeTexture says the same, but that one is not const.
+	if (IsGrenadeMode())									return false;
 	return m_UIScope && !IsLensedScope() && !IsCollimatorScope();
 }
 
@@ -3869,7 +3889,7 @@ float CWeapon::Scope2DDigitalZoom() const
 float CWeapon::Scope2DTotalZoom() const
 {
 	extern float g_fov;
-	const float aim_fov = IsLensedScopeCfg() ? GetLensFOV() : (GetZoomFactor() * 0.75f);
+	const float aim_fov = IsLensedScopeCfg() ? GetLensFOV() : ZoomFactorFOV(GetZoomFactor(), g_fov);
 	if (aim_fov <= 0.1f || g_fov <= 0.f)			return 1.f;
 	const float t_base = tanf(deg2rad(g_fov)   * 0.5f);
 	const float t_aim  = tanf(deg2rad(aim_fov) * 0.5f);
@@ -4111,8 +4131,12 @@ void CWeapon::UpdateScopePPZoom()
 	// picture instead of hanging over the backup notch. The eyepiece factor alone was not enough of a
 	// guard: it is 1 in that pose, but the circle carries the other three regardless of it, and the
 	// distortion stopped being keyed to the factor when the glass was made to bend at every power.
+	// ZoomTexture(), not a hand-built "m_UIScope && !lensed && !collimator": UseScopeTexture is virtual and
+	// the GL weapon's override is what says "not while aiming the launcher". IsLensedScope/IsCollimatorScope
+	// both read false in grenade mode, so the hand-built test took a lensed optic in GL mode for a 2D scope
+	// and put the eyepiece mask over the ladder sight.
 	const bool on_2d = act && act == Actor() && IsZoomed() && Scope2DReady()
-					&& m_UIScope && !IsLensedScope() && !IsCollimatorScope() && !IsAlterZoom();
+					&& ZoomTexture() && !IsAlterZoom();
 	// The eye leaves the optic's axis whether the picture is a flat texture or the 3D lens, so the
 	// crescent belongs to both. The LENS gets the drift only -- there is no eyepiece circle to publish
 	// (the pp pass has nothing to draw inside; model_scope_lense.ps shades the glass itself, in its own
@@ -4700,11 +4724,59 @@ static bool read_scope_aim_offset(LPCSTR scope_sect, LPCSTR hud_sect, bool wide,
 	return false;
 }
 
+// Where the weapon SITS (not aims) while a scope is on it: scoped_hud_offset_pos/rot (+_16x9), same units
+// as aim_hud_offset_*. A big optic can fill a third of the screen at the hip; this lowers or pulls the gun
+// back for that scope only. Read from the attached scope's section first, then the weapon HUD section
+// (applies to every scope on that gun). The aim offset is added to the same base, so this one fades out
+// as the weapon comes up -- the aimed pose is exactly what aim_hud_offset_* says, with or without it.
+static bool read_scoped_hud_offset(LPCSTR scope_sect, LPCSTR hud_sect, bool wide, Fvector& pos, Fvector& rot)
+{
+	LPCSTR sects[2] = { scope_sect, hud_sect };
+	for (LPCSTR s : sects)
+	{
+		if (!s || !s[0] || !pSettings->section_exist(s))	continue;
+		LPCSTR pk = (wide && pSettings->line_exist(s, "scoped_hud_offset_pos_16x9")) ? "scoped_hud_offset_pos_16x9" : "scoped_hud_offset_pos";
+		LPCSTR rk = (wide && pSettings->line_exist(s, "scoped_hud_offset_rot_16x9")) ? "scoped_hud_offset_rot_16x9" : "scoped_hud_offset_rot";
+		const bool has_p = pSettings->line_exist(s, pk), has_r = pSettings->line_exist(s, rk);
+		if (!has_p && !has_r)	continue;
+		pos = has_p ? pSettings->r_fvector3(s, pk) : Fvector().set(0.f, 0.f, 0.f);
+		rot = has_r ? pSettings->r_fvector3(s, rk) : Fvector().set(0.f, 0.f, 0.f);
+		return true;
+	}
+	return false;
+}
+
+static void apply_hud_offset(Fmatrix& trans, const Fvector& offs, const Fvector& rot)
+{
+	Fmatrix m, r;
+	m.identity();	m.rotateX(rot.x);
+	r.identity();	r.rotateY(rot.y);	m.mulA_43(r);
+	r.identity();	r.rotateZ(rot.z);	m.mulA_43(r);
+	m.translate_over(offs);
+	trans.mulB_43(m);
+}
+
 void CWeapon::UpdateHudAdditonal		(Fmatrix& trans)
 {
 	CActor* pActor	= smart_cast<CActor*>(H_Parent());
 	if(!pActor)		return;
 
+	if (IsScopeAttached())
+	{
+		attachable_hud_item* hi = HudItemData();
+		const float k = 1.f - _max(0.f, _min(1.f, m_zoom_params.m_fZoomRotationFactor));
+		if (hi && k > 0.f)
+		{
+			const bool wide = hi->m_measures.m_prop_flags.test(hud_item_measures::e_16x9_mode_now);
+			shared_str sc = GetCurrentScopeSection();
+			Fvector spos, srot;
+			if (read_scoped_hud_offset(sc.size() ? *sc : nullptr, *hi->m_sect_name, wide, spos, srot))
+			{
+				spos.mul(k);	srot.mul(k);
+				apply_hud_offset(trans, spos, srot);
+			}
+		}
+	}
 
 	if(		(IsZoomed() && m_zoom_params.m_fZoomRotationFactor<=1.f) ||
 			(!IsZoomed() && m_zoom_params.m_fZoomRotationFactor>0.f))

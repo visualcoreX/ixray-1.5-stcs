@@ -8,6 +8,7 @@
 #include "../level.h"
 #include "object_broker.h"
 #include "UIXmlInit.h"
+#include "../../xrEngine/GameFont.h"
 #include "UIProgressBar.h"
 
 CUICellItem* CUICellItem::m_mouse_selected_item = NULL;
@@ -296,6 +297,32 @@ bool CUICellItem::HasChild(CUICellItem* item)
 	return (m_childs.end() != std::find(m_childs.begin(), m_childs.end(), item) );
 }
 
+// The count sat on a plate as wide as the whole cell whatever it said ("60" on a full-width strip).
+// Fit the plate to the text instead: the width of what is written plus a small margin, so a short
+// number gets a short plate and "1000" still fits. The text is drawn centred in the static's own
+// width (CUIStatic::DrawText resizes the lines to it), so only the width needs to change.
+void CUICellItem::FitItemText()
+{
+	if (!m_text)	return;
+	LPCSTR s		= m_text->GetText();
+	if (!s || !*s)	return;
+	CGameFont* f	= m_text->GetFont();
+	if (!f)			return;
+
+	float w			= f->SizeOf_(s);
+	UI()->ClientToScreenScaledWidth(w);
+	// A fixed margin is not enough: the plate texture is STRETCHED, and its side frames (the fill is only
+	// texels 3..25 of 29) grow with it, so a wide plate loses more room to its own border -- with a flat +4
+	// three and four digits sat against the right frame while one or two looked fine. Scale instead: 4/3
+	// is exactly what two digits already got (12 -> 16), so their look is kept and longer counts keep it too.
+	w				*= 4.f / 3.f;
+	const float min_w	= m_text->GetHeight();			// never narrower than it is tall
+	if (w < min_w)	w = min_w;
+	const float max_w	= GetWidth() - m_text->GetWndPos().x;	// ...nor wider than the item
+	if (max_w > 0.f && w > max_w)	w = max_w;
+	m_text->SetWidth(w);
+}
+
 void CUICellItem::UpdateItemText()
 {
 	if ( ChildsCount() )
@@ -304,6 +331,7 @@ void CUICellItem::UpdateItemText()
 		xr_sprintf( str, "x%d", ChildsCount()+1 );
 		m_text->SetText( str );
 		m_text->Show( true );
+		FitItemText();
 	}
 	else
 	{

@@ -1042,10 +1042,12 @@ float CActor::currentFOV()
 		return g_fov + (pWeapon->AimBaseFOV() - g_fov) * f;
 	}
 
-	// Gunslinger: aiming the GL (grenade mode) never zooms the WORLD -- it uses its own HUD fov
-	// (hud_fov_gl_zoom_factor), so the scope's zoom must not leak onto GL aiming (ActorUtils.pas grenade branch).
-	if (pWeapon->IsGrenadeMode())
-		return g_fov;
+	// Aiming the GL (grenade mode) zooms the world like the iron sights do: CWeaponMagazinedWGrenade::
+	// CurrentZoomFactor hands out the iron-sight factor in that mode, and GS keeps exactly that (its
+	// CWeapon__OnZoomIn, WeaponEvents.pas:1917, only swaps in gl_zoom_factor when a section has one).
+	// There used to be an early "return g_fov" here, so the launcher's sight never zoomed at all. The
+	// scope cannot leak in: IsLensedScopeCfg, IsCollimatorScope and ZoomTexture all read false in grenade
+	// mode, so this falls through to the iron-sight ramp at the bottom.
 
 	// PDA held up. GS keeps the world fov on its own key (ActorUtils.pas UpdateFOV multiplies the base
 	// by the item section's fov_factor) -- a constant that would snap the view the moment the phantom is
@@ -1081,7 +1083,7 @@ float CActor::currentFOV()
 			// split), fall through: the world gets the whole zoom, exactly as it did before the split
 			// existed. Returning the base fov here left the binoculars with no magnification whatever.
 		}
-		const float zoomed = pWeapon->GetZoomFactor() * (0.75f);
+		const float zoomed = CWeapon::ZoomFactorFOV(pWeapon->GetZoomFactor(), g_fov);
 		return g_fov + (zoomed - g_fov) * k;
 	}
 
@@ -1092,7 +1094,8 @@ float CActor::currentFOV()
 	clamp(f, 0.f, 1.f);
 	if (f <= 0.f)
 		return g_fov;
-	float target = pWeapon->CurrentZoomFactor() * (0.75f);
+	// relative to the player's fov, not an absolute angle -- see CWeapon::ZoomFactorFOV
+	float target = CWeapon::ZoomFactorFOV(pWeapon->CurrentZoomFactor(), g_fov);
 	return g_fov + (target - g_fov) * f;
 }
 

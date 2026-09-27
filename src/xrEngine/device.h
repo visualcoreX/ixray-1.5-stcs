@@ -70,6 +70,8 @@ public:
 	// off; minimised never. Both the render loop and CGameFont ask this -- the font had its own
 	// b_is_Active test, which silently dropped every string while the rest of the frame drew.
 	BOOL									may_render() const;
+	// Fades the sound out while the window is inactive and g_pause_on_minimize is off (device.cpp).
+	void									UpdateFocusSoundFade();
 public:
 	//ref_shader								m_WireShader;
 	//ref_shader								m_SelectionShader;

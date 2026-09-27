@@ -271,6 +271,7 @@ public:
 
 	// Information
 	virtual void					Statistics					(CGameFont* F);
+	virtual void					fluid_bullet_wake			(const Fvector& from, const Fvector& to);
 	virtual LPCSTR					getShaderPath				()									{ return "r3\\";	}
 	virtual ref_shader				getShader					(int id);
 	virtual IRender_Sector*			getSector					(int id);

@@ -261,7 +261,11 @@ void CBulletManager::UpdateWorkload()
 	BulletVec::reverse_iterator	i = m_Bullets.rbegin();
 	BulletVec::reverse_iterator	e = m_Bullets.rend();
 	for (u16 j=u16(e - i); i != e; ++i, --j) {
-		if ( process_bullet( rq_storage, *i, time_delta ) )
+		const Fvector	wake_from	= i->bullet_pos;
+		const bool		alive		= process_bullet( rq_storage, *i, time_delta );
+		// the path covered this frame (up to the hit, if there was one) parts volumetric smoke (R3)
+		::Render->fluid_bullet_wake	( wake_from, i->bullet_pos );
+		if ( alive )
 			continue;
 
 		VERIFY					(j > 0);

@@ -1342,6 +1342,11 @@ namespace
 void gwr_UpdateHudMove(u32 mreal, u32 mwish, u32 dt)
 {
 	if (!g_player_hud || !dt)	return;
+	// The hud tuner (Shift+Num1/Num2) edits hands_attach directly, and this function eases hands_attach
+	// back to the CONFIG hands_position every frame -- so every tuned step crept straight back. Stand
+	// aside while it is position/orientation tuning.
+	extern u32 hud_adj_mode;
+	if (hud_adj_mode == 1 || hud_adj_mode == 2)	return;
 	attachable_hud_item* hi		= g_player_hud->attached_item(0);
 	attachable_hud_item* det	= g_player_hud->attached_item(1);
 	if (!hi)	{ hi = det; det = NULL; }

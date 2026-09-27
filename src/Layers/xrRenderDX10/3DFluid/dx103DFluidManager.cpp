@@ -707,6 +707,39 @@ void dx103DFluidManager::ProjectVelocity( float timestep )
 	//pShaderResourceVariables[RENDER_TARGET_VELOCITY0]->SetResource( pRenderTargetShaderViews[RENDER_TARGET_VELOCITY0] );
 }
 
+// A wake outlives the frame it was made in: the simulation steps at 30 Hz (dx103DFluidVolume::Render), so a
+// bullet crossing the smoke between two steps must still be there for the next one -- two steps, then the
+// smoke is left to close in behind it.
+static const float	BULLET_WAKE_LIFETIME	= 0.07f;
+static const u32	BULLET_WAKE_MAX			= 64;
+
+void dx103DFluidManager::AddBulletWake( const Fvector &from, const Fvector &to )
+{
+	if (!m_bInited)										return;
+	if (from.similar(to, EPS_L))						return;
+	xrCriticalSection::raii guard(&m_BulletWakesLock);
+	if (m_BulletWakes.size() >= BULLET_WAKE_MAX)
+		m_BulletWakes.erase(m_BulletWakes.begin());		// drop the oldest
+	SBulletWake w;
+	w.from		= from;
+	w.to		= to;
+	w.expire	= Device.fTimeGlobal + BULLET_WAKE_LIFETIME;
+	m_BulletWakes.push_back(w);
+}
+
+void dx103DFluidManager::GetBulletWakes( xr_vector<SBulletWake> &out )
+{
+	out.clear();
+	xrCriticalSection::raii guard(&m_BulletWakesLock);
+	const float now = Device.fTimeGlobal;
+	for (u32 i = 0; i < m_BulletWakes.size(); )
+	{
+		if (m_BulletWakes[i].expire < now)	{ m_BulletWakes.erase(m_BulletWakes.begin() + i); continue; }
+		out.push_back(m_BulletWakes[i]);
+		++i;
+	}
+}
+
 void dx103DFluidManager::RenderFluid(dx103DFluidData &FluidData)
 {
 //	return;

@@ -679,6 +679,11 @@ CRender::~CRender()
 	SWIs.clear();
 }
 
+void	CRender::fluid_bullet_wake	(const Fvector& from, const Fvector& to)
+{
+	if (o.volumetricfog)	FluidManager.AddBulletWake(from, to);
+}
+
 #include "../../xrEngine/GameFont.h"
 void	CRender::Statistics	(CGameFont* _F)
 {

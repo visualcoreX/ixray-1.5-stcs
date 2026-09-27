@@ -116,6 +116,7 @@ void CUIInventoryCellItem::UpdateItemText()
 		xr_sprintf						( str, "x%d", count );
 		m_text->SetText					( str );
 		m_text->Show					( true );
+		FitItemText						();
 	}
 	else
 	{
@@ -174,6 +175,7 @@ void CUIAmmoCellItem::UpdateItemText()
 		xr_sprintf( str, "%d", total );
 		m_text->SetText( str );
 		m_text->Show( true );
+		FitItemText();
 	}
 	else
 	{

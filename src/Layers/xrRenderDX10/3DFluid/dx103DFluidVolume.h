@@ -21,6 +21,10 @@ private:
 	ref_geom		m_Geom;
 
 	dx103DFluidData	m_FluidData;
+
+	// fixed-rate simulation (see Render): unsimulated time and the frame it was last advanced on
+	float			m_fSimAccum;
+	u32				m_dwSimFrame;
 };
 
 #endif	//	dx103DFluidVolume_included

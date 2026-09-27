@@ -83,8 +83,37 @@ void CHW::CreateD3D()
 	pFactory->Release();
 	*/
 
+	// A dxgi.dll next to the exe (DXVK) must be picked up BY PATH. Resolving it by name hands us the
+	// System32 one: the R2 capability probe creates a D3D9 object before we get here, and the system
+	// d3d9.dll pulls System32\dxgi.dll in through an API set, bypassing the application directory.
+	// A system adapter then reaches DXVK's d3d10core ("Adapter is not a DXVK adapter") and the swap
+	// chain cannot be created. The module is never freed: the factory, adapter and swap chain live in it.
+	typedef HRESULT WINAPI _CreateDXGIFactory(REFIID riid, void** ppFactory);
+	_CreateDXGIFactory* pCreateFactory = CreateDXGIFactory;
+
+	string_path local_dxgi;
+	DWORD path_len = GetModuleFileName(NULL, local_dxgi, sizeof(local_dxgi));
+	LPSTR slash = (path_len && path_len < sizeof(local_dxgi)) ? strrchr(local_dxgi, '\\') : NULL;
+	if (slash)
+	{
+		slash[1] = 0;
+		xr_strcat(local_dxgi, "dxgi.dll");
+		if (GetFileAttributes(local_dxgi) != INVALID_FILE_ATTRIBUTES)
+		{
+			HMODULE hLocalDXGI = LoadLibrary(local_dxgi);
+			_CreateDXGIFactory* pLocal = hLocalDXGI ? (_CreateDXGIFactory*)GetProcAddress(hLocalDXGI, "CreateDXGIFactory") : NULL;
+			if (pLocal)
+			{
+				pCreateFactory = pLocal;
+				Msg("* DXGI: using '%s'", local_dxgi);
+			}
+			else
+				Msg("! DXGI: can't use '%s', falling back to the system one", local_dxgi);
+		}
+	}
+
 	IDXGIFactory* pFactory = nullptr;
-	R_CHK(CreateDXGIFactory(IID_PPV_ARGS(&pFactory)));
+	R_CHK(pCreateFactory(IID_PPV_ARGS(&pFactory)));
 
 	m_pAdapter = 0;
 	m_bUsePerfhud = false;
