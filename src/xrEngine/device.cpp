@@ -424,8 +424,43 @@ void CRenderDevice::on_idle		()
 		}
 	}
 
+	UpdateFocusSoundFade			();
+
 	if (!b_is_Active)
 		Sleep		(1);
+}
+
+// With "pause on minimise" off the game keeps running behind another window -- and kept playing at
+// full volume there too. Fade the listener gain out while the window is inactive and back in when it
+// returns. Real time, not game time: the fade must run the same whatever the time factor or pause.
+// The level precache owns the same gain (it mutes the load and restores 1.0 at the end), so stay out
+// of its way while it runs; the next frame after it picks the fade up from wherever it is.
+void CRenderDevice::UpdateFocusSoundFade()
+{
+#ifndef DEDICATED_SERVER
+	static float	s_gain		= 1.f;
+	static u32		s_prev_ms	= 0;
+	static bool		s_applied	= false;	// last value we set is s_gain (false: someone else set 1.0)
+
+	const u32	now_ms		= TimerGlobal.GetElapsed_ms();
+	const float	dt			= s_prev_ms ? float(now_ms - s_prev_ms) * 0.001f : 0.f;
+	s_prev_ms				= now_ms;
+
+	const bool	muted		= !b_is_Active && !psDeviceFlags.test(rsPauseOnMinimize);
+	const float	target		= muted ? 0.f : 1.f;
+	const float	fade_time	= muted ? 0.75f : 0.5f;		// seconds for a full swing
+	const float	prev		= s_gain;
+	if (s_gain < target)	s_gain = _min(target, s_gain + dt / fade_time);
+	else if (s_gain > target) s_gain = _max(target, s_gain - dt / fade_time);
+
+	if (dwPrecacheFrame)	{ s_applied = false; return; }
+	if (!::Sound)			return;
+	if (s_gain != prev || (!s_applied && s_gain < 1.f))
+	{
+		::Sound->set_master_volume	(s_gain);
+		s_applied					= true;
+	}
+#endif
 }
 
 #ifdef INGAME_EDITOR
