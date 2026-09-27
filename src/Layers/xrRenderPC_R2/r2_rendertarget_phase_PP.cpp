@@ -80,7 +80,12 @@ BOOL CRenderTarget::u_need_PP	()
 		int		_b	= _abs((int)(param_color_add.z*255));
 		if (_r>2 || _g>2 || _b>2)	_cadd	= true	;
 	}
-	return _blur || _gray || _noise || _dual || _cbase || _cadd; 
+	// The 2D scope's eyepiece (digital zoom, night-vision mask, shadow, aberration) lives in this pass.
+	// R3 runs it every frame; here it only ran when some other effect wanted it, so a variable-power
+	// optic changed its step without the picture changing at all.
+	bool	_scope	= g_pGamePersistent && (g_pGamePersistent->pp_zoom_circle.x > 0.f
+					|| g_pGamePersistent->pp_mask_circle.z > 0.f);
+	return _blur || _gray || _noise || _dual || _cbase || _cadd || _scope;
 }
 
 struct TL_2c3uv		{

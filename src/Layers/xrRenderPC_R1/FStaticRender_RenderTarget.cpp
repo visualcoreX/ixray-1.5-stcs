@@ -168,7 +168,11 @@ BOOL CRenderTarget::NeedPostProcess()
 		int		_b	= _abs((int)(param_color_add.z*255));
 		if (_r>2 || _g>2 || _b>2)	_cadd	= true	;
 	}
-	return _blur || _gray || _noise || _dual || _cbase || _cadd || _menu_pp; 
+	// The 2D scope's eyepiece (digital zoom, night-vision mask, shadow, aberration) is drawn by this
+	// pass (shaders\r1\pp_scope.h), so it has to run while the game publishes a circle.
+	bool	_scope	= g_pGamePersistent && (g_pGamePersistent->pp_zoom_circle.x > 0.f
+					|| g_pGamePersistent->pp_mask_circle.z > 0.f);
+	return _blur || _gray || _noise || _dual || _cbase || _cadd || _menu_pp || _scope;
 }
 
 BOOL CRenderTarget::Perform		()
@@ -305,6 +309,19 @@ void CRenderTarget::End		()
 	RCache.Vertex.Unlock									(4,g_postprocess.stride());
 
 	// Actual rendering
+	// The scope eyepiece, as on R2/R3 (r2_rendertarget_phase_PP.cpp): mask circle, zoom circle + factor,
+	// scope shadow. Set by name, the same way c_brightness below reaches this pass.
+	{
+		static	shared_str	s_pp_mask		= "m_pp_mask";
+		static	shared_str	s_pp_zoom		= "m_pp_zoom";
+		static	shared_str	s_pp_shadow		= "m_pp_shadow";
+		Fvector4 m	= g_pGamePersistent ? g_pGamePersistent->pp_mask_circle	: Fvector4().set(0.5f,0.5f,0.f,0.f);
+		Fvector4 zc	= g_pGamePersistent ? g_pGamePersistent->pp_zoom_circle	: Fvector4().set(0.f,0.f,1.f,0.f);
+		Fvector4 sh	= g_pGamePersistent ? g_pGamePersistent->pp_scope_shadow	: Fvector4().set(0.f,0.f,0.f,0.f);
+		RCache.set_c		(s_pp_mask,		m.x,  m.y,  m.z,  m.w);
+		RCache.set_c		(s_pp_zoom,		zc.x, zc.y, zc.z, zc.w);
+		RCache.set_c		(s_pp_shadow,	sh.x, sh.y, sh.z, sh.w);
+	}
 	static	shared_str	s_brightness	= "c_brightness";
 	RCache.set_c		(s_brightness,p_brightness.x,p_brightness.y,p_brightness.z,0);
 	RCache.set_Geometry	(g_postprocess);
