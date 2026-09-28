@@ -109,7 +109,10 @@ void player_legs_controller::warn_once(LPCSTR fmt, ...)
 bool player_legs_controller::resolve_config(CActor* actor, shared_str& sect, shared_str& model)
 {
 	PIItem outfit			= actor->inventory().m_slots[OUTFIT_SLOT].m_pIItem;
-	shared_str current		= outfit ? outfit->object().cNameSect() : shared_str("actor");
+	// no outfit: the same [without_outfit] actor_visual the third-person model uses (CActor::net_Spawn)
+	shared_str current		= outfit ? outfit->object().cNameSect()
+							: (pSettings->line_exist("without_outfit", "legs_visual") || pSettings->line_exist("without_outfit", "actor_visual"))
+								? shared_str("without_outfit") : shared_str("actor");
 
 	if (m_last_outfit_sect == current && m_last_model.size())
 	{
