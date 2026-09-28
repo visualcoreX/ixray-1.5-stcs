@@ -64,6 +64,7 @@ CInventory::CInventory()
 	m_iActiveSlot								= NO_ACTIVE_SLOT;
 	m_iNextActiveSlot							= NO_ACTIVE_SLOT;
 	m_iPrevActiveSlot							= NO_ACTIVE_SLOT;
+	m_dwBlockedActiveSince						= 0;
 	//m_iLoadActiveSlot							= NO_ACTIVE_SLOT;
 
 	string256 temp;
@@ -952,6 +953,35 @@ void CInventory::Update()
 */
 	if( OnServer() )
 	{
+		// Safety net for the no-weapon zones. Blocking the slots holsters the active item exactly once,
+		// when the block goes on (SetSlotsBlocked); an item that did not take that order -- e.g. the
+		// binoculars drawn by the save load a moment before the zone blocked everything -- then stayed in
+		// the hands for good, and with every slot blocked nothing could switch it out either. Ask again,
+		// and if it still has not gone after a couple of seconds, put it away by force.
+		if (m_iActiveSlot != NO_ACTIVE_SLOT && m_slots[m_iActiveSlot].IsBlocked() &&
+			m_slots[m_iActiveSlot].m_pIItem && smart_cast<CActor*>(m_pOwner))
+		{
+			CHudItem* hi = m_slots[m_iActiveSlot].m_pIItem->cast_hud_item();
+			if (hi && !hi->IsHidden())
+			{
+				if (m_iNextActiveSlot == m_iActiveSlot)		// nobody asked it to go yet
+					Activate(NO_ACTIVE_SLOT);
+				if (!m_dwBlockedActiveSince)
+					m_dwBlockedActiveSince = Device.dwTimeGlobal ? Device.dwTimeGlobal : 1;
+				else if (Device.dwTimeGlobal - m_dwBlockedActiveSince > 2000)
+				{
+					Msg("~ [inventory] [%s] stayed in blocked slot %d and would not holster -- putting it away",
+						m_slots[m_iActiveSlot].m_pIItem->object().cNameSect().c_str(), m_iActiveSlot);
+					if (m_iPrevActiveSlot == NO_ACTIVE_SLOT)	m_iPrevActiveSlot = m_iActiveSlot;
+					m_iNextActiveSlot		= NO_ACTIVE_SLOT;
+					hi->SwitchState			(CHUDState::eHidden);
+					m_dwBlockedActiveSince	= 0;
+				}
+			}
+			else	m_dwBlockedActiveSince = 0;
+		}
+		else		m_dwBlockedActiveSince = 0;
+
 		if(m_iActiveSlot!=m_iNextActiveSlot)
 		{
 			CObject* pActor_owner = smart_cast<CObject*>(m_pOwner);
