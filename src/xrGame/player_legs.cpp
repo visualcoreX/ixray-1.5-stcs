@@ -39,9 +39,17 @@ BOOL	g_legs_yaw_hold			= TRUE;
 float	g_legs_yaw_deadzone		= 30.f;		// degrees the view may twist away before the feet follow,
 											// and the most the body may lag the view (see update())
 float	g_legs_yaw_speed		= 240.f;	// degrees a second the model turns while catching up
+float	g_legs_yaw_max_lag		= 60.f;		// hard limit: the feet never trail the VIEW by more than this
 float	g_legs_sprint_offset	= -0.2f;	// extra distance the body drops back while sprinting
 float	g_legs_sprint_speed		= 4.f;		// how quickly it goes there and comes back
 BOOL	g_legs_anchor_pelvis	= FALSE;	// park the HIPS over the actor (see update())
+// Torso bent back off the camera (see lean_torso_off_camera()). Only the stand-in body bends: the
+// shadow is cast by the actor's own skeleton, so none of this reaches it.
+BOOL	g_legs_lean				= TRUE;
+float	g_legs_lean_margin		= 0.5f;	// how far behind the eyes the chest bones have to stay, metres
+float	g_legs_lean_max			= 60.f;		// the most the torso may bend back, degrees
+float	g_legs_lean_speed_in	= 15.f;		// how fast it bends away (fast: a late lean is a chest in the lens)
+float	g_legs_lean_speed_out	= 5.f;		// how fast it straightens once the chest is clear again
 
 namespace
 {
@@ -55,6 +63,9 @@ LPCSTR	ARM_BONE_L		= "bip01_l_upperarm";
 LPCSTR	ARM_BONE_R		= "bip01_r_upperarm";
 LPCSTR	SPINE_BONE		= "bip01_spine";
 LPCSTR	PELVIS_BONE		= "bip01_pelvis";
+// What the torso lean keeps behind the eyes: the upper chest and the shoulders. The chest SURFACE
+// sits a hand in front of these, which is what g_legs_lean_margin pays for.
+LPCSTR	LEAN_PROBES[]	= { "bip01_spine2", "bip01_neck", "bip01_l_clavicle", "bip01_r_clavicle" };
 } // namespace
 
 player_legs_controller::player_legs_controller()
@@ -67,6 +78,7 @@ player_legs_controller::player_legs_controller()
 	m_offset_dir.set	(0.f, 0.f, 1.f);
 	m_offset_dir_valid	= false;
 	m_sprint_blend		= 0.f;
+	m_lean				= 0.f;
 	m_has_fwd_offset	= false;
 	m_fwd_offset		= 0.f;
 	m_legs_transform.identity();
@@ -273,6 +285,13 @@ void player_legs_controller::copy_bones_from_actor(CActor* actor)
 // interface hands out parents (GetParentID) and not children.
 void player_legs_controller::shift_bone_branch(u16 branch_root, const Fvector& delta)
 {
+	Fmatrix xf;					xf.translate(delta);
+	transform_bone_branch		(branch_root, xf);
+}
+
+// The same walk, applying a model-space transform to every bone of the branch: m = xform * m.
+void player_legs_controller::transform_bone_branch(u16 branch_root, const Fmatrix& xform)
+{
 	if (BI_NONE == branch_root)
 		return;
 
@@ -289,7 +308,8 @@ void player_legs_controller::shift_bone_branch(u16 branch_root, const Fvector& d
 			continue;
 
 		Fmatrix& m				= m_model->LL_GetTransform(i);
-		m.c.add					(delta);
+		Fmatrix src;			src.set(m);
+		m.mul_43				(xform, src);	// src first, then xform
 		m_model->LL_GetBoneInstance(i).mRenderTransform.mul_43(m, m_model->LL_GetData(i).m2b_transform);
 	}
 }
@@ -322,6 +342,7 @@ void player_legs_controller::collapse_bone_branch(u16 branch_root)
 
 void player_legs_controller::update(CActor* actor)
 {
+	const bool was_drawn		= m_draw;
 	m_draw						= false;
 
 	// Only the reasons that are not going to reverse a second later tear the model down. A ladder,
@@ -411,6 +432,24 @@ void player_legs_controller::update(CActor* actor)
 			}
 			else
 				m_yaw			+= (d > 0.f ? step : -step);
+		}
+
+		// ...but g_legs_yaw_speed alone does not bound the LAG. A flick of the mouse turns the view
+		// far faster than the feet may, so for as long as the flick lasts the gap just grows -- a
+		// quick half turn left the body facing the player's back, legs pointing the other way.
+		// So past g_legs_yaw_max_lag the model is carried along with the view, rigidly, whatever
+		// the rate; once the view stops, m_yaw_turning lets it finish the turn at the normal speed.
+		// Measured against the CAMERA, not the actor heading the turn above chases: the promise is
+		// about what the player sees, and the diagonal strafe keeps the actor 45 degrees off the
+		// view on purpose (actor.ltx *_strafe_yaw), which the default limit leaves room for.
+		Fmatrix view_m;			view_m.setHPB(actor->cam_Active()->GetWorldYaw(), 0.f, 0.f);
+		const float view_h		= view_m.k.getH();		// the getH convention m_yaw is kept in
+		const float lag			= angle_difference_signed(m_yaw, view_h);
+		const float max_lag		= deg2rad(g_legs_yaw_max_lag);
+		if (_abs(lag) > max_lag)
+		{
+			m_yaw				= angle_normalize_signed(view_h + ((lag > 0.f) ? max_lag : -max_lag));
+			m_yaw_turning		= true;
 		}
 
 		// setHPB, NOT identity+rotateY: getH() reads a heading as direction (-sin h, 0, cos h) and
@@ -515,6 +554,121 @@ void player_legs_controller::update(CActor* actor)
 		m_legs_transform.c.x	-= drift.x;
 		m_legs_transform.c.z	-= drift.z;
 	}
+
+	// Last, because it needs the model's final place: the lean is measured against the eyes.
+	// Coming back from a frame that was not drawn (ladder, vehicle, third person) it snaps straight
+	// to where it should be -- easing in from a stale angle would show the chest for a moment.
+	lean_torso_off_camera		(actor, !was_drawn);
+}
+
+// THE CHEST IN THE LENS.
+// Some animations -- leaning over a weapon, the crouches, the sprint -- bring the upper chest forward
+// far enough that the camera ends up in front of it, or inside it, and the player looks down at the
+// inside of his own jacket. Fixing the clips is out of the question: they are shared with the third
+// person view and with the SHADOW, and there are hundreds of them.
+// But this model is ours alone. The shadow is cast by the actor's own skeleton (see
+// CActor::renderable_Render), so whatever is done to these bones stays in first person.
+//
+// So: a vertical plane g_legs_lean_margin behind the eyes, facing the view, and the chest bones are
+// kept behind it by bending the whole spine branch back around bip01_spine. A ROTATION about the
+// waist, not a shift like g_legs_fwd_offset: a shift pulls the torso off the hips, a bend keeps the
+// waist where the pelvis is and only changes the angle the skinning already blends across.
+// Only as much as the pose needs: standing straight nothing moves at all.
+//
+// The plane is horizontal-only on purpose. The first-person camera stands right over the actor
+// origin (CActor::cam_Update: XFORM().c plus the eye height), so the eyes are known from the actor
+// alone, this frame -- the camera itself is updated AFTER this in UpdateCL, and a one-frame-old
+// camera position is ten centimetres off at a sprint. The Q/E lookout moves the eyes sideways,
+// along the plane, where it changes nothing.
+void player_legs_controller::lean_torso_off_camera(CActor* actor, bool snap)
+{
+	const u16 spine				= m_model->LL_BoneID(SPINE_BONE);
+	if (!g_legs_lean || (BI_NONE == spine))
+	{
+		m_lean					= 0.f;
+		return;
+	}
+
+	Fmatrix inv;				inv.invert(m_legs_transform);
+
+	// the view heading in model space, flattened
+	Fmatrix aim_m;				aim_m.setHPB(actor->cam_Active()->GetWorldYaw(), 0.f, 0.f);
+	Fvector aim;				inv.transform_dir(aim, aim_m.k);
+	aim.y						= 0.f;
+	if (aim.square_magnitude() < EPS)
+		return;
+	aim.normalize				();
+
+	Fvector eye;				inv.transform_tiny(eye, actor->XFORM().c);
+	const Fvector pivot			= m_model->LL_GetTransform(spine).c;
+
+	// Every probe has to end up with its forward coordinate (along aim, measured from the pivot)
+	// at most t. Bending back by a turns a point at (forward f, up u) = R*(sin p, cos p) into
+	// R*sin(p - a), so the bend it asks for is p - asin(t/R). The most demanding probe wins.
+	Fvector to_eye;				to_eye.sub(eye, pivot);
+	const float t				= aim.dotproduct(to_eye) - g_legs_lean_margin;
+	float target				= 0.f;
+	for (u32 i=0; i<sizeof(LEAN_PROBES)/sizeof(LEAN_PROBES[0]); ++i)
+	{
+		const u16 id			= m_model->LL_BoneID(LEAN_PROBES[i]);
+		if (BI_NONE == id)
+			continue;
+
+		Fvector r;				r.sub(m_model->LL_GetTransform(id).c, pivot);
+		const float f			= aim.dotproduct(r);
+		if (f <= t)
+			continue;			// already behind the plane
+
+		const float u			= r.y;
+		const float R			= _sqrt(f*f + u*u);
+		if (R < EPS_L)
+			continue;
+
+		float ratio				= t / R;
+		clamp					(ratio, -1.f, 1.f);
+		target					= _max(target, atan2f(f, u) - asinf(ratio));
+	}
+	clamp						(target, 0.f, deg2rad(g_legs_lean_max));
+
+	if (snap)
+		m_lean					= target;
+	else
+	{
+		float k					= ((target > m_lean) ? g_legs_lean_speed_in : g_legs_lean_speed_out) * Device.fTimeDelta;
+		clamp					(k, 0.f, 1.f);
+		m_lean					+= (target - m_lean) * k;
+	}
+
+	if (m_lean < deg2rad(0.1f))
+		return;
+
+	// Rotation about n = aim x up: for a positive angle that carries "up" towards -aim, i.e. the
+	// top of the spine goes BACK. Built by hand (Rodrigues) rather than Fmatrix::rotation so the
+	// direction does not hang on that function's handedness. The rows of an Fmatrix are the images
+	// of the basis vectors (transform_tiny is v.x*i + v.y*j + v.z*k + c).
+	Fvector up;					up.set(0.f, 1.f, 0.f);
+	Fvector n;					n.crossproduct(aim, up);
+	n.normalize					();
+	const float c				= _cos(m_lean);
+	const float sn				= _sin(m_lean);
+
+	Fmatrix xf;					xf.identity();
+	Fvector* rows[3]			= { &xf.i, &xf.j, &xf.k };
+	for (int a=0; a<3; ++a)
+	{
+		Fvector v;				v.set(0.f, 0.f, 0.f);
+		v[a]					= 1.f;
+		Fvector nxv;			nxv.crossproduct(n, v);
+		rows[a]->set			(v);
+		rows[a]->mul			(c);
+		rows[a]->mad			(nxv, sn);
+		rows[a]->mad			(n, n.dotproduct(v) * (1.f - c));
+	}
+	// about the pivot: c = pivot - R(pivot)
+	Fvector rp;					xf.transform_dir(rp, pivot);
+	xf.c.sub					(pivot, rp);
+
+	transform_bone_branch		(spine, xf);
 }
 
 void player_legs_controller::render()

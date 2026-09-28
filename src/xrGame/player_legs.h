@@ -16,7 +16,7 @@
 //     because the invisible actor is never reached by the visibility loop.
 //
 // Console: g_legs (off by default), g_legs_fwd_offset, g_legs_spine_offset_y, g_legs_attach_to_camera,
-// g_legs_in_low_crouch.
+// g_legs_in_low_crouch, g_legs_lean*.
 
 class CActor;
 class IKinematics;
@@ -44,6 +44,8 @@ private:
 	void			copy_bones_from_actor	(CActor* actor);
 	void			collapse_bone_branch	(u16 branch_root);
 	void			shift_bone_branch		(u16 branch_root, const Fvector& delta);
+	void			transform_bone_branch	(u16 branch_root, const Fmatrix& xform);
+	void			lean_torso_off_camera	(CActor* actor, bool snap);
 	void			warn_once				(LPCSTR fmt, ...);
 
 	IKinematics*	m_model;
@@ -59,6 +61,7 @@ private:
 	Fvector			m_offset_dir;
 	bool			m_offset_dir_valid;
 	float			m_sprint_blend;			// 0..1, eases the extra sprint offset in and out
+	float			m_lean;					// radians the torso is currently bent back off the camera
 	shared_str		m_visual_name;
 	shared_str		m_last_outfit_sect;
 	shared_str		m_last_model;
