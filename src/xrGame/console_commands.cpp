@@ -2462,6 +2462,7 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 		extern BOOL		g_legs_yaw_hold;
 		extern float	g_legs_yaw_deadzone;
 		extern float	g_legs_yaw_speed;
+		extern float	g_legs_yaw_max_lag;
 		extern float	g_legs_sprint_offset;
 		extern float	g_legs_sprint_speed;
 		CMD4(CCC_Integer,	"g_legs_arms",				&g_legs_arms,				0, 1);
@@ -2471,12 +2472,23 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 		CMD4(CCC_Integer,	"g_legs_yaw_hold",			&g_legs_yaw_hold,			0, 1);
 		CMD4(CCC_Float,		"g_legs_yaw_deadzone",		&g_legs_yaw_deadzone,		0.f, 180.f);
 		CMD4(CCC_Float,		"g_legs_yaw_speed",			&g_legs_yaw_speed,			10.f, 1440.f);
+		CMD4(CCC_Float,		"g_legs_yaw_max_lag",		&g_legs_yaw_max_lag,		0.f, 180.f);
 		CMD4(CCC_Float,		"g_legs_sprint_offset",		&g_legs_sprint_offset,		-2.f, 2.f);
 		CMD4(CCC_Float,		"g_legs_sprint_speed",		&g_legs_sprint_speed,		0.5f, 30.f);
 		CMD4(CCC_Float,		"g_legs_fwd_offset",		&g_legs_fwd_offset,			-2.0f, 2.0f);
 		CMD4(CCC_Float,		"g_legs_spine_offset_y",	&g_legs_spine_offset_y,		-1.0f, 1.0f);
 		CMD4(CCC_Integer,	"g_legs_attach_to_camera",	&g_legs_attach_to_camera,	0, 1);
 		CMD4(CCC_Integer,	"g_legs_in_low_crouch",		&g_legs_in_low_crouch,		0, 1);
+		extern BOOL		g_legs_lean;
+		extern float	g_legs_lean_margin;
+		extern float	g_legs_lean_max;
+		extern float	g_legs_lean_speed_in;
+		extern float	g_legs_lean_speed_out;
+		CMD4(CCC_Integer,	"g_legs_lean",				&g_legs_lean,				0, 1);
+		CMD4(CCC_Float,		"g_legs_lean_margin",		&g_legs_lean_margin,		-1.f, 1.f);
+		CMD4(CCC_Float,		"g_legs_lean_max",			&g_legs_lean_max,			0.f, 90.f);
+		CMD4(CCC_Float,		"g_legs_lean_speed_in",		&g_legs_lean_speed_in,		0.5f, 60.f);
+		CMD4(CCC_Float,		"g_legs_lean_speed_out",	&g_legs_lean_speed_out,		0.5f, 60.f);
 
 		// ...and the same turn smoothing for the WORLD model in third person (Actor_Movement.cpp
 		// g_Orientate). Visual only -- movement still uses the instant heading.
