@@ -64,6 +64,13 @@ LPCSTR	ARM_BONE_L		= "bip01_l_upperarm";
 LPCSTR	ARM_BONE_R		= "bip01_r_upperarm";
 LPCSTR	SPINE_BONE		= "bip01_spine";
 LPCSTR	PELVIS_BONE		= "bip01_pelvis";
+LPCSTR	SPINE1_BONE		= "bip01_spine1";
+LPCSTR	SPINE2_BONE		= "bip01_spine2";
+// Share of the camera twist the actor's torso callbacks put on each bone -- y_spin1_factor and
+// y_shoulder_factor in ActorAnimation.cpp (bip01_spine itself gets y_spin0_factor, which is 0).
+// Keep them in step with those.
+const float	SPINE1_TWIST	= 0.4f;
+const float	SPINE2_TWIST	= 0.4f;
 LPCSTR	CLAVICLE_L		= "bip01_l_clavicle";
 LPCSTR	CLAVICLE_R		= "bip01_r_clavicle";
 // What the torso lean keeps behind the eyes: the upper chest and the shoulders. The chest SURFACE
@@ -585,8 +592,52 @@ void player_legs_controller::update(CActor* actor)
 	// Last, because it needs the model's final place: the lean is measured against the eyes.
 	// Coming back from a frame that was not drawn (ladder, vehicle, third person) it snaps straight
 	// to where it should be -- easing in from a stale angle would show the chest for a moment.
+	retwist_torso				(actor);
 	clamp_torso_yaw				(actor);
 	lean_torso_off_camera		(actor, !was_drawn);
+}
+
+// THE TORSO THAT SNAPS ROUND ON A FLICK.
+// The pose copied from the actor carries his spine twist: Spin1Callback and ShoulderCallback turn
+// bip01_spine1 and bip01_spine2 by angle_normalize_signed(r_torso.yaw - ModelYawVisual()), 0.4 of it
+// each. That is the gap between the camera and HIS heading -- and his heading lags a fast mouse with
+// rules of its own. The moment the gap passes 180 degrees the normalisation wraps it to the other
+// sign, and the twist jumps by some 290 degrees in one frame. clamp_torso_yaw() then puts the chest
+// back within reach of the view, but the spine under it has been wrung the other way round: that is
+// the click and the corkscrew on every half turn.
+// This body is not standing on his heading anyway, it stands on m_legs_transform. So the twist is
+// taken out and put back measured against OUR heading -- which g_legs_yaw_max_lag keeps within 60
+// degrees of the view, so it can never get near the wrap. Same bones, same shares, same
+// setXYZ spin the callbacks use, so it replaces their result exactly rather than approximating it;
+// the constant corrections they add (m_fTorsoYawFix, the neck fix) are left in place.
+void player_legs_controller::retwist_torso(CActor* actor)
+{
+	const float follow			= actor->TorsoFollowCam();
+	const float cam				= actor->Orientation().yaw;
+	const float had				= angle_normalize_signed(cam - actor->ModelYawVisual())		* follow;
+	const float want			= angle_normalize_signed(cam - m_legs_transform.k.getH())	* follow;
+	const float d				= want - had;
+	if (fis_zero(d))
+		return;
+
+	// Child first: each turn is about the vertical through its own bone, and undoing the outer one
+	// before the inner keeps the pivots where the callbacks had them.
+	struct { LPCSTR bone; float share; } steps[] = { { SPINE2_BONE, SPINE2_TWIST }, { SPINE1_BONE, SPINE1_TWIST } };
+	for (u32 i=0; i<sizeof(steps)/sizeof(steps[0]); ++i)
+	{
+		const u16 id			= m_model->LL_BoneID(steps[i].bone);
+		if (BI_NONE == id)
+			continue;
+
+		// The callback does world = world * spin with the bone's position put back, i.e. spin about
+		// the vertical through the bone, and its children follow. On a finished pose that is the
+		// branch turned about that point.
+		Fmatrix xf;				xf.setXYZ(0.f, d * steps[i].share, 0.f);
+		const Fvector pivot		= m_model->LL_GetTransform(id).c;
+		Fvector rp;				xf.transform_dir(rp, pivot);
+		xf.c.sub				(pivot, rp);
+		transform_bone_branch	(id, xf);
+	}
 }
 
 // Heading of the chest in MODEL space, in the getH convention: the normal of the shoulder line,

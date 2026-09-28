@@ -298,6 +298,7 @@ protected:
 	bool					m_bModelYawVisValid;
 public:
 	IC		float			ModelYawVisual		() const	{ return m_fModelYawVis; }
+	IC		float			TorsoFollowCam		() const	{ return m_fTorsoFollowCam; }	// the first-person legs re-twist their copy with it
 protected:
 	// Upper-body yaw correction for the torso set currently playing, radians, added in
 	// Spin1Callback. Zero = stock behaviour; see torso_yaw_fix() in ActorAnimation.cpp.
