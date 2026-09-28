@@ -40,6 +40,7 @@ float	g_legs_yaw_deadzone		= 30.f;		// degrees the view may twist away before th
 											// and the most the body may lag the view (see update())
 float	g_legs_yaw_speed		= 240.f;	// degrees a second the model turns while catching up
 float	g_legs_yaw_max_lag		= 60.f;		// hard limit: the feet never trail the VIEW by more than this
+float	g_legs_torso_max_lag	= 15.f;		// the same for the chest and the arms on it (see clamp_torso_yaw())
 float	g_legs_sprint_offset	= -0.2f;	// extra distance the body drops back while sprinting
 float	g_legs_sprint_speed		= 4.f;		// how quickly it goes there and comes back
 BOOL	g_legs_anchor_pelvis	= FALSE;	// park the HIPS over the actor (see update())
@@ -63,6 +64,8 @@ LPCSTR	ARM_BONE_L		= "bip01_l_upperarm";
 LPCSTR	ARM_BONE_R		= "bip01_r_upperarm";
 LPCSTR	SPINE_BONE		= "bip01_spine";
 LPCSTR	PELVIS_BONE		= "bip01_pelvis";
+LPCSTR	CLAVICLE_L		= "bip01_l_clavicle";
+LPCSTR	CLAVICLE_R		= "bip01_r_clavicle";
 // What the torso lean keeps behind the eyes: the upper chest and the shoulders. The chest SURFACE
 // sits a hand in front of these, which is what g_legs_lean_margin pays for.
 LPCSTR	LEAN_PROBES[]	= { "bip01_spine2", "bip01_neck", "bip01_l_clavicle", "bip01_r_clavicle" };
@@ -79,6 +82,7 @@ player_legs_controller::player_legs_controller()
 	m_offset_dir_valid	= false;
 	m_sprint_blend		= 0.f;
 	m_lean				= 0.f;
+	m_chest_sign		= 1.f;
 	m_has_fwd_offset	= false;
 	m_fwd_offset		= 0.f;
 	m_legs_transform.identity();
@@ -181,6 +185,26 @@ bool player_legs_controller::ensure_model(const shared_str& sect, const shared_s
 
 	m_model					= K;
 	m_visual_name			= model;
+
+	// Which way the chest faces is read off the shoulder line (chest_heading()), and a line has two
+	// normals. Pick the one that points forward in the BIND pose, where the model stands facing +z
+	// -- the heading convention everything here uses. m2b_transform is the inverse of the bind
+	// pose in model space, so inverting it gives the bone's bind position.
+	m_chest_sign			= 1.f;
+	{
+		const u16 l			= K->LL_BoneID(CLAVICLE_L);
+		const u16 r			= K->LL_BoneID(CLAVICLE_R);
+		if ((BI_NONE != l) && (BI_NONE != r))
+		{
+			Fmatrix bl;		bl.invert(K->LL_GetData(l).m2b_transform);
+			Fmatrix br;		br.invert(K->LL_GetData(r).m2b_transform);
+			Fvector side;	side.sub(br.c, bl.c);
+			Fvector up;		up.set(0.f, 1.f, 0.f);
+			Fvector fwd;	fwd.crossproduct(side, up);
+			if (fwd.z < 0.f)
+				m_chest_sign = -1.f;
+		}
+	}
 
 	m_has_fwd_offset		= !!pSettings->line_exist(sect, "legs_fwd_offset");
 	m_fwd_offset			= m_has_fwd_offset ? pSettings->r_float(sect, "legs_fwd_offset") : 0.f;
@@ -561,7 +585,77 @@ void player_legs_controller::update(CActor* actor)
 	// Last, because it needs the model's final place: the lean is measured against the eyes.
 	// Coming back from a frame that was not drawn (ladder, vehicle, third person) it snaps straight
 	// to where it should be -- easing in from a stale angle would show the chest for a moment.
+	clamp_torso_yaw				(actor);
 	lean_torso_off_camera		(actor, !was_drawn);
+}
+
+// Heading of the chest in MODEL space, in the getH convention: the normal of the shoulder line,
+// on the side the bind pose calls the front.
+bool player_legs_controller::chest_heading(float& h) const
+{
+	const u16 l					= m_model->LL_BoneID(CLAVICLE_L);
+	const u16 r					= m_model->LL_BoneID(CLAVICLE_R);
+	if ((BI_NONE == l) || (BI_NONE == r))
+		return					false;
+
+	Fvector side;				side.sub(m_model->LL_GetTransform(r).c, m_model->LL_GetTransform(l).c);
+	Fvector up;					up.set(0.f, 1.f, 0.f);
+	Fvector fwd;				fwd.crossproduct(side, up);
+	fwd.mul						(m_chest_sign);
+	fwd.y						= 0.f;
+	if (fwd.square_magnitude() < EPS)
+		return					false;
+
+	fwd.normalize				();
+	h							= fwd.getH();
+	return						true;
+}
+
+// THE ARMS TURNED ROUND.
+// g_legs_yaw_max_lag keeps the FEET within reach of the view, but the chest is not placed by the
+// model heading alone: the actor's torso callbacks (Spin0/Spin1/ShoulderCallback) twist his spine
+// by the gap between the camera and HIS OWN heading, and that pose is copied here as it is. His
+// heading lags on a flick with rules of its own, so the copied twist and our clamped m_yaw add up
+// to whatever they add up to -- with empty hands the arms are drawn, and a fast turn could leave
+// them pointing behind the player.
+// So the chest is measured where it actually ended up, and past g_legs_torso_max_lag off the view
+// the whole spine branch is turned about the vertical through bip01_spine until it is back at the
+// limit. Before the lean: that one bends away from the view, and should bend what is facing it.
+void player_legs_controller::clamp_torso_yaw(CActor* actor)
+{
+	const u16 spine				= m_model->LL_BoneID(SPINE_BONE);
+	if (BI_NONE == spine)
+		return;
+
+	float chest_h;
+	if (!chest_heading(chest_h))
+		return;
+
+	// Everything in the getH convention. The model only turns about y, so a heading in model space
+	// plus the model's own is the heading in the world.
+	Fmatrix view_m;				view_m.setHPB(actor->cam_Active()->GetWorldYaw(), 0.f, 0.f);
+	const float view_h			= view_m.k.getH();
+	const float world_h			= m_legs_transform.k.getH() + chest_h;
+	const float lag				= angle_difference_signed(world_h, view_h);
+	const float max_lag			= deg2rad(g_legs_torso_max_lag);
+	if (_abs(lag) <= max_lag)
+		return;
+
+	// Turn the heading by dh = back towards the view. For a rotation about +y by t the heading goes
+	// to -t (getH of (sin t, 0, cos t) is -t), hence the minus.
+	const float dh				= ((lag > 0.f) ? max_lag : -max_lag) - lag;
+	Fmatrix rot;				rot.identity();
+	const float c				= _cos(-dh);
+	const float sn				= _sin(-dh);
+	rot.i.set					(c, 0.f, -sn);	// Rodrigues about +y: v cos + (y x v) sin
+	rot.j.set					(0.f, 1.f, 0.f);
+	rot.k.set					(sn, 0.f, c);
+
+	const Fvector pivot			= m_model->LL_GetTransform(spine).c;
+	Fvector rp;					rot.transform_dir(rp, pivot);
+	rot.c.sub					(pivot, rp);
+
+	transform_bone_branch		(spine, rot);
 }
 
 // THE CHEST IN THE LENS.

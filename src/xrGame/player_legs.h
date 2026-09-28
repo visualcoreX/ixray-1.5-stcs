@@ -46,6 +46,8 @@ private:
 	void			shift_bone_branch		(u16 branch_root, const Fvector& delta);
 	void			transform_bone_branch	(u16 branch_root, const Fmatrix& xform);
 	void			lean_torso_off_camera	(CActor* actor, bool snap);
+	void			clamp_torso_yaw			(CActor* actor);
+	bool			chest_heading			(float& h) const;
 	void			warn_once				(LPCSTR fmt, ...);
 
 	IKinematics*	m_model;
@@ -62,6 +64,7 @@ private:
 	bool			m_offset_dir_valid;
 	float			m_sprint_blend;			// 0..1, eases the extra sprint offset in and out
 	float			m_lean;					// radians the torso is currently bent back off the camera
+	float			m_chest_sign;			// which side of the shoulder line is the front (see ensure_model())
 	shared_str		m_visual_name;
 	shared_str		m_last_outfit_sect;
 	shared_str		m_last_model;
