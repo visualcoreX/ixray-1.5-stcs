@@ -204,9 +204,18 @@ bool CUIInventoryUpgradeWnd::install_item( CInventoryItem& inv_item, bool can_up
 
 	SetCurScheme( scheme_name );
 
-	// Weapons show their upgrade state the Call of Pripyat way (a lamp beside the icon), outfits keep
-	// Clear Sky's colour wash. Decided per item: the scheme cells are shared between the two.
-	const bool lamp_mode = ( smart_cast<CWeapon*>( &inv_item ) != NULL );
+	// Weapons on a Gunslinger upgrade tree show their upgrade state the Call of Pripyat way (a lamp
+	// beside the icon); outfits and the weapons still on a stock Clear Sky tree keep Clear Sky's colour
+	// wash. Decided per item: the scheme cells are shared between the two. A stock tree is recognised by
+	// its stock scheme -- the generic upgrade_scheme_u8 / _u15_nolamp / _u16a... templates, where every GS
+	// port draws a scheme of its own -- and `upgrade_lamps` on the item section overrides that guess.
+	bool lamp_mode = ( smart_cast<CWeapon*>( &inv_item ) != NULL );
+	if ( lamp_mode )
+	{
+		const bool stock_scheme = ( 0 == strncmp( scheme_name, "upgrade_scheme_u", 16 ) ) &&
+								  ( scheme_name[16] >= '0' && scheme_name[16] <= '9' );
+		lamp_mode = !!READ_IF_EXISTS( pSettings, r_bool, inv_item.m_section_id.c_str(), "upgrade_lamps", !stock_scheme );
+	}
 	m_lamp_hover = NULL;
 	
 	UI_Upgrades_type::iterator ib = m_current_scheme->cells.begin();
