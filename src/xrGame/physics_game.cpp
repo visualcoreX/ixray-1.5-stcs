@@ -11,6 +11,7 @@
 #include "PHCommander.h"
 #include "MathUtils.h"
 #include "PHWorld.h"
+#include "entity_alive.h"
 
 #include "../Include/xrRender/FactoryPtr.h"
 #include "../Include/xrRender/WallMarkArray.h"
@@ -146,7 +147,14 @@ void  TContactShotMark(CDB::TRI* T,dContactGeom* c)
 				}
 				else
 				{
-					if(data->ph_ref_object&&!mtl_pair->CollideSounds.empty())
+					// Wading through a passable material (water) used to splash here on top of the
+					// footstep: actor/human vs water carry the same n_water clips as CollideSounds and
+					// as StepSounds, and CStepManager already plays the StepSounds on every footfall.
+					// With the overlap gate in CPHSoundPlayer::Play that doubled the step rate. A living
+					// creature's feet belong to its step manager, so it gets no contact splash; a body
+					// or an object that falls into the water still does.
+					CEntityAlive* alive = smart_cast<CEntityAlive*>(data->ph_ref_object);
+					if(data->ph_ref_object&&!(alive&&alive->g_Alive())&&!mtl_pair->CollideSounds.empty())
 					{
 						CPHSoundPlayer* sp=NULL;
 						sp=data->ph_ref_object->ph_sound_player();
