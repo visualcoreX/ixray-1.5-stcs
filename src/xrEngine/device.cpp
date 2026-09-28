@@ -430,9 +430,9 @@ void CRenderDevice::on_idle		()
 		Sleep		(1);
 }
 
-// With "pause on minimise" off the game keeps running behind another window -- and kept playing at
-// full volume there too. Fade the listener gain out while the window is inactive and back in when it
-// returns. Real time, not game time: the fade must run the same whatever the time factor or pause.
+// The game kept playing at full volume behind another window: with "pause on minimise" off the whole
+// game, with it on still the menu music. Fade the listener gain out while the window is inactive and
+// back in when it returns. Real time, not game time: the fade must run the same whatever the time factor or pause.
 // The level precache owns the same gain (it mutes the load and restores 1.0 at the end), so stay out
 // of its way while it runs; the next frame after it picks the fade up from wherever it is.
 void CRenderDevice::UpdateFocusSoundFade()
@@ -446,7 +446,9 @@ void CRenderDevice::UpdateFocusSoundFade()
 	const float	dt			= s_prev_ms ? float(now_ms - s_prev_ms) * 0.001f : 0.f;
 	s_prev_ms				= now_ms;
 
-	const bool	muted		= !b_is_Active && !psDeviceFlags.test(rsPauseOnMinimize);
+	// Regardless of "pause on minimise": with it on the game sounds pause, but the menu and pause-screen
+	// music is exempt from the pause and kept playing behind another window.
+	const bool	muted		= !b_is_Active;
 	const float	target		= muted ? 0.f : 1.f;
 	const float	fade_time	= muted ? 0.75f : 0.5f;		// seconds for a full swing
 	const float	prev		= s_gain;
