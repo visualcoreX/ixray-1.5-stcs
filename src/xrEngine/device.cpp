@@ -442,7 +442,9 @@ void CRenderDevice::UpdateFocusSoundFade()
 	static u32		s_prev_ms	= 0;
 	static bool		s_applied	= false;	// last value we set is s_gain (false: someone else set 1.0)
 
-	const u32	now_ms		= TimerGlobal.GetElapsed_ms();
+	// TimerMM, not TimerGlobal: TimerGlobal is a CTimer_paused and stops with the game -- the pause menu
+	// froze the fade and its music kept playing behind another window.
+	const u32	now_ms		= TimerMM.GetElapsed_ms();
 	const float	dt			= s_prev_ms ? float(now_ms - s_prev_ms) * 0.001f : 0.f;
 	s_prev_ms				= now_ms;
 
