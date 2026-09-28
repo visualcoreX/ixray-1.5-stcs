@@ -246,10 +246,12 @@ void UIUpgrade::set_lamp_mode( bool on )
 	// The scheme cells are shared by every item that uses the scheme, so this is set afresh each time
 	// the window takes an item; update_mask/update_item then draw whichever look it says.
 	m_lamp_mode = on;
-	if ( !on )
-		m_lamp->Show( false );
-	else
+	if ( on )
 		m_ink->Show( false );
+	// The lamp is forgotten AND hidden, always: the cell may still carry the previous item's green or red.
+	// Clearing only m_lamp_shown left that picture up whenever the new item's cell wants no lamp at all --
+	// refresh_lamp saw "none -> none" and never touched it, so it stayed lit until the cursor passed over.
+	m_lamp->Show( false );
 	m_lamp_shown = NULL;
 }
 

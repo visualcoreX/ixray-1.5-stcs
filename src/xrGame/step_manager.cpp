@@ -14,7 +14,7 @@
 BOOL debug_step_info = FALSE;
 BOOL debug_step_info_load = FALSE;
 #endif
-CStepManager::CStepManager()
+CStepManager::CStepManager() : m_time_anim_started(0), m_anim_phase(0.f), m_phase_time(0)
 {
 }
 
@@ -108,6 +108,8 @@ void CStepManager::reload(LPCSTR section)
 
 	
 	m_time_anim_started	= 0;
+	m_anim_phase		= 0.f;
+	m_phase_time		= 0;
 	m_blend				= 0;
 }
 
@@ -120,6 +122,8 @@ void CStepManager::on_animation_start(MotionID motion_id, CBlend *blend)
 		m_object->character_ik_controller	()->PlayLegs(blend);
 
 	m_time_anim_started = Device.dwTimeGlobal; 
+	m_anim_phase		= 0.f;
+	m_phase_time		= Device.dwTimeGlobal;
 	
 	// ������ ������� �������� � STEPS_MAP
 	STEPS_MAP_IT it = m_steps_map.find(motion_id);
@@ -158,8 +162,6 @@ void CStepManager::update()
 	if (m_step_info.disable)	return;
 	if (!m_blend)				return;
 
-	SGameMtlPair* mtl_pair		= m_object->material().get_current_pair();
-	if (!mtl_pair)				return;
 
 	// �������� ��������� ����
 	SStepParam	&step		= m_step_info.params;
@@ -168,6 +170,24 @@ void CStepManager::update()
 	// ����� ������ ����� ��������
 	float cycle_anim_time	= get_blend_time() / step.cycles;
 
+	// The loop position is ACCUMULATED: each frame adds its own dt at the speed the blend has in that
+	// frame. It used to be "time since the loop started / loop length at the CURRENT speed", which
+	// re-read the whole elapsed time at whatever speed this frame had -- and the actor's leg speed is
+	// set every frame from the real velocity (CActor::UpdateCL). Wherever that velocity jitters (water,
+	// rough ground) every upward spike jumped the phase forward, closed the loop early and started the
+	// next one: the footsteps came faster than the legs actually moved.
+	{
+		const float blend_time	= get_blend_time();
+		const u32 dt				= cur_time - m_phase_time;
+		m_phase_time				= cur_time;
+		if (blend_time > EPS_S)	m_anim_phase += (0.001f * float(dt)) / blend_time;
+		if (m_blend->stop_at_end && m_anim_phase > 1.f)	m_anim_phase = 1.f;
+	}
+
+	// after the phase has moved: a frame with no material (airborne) must not freeze the loop
+	SGameMtlPair* mtl_pair		= m_object->material().get_current_pair();
+	if (!mtl_pair)				return;
+
 	// ������ �� ���� ����� � ��������� �����
 	for (u32 i=0; i<m_legs_count; i++) {
 
@@ -175,8 +195,8 @@ void CStepManager::update()
 		if (m_step_info.activity[i].handled && (m_step_info.activity[i].cycle == m_step_info.cur_cycle)) continue;
 
 		// ��������� ��������� ����� ���� � ������������ � ����������� �������� ������
-		u32 offset_time = m_time_anim_started + u32(1000 * (cycle_anim_time * (m_step_info.cur_cycle-1) + cycle_anim_time * step.step[i].time));
-		if (offset_time <= cur_time){
+		const float step_phase = (float(m_step_info.cur_cycle-1) + step.step[i].time) / float(step.cycles);
+		if (step_phase <= m_anim_phase){
 
 			// ������ ����
 
@@ -220,13 +240,14 @@ void CStepManager::update()
 	}
 
 	// ���������� ������� ����
-	if (m_step_info.cur_cycle < step.cycles) m_step_info.cur_cycle = 1 + u8(float(cur_time - m_time_anim_started) / (1000.f * cycle_anim_time));
+	if (m_step_info.cur_cycle < step.cycles) m_step_info.cur_cycle = u8(_min(float(step.cycles), 1.f + _max(0.f, m_anim_phase) * float(step.cycles)));
 
 	// ���� �������� �����������...
-	u32 time_anim_end = m_time_anim_started + u32(get_blend_time() * 1000);		// ����� ���������� ������ ��������
-	if (!m_blend->stop_at_end && (time_anim_end < cur_time)) {
+	(void)cycle_anim_time;		// ����� ���������� ������ ��������
+	if (!m_blend->stop_at_end && (m_anim_phase >= 1.f)) {
 		
-		m_time_anim_started		= time_anim_end;
+		m_anim_phase			-= floorf(m_anim_phase);
+		m_time_anim_started		= cur_time;
 		m_step_info.cur_cycle	= 1;
 
 		for (u32 i=0; i<m_legs_count; i++) {

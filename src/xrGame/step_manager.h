@@ -22,6 +22,10 @@ class CStepManager {
 		void play_next( SGameMtlPair* mtl_pair, CEntityAlive	*object, float volume );
 	}				m_step_sound;
 	u32				m_time_anim_started;
+	// Where in the leg loop we are (0..1 of the whole animation), accumulated frame by frame at the
+	// speed the blend had in that frame -- see CStepManager::update.
+	float			m_anim_phase;
+	u32				m_phase_time;
 
 public: 
 						CStepManager			();

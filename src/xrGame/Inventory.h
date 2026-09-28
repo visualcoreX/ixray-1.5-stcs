@@ -142,6 +142,7 @@ protected:
 	u32 				m_iActiveSlot;
 	u32 				m_iNextActiveSlot;
 	u32 				m_iPrevActiveSlot;
+	u32					m_dwBlockedActiveSince;	// when the active item was first seen sitting in a blocked slot (0 = not)
 	//u32 				m_iLoadActiveSlot;
 	//u32 				m_iLoadActiveSlotFrame;
 	//EActivationReason	m_ActivationSlotReason;

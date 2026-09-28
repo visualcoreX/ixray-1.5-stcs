@@ -644,6 +644,17 @@ BOOL CActor::net_Spawn		(CSE_Abstract* DC)
 	}
 */	
 	SetDefaultVisualOutfit(cNameVisual());
+	// What the actor wears with NO outfit. The stock "default" is whatever model the actor object was
+	// spawned with -- all.spawn's stalker_hero_1, i.e. the novice jacket -- and ChangeVisual never reaches
+	// the server object, so saves keep that too. [without_outfit] actor_visual, when given, wins: taking
+	// the outfit off returns to it (CCustomOutfit::ApplySkinModel asks GetDefaultVisualOutfit). Nothing is
+	// worn yet at this point; an outfit in the slot switches the model again as it is placed there.
+	if (pSettings->line_exist("without_outfit", "actor_visual"))
+	{
+		shared_str bare			= pSettings->r_string("without_outfit", "actor_visual");
+		SetDefaultVisualOutfit	(bare);
+		ChangeVisual			(bare);
+	}
 
 	smart_cast<IKinematics*>(Visual())->CalculateBones();
 
