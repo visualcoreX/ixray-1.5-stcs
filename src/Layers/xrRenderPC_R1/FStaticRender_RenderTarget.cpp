@@ -171,7 +171,8 @@ BOOL CRenderTarget::NeedPostProcess()
 	// The 2D scope's eyepiece (digital zoom, night-vision mask, shadow, aberration) is drawn by this
 	// pass (shaders\r1\pp_scope.h), so it has to run while the game publishes a circle.
 	bool	_scope	= g_pGamePersistent && (g_pGamePersistent->pp_zoom_circle.x > 0.f
-					|| g_pGamePersistent->pp_mask_circle.z > 0.f);
+					|| g_pGamePersistent->pp_mask_circle.z > 0.f
+					|| g_pGamePersistent->pp_screen_warp.x > 0.f);	// the intoxication fisheye lives here too
 	return _blur || _gray || _noise || _dual || _cbase || _cadd || _menu_pp || _scope;
 }
 
@@ -325,6 +326,10 @@ void CRenderTarget::End		()
 		static	shared_str	s_pp_nv			= "m_pp_nv";
 		const Fvector4 nv = g_pGamePersistent ? g_pGamePersistent->hud_zoom_deviation : Fvector4().set(0.f,0.f,0.f,0.f);
 		RCache.set_c		(s_pp_nv,		nv.z, nv.w, nv.x, 0.f);
+		// the intoxication: x = fisheye strength at the edges, y = colour swim, z = edge wave, w = time (s)
+		static	shared_str	s_pp_warp		= "m_pp_warp";
+		const Fvector4 sw = g_pGamePersistent ? g_pGamePersistent->pp_screen_warp : Fvector4().set(0.f,1.f,0.f,0.f);
+		RCache.set_c		(s_pp_warp, sw.x, sw.z, sw.w, Device.fTimeGlobal);
 	}
 	static	shared_str	s_brightness	= "c_brightness";
 	RCache.set_c		(s_brightness,p_brightness.x,p_brightness.y,p_brightness.z,0);

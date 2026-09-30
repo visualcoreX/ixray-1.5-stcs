@@ -58,7 +58,9 @@ public:
 			// What the drunk camera/ppe effectors are actually driven by: the same value, but eased.
 			// A swig of vodka adds its whole dose to m_fAlcohol in one frame, and feeding that straight
 			// to the effector amplitude snapped the camera; this catches up over alcohol_effector_speed.
-			float	xr_stdcall	GetAlcoholEffector	()	{return m_fAlcoholEff;}
+			// ...and the medicine intoxication sways it too: while it runs, at least what 0.15 of alcohol gives
+			// (INTOX_ALCOHOL_EQUIV x the intoxication's eased strength); the real level is left untouched.
+			float	xr_stdcall	GetAlcoholEffector	();
 			float	xr_stdcall	GetPsy				()	{return 1.0f-GetPsyHealth();}
 			virtual float		GetSatiety			() const override	{return m_fSatiety;}
 			IC float GetSatietyPower() const {

@@ -1107,6 +1107,10 @@ float CActor::currentFOV()
 	return g_fov + (target - g_fov) * f;
 }
 
+// The medicine intoxication's eased strength (0..1), set in UpdateCL below; the drunk camera sway reads it
+// (CActorCondition::GetAlcoholEffector) so intoxication also sways like 0.15 of alcohol at full power.
+float g_intox_fx_level = 0.f;
+
 void CActor::UpdateCL	()
 {
 	UpdateInventoryOwner			(Device.dwTimeDelta);
@@ -1209,6 +1213,88 @@ void CActor::UpdateCL	()
 			}
 			else
 				g_pGamePersistent->hud_zoom_deviation.set(0.f, 0.f, 0.f, 0.f);
+		}
+	}
+
+	// INTOXICATION SCREEN WARP (gunsl_peredoz.script -> level.set_intox_screen_fx). A slow pulse drives it:
+	// a rise, a longer fall that starts gently and gathers pace, then a rest. Every joint meets at zero
+	// speed (cosine ramps), so nothing snaps -- the first, piecewise-linear version looked mechanical.
+	// It swells the stretch of the outer part of the screen (an ellipse, see
+	// pp_warp_uv) and breathes the world fov a touch. Nausea, not a spinning head: nothing rotates or
+	// drifts. A script that stopped calling (the trip is over, a load) counts as zero after half a second.
+	if (g_pGamePersistent)
+	{
+		extern float	g_intox_fx_power;
+		extern u32		g_intox_fx_time;
+		// The pulse shows mostly in the EDGES stretching; the fov only breathes along a little.
+		const float		INTOX_FISHEYE		= 0.07f;	// edge pull at full power, steady part (share of the radius)
+		const float		INTOX_FISHEYE_BEAT	= 0.07f;	// ...and what the pulse's peak adds on top
+		const float		INTOX_PERIOD_SLOW	= 3.2f;	// seconds per pulse when it just shows...
+		const float		INTOX_PERIOD_FAST	= 2.4f;	// ...and at full power
+		const float		INTOX_SURGE			= 0.18f;	// share of the period: the rise
+		const float		INTOX_RECOVER		= 0.50f;	// ...the fall; the rest of the period is calm
+		const float		INTOX_FALL_SHAPE	= 1.4f;	// >1 = the fall lingers near the peak, then goes
+		const float		INTOX_FOV_PULSE		= 0.005f;	// fov swing on a beat at full power (0.5%)
+		const float		INTOX_WOBBLE		= 0.005f;	// slow wave distortion at the edges (share of the screen)
+		// The colour swim moved here from the script's PPE: a PPE colour is summed with every other effector
+		// and lands on the whole screen, while this one goes through the same mask -- strongest at the edges,
+		// nothing in the middle. 1.0 = GS's full-screen wash; it was 0.3 while it covered everything.
+		const float		INTOX_COLOUR		= 0.3f;	// was 0.6: halved once the colour started swelling with the pulse
+		// ...and it swells with the pulse: between beats it is just INTOX_COLOUR, at a beat's peak this much more
+		// on top (1 = twice as strong), riding the same envelope as the fisheye and the fov
+		const float		INTOX_COLOUR_BEAT	= 1.0f;
+		// the pulse also pulls the focus towards the reload blur (CGamePersistent::GetCurrentDof blends it in
+		// over whatever owns the DOF); 1 = at the peak of a full-strength pulse it IS the reload blur
+		const float		INTOX_DOF			= 0.4f;	// 1 = the full reload blur at the peak; toned down on request
+		// ...on its own, SHORTER envelope around the same peak (the end of the rise): quick in, quick out,
+		// instead of riding the long fall of the stretch
+		const float		INTOX_DOF_IN		= 0.13f;	// share of the period to come in, ending at the peak
+		const float		INTOX_DOF_OUT		= 0.26f;	// ...and to go back out after it
+		static float	s_power = 0.f, s_phase = 0.f, s_beat = 0.f, s_dof = 0.f;
+		const float		target = (Device.dwTimeGlobal - g_intox_fx_time < 500) ? g_intox_fx_power : 0.f;
+		s_power += (target - s_power) * _min(1.f, Device.fTimeDelta * 2.f);
+		if (s_power < 0.001f)	{ s_power = 0.f; s_phase = 0.f; }
+		g_intox_fx_level = s_power;		// the drunk sway reads it too (CActorCondition::GetAlcoholEffector)
+		const float		period = INTOX_PERIOD_SLOW + (INTOX_PERIOD_FAST - INTOX_PERIOD_SLOW) * s_power;
+		s_phase += Device.fTimeDelta / period;
+		s_phase -= floorf(s_phase);
+		float			beat_raw = 0.f;
+		if (s_phase < INTOX_SURGE)
+			beat_raw = 0.5f * (1.f - cosf(PI * s_phase / INTOX_SURGE));			// eased up
+		else if (s_phase < INTOX_SURGE + INTOX_RECOVER)
+		{
+			const float u = (s_phase - INTOX_SURGE) / INTOX_RECOVER;
+			beat_raw = 0.5f * (1.f + cosf(PI * powf(u, INTOX_FALL_SHAPE)));	// eased down, lingering at the top
+		}
+		// and a light low-pass on top (~0.1 s), so even a frame-time hitch cannot show as a step
+		s_beat += (beat_raw - s_beat) * _min(1.f, Device.fTimeDelta * 10.f);
+		if (s_power <= 0.f)	s_beat = 0.f;
+		const float		beat = s_beat;
+		g_pGamePersistent->pp_screen_warp.set(s_power * (INTOX_FISHEYE + INTOX_FISHEYE_BEAT * beat),
+												1.f + INTOX_FOV_PULSE * s_power * beat,
+												INTOX_COLOUR * s_power * s_power * (1.f + INTOX_COLOUR_BEAT * beat),	// squared, as GS's: comes up slowly, then bites
+												INTOX_WOBBLE * s_power);
+		{
+			float dof_raw = 0.f;
+			const float from = INTOX_SURGE - INTOX_DOF_IN, to = INTOX_SURGE + INTOX_DOF_OUT;
+			// quintic ramps (smootherstep): zero speed AND zero acceleration at both ends, so the blur eases
+			// in and out with no perceptible start or stop -- the cosine ones still read as a switch
+			auto ease = [](float x) { clamp(x, 0.f, 1.f); return x * x * x * (x * (x * 6.f - 15.f) + 10.f); };
+			if (s_phase >= from && s_phase < INTOX_SURGE)
+				dof_raw = ease((s_phase - from) / INTOX_DOF_IN);
+			else if (s_phase >= INTOX_SURGE && s_phase < to)
+				dof_raw = 1.f - ease((s_phase - INTOX_SURGE) / INTOX_DOF_OUT);
+			s_dof += (dof_raw - s_dof) * _min(1.f, Device.fTimeDelta * 12.f);	// a light low-pass on top
+			if (s_power <= 0.f)	s_dof = 0.f;
+			const float dof_w = INTOX_DOF * _min(1.f, s_power * 2.f) * s_dof;	// full reload blur at the peak from half power up
+			if (CGamePersistent* gp = smart_cast<CGamePersistent*>(g_pGamePersistent))
+				gp->m_intox_dof = dof_w;
+			// Aiming a 3D lens, the same pulse blurs the finished picture instead -- lens and weapon alike --
+			// since the aim owns the DOF and the lens image never sees it. Rides the aim factor in and out.
+			float lens_aim = 0.f;
+			if (CWeapon* lw = smart_cast<CWeapon*>(inventory().ActiveItem()))
+				if (lw->IsLensedScope())	lens_aim = lw->GetInertionAimFactor();
+			g_pGamePersistent->pp_blur = dof_w * lens_aim;
 		}
 	}
 

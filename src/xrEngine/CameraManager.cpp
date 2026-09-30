@@ -370,6 +370,12 @@ void CCameraManager::ApplyDevice (float _viewport_near)
 								? hud_fov_base
 								: fov_now;
 
+	// The intoxication's heartbeat (CActor fills pp_screen_warp.y). The world only -- the HUD fov was
+	// settled just above, so the weapon in hand does not throb -- and never on a lens frame, whose fov
+	// belongs to the optic.
+	if (g_pGamePersistent && !g_pGamePersistent->m_bLensFrameNow && g_pGamePersistent->pp_screen_warp.y > 0.f)
+		fov_now					*= g_pGamePersistent->pp_screen_warp.y;
+
 	// projection
 	Device.fFOV					= fov_now;
 	Device.fASPECT				= m_cam_info.fAspect;

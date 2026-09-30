@@ -84,7 +84,9 @@ BOOL CRenderTarget::u_need_PP	()
 	// R3 runs it every frame; here it only ran when some other effect wanted it, so a variable-power
 	// optic changed its step without the picture changing at all.
 	bool	_scope	= g_pGamePersistent && (g_pGamePersistent->pp_zoom_circle.x > 0.f
-					|| g_pGamePersistent->pp_mask_circle.z > 0.f);
+					|| g_pGamePersistent->pp_mask_circle.z > 0.f
+					|| g_pGamePersistent->pp_screen_warp.x > 0.f
+					|| g_pGamePersistent->pp_blur > 0.f);	// the intoxication fisheye lives here too
 	return _blur || _gray || _noise || _dual || _cbase || _cadd || _scope;
 }
 
@@ -158,6 +160,14 @@ void CRenderTarget::phase_pp		()
 		static	shared_str	s_pp_nv			= "m_pp_nv";
 		const Fvector4 nv = g_pGamePersistent ? g_pGamePersistent->hud_zoom_deviation : Fvector4().set(0.f,0.f,0.f,0.f);
 		RCache.set_c		(s_pp_nv, nv.z, nv.w, nv.x, 0.f);
+		// the intoxication: x = fisheye strength at the edges, y = colour swim, z = edge wave, w = time (s)
+		static	shared_str	s_pp_warp		= "m_pp_warp";
+		const Fvector4 sw = g_pGamePersistent ? g_pGamePersistent->pp_screen_warp : Fvector4().set(0.f,1.f,0.f,0.f);
+		RCache.set_c		(s_pp_warp, sw.x, sw.z, sw.w, Device.fTimeGlobal);
+		// blur over the finished picture (pp_blur, CActor): x = amount, y = h/w so the kernel is round
+		static	shared_str	s_pp_blur		= "m_pp_blur";
+		RCache.set_c		(s_pp_blur, g_pGamePersistent ? g_pGamePersistent->pp_blur : 0.f,
+							 Device.dwWidth ? float(Device.dwHeight) / float(Device.dwWidth) : 1.f, 0.f, 0.f);
 	}
 	static	shared_str	s_brightness	= "c_brightness";
 	RCache.set_c		(s_brightness,p_brightness.x,p_brightness.y,p_brightness.z,0);
