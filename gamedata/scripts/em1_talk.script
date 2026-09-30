@@ -1,0 +1,51 @@
+-- EM1 (wpn_gauss_aes) small talk: traders and mechanics who have never seen the rifle.
+-- Offered only while the rifle is on the actor, and once per NPC: the answer stores
+-- em1_asked_<tag> = true in the actor's pstor, which rides the save.
+-- The Marsh mechanic is not here: he has the real line (mar_gauss_ammo.script).
+
+local EM1_SECT = "wpn_gauss_aes"
+
+local function has_em1()
+	return db.actor:object(EM1_SECT) ~= nil
+end
+
+local function asked(tag)
+	return xr_logic.pstor_retrieve(db.actor, "em1_asked_" .. tag, false) == true
+end
+
+local function mark(tag)
+	xr_logic.pstor_store(db.actor, "em1_asked_" .. tag, true)
+end
+
+function can_esc_tech(first_speaker, second_speaker)	return has_em1() and not asked("esc_tech")	end
+function done_esc_tech(first_speaker, second_speaker)	mark("esc_tech")	end
+function can_agr_mech(first_speaker, second_speaker)	return has_em1() and not asked("agr_mech")	end
+function done_agr_mech(first_speaker, second_speaker)	mark("agr_mech")	end
+function can_agr_duty_mech(first_speaker, second_speaker)	return has_em1() and not asked("agr_duty_mech")	end
+function done_agr_duty_mech(first_speaker, second_speaker)	mark("agr_duty_mech")	end
+function can_val_fixer(first_speaker, second_speaker)	return has_em1() and not asked("val_fixer")	end
+function done_val_fixer(first_speaker, second_speaker)	mark("val_fixer")	end
+function can_gar_fixer(first_speaker, second_speaker)	return has_em1() and not asked("gar_fixer")	end
+function done_gar_fixer(first_speaker, second_speaker)	mark("gar_fixer")	end
+function can_red_forester(first_speaker, second_speaker)	return has_em1() and not asked("red_forester")	end
+function done_red_forester(first_speaker, second_speaker)	mark("red_forester")	end
+function can_esc_sid(first_speaker, second_speaker)	return has_em1() and not asked("esc_sid")	end
+function done_esc_sid(first_speaker, second_speaker)	mark("esc_sid")	end
+function can_esc_shilov(first_speaker, second_speaker)	return has_em1() and not asked("esc_shilov")	end
+function done_esc_shilov(first_speaker, second_speaker)	mark("esc_shilov")	end
+function can_agr_drozd(first_speaker, second_speaker)	return has_em1() and not asked("agr_drozd")	end
+function done_agr_drozd(first_speaker, second_speaker)	mark("agr_drozd")	end
+function can_agr_mityai(first_speaker, second_speaker)	return has_em1() and not asked("agr_mityai")	end
+function done_agr_mityai(first_speaker, second_speaker)	mark("agr_mityai")	end
+function can_val_ashot(first_speaker, second_speaker)	return has_em1() and not asked("val_ashot")	end
+function done_val_ashot(first_speaker, second_speaker)	mark("val_ashot")	end
+function can_gar_zub(first_speaker, second_speaker)	return has_em1() and not asked("gar_zub")	end
+function done_gar_zub(first_speaker, second_speaker)	mark("gar_zub")	end
+function can_agr_hermit(first_speaker, second_speaker)	return has_em1() and not asked("agr_hermit")	end
+function done_agr_hermit(first_speaker, second_speaker)	mark("agr_hermit")	end
+function can_mar_suslov(first_speaker, second_speaker)	return has_em1() and not asked("mar_suslov")	end
+function done_mar_suslov(first_speaker, second_speaker)	mark("mar_suslov")	end
+function can_esc_agent(first_speaker, second_speaker)	return has_em1() and not asked("esc_agent")	end
+function done_esc_agent(first_speaker, second_speaker)	mark("esc_agent")	end
+function can_yan_sakharov(first_speaker, second_speaker)	return has_em1() and not asked("yan_sakharov")	end
+function done_yan_sakharov(first_speaker, second_speaker)	mark("yan_sakharov")	end

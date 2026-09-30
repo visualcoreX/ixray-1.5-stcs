@@ -41,6 +41,7 @@ single_handed           = 0
 
 slot                    = 2                ; // secondary
 animation_slot          = 10                ; type of the animation that will be used
+actor_anim_group        = groza_glon	; third-person set: the Groza with its launcher on (slot 10 had no proper sprint pose)
 
 inv_name				= gunsl_wpn_rgm-40	; orig st_wpn_rg6 (GS wpn_rgm-40)
 inv_name_short			= gunsl_wpn_rgm-40	; orig st_wpn_rg6 (GS wpn_rgm-40)
@@ -144,6 +145,7 @@ scope_zoom_factor			= 100
 ;�����
 snd_draw					= weapons\ak74\ak74_draw
 snd_holster					= weapons\p90\p90_hide
+snd_shoot					= weapons\ak74\ak74_gl_shoot, -0.9
 snd_empty					= weapons\glock17\glock17_dry
 ; back to the plain magazined reload sounds now that tri_state_reload is off (GS base.ltx:185-186);
 ; the open/add/close set below is dead with tri-state off, kept only as a record of the old RG-6

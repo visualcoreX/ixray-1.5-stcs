@@ -1,253 +1,184 @@
+-- DC170429: Fixed the incorrect parsing of hyphenated item names appearing as requisites for ammo in section [item_dependence] in death_generic.ltx.
 
---' Ключем является группировка персонажа. Значением является таблица, содержашая имена секций предметов.
-local item_by_community = {}
+local sim = _G.sim
+local item_dependence = {}  -- example key-value pair: ["ammo_vog-25p"] = {wpn_groza = true, wpn_rg-6 = true}
+local limits_by_item  = nil -- example key-value pair: ["ammo_9x18_fmj"] = {min = 20, max = 60}
 
---' Зависимости в спауне предметов. Предмет спауниться только если есть хотя бы один из зависимых.
-local item_dependence = {}
-
---' Множители и минимаксы для выпадения вещей в зависимости от уровня
-local mul_by_level = {}
-local count_by_level = {}
-
---' Предметы, которые нельзя удалять (квестовые например)
-local always_keep_item = {}
-
---' Предметы, относящиеся к патронам. Их надо спаунить другим методом.
-ammo_sections = {}
-
-local death_ini = ini_file("misc\\death_generic.ltx")
-
+item_by_community     = {}  -- example key-value pair: ["stalker"] = {af_cristall = 0.001, ammo_9x18_fmj = 1}
+count_by_level        = {}  -- example key-value pair: ["marsh"] = {["ammo_9x18_fmj"] = {min = 20, max = 60}}
+always_keep_item      = {}  -- example key-value pair: ["flesh_up_ac_ak74u"] = true
 
 function init_drop_settings()
-	local community_list = { "stalker", "dolg", "freedom", "renegade", "bandit", "army", "zombied", "ecolog", "killer", "monolith", "csky", "actor_dolg" , "arena_enemy" }
-
-    for k,v in pairs(community_list) do
-        --' Необходимо заполнить таблицу
-        item_by_community[v] = {}
-        if death_ini:section_exist(v) then
-		    local n = death_ini:line_count(v)
-		    local id, value = "", ""
-		    for i=0,n-1 do
-			    result, id, value	= death_ini:r_line(v,i,"","")
-                item_by_community[v][id] = 100*tonumber(value)
-		    end
-        end
-    end
-
-    --' Заполняем таблицу зависимостей
-	local n = death_ini:line_count("item_dependence")
-	local id, value = "", ""
-	for i=0,n-1 do
-		result, id, value	= death_ini:r_line("item_dependence",i,"","")
-		item_dependence[id] = {}
-		local vvv = parse_names(value)
-		for k,v in pairs(vvv) do
-			item_dependence[id][v] = true
+	local ini = ini_file("misc\\death_generic.ltx")
+	if not ini:section_exist("factions") then
+		abort("[death_manager.init_drop_settings]: There is no section [factions] in misc\\death_generic.ltx or any of its includes.")
+	end
+	for i = 0, ini:line_count("factions") - 1 do
+		local _, faction_name = ini:r_line("factions", i, "", "")
+		if not ini:section_exist(faction_name) then
+			abort("[death_manager.init_drop_settings]: There is no section [%s] in misc\\death_generic.ltx or any of its includes, despite being listed under section [factions].", faction_name)
+		end
+		local prob_by_item = {}
+--		dbglog("item_by_community['%s'] = {}", faction_name)
+		item_by_community[faction_name] = prob_by_item
+		for i = 0, ini:line_count(faction_name) - 1 do
+			local _, item_name, prob = ini:r_line(faction_name, i, "", "")
+			prob = tonumber(prob)
+--			dbglog("item_by_community['%s']['%s'] = %g", faction_name, item_name, prob)
+			prob_by_item[item_name] = prob
 		end
 	end
-
-	--' Множители и минимаксы для выпадения вещей в зависимости от уровня
-    local level_name = level.name()
-
-	if not death_ini:section_exist(level_name) then
-		level_name = "default"
+	if not ini:section_exist("item_dependence") then
+		abort("[death_manager.init_drop_settings]: There is no section [item_dependence] in misc\\death_generic.ltx or any of its includes.")
 	end
-
-    local n = death_ini:line_count(level_name)
-	local id, value = "", ""
-	for i=0,n-1 do
-		result, id, value	= death_ini:r_line(level_name,i,"","")
-        mul_by_level[id] = tonumber(value)
+	for i = 0, ini:line_count("item_dependence") - 1 do
+		local _, ammo_name, weapon_names = ini:r_line("item_dependence", i, "", "") -- example 'weapon_names' value: "wpn_pm, wpn_fort_up"
+		item_dependence[ammo_name] = parse_names_to_hash(weapon_names) -- DC170429
+--		dbglog("item_dependence['%s'] = {}", ammo_name)
+--		for weapon_name in pairs (item_dependence[ammo_name]) do
+--			dbglog("item_dependence['%s']['%s'] = true", ammo_name, weapon_name)
+--		end
 	end
-
-    local item_count_section = "item_count_" .. level.get_game_difficulty()
-    local n = death_ini:line_count(item_count_section)
-	for i=0,n-1 do
-		result, id, value	= death_ini:r_line(item_count_section,i,"","")
-        --' Нужно распарсить value в два значения
-        local t = parse_nums(value)
-		if t[1] == nil then
-            abort("Error on [death_ini] declaration. Section [%s], line [%s]", item_count_section, tostring(id))
-        end
-        local min = t[1]
-        local max = t[2]
-        if max == nil then
-            max = min
-        end
-
-        if mul_by_level[id] == nil then
-            mul_by_level[id] = 0
-        end
-
-        min = tonumber(min) * mul_by_level[id]
-        max = tonumber(max) * mul_by_level[id]
-
-        count_by_level[id] = {min = min, max = max}
+	if not ini:section_exist("levels") then
+		abort("[death_manager.init_drop_settings]: There is no section [levels] in misc\\death_generic.ltx or any of its includes.")
 	end
-
- 	--' Предметы, которые нельзя удалять (квестовые например)
-    local n = death_ini:line_count("keep_items")
-	for i=0,n-1 do
-		result, id, value	= death_ini:r_line("keep_items",i,"","")
-        if value == "true" then
-            always_keep_item[id] = true
-        end
-    end
-
-	--' Предметы, относящиеся к патронам. Их надо спаунить другим методом.
-    ammo_sections = {}
-    local n = death_ini:line_count("ammo_sections")
-	local id, value = "", ""
-	for i=0,n-1 do
-		result, id, value	= death_ini:r_line("ammo_sections",i,"","")
-        ammo_sections[id] = true
+	local multiplier_by_item_by_level = {} -- example key-value pair: ["marsh"] = {["ammo_11.43x23_fmj"] = 0, ["ammo_9x18_fmj"] = 1}
+	for i = 0, ini:line_count("levels") - 1 do
+		local _, level_name = ini:r_line("levels", i, "", "")
+		if not ini:section_exist(level_name) then
+			abort("[death_manager.init_drop_settings]: There is no section [%s] in misc\\death_generic.ltx or any of its includes, despite being listed under section [levels].", level_name)
+		end
+		local multiplier_by_item = {}
+--		dbglog("multiplier_by_item_by_level['%s'] = {}", level_name)
+		multiplier_by_item_by_level[level_name] = multiplier_by_item
+--		dbglog("count_by_level['%s'] = {}", level_name)
+		count_by_level[level_name] = {}
+		for i = 0, ini:line_count(level_name) - 1 do
+			local _, item_name, multiplier = ini:r_line(level_name, i, "", "")
+--			dbglog("multiplier_by_item_by_level['%s']['%s'] = %s", level_name, item_name, multiplier)
+			multiplier_by_item[item_name] = tonumber(multiplier)
+		end
+	end
+	local item_count_section = "item_count_"..level.get_game_difficulty()
+	if not ini:section_exist(item_count_section) then
+		abort("[death_manager.init_drop_settings]: There is no section [%s] in misc\\death_generic.ltx or any of its includes.", item_count_section)
+	end
+	for level_name, multiplier_by_item in pairs (multiplier_by_item_by_level) do
+		local item_limits = count_by_level[level_name]
+		for i = 0, ini:line_count(item_count_section) - 1 do
+			local _, item_name, counts = ini:r_line(item_count_section, i, "", "") -- example 'counts' values: "20, 100", "1"
+			local t = parse_nums(counts)
+			local min = t[1] or abort("[death_manager.init_drop_settings]: Missing value for parameter '%s' in section '%s' in misc\\death_generic.ltx or one of its includes.", item_name, item_count_section)
+			local max = t[2] or min
+			local multiplier = multiplier_by_item[item_name] or 0
+--			dbglog("count_by_level['%s']['%s'] = {min = %d, max = %d}", level_name, item_name, min * multiplier, max * multiplier)
+			item_limits[item_name] = {min = min * multiplier, max = max * multiplier} -- 'min' and 'max' coerced into numbers in parse_nums()
+		end
+	end
+	if not ini:section_exist("keep_items") then
+		abort("[death_manager.init_drop_settings]: There is no section [keep_items] in misc\\death_generic.ltx or any of its includes.")
+	end
+	for i = 0, ini:line_count("keep_items") - 1 do
+		local _, item_name = ini:r_line("keep_items", i, "", "")
+--		dbglog("always_keep_item['%s'] = true", item_name)
+		always_keep_item[item_name] = true
 	end
 end
 
-
+function init_level_drop_settings(actor_level)
+	limits_by_item = count_by_level[actor_level] or count_by_level["default"]
+end
 
 class "drop_manager"
+
 function drop_manager:__init(npc)
 	self.npc = npc
 end
-function drop_manager:create_release_item()
-	--' Спрашиваем у серверного объекта генерились ли предметы
-	local se_obj = alife():object(self.npc:id())
-	if se_obj == nil or se_obj.death_droped == true then
+
+function drop_manager:create_release_item(se_npc, npc_id)
+	local npc = self.npc
+	se_npc.death_droped = true
+	npc:iterate_inventory(keep_item, npc)
+	local ini = se_npc.ini -- npc:spawn_ini()
+	if ini and ini:section_exist("dont_spawn_loot") then
 		return
 	end
-	se_obj.death_droped = true
-
-    --' Запускаем итератор на удаление предметов
-    self.npc:iterate_inventory(keep_item, self.npc)
-
-    --' Проверка на отсутствие спауна лута
-    local ini = self.npc:spawn_ini()
-
-    if ini and ini:section_exist("dont_spawn_loot") then
-        return
-    end
-
-    --' Доспавниваем необходимое количество итемов:
-    --' Необходимо составить список объектов которые могут быть заспавнены для персонажа
-
-    local spawn_items = item_by_community[self.npc:character_community()]
-    if spawn_items == nil then
-    	return
-    end
-    for k,v in pairs(spawn_items) do
-        --' По каждому объекту необходимо получить зависимости
-        if check_item_dependence(self.npc, k) == true then
-            --' По каждому объекту необходимо получить количество
-            local number = math.ceil(math.random(count_by_level[k].min, count_by_level[k].max))
-            --' Необходимо заспавнить нужное количество.
-            create_items(self.npc, k, number, v)
-        end
-    end
-
+	local spawn_items = item_by_community[npc:character_community()]
+	if spawn_items == nil then
+		return
+	end
+	local check_item_dependence, limits_by_item, ammo_section, math_ceil, math_random
+	    = check_item_dependence, limits_by_item, ammo_section, math.ceil, math.random
+	local vec = vector()
+	for item_name, spawn_prob in pairs (spawn_items) do
+		if check_item_dependence(npc, item_name) then
+			local units = math_ceil(math_random(limits_by_item[item_name].min, limits_by_item[item_name].max))
+			if units > 0 then
+				if ammo_section[item_name] then
+					se_respawn.create_ammo(item_name, vec, 0, 0, npc_id, units)
+				else
+					for i = 1, units do
+						if math_random() <= spawn_prob then
+							sim:create(item_name, vec, 0, 0, npc_id)
+						end
+					end
+				end
+			end
+		end
+	end
 end
 
---' Функция вызывается для каждого предмета, если вернет false то предмет удалится.
+-- GS death_manager.set_weapon_drop_condition ([GUNSLINGER mod] fix of the stock bug where an NPC
+-- "repaired" a weapon: the stock code SET every slotted gun to 65..79% on death, so a wreck an NPC had
+-- picked up came off his body in fine shape). Now it only ever goes DOWN -- to 21..100% of what it
+-- was -- and a gun already at 30% or worse is left exactly as it is.
+function set_weapon_drop_condition(item)
+	local cur_cond = item:condition()
+	if cur_cond > 0.3 then
+		local new_cond = (0.2 + (math.random(80) / 100)) * cur_cond
+		item:set_condition(new_cond)
+	end
+end
+
 function keep_item(npc, item)
-    local section = item:section()
-	printf("keep_item:item ["..item:name().."] npc_name ["..npc:name().."]")
-    if section == "bolt" then
-    	printf("1")
-        return
-    end
-
-    if always_keep_item[section] == true then
-		printf("2")
-        return
-    end
-
-    local item_id = item:id()
-    local item_in_slot = npc:item_in_slot(1)
-    if item_in_slot ~= nil and item_in_slot:id() == item_id
-    then
-	--[[	if level.name() == "y_arena" then
-			 item:unload_magazine()
-			 npc:drop_item(item_in_slot)
-			 alife():release(alife():object(item_in_slot:id()),true)
-			 return
-		end]]--
-
-        --item:unload_magazine()
-		--' Тут надо уменьшить кондишн оружия
-		item:set_condition((math.random(15)+65)/100)
-		printf("3")
-        return
-    end
-    item_in_slot = npc:item_in_slot(2)
-    if item_in_slot ~= nil and item_in_slot:id() == item_id
-    then
-	--[[	if level.name() == "y_arena" then
-			 item:unload_magazine()
-			 npc:drop_item(item_in_slot)
-			 alife():release(alife():object(item_in_slot:id()),true)
-			 return
-		end]]--
-        --item:unload_magazine()
-		--' Тут надо уменьшить кондишн оружия
-		item:set_condition((math.random(15)+65)/100)
-		printf("4")
-        return
-    end
---  npc:mark_item_dropped(item)
-    local item_in_slot = npc:item_in_slot(3)
-    if item_in_slot ~= nil and item_in_slot:id() == item_id
-    then
-		printf("5")
+	local section = item:section()
+	if section == "bolt" then
+		return
+	end
+	if always_keep_item[section] then
+		return
+	end
+	local item_id = item:id()
+	local slot_item = npc:item_in_slot(1)
+	if slot_item and slot_item:id() == item_id then
+		set_weapon_drop_condition(item)
+--		npc:transfer_item(item, npc)
+		return
+	end
+	slot_item = npc:item_in_slot(2)
+	if slot_item and slot_item:id() == item_id then
+		set_weapon_drop_condition(item)
+--		npc:transfer_item(item, npc)
+		return
+	end
+	slot_item = npc:item_in_slot(3)
+	if slot_item and slot_item:id() == item_id then
 		return
 	end
 	if not npc:marked_dropped(item) then
-		printf("6")
-		printf("releasing object ["..item:name().."]")
-		alife():release(alife():object(item:id()), true)
+		sim:release(sim:object(item_id), true)
 	end
 end
 
---' Функция спавнит необходимое число предметов
-function create_items(npc, section, number, rnd)
-    --'printf("create %s of %s", tostring(number), tostring(section))
-    if ammo_sections[section] == true then
-        if number > 0 then
-            se_respawn.create_ammo(section,
-				    npc:position(),
-				    npc:level_vertex_id(),
-				    npc:game_vertex_id(),
-				    npc:id(),
-                    number)
-        end
-    else
-        for i=1,number do
-			--' Проверяем вероятность появить каждый объект в отдельности
-            if math.random(100) <=  rnd then
-				alife():create(section,
-					    npc:position(),
-						npc:level_vertex_id(),
-						npc:game_vertex_id(),
-						npc:id())
-			end
-        end
-    end
-end
-
-
---' Функция проверяет есть ли хоть один из зависимых объектов у персонажа
 function check_item_dependence(npc, section)
 	if item_dependence[section] == nil then
 		return true
 	end
-
-    local d_flag = true
-    for k,v in pairs(item_dependence[section]) do
-        local obj = npc:object(k)
-        if obj ~= nil and npc:marked_dropped(obj) ~= true then
-            return true
-        end
-        d_flag = false
-    end
-
-    return d_flag
+	for requisite in pairs (item_dependence[section]) do
+		local owned_requisite = npc:object(requisite)
+		if owned_requisite and not npc:marked_dropped(owned_requisite) then
+			return true
+		end
+	end
+	return false
 end

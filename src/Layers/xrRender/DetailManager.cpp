@@ -141,6 +141,8 @@ void CDetailManager::Load		()
 
 	// Initialize 'vis' and 'cache'
 	for (u32 i=0; i<3; ++i)	m_visibles[i].resize(objects.size());
+	for (u32 i=0; i<3; ++i)	m_visibles_shadow[i].resize(objects.size());
+	for (u32 i=0; i<3; ++i)	m_visibles_shadow_fade[i].resize(objects.size());
 	cache_Initialize	();
 
 	// Make dither matrix
@@ -178,6 +180,13 @@ void CDetailManager::Unload		()
 	m_visibles[0].clear	();
 	m_visibles[1].clear	();
 	m_visibles[2].clear	();
+	m_visibles_shadow[0].clear	();
+	m_visibles_shadow[1].clear	();
+	m_visibles_shadow[2].clear	();
+	m_visibles_shadow_fade[0].clear	();
+	m_visibles_shadow_fade[1].clear	();
+	m_visibles_shadow_fade[2].clear	();
+	m_shadow_slots.clear		();
 	FS.r_close			(dtFS);
 }
 
@@ -211,6 +220,12 @@ void CDetailManager::UpdateVisibleM()
 	const float	ssa_screen		= float(ssa_T->get_width()*ssa_T->get_height()) * _sqr(90.f/ssa_fov) * (EPS_S+ps_r__LOD);
 	const float	ssa_discard		= _sqr(ps_r__ssaDISCARD) / ssa_screen;
 	float		r_ssaCHEAP		= 16*ssa_discard;
+
+	// Grass shadows: a blade's shadow is lost in the cascade texels (and the fog) long before the grass itself
+	// fades out, so the sun cascades only get the slots within this radius -- see RenderShadow.
+	float shadow_limit			= _min(dm_fade, float(ps_r2_sun_details_radius));
+	shadow_limit				= shadow_limit*shadow_limit;
+	m_shadow_slots.clear		();
 
 	for (u8 i = 0; i != 3; i++) {
 		auto& list = m_visibles[i];
@@ -289,6 +304,8 @@ void CDetailManager::UpdateVisibleM()
 					if (!sp.r_items[1].empty()) m_visibles[1][sp.id].push_back(&sp.r_items[1]);
 					if (!sp.r_items[2].empty()) m_visibles[2][sp.id].push_back(&sp.r_items[2]);
 				}
+				if (EYE.distance_to_sqr(S.vis.sphere.P) <= shadow_limit)
+					m_shadow_slots.push_back(PS);
 			}
 		}
 	}
@@ -321,6 +338,16 @@ void CDetailManager::Render	()
 #else
 	float factor			= 0.3f;
 #endif
+	// The wind factor picks the sway between the calm and the windy set, and anything that makes it step
+	// (a weather ambient effect handing the wind back, say) moved every blade to a new pose in one frame.
+	// Follow it with a short lag instead (~0.3 s) -- a real change of wind still comes through at once
+	// to the eye, a step no longer does.
+	{
+		static float s_factor	= -1.f;
+		if (s_factor < 0.f)		s_factor = factor;
+		else					s_factor += (factor - s_factor) * _min(1.f, Device.fTimeDelta * 3.f);
+		factor					= s_factor;
+	}
 	swing_current.lerp		(swing_desc[0],swing_desc[1],factor);
 
 	RCache.set_CullMode		(CULL_NONE);
@@ -330,6 +357,62 @@ void CDetailManager::Render	()
 	RCache.set_CullMode		(CULL_CCW);
 	Device.Statistic->RenderDUMP_DT_Render.End	();
 	m_frame_rendered		= Device.dwFrame;
+}
+
+// A sun cascade's grass: the near slots UpdateVisibleM kept for shadows, minus the ones outside this cascade.
+// Every slot used to go into every cascade -- the whole camera view, out to the grass radius, three times a
+// frame, each time rebuilding the instance constants and sending batch after batch the cascade then clipped.
+void CDetailManager::RenderShadow(const CFrustum& cascade)
+{
+#ifndef _EDITOR
+	if (0==dtFS)						return;
+	if (!psDeviceFlags.is(rsDetails))	return;
+#endif
+
+	MT_SYNC					();
+
+	for (u8 i = 0; i != 3; i++) {
+		auto& list = m_visibles_shadow[i];
+		auto& fade = m_visibles_shadow_fade[i];
+		for (u32 j = 0; j != list.size(); j++) {
+			list[j].clear();
+			fade[j].clear();
+		}
+	}
+
+	// A hard radius made the shadows switch on a whole 2 m slot at a time as you walk. Across the outer band the
+	// blades are shrunk towards their roots instead (shadow pass only), so a shadow grows in rather than appears.
+	const Fvector&	EYE		= Device.vCameraPosition_saved;
+	const float		R		= _min(dm_fade, float(ps_r2_sun_details_radius));
+	const float		band	= _max(4.f, R*0.3f);
+	const float		inner	= R - band;
+
+	bool any				= false;
+	for (Slot* PS : m_shadow_slots) {
+		Slot& S				= *PS;
+		const float	dist	= EYE.distance_to(S.vis.sphere.P);
+		if (dist >= R)		continue;
+		float k				= (dist <= inner) ? 1.f : (R - dist)/band;
+		k					= k*k*(3.f - 2.f*k);
+		u32 mask			= 0xff;
+		if (fcvNone == cascade.testSAABB(S.vis.sphere.P, S.vis.sphere.R, S.vis.box.data(), mask))
+			continue;
+		for (int sp_id=0; sp_id<dm_obj_in_slot; sp_id++){
+			SlotPart&		sp	= S.G[sp_id];
+			if (sp.id==DetailSlot::ID_Empty)	continue;
+			for (u32 v = 0; v != 3; v++) {
+				if (sp.r_items[v].empty())		continue;
+				m_visibles_shadow[v][sp.id].push_back(&sp.r_items[v]);
+				m_visibles_shadow_fade[v][sp.id].push_back(k);
+				any			= true;
+			}
+		}
+	}
+	if (!any)				return;
+
+	m_render_visibles		= m_visibles_shadow;
+	Render					();
+	m_render_visibles		= m_visibles;
 }
 
 void __stdcall	CDetailManager::MT_CALC		()

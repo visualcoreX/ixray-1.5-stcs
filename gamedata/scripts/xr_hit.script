@@ -1,55 +1,60 @@
 class "action_process_hit"
 
-function action_process_hit:__init(obj, storage)
-	self.object = obj
-	self.st = storage
+function action_process_hit:__init(storage)
+	self.info = storage.info
+	self.info2 = storage.info2
 end
 
-function action_process_hit:hit_callback(obj, amount, local_direction, who, bone_index)
+function action_process_hit:hit_callback(victim, amount)
+
 	if amount == 0 then
-		-- FIXME if_then_else
---		printf("[%s] hit by [%s]: 0 damage, ignoring", obj:name(), if_then_else(who, who:name(), "<no one>"))
 		return
 	end
-	if who then
-		printf("[%s] hit by [%s]", obj:name(), who:name())
-		db.storage[obj:id()].hit.who = who:id()
+--[[
+	Note: xr_conditions.hit_by_actor() won't work with the block below commented out.
+	It doesn't work in most cases in vanilla anyway, because for this callback to fire,
+	an instance of this class must be stored by xr_logic.subscribe_action_for_events() in
+	st.actions, which however only happens if 'on_hit' exists in an NPC's [logic] or
+	[logic@something] section - see xr_logic.enable_generic_schemes(). And most NPCs whose
+	logic uses '{=hit_by_actor}' don't have 'on_hit' defined, so this callback would never
+	fire for them, and hence their db.storage[npc:id()].hit.who wouldn't get set, and hence
+	hit_by_actor() would always return false for them.
+
+	The only place where hit_by_actor() works in vanilla is lim_bandit_wounded_1_logic.ltx,
+	where however it's redundant, since the effect following its '{=hit_by_actor}' is
+	anyway implemented (for all hitters) using a [hit] section.
+
+	if hitter then
+		db.storage[victim:id()].hit.who = hitter:id()
 	else
-		printf("[%s] hit by [Unknown]", victim:name())
-		db.storage[obj:id()].hit.who = -1
+		db.storage[victim:id()].hit.who = -1
 	end
-	if db.storage[self.object:id()].active_scheme then
-		if xr_logic.try_switch_to_another_section(obj, self.st, db.actor) then
-			return
-		end
+]]
+	if self.info then
+		xr_logic.pick_section_from_condlist(db.actor, victim, self.info)
+	end
+
+	if self.info2 then
+		xr_logic.pick_section_from_condlist(db.actor, victim, self.info2)
 	end
 end
 
-----------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- binder
-----------------------------------------------------------------------------------------------------------------------
-function add_to_binder(npc, ini, scheme, section, storage) 	
- 	local new_action = this.action_process_hit(npc, storage)
-	storage.action = new_action
-end
+--------------------------------------------------------------------------------
 
-function set_hit_checker(npc, ini, scheme, section)
-	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
-	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
-	
-	-- НЕ СТАВИТЬ hit callback напрямую - получаем его из motivator-а через
-	-- event в подписанном на него action-е:
-	--npc:set_callback(callback.hit, st.action.hit_callback, st.action)
-	xr_logic.subscribe_action_for_events(npc, st, st.action)
-end
+function add_to_binder(npc, ini, scheme, section, storage)
 
-function disable_scheme(npc, scheme)
-	-- При отключении схемы, нужно снять подписку, чтобы hit callback перестал
-	-- передаваться:
-	--npc:set_callback(callback.hit, nil)
-	local st = db.storage[npc:id()][scheme]
-	if st then
-		xr_logic.unsubscribe_action_from_events(npc, st, st.action)
+	if ini:section_exist(section) then
+
+		if ini:line_exist(section, "on_info") then
+			storage.info = xr_logic.parse_condlist(nil, nil, nil, ini:r_string(section, "on_info"))
+		end
+
+		if ini:line_exist(section, "on_info2") then
+			storage.info2 = xr_logic.parse_condlist(nil, nil, nil, ini:r_string(section, "on_info2"))
+		end
+
+		xr_logic.subscribe_action_for_events(npc, storage, this.action_process_hit(storage))
 	end
 end
-

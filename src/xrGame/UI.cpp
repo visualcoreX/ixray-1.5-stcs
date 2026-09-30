@@ -13,6 +13,7 @@
 #include "ui/UIMessagesWindow.h"
 #include "ui/UIPdaWnd.h"
 #include "UIGameCustom.h"
+#include "Weapon.h"
 
 extern bool gwr_pda_screen_active();		// ui\UIPdaWnd.cpp
 
@@ -84,6 +85,23 @@ void CUI::UIOnFrame()
 #include "huditem.h"
 bool CUI::Render()
 {
+	// The goggles sit on the EYES, in front of everything -- including a flat scope picture, which is drawn
+	// with the item UI below, after the custom statics. Drawn in its usual turn the NV mask (vignette +
+	// stripes) ended up UNDER the scope art and was gone the moment you looked through an optic. While a
+	// 2D picture is up, lift it out of the statics pass and draw it once the item UI is done.
+	SDrawStaticStruct*	nv_mask		= NULL;
+	CUIStatic*			nv_mask_wnd	= NULL;
+	if (pUIGame)
+	{
+		CActor*  a = smart_cast<CActor*>(Level().CurrentEntity());
+		CWeapon* w = a ? smart_cast<CWeapon*>(a->inventory().ActiveItem()) : NULL;
+		if (w && w->Scope2DPictureOn())
+		{
+			nv_mask = pUIGame->GetCustomStatic("gwr_nv_screen_mask");
+			if (nv_mask)	{ nv_mask_wnd = nv_mask->m_static; nv_mask->m_static = NULL; }
+		}
+	}
+
 	if( GameIndicatorsShown() )
 	{
 		if (pUIGame)
@@ -112,6 +130,14 @@ bool CUI::Render()
 				PIItem itm			= (*it).m_pIItem;
 				if(itm && itm->render_item_ui_query())
 					itm->render_item_ui();
+			}
+
+			// ...and the goggles over the scope picture (lifted out of the statics pass above)
+			if (nv_mask_wnd)
+			{
+				nv_mask->m_static = nv_mask_wnd;
+				nv_mask_wnd = NULL;
+				nv_mask->Draw();
 			}
 		}
 
@@ -147,6 +173,9 @@ bool CUI::Render()
 	{
 		m_pMessagesWnd->Draw();
 	}
+
+	// never leave the static detached, whatever branch ran above
+	if (nv_mask_wnd)	nv_mask->m_static = nv_mask_wnd;
 
 	DoRenderDialogs();
 

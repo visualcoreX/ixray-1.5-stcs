@@ -1,4 +1,7 @@
 [m_controller_e]:monster_base
+; GS key: the controller must SEE the victim for the suicide to go through -- a wall saves you on
+; every difficulty (GS drops the check on veteran+ unless this is set; user wants walls to count)
+mandatory_suicide_visibility_check = true
 GroupControlSection	= spawn_group
 SpaceRestrictionSection = space_restrictor,zone_mosquito_bald
 $spawn               = "monsters\old\controller"	; option for Level Editor

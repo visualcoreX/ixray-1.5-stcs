@@ -47,6 +47,7 @@ extern ECORE_API	float		ps_r__Detail_density;
 // DetailManager.h), so this only trims the radius DOWN from that physical maximum -- which is what
 // makes it adjustable at runtime without reallocating anything.
 extern ECORE_API	int			ps_r__Detail_radius;
+extern ECORE_API	int			ps_r2_sun_details_radius;
 
 extern ECORE_API	float		ps_r__Tree_SBC;		// scale bias correct
 

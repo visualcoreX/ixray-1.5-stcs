@@ -1,0 +1,305 @@
+--[[
+	gunsl_thirst.script -- Gunslinger thirst, ported to Clear Sky (IX-Ray 1.5 STCS).
+	Original: GS scripts/gunsl_thirst.script (Sin!, 08 Sept 2022).
+
+	Entirely script-side: the engine knows nothing about thirst. The level of water in the body is
+	one number in the actor's pstor (so it rides the save like any other stored value), drained by
+	the actor binder every update at a rate that depends on how hard the actor is moving, and topped
+	up by drinking -- any eatable whose section carries `thirst_factor`.
+
+	Below 0.2 the screen starts pulsing darker; below 0 health and stamina bleed away until the actor
+	drinks. Above 0.7 nothing shows at all.
+
+	This window also carries the medicine-intoxication icon (gunsl_peredoz.script), which has a slot
+	of its own one step higher. GS shares one slot between the two; here they are both on screen,
+	and they are built together because the no-interface corner row has to lay them out as a set.
+
+	Dropped from GS's version for want of the system it reads:
+	  * level.is_actor_burned() -- burning drank the reserve three times as fast.
+]]--
+
+local PSTOR = "gunsl_thirst"
+
+local idle_decrement    = 0.00001  -- per game second standing still; a full bottle lasts ~27.7 h
+local move_decrement    = 0.00003  -- walking, ~9 h
+local sprint_decrement  = 0.0001   -- sprinting, ~2.7 h
+
+local max_delta_time    = 5400     -- game seconds; anything longer is a sleep or a teleport
+local sleep_decrement   = 0.3      -- flat cost of a sleep longer than max_delta_time
+local teleport_decrement= 0.15     -- flat cost of a guide/teleport time jump
+
+local bleeding_koef     = 0.0001   -- extra drain at bleeding == 1
+
+local health_decrement  = 0.00043  -- health lost per second once the reserve goes negative
+local power_decrement   = 0.00350  -- stamina lost per second once the reserve goes negative
+
+local ppe_rem_time      = 10000    -- ms before the post-effect is dropped again
+
+local ini = system_ini()
+
+local lasttime
+local lastpos
+local thirst_indicator
+local thirst_ppe
+local pp_start_time
+local pp_startrem_time
+
+local function aid()
+	return db.actor:id()
+end
+
+local function get()
+	local st = db.storage[aid()]
+	if st == nil or st.pstor == nil then return nil end
+	st.pstor[PSTOR] = st.pstor[PSTOR] or 1
+	return st.pstor[PSTOR]
+end
+
+local function set(v)
+	if v > 1 then v = 1 end
+	if v < -0.15 then v = -0.15 end
+	local st = db.storage[aid()]
+	if st ~= nil and st.pstor ~= nil then st.pstor[PSTOR] = v end
+end
+
+-- current level, 1 = fully watered, negative = dying of thirst. nil before the actor storage exists.
+function GetThirst()
+	if db.actor == nil then return nil end
+	return get()
+end
+
+-- Called from bind_stalker.on_use_item for every used item. A drink declares how much of the
+-- reserve it restores on its *_eatable section (thirst_factor), so the number sits next to the
+-- rest of that portion's effects.
+function OnItemUsed(sect)
+	if db.actor == nil or get() == nil then return end
+	if not ini:line_exist(sect, "thirst_factor") then return end
+	set(get() + ini:r_float(sect, "thirst_factor"))
+end
+
+function UpdateState(delta1)
+	if db.actor == nil or not db.actor:alive() then return end
+	local cur = get()
+	if cur == nil then return end
+
+	lasttime = lasttime or game.get_game_time()
+	lastpos  = lastpos or db.actor:position()
+
+	local newtime = game.get_game_time()
+	local delta   = newtime:diffSec(lasttime)
+	local hit_allowed = true
+	if delta > max_delta_time then
+		-- a sleep or a level transition: charge a flat price instead of the elapsed hours, and do
+		-- not let the health drain below fire for a jump the player did not live through
+		delta = max_delta_time
+		hit_allowed = false
+	end
+
+	local newpos = db.actor:position()
+	local speed  = math.ceil((newpos:distance_to(lastpos) / delta1) * 10000)
+
+	if speed < 6 then                      -- standing
+		cur = cur - (hit_allowed and idle_decrement * delta or sleep_decrement)
+	elseif speed < 50 then                 -- walking
+		cur = cur - (hit_allowed and move_decrement * delta or sleep_decrement)
+	else                                   -- running
+		cur = cur - (hit_allowed and sprint_decrement * delta or teleport_decrement)
+	end
+
+	local bleeding = db.actor:get_bleeding()
+	if bleeding > 0.005 then
+		cur = cur - bleeding_koef * bleeding * delta
+	end
+
+	set(cur)
+	cur = get()
+
+	if (cur < 0.2) and hit_allowed then
+		-- the screen pulses darker, deeper the drier the actor is
+		if thirst_ppe == nil then
+			thirst_ppe = 13
+			level.add_pp_effector("black.ppe", thirst_ppe, true)
+			level.set_pp_effector_factor(thirst_ppe, 0.001)
+			pp_start_time = time_global()
+		else
+			local pp_factor = (1 - ((cur + 0.15) / 0.35) ^ 3) / 2.5
+			local phase = (math.sin((time_global() - pp_start_time) / 1000) - 0.66) * 5
+			if phase < 0 then phase = 0 end
+			level.set_pp_effector_factor(thirst_ppe, pp_factor * phase, 0.8)
+		end
+
+		if cur < 0 then
+			-- health and stamina are ADDITIVE properties here, so these are losses
+			local hlth = (cur - 1) * health_decrement * delta
+			if db.actor.health + hlth < 0.005 then
+				if db.actor.health > 0.004 then db.actor.health = 0.004 - db.actor.health end
+			else
+				db.actor.health = hlth
+			end
+			db.actor.power = (cur - 1) * power_decrement * delta
+		end
+	elseif thirst_ppe ~= nil then
+		-- recovered: fade the post-effect out, then drop it
+		if pp_startrem_time == nil then
+			pp_startrem_time = time_global()
+			level.set_pp_effector_factor(thirst_ppe, 0, 0.4)
+		end
+		if time_global() - ppe_rem_time > pp_startrem_time then
+			level.remove_pp_effector(thirst_ppe)
+			thirst_ppe = nil
+			pp_startrem_time = nil
+		end
+	end
+
+	lasttime = newtime
+	lastpos  = newpos
+end
+
+function on_netspawn()
+	lasttime = nil
+	lastpos  = nil
+	thirst_indicator = gunsl_thirst_indicator()
+	level.add_dialog_to_render(thirst_indicator)
+end
+
+function on_netdestroy()
+	if thirst_indicator ~= nil then
+		level.remove_dialog_to_render(thirst_indicator)
+		thirst_indicator = nil
+	end
+	if thirst_ppe ~= nil then
+		level.remove_pp_effector(thirst_ppe)
+		thirst_ppe = nil
+		pp_startrem_time = nil
+	end
+end
+
+-- Thirst indicator: one glyph in the hud state column, directly above the food one and on the same
+-- 30 px pitch, with the intoxication one a further step up. It behaves like the food glyph next to it (CUIHudStatesWnd::UpdateSatiety): always on
+-- screen, plain white while there is nothing to say, and colour only as the state gets worse. GS
+-- instead hides it and swaps between four coloured images -- one glyph tinted gives the same steps
+-- and matches the indicators it sits with.
+local tint_white  = GetARGB(255, 255, 255, 255)
+local tint_green  = GetARGB(255,   0, 255,   0)
+local tint_yellow = GetARGB(255, 255, 255,   0)
+local tint_orange = GetARGB(255, 255, 128,   0)
+local tint_red    = GetARGB(255, 255,   0,   0)
+
+class "gunsl_thirst_indicator" (CUIScriptWnd)
+function gunsl_thirst_indicator:__init() super()
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_gunsl_thirst_indicator.xml")
+	-- the plate first, so it is attached first and therefore drawn under the glyph. It is what gives
+	-- the column its round icons -- every engine indicator has one (resist_back_*), and without it
+	-- the bare glyph reads as a noticeably smaller icon than its neighbours.
+	self.back_static = xml:InitStatic("back_static", self)
+	self.main_static = xml:InitStatic("main_static", self)
+	-- Medicine intoxication (gunsl_peredoz.script) has its OWN slot, one 30 px step above thirst,
+	-- and is on screen only while the trip lasts. It is built into THIS window rather than one of
+	-- its own because of the corner row below: two windows each placing themselves at
+	-- level.hud_warn_row_left() would land on top of each other.
+	self.back_intox  = xml:InitStatic("back_static_intox", self)
+	self.main_intox  = xml:InitStatic("main_static_intox", self)
+	-- where the xml put them, so the column layout can be restored when the interface comes back
+	self.home_back  = vector2():set(self.back_static:GetWndPos().x, self.back_static:GetWndPos().y)
+	self.home_main  = vector2():set(self.main_static:GetWndPos().x, self.main_static:GetWndPos().y)
+	self.home_iback = vector2():set(self.back_intox:GetWndPos().x,  self.back_intox:GetWndPos().y)
+	self.home_imain = vector2():set(self.main_intox:GetWndPos().x,  self.main_intox:GetWndPos().y)
+	self.in_corner = false
+end
+
+-- Where the skull comes on. Gunslinger's own threshold, and it sits just under the 1.0 at which the
+-- post-effect starts, so the icon and the swimming screen arrive together. Below it the level is the
+-- harmless residue every single medkit leaves behind, which is not worth an icon.
+local INTOX_SHOWN = 0.98
+
+-- With the interface off the engine draws its warning indicators as a ROW in the bottom-right corner
+-- instead of the usual column, and these icons have to join that row rather than hang where the
+-- column used to be. level.hud_warn_row_left() is the left edge of what the engine has already
+-- placed, so ours fall in to the left of it. Moving them back is by the remembered xml positions.
+local CORNER_MARGIN = 14
+local CORNER_GAP    = 4
+
+-- move a plate+glyph pair together, so the glyph keeps the small offset the xml gave it
+function gunsl_thirst_indicator:move_pair(back, main, home_back, home_main, x, y)
+	local dx = x - home_back.x
+	local dy = y - home_back.y
+	back:SetWndPos(vector2():set(x, y))
+	main:SetWndPos(vector2():set(home_main.x + dx, home_main.y + dy))
+end
+
+function gunsl_thirst_indicator:place(corner, show_thirst, show_intox)
+	if not corner then
+		if self.in_corner then
+			self.back_static:SetWndPos(self.home_back)
+			self.main_static:SetWndPos(self.home_main)
+			self.back_intox:SetWndPos(self.home_iback)
+			self.main_intox:SetWndPos(self.home_imain)
+			self.in_corner = false
+		end
+		return
+	end
+
+	-- re-evaluated every frame: the row grows and shrinks as the engine indicators light up, and our
+	-- own two come and go, so it is filled right to left out of whatever is visible this frame
+	local x = level.hud_warn_row_left()
+	local y = 768 - CORNER_MARGIN - self.back_static:GetHeight()	-- 768 = UI_BASE_HEIGHT
+
+	if show_thirst then
+		x = x - CORNER_GAP - self.back_static:GetWidth()
+		self:move_pair(self.back_static, self.main_static, self.home_back, self.home_main, x, y)
+	end
+	if show_intox then
+		x = x - CORNER_GAP - self.back_intox:GetWidth()
+		self:move_pair(self.back_intox, self.main_intox, self.home_iback, self.home_imain, x, y)
+	end
+	self.in_corner = true
+end
+
+function gunsl_thirst_indicator:Update()
+	local cur = GetThirst()
+	if cur == nil then return end
+
+	local intox = gunsl_peredoz.GetIntoxication() or 0
+
+	-- follow the engine indicators: they go down for sleep, cutscenes and the pda, and a lone
+	-- thirst icon left floating over a black screen looks like a bug.
+	-- With the INTERFACE off (master difficulty, hud_draw, or a scope that hides the hud while you
+	-- aim), the engine indicators keep showing the ones that are warning about something and hide the
+	-- rest -- the thirst icon plays by the same rule: silent while it is white, back on screen from
+	-- green onwards. level.hud_drawn() is the engine's own answer for the frame: the hud_draw console
+	-- variable alone does not know about the aim, which used to leave this icon alone in the column.
+	local warning = (cur <= 0.7)
+	local hud     = level.hud_drawn()
+	local alive   = (db.actor ~= nil) and db.actor:alive() and level.indicators_shown()
+
+	local shown       = alive and (hud or warning)
+	-- the skull is never idle chrome -- it is on screen exactly while the trip is, hud or no hud
+	local shown_intox = alive and (intox > INTOX_SHOWN)
+
+	self.back_static:Show(shown)
+	self.main_static:Show(shown)
+	self.back_intox:Show(shown_intox)
+	self.main_intox:Show(shown_intox)
+
+	if not (shown or shown_intox) then
+		self:place(false)
+		return
+	end
+	-- with the hud up they belong in the column; with the hud down, in the corner row
+	self:place(not hud, shown, shown_intox)
+
+	if not shown then return end
+
+	if cur > 0.7 then
+		self.main_static:SetColor(tint_white)     -- nothing to say yet, same as a fed actor
+	elseif cur > 0.5 then
+		self.main_static:SetColor(tint_green)
+	elseif cur > 0.3 then
+		self.main_static:SetColor(tint_yellow)
+	elseif cur > 0.1 then
+		self.main_static:SetColor(tint_orange)
+	else
+		self.main_static:SetColor(tint_red)
+	end
+end

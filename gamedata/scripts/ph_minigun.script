@@ -30,6 +30,7 @@ function action_mgun:__init(obj, storage)
     printf("mgun <state>: init.")
 	self.object = obj
 	self.mgun = self.object:get_car()
+	esc_minigun_stealth.register_gun(obj)	-- lets the alarm restrictors measure distance to the gun
 	self.st = storage
 	self.start_direction =  self.object:direction()
 	self.start_look_pos =  vector():set(0,0,0)
@@ -143,7 +144,7 @@ function action_mgun:reset_scheme(loading)
     	
         self.path_fire = self.st.path_fire
         self.path_fire_point = nil
-        --' Р—Р°РїРѕРјРёРЅР°РµРј РїРѕР·РёС†РёСЋ РєСѓРґР° СЃС‚СЂРµР»СЏС‚СЊ.
+        --' Запоминаем позицию куда стрелять.
         if self.path_fire ~= nil then
             if level.patrol_path_exists(self.path_fire) then
                 self.path_fire_point = patrol(self.path_fire):point(0)
@@ -160,7 +161,7 @@ function action_mgun:reset_scheme(loading)
 	    
         self.fire_range_sqr = self.st.fire_range * self.st.fire_range
 
-        --' РЎС‚СЂРµР»СЊР±Р° РїРѕ РїР°С‚СЂСѓР»СЊРЅС‹Рј С‚РѕС‡РєР°Рј.
+        --' Стрельба по патрульным точкам.
         if self.state_firetarget == state_firetarget_points and self.path_fire then
             printf("car <state>: firetarget = points")
             self.state_cannon = state_cannon_follow
@@ -179,6 +180,17 @@ function action_mgun:reset_scheme(loading)
 	   
 	self.object:set_fastcall(self.fastcall, self)
 	printf("car <state>: END INITIALIZING ========================================================\n")
+end
+
+-- Visibility of a target, with one hook: for the ACTOR the answer can be overridden by
+-- esc_minigun_stealth (night + crouched + no lights + far enough = not seen). Anything else, and any
+-- other target, gets the engine's own answer unchanged.
+function action_mgun:target_visible(obj)
+	local real = self.mgun:IsObjectVisible(obj)
+	if db.actor == nil or obj:id() ~= db.actor:id() then
+		return real
+	end
+	return esc_minigun_stealth.actor_seen_by(self.object, real)
 end
 
 function action_mgun:set_shooting(shooting)		
@@ -226,7 +238,7 @@ end
 
 function action_mgun:fastcall()	
 	if db.storage[self.object:id()].active_scheme ~= "ph_minigun" then
-		--' Р•СЃР»Рё Р°РєС‚РёРІРЅР°СЏ СЃС…РµРјР° - РЅРµ РјР°С€РёРЅР°, СЃРЅСЏС‚СЊ Р±С‹СЃС‚СЂС‹Р№ Р°РїРґРµР№С‚
+		--' Если активная схема - не машина, снять быстрый апдейт
         self:set_shooting(0)
 		return true
 	end
@@ -280,7 +292,7 @@ function action_mgun:fast_update()
 		if xr_logic.mob_captured(self.object) and not self.object:action() then
 		    printf("car <state>: stopped")
 	        self:destroy_car()
-			return true -- Р°РїРґРµР№С‚С‹ Р±РѕР»СЊС€Рµ РЅРµ РЅСѓР¶РЅС‹
+			return true -- апдейты больше не нужны
 		end
 		return false
 	end
@@ -290,7 +302,7 @@ function action_mgun:fast_update()
 	--printf("car <fire>: TEST")
 	if self.hasWeapon then
 	 --  printf("car <fire>: target(%d)", self.state_firetarget)
-		if self.on_target_vis and self.on_target_vis.v1:alive() and self.mgun:IsObjectVisible(self.on_target_vis.v1) then
+		if self.on_target_vis and self.on_target_vis.v1:alive() and self:target_visible(self.on_target_vis.v1) then
 	    --    printf("car <vis>: try")
 		    local new_section = xr_logic.pick_section_from_condlist(db.actor, self.object, self.on_target_vis.condlist)
 		    if new_section then
@@ -299,7 +311,7 @@ function action_mgun:fast_update()
 		    end
 		end
 
-		if self.on_target_nvis and self.on_target_nvis.v1:alive() and not self.mgun:IsObjectVisible(self.on_target_nvis.v1) then
+		if self.on_target_nvis and self.on_target_nvis.v1:alive() and not self:target_visible(self.on_target_nvis.v1) then
 	        --printf("car <nvis>: try")
 		    local new_section = xr_logic.pick_section_from_condlist(db.actor, self.object, self.on_target_nvis.condlist)
 		    if new_section then
@@ -309,7 +321,7 @@ function action_mgun:fast_update()
 		end
 
 	    if self.state_firetarget == state_firetarget_points then
-            --' РЎС‚СЂРµР»СЊР±Р° РїРѕ С‚РѕС‡РєР°Рј
+            --' Стрельба по точкам
 	        local fire_angle = angle_xz(self.object, self.path_fire_point, self.start_direction)
 			local can_rotate = fire_angle <= self.st.fire_angle*math.pi/360 and fire_angle >= -(self.st.fire_angle*math.pi/360)
             
@@ -330,7 +342,7 @@ function action_mgun:fast_update()
 	    elseif self.state_firetarget == state_firetarget_enemy then
 	        local fire_angle = angle_xz(self.object, self.target_obj:position(), self.start_direction)
 			local can_rotate = fire_angle <= self.st.fire_angle*math.pi/360 and fire_angle >= -(self.st.fire_angle*math.pi/360)
-            local object_visible = self.mgun:IsObjectVisible(self.target_obj) or self.st.shoot_only_on_visible == false
+            local object_visible = self:target_visible(self.target_obj) or self.st.shoot_only_on_visible == false
 
 --'			printf("object visible:---------> %s  can_rotate = %s fire_angle = %s", tostring(object_visible), tostring(can_rotate), tostring(fire_angle))
 			if self.target_obj:alive() and
@@ -426,7 +438,7 @@ function add_to_binder(npc, ini, scheme, section, storage)
 
 	local new_action = action_mgun(npc, storage)
 
-	-- Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊ РІСЃРµ actions, РІ РєРѕС‚РѕСЂС‹С… РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РІС‹Р·РІР°РЅ РјРµС‚РѕРґ reset_scheme РїСЂРё РёР·РјРµРЅРµРЅРёРё РЅР°СЃС‚СЂРѕРµРє СЃС…РµРјС‹:
+	-- Зарегистрировать все actions, в которых должен быть вызван метод reset_scheme при изменении настроек схемы:
 	xr_logic.subscribe_action_for_events(npc, storage, new_action)
 end
 function set_scheme(npc, ini, scheme, section, gulag_name)
@@ -434,15 +446,15 @@ function set_scheme(npc, ini, scheme, section, gulag_name)
 
 		st.logic            = xr_logic.cfg_get_switch_conditions(ini, section, npc)
 	    st.path_fire        = utils.cfg_get_string(ini, section, "path_fire",       npc, false, gulag_name, nil)
-	    st.auto_fire        = utils.cfg_get_bool(ini,   section, "auto_fire",       npc, false, false) --' РЎС‚СЂРµР»СЏС‚СЊ РёР»Рё РЅРµС‚.
-	    st.fire_time        = utils.cfg_get_number(ini, section, "fire_time",       npc, false, def_min_fire_time) --' Р’СЂРµРјСЏ СЃС‚СЂРµР»СЊР±С‹
-	    st.fire_rep         = utils.cfg_get_number(ini, section, "fire_repeat",     npc, false, def_fire_rep) --' Р’СЂРµРјСЏ Р·Р°РґРµСЂР¶РєРё
-	    st.fire_range       = utils.cfg_get_number(ini, section, "fire_range",      npc, false, def_fire_range) --' Р Р°СЃСЃС‚РѕСЏРЅРёРµ РїСЂРё РєРѕС‚РѕСЂРѕР№ СЃС‚СЂРµР»СЏРµРј
-	    st.fire_target      = utils.cfg_get_string(ini, section, "target",          npc, false, gulag_name, "points") --' Р¦РµР»СЊ: actor|story_ids|points
-	    st.fire_track_target= utils.cfg_get_bool(ini,   section, "track_target",    npc, false, false)  --' РџСЂРµСЃР»РµРґРѕРІР°С‚СЊ С†РµР»СЊ.
-		st.fire_angle		= utils.cfg_get_number(ini, section, "fire_angle",    npc, false, def_fire_angle) --' РЈРіРѕР» РѕР±Р·РѕСЂР°
+	    st.auto_fire        = utils.cfg_get_bool(ini,   section, "auto_fire",       npc, false, false) --' Стрелять или нет.
+	    st.fire_time        = utils.cfg_get_number(ini, section, "fire_time",       npc, false, def_min_fire_time) --' Время стрельбы
+	    st.fire_rep         = utils.cfg_get_number(ini, section, "fire_repeat",     npc, false, def_fire_rep) --' Время задержки
+	    st.fire_range       = utils.cfg_get_number(ini, section, "fire_range",      npc, false, def_fire_range) --' Расстояние при которой стреляем
+	    st.fire_target      = utils.cfg_get_string(ini, section, "target",          npc, false, gulag_name, "points") --' Цель: actor|story_ids|points
+	    st.fire_track_target= utils.cfg_get_bool(ini,   section, "track_target",    npc, false, false)  --' Преследовать цель.
+		st.fire_angle		= utils.cfg_get_number(ini, section, "fire_angle",    npc, false, def_fire_angle) --' Угол обзора
 		st.shoot_only_on_visible =  utils.cfg_get_bool(ini, section, "shoot_only_on_visible", npc, false, true)
 		
-	    st.on_target_vis    = xr_logic.cfg_get_string_and_condlist(ini, section, "on_target_vis", npc) --' РЈСЃР»РѕРІРёРµ РїРµСЂРµС…РѕРґР°
-	    st.on_target_nvis   = xr_logic.cfg_get_string_and_condlist(ini, section, "on_target_nvis", npc) --' РЈСЃР»РѕРІРёРµ РїРµСЂРµС…РѕРґР°
+	    st.on_target_vis    = xr_logic.cfg_get_string_and_condlist(ini, section, "on_target_vis", npc) --' Условие перехода
+	    st.on_target_nvis   = xr_logic.cfg_get_string_and_condlist(ini, section, "on_target_nvis", npc) --' Условие перехода
 end

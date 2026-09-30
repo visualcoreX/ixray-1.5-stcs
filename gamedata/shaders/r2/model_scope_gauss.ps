@@ -1,13 +1,24 @@
 #include "common.h"
 
+// The gauss's electronic sight (models_zoom_gauss.s: s_vp2 = $user$scopeui, the lens capture WITH the UI
+// pass, so the alive-detector frames ride inside the picture). Everything the glass does is the same as
+// model_scope_lense.ps -- keep the two in step -- and on top of it the two things only this optic has:
+// the night-vision tint + noise (m_zoom_deviation.zw, the "nv" upgrade) and the blowout interference
+// (m_affects.x).
+
 struct 	v2p
 {
- 	half2 	tc0: 		TEXCOORD0;	// base
+ 	float2 	tc0: 		TEXCOORD0;	// base
  	half3 	tc1: 		TEXCOORD1;	// environment
   	half4	c0:			COLOR0;		// sun.(fog*fog)
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////
+
+float  resize(float input, float factor, float offset)
+{
+	return (input-0.5f+offset) / factor+0.5f-offset;
+}
 
 // Pixel
 uniform	float4		screen_res;
@@ -15,9 +26,37 @@ uniform	float4 		m_hud_params;
 uniform	float4 		m_zoom_deviation;
 uniform	float4 		m_affects;
 
-float  resize(float input, float factor, float offset)
+// EYE RELIEF, from the same constant the flat scope's post-process reads (postprocess.ps
+// pp_scope_shadow): xy = how far the exit pupil has drifted off the optic's axis, in units of the glass
+// radius, z = how soft that edge is.
+uniform	float4 		m_scope_shadow;
+#define LENS_REST_RIM 0.875f		// where the shading sits with the eye centred (1.0 = none at all)
+// The VISIBLE aperture, in the mesh's own uv. crosshair_gauss's alpha is half-opaque at 0.42 and fully
+// opaque by 0.44 -- the same hole as the G36/ELCAN/PSO art, so the same figure.
+#define LENS_GLASS_R  0.44f
+#define LENS_DIST_R0  0.45f		// the middle of the glass this distortion does not touch at all
+
+// The GLASS CURVATURE (postprocess.ps pp_zoom_uv): the middle of the field is left flat and the rim is
+// pulled OUT. m_scope_shadow.w carries the strength (0 = a flat lens).
+float2 lens_warp_uv(float2 uv, float2 glass)
 {
-	return (input-0.5f+offset) / factor+0.5f-offset;
+	if (m_scope_shadow.w <= 0.0001f)	return uv;
+	float r = length(glass - 0.5f) / LENS_GLASS_R;		// 0 at the centre, 1 at the aperture
+	float t = saturate((r - LENS_DIST_R0) / (1.0f - LENS_DIST_R0));
+	float k = 1.0f - m_scope_shadow.w * t * t;
+	return 0.5f + (uv - 0.5f) * k;
+}
+
+// 1 = lit, 0 = in the shadow. uv is the ocular's own space.
+float lens_scope_shadow(float2 uv)
+{
+	// nothing published -- the eye is off this optic
+	if (m_scope_shadow.z <= 0.0f)		return 1.0f;
+	float  soft	= max(m_scope_shadow.z, 0.01f);
+	float2 pupil= 0.5f + m_scope_shadow.xy * LENS_GLASS_R;	// where the eye is looking from
+	float  rad	= LENS_GLASS_R * LENS_REST_RIM / (1.0f - soft);	// ...and how much of the glass it still sees
+	float  d	= length(uv - pupil) / rad;
+	return 1.0f - smoothstep(1.0f - soft, 1.0f, d);
 }
 
 half get_noise(float2 co)
@@ -25,54 +64,87 @@ half get_noise(float2 co)
 	return (frac(sin(dot(co.xy ,float2(12.9898,78.233))) * 43758.5453))*0.5;
 };
 
-uniform sampler2D	s_vp2;
-
 float random(float2 co)
 {
       return 0.5+(frac(sin(dot(co.xy ,float2(12.9898,78.233))) * 43758.5453))*0.5;
 };
 
+uniform sampler2D	s_vp2;
+
 half4 	main	( v2p I )	: COLOR
 {
+	// the ocular's own uv, before the sway and the aspect squeeze below: the glass is 0..1 here
+	float2 uv_glass = I.tc0.xy;
 
-	half4	t_base 		= tex2D		(s_base,	I.tc0);		// Текстура сетки
- 
-	//сдвиг от состояния оружия
+	half4	t_base 		= tex2D		(s_base,	I.tc0);		// reticle + ring
+
+	// lens sway
 	I.tc0.x	= I.tc0.x+m_zoom_deviation.x;
-	I.tc0.y	= I.tc0.y+m_zoom_deviation.y; 
-	
-	// Растягиваем картинку в линзе так, чтобы на любом разрешении экрана были правильные пропорции
-	I.tc0.x = resize(I.tc0.x, screen_res.x/screen_res.y, 0);	
-	half4	t_vp2	 = tex2D		(s_vp2, I.tc0);			// Изображение со второго вьюпорта
-	half3	final	 = half3(0, 0, 0);
-	
-	//Абберация
-	half2 offset = distance(I.tc0, half2( .5f, .5f ))*half2(m_hud_params.z, m_hud_params.z);	
-	t_vp2.r = tex2D	( s_vp2, I.tc0+offset).r;
-	t_vp2.b = tex2D	( s_vp2, I.tc0-offset).b;		
-	
-	//Ночной режим
-		
-	// Рассчитываем случайный шум пикселя
+	I.tc0.y	= I.tc0.y+m_zoom_deviation.y;
+
+	// squeeze the full-screen capture into the round ocular
+	I.tc0.x = resize(I.tc0.x, screen_res.x/screen_res.y, 0);
+	I.tc0 = lens_warp_uv(I.tc0, uv_glass);	// the glass bends what it looks at
+	half4	t_vp2	 = tex2D		(s_vp2, I.tc0);
+
+	// chromatic aberration, softened: half the split and a three-tap smear per channel
+	half  dist   = distance(I.tc0, half2( .5f, .5f ));
+	half2 offset = dist*half2(m_hud_params.z, m_hud_params.z)*0.5f;
+	half2 blur   = offset*0.5f;
+
+	t_vp2.r = ( tex2D	( s_vp2, I.tc0+offset-blur).r
+	          + tex2D	( s_vp2, I.tc0+offset).r
+	          + tex2D	( s_vp2, I.tc0+offset+blur).r ) / 3.0f;
+	t_vp2.g = ( tex2D	( s_vp2, I.tc0-blur).g
+	          + t_vp2.g
+	          + tex2D	( s_vp2, I.tc0+blur).g ) / 3.0f;
+	t_vp2.b = ( tex2D	( s_vp2, I.tc0-offset-blur).b
+	          + tex2D	( s_vp2, I.tc0-offset).b
+	          + tex2D	( s_vp2, I.tc0-offset+blur).b ) / 3.0f;
+
+	// purple fringing: dark pixels right next to a bright one pick up a violet edge
+	half edge_amount   = 0.2f;
+	half luma          = dot(t_vp2.rgb, half3(0.299f, 0.587f, 0.114f));
+
+	half2 glow_r        = half2(0.004f, 0.0f);
+	half2 glow_u        = half2(0.0f, 0.004f);
+	half3 n0            = tex2D	( s_vp2, I.tc0+glow_r).rgb;
+	half3 n1            = tex2D	( s_vp2, I.tc0-glow_r).rgb;
+	half3 n2            = tex2D	( s_vp2, I.tc0+glow_u).rgb;
+	half3 n3            = tex2D	( s_vp2, I.tc0-glow_u).rgb;
+	half  neighbor_luma = max( max( dot(n0, half3(0.299f,0.587f,0.114f)), dot(n1, half3(0.299f,0.587f,0.114f)) ),
+	                           max( dot(n2, half3(0.299f,0.587f,0.114f)), dot(n3, half3(0.299f,0.587f,0.114f)) ) );
+
+	half glow          = saturate((neighbor_luma-0.4f) * 3.5f);	// how bright the neighbourhood is
+	half dark          = saturate(0.65f - luma);					// how dark this pixel is
+	half fringe_amount = edge_amount * glow * dark;
+
+	t_vp2.r = saturate(t_vp2.r + fringe_amount*0.15f);
+	t_vp2.g = t_vp2.g * (1.0f - fringe_amount*0.25f);
+	t_vp2.b = saturate(t_vp2.b + fringe_amount*0.65f);
+
+	// night vision (the "nv" upgrade): grey-blue tint and flicker, strength in m_zoom_deviation.z
 	float noise		= random(I.tc0*timers.z) * m_zoom_deviation.w;
 
-	float gray = ((t_vp2.r + t_vp2.g + t_vp2.b))*m_zoom_deviation.z*7;	
+	float gray = ((t_vp2.r + t_vp2.g + t_vp2.b))*m_zoom_deviation.z*7;
 	t_vp2.r = t_vp2.r*(1-m_zoom_deviation.z) + gray;
-	t_vp2.g = t_vp2.g*(1-m_zoom_deviation.z) + gray;	
-	t_vp2.b = t_vp2.b*(1-m_zoom_deviation.z) + gray;		
-	
+	t_vp2.g = t_vp2.g*(1-m_zoom_deviation.z) + gray;
+	t_vp2.b = t_vp2.b*(1-m_zoom_deviation.z) + gray;
+
 	t_vp2.b+= (0.4 + noise)*m_zoom_deviation.z;
 
-	// Шум при выбросе
-	half noise_blow	= get_noise(I.tc0*timers.z) * m_affects.x * m_affects.x * 30;		
+	// blowout interference
+	half noise_blow	= get_noise(I.tc0*timers.z) * m_affects.x * m_affects.x * 30;
 	t_vp2.r += noise_blow;
 	t_vp2.g += noise_blow;
-	t_vp2.b += noise_blow;	
-	
-	// Миксуем с сеткой
-	final	= lerp	(t_vp2, t_base, t_base.a);
+	t_vp2.b += noise_blow;
 
-	
+	// the reticle over the picture
+	half3	final	= lerp	(t_vp2.rgb, t_base.rgb, t_base.a);
+
+	// ...and the eye drifts off the axis: darken the far side of the glass
+	final	*= lens_scope_shadow(uv_glass);
+
 	// out
 	return  half4	(final.r, final.g, final.b, min(m_hud_params.y, m_hud_params.a));
 }

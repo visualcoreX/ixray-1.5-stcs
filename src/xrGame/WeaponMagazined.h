@@ -280,6 +280,14 @@ public:
 	virtual bool	Action			(s32 cmd, u32 flags);
 	bool			IsAmmoAvailable	();
 	virtual void	UnloadMagazine	(bool spawn_ammo = true, u32 keep_count = 0);	// keep_count: stop unloading with this many rounds left (GS ammo_in_chamber save)
+	// Unload straight into `owner` instead of whoever holds the weapon. A gun lying in the world has neither a
+	// holder nor an inventory (UnloadMagazine would spawn the rounds into H_Parent -- null there): the actor
+	// empties one by holding USE on it (CActor::UpdateWorldUnload). Same rounds the inventory menu's unload takes.
+	virtual void	UnloadMagazineInto	(CInventoryOwner* owner);
+	virtual bool	HasAmmoToUnload		() const	{ return GetAmmoElapsed() > 0; }	// anything UnloadMagazineInto would hand over
+protected:
+	CInventoryOwner*	m_unload_into;	// set only for the duration of UnloadMagazineInto
+public:
 
 	virtual void	GetBriefInfo				(xr_string& str_name, xr_string& icon_sect_name, xr_string& str_count, string16& fire_mode);
 

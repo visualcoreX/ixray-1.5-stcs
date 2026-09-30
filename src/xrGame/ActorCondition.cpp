@@ -175,6 +175,17 @@ float CActorCondition::GetZoneMaxPower( ALife::EHitType hit_type ) const
 #include "UI.h"
 #include "HUDManager.h"
 
+// The medicine intoxication (gunsl_peredoz.script -> level.set_intox_screen_fx, eased in CActor::UpdateCL) also
+// gives the drunk sway: at full strength what 0.1 of alcohol does (a sip of vodka_eatable is 0.1, a bottle 0.4),
+// scaled by how strong it is, so it comes and goes with the rest of the intoxication effect.
+// Only the effector reads it; the alcohol level itself (and whatever depends on it) is not touched.
+static const float INTOX_ALCOHOL_EQUIV = 0.1f;	// was 0.15, lowered on request
+float CActorCondition::GetAlcoholEffector()
+{
+	extern float g_intox_fx_level;		// Actor.cpp: the eased intoxication strength, 0..1
+	return _max(m_fAlcoholEff, INTOX_ALCOHOL_EQUIV * g_intox_fx_level);
+}
+
 void CActorCondition::UpdateCondition()
 {
 	// GodMode() is not only the g_god cheat: level.hide_indicators*() raises AF_GODMODE_RT for every
@@ -238,7 +249,7 @@ void CActorCondition::UpdateCondition()
 		CEffectorCam* ce = Actor()->Cameras().GetCamEffector((ECamEffectorType)effAlcohol);
 		// Keep it alive while the EASED value is still winding down, or the effector would be torn
 		// off at full amplitude the moment the level itself hit zero.
-		if	((m_fAlcohol>0.0001f) || (m_fAlcoholEff>0.0001f) ){
+		if	((m_fAlcohol>0.0001f) || (GetAlcoholEffector()>0.0001f) ){
 			if(!ce){
 				AddEffector(m_object,effAlcohol, "effector_alcohol", GET_KOEFF_FUNC(this, &CActorCondition::GetAlcoholEffector));
 			}

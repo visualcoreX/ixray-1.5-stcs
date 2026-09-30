@@ -1,0 +1,368 @@
+---------------------------------------------------------------------------------------------
+-- Send NPCs who stay online through a surge to the nearest cover.
+--
+-- WHAT VANILLA DOES. Smart terrains flagged `surge_hide_avaliable` hand out `surge_hide` jobs at
+-- priority 100 the moment `is_surge_activated` turns true (gulag_general), and everyone else is
+-- simply switched offline by `xr_surge_hide.stalker_can_switch_offline`. That function refuses to
+-- switch an NPC who is within 100 m of the actor or in his line of sight -- so exactly the NPCs
+-- the player can watch are the ones left standing in the open with their ordinary job logic.
+-- On top of that, way-paths named `<smart>_surge_hide_N` only exist on Garbage, so most smarts
+-- have no hide job to give in the first place.
+--
+-- WHAT THIS DOES. While a surge is running, every online human NPC that is not already hiding is
+-- handed the stock `surge_hide` scheme pointed at the nearest cover. When the surge ends their
+-- smart terrain re-applies their normal job.
+--
+-- COVER PREFERENCE (asked for): the nearest `<smart>_surge_hide_N` way-point on this level; if the
+-- level has none, the nearest `actor_hides` restrictor -- the real shelters the player's own hide
+-- task points at.
+---------------------------------------------------------------------------------------------
+
+local DEBUG      = false     -- one log line per NPC when he is handed a shelter; see log_assignment
+
+-- Named characters are normally left alone -- pulling one out of a scripted scene mid-surge is how
+-- quests break. These few are the exception, and only once the quest that holds them in place is
+-- finished: after that they are just standing around, and standing around through a surge is what
+-- looked wrong. [object name] = the info portion that means "done with him".
+-- KEYS ARE THE OBJECT NAMES AS THEY EXIST AT RUNTIME, and those do not match the file names their
+-- logic lives in. Read off db.storage: the drifter is "esc_stalker_novice" while his logic file is
+-- esc_novice_stalker.ltx (the two words are the other way round), and Wolf's brother is plain
+-- "wolf_brother" with no esc_ prefix at all. The .ltx spellings are kept alongside as insurance --
+-- an unused key costs nothing, a wrong one costs a playtest.
+local STORY_NPC_ONCE_DONE =
+{
+	-- Drifter, once he has been escorted to the rookie camp.
+	["esc_stalker_novice"] = "esc_wolf_novice_3",
+	["esc_novice_stalker"] = "esc_wolf_novice_3",	-- spelling used by his logic file
+	-- Wolf's brother once he has REACHED the camp, not merely been handed a gun: esc_wolf_brother.ltx
+	-- gives _3 from walker@run's on_npc_in_zone on the camp's defence restrictor (the same line that
+	-- restores his health) and drops him into his idle logic there. _2 only means the gun changed
+	-- hands -- he is still walking then, and walking away from the player kills him (kill_npc at 100 m).
+	["wolf_brother"]       = "esc_wolf_brother_3",
+	["esc_wolf_brother"]   = "esc_wolf_brother_3",	-- spelling used by his logic file
+}
+local UPDATE_MS  = 2000      -- how often to sweep the online NPC list
+local ARRIVED_M  = 8         -- this close to a cover counts as already there, leave him alone
+-- A shelter is only worth running to if it is not somebody else's camp. Cordon's military blockposts
+-- have no cover of their own, so the nearest one was the newcomers' village and the soldiers marched in
+-- shooting. A cover with a live hostile (to this NPC) within HOSTILE_M is skipped, and none further than
+-- MAX_COVER_M is offered at all -- an NPC with nothing acceptable stays at his post, as in vanilla (the
+-- surge does not kill NPCs).
+local HOSTILE_M   = 30
+local MAX_COVER_M = 150
+
+local covers      = nil      -- built lazily: { {pos = vector, path = <name or nil>}, ... }
+local covers_level = nil     -- which level `covers` was built for; they are per-level
+local sent        = {}       -- [npc id] = true while we hold his logic
+local next_update = 0
+local was_active  = false
+
+---------------------------------------------------------------------------------------------
+-- Covers
+---------------------------------------------------------------------------------------------
+
+local function on_this_level(gvid, level_id, GG)
+	return GG:vertex(gvid):level_id() == level_id
+end
+
+local function build_covers()
+	local list  = {}
+	local board = sim_board.get_sim_board()
+	local sim   = _G.sim
+	if board == nil or sim == nil then return list end
+
+	local level_id = sim:level_id()
+	local GG       = game_graph()
+
+	-- 1. Way-points laid out for hiding, the same ones the gulag surge jobs use.
+	for _, v in pairs (board.smarts) do
+		local smrt = v.smrt
+		if smrt and on_this_level(smrt.m_game_vertex_id, level_id, GG) then
+			local i = 1
+			local name = smrt:name().."_surge_hide_"..i
+			while level.patrol_path_exists(name) do
+				list[#list + 1] = { pos = patrol(name):point(0), path = name }
+				i = i + 1
+				name = smrt:name().."_surge_hide_"..i
+			end
+		end
+	end
+
+	if #list > 0 then return list end
+
+	-- 2. Nothing on this level, so fall back to the actual shelters.
+	for _, v in pairs (board.smarts) do
+		local hides = v.smrt and v.smrt.actor_hides
+		if hides ~= nil then
+			for _, hide_name in pairs (hides) do
+				local obj = sim:object(hide_name)
+				if obj and on_this_level(obj.m_game_vertex_id, level_id, GG) then
+					-- `zone` is the restrictor NAME; the client object it resolves to is what can
+					-- answer :inside(), and it only exists while the restrictor is online.
+					list[#list + 1] = { pos = obj.position, path = nil, zone = hide_name }
+				end
+			end
+		end
+	end
+
+	return list
+end
+
+local function nearest_cover(pos)
+	local best, best_dist = nil, nil
+	for i = 1, #covers do
+		local d = covers[i].pos:distance_to_sqr(pos)
+		if best_dist == nil or d < best_dist then
+			best, best_dist = covers[i], d
+		end
+	end
+	return best, best_dist
+end
+
+--- Is anybody hostile to `npc` alive and online within HOSTILE_M of `pos`?
+local function hostiles_near(npc, pos)
+	local r2 = HOSTILE_M * HOSTILE_M
+	for id, st in pairs (db.storage) do
+		local o = st.object
+		if o ~= nil and id ~= 0 and id ~= npc:id() and IsStalker(o) and o:alive()
+		   and o:position():distance_to_sqr(pos) < r2
+		   and npc:relation(o) == game_object.enemy then
+			return true
+		end
+	end
+	return false
+end
+
+--- The nearest cover this NPC may actually use: not further than MAX_COVER_M and not held by people
+--  hostile to him. nil when there is none -- then he keeps to his post.
+local function nearest_safe_cover(npc)
+	local pos   = npc:position()
+	local max2  = MAX_COVER_M * MAX_COVER_M
+	local order = {}
+	for i = 1, #covers do
+		local d = covers[i].pos:distance_to_sqr(pos)
+		if d <= max2 then order[#order + 1] = { c = covers[i], d = d } end
+	end
+	table.sort(order, function(a, b) return a.d < b.d end)
+	for i = 1, #order do
+		if not hostiles_near(npc, order[i].c.pos) then
+			return order[i].c, order[i].d
+		end
+	end
+	return nil, nil
+end
+
+---------------------------------------------------------------------------------------------
+-- Who gets sent
+---------------------------------------------------------------------------------------------
+
+--- The key into STORY_NPC_ONCE_DONE for this object.
+--
+-- A spawned object's name is its spawn name with the object id stuck on the end -- Wolf shows up in
+-- the log as "esc_wolf14687", not "esc_wolf" -- so an exact match against the spawn name never
+-- fires. Strip the trailing digits. (Careful if this table ever grows: "esc_wolf" would then also
+-- match "esc_wolf_brother"'s stripped name only if the brother's own entry were removed, since the
+-- lookup is on the whole stripped string, not a prefix.)
+local function story_key(obj)
+	return (string.gsub(obj:name(), "%d+$", ""))
+end
+
+local function needs_cover(obj, st)
+	-- Class check first, on purpose. db.storage also holds non-creatures (campfires and the like),
+	-- and IsStalker only reads a class id, whereas alive()/story_id() expect an actual creature.
+	if not IsStalker(obj) then return false end       -- humans only; monsters do not hide
+	if obj:id() == 0 then return false end            -- the actor has his own hide task
+	if not obj:alive() then return false end
+
+	-- Story squads and named characters keep their scripted behaviour: pulling them out of a scene
+	-- mid-surge is exactly how quests break. The exceptions in STORY_NPC_ONCE_DONE have finished
+	-- theirs, so both of those guards are lifted for them.
+	local done_info = STORY_NPC_ONCE_DONE[story_key(obj)]
+	if done_info == nil or not has_alife_info(done_info) then
+		if obj:story_id() < 65535 then return false end
+
+		local se = alife():object(obj:id())
+		if se == nil then return false end
+		if se.squad_id ~= nil then
+			local board = sim_board.get_sim_board()
+			local squad = board and board.squads and board.squads[se.squad_id]
+			if squad and squad.name == "sim_squad_scripted" then return false end
+		end
+	end
+
+	-- Already doing the right thing, or busy with something that outranks the weather.
+	if st == nil then return false end
+	if st.active_scheme == "surge_hide" then return false end
+	if obj:best_enemy() ~= nil then return false end
+
+	return true
+end
+
+---------------------------------------------------------------------------------------------
+-- Applying and releasing the scheme
+---------------------------------------------------------------------------------------------
+
+--- Where should this NPC hide? Asked by xr_surge_hide.set_scheme every time the scheme starts --
+--  from the gulag surge jobs as well as from this module, and after a savegame load -- so nothing
+--  about the destination has to be persisted anywhere.
+function cover_for(npc)
+	local here = level.name()
+	if covers == nil or covers_level ~= here then
+		covers = build_covers()
+		covers_level = here
+	end
+	local npos = npc:position()
+
+	-- Already standing in a shelter? Settle in THIS one. Picking the globally nearest cover instead
+	-- is how someone safe inside one shelter gets sent walking out of it towards another -- which
+	-- reads in game as an NPC wandering off out of his camp for no reason.
+	for i = 1, #covers do
+		local z = covers[i].zone and db.zone_by_name[covers[i].zone]
+		if z ~= nil and z:inside(npos) then
+			local p = covers[i].pos
+			return vector():set(p.x, p.y, p.z), z, covers[i].zone
+		end
+	end
+
+	local cover = nearest_safe_cover(npc)
+	if cover == nil then return nil end
+	local p = cover.pos
+	return vector():set(p.x, p.y, p.z), (cover.zone ~= nil and db.zone_by_name[cover.zone] or nil), cover.zone
+end
+
+--- One line per NPC when he is handed a shelter, so a run in-game explains itself: which shelter,
+--  whether its volume actually resolved (no volume = no containment test, and he can end up in the
+--  open next to it), how far he has to go and at what pace.
+--  log() is a no-op in Release -- only error_log/dbglog reach the file, hence the [LUA][ERROR] tag.
+--- Second half of the diagnostic: which branch of get_dest_vertex actually produced the node, and
+--  whether that node is inside the shelter. One line per NPC per surge.
+--
+--  Read it together with log_assignment. If an NPC has an assignment line but NO dest line, the
+--  go-to-position action never executed at all -- its GOAP preconditions (danger, enemy, common)
+--  are blocking, and no amount of picking better nodes will move him. If he has a dest line saying
+--  inside=false, the node search lost: everything inside the volume failed npc:accessible(), which
+--  means movement restrictions, and the fix is restrictions, not geometry.
+local dest_logged = {}
+
+function log_dest(npc, tag, v, zone)
+	if not DEBUG then return end
+	local id = npc:id()
+	if dest_logged[id] then return end
+	dest_logged[id] = true
+
+	local inside = "?"
+	if v ~= nil and v ~= 4294967295 and v ~= 4294967296 and zone ~= nil then
+		inside = tostring(zone:inside(level.vertex_position(v)))
+	end
+	dbglog("[surge_cover] %s dest via %s | inside=%s", npc:name(), tag, inside)
+end
+
+function log_assignment(npc, st, cover_name)
+	if not DEBUG then return end
+	local dist = npc:position():distance_to(st.anchor)
+	dbglog("[surge_cover] %s -> %s | zone=%s | dist=%.1f | %s",
+		npc:name(),
+		tostring(cover_name),
+		st.cover_zone ~= nil and "yes" or "NO",
+		dist,
+		st.run_to_cover and "run" or "walk")
+end
+
+-- A real file on disk on purpose -- see the header of configs\scripts\surge_cover.ltx.
+local COVER_LTX = [[scripts\surge_cover.ltx]]
+
+local function send_to_cover(obj)
+	local ini = ini_file(COVER_LTX)
+	xr_logic.configure_schemes(obj, ini, COVER_LTX, modules.stype_stalker, "logic@surge_cover", "")
+	xr_logic.activate_by_section(obj, ini, "surge_hide@surge_cover", false)
+	sent[obj:id()] = true
+end
+
+-- Surge over: hand each NPC back to his smart terrain, which re-applies his normal job logic.
+--
+-- Driven off the ACTIVE SECTION rather than off `sent`, because `sent` is module state and does not
+-- survive a savegame: load a save made mid-surge and the NPCs still carry this logic (xr_logic
+-- restored it) while the table is empty. Reading the section back means they are released anyway.
+local function release_all()
+	local sim   = alife()
+	local board = sim_board.get_sim_board()
+	for id, st in pairs (db.storage) do
+		local obj = st.object
+		if obj ~= nil and st.active_section == "surge_hide@surge_cover"
+		   and obj:alive() and sim ~= nil and board ~= nil then
+			local se = sim:object(id)
+			local smart_id = se and se.m_smart_terrain_id
+			local entry = smart_id and board.smarts and board.smarts[smart_id]
+			local smart = entry and entry.smrt
+			if smart ~= nil and smart.npc_info ~= nil and smart.npc_info[id] ~= nil then
+				smart:setup_logic(obj)
+			else
+				-- No smart job to go back to -- which is the case for the named characters in
+				-- STORY_NPC_ONCE_DONE: they run on hand-written logic from their own custom_data,
+				-- not on a gulag job, so nobody would ever take this scheme off them again.
+				-- Re-apply their spawn logic the same way xr_logic.initialize_obj does on a fresh
+				-- spawn, so the drifter goes back to his walker@idle and Wolf's brother to his.
+				local ini = obj:spawn_ini()
+				if ini ~= nil and ini:section_exist("logic") then
+					ini = xr_logic.configure_schemes(obj, ini, "<customdata>", modules.stype_stalker, "logic", "")
+					local sect = xr_logic.determine_section_to_activate(obj, ini, "logic")
+					xr_logic.activate_by_section(obj, ini, sect, false)
+				end
+			end
+		end
+	end
+	sent = {}
+end
+
+---------------------------------------------------------------------------------------------
+-- Driver, called from the actor binder
+---------------------------------------------------------------------------------------------
+
+function update()
+	local active = xr_surge_hide.surge_activated == true
+
+	local now = time_global()
+
+	if not active then
+		-- Kept running on the throttle instead of firing once on the falling edge. An NPC can be
+		-- holding this logic with no one left to take it back: he was switched offline during the
+		-- surge and came back after it (xr_logic restores the section from his save data), or the
+		-- savegame itself was loaded after the surge ended. The scan is a string compare per online
+		-- object and goes quiet the moment nobody is left carrying it.
+		if now < next_update then return end
+		next_update = now + UPDATE_MS
+		release_all()
+		covers = nil
+		was_active = false
+		return
+	end
+
+	if not was_active then
+		covers = build_covers()
+		covers_level = level.name()
+		dest_logged   = {}
+		was_active = true
+	end
+
+	if now < next_update then return end
+	next_update = now + UPDATE_MS
+
+	if covers == nil or #covers == 0 then return end
+
+	for id, st in pairs (db.storage) do
+		local obj = st.object
+		if obj ~= nil and sent[id] == nil and needs_cover(obj, st) then
+			local pos = obj:position()
+			-- already inside ANY shelter: stay (cover_for would settle him there anyway)
+			local under_cover = false
+			for i = 1, #covers do
+				local z = covers[i].zone and db.zone_by_name[covers[i].zone]
+				if z ~= nil and z:inside(pos) then under_cover = true break end
+			end
+			local cover, dist_sqr = nearest_safe_cover(obj)
+			if not under_cover and cover ~= nil and dist_sqr > ARRIVED_M * ARRIVED_M then
+				send_to_cover(obj)
+			end
+		end
+	end
+end

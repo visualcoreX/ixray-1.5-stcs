@@ -4,7 +4,7 @@
 	     you are on fire and not yet beating the flames out. The string table scans this whole folder,
 	     so the file just has to be here (see CStringTable: text\<lang>\*.xml). -->
 	<string id="st_gwr_actor_burned">
-		<text>Ты горишь! Сбивай пламя, чтобы потушить себя.</text>
+		<text>Ты горишь! Сбивай пламя клавишей [$$ACTION_use$$], чтобы потушить себя.</text>
 	</string>
 	<string id="kb_wpn_laser">
 		<text>ЛЦУ (лазер)</text>
@@ -83,8 +83,5 @@
 	</string>
 	<string id="ui_st_discord_in_menu">
 		<text>В главном меню</text>
-	</string>
-	<string id="agroprom_underground">
-		<text>Подземка Агропрома</text>
 	</string>
 </string_table>

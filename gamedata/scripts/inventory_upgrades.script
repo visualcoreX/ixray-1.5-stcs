@@ -58,6 +58,16 @@ function effect_functor_a( param2, section, loading ) --( string, string, int )
 	end
 end
 
+-- Gunslinger gauss `kardan_ammo` node: unlocking the home-made round also hands out an info portion,
+-- so anything keyed on it (traders starting to stock the round, dialogue) can react. Verbatim from GS's
+-- own inventory_upgrades.script; the money side stays with the ordinary effect_functor_a.
+function effect_functor_gauss_kardan_ammo( param2, section, loading ) --( string, string, int )
+	if loading == 0 then
+		db.actor:give_info_portion("gunsl_gauss_ammo_up")
+	end
+	effect_functor_a(param2, section, loading)
+end
+
 function prereq_functor_a( param3, section )
     if issue_condlist then
 		if db.actor then
@@ -87,6 +97,26 @@ function property_functor_a( param1, name )
 	local section_table = utils.parse_names(param1)
 	local section_table_n = #section_table
 	local section = section_table[1]
+	-- prop_weight_kg: Gunslinger-style weapon weight upgrades whose `value` is a real kg delta
+	-- (not a percent). Sum the float values and show in kg, so the display matches inv_weight.
+	-- Handled separately from the percent props so the fractional kg (e.g. -0.3) survives (the
+	-- generic multi-section path below reads value with r_s32 and would truncate it to 0).
+	if name == "prop_weight_kg" then
+		if section_table_n == 0 then return "" end
+		local sum = 0
+		for i = 1, section_table_n do
+			if char_ini:line_exist(section_table[i], "value") then
+				sum = sum + (tonumber(char_ini:r_string(section_table[i], "value")) or 0)
+			end
+		end
+		-- format with 2 decimals then trim trailing zeros (and a bare dot), so -0.3 shows as "-0.3"
+		-- and -1 as "-1" instead of the engine Lua's "%f"-style "-0.300000".
+		local s = string.format("%.2f", sum)
+		s = s:gsub("0+$", "")
+		s = s:gsub("%.$", "")
+		if sum > 0 then s = "+"..s end
+		return t_prorerty_name.." "..s.." "..game.translate_string("st_kg")
+	end
 	if section_table_n == 0 then
 		return ""
 	elseif section_table_n == 1 then

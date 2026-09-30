@@ -971,7 +971,13 @@ bool CMissile::SuicideAllowed()
 bool CMissile::SuicideStillGrabbed()
 {
 	CActor* act = smart_cast<CActor*>(H_Parent());
-	return act && (act->IsActorControlled() || act->IsSuicideInProgress());
+	// The scene itself counts as holding -- unless the victim got away meanwhile, by the very rule the
+	// firearm and knife gestures end on (m_bSuicideBroken || !m_bControllerSees): the grab broken (dead
+	// controller, the hold ran out) or the controller no longer SEEING him -- a wall between them. That is
+	// the escape, and the grenade is hurled away. (On veteran+ GS drops the visibility requirement unless
+	// the controller asks for it -- NotifyControllerSees -- so a wall saves you only below that.)
+	if (!act || act->IsSuicideBroken() || !act->ControllerSeesMe())	return false;
+	return act->IsActorControlled() || act->IsSuicideInProgress();
 }
 
 // GS PrepareGrenadeForSuicideThrow: min force 0, throw/const force = the named config value
@@ -981,4 +987,19 @@ void CMissile::SuicidePrepareForce(LPCSTR key, float def)
 	m_fMinForce		= 0.f;
 	m_fThrowForce	= f;
 	m_fConstForce	= f;
+}
+
+// GS PsiEffects, a grenade caught MID-PIN-PULL by the grab: PrepareGrenadeForSuicideThrow +
+// SetConstPowerStatus + SetImmediateThrowStatus -- it leaves the hand at the ready force the moment the
+// pin-pull animation ends, whatever the player was winding it up for.
+void CMissile::SuicideReleaseNow()
+{
+	SuicidePrepareForce	("suicide_ready_force", 8.f);
+	m_constpower		= true;
+	m_throw				= true;
+}
+
+bool CMissile::IsSuicideThrow() const
+{
+	return m_bSuicideThrow;
 }

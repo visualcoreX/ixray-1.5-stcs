@@ -1,86 +1,99 @@
---'******************************************************
---'*	Менеджер для выбора каверов в текущем смарте.
---'******************************************************
+-- Smart covers the defence jobs must never send a fighter to. A fighter whose best cover is one of these gets
+-- no defence cover at all and stays on his ordinary job.
+local FORBIDDEN_SMART_COVERS = {
+	["esc_smart_cover_0400"] = true,	-- Cordon military blockpost
+}
+
+local function forbidden_smart_cover(cover)
+	if not cover:is_smart_cover() then
+		return false
+	end
+	local vertex_id = cover:level_vertex_id()
+	for name in pairs (FORBIDDEN_SMART_COVERS) do
+		local se_cover = se_smart_cover.registered_smartcovers[name]
+		if se_cover ~= nil and se_cover.m_level_vertex_id == vertex_id then
+			return true
+		end
+	end
+	return false
+end
 
 class "CCover_manager"
-function CCover_manager:__init(smart)
+
+function CCover_manager:__init(board)
 	self.squads = {}
 	self.cover_table = {}
-	self.board = sim_board.get_sim_board()
-	self.is_valid = false
---	self.name = smart:name()
---	self.sid = math.random(1,100000)
+	self.board = board
+	self.is_current = true
 end
-function CCover_manager:register_squad(squad)
---	printf("CCover_manager:register_squad() name[%s] sid[%s]", tostring(self.name), tostring(self.sid))
-	if squad.player_id ~= "monster" then
-		self.squads[squad.squad_id] = true
-		self.is_valid = false
-	end
+
+function CCover_manager:register_squad(squad_id)
+	self.squads[squad_id] = true
+	self.is_current = false
 end
-function CCover_manager:unregister_squad(squad)
---	printf("CCover_manager:unregister_squad() name[%s] sid[%s]", tostring(self.name), tostring(self.sid))
-	if self.squads[squad.squad_id] == nil then
+
+function CCover_manager:unregister_squad(squad_id)
+	if self.squads[squad_id] == nil then
 		return
 	end
-	self.squads[squad.squad_id] = nil
-	self.is_valid = false
+	self.squads[squad_id] = nil
+	self.is_current = false
 end
+
 function CCover_manager:calculate_covers(position)
-	--printf("CCover_manager:calculate_covers() valid[%s]", tostring(self.is_valid))
-	--callstack()
-	if self.is_valid == true then
+
+	if self.is_current then
 		return
 	end
-	self.is_valid = true
-	
-	local npc_table = {}
-	for k,v in pairs(self.squads) do
-		local squad = self.board.squads[k]
-		for kk,vv in pairs(squad.squad_npc) do
-			if db.storage[kk] ~= nil then
-				local npc_object = db.storage[kk].object		
-				table.insert(npc_table, npc_object)
+
+	self.is_current = true
+	self.cover_table = {}
+
+	local board_squads = self.board.squads
+	local db_storage = db.storage
+
+	for squad_id in pairs (self.squads) do
+		local squad = board_squads[squad_id]
+		local faction_name = squad.player_id
+		if faction_name == "monster" or faction_name == "zombied" then
+			self.squads[squad_id] = nil
+		else
+			for npc_id in pairs (squad.squad_npc) do
+				local npc = db_storage[npc_id]
+				npc = npc and npc.object
+				if npc ~= nil then
+					npc:register_in_combat()
+					local cover = npc:find_best_cover(position)
+					if cover == nil then
+						self.is_current = false
+					elseif forbidden_smart_cover(cover) then
+						-- no entry: no cover job for him. is_current stays as it is, or every later call
+						-- would redo the whole search just to land on the same smart cover again.
+					else
+						self.cover_table[npc_id] =
+						{
+							cover_vertex_id = cover:level_vertex_id(),
+							cover_position  = cover:position(),
+							look_pos        = position,
+							is_smart_cover  = cover:is_smart_cover()
+						}
+					end
+					npc:unregister_in_combat()
+				end
 			end
 		end
-	end
-	
-	for k,v in pairs(npc_table) do
-		v:register_in_combat()
-	end
-
-	self.cover_table = {}
-	for k,v in pairs(npc_table) do
-		v:find_best_cover(position)
-	end
-	for k,v in pairs(npc_table) do
-		local cover = v:find_best_cover(position)
-		if cover ~= nil then			
-			--printf("!!! %s: %s [%s]", v:name(), cover:level_vertex_id(), tostring(cover:is_smart_cover()))
-			self.cover_table[v:id()] = {cover_vertex_id = cover:level_vertex_id(), cover_position = cover:position(),
-										 look_pos = position, is_smart_cover = cover:is_smart_cover()}
-		--else
-			--printf("!!! nil")
-		end
-	end
-
-	for k,v in pairs(npc_table) do
-		v:unregister_in_combat()
 	end
 end
 
 function CCover_manager:save(packet)
 	set_save_marker(packet, "save", false, "CCover_manager")
-
-	packet:w_bool(self.is_valid)
-
-	-- сохранять регистренные сквады
+	packet:w_bool(self.is_current)
 	local n = 0
-	for k,v in pairs(self.cover_table) do
+	for k in pairs (self.cover_table) do
 		n = n + 1
 	end
 	packet:w_u8(n)
-	for k,v in pairs(self.cover_table) do
+	for k, v in pairs (self.cover_table) do
 		packet:w_u16(k)
 		packet:w_u32(v.cover_vertex_id)
 		packet:w_float(v.cover_position.x)
@@ -91,113 +104,92 @@ function CCover_manager:save(packet)
 		packet:w_float(v.look_pos.z)
 		packet:w_bool(v.is_smart_cover)
 	end
-	
 	set_save_marker(packet, "save", true, "CCover_manager")
 end
 
 function CCover_manager:load(packet)
 	set_save_marker(packet, "load", false, "CCover_manager")
-
-	self.is_valid = packet:r_bool()
-
+	self.is_current = packet:r_bool()
 	local n = packet:r_u8()
-	for i = 1,n do
+	for i = 1, n do
 		local npc_id = packet:r_u16()
 		local cover_vertex_id = packet:r_u32()
 		local cover_position = vector():set(0,0,0)
 		cover_position.x = packet:r_float()
 		cover_position.y = packet:r_float()
 		cover_position.z = packet:r_float()
-
 		local look_pos = vector():set(0,0,0)
 		look_pos.x = packet:r_float()
 		look_pos.y = packet:r_float()
 		look_pos.z = packet:r_float()
-		
 		local is_smart_cover = packet:r_bool()
-
-		self.cover_table[npc_id] = {cover_vertex_id = cover_vertex_id, cover_position = cover_position,
-									 look_pos = look_pos, is_smart_cover = is_smart_cover}
+		self.cover_table[npc_id] = {cover_vertex_id = cover_vertex_id, cover_position = cover_position, look_pos = look_pos, is_smart_cover = is_smart_cover}
 	end
-		
 	set_save_marker(packet, "load", true, "CCover_manager")
 end
 
+function has_smart_cover(se_npc, smart)
 
+	local npc_id = se_npc.id
+	local cover = smart.combat_manager.cover_manager.cover_table[npc_id]
 
--- Есть ли у объекта выбранный смарт кавер
-function has_smart_cover(se_obj, smrttrn)
-	local cmanager = smrttrn.combat_manager.cover_manager
-	local npc_id = se_obj.id
-	local cover = cmanager.cover_table[npc_id]	
---	if se_obj.squad_id == "esc_smart_terrain_6_8_stalker_patrol_2" then
---		printf("   HSC [%s] sid[%s]", tostring(se_obj.squad_id), tostring(cmanager.sid))
---		print_table(cmanager.cover_table)
---	end	
 	if cover == nil then
 		return false
 	end
 
-	if cover.is_smart_cover ~= true then
-		return false
-	end
-	
-	local npc_storage = db.storage[npc_id]
-	if npc_storage == nil then
-		return false
+	if cover.is_smart_cover then
+
+		local npc = db.storage[npc_id]
+		npc = npc and npc.object
+		if npc == nil then
+			return false
+		end
+
+		local smrt_cover = se_smart_cover.registered_smartcovers_by_lv_id[smart.level_id][cover.cover_vertex_id]
+		if smrt_cover == nil then
+			return false
+		end
+
+		local smrt_cover_object = bind_smart_cover.registered_smartcovers[smrt_cover:name()]
+		if npc:suitable_smart_cover(smrt_cover_object) then
+			return true
+		end
 	end
 
-	local npc_obj = npc_storage.object
-	local level_id = game_graph():vertex(smrttrn.m_game_vertex_id):level_id()
-	
-	local smrt_cover = se_smart_cover.registered_smartcovers_by_lv_id[level_id][cover.cover_vertex_id]
-	if smrt_cover == nil then
-		return false
-	end	
-	local smrt_cover_object = bind_smart_cover.registered_smartcovers[smrt_cover:name()] 
-	if npc_obj:suitable_smart_cover(smrt_cover_object) then
-		return true
-	end
-	
 	return false
 end
 
--- Есть ли у объекта выбранный кавер
-function has_cover(se_obj, smrttrn)
-	local cmanager = smrttrn.combat_manager.cover_manager	
-	local cover = cmanager.cover_table[se_obj.id]	
---	if se_obj.squad_id == "esc_smart_terrain_6_8_stalker_patrol_2" then
---		printf("   HC [%s] sid[%s]", tostring(se_obj.squad_id), tostring(cmanager.sid))
---		print_table(cmanager.cover_table)
---	end	
+function has_cover(se_npc, smart)
+
+	local npc_id = se_npc.id
+	local cover = smart.combat_manager.cover_manager.cover_table[npc_id]
+
 	if cover == nil then
 		return false
 	end
-	
+
 	if cover.is_smart_cover then
-		local npc_storage = db.storage[npc_id]
-		if npc_storage == nil then
+
+		local npc = db.storage[npc_id]
+		npc = npc and npc.object
+		if npc == nil then
 			return true
 		end
-	
-		local npc_obj = npc_storage.object
-		local level_id = game_graph():vertex(smrttrn.m_game_vertex_id):level_id()
-		local smrt_cover = se_smart_cover.registered_smartcovers_by_lv_id[level_id][cover.cover_vertex_id]
+
+		local smrt_cover = se_smart_cover.registered_smartcovers_by_lv_id[smart.level_id][cover.cover_vertex_id]
 		if smrt_cover == nil then
 			return true
-		end	
-			
+		end
+
 		local smrt_cover_object = bind_smart_cover.registered_smartcovers[smrt_cover:name()]
-		
-		if npc_obj:suitable_smart_cover(smrt_cover_object) then
+		if npc:suitable_smart_cover(smrt_cover_object) then
 			return false
-		end	
+		end
 	end
-	
+
 	return true
 end
--- Получить выбранный кавер объекта
-function get_cover(obj, smrttrn)
-	local cmanager = smrttrn.combat_manager.cover_manager
-	return cmanager.cover_table[obj:id()]
+
+function get_cover(npc, smart)
+	return smart.combat_manager.cover_manager.cover_table[npc:id()]
 end

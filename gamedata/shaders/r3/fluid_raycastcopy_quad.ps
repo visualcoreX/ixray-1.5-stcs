@@ -15,10 +15,11 @@ float4 main(PS_INPUT_RAYCAST input) : SV_Target
 		return tex;
 #else	//	RENDER_FIRE
     float4 tex = rayCastTex.Sample(samLinearClamp, float2(input.pos.x/RTWidth,input.pos.y/RTHeight));
+	// both are already lit: DoSample applies DiffuseLight and the per-sample lights (fluid_common_render.h)
 	if(edge > 0 && tex.a > 0)
-		return Raycast(input)*DiffuseLight;
+		return Raycast(input);
 		//return float4(1,0,0,1);
 	else
-		return tex*DiffuseLight;
+		return tex;
 #endif	//	RENDER_FIRE
 }

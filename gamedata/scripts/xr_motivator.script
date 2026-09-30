@@ -1,567 +1,492 @@
---[[------------------------------------------------------------------------------------------------------------------
-автор: Диденко Руслан (Stohe)
+function AddToMotivator(npc) -- called 1st
+	npc:bind_object(this.motivator_binder(npc))
+end
 
-порядок вызова методов биндера:
-reload
-reinit
-load
-net_spawn
---------------------------------------------------------------------------------------------------------------------]]
-memtsg = {} --' временная таблица
-lasthealth = 0
-lastime = nil
-local bloodsuckers_restr = {}
 bloodsucker_zone_enter = {}
+local bloodsuckers_restr = {}
 
-----------------------------------------------------------------------------------------------------------------------
+function register_bloodsucker_restr(obj)
+	bloodsuckers_restr[obj:id()] = obj
+end
+
+local function clear_npc_from_bloodsucker_zones(npc_id)
+	for restr_id in pairs (bloodsuckers_restr) do
+		if bloodsucker_zone_enter[restr_id] and bloodsucker_zone_enter[restr_id]:id() == npc_id then
+			bloodsucker_zone_enter[restr_id] = nil
+		end
+	end
+end
+
+local function init_corpse_known_info(npc)
+	local spawn_ini = npc:spawn_ini()
+	local filename = nil
+	if spawn_ini then
+		filename = utils.cfg_get_string(spawn_ini, "logic", "cfg", nil, false, "")
+	end
+	local char_ini = nil
+	if filename ~= nil then
+		char_ini = ini_file(filename)
+	else
+		char_ini = spawn_ini
+	end
+	if char_ini and char_ini:section_exist("known_info") then
+		for i = 0, char_ini:line_count("known_info") - 1 do
+			local _, info = char_ini:r_line("known_info", i, "", "")
+			npc:give_info_portion(info)
+		end
+	end
+end
+
+--------------------------------------------------------------------------------
+
 class "motivator_binder" (object_binder)
 
-function motivator_binder:__init (obj) super(obj)
+function motivator_binder:__init(npc) super(npc) -- called 2nd
 	self.loaded = false
-	self.last_update = 0
-	----memusage.collect_info(self.object, "__init")
-
-		self.first_update = false
-	self.treasure_processed = false
-	self.now_in_combat = false
-	self.strelok_particles_added = false
+	self.update_time = -10000
+	self.first_update_done = false
+	self.death_recorded = false
+	self.is_strelok = npc:profile_name() == "stc_strelok"
+	self.st = {}
 end
 
-function motivator_binder:extrapolate_callback(cur_pt)
-	if self.st.active_section then
-		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "extrapolate_callback")
-		self.st.move_mgr:extrapolate_callback(self.object)
+function motivator_binder:reload(section) -- called 3rd
+	object_binder.reload(self, section)
+end
+
+function motivator_binder:reinit() -- called 4th
+	object_binder.reinit(self)
+	local npc = self.object
+	local npc_st = self.st
+	db.storage[npc:id()] = npc_st
+	if npc:alive() then
+		npc_st.state_mgr = state_mgr.bind_manager(npc)
+		npc_st.move_mgr = move_mgr.move_mgr(npc)
+		npc_st.move_mgr:initialize()
 	end
-
-	if patrol(self.object:patrol()):flags(cur_pt):get() == 0 then
-		return true
-	end
-	return false
 end
 
-function motivator_binder:reinit()
-		object_binder.reinit(self)
-		--memusage.collect_info(self.object, "reinit_start")
-		--printf("motivator_binder:reinit(): self.object:name()='%s'", self.object:name())
+function motivator_binder:net_spawn(se_abstract) -- called 5th
 
-		-- КОЛЛБЕКИ ЗДЕСЬ СТАВИТЬ НЕЛЬЗЯ! Здесь еще неизвестна активная схема.
-		-- Ставьте коллбеки в методе update в отмеченном комментарием месте.
-
-		local char_ini = self.object:spawn_ini() or ini_file("scripts\\dummy.ltx")
-
-----------------------------------------------------------------------------------------------------------------------
--- Общие скрипты
-----------------------------------------------------------------------------------------------------------------------
-		db.storage[self.object:id()] = {  followers = {} }
-		self.st = db.storage[self.object:id()]
-
-		--' Создание менеджера контроля положений тела
-		--memusage.collect_info(self.object, "before_statemgr")
-	self.st.state_mgr = state_mgr.bind_manager(self.object)
-
-	self.st.move_mgr = move_mgr.move_mgr(self.object)
-	self.st.move_mgr:initialize()
-
-	--memusage.collect_info(self.object, "after_statemgr")
-	--memusage.collect_info(self.object, "reinit_end")
-end
-----------------------------------------------------------------------------------------------------------------------
-function motivator_binder:net_spawn(sobject)
-	printf("motivator_binder:net_spawn(): self.object:name()='%s'", self.object:name())
-	local ppos = self.object:position()
-	--printf("position [%s][%s][%s]", ppos.x, ppos.y, ppos.z)
-	xrs_dyn_music.npc_table[self.object:id()] = self.object
-	--memusage.collect_info(self.object, "netspawn_start")
-	if not object_binder.net_spawn(self, sobject) then
+	if not object_binder.net_spawn(self, se_abstract) then
 		return false
 	end
 
-	--' Кешируем squad
-	db.storage[self.object:id()].squad_obj = sim_board.get_sim_board().squads[alife():object(self.object:id()).squad_id]
+	local npc = self.object
 
---	if self.object:spawn_ini():section_exist("dont_spawn_online") then
---		printf("!!!OFFLINE")
---		alife():object(self.object:id()).dont_spawn_online = true
---	end
+	npc:set_callback(callback.use_object, motivator_binder.use_callback, self)
 
-	db.add_obj(self.object)
-
-	-- Все CALLBACK-и ставить здесь:
-	self.object:set_patrol_extrapolate_callback(motivator_binder.extrapolate_callback, self)
-	self.object:set_callback(callback.hit, motivator_binder.hit_callback, self)
-	self.object:set_callback(callback.death, motivator_binder.death_callback, self)
-	self.object:set_callback(callback.use_object, motivator_binder.use_callback, self)
-	--memusage.collect_info(self.object, "after__callback")
-
-	--self.object:set_callback(callback.sound, motivator_binder.hear_callback, self)
-
-	-- ставим дефолтное расстояние входа в смарткаверы
-
-	self.object:apply_loophole_direction_distance(1.0)
-
-		--' Загрузка историй для лагеря.
-	if self.loaded == false then
-		local char_ini = ""
-		local spawn_ini = self.object:spawn_ini()
-		local filename = nil
-		if spawn_ini then
-			filename = utils.cfg_get_string(spawn_ini, "logic", "cfg", self.object, false, "")
-			printf("filename is [%s]", tostring(filename))
+	if not npc:alive() then
+		if not self.loaded then
+			init_corpse_known_info(npc)
 		end
-		if filename ~= nil then
-			char_ini = ini_file(filename)
-		else
-			char_ini = self.object:spawn_ini() or ini_file("scripts\\dummy.ltx")
-		end
-
-		printf("xr_info loaded!!!")
-		xr_info.loadInfo(self.object, char_ini)
-	end
-
-	if not self.object:alive() then
 		return true
 	end
--- setting npc relation and sympathy from storage
-	local relation = db.goodwill.relations and db.goodwill.relations[self.object:id()]
-		if relation ~= nil and db.actor then
-				game_relations.set_npcs_relation(self.object, db.actor, relation)
-	end
-	local sympathy = db.goodwill.sympathy and db.goodwill.sympathy[self.object:id()]
-		if sympathy ~= nil then
-				game_relations.set_npc_sympathy(self.object, sympathy)
-	end
-		game_relations.set_level_faction_community(self.object)
-		db.add_enemy( self.object )
-		self.e_index = db.heli_enemy_count - 1
 
-		--' загрузка озвучки
-		--memusage.collect_info(self.object, "before_soundmgr")
-		sound_theme.init_npc_sound(self.object)
-		--memusage.collect_info(self.object, "after_soundmgr_netspawn_end")
+	-- DC20230306: It's possible for motivator_binder:net_spawn() to be called before
+	-- actor_binder:net_spawn() or even actor_binder:__init(). Several function calls
+	-- originating from motivator_binder:net_spawn() assume that db.actor has been
+	-- initialized, and a few corrupt the NPC if db.actor = nil, e.g. npc:see(db.actor)
+	-- in xr_wounded.script and npc:set_goodwill(goodwill, db.actor) here.
 
-
-	--' Для зомбированных чуваков говорим что аномалий не существует
---	if self.object:character_community() == "zombied" then
-		local manager = self.object:motivation_action_manager()
-		manager:remove_evaluator	(stalker_ids.property_anomaly)
-		manager:add_evaluator		(stalker_ids.property_anomaly, property_evaluator_const(false))
---	end
-
-	xr_smartcover.init_global_evaluators(self.object)
-
-	smart_terrain.setup_gulag_and_logic_on_spawn(self.object, self.st, sobject, modules.stype_stalker, self.loaded)
-	--' грузим универсальную реакцию на болотную тварь
-	bloodsucker_reaction.add_bloodsucker_reactions(self.object)
-	--' грузим универсальную реакцию на актёра вышедшего из левелчейнджера
-	actor_reaction.add_actor_reactions(self.object)
-
-	--' Универсальный тормоз на выход из комбата
-	if self.object:character_community() ~= "zombied" then
-		post_combat_idle.add_post_combat_idle(self.object)
-	end
-
-
-
-	self.object:group_throw_time_interval(2000)
-
-	if self.object:profile_name() == "stc_strelok" then
-		printf("strelok_health [true]")
-		stc_strelok_health_manager.cs_strelok_health(self.object)
+	if db.actor then
+		self:finish_net_spawn()
+	else
+		bind_stalker.defer_net_spawn(self)
 	end
 
 	return true
 end
 
-function motivator_binder:net_destroy()
-	--printf("motivator_binder:net_destroy(): self.object:name()='%s'", self.object:name())
-	xrs_dyn_music.npc_table[self.object:id()] = nil
-	xrs_dyn_music.stop_combat(self.object:id())
-		xr_sound.stop_sounds_by_id(self.object:id())
-	local st = db.storage[self.object:id()]
-	if st.active_scheme then
-		xr_logic.issue_event(self.object, st[st.active_scheme], "net_destroy", self.object)
+function motivator_binder:finish_net_spawn()
+
+	local npc = self.object
+	local npc_id = npc:id()
+	local se_npc = _G.sim:object(npc_id)
+	local npc_st = self.st
+
+	xrs_dyn_music.add_object(npc)
+
+	npc_st.squad_obj = sim_board.get_sim_board().squads[se_npc.squad_id]
+
+	self.e_index = db.heli_enemy_count
+
+	db.add_obj(npc)
+	db.add_enemy(npc)
+
+	npc:set_patrol_extrapolate_callback(motivator_binder.extrapolate_callback, self)
+	npc:set_callback(callback.hit, motivator_binder.hit_callback, self)
+	npc:set_callback(callback.death, motivator_binder.death_callback, self)
+	npc:apply_loophole_direction_distance(1)
+
+	local goodwill = db.goodwill.relations[npc_id]
+	local sympathy = db.goodwill.sympathy[npc_id]
+
+	if goodwill then
+		npc:set_goodwill(goodwill, db.actor)
 	end
 
-	db.del_obj(self.object)
+	if sympathy then
+		npc:set_sympathy(sympathy)
+	end
 
-	db.storage[self.object:id()] = nil
+	sound_theme.init_npc_sound(npc)
 
+	local manager = npc:motivation_action_manager()
+	manager:remove_evaluator(stalker_ids.property_anomaly)
+	manager:add_evaluator(stalker_ids.property_anomaly, property_evaluator_const(false))
+
+	xr_smartcover.init_global_evaluators(npc)
+
+	smart_terrain.setup_gulag_and_logic_on_spawn(npc, npc_st, se_npc, modules.stype_stalker, self.loaded)
+
+	local char_ini = npc_st.ini
+	if char_ini:section_exist("known_info") then
+		for i = 0, char_ini:line_count("known_info") - 1 do
+			local _, info = char_ini:r_line("known_info", i, "", "")
+			npc:give_info_portion(info)
+		end
+		se_npc.has_known_info = true
+	end
+
+	bloodsucker_reaction.add_bloodsucker_reactions(npc)
+	actor_reaction.add_actor_reactions(npc)
+
+	if npc:character_community() ~= "zombied" then
+		post_combat_idle.add_post_combat_idle(npc)
+	end
+
+	npc:group_throw_time_interval(2000)
+
+	if self.is_strelok then
+		stc_strelok_health_manager.cs_strelok_health(npc)
+	end
+end
+
+function motivator_binder:net_destroy()
+
+	local npc = self.object
+
+	npc:set_callback(callback.use_object, nil) -- SRP
 	self:clear_callbacks()
 
-		if self.e_index ~= nil then
-		db.delete_enemy( self.e_index )
+	local npc_id = npc:id()
+
+	clear_npc_from_bloodsucker_zones(npc_id)
+
+	xrs_dyn_music.remove_object(npc_id)
+	xr_sound.stop_sounds_by_id(npc_id)
+
+	local npc_st = self.st
+
+	if npc_st.active_scheme then
+		xr_logic.issue_event(nil, npc_st[npc_st.active_scheme], "net_destroy", npc)
 	end
-	if self.object:profile_name() == "stc_strelok" then
+
+	if self.e_index ~= nil then
+		db.delete_enemy(self.e_index)
+	end
+
+	if self.is_strelok then
 		stc_strelok_health_manager.remove_health_bar()
 	end
+
+	db.del_obj(npc)
+
 	object_binder.net_destroy(self)
 end
 
-function motivator_binder:clear_callbacks()
-	self.object:set_patrol_extrapolate_callback(nil)
-	self.object:set_callback(callback.hit, nil)
-	self.object:set_callback(callback.death, nil)
-	-- self.object:set_callback(callback.use_object, nil)
-end
+local stalker_ids_action_combat_planner = stalker_ids.action_combat_planner
+local object_binder_update = object_binder.update
 
-function motivator_binder:hit_callback(obj, amount, local_direction, who, bone_index)
-	callstack()
-	-- FIXME: коллбеки неплохо было бы регистрировать в общем storage, а не посхемно...
-	-- просто всегда ставить их при включении схемы и снимать при отключении.
-	if obj:profile_name() == "stc_strelok" then
-		stc_strelok_health_manager.hit_callback(obj, who, amount)
-	end
+function motivator_binder:update(delta) -- called 6th
 
-	if self.st.active_section then
-		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "hit_callback", obj, amount, local_direction, who, bone_index)
-	end
-	if self.st.combat_ignore then
-		xr_logic.issue_event(self.object, self.st.combat_ignore, "hit_callback", obj, amount, local_direction, who, bone_index)
-	end
-	if self.st.combat then
-		xr_logic.issue_event(self.object, self.st.combat, "hit_callback", obj, amount, local_direction, who, bone_index)
-	end
-	if self.st.hit then
-		xr_logic.issue_event(self.object, self.st.hit, "hit_callback", obj, amount, local_direction, who, bone_index)
-	end
-	if amount > 0 then
-		printf("HIT_CALLBACK: %s amount=%s bone=%s", obj:name(), amount, tostring(bone_index))
-		sr_territory.issue_event(self.object, "hit_callback", obj, amount, local_direction, who, bone_index)
-		xr_wounded.hit_callback(self.object:id())
-			 sim_combat.hit_callback(self.object:id(),who:id())
-	end
-end
+	object_binder_update(self, delta)
 
-function motivator_binder:death_callback(victim, who)
-	callstack()
-	--' Distemper 03.2008 --
-	xrs_dyn_music.stop_combat(self.object:id())
-	--' Если игрок был с квестом от механика - фейлить его
-	local st = db.storage[self.object:id()]
-	local npc = self.object
-	stalker_generic.remove_level_spot(npc, st)
-	--' end  --
-	if who:id() == db.actor:id() then
-		xr_statistic.addKillCount(self.object)
-		xr_statistic.inc_killed_stalkers_counter()
-	end
-
-	--' Загрузка историй для лагеря.
-	local known_info = utils.cfg_get_string(st.ini,st.section_logic , "known_info", self.object, false, "", nil)
-	printf("xr_info from death loaded!!!")
-	xr_info.loadInfo(self.object, st.ini, known_info)
-
-
-	if self.st.death then
-		xr_logic.issue_event(self.object, self.st.death, "death_callback", victim, who)
-	end
-	if self.st.active_section then
-		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "death_callback", victim, who)
-	end
-	sr_territory.issue_event(self.object, "death_callback", victim, who)
-
-	sr_light.check_light(self.object)
-
-	death_manager.drop_manager(self.object):create_release_item()
-
-		db.delete_enemy( self.e_index )
-
-	self:clear_callbacks()
-	-- Отключаем реакцию на кровососа
-	bloodsucker_reaction.disable_bloodsucker_reaction(self.object)
-	--' Наносим небольшой импульс вперед.
-	if(actor_stats.remove_from_ranking~=nil)then
-		local community = self.object:character_community()
-		if community == "zombied" or
-			 community == "monolith" or
-			 community == "arena_enemy"
-		then
-		else
-			actor_stats.remove_from_ranking(self.object:id())
-		end
-
-	end
-	release_body_manager.get_release_body_manager():moving_dead_body(self.object) --' Distemper 11.02.2008
-end
-
-function motivator_binder:use_callback(obj, who)
-	printf("motivator_binder:use_callback(obj, who)")
-	if self.object:alive() then
-		inventory_upgrades.need_victim(obj) --' Distemper 03.2008
-		xr_use.notify_on_use(obj, who)
-		if self.st.active_section then
-			xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "use_callback", obj, who)
-		end
-	else
-		if self.treasure_processed == false then
-			printf("treasure_manager.use(self.object)")
-			treasure_manager.use(self.object)
-			self.treasure_processed = true
-		end
-	end
-end
-
-function motivator_binder:update(delta)
-	object_binder.update(self, delta)
-	if bind_stalker.to_delayed_alife_release_objects[self.object:id()] == true then
-		printf("releasing object ["..self.object:name().."]")
-		alife():release(alife():object(self.object:id()),true)
+	if self.death_recorded then
 		return
 	end
 
-	local object_alive = self.object:alive()
-	local object = self.object
-	local actor = db.actor
-	local st = db.storage[object:id()]
-	local st_combat = st.combat
-	if not self.strelok_particles_added and object:profile_name() == "stc_strelok" then
-		object:start_particles("monsters\\polter_idle","bip01_head")
-		self.strelok_particles_added = true
-	end
-	if st ~= nil and st.active_scheme ~= nil and object_alive then
-		-- Обрабатываем Override on_combat
-		local switched = false
-		local manager = object:motivation_action_manager()
-		if manager:initialized() and manager:current_action_id() == stalker_ids.action_combat_planner then
-			local overrides = xr_logic.generic_scheme_overrides(object)
-			if overrides then
-				if overrides.on_combat then
-					xr_logic.pick_section_from_condlist(actor, object, overrides.on_combat.condlist)
-				end
+	local npc = self.object
+	local npc_alive = npc:alive()
 
-				if st_combat and st_combat.logic and not xr_logic.try_switch_to_another_section(object, st_combat, actor) then
-					if overrides.combat_type then
-						set_combat_type(object, actor, overrides)
+	if not self.first_update_done then
+		if npc_alive then
+			-- We update the NPC's trade supplies on the first update to prevent
+			-- e.g. his walkie-talkie (Suslov) or pistol (flea market night
+			-- trader) vanishing from his hands if the first time the NPC is
+			-- "used" after loading is with the item equipped:
+			trade_manager.update(npc)
+			if self.is_strelok then
+				npc:start_particles("monsters\\polter_idle", "bip01_head")
+			end
+		else
+			local npc_id = npc:id()
+			local se_npc = _G.sim:object(npc_id)
+			if se_npc.death_droped ~= true then
+				-- We create drop items for perma-corpses if we haven't already;
+				-- they don't get a death_callback() call:
+				death_manager.drop_manager(npc):create_release_item(se_npc, npc_id)
+				level.map_add_object_spot_ser(npc_id, "deadbody_location", "") -- see DC20190408
+				level.map_add_object_spot_ser(npc_id, "deadbody_location", "")
+			end
+		end
+		self.first_update_done = true
+	end
+
+	local global_time = time_global()
+
+	if global_time > self.update_time then
+		sr_light.check_light(npc)
+		if npc_alive then
+			local npc_pos = npc:position()
+			for restr_id, restr in pairs (bloodsuckers_restr) do
+				if restr:inside(npc_pos) then
+					if bloodsucker_zone_enter[restr_id] == nil then
+						bloodsucker_zone_enter[restr_id] = npc
 					end
 				else
-					switched = true
+					if bloodsucker_zone_enter[restr_id] and bloodsucker_zone_enter[restr_id]:id() == npc:id() then
+						bloodsucker_zone_enter[restr_id] = nil
+					end
 				end
-
-			else
-				set_combat_type(object, actor, st_combat)
 			end
-		end
-
-		if not switched then
-			xr_logic.try_switch_to_another_section(object, st[st.active_scheme], actor)
-		end
-	else
-		-- если нет активной секции, то тип боя взять из секции on_combat
-		xr_combat.set_combat_type(object, actor, st_combat)
-	end
-
-		if self.first_update == false then
-				if object_alive == false then
-			death_manager.drop_manager(object):create_release_item()
-				end
-				self.first_update = true
-		end
-	if time_global() - self.last_update > 1000 then
-		sr_light.check_light(object)
-		self.last_update = time_global()
-		end
-
-		--' проверка, не находится ли сталкер в одном из sr_bloodsucker
-		for k,v in pairs(bloodsuckers_restr) do
-				if v:inside(object:position()) and object:alive() then
-					 if  bloodsucker_zone_enter[k] == nil then
-								-- printf("ZONE ENTERED")
-								bloodsucker_zone_enter[k] = object
-					 end
-		else
-			if  bloodsucker_zone_enter[k] ~= nil then
-				-- printf("ZONE ENTERED")
-				bloodsucker_zone_enter[k] = nil
-			end
-				end
-		end
-
-	--' Выбираем активный сектор для НПС
-	self.st.active_sector = sr_danger.select_active_sectors(object)
-
-	--' Апдейт менеджера состояний тела
-	if self.st.state_mgr then
-		if object_alive then
-			self.st.state_mgr:update()
-			-- Апдейт торговли
-			if self.st.state_mgr.combat == false and
-				 self.st.state_mgr.alife == false
-			then
-				trade_manager.update(object)
-			end
-		else
-			self.st.state_mgr = nil
+			self.update_time = global_time + 1000
 		end
 	end
 
-	--' Апдейт саундменеджера
-	if object_alive then
-		xr_sound.update(object:id())
-	end
+	local npc_st = self.st
 
-	-- Апдейт отряда
-	local squad = db.storage[self.object:id()].squad_obj
-	if squad ~= nil then
-		if squad.commander_id == self.object:id() then
+	if npc_alive then
+
+		local npc_id = npc:id()
+
+		xr_sound.update(npc_id) -- DC20231015
+
+		if npc_st.active_scheme then
+			local need_switch = true
+			local manager = npc:motivation_action_manager()
+			if manager:initialized() and manager:current_action_id() == stalker_ids_action_combat_planner then
+--				local overrides = npc_st.overrides
+--				if overrides.on_combat then -- overrides guaranteed valid given npc_st.active_scheme is; see xr_logic.activate_by_section()
+--					xr_logic.pick_section_from_condlist(db.actor, npc, overrides.on_combat) -- no on_combat lines outside of [logic] in vanilla
+--				end
+				local st_combat = npc_st.combat
+				if st_combat and st_combat.enabled then
+					if xr_logic.try_switch_to_another_section(npc, st_combat, db.actor) then
+						need_switch = false
+					end
+				end
+			end
+			if need_switch then
+				xr_logic.try_switch_to_another_section(npc, npc_st[npc_st.active_scheme], db.actor)
+			end
+		end
+
+		npc_st.active_sector = sr_danger.select_active_sectors(npc)
+		npc_st.state_mgr:update()
+
+		local squad = npc_st.squad_obj
+
+		if squad then
+			sim_combat.keep_actor_tick(npc, squad)	-- garrisons that do not drop the actor mid-fight
+		end
+
+		if squad and squad.commander_id == npc_id then
 			squad:update()
 		end
+	else
+		npc_st.state_mgr = nil
+		npc_st.move_mgr = nil -- SRP
+		self.death_recorded = true
+	end
+end
+
+--------------------------------------------------------------------------------
+
+function motivator_binder:clear_callbacks()
+	local npc = self.object
+	npc:set_patrol_extrapolate_callback(nil)
+	npc:set_callback(callback.hit, nil)
+	npc:set_callback(callback.death, nil)
+end
+
+function motivator_binder:extrapolate_callback(current_point_index)
+
+	local npc = self.object
+	local npc_st = self.st
+
+	if npc_st.active_scheme then
+		xr_logic.issue_event(nil, npc_st[npc_st.active_scheme], "extrapolate_callback")
+		npc_st.move_mgr:extrapolate_callback(npc)
 	end
 
+	return patrol(npc:patrol()):flags(current_point_index):get() == 0
+end
 
+function motivator_binder:hit_callback(victim, amount, local_direction, hitter, bone_index)
 
---	object:info_clear()
-	if object_alive then
-		--[[		local active_section = db.storage[object:id()].active_section
-		if active_section then
-			object:info_add("section: " .. active_section)
+	if self.is_strelok then
+		stc_strelok_health_manager.hit_callback(victim, hitter, amount)
+	end
+
+	local npc_st = self.st
+
+	if npc_st.active_scheme then
+		xr_logic.issue_event(nil, npc_st[npc_st.active_scheme], "hit_callback", victim, amount, local_direction, hitter, bone_index)
+	end
+
+	if npc_st.combat_ignore then
+		xr_logic.issue_event(nil, npc_st.combat_ignore, "hit_callback", victim, amount, local_direction, hitter, bone_index)
+	end
+
+	if npc_st.combat then
+		xr_logic.issue_event(nil, npc_st.combat, "hit_callback", victim, amount, local_direction, hitter, bone_index)
+	end
+
+	if npc_st.hit then
+		xr_logic.issue_event(nil, npc_st.hit, "hit_callback", victim, amount, local_direction, hitter, bone_index)
+	end
+
+	if amount > 0 then
+		local victim_id = victim:id()
+		xr_wounded.hit_callback(victim_id)
+		if hitter:id() == 0 then -- 0 = actor ID
+			sim_combat.hit_callback(victim_id)
 		end
-		local best_enemy = object:best_enemy()
-		if best_enemy then
-			object:info_add("enemy: " .. best_enemy:name())
-		end
-		object:info_add(object:name().." ["..object:team().."]["..object:squad().."]["..object:group().."]")
+	end
+end
 
-		if alife():object(object:id()) == nil then
-			return
-		end
+function motivator_binder:death_callback(victim, culprit)
 
-		local squad = db.storage[object:id()].squad_obj
-		if squad ~= nil then
-			object:info_add("squad_id: " .. squad.squad_id)
-			if squad.sim_combat_id ~= nil then
-				local smart = sim_board.get_sim_board().smarts[squad.sim_combat_id].smrt
-				local sim_combat = smart.combat_manager
-				object:info_add("sim_combat: stage[" .. sim_combat:get_squad_stage(squad).."]")
-			end
-		end]]
+	self:clear_callbacks()
 
-		if object:is_talk_enabled() then
-			object:set_tip_text("character_use")
-		else
-			object:set_tip_text("")
+	local npc_id = victim:id()
+	local npc_st = self.st
+
+	clear_npc_from_bloodsucker_zones(npc_id)
+
+	xrs_dyn_music.remove_object(npc_id)
+
+	stalker_generic.remove_level_spot(victim, npc_st)
+
+	-- DC20190408: Hack per Shoker to add a corpse map spot in case the engine fails to.
+	-- The spot needs to be added twice to guarantee that the engine's interference will
+	-- not prevent it from being rendered on the minimap.
+
+	level.map_add_object_spot_ser(npc_id, "deadbody_location", "")
+	level.map_add_object_spot_ser(npc_id, "deadbody_location", "")
+
+	if culprit:id() == 0 then -- 0 = actor ID
+		xr_statistic.addKillCount(victim)
+		xr_statistic.inc_killed_stalkers_counter()
+	end
+
+	if npc_st.death then
+		xr_logic.issue_event(nil, npc_st.death, "death_callback", victim, culprit)
+	end
+
+	if npc_st.active_scheme then
+		xr_logic.issue_event(nil, npc_st[npc_st.active_scheme], "death_callback", victim, culprit)
+	end
+
+	sr_light.check_light(victim)
+
+	local se_npc = _G.sim:object(npc_id)
+
+	death_manager.drop_manager(victim):create_release_item(se_npc, npc_id)
+
+	db.delete_enemy(self.e_index)
+
+	bloodsucker_reaction.disable_bloodsucker_reaction(victim)
+
+	release_body_manager.moving_dead_body(victim, se_npc, npc_id) --' Distemper 11.02.2008
+end
+
+function motivator_binder:use_callback(used_npc, user)
+	if used_npc:alive() then
+		trade_manager.update(used_npc)
+		dialog_manager.restore_certain_disabled_phrases(used_npc)
+		xr_use.notify_on_use(used_npc, user)
+		local npc_st = self.st
+		if npc_st.active_scheme then
+			xr_logic.issue_event(nil, npc_st[npc_st.active_scheme], "use_callback", used_npc, user)
 		end
 	else
-		object:set_tip_text_default()
+		local se_npc = _G.sim:object(used_npc:id())
+		if se_npc.treasure_processed ~= 1 then
+			treasure_manager.use(used_npc)
+			se_npc.treasure_processed = 1
+		end
 	end
-
 end
 
-function motivator_binder:reload(section)
-	--memusage.collect_info(self.object, "reload_start")
-	object_binder.reload(self, section)
-	--printf("motivator_binder:reload(): self.object:name()='%s'", self.object:name())
-	--self.object:set_pda_callback(pda_callback)
-	--memusage.collect_info(self.object, "reload_end")
-end
+--------------------------------------------------------------------------------
 
 function motivator_binder:net_save_relevant()
-	--printf("motivator_binder:net_save_relevant(): self.object:name()='%s'", self.object:name())
 	return true
 end
 
 function motivator_binder:save(packet)
+
 	set_save_marker(packet, "save", false, "motivator_binder")
 
 	object_binder.save(self, packet)
-	if self.object:profile_name() == "stc_strelok" then
+
+	if self.is_strelok then
 		stc_strelok_health_manager.save(packet)
 	end
-	packet:w_bool(self.treasure_processed)
 
-	xr_logic.save_obj(self.object, packet)
-	trade_manager.save(self.object, packet)
---	treasure_manager.save(packet)
-	xr_sound.save_npc(packet, self.object:id())
-	dialog_manager.save_npc(packet, self.object:id())
+	local npc = self.object
+
+	xr_logic.save_obj(npc, packet)
+	xr_sound.save_npc(packet, npc:id())
 
 	set_save_marker(packet, "save", true, "motivator_binder")
 end
 
-function motivator_binder:load(reader)
-	self.loaded = true
-	printf("obj1: [%s]", self.object:name())
+function motivator_binder:load(reader) -- called 4.5th (only on load)
+
 	set_save_marker(reader, "load", false, "motivator_binder")
-	printf("obj2: [%s]", self.object:name())
+
 	object_binder.load(self, reader)
-	printf("obj3: [%s]", self.object:name())
-	if self.object:profile_name() == "stc_strelok" then
+
+	if self.is_strelok then
 		stc_strelok_health_manager.load(reader)
 	end
-	self.treasure_processed = reader:r_bool()
 
-	xr_logic.load_obj(self.object, reader)
-	trade_manager.load(self.object, reader)
---	treasure_manager.load(reader)
-	xr_sound.load_npc(reader, self.object:id())
-	dialog_manager.load_npc(reader, self.object:id())
+	local npc = self.object
+
+	xr_logic.load_obj(npc, reader)
+	xr_sound.load_npc(reader, npc:id())
+
 	set_save_marker(reader, "load", true, "motivator_binder")
+
+	self.loaded = true
 end
 
-function motivator_binder:hear_callback(self, who, sound_type, sound_position, sound_power)
-	if who:id() == self:id() then
-		return
-	end
-	local type = "NIL"
-	if bit_and(sound_type, snd_type.weapon) == snd_type.weapon then
-		type = "WPN"
-		if bit_and(sound_type, snd_type.weapon_shoot) == snd_type.weapon_shoot then
-			type = "WPN_shoot"
-		elseif bit_and(sound_type, snd_type.weapon_empty) == snd_type.weapon_empty then
-			type = "WPN_empty"
-		elseif bit_and(sound_type, snd_type.weapon_bullet_hit) == snd_type.weapon_bullet_hit then
-			type = "WPN_hit"
-		elseif bit_and(sound_type, snd_type.weapon_reload) == snd_type.weapon_reload then
-			type = "WPN_reload"
-		end
-	elseif bit_and(sound_type, snd_type.item) == snd_type.item then
-		type = "ITM"
-		if bit_and(sound_type, snd_type.item_pick_up) == snd_type.item_pick_up then
-			type = "ITM_pckup"
-		elseif bit_and(sound_type, snd_type.item_drop) == snd_type.item_drop then
-			type = "ITM_drop"
-		elseif bit_and(sound_type, snd_type.item_hide) == snd_type.item_hide then
-			type = "ITM_hide"
-		elseif bit_and(sound_type, snd_type.item_take) == snd_type.item_take then
-			type = "ITM_take"
-		elseif bit_and(sound_type, snd_type.item_use) == snd_type.item_use then
-			type = "ITM_use"
-		end
-	elseif bit_and(sound_type, snd_type.monster) == snd_type.monster then
-		type = "MST"
-		if bit_and(sound_type, snd_type.monster_die) == snd_type.monster_die then
-			type = "MST_die"
-		elseif bit_and(sound_type, snd_type.monster_injure) == snd_type.monster_injure then
-			type = "MST_damage"
-		elseif bit_and(sound_type, snd_type.monster_step) == snd_type.monster_step then
-			type = "MST_step"
-		elseif bit_and(sound_type, snd_type.monster_talk) == snd_type.monster_talk then
-			type = "MST_talk"
-		elseif bit_and(sound_type, snd_type.monster_attack) == snd_type.monster_attack then
-			type = "MST_attack"
-		elseif bit_and(sound_type, snd_type.monster_eat) == snd_type.monster_eat then
-			type = "MST_eat"
-		end
-	end
-	if type ~= "NIL" then
-		printf("SND *%s* dist: %d [%f], %s -> %s", type, self:position():distance_to(who:position()), sound_power, who:name(), self:name())
-	end
-end
+--------------------------------------------------------------------------------
 
-function AddToMotivator(npc)
-	if alife() then
-		npc:bind_object(this.motivator_binder(npc))
-	end
-end
+local wp_meet_false       = world_property(xr_evaluators_id.stohe_meet_base + 1, false)
+local wp_wounded_false    = world_property(xr_evaluators_id.sidor_wounded_base, false)
+local wp_abuse_false      = world_property(xr_evaluators_id.abuse_base, false)
 
--- Эвалюаторы, которые имеют высший приоритет, и, соответственно, перебивают остальные скрипты собой
+local wp_alive_true       = world_property(stalker_ids.property_alive, true)
+local wp_danger_false     = world_property(stalker_ids.property_danger, false)
+local wp_enemy_false      = world_property(stalker_ids.property_enemy, false)
+local wp_anomaly_false    = world_property(stalker_ids.property_anomaly, false)
+local wp_smartcover_false = world_property(xr_evaluators_id.smartcover_action + 3, false)
+
 function addCommonPrecondition(action)
-	--action:add_precondition (world_property(xr_evaluators_id.reaction,false))
-	action:add_precondition (world_property(xr_evaluators_id.stohe_meet_base + 1,false))
-	action:add_precondition (world_property(xr_evaluators_id.sidor_wounded_base + 0,  false))
-	--'action:add_precondition (world_property(xr_evaluators_id.chugai_heli_hunter_base, false))
-	action:add_precondition (world_property(xr_evaluators_id.abuse_base, false))
+	action:add_precondition(wp_meet_false)
+	action:add_precondition(wp_wounded_false)
+	action:add_precondition(wp_abuse_false)
 end
-function register_bloodsucker_restr(obj)
-		printf("registering blood restr!!!")
-		bloodsuckers_restr[obj:id()] = obj
+
+function addPrecondAliveNoDangerNoEnemyNoAnomalyNoSmartcover(action)
+	action:add_precondition(wp_alive_true)
+	action:add_precondition(wp_danger_false)
+	action:add_precondition(wp_enemy_false)
+	action:add_precondition(wp_anomaly_false)
+	action:add_precondition(wp_smartcover_false)
 end

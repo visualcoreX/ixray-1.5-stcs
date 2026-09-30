@@ -1,0 +1,895 @@
+--[[
+    gwr_eatable.script  --  S.T.A.L.K.E.R. Clear Sky (IX-Ray 1.5 STCS).
+    Animated item-use, Gunslinger-based.
+
+    Flow: bind_stalker.on_use_item -> OnItemUsed(section). The used item declares
+    `hud = <hud_model>`. We spawn that hud-model (a WP_BINOC-class phantom placed in
+    the unused ARTEFACT_SLOT (10), script_binding = gwr_eatable.init); its binder
+    force-equips it (make_item_active), plays the sound, applies the item's real
+    effect (a hidden gwr_eatable_object eaten after effect_delay), then restores the
+    weapon the player had out and releases the phantom.
+
+    The phantom lives in slot 10 (artefact slot: slot_active=true but no SP item uses
+    it), so the real slot-4 binocular is NEVER touched -- no despawn, no backpack
+    collision, no draw/holster flash. Releasing the phantom empties slot 10, so empty
+    hands stay empty. Weapon/slot switching is blocked engine-side (g_block_wpn_switch)
+    for the duration.
+
+    Anti-spam: while an animation plays, further uses are cancelled (finite-use items
+    are handed back; infinite-portion drinks just lose a no-effect portion). All
+    animated items have their eat_* zeroed and moved to their *_eatable, so handing
+    the item back never doubles an effect.
+]]--
+
+local ini = system_ini()
+
+local saved_slot     = nil
+local saved_item_id  = nil
+local saved_detector = false     -- a detector was out (left hand) when the item-use started
+local detector_show_pending = false  -- re-show the detector once the eat phantom is destroyed
+local kick_binder_live = false   -- the live phantom is the quick-kick one
+local busy           = false     -- an animation is currently playing
+local kick_repeat    = false     -- kick key pressed again while a stab is running (GS kfQUICKKICK)
+local snd_instant    = false     -- play the use sound with no snd_delay this time
+local wpn_blocked    = false     -- mirror of the g_block_wpn_switch engine console var
+
+-- spawn a hud-model phantom (slot 10) that plays its anm_show; shared by item-use and action animators
+-- section of the real item this gesture is using, so an INTERRUPTED gesture can hand it back
+-- (the engine consumed it before we ever ran). nil for the burn / toggle phantoms.
+local pending_item_sect = nil
+
+local function spawn_phantom(hud_sect, item_sect)
+	busy = true
+	pending_item_sect = item_sect
+	saved_slot = db.actor:active_slot()
+	local ai = db.actor:active_item()
+	saved_item_id = ai and ai:id() or nil
+	saved_detector = db.actor:detector_active()   -- remember an out detector so we can restore it later
+	-- sound plays immediately only with TRULY empty hands; a weapon OR a detector holsters first
+	-- (both have a hide animation), so wait snd_delay in that case
+	snd_instant = (saved_item_id == nil) and (not saved_detector)
+	alife():create(hud_sect, db.actor:position(), db.actor:level_vertex_id(), db.actor:game_vertex_id(), db.actor:id())
+end
+
+-- GS multi-use items ("system of usable-item state"): a bottle is not one item with a counter but a
+-- CHAIN of sections -- water -> water2 -> water3 -> water4 -> nothing. The full bottle carries the
+-- whole map (base_object, uses_count, using_2..N); every later stage inherits it and only differs by
+-- icon, weight, cost and description. The engine consumes whichever stage was used, and once the sip
+-- has actually landed we hand the NEXT one back. Single-use items have no uses_count and return nil.
+function next_use_stage(sect)
+	if sect == nil then return nil end
+	local base = ini:line_exist(sect, "base_object") and ini:r_string(sect, "base_object") or sect
+	if not ini:line_exist(base, "uses_count") then return nil end
+	local uses = ini:r_s32(base, "uses_count")
+	if uses < 2 then return nil end
+
+	-- which link is the section we just drank from? the base is link 1, using_N is link N
+	local idx = nil
+	if sect == base then
+		idx = 1
+	else
+		for i = 2, uses do
+			if ini:line_exist(base, "using_" .. tostring(i)) and ini:r_string(base, "using_" .. tostring(i)) == sect then
+				idx = i
+				break
+			end
+		end
+	end
+	if idx == nil or idx >= uses then return nil end   -- unknown, or that was the last portion
+
+	local nxt = "using_" .. tostring(idx + 1)
+	return ini:line_exist(base, nxt) and ini:r_string(base, nxt) or nil
+end
+
+-- called by callback.use_object (bind_stalker.on_use_item)
+function OnItemUsed(section)
+	-- no animated use on a corpse (the item is consumed by the engine either way)
+	if db.actor == nil or not db.actor:alive() then return end
+	if not ini:line_exist(section, "hud") then return end
+	local hud_sect = ini:r_string(section, "hud")
+	if not ini:line_exist(hud_sect, "timing") then return end
+
+	-- exoskeleton: use the item's special exo animation variant if it defines one
+	if is_exo_outfit() and ini:line_exist(hud_sect, "hud_exo") then
+		local exo = ini:r_string(hud_sect, "hud_exo")
+		if ini:line_exist(exo, "timing") then hud_sect = exo end
+	end
+
+	-- don't start while another animation is running (anti-spam) or the weapon owns the hands for
+	-- something that must not be cut (draw / holster / shot cycle / gesture) -- the engine already
+	-- consumed the item, so hand it back. A RELOAD or a JAM does not stop us: the phantom takes the
+	-- hands and the holster cuts that animation short, like the quick grenade throw does.
+	if busy or db.actor:active_item_uninterruptible() then
+		-- hand the just-consumed item back (finite-use only; drinks keep -1 portions)
+		local portions = ini:line_exist(section, "eat_portions_num") and ini:r_s32(section, "eat_portions_num") or 1
+		if portions >= 0 then
+			alife():create(section, db.actor:position(), db.actor:level_vertex_id(), db.actor:game_vertex_id(), db.actor:id())
+		end
+		return
+	end
+
+	spawn_phantom(hud_sect, section)
+end
+
+function init(obj)
+	obj:bind_object(gwr_eat_binder(obj))
+end
+
+-- Called from the engine (ActorInput.cpp) when USE is pressed while the actor is burning.
+-- Brings up the hands that beat the flames out. The engine drains the burn wound faster for as
+-- long as this phantom is in hand (its burn_restore), so pressing again just extends that.
+-- Reuses the eatable phantom wholesale: same spawn, same binder, same slot save/restore.
+function on_burn_use()
+	if db.actor == nil or busy then return end
+	spawn_phantom("gwr_burn_animator")
+end
+
+-- Called from the engine (ActorInput.cpp) when the headlamp / night-vision is toggled.
+-- Plays the matching Gunslinger-style toggle animation via the shared phantom (slot 10).
+-- Does not interrupt a running animation; the light itself was already toggled engine-side.
+-- Keep the sound_object at MODULE scope: a plain local is GC'd as soon as the function returns, and
+-- CScriptSound::~CScriptSound THROW3s ("playing sound is not completed, but is destroying") if it is
+-- destroyed while the ~1s nv_deact/nv_act blip is still playing -> abort in the debug/mixed build
+-- (Release's GC happens to collect it after the sound ends, so it never surfaced there). Stop any
+-- previous blip before starting a new one, mirroring the self.snd discipline used elsewhere in this file.
+local _toggle_snd
+local function play_toggle_sound(snd)
+	if _toggle_snd and _toggle_snd:playing() then _toggle_snd:stop() end
+	_toggle_snd = sound_object(snd)
+	_toggle_snd:play_at_pos(db.actor, vector():set(0, 0, 0), 0, sound_object.s2d)
+end
+
+-- Called from the engine after a headlamp/NV toggle. `spawn_left_hand` = the actor's hands are
+-- EMPTY (no weapon/detector in hands), so we play the generic left-hand headflash animator (its
+-- binder plays the sound). Otherwise a weapon/detector already played its own gesture (or none),
+-- and we just play the toggle sound here.
+function on_headlamp_switch(on, spawn_left_hand)
+	if db.actor == nil then return end
+	if spawn_left_hand then
+		play_action_animator(on and "headlamp_enable_animator" or "headlamp_disable_animator")
+	else
+		play_toggle_sound(on and "weapons\\headflash_on" or "weapons\\headflash_off")
+	end
+end
+
+function on_nv_switch(on, spawn_left_hand)
+	if db.actor == nil then return end
+	if spawn_left_hand then
+		play_action_animator(on and "nv_enable_animator" or "nv_disable_animator")
+	else
+		play_toggle_sound(on and "weapons\\nv_act" or "weapons\\nv_deact")
+	end
+end
+
+-- Spawn the action-animator item (engine class CWpnActionAnimator auto-shows it on the LEFT
+-- hand; gwr_action_binder plays the sound and releases it after timing). No make_item_active,
+-- so the weapon in the right hand is untouched.
+function play_action_animator(hud_model_sect)
+	if db.actor == nil or busy then return end
+	if not ini:line_exist(hud_model_sect, "timing") then return end
+	busy = true
+	alife():create(hud_model_sect, db.actor:position(), db.actor:level_vertex_id(), db.actor:game_vertex_id(), db.actor:id())
+end
+
+-- GS monster kick: a boar hit knocked the item out of the hands -> play the empty-hands flinch.
+-- The motions (boar_hit_front / boar_hit_front1 / boar_hit_back) live in the HANDS bank
+-- (wpn_hand_animation.omf); the engine resolves a hud phantom's anm_* aliases against the hands
+-- model, so the phantom only exists to carry the alias. Called from CActor::UpdatePlannedMonsterKick.
+function on_monster_kick(from_back)
+	if from_back then
+		play_action_animator("boar_kick_back_animator")
+	else
+		play_action_animator("boar_kick_front_animator")
+	end
+end
+
+function init_action(obj)
+	obj:bind_object(gwr_action_binder(obj))
+end
+
+-- true when the actor wears an exoskeleton. Exo outfits use an exo hands hud section
+-- (wpn_hand_exo / wpn_hand_exo_freedom / ...), so detect via player_hud_section containing "exo".
+-- Covers exo_outfit, svoboda_exo_outfit and any modded exo automatically.
+function is_exo_outfit()
+	if db.actor == nil then return false end
+	local o = db.actor:item_in_slot(6)   -- OUTFIT_SLOT
+	if o == nil then return false end
+	local osect = o:section()
+	if not ini:line_exist(osect, "player_hud_section") then return false end
+	local phs = ini:r_string(osect, "player_hud_section")
+	return phs ~= nil and string.find(phs, "exo", 1, true) ~= nil
+end
+
+-- toggle the engine-level weapon/slot-switch block (ActorInput.cpp / g_block_wpn_switch)
+function set_wpn_block(on)
+	if on ~= wpn_blocked then
+		get_console():execute("g_block_wpn_switch "..(on and "1" or "0"))
+		wpn_blocked = on
+	end
+end
+
+-- idle safety net (called throttled from bind_stalker.update): never stay input-blocked
+-- while no animation runs (covers a save/quit/load that happened mid-animation).
+function ensure_binocular()
+	if db.actor == nil then return end
+	if not busy then set_wpn_block(false) end
+end
+
+-- GS blowout device failure: mirror the CS emission state (xr_surge_hide.surge_activated) into the
+-- engine console var g_surge_active, which drives CActor::UpdateElectronicsProblems (glitches/disables
+-- NV, headlamp, weapon laser/flashlight during a surge). Only touches the console on a state change.
+local _last_surge_flag = nil
+function update_surge_flag()
+	local on = xr_surge_hide and xr_surge_hide.surge_activated and true or false
+	if on ~= _last_surge_flag then
+		_last_surge_flag = on
+		get_console():execute("g_surge_active " .. (on and "1" or "0"))
+		if on then
+			local t = tonumber(xr_surge_hide.time_before_surge) or 30
+			if t < 1 then t = 30 end
+			get_console():execute("g_surge_time " .. tostring(t))
+		end
+	end
+end
+
+-- The live burn phantom. The engine keeps it out (its gwr_update_burning drives the whole thing:
+-- when to start beating, when to stop) and calls finish_burn to bring the hands down. We just make
+-- the binder release the phantom on demand instead of on its own timing.
+local burn_binder = nil
+
+-- The item-use phantom currently in hand, if any. Tracked so the engine can CANCEL the gesture
+-- outright: a quick grenade throw is allowed to interrupt anything, Gunslinger-style, and the
+-- animation has to let go of the hands (and of g_block_wpn_switch) before the grenade comes up.
+local cur_binder = nil
+
+-- Called from the engine (ActorInput, kQUICK_GRENADE): the slot the running gesture took the
+-- hands from, so the quick throw knows where to go back to. -1 when there is nothing to restore.
+-- Deliberately reads module state, not cur_binder -- the engine asks AFTER abandon_now has run.
+function interrupted_slot()
+	if saved_slot ~= nil then return saved_slot end
+	return -1
+end
+
+-- Called from the engine (ActorInput, kQUICK_GRENADE). Drops whatever item-use animation is
+-- playing WITHOUT restoring the weapon it interrupted -- the grenade is taking the hands next.
+-- Hands the item back if its effect had not landed yet. Returns true if there was something to cancel.
+function abandon_now()
+	if cur_binder ~= nil and not cur_binder.done then
+		cur_binder:abandon()
+		return true
+	end
+	return false
+end
+
+-- Called from the engine once the fire is out (or the player let go) AND the fire_on_the_hand cycle
+-- has reached a clean boundary -- so the hands come down at the end of a swing, not mid-air.
+function finish_burn()
+	if burn_binder and not burn_binder.done then
+		burn_binder:finish()
+	end
+end
+
+
+-- The weapon we put away when the animation started, IF it is still where we left it. The player can
+-- open the inventory mid-animation and move it to the ruck (or drop it) -- pulling it back into the
+-- hands afterwards would silently re-equip something he deliberately took off. Same for the slot
+-- fallback: only restore a slot that still holds something.
+local function saved_weapon_still_slotted()
+	if db.actor == nil or saved_item_id == nil or saved_slot == nil then return nil end
+	local w = level.object_by_id(saved_item_id)
+	if w == nil then return nil end
+	local in_slot = db.actor:item_in_slot(saved_slot)
+	if in_slot == nil or in_slot:id() ~= saved_item_id then return nil end
+	return w
+end
+
+local function saved_slot_has_item()
+	return db.actor ~= nil and saved_slot ~= nil and db.actor:item_in_slot(saved_slot) ~= nil
+end
+
+class "gwr_eat_binder" (object_binder)
+
+function gwr_eat_binder:__init(obj) super(obj)
+	local sect = self.object:section()
+	if sect == "gwr_burn_animator" then burn_binder = self end
+	self.timing          = ini:r_s32(sect, "timing")
+	self.snd_name        = ini:line_exist(sect, "snd_using") and ini:r_string(sect, "snd_using") or nil
+	self.snd_delay       = ini:line_exist(sect, "snd_delay") and ini:r_s32(sect, "snd_delay") or 0
+	-- detector-only: it holsters faster than a weapon, so use a shorter delay if the item provides one
+	if (saved_item_id == nil) and saved_detector and ini:line_exist(sect, "snd_delay_detector") then
+		self.snd_delay = ini:r_s32(sect, "snd_delay_detector")
+	end
+	self.snd_instant     = snd_instant
+	self.eatable_section = ini:line_exist(sect, "gwr_eatable_object") and ini:r_string(sect, "gwr_eatable_object") or nil
+	self.effect_delay    = ini:line_exist(sect, "effect_delay") and ini:r_s32(sect, "effect_delay") or 0
+	-- GS trash: the empty this animation throws away, and how far into the animation it leaves the
+	-- hand. Clamped below `timing` -- past that the phantom is already gone and nothing would spawn.
+	self.trash_sect      = ini:line_exist(sect, "trash_object") and ini:r_string(sect, "trash_object") or nil
+	-- GS `no_trash`: this variant of the animation discards nothing. Set on the exoskeleton medkit
+	-- and antirad huds -- the exo injects through the suit in one motion, there is no wrapper to
+	-- drop. The key lives on the HUD MODEL, so a variant can refuse the trash its item declares.
+	if ini:line_exist(sect, "no_trash") and ini:r_bool(sect, "no_trash") then self.trash_sect = nil end
+	self.timing_trash    = ini:line_exist(sect, "timing_trash") and ini:r_s32(sect, "timing_trash") or 0
+	if self.timing_trash >= self.timing then self.timing_trash = self.timing - 100 end
+
+	self.taken          = false
+	self.snd_started    = false
+	self.eaten          = false
+	self.done           = false
+	self.reqtime        = nil      -- when the phantom was ASKED for (make_item_active)
+	self.starttime      = nil      -- when it actually reached the hands -- the gesture clock
+	self.snd            = nil
+	self.eatable_id     = nil
+	self.trash_thrown   = false
+
+	busy = true                    -- also covers the phantom respawning on load
+	cur_binder = self              -- so the engine can cancel this gesture (see abandon_now)
+	self.item_sect = pending_item_sect
+	pending_item_sect = nil
+	-- multi-use item: what comes back to the bag after this portion (nil = single use, or the last one)
+	self.next_sect = next_use_stage(self.item_sect)
+end
+
+function gwr_eat_binder:play_sound()
+	self.snd_started = true
+	self.snd = sound_object(self.snd_name)
+	self.snd:play_at_pos(db.actor, vector():set(0, 0, 0), 0, sound_object.s2d)
+end
+
+-- Tear the sequence down WITHOUT touching the actor: release the phantom, drop the weapon block and
+-- clear the shared state. For when the actor dies mid-animation.
+function gwr_eat_binder:abandon()
+	self.done = true
+	if cur_binder == self then cur_binder = nil end
+
+	-- Interrupted before the effect landed: give the item back, exactly like the anti-spam path in
+	-- OnItemUsed. The engine consumes the item the moment it is used, so without this an
+	-- interrupted medkit is simply gone. Finite-use only -- drinks keep -1 portions.
+	if self.item_sect and (not self.eaten) and db.actor ~= nil and db.actor:alive() then
+		local portions = ini:line_exist(self.item_sect, "eat_portions_num")
+			and ini:r_s32(self.item_sect, "eat_portions_num") or 1
+		if portions >= 0 then
+			alife():create(self.item_sect, db.actor:position(), db.actor:level_vertex_id(),
+			               db.actor:game_vertex_id(), db.actor:id())
+		end
+	end
+	-- ...and the hidden effect-carrier spawned for the delayed effect never got eaten: drop it,
+	-- or it stays in the inventory as an invisible duplicate.
+	if self.eatable_id ~= nil and (not self.eaten) then
+		local se = alife():object(self.eatable_id)
+		if se ~= nil then alife():release(se, true) end
+		self.eatable_id = nil
+	end
+	set_wpn_block(false)
+	if self.snd and (self.snd:playing() == true) then self.snd:stop() end
+	local se = alife():object(self.object:id())
+	if se ~= nil then alife():release(se, true) end
+	detector_show_pending = false
+	busy = false
+end
+
+function gwr_eat_binder:update(delta)
+	object_binder.update(self, delta)
+	if db.actor == nil then return end
+
+	-- The actor can die in the middle of the animation -- a controller's tube while the medkit key is
+	-- being spammed is exactly how it happens. db.actor is still a valid object for a corpse, so the
+	-- nil check above passes, and everything below (make_item_active, eat, activate_slot) would then
+	-- run against an actor whose inventory and hud the engine is tearing down. That is an access
+	-- violation with no log at all. Abandon the sequence instead of finishing it.
+	if not db.actor:alive() then
+		if not self.done then self:abandon() end
+		return
+	end
+
+	local tg = time_global()
+
+	if not self.taken then
+		self.taken     = true
+		self.reqtime   = tg
+		-- raise the block BEFORE make_item_active so the weapon's holster (anm_hide) plays sped-up
+		-- (engine CalcMotionSpeed keys the fast holster off g_block_wpn_switch) -- Gunslinger-style
+		set_wpn_block(true)
+		db.actor:make_item_active(self.object)   -- draw the phantom (slot 10); real binocular untouched
+		return
+	end
+
+	-- The phantom is NOT in hands the frame we ask for it: whatever was there has to play its holster
+	-- first, and with a rifle up that is most of a second. `timing` measures the gesture itself, so
+	-- starting the clock at make_item_active spent the holster out of the drink -- the bottle went
+	-- away well before the animation was over, and the more there was to put away the worse it got.
+	-- CInventory::Activate only sets m_iNextActiveSlot; active_item() keeps returning the OLD item
+	-- until the switch really lands, which is exactly the moment anm_show begins.
+	if not self.starttime then
+		local act   = db.actor:active_item()
+		local drawn = (act ~= nil) and (act:id() == self.object:id())
+		-- never wait forever, though: if the switch cannot happen, `busy` would latch and no item
+		-- could ever be used again. Give up after a second and run on the old (early) timing.
+		if (not drawn) and (tg - self.reqtime < 1000) then return end
+
+		self.starttime = tg
+		-- snd_delay existed only to cover this same holster by hand; now that the clock starts with
+		-- the animation, the sound belongs at its start. Only the give-up path still needs the delay.
+		if self.snd_name and (drawn or self.snd_delay <= 0 or self.snd_instant) then
+			self:play_sound()
+		end
+		return
+	end
+
+	-- weapon/slot switching is blocked at the engine level (g_block_wpn_switch),
+	-- so no re-assert needed here -- the switch input simply never fires.
+
+	if self.snd_name and (not self.snd_started) and (tg - self.starttime >= self.snd_delay) then
+		self:play_sound()
+	end
+
+	-- apply the real effect after effect_delay by eating a hidden object
+	if self.eatable_section and (not self.eaten) then
+		if self.eatable_id == nil then
+			if tg - self.starttime >= self.effect_delay then
+				local se = alife():create(self.eatable_section, db.actor:position(), db.actor:level_vertex_id(), db.actor:game_vertex_id(), db.actor:id())
+				if se ~= nil then self.eatable_id = se.id end
+			end
+		else
+			local e = level.object_by_id(self.eatable_id)
+			if e ~= nil then
+				db.actor:eat(e)
+				self.eaten = true
+			end
+		end
+	end
+
+	if self.trash_sect and (not self.trash_thrown) and (tg - self.starttime >= self.timing_trash) then
+		self.trash_thrown = true
+		spawn_trash(self.trash_sect)
+	end
+
+	if (not self.done) and (tg - self.starttime >= self.timing) then
+		self:finish()
+	end
+end
+
+function gwr_eat_binder:finish()
+	self.done = true
+	set_wpn_block(false)
+	if self.snd and (self.snd:playing() == true) then self.snd:stop() end
+
+	-- ...and never feed or re-arm a corpse: finish() is also reachable on the frame the actor dies.
+	local alive = db.actor ~= nil and db.actor:alive()
+
+	-- safety: make sure the delayed effect was applied
+	if alive and self.eatable_section and (not self.eaten) and self.eatable_id ~= nil then
+		local e = level.object_by_id(self.eatable_id)
+		if e ~= nil then db.actor:eat(e); self.eaten = true end
+	end
+
+	-- Multi-use item: the portion is gone, so put the next, emptier stage in the bag. Gated on
+	-- `eaten` on purpose -- a gesture cut short before the effect landed hands the ORIGINAL stage
+	-- back instead (see abandon), and doing both would duplicate the bottle.
+	if alive and self.next_sect and self.eaten then
+		alife():create(self.next_sect, db.actor:position(), db.actor:level_vertex_id(),
+		               db.actor:game_vertex_id(), db.actor:id())
+	end
+
+	-- release the phantom; slot 10 empties -> engine holsters to empty hands
+	alife():release(alife():object(self.object:id()), true)
+
+	-- redraw the weapon the player had out; empty hands stay empty
+	local w = alive and saved_weapon_still_slotted() or nil
+	if w ~= nil then
+		db.actor:make_item_active(w)
+	elseif alive and saved_item_id ~= nil and saved_slot_has_item() then
+		db.actor:activate_slot(saved_slot)      -- the object is gone but the slot is not empty
+	end
+
+	-- bring the detector back out if it was out before the item-use (it hid when the phantom equipped);
+	-- actually shown in net_destroy, once the phantom object is gone and the weapon is active again,
+	-- so it draws in sync with the restored weapon (its compatibility check needs the real active item)
+	if alive and saved_detector then
+		detector_show_pending = true
+	end
+
+	busy = false
+end
+
+function gwr_eat_binder:net_destroy()
+	if burn_binder == self then burn_binder = nil end
+	if cur_binder == self then cur_binder = nil end
+	if self.snd and (self.snd:playing() == true) then self.snd:stop() end
+	-- destroyed before finish (level change / quit / load): release the anti-spam lock
+	if not self.done then
+		busy = false
+		set_wpn_block(false)
+	elseif detector_show_pending and db.actor ~= nil then
+		-- normal finish: the phantom is now gone and the weapon is active -> re-show the detector
+		-- in sync with the restored weapon draw. emergency (hand_draw) anim if a weapon/item is also
+		-- being drawn, otherwise the normal draw.
+		detector_show_pending = false
+		db.actor:show_detector(saved_item_id ~= nil)
+	end
+	object_binder.net_destroy(self)
+end
+
+-- Binder for the action animators (headlamp / night-vision toggle gesture). The engine class
+-- CWpnActionAnimator shows the item on the LEFT hand itself; this binder only plays the sound
+-- and releases the item after `timing`. It does NOT touch the weapon (right hand stays).
+class "gwr_action_binder" (object_binder)
+
+function gwr_action_binder:__init(obj) super(obj)
+	local sect = self.object:section()
+	self.snd_name  = ini:line_exist(sect, "snd_using") and ini:r_string(sect, "snd_using") or nil
+	self.timing    = ini:r_s32(sect, "timing")
+	self.starttime = nil
+	self.done      = false
+	self.snd       = nil
+	busy = true
+end
+
+function gwr_action_binder:update(delta)
+	object_binder.update(self, delta)
+	if db.actor == nil then return end
+	local tg = time_global()
+
+	if self.starttime == nil then
+		self.starttime = tg
+		if self.snd_name then
+			self.snd = sound_object(self.snd_name)
+			self.snd:play_at_pos(db.actor, vector():set(0, 0, 0), 0, sound_object.s2d)
+		end
+		return
+	end
+
+	if (not self.done) and (tg - self.starttime >= self.timing) then
+		self.done = true
+		alife():release(alife():object(self.object:id()), true)
+		busy = false
+	end
+end
+
+function gwr_action_binder:net_destroy()
+	if self.snd and (self.snd:playing() == true) then self.snd:stop() end
+	if not self.done then busy = false end
+	object_binder.net_destroy(self)
+end
+
+-- ===================== Gunslinger quick knife kick =====================
+-- Full-view phantom: holsters the weapon, plays a quick knife stab (knife_kick_quick), lands a melee hit
+-- at hit_time on the crosshair target within kick_distance, then redraws the weapon. Spawned from the
+-- engine (ActorInput kWPN_KICK -> gwr_eatable.on_quick_kick). Mirrors gwr_eat_binder minus the eating.
+
+function init_kick(obj)
+	obj:bind_object(gwr_kick_binder(obj))
+end
+
+-- returns true only if the kick actually started (engine gates the melee hit on this)
+function on_quick_kick()
+	if db.actor == nil then return false end
+	-- already stabbing: GS keeps the key press and re-triggers the stab when this one ends,
+	-- so you can keep hitting without waiting for the weapon to be drawn back
+	if busy then
+		if kick_binder_live then kick_repeat = true end
+		return false
+	end
+	if db.actor:item_in_slot(0) == nil then return false end   -- only with a knife equipped (CS knife slot = 0)
+	-- a reload / jam may be cut short (the phantom's holster does it), same rule as item use;
+	-- a draw, holster, shot cycle or another gesture still refuses. orig: active_item_busy()
+	if db.actor:active_item_uninterruptible() then return false end
+	if not ini:line_exist("quick_kick_animator", "timing") then return false end
+	spawn_phantom("quick_kick_animator")
+	return true
+end
+
+class "gwr_kick_binder" (object_binder)
+
+function gwr_kick_binder:__init(obj) super(obj)
+	local sect      = self.object:section()
+	self.snd_name   = ini:line_exist(sect, "snd_using") and ini:r_string(sect, "snd_using") or nil
+	self.hit_frac   = ini:line_exist(sect, "mark_anm_show") and ini:r_float(sect, "mark_anm_show") or 0.3  -- GS mark
+	self.max_timing = ini:line_exist(sect, "timing") and ini:r_s32(sect, "timing") or 2000                 -- safety cap
+	self.taken      = false
+	self.started    = false    -- the stab (anm_show) is actually on screen (after the weapon holster)
+	self.hit_done   = false
+	self.done       = false
+	self.spawntime  = nil
+	self.anim_start = nil
+	self.anim_end   = nil
+	self.snd        = nil
+	busy = true
+	kick_repeat = false
+	kick_binder_live = true
+end
+
+function gwr_kick_binder:update(delta)
+	object_binder.update(self, delta)
+	if db.actor == nil then return end
+	local tg = time_global()
+
+	if not self.taken then
+		self.taken     = true
+		self.spawntime = tg
+		set_wpn_block(true)                       -- speeds up the weapon holster (like the eat animators)
+		db.actor:make_item_active(self.object)    -- draw the knife phantom (slot 10); real weapon untouched
+		return
+	end
+
+	-- Wait until the phantom's stab (anm_show=knife_kick_quick) is ACTUALLY playing (i.e. after the weapon
+	-- has holstered), then latch the real animation window from the engine. This makes the hit + release
+	-- track GS's fractional mark_anm_show (0.3) and the true anim length -- no cut-off, no holster-desync.
+	if not self.started then
+		local ai = db.actor:active_item()
+		local me = db.actor:active_item_motion_end()   -- wall-clock ms when the stab ends (0 = none)
+		if ai ~= nil and ai:id() == self.object:id() and me ~= nil and me > tg then
+			self.started    = true
+			self.anim_start = tg
+			self.anim_end   = me
+			if self.snd_name then                      -- GS snd_draw: at the stab start
+				self.snd = sound_object(self.snd_name)
+				self.snd:play_at_pos(db.actor, vector():set(0, 0, 0), 0, sound_object.s2d)
+			end
+		elseif tg - self.spawntime > self.max_timing then
+			self:finish()                              -- safety: never latched -> bail out
+		end
+		return
+	end
+
+	if (not self.hit_done) and (tg >= self.anim_start + (self.anim_end - self.anim_start) * self.hit_frac) then
+		self.hit_done = true
+		db.actor:quick_kick_hit()
+	end
+
+	if (not self.done) and (tg >= self.anim_end) then
+		-- GS: the key was pressed again -> replay the stab instead of holstering back to the weapon
+		if kick_repeat and db.actor:active_item_replay_show() then
+			kick_repeat   = false
+			self.started  = false                      -- re-latch the new anim window (and replay the sound)
+			self.hit_done = false
+			self.spawntime = tg
+			if self.snd and (self.snd:playing() == true) then self.snd:stop() end
+			return
+		end
+		self:finish()                                  -- release exactly at the stab's end (GS holds to anim end)
+	end
+end
+
+function gwr_kick_binder:finish()
+	self.done = true
+	kick_binder_live = false
+	kick_repeat = false
+	set_wpn_block(false)
+	if self.snd and (self.snd:playing() == true) then self.snd:stop() end
+	alife():release(alife():object(self.object:id()), true)   -- despawn the phantom
+	-- redraw the weapon the player had out
+	local w = saved_weapon_still_slotted()
+	if w ~= nil then
+		db.actor:make_item_active(w)
+	elseif saved_item_id ~= nil and saved_slot_has_item() then
+		db.actor:activate_slot(saved_slot)
+	end
+	if saved_detector then detector_show_pending = true end
+	busy = false
+end
+
+function gwr_kick_binder:net_destroy()
+	if self.snd and (self.snd:playing() == true) then self.snd:stop() end
+	if not self.done then
+		busy = false
+		set_wpn_block(false)
+	elseif detector_show_pending and db.actor ~= nil then
+		detector_show_pending = false
+		db.actor:show_detector(saved_item_id ~= nil)
+	end
+	object_binder.net_destroy(self)
+end
+
+-- ===================== Gunslinger-style 3D PDA (stage 1) =====================
+-- Same phantom trick as the item-use, with one difference: the [pda_show_animator] section has no
+-- `timing`, so this binder does NOT auto-release -- it holds the PDA in hand until the PDA window
+-- closes. Driven from the engine: CUIPdaWnd::Show/Hide -> on_pda_show / on_pda_hide.
+
+local pda_binder = nil      -- the live phantom's binder while the PDA is out
+local pda_wanted = false    -- the PDA window is currently open
+
+function on_pda_show()
+	if db.actor == nil or pda_wanted or busy then return end
+	pda_wanted = true
+	spawn_phantom("pda_show_animator")
+end
+
+function on_pda_hide()
+	pda_wanted = false
+	if pda_binder ~= nil then pda_binder:finish() end
+end
+
+class "gwr_pda_binder" (object_binder)
+
+local PDA_HIDE_TIMEOUT = 3000   -- ms; safety net in case the holster never reports finished
+local NO_ACTIVE_SLOT   = 4294967295   -- 0xffffffff, xrServerEntities\inventory_space.h
+
+function gwr_pda_binder:__init(obj) super(obj)
+	self.taken   = false
+	self.hiding  = false
+	self.done    = false
+	self.hide_at = nil
+	busy = true
+end
+
+function gwr_pda_binder:update(delta)
+	object_binder.update(self, delta)
+	if db.actor == nil then return end
+	if not self.taken then
+		self.taken = true
+		pda_binder = self
+		-- block weapon switching for as long as the PDA is out; also makes the weapon's holster
+		-- play sped-up (engine CalcMotionSpeed keys off g_block_wpn_switch), Gunslinger-style
+		set_wpn_block(true)
+		db.actor:make_item_active(self.object)   -- draw the PDA phantom (slot 10)
+		return
+	end
+	-- window closed while we were still drawing -> start closing now
+	if not pda_wanted and not self.hiding then self:finish() end
+
+	if self.hiding and not self.done then
+		-- the phantom stops being the active item once its pda_hide has played out -> only THEN is
+		-- it safe to delete it. Deleting it in finish() removed the model mid-air and the hide was
+		-- never seen. The timeout covers the case where the switch can't complete (e.g. nothing to
+		-- switch back to), so the phantom can never get stuck in hand.
+		local ai = db.actor:active_item()
+		if (ai == nil or ai:id() ~= self.object:id()) or (time_global() >= self.hide_at) then
+			self:release_now()
+		end
+	end
+end
+
+-- Start the close: hand the slot back so the ENGINE holsters the phantom (that's what plays
+-- pda_hide). The actual delete happens in update(), once the holster is done.
+function gwr_pda_binder:finish()
+	if self.done or self.hiding then return end
+	self.hiding  = true
+	self.hide_at = time_global() + PDA_HIDE_TIMEOUT
+	pda_binder   = nil
+	-- lower the block BEFORE switching: while it's up the engine plays holsters sped-up, and we
+	-- want to actually see pda_hide at its normal speed
+	set_wpn_block(false)
+	-- redraw whatever was out before; empty hands stay empty
+	local w = saved_weapon_still_slotted()
+	if w ~= nil then
+		db.actor:make_item_active(w)
+	elseif saved_item_id == nil then
+		-- hands were empty. Do NOT reuse saved_slot here: with empty hands it doesn't name a real
+		-- slot, and activating it drew the KNIFE (slot 0). Ask for "no slot" explicitly instead --
+		-- that still holsters the phantom (so pda_hide plays) and leaves the hands empty.
+		db.actor:activate_slot(NO_ACTIVE_SLOT)
+	elseif saved_slot_has_item() then
+		db.actor:activate_slot(saved_slot)      -- the object is gone but the slot is not empty
+	end
+end
+
+function gwr_pda_binder:release_now()
+	self.done = true
+	alife():release(alife():object(self.object:id()), true)
+	if saved_detector then detector_show_pending = true end
+	busy = false
+end
+
+function gwr_pda_binder:net_destroy()
+	pda_binder = nil
+	if not self.done then
+		-- destroyed before finish (level change / quit / load): release the locks
+		busy = false
+		set_wpn_block(false)
+	elseif detector_show_pending and db.actor ~= nil then
+		detector_show_pending = false
+		db.actor:show_detector(saved_item_id ~= nil)
+	end
+	object_binder.net_destroy(self)
+end
+
+function init_pda(obj)
+	obj:bind_object(gwr_pda_binder(obj))
+end
+
+
+--[[ ------------------------------------------------------------------------------------------
+    Gunslinger trash: the wrapper / bottle / blister the animation throws away.
+
+    The hud model names it (`trash_object`) and says when it leaves the hand (`timing_trash`).
+    We spawn it in front of the CAMERA, offset by the item's own throw_offset_*, and its binder
+    (gwr_eatable.init_trash, set on gwr_base_trash) gives it one push on its first update: a hit
+    with power 0 and the item's throw_impulse -- which is how GS throws it too, since a hit is the
+    only way a script can put an impulse into a physics shell. After `remove_time` it releases
+    itself, so the world does not fill up with litter.
+--------------------------------------------------------------------------------------------]]--
+
+local function cfg_float(sect, key, def)
+	if ini:line_exist(sect, key) then return ini:r_float(sect, key) end
+	return def
+end
+
+function spawn_trash(sect)
+	if db.actor == nil or not db.actor:alive() then return end
+	if not ini:section_exist(sect) then return end
+
+	local d = device()
+	-- GS SpawnTrash: x along the view, y along the camera's up, z along its right
+	local pos = vector():set(d.cam_pos)          -- copy: never write through to the camera
+	pos = pos:add(vector():set(d.cam_top):mul(cfg_float(sect, "throw_offset_y", 0.2)))
+	pos = pos:add(vector():set(d.cam_dir):mul(cfg_float(sect, "throw_offset_x", -0.1)))
+	pos = pos:add(vector():set(d.cam_right):mul(cfg_float(sect, "throw_offset_z", 0)))
+
+	local se = alife():create(sect, pos, db.actor:level_vertex_id(), db.actor:game_vertex_id())
+
+	-- optional spawn orientation (degrees, XYZ Euler). Without it a piece of trash always spawns
+	-- upright, which looks wrong for anything that should be lying on its side -- e.g. the can.
+	if se ~= nil then
+		local rx = cfg_float(sect, "spawn_rotation_x", 0)
+		local ry = cfg_float(sect, "spawn_rotation_y", 0)
+		local rz = cfg_float(sect, "spawn_rotation_z", 0)
+		if rx ~= 0 or ry ~= 0 or rz ~= 0 then
+			se.angle = vector():set(rx * math.pi / 180, ry * math.pi / 180, rz * math.pi / 180)
+		end
+	end
+end
+
+function init_trash(obj)
+	obj:bind_object(gwr_trash_binder(obj))
+end
+
+class "gwr_trash_binder" (object_binder)
+
+function gwr_trash_binder:__init(obj) super(obj)
+	local sect       = self.object:section()
+	self.throw_dir   = ini:line_exist(sect, "throw_dir") and ini:r_string(sect, "throw_dir") or "right"
+	self.impulse     = cfg_float(sect, "throw_impulse_z", 50)
+	self.impulse_y   = cfg_float(sect, "throw_impulse_y", 0.05)
+	self.life        = (ini:line_exist(sect, "remove_time") and ini:r_s32(sect, "remove_time") or 30) * 1000
+	self.starttime   = time_global()
+	self.thrown      = false
+end
+
+-- direction taken from the camera at the moment of the throw, exactly like GS's GetThrowDir
+local function throw_dir(name)
+	local d = device()
+	if     name == "left"    then return vector():set(d.cam_right):mul(-1)
+	elseif name == "right"   then return vector():set(d.cam_right)
+	elseif name == "back"    then return vector():set(d.cam_dir):mul(-1)
+	end
+	return vector():set(d.cam_dir)                 -- "forward" and anything unrecognised
+end
+
+function gwr_trash_binder:update(delta)
+	object_binder.update(self, delta)
+
+	if not self.thrown then
+		self.thrown = true
+		local dir = throw_dir(self.throw_dir)
+		dir.y     = self.impulse_y
+		local h       = hit()
+		h.direction   = dir
+		h.draftsman   = db.actor
+		h.impulse     = self.impulse
+		h.power       = 0
+		h.type        = hit.strike
+		self.object:hit(h)
+		return
+	end
+
+	if time_global() - self.starttime >= self.life then
+		self:release()
+	end
+end
+
+function gwr_trash_binder:release()
+	local se = alife():object(self.object:id())
+	if se ~= nil then alife():release(se, true) end
+end
+
+-- Safety net, same as GS's. The engine does NOT clean these up: a physic object's `remove_time` is
+-- only honoured for a skeleton part that SPLIT off a bigger object (CPHSkeleton::CopySpawnInit ->
+-- SetAutoRemove), never for one spawned whole, and CSE_ALifeObjectPhysic clears flUseSwitches, so it
+-- never goes offline on its own either. The timer above is the only thing deleting it -- and it stops
+-- ticking the moment this binder dies (level change, quit). Release the alife object here too, or a
+-- level left within remove_time keeps its litter in the save forever.
+function gwr_trash_binder:net_destroy()
+	self:release()
+	object_binder.net_destroy(self)
+end

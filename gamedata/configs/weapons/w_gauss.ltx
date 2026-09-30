@@ -938,7 +938,7 @@ snd_anm_shoot_last       = weapons\gauss\gauss_shoot_recharge_empty
 snd_anm_shoot_aim        = weapons\gauss\gauss_shoot_recharge_fast
 snd_anm_shoot_aim_last   = weapons\gauss\gauss_shoot_recharge_empty
 snd_anm_shoot_suicide    = weapons\gauss\gauss_shoot_recharge_fast
-snd_anm_shoot_last_suicide = weapons\gauss\gauss_shoot_recharge_empty 
+snd_anm_shoot_last_suicide = weapons\gauss\gauss_shoot_recharge_empty
 
 snd_exclusive_anm_shoot = false;
 snd_exclusive_anm_shoot_last = false;
@@ -951,7 +951,7 @@ snd_anm_shoot_auto_last       = weapons\gauss\gauss_shoot_recharge_empty
 snd_anm_shoot_aim_auto        = weapons\gauss\gauss_shoot_recharge_fast
 snd_anm_shoot_aim_auto_last   = weapons\gauss\gauss_shoot_recharge_empty
 snd_anm_shoot_auto_suicide = weapons\gauss\gauss_shoot_recharge_fast
-snd_anm_shoot_auto_last_suicide = weapons\gauss\gauss_shoot_recharge_empty 
+snd_anm_shoot_auto_last_suicide = weapons\gauss\gauss_shoot_recharge_empty
 
 snd_exclusive_anm_shoot_auto = false;
 snd_exclusive_anm_shoot_auto_last = false;
@@ -1018,6 +1018,12 @@ snd_night_vision_broken		= $silent
 pp_eff_name = nightvision_gauss.ppe
 pp_eff_cyclic = 1
 pp_eff_overlap = false
+; 2D picture (3D lens off): the pp pass applies the gauss lens formula (grey-blue lift by the
+; brightness value) inside the eyepiece instead of a plain gain -- both modes brighten alike
+pp_nv_2d_lens_tint = true
+; with the suit's NV on too, the goggles grade the picture and this optic only amplifies: its lift
+; becomes a gain (1 + 20*brightness), times this (1 = its ppe carries no gain of its own)
+pp_nv_2d_chain_gain = 1.0
 
 ; ---------------------------------------------------------------------------------------------
 ; scope_alive_detector params (GS weapons\addons\scopes\effectors\alive_detector_base.ltx). The

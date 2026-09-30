@@ -355,7 +355,7 @@
 	<specific_character id="esc_stalker_novice_quest" team_default = "1">
 
 		<name>esc_stalker_novice_quest_name</name>
-		<icon>ui_npc_u_neutral_2</icon>
+		<icon>ui_npc_u_neutral_strider</icon>
 
 		<class>esc_stalker_novice_quest</class>
 		<community>stalker</community> <terrain_sect>stalker_terrain</terrain_sect>
@@ -365,8 +365,8 @@
 
 		<money min="200" max="500" infinitive="0"/>
 
-		<visual>actors\stalker_neutral\stalker_neutral_2</visual>
-		<snd_config>characters_voice\human_03\stalker\</snd_config>
+		<visual>actors\stalker_neutral\stalker_neutral_strider</visual>
+		<snd_config>characters_voice\human_01\stalker\</snd_config>
 
 		<supplies>
 			[spawn] \n

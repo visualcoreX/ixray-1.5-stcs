@@ -1,0 +1,165 @@
+---------------------------------------------------------------------------------------------
+-- Artefacts born from a surge.
+--
+-- Vanilla grew artefacts on a clock: a zone was topped up to `artefact_count` whenever it came
+-- online with the respawn timer expired, and `update()` added one every `idle_time` (~4 real
+-- hours). Both of those are gone from bind_anomaly_zone. What is kept is the STARTING hoard -- the
+-- artefacts a zone is stocked with the first time it is ever seen -- and from then on the only way
+-- a new one appears is a surge.
+--
+-- Each surge every anomaly rolls for a new artefact on top of what it already holds. The odds fall
+-- off as it fills up, so a zone nobody visits does not quietly become a stockpile:
+--     nothing in it yet -> 50 %
+--     one already there -> 25 %
+--     two already there -> 10 %
+--     three            -> never, that is the cap
+-- A roll that succeeds yields two artefacts instead of one 20 % of the time, whenever there is room
+-- for two. A zone already holding two therefore can never gain two: one slot, one artefact.
+--
+-- OFFLINE ZONES ARE NOT SKIPPED. A surge stamps its time on the actor, and a zone that was offline
+-- when it happened settles up in net_spawn the moment it comes back (catch_up below). Nothing new
+-- is written to any savegame for this: the bookkeeping reuses two fields that are already
+-- persisted -- the actor's pstor for the surge time, and the zone's own `idle_time_start`, which
+-- the timed respawn no longer needs, for how far that zone has caught up.
+--
+-- Spawning always goes through the zone's own spawn_artefact_randomly(), so an artefact lands on
+-- one of the authored `artefact_ways` points and is saved exactly as before, and picking it up
+-- still decrements the count through on_artefact_take().
+---------------------------------------------------------------------------------------------
+
+local MAX_PER_ZONE = 3
+
+-- Chance in percent that a surge yields anything at all, indexed by how many the zone already holds.
+local CHANCE_BY_COUNT = { [0] = 50, [1] = 25, [2] = 10 }
+
+-- ...and if it does yield, the chance in percent that it yields TWO rather than one. This is what
+-- covers for the single catch-up roll: a zone that sat offline through several surges can still
+-- come back noticeably richer, so the shortcut does not read as one.
+-- Never applies when there is only one slot left, i.e. a zone already holding two cannot gain two.
+local DOUBLE_CHANCE = 20
+
+local PSTOR_LAST_AT = "surge_last_at"
+
+local was_active = false
+
+---------------------------------------------------------------------------------------------
+-- Time, in absolute in-game seconds since 2000-01-01 -- the same currency xr_surge_hide uses for
+-- the surge schedule, and small enough that pstor keeps it exact.
+---------------------------------------------------------------------------------------------
+
+local epoch_ctime
+
+local function to_sec(ctime)
+	if not epoch_ctime then
+		epoch_ctime = game.CTime()
+		epoch_ctime:set(2000, 1, 1, 0, 0, 0, 0)
+	end
+	return ctime:diffSec(epoch_ctime)
+end
+
+local function game_sec()
+	return to_sec(game.get_game_time())
+end
+
+local function actor_with_pstor()
+	local actor = db.actor
+	if actor == nil or db.storage[actor:id()] == nil then
+		return nil
+	end
+	return actor
+end
+
+--- When the last surge ended, or nil if none has since this savegame began.
+local function last_surge_at()
+	local actor = actor_with_pstor()
+	if actor == nil then return nil end
+	return xr_logic.pstor_retrieve(actor, PSTOR_LAST_AT, nil)
+end
+
+---------------------------------------------------------------------------------------------
+-- Zone bookkeeping
+---------------------------------------------------------------------------------------------
+
+--- Record that this zone is up to date as of now.
+function mark_current(zone)
+	zone.idle_time_start = game.get_game_time()
+end
+
+--- One roll for one zone, then mark it current.
+local function roll(zone)
+	local held   = zone.spawned_count or 0
+	local chance = CHANCE_BY_COUNT[held]
+
+	-- chance is nil once held reaches MAX_PER_ZONE: that is the cap doing its job.
+	if held < MAX_PER_ZONE and chance ~= nil
+	   and zone.artefacts_table ~= nil and #zone.artefacts_table > 0
+	   and zone.path_table ~= nil and #zone.path_table > 0
+	   and math.random(100) <= chance then
+
+		local room  = MAX_PER_ZONE - held
+		local count = (room >= 2 and math.random(100) <= DOUBLE_CHANCE) and 2 or 1
+
+		for _ = 1, count do
+			zone:spawn_artefact_randomly()
+		end
+	end
+
+	mark_current(zone)
+end
+
+--- Called from anomaly_zone_binder:net_spawn for a zone that has been stocked before. Rolls if a
+--  surge has passed since this zone last settled up.
+--
+--  Only the LAST surge time is on record, so a zone that sat offline through several surges gets
+--  one roll, not one per surge. Storing a count per zone would mean adding a field to its save
+--  packet, which would break every existing savegame.
+function catch_up(zone)
+	local last = last_surge_at()
+	if last == nil then return end
+	if zone.idle_time_start ~= nil and to_sec(zone.idle_time_start) >= last then
+		return
+	end
+	roll(zone)
+end
+
+---------------------------------------------------------------------------------------------
+-- Driver
+---------------------------------------------------------------------------------------------
+
+--- A surge has just come and gone: stamp the time and roll every anomaly that is online right now.
+--  The rest settle up through catch_up() when they come back.
+--
+--  Public because a surge does not always run in front of the player: sleeping through one in a
+--  shelter skips the whole sequence (atmsleep.sleep_start), and the anomalies still have to be
+--  restocked for it. Clearing was_active makes this safe to call while surge_activated is being
+--  torn down -- the falling edge in update() cannot then roll a second time for the same surge.
+function apply_surge()
+	was_active = false
+
+	local actor = actor_with_pstor()
+	if actor ~= nil then
+		xr_logic.pstor_store(actor, PSTOR_LAST_AT, game_sec())
+	end
+
+	local zones = bind_anomaly_zone.zones_by_id
+	if zones == nil then return end
+
+	for _, zone in pairs (zones) do
+		roll(zone)
+	end
+end
+
+--- Called every actor update (from bind_stalker), alongside surge_cover.update().
+--
+-- Fires when the surge ENDS rather than when it is announced: the artefacts are what the blowout
+-- leaves behind, and rolling at the end also means one does not pop into view while the player is
+-- still standing next to the anomaly waiting it out.
+function update()
+	local active = xr_surge_hide.surge_activated == true
+
+	if was_active and not active then
+		apply_surge()
+	end
+
+	was_active = active
+end

@@ -342,4 +342,10 @@
 	<string id="ui_inv_outfit_additional_weight">
 		<text>Макс. вес</text>
 	</string>
+
+	<!-- a loaded gun lying in the world: a short USE picks it up, holding USE unloads it into the
+	     inventory (CActor::TryStartWorldUnload) -- shown instead of inventory_item_use -->
+	<string id="inventory_item_use_unload">
+		<text>Поднять предмет ($$ACTION_USE$$)\nРазрядить (удерживать $$ACTION_USE$$)</text>
+	</string>
 </string_table>

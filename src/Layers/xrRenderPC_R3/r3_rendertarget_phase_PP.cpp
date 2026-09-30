@@ -151,6 +151,19 @@ void CRenderTarget::phase_pp		()
 		static	shared_str	s_pp_shadow		= "m_pp_shadow";
 		Fvector4 sh = g_pGamePersistent ? g_pGamePersistent->pp_scope_shadow : Fvector4().set(0.f,0.f,0.f,0.f);
 		RCache.set_c		(s_pp_shadow, sh.x, sh.y, sh.z, sh.w);
+		// the 2D night scope's brightness (CActor fills hud_zoom_deviation.zw while its mask is up):
+		// z = a gain for the picture inside m_pp_mask, w = the gauss lens tint, x = chained with the suit's NV
+		static	shared_str	s_pp_nv			= "m_pp_nv";
+		const Fvector4 nv = g_pGamePersistent ? g_pGamePersistent->hud_zoom_deviation : Fvector4().set(0.f,0.f,0.f,0.f);
+		RCache.set_c		(s_pp_nv, nv.z, nv.w, nv.x, 0.f);
+		// the intoxication: x = fisheye strength at the edges, y = colour swim, z = edge wave, w = time (s)
+		static	shared_str	s_pp_warp		= "m_pp_warp";
+		const Fvector4 sw = g_pGamePersistent ? g_pGamePersistent->pp_screen_warp : Fvector4().set(0.f,1.f,0.f,0.f);
+		RCache.set_c		(s_pp_warp, sw.x, sw.z, sw.w, Device.fTimeGlobal);
+		// blur over the finished picture (pp_blur, CActor): x = amount, y = h/w so the kernel is round
+		static	shared_str	s_pp_blur		= "m_pp_blur";
+		RCache.set_c		(s_pp_blur, g_pGamePersistent ? g_pGamePersistent->pp_blur : 0.f,
+							 Device.dwWidth ? float(Device.dwHeight) / float(Device.dwWidth) : 1.f, 0.f, 0.f);
 	}
 	static	shared_str	s_brightness	= "c_brightness";
 	RCache.set_c		( s_brightness, p_brightness.x, p_brightness.y, p_brightness.z, 0 );

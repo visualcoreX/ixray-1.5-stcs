@@ -122,6 +122,8 @@ public:
 	bool			SuicideAllowed		();		// hud `allow_suicide` + the animation exists + grabbed
 	bool			SuicideStillGrabbed	();
 	void			SuicidePrepareForce	(LPCSTR key, float def);
+	void			SuicideReleaseNow	();		// caught mid-pin-pull: ready force, thrown at the anim end
+	bool			IsSuicideThrow		() const;	// the running pin-pull IS the suicide gesture
 protected:
 	float					m_fThrowForce;
 protected:

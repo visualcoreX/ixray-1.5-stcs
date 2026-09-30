@@ -148,25 +148,13 @@ v_model skinning_2 	(v_model_skinned_2	v)
 	return o;
 }
 
+// The distant (lq) path used to pin every vertex to its FIRST bone and drop the weight. Stock models are
+// exported with the dominant bone first, so that went unnoticed; models from other tools are not, and
+// their limbs tore apart at a distance (R1 only draws far models with the lq shader). Skin both bones,
+// as skinning_3lq / skinning_4lq below already do.
 v_model skinning_2lq 	(v_model_skinned_2	v)
 {
-	// matrices
-	int 	id_0 	= v.tc.z;
-	float4  m0 	= sbones_array[id_0+0];
-	float4  m1 	= sbones_array[id_0+1];
-	float4  m2 	= sbones_array[id_0+2];
-
-	// skinning
-	v_model 	o ;
-	o.pos 		= skinning_pos	(v.P, m0,m1,m2 );
-	o.norm 		= skinning_dir	(v.N, m0,m1,m2 );
-	o.T 		= skinning_dir	(v.T, m0,m1,m2 );
-	o.B 		= skinning_dir	(v.B, m0,m1,m2 );
-	o.tc 		= v.tc		*(16.f / 32768.f);	// -16..+16
-#ifdef SKIN_COLOR
-	o.rgb_tint	= float3	(0,2,0)	;
-#endif
-	return o;
+ return skinning_2(v);
 }
 
 v_model skinning_3 	(v_model_skinned_3	v)

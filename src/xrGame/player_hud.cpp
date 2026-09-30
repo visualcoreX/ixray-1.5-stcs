@@ -1463,6 +1463,19 @@ void gwr_UpdateHudMove(u32 mreal, u32 mwish, u32 dt)
 	if (s_hm.acc > 200)	s_hm.acc = 200;	// pause/load safety
 	Fvector cur_pos = hi->hands_attach_pos();
 	Fvector cur_rot = hi->hands_attach_rot();
+	// The slow intoxication tremor (below) is a pure offset on top of the eased pose: take last frame's
+	// off first, so the easing works on the real pose and neither eats the tremor nor lets it pile up.
+	static struct
+	{
+		Fvector	pos, rot;				// applied last frame
+		Fvector	from_pos, to_pos;		// the current glide: from one random point...
+		Fvector	from_rot, to_rot;		// ...to the next
+		u32		start;					// when that glide began (Device.dwTimeGlobal)
+	} s_tremor = { {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, 0 };
+	cur_pos.sub(s_tremor.pos);
+	cur_rot.sub(s_tremor.rot);
+	s_tremor.pos.set(0.f, 0.f, 0.f);
+	s_tremor.rot.set(0.f, 0.f, 0.f);
 	while (s_hm.acc > 8)
 	{
 		Fvector d;
@@ -1482,8 +1495,43 @@ void gwr_UpdateHudMove(u32 mreal, u32 mwish, u32 dt)
 	// per-frame random offset on top of everything else. Amplitudes come from the weapon hud
 	// (jitter_pos_amplitude / jitter_rot_amplitude), falling back to [gunslinger_base]'s
 	// base_jitter_*. Used after a controller lets go and while a psi block holds it off.
+	// The medicine intoxication shakes them too, much weaker (INTOX_HANDS_JITTER of the controller's amplitude
+	// at full strength, riding its eased strength, Actor.cpp g_intox_fx_level) and SLOWER: not a new random kick
+	// every frame but a glide from one random point to the next every INTOX_TREMOR_PERIOD, smoothstepped.
+	// While the controller's shake runs, that one takes over.
 	{
+		static const float	INTOX_HANDS_JITTER	= 0.2f;
+		static const u32	INTOX_TREMOR_PERIOD	= 100;	// ms per glide (was 200)
+		extern float g_intox_fx_level;
 		CActor* act = smart_cast<CActor*>(Level().CurrentControlEntity());
+		const float k_intox = INTOX_HANDS_JITTER * g_intox_fx_level;
+		if (act && !act->HandsJitterActive() && k_intox > 0.f)
+		{
+			const float ap = READ_IF_EXISTS(pSettings, r_float, sect, "jitter_pos_amplitude",
+					READ_IF_EXISTS(pSettings, r_float, "gunslinger_base", "base_jitter_pos_amplitude", 0.001f)) * k_intox;
+			const float ar = READ_IF_EXISTS(pSettings, r_float, sect, "jitter_rot_amplitude",
+					READ_IF_EXISTS(pSettings, r_float, "gunslinger_base", "base_jitter_rot_amplitude", 0.1f)) * k_intox;
+			const u32 now = Device.dwTimeGlobal;
+			if (now - s_tremor.start >= INTOX_TREMOR_PERIOD || now < s_tremor.start)
+			{
+				// next glide: start where the last one ended (a unit point, scaled by the amplitude below)
+				s_tremor.from_pos	= s_tremor.to_pos;
+				s_tremor.from_rot	= s_tremor.to_rot;
+				s_tremor.to_pos.set(::Random.randF(-1.f, 1.f), ::Random.randF(-1.f, 1.f), ::Random.randF(-1.f, 1.f));
+				s_tremor.to_rot.set(::Random.randF(-1.f, 1.f), ::Random.randF(-1.f, 1.f), ::Random.randF(-1.f, 1.f));
+				s_tremor.start		= now;
+			}
+			float t = float(now - s_tremor.start) / float(INTOX_TREMOR_PERIOD);
+			clamp(t, 0.f, 1.f);
+			t = t * t * (3.f - 2.f * t);	// smoothstep: no kink where two glides meet
+			Fvector up, ur;
+			up.lerp(s_tremor.from_pos, s_tremor.to_pos, t);
+			ur.lerp(s_tremor.from_rot, s_tremor.to_rot, t);
+			s_tremor.pos.set(up.x * ap, up.y * ap, up.z * ap);
+			s_tremor.rot.set(ur.x * ar, ur.y * ar, ur.z * ar);	// degrees, like the offsets above
+			cur_pos.add(s_tremor.pos);
+			cur_rot.add(s_tremor.rot);
+		}
 		if (act && act->HandsJitterActive())
 		{
 			// GS GetHandJitterScale: full while the controller holds you, then fading over jitter_stop_time

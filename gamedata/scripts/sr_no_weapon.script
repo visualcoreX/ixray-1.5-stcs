@@ -3,9 +3,9 @@
 ----------------------------------------------------------------------------------------------------
 function printf()
 end
-local state_nowhere = 0 -- СЃС…РµРјР° С‚РѕР»СЊРєРѕ С‡С‚Рѕ РІРєР»СЋС‡РёР»Р°СЃСЊ
-local state_inside = 1 -- Р°РєС‚РµСЂ РІРЅСѓС‚СЂРё
-local state_outside = 2 -- Р°РєС‚РµСЂ СЃРЅР°СЂСѓР¶Рё
+local state_nowhere = 0 -- схема только что включилась
+local state_inside = 1 -- актер внутри
+local state_outside = 2 -- актер снаружи
 
 class "action_no_weapon"
 
@@ -17,17 +17,20 @@ end
 function action_no_weapon:reset_scheme()
 	--printf("_bp: sr_idle: action_no_weapon:reset_scheme: self.object:name()='%s'", self.object:name())
 	
-	self.state = state_nowhere -- РµС‰Рµ РЅРµСЏСЃРЅРѕ, РІ Р·РѕРЅРµ РѕРЅ, РёР»Рё РЅРµС‚
+	self.state = state_nowhere -- еще неясно, в зоне он, или нет
 	
 	self:switch_state(db.actor)
 end
 
 function action_no_weapon:update( delta )
-	--printf("_br: sr_idle: action_no_weapon:update()")
+------Повелитель Зоны-----------
+      god.main()
+--------------------------------
+	printf("_br: sr_idle: action_no_weapon:update()")
 
-	--if not xr_logic.is_active( self.object, self.st ) then
-	--	return
-	--end
+	if not xr_logic.is_active( self.object, self.st ) then
+		return
+	end
 
 	local actor = db.actor
 
@@ -63,13 +66,22 @@ function action_no_weapon:switch_state( actor )
 end
 
 function action_no_weapon:zone_enter()
+	-- Guarded, not a bare call: switch_state() reaches zone_leave() straight from state_nowhere when
+	-- the actor is outside at reset, so an unguarded pair would decrement bind_stalker's counter once
+	-- per restrictor on the level without ever having incremented it. With half a dozen base zones the
+	-- counter sits at -6 and entering one can never push it above zero -- the weapon would simply never
+	-- holster. Only a real outside->inside (and inside->outside) transition may touch it.
+	if self.state ~= state_inside then
+		bind_stalker.hide_weapon()		-- off while the mod is in progress; uncomment to re-enable
+	end
 	self.state = state_inside
-	bind_stalker.hide_weapon(self.object:id())
 end
 
 function action_no_weapon:zone_leave()
+	if self.state == state_inside then
+		bind_stalker.restore_weapon()	-- ...and its pair
+	end
 	self.state = state_outside
-	bind_stalker.restore_weapon(self.object:id())
 end
 
 ---------------------------------------------------------------------------------------------------------------------
@@ -78,7 +90,7 @@ function add_to_binder(npc, ini, scheme, section, storage)
 
 	local new_action = action_no_weapon(npc, storage)
 
-	-- Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊ РІСЃРµ actions, РІ РєРѕС‚РѕСЂС‹С… РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РІС‹Р·РІР°РЅ РјРµС‚РѕРґ reset_scheme РїСЂРё РёР·РјРµРЅРµРЅРёРё РЅР°СЃС‚СЂРѕРµРє СЃС…РµРјС‹:
+	-- Зарегистрировать все actions, в которых должен быть вызван метод reset_scheme при изменении настроек схемы:
 	xr_logic.subscribe_action_for_events(npc, storage, new_action)
 end
 

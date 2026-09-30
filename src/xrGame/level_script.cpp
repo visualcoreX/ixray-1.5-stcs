@@ -606,6 +606,18 @@ extern bool g_bDisableAllInput;
 // Script-side logging. This build exports NO way for Lua to write to the log (`printf` in
 // _g.script is an empty stub), which makes every script-level diagnostic a guess. level.log("...")
 // now goes straight to the engine log like any Msg.
+// gunsl_peredoz.script hands the intoxication's effect power (0..1) here every frame; CActor::UpdateCL
+// turns it into the fisheye and the heartbeat. The time stamp lets a script that stopped calling count
+// as zero, so nothing can stay stuck on screen.
+float	g_intox_fx_power	= 0.f;
+u32		g_intox_fx_time		= 0;
+void set_intox_screen_fx(float power)
+{
+	clamp				(power, 0.f, 1.f);
+	g_intox_fx_power	= power;
+	g_intox_fx_time		= Device.dwTimeGlobal;
+}
+
 void script_log(LPCSTR s)
 {
 	Msg("[lua] %s", s ? s : "");
@@ -915,6 +927,7 @@ void CLevel::script_register(lua_State *L)
 		def("remove_calls_for_object",			remove_calls_for_object),
 		def("present",							is_level_present),
 		def("log",								script_log),
+		def("set_intox_screen_fx",				set_intox_screen_fx),
 		def("disable_input",					disable_input),
 		def("enable_input",						enable_input),
 		def("spawn_phantom",					spawn_phantom),

@@ -77,6 +77,18 @@ public:
 	// units of the eyepiece radius; z = how soft/deep the darkening is (0 = no shadow at all).
 	Fvector4						pp_scope_shadow;
 	Fvector4						hud_zoom_deviation;
+	// Intoxication screen warp (gunsl_peredoz.script -> level.set_intox_screen_fx -> CActor::UpdateCL):
+	// x = fisheye strength at the screen edges (0 = none), y = world fov multiplier (1 = none, applied
+	// in CCameraManager::ApplyDevice), z = colour swim strength, w = edge wave strength.
+	Fvector4						pp_screen_warp;
+	// DOF blur amount: multiplies r2_dof_kernel in the combine pass. Set by GetCurrentDof, which the
+	// render calls right before it uploads the kernel -- the intoxication fades its blur IN PLACE with
+	// it (planes fixed, amount growing) instead of dragging the far plane in from infinity. 1 = as set.
+	float							dof_kernel_mul;
+	// Blur over the FINISHED picture (pp pass), 0..1. The intoxication pulse while a 3D lens is aimed: the
+	// lens samples a capture taken before DOF happens and the aim owns the DOF anyway, so the blur is laid
+	// over everything instead -- lens and weapon alike. Set by CActor.
+	float							pp_blur;
 
 	// Gunslinger 3D PiP double-render: true on a "lens frame" -- the whole scene is rendered at the
 	// magnified scope FOV with the first-person HUD suppressed, captured into $user$scope, and NOT

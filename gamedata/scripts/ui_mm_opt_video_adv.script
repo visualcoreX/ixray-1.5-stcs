@@ -50,6 +50,76 @@ function only_3_and_more_mode(ctrl, _id, _ssample_trb_val, _ssample_cb_val)
 	ctrl:Enable		(bEnabled)
 end
 
+-- Supersampling belongs to R1 alone: only FStaticRender scales its render target by
+-- r__supersample, the deferred renderers never read the value. The slider keeps its row below R3
+-- (on R3 the MSAA quality list takes the same row) but is dead everywhere except R1, so it greys
+-- out there instead of pretending to do something.
+function ssample_r1_only(ctrl, _id, _ssample_trb_val, _ssample_cb_val)
+	local shown		= _id<4
+	ctrl:Show		(shown)
+	ctrl:Enable		(shown and _id==0)
+end
+
+-- The SSAO algorithm, as radio buttons. Classic and HBAO, both from R2.5 up.
+-- HDAO WAS OFFERED HERE AND IS NOT ANY MORE (2026-09-05): what this tree ships is an IX-Ray
+-- refactor of the vanilla shader that displaces the two sides of its depth comparison by
+-- different quantities, which draws an outline around the HUD; restoring vanilla's own version
+-- trades that for corners with no occlusion at all, because the engine forces SSAO_OPT_DATA and
+-- vanilla's reject radius is tuned for the other branch. The button is gone from both layouts;
+-- the migration below stays so a profile that still names HDAO lands on HBAO instead.
+function ssao_mode_by_renderer(ctrl, _id, _ssample_trb_val, _ssample_cb_val)
+	-- SSAO needs advancedpp, which is renderer_value>=3 (r2.cpp gates the SSAO_QUALITY define on
+	-- it), so nothing here applies below R2.5. Disabling the CUITabControl is NOT enough: it only
+	-- disables the container, and every CUITabButton inside keeps its own state and its own input.
+	local on	= _id>=3
+	ctrl:Enable		(on)
+
+	local b
+	b = ctrl:GetButtonById("ui_mm_ssao_classic")	if b then b:Enable(on) end
+	b = ctrl:GetButtonById("ui_mm_ssao_hbao")	if b then b:Enable(on) end
+	-- No renderer check for HDAO any more: the button does not exist. An old profile can still
+	-- name it, so move it to HBAO whatever the renderer -- otherwise the tab control would show
+	-- nothing selected while the engine kept running HDAO from the saved flag.
+	if ctrl:GetActiveId()=="ui_mm_ssao_hdao" then
+		ctrl:SetActiveTab("ui_mm_ssao_hbao")
+	end
+end
+
+-- The mode list. FXAA and SMAA are screen-space filters over the finished frame, and the AA block
+-- in phase_combine sits at function-body level -- so they run on every renderer that loads
+-- xrRender_R2.dll, which is r2a, r2 AND r2.5 (xr_ioc_cmd.cpp: rsR2 covers renderer_value 1..3;
+-- what separates those three is r2_sun_static and r2_advanced_pp, neither of which that block
+-- reads). R3 has them too. Only R1 has no post-process AA at all, and there the row greys out
+-- rather than disappearing, the way this tab treats every option the selected renderer cannot use.
+-- MSAA is the exception that leaves the LIST rather than the row: it is hardware multisampling
+-- and only R3 has it.
+function aa_mode_by_renderer(ctrl, _id, _ssample_trb_val, _ssample_cb_val)
+	ctrl:Enable		(_id>=1)
+	if _id>=4 then
+		ctrl:enable_id	(3)		-- ui_mm_aa_msaa
+	else
+		ctrl:disable_id	(3)
+	end
+	-- the shown item has to be re-picked: on a renderer without MSAA the list must land elsewhere
+	ctrl:SetCurrentValue()
+end
+
+-- The sample count belongs to MSAA alone. Shown on R3 as before, but usable only while the mode
+-- list above actually selects MSAA. r_aa_mode reports its chosen token by name, and a combo writes
+-- its console variable the moment it changes, so this reads the fresh value.
+-- Picking MSAA can set the sample count itself (4x when it was off), so the list under it has to
+-- re-read its value before the enable pass decides anything.
+function on_aa_mode_changed(handler)
+	if handler.ss_cb then handler.ss_cb:SetCurrentValue() end
+	handler:UpdateDependControls()
+end
+
+function ssample_only_when_msaa(ctrl, _id, _ssample_trb_val, _ssample_cb_val)
+	local r3		= _id>=4
+	ctrl:Show		(r3)
+	ctrl:Enable		(r3 and get_console():get_string("r_aa_mode") == "ui_mm_aa_msaa")
+end
+
 function only_r3_and_r3msaa_more_than_zero(ctrl, _id, _ssample_trb_val, _ssample_cb_val)
 	local bEnabled	= (_id>=4) and (_ssample_cb_val>0)
 	
@@ -100,6 +170,11 @@ function opt_video_adv:InitControls(x, y, xml, handler)
 	xml:InitStatic								("video_adv:cap_geometry_lod",			_st)
 	xml:InitTrackBar							("video_adv:track_geometry_lod",		_st)
 
+	-- grass draw distance (r__detail_radius): the engine caps it at the cache size
+	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
+	xml:InitStatic								("video_adv:cap_detail_radius",			_st)
+	xml:InitTrackBar							("video_adv:track_detail_radius",		_st)
+
 
 	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
 	xml:InitStatic								("video_adv:cap_texture_lod",			_st)
@@ -111,16 +186,29 @@ function opt_video_adv:InitControls(x, y, xml, handler)
 	
 --    
 	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
-	xml:InitStatic								("video_adv:cap_ssample",				_st)
+	xml:InitStatic								("video_adv:cap_aa_mode",				_st)
+	ctl				= xml:InitComboBox			("video_adv:combo_aa_mode",				_st)
+	handler:Register(ctl, "cb_aa_mode")
+	handler.m_preconditions[ctl]				= aa_mode_by_renderer
+	-- re-run the dependency pass on change, the way cb_ssample already does, so the sample list
+	-- greys out at once instead of on the next visit to this tab
+	handler:AddCallback("cb_aa_mode", ui_events.LIST_ITEM_SELECT, on_aa_mode_changed, handler)
+
+	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
+	ctl				= xml:InitStatic			("video_adv:cap_ssample",				_st)
+	handler.m_preconditions[ctl]				= only_3_and_more_mode_invisible
+	ctl				= xml:InitStatic			("video_adv:cap_msaa_samples",			_st)
+	handler.m_preconditions[ctl]				= only_3_and_more_mode_visible
 	ctl				= xml:InitTrackBar			("video_adv:track_ssample",				_st)
 	handler.ss_trb	= ctl
 	handler:Register(ctl, "trb_ssample")
-	handler.m_preconditions[ctl]				= only_3_and_more_mode_invisible
+	handler.m_preconditions[ctl]				= ssample_r1_only
 
 	ctl				= xml:InitComboBox			("video_adv:combo_ssample",				_st)
 	handler.ss_cb	= ctl
+	ctl:disable_id(0)	-- "off" belongs to the mode list above, not here
 	handler:Register(ctl, "cb_ssample")
-	handler.m_preconditions[ctl]				= only_3_and_more_mode_visible
+	handler.m_preconditions[ctl]				= ssample_only_when_msaa
           
 	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
 	xml:InitStatic								("video_adv:cap_detail_density",		_st)
@@ -169,6 +257,14 @@ function opt_video_adv:InitControls(x, y, xml, handler)
 	ctl			= xml:InitComboBox				("video_adv:list_r2_sun_quality",_st)
 	handler.m_preconditions[ctl]		= only_25_and_more_mode
 
+	-- shadow map size: was only reachable through the -smapNNNN command line switch. R2 and up, and it
+	-- needs a video restart (the shadow render targets are sized from it, and the value is baked into
+	-- the shaders as SMAP_size) -- the depend="vid" on its options_item takes care of that.
+	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
+	xml:InitStatic								("video_adv:cap_r2_smapsize",	_st)
+	ctl			= xml:InitComboBox				("video_adv:list_r2_smapsize",_st)
+	handler.m_preconditions[ctl]		= only_2_and_more_mode
+
 	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
 	xml:InitStatic								("video_adv:cap_sun_shafts",			_st)
 	ctl				= xml:InitComboBox			("video_adv:combo_sun_shafts",			_st)
@@ -178,6 +274,11 @@ function opt_video_adv:InitControls(x, y, xml, handler)
 	xml:InitStatic								("video_adv:cap_ssao",					_st)
 	ctl				= xml:InitComboBox			("video_adv:combo_ssao",				_st)
 	handler.m_preconditions[ctl]		= only_25_and_more_mode
+
+	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
+	xml:InitStatic								("video_adv:cap_ssao_mode",				_st)
+	ctl				= xml:InitTab				("video_adv:radio_ssao_mode",			_st)
+	handler.m_preconditions[ctl]		= ssao_mode_by_renderer
 
 	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
 	xml:InitStatic								("video_adv:cap_soft_water",			_st)
@@ -234,6 +335,55 @@ function opt_video_adv:InitControls(x, y, xml, handler)
 	xml:InitStatic								("video_adv:cap_60hz",					_st)
 	xml:InitCheck								("video_adv:check_60hz",				_st)
 
-	btn		= xml:Init3tButton					("video_adv:btn_to_simply",	self)	
+	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
+	xml:InitStatic								("video_adv:cap_actor_shadow",			_st)
+	xml:InitCheck								("video_adv:check_actor_shadow",		_st)
+-- SSS: screen-space contact shadows on the HUD models. Needs the G-buffer, so R2/R3 only -- the row
+-- is greyed out on the static renderer, same as the 3D lens below.
+	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
+	xml:InitStatic								("video_adv:cap_hud_shadow",			_st)
+	ctl			= xml:InitCheck					("video_adv:check_hud_shadow",			_st)
+	handler.m_preconditions[ctl]		= only_2_and_more_mode
+-- Grass in the sun cascades (r2_sun_details -> R2FLAG_SUN_DETAILS, R_sun.cpp). The sun shadow map
+-- is an R2/R3 thing, so the row is greyed out on the static renderer.
+	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
+	xml:InitStatic								("video_adv:cap_grass_shadow",			_st)
+	ctl			= xml:InitCheck					("video_adv:check_grass_shadow",		_st)
+	handler.m_preconditions[ctl]		= only_2_and_more_mode
+-- ...and how far out the grass casts them (r2_sun_details_radius): past ~40 m a blade's shadow is lost
+-- in the cascade texels anyway, while every extra metre is grass drawn three more times a frame.
+	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
+	xml:InitStatic								("video_adv:cap_grass_shadow_radius",	_st)
+	xml:InitTrackBar							("video_adv:track_grass_shadow_radius",	_st)
+
+
+
+-- Gunslinger lens_enabled. The PiP lens needs the $user$scope render target, which only R2/R3 have,
+-- so the row is greyed out on the static renderer.
+	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
+	xml:InitStatic								("video_adv:cap_lens_enabled",			_st)
+	local chk_lens = xml:InitCheck					("video_adv:check_lens_enabled",		_st)
+	handler.m_preconditions[chk_lens]		= only_2_and_more_mode
+-- ...and how often that lens is redrawn (GS lens_render_factor): one lens frame out of N, and a lens
+-- frame is not presented -- so a smaller N means a livelier scope picture and fewer frames for the
+-- main view. Inverted like GS's, so the slider reads left-to-right as "more lens FPS".
+	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
+	xml:InitStatic								("video_adv:cap_lens_factor",			_st)
+	ctl			= xml:InitTrackBar				("video_adv:track_lens_factor",			_st)
+	handler.m_preconditions[ctl]		= only_2_and_more_mode
+	-- with the lens off there is nothing to set a redraw rate for, so the slider follows the
+	-- switch: CUICheckButton::Update greys its depend controls out, reading the PENDING tick
+	chk_lens:AddDependControl(ctl)
+-- Gunslinger npc_lasers
+	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
+	xml:InitStatic								("video_adv:cap_npc_lasers",			_st)
+	xml:InitCheck								("video_adv:check_npc_lasers",			_st)
+
+	-- first-person body (g_legs). Display only, so it sits with the other view options.
+	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
+	xml:InitStatic								("video_adv:cap_legs",					_st)
+	xml:InitCheck								("video_adv:check_legs",				_st)
+
+	btn		= xml:Init3tButton					("video_adv:btn_to_simply",	self)
 	handler:Register							(btn, "btn_simply_graphic")	
 end

@@ -57,11 +57,16 @@ invulnerable = true
 cover_name = val_2_1_com_smartcover
 ;target_path = val_2_1_free1_smartcover_target_1
 ;target_path = val_2_1_free1_smartcover_target_2
-cover_state = fire_target
+; orig cover_state = fire_target
+; blind covering fire while the jumpers (val_smart_terrain_1_4_killer) live, then just look out
+cover_state = {+val_killer_1_4_dead} lookout_target, fire_target
 meet = no_meet
 on_info = {=fighting_dist_le(10)} walker@lead_fight
 invulnerable = true
 use_in_combat = false
+; the jumpers (val_smart_terrain_1_4_killer) are fought; everyone else stays ignored as before --
+; without this the sim rules never make them our enemies (no smart in common)
+combat_ignore_cond = {!enemy_in_squad(val_smart_terrain_1_4_killer)}
 
 [walker@lead_fight]
 path_walk = freedom_lead_run_walk
@@ -122,11 +127,16 @@ out_restr = val_smart_2_1_bufer_zone_2
 [smartcover@free2_2]
 cover_name = val_2_1_free2_1_smartcover
 ;target_path = val_2_1_free2_1_smartcover_target
-cover_state = fire_no_lookout_target
+; orig cover_state = fire_no_lookout_target
+; blind covering fire while the jumpers (val_smart_terrain_1_4_killer) live, then just look out
+cover_state = {+val_killer_1_4_dead} lookout_target, fire_no_lookout_target
 meet = no_meet
 on_info = {=fighting_dist_le(5)} remark@work2
 invulnerable = true
 use_in_combat = false
+; the jumpers (val_smart_terrain_1_4_killer) are fought; everyone else stays ignored as before --
+; without this the sim rules never make them our enemies (no smart in common)
+combat_ignore_cond = {!enemy_in_squad(val_smart_terrain_1_4_killer)}
 
 [remark@work2]
 anim = hide
@@ -186,11 +196,16 @@ invulnerable = true
 
 [smartcover@free3_2]
 cover_name = val_2_1_free3_1_smartcover
-cover_state = fire_target
+; orig cover_state = fire_target
+; blind covering fire while the jumpers (val_smart_terrain_1_4_killer) live, then just look out
+cover_state = {+val_killer_1_4_dead} lookout_target, fire_target
 meet = no_meet
 on_info = {=fighting_dist_le(5)} remark@work3
 invulnerable = true
 use_in_combat = false
+; the jumpers (val_smart_terrain_1_4_killer) are fought; everyone else stays ignored as before --
+; without this the sim rules never make them our enemies (no smart in common)
+combat_ignore_cond = {!enemy_in_squad(val_smart_terrain_1_4_killer)}
 
 [remark@work3]
 anim = hide
@@ -251,11 +266,16 @@ invulnerable = true
 [smartcover@free4_2]
 cover_name = val_2_1_free4_1_smartcover
 ;target_path = val_2_1_free4_1_smartcover_target
-cover_state = fire_target
+; orig cover_state = fire_target
+; blind covering fire while the jumpers (val_smart_terrain_1_4_killer) live, then just look out
+cover_state = {+val_killer_1_4_dead} lookout_target, fire_target
 meet = no_meet
 on_info = {=fighting_dist_le(5)} remark@work4
 invulnerable = true
 use_in_combat = false
+; the jumpers (val_smart_terrain_1_4_killer) are fought; everyone else stays ignored as before --
+; without this the sim rules never make them our enemies (no smart in common)
+combat_ignore_cond = {!enemy_in_squad(val_smart_terrain_1_4_killer)}
 
 [remark@work4]
 anim = hide
@@ -316,11 +336,16 @@ invulnerable = true
 [smartcover@free5_2]
 cover_name = val_2_1_free5_1_smartcover
 ;target_path = val_2_1_free5_1_smartcover_target
-cover_state = fire_target
+; orig cover_state = fire_target
+; blind covering fire while the jumpers (val_smart_terrain_1_4_killer) live, then just look out
+cover_state = {+val_killer_1_4_dead} lookout_target, fire_target
 meet = no_meet
 ;on_info = {=fighting_dist_le(10)} remark@work5
 invulnerable = true
 use_in_combat = false
+; the jumpers (val_smart_terrain_1_4_killer) are fought; everyone else stays ignored as before --
+; without this the sim rules never make them our enemies (no smart in common)
+combat_ignore_cond = {!enemy_in_squad(val_smart_terrain_1_4_killer)}
 
 [remark@work5]
 anim = hide

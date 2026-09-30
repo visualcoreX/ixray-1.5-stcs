@@ -65,11 +65,10 @@ uniform float3		eye_normal;
 
 float 	calc_cyclic 	(float x)				
 {
-	float 	phase 	= 1/(2*3.141592653589f);
-	float 	sqrt2	= 1.4142136f;
-	float 	sqrt2m2	= 2.8284271f;
-	float 	f 	= sqrt2m2*frac(x)-sqrt2;	// [-sqrt2 .. +sqrt2] !No changes made, but this controls the grass wave (which is violent if I must say)
-	return 	f*f - 1.f;				// [-1     .. +1]
+	// A smooth cosine with the stock range and phase (+1 at frac 0, -1 at frac 0.5). The stock
+	// parabola (f*f-1 over frac) met itself at the wrap with the right value but the opposite slope,
+	// so the grass and the trees reversed at the top of every swing in one frame.
+	return	cos(6.2831853f * x);
 }
 
 float2 	calc_xz_wave 	(float2 dir2D, float frac)		

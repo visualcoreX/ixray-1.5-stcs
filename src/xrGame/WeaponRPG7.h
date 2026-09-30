@@ -30,6 +30,7 @@ public:
 
 			void UpdateMissileVisibility	();
 	virtual void UnloadMagazine				(bool spawn_ammo = true);
+	virtual void UnloadMagazineInto			(CInventoryOwner* owner);	// the rocket leaves the model too
 	virtual void UpdateCL					();
 
 	virtual void net_Import			( NET_Packet& P);				// import from server

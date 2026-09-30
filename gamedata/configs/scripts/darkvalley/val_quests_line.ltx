@@ -59,22 +59,22 @@ on_info = {+val_strike_antenna_ready} sr_idle@check_for_capture_two_antennes %=g
 
 [sr_idle@check_for_capture_two_antennes]
 on_info = {=smart_captured_by_faction(val_smart_terrain_4_0:freedom) =smart_captured_by_faction(val_smart_terrain_7_8:freedom)} sr_idle@val_strike_antenna_two %+val_strike_antenna_two_captured%
-
+on_info2 = {=is_faction_enemy_to_actor(freedom)} sr_idle@killer_base_abandoned
 [sr_idle@val_strike_antenna_two]
 on_info = sr_idle@val_strike_antenna_two_sound %=play_sound(val_antenna_finish:freedom:val_freedom_leader_name)%
-
+on_info2 = {=is_faction_enemy_to_actor(freedom)} sr_idle@killer_base_abandoned
 [sr_idle@val_strike_antenna_two_sound]
 on_signal = sound_end | sr_idle@val_destroy_killer_base_sf %=play_sound(val_antenna_good:freedom:val_freedom_leader_name)%
-
+on_info = {=is_faction_enemy_to_actor(freedom)} sr_idle@killer_base_abandoned
 [sr_idle@val_destroy_killer_base_sf]
 on_signal = sound_end | sr_idle@destroy_killer_base_sf %+val_spawn_attack_freedom_2 =give_inited_task(eliminate_smart:val_smart_terrain_1_2:freedom)%
-
+on_info = {=is_faction_enemy_to_actor(freedom)} sr_idle@killer_base_abandoned
 [sr_idle@destroy_killer_base_sf]
 on_game_timer = 50 | sr_idle@destroy_killer_base_ai %+val_freedom_attack_info%
-
+on_info = {=is_faction_enemy_to_actor(freedom)} sr_idle@killer_base_abandoned
 [sr_idle@destroy_killer_base_ai]
 on_info = {+val_destroy_killer_base_done} sr_idle@val_comeback_freedom_leader %+val_freedom_join_talked_first%
-
+on_info2 = {=is_faction_enemy_to_actor(freedom)} sr_idle@killer_base_abandoned
 [sr_idle@val_comeback_freedom_leader]
 on_timer = 4000 | %=play_sound(val_quest_finish:freedom:val_freedom_leader_name)%
 on_signal = sound_end | sr_idle@join_freedom
@@ -83,3 +83,23 @@ on_signal = sound_end | sr_idle@join_freedom
 on_timer = 2000 | {+val_freedom_join_need_sound +agru_open_story_door !black_screen !is_faction_enemy_to_actor(freedom)} sr_idle@val_finish_quest_line %=play_sound(val_leader_join_freedom:freedom:val_freedom_leader_name)%
 
 [sr_idle@val_finish_quest_line]
+
+; Freedom turned hostile to the actor from the antenna strike onwards (joined Duty, shot them, ...); joining a
+; side Freedom gets on with does not count.
+; The story tasks here are not in Freedom's random_tasks, so a join does not drop them: fail Freedom's antenna
+; and factory tasks (the factory one's on_reversed gives val_killer_base_is_no_more: the second assault squad stays
+; unspawned). This line no longer hands out val_strike_antenna_two_captured, so the assault is not staged either.
+; val_killer_base_is_no_more is also given here (the factory task may not be out yet): it switches off the factory
+; restrictor (no more spawns, roof line, alarm), so killing the mercs later plays no quest lines (the barrel
+; ambush is left as it is);
+; if it already was, every assault squad -- Freedom's (invulnerable) and the mercs' -- is taken away. This restrictor only runs while the actor
+; is on Dark Valley (the join happens on Agroprom), so not "once he is gone" but once no living member of them
+; is within 100 m of him: never in front of him. sim_board:set_actor_community already
+; fails the tasks at a join that makes Freedom hostile; the reverse here covers turning hostile without joining.
+[sr_idle@killer_base_abandoned]
+on_info = sr_idle@killer_base_abandoned_wait %=reverse_smart_task(val_smart_terrain_1_2:freedom) =reverse_smart_task(val_smart_terrain_7_8:freedom) =reverse_smart_task(val_smart_terrain_4_0:freedom) +val_killer_base_is_no_more%
+
+[sr_idle@killer_base_abandoned_wait]
+on_info = {=squads_far_from_actor(100:val_smart_terrain_2_1_freedom:val_smart_terrain_2_2_freedom:val_smart_terrain_1_1_killer:val_smart_terrain_1_2_killer:val_smart_terrain_1_3_killer:val_smart_terrain_1_4_killer:val_smart_terrain_1_5_killer)} sr_idle@killer_base_abandoned_done %=remove_squad(val_smart_terrain_2_1_freedom) =remove_squad(val_smart_terrain_2_2_freedom) =remove_squad(val_smart_terrain_1_1_killer) =remove_squad(val_smart_terrain_1_2_killer) =remove_squad(val_smart_terrain_1_3_killer) =remove_squad(val_smart_terrain_1_4_killer) =remove_squad(val_smart_terrain_1_5_killer)%
+
+[sr_idle@killer_base_abandoned_done]

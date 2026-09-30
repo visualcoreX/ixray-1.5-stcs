@@ -68,6 +68,7 @@ CGamePersistent::CGamePersistent(void)
 	m_bPickableDOF				= false;
 	m_dof_speed					= 5.f;		// = the vanilla 0.2s until the first transition sets its own
 	m_dof_changed				= false;
+	m_intox_dof					= 0.f;
 	m_game_params.m_e_game_type	= eGameIDNoGame;
 	ambient_effect_next_time	= 0;
 	ambient_effect_stop_time	= 0;
@@ -212,6 +213,7 @@ void CGamePersistent::OnGameStart()
 	// inside it, and a stuck m_bPickableDOF blocks every DOF request for the rest of the session
 	m_bPickableDOF				= false;
 	m_dof_changed				= false;
+	m_intox_dof					= 0.f;
 }
 
 LPCSTR GameTypeToString(EGameIDs gt, bool bShort)
@@ -414,6 +416,14 @@ void CGamePersistent::WeathersUpdate()
 
 			Environment().wind_blast_direction.set(Environment().wind_blast_current.x,Environment().wind_blast_current.y,Environment().wind_blast_current.z);
 			Environment().wind_strength_factor=Environment().wind_blast_strength_start_value+t*(Environment().wind_blast_strength_stop_value-Environment().wind_blast_strength_start_value);
+		}
+		// ...and HOLD the blast between blowing in and blowing out. Stock let go here, so the frame after
+		// the blow-in the strength fell straight back to the environment's noise (1.0 -> 0.3, say) --
+		// and the grass, whose sway is mixed from the calm and the windy set by this very factor, jumped
+		// to a new pose all at once. The blow-out below then starts from the held blast, not the noise.
+		if (ambient_effect_wind_on && Device.fTimeGlobal>ambient_effect_wind_in_time && Device.fTimeGlobal<ambient_effect_wind_end)
+		{
+			Environment().wind_strength_factor=Environment().wind_blast_strength_stop_value;
 		}
 
 		// stop if time exceed or indoor
@@ -1035,8 +1045,25 @@ void CGamePersistent::GetCurrentDof(Fvector3& dof)
 	// DOF context for LENS_DOF_NEAR/FOCUS/FAR = -9151 / 0 / 9151 for the duration of the lens frame and
 	// restores it in dof_lens_off -- a range that wide simply leaves everything in focus. Taken verbatim
 	// rather than reusing our base dof, which is itself whatever r2_dof happens to be.
+	dof_kernel_mul = 1.f;
+	// (the intoxication does NOT touch the lens frame: the ordinary lens samples $user$scope, captured
+	// before the combine pass where DOF happens, so it would never see it -- while aiming a 3D lens the
+	// pulse blurs the finished picture in the pp pass instead, lens and weapon alike: pp_blur, CActor)
 	if (m_bLensFrameNow)	dof.set(-9151.f, 0.f, 9151.f);
-	else					dof = m_dof[1];
+	else
+	{
+		dof = m_dof[1];
+		// The intoxication pulse: the reload blur, faded in IN PLACE. Moving the planes towards it (even
+		// the far one by its reciprocal) made the blurred zone roll in from the horizon; instead the planes
+		// ARE the action ones for the pulse and the blur AMOUNT (the kernel) follows the pulse. Only while
+		// nothing else owns the DOF -- an aim, a reload or a pick zone keeps its own blur untouched; a
+		// reload blurs anyway.
+		if (m_intox_dof > 0.001f && !m_dof_changed && !m_bPickableDOF)
+		{
+			dof				= DofDefaults().action;
+			dof_kernel_mul	= _min(m_intox_dof, 1.f);
+		}
+	}
 }
 
 void CGamePersistent::SetBaseDof(const Fvector3& dof)

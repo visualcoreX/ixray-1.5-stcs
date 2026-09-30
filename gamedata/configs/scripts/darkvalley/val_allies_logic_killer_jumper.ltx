@@ -37,8 +37,11 @@ def_state_moving2 = assault
 def_state_moving3 = assault
 radius = 10
 
-;-----------------------------------------------------------------------------
+; after the jump: fight the actor and both Freedom assault squads -- the sim rules keep them apart
+; (no smart in common), so without this the jumpers and Freedom ignored each other
+combat_ignore_cond = {!is_enemy_actor !enemy_in_squad(val_smart_terrain_2_1_freedom) !enemy_in_squad(val_smart_terrain_2_2_freedom)}
 
+;-----------------------------------------------------------------------------
 [logic@work200]
 active = walker@start_work2
 suitable = {=check_npc_name(val_killer_sniper_7)} true
@@ -76,8 +79,11 @@ def_state_moving2 = assault
 def_state_moving3 = assault
 radius = 10
 
-;-----------------------------------------------------------------------------
+; after the jump: fight the actor and both Freedom assault squads -- the sim rules keep them apart
+; (no smart in common), so without this the jumpers and Freedom ignored each other
+combat_ignore_cond = {!is_enemy_actor !enemy_in_squad(val_smart_terrain_2_1_freedom) !enemy_in_squad(val_smart_terrain_2_2_freedom)}
 
+;-----------------------------------------------------------------------------
 [logic@work300]
 active = walker@start_work3
 suitable = {=check_npc_name(val_killer_sniper_8)} true
@@ -114,13 +120,18 @@ def_state_moving2 = assault
 def_state_moving3 = assault
 on_signal = smart_cover | smartcover@jumper3
 radius = 10 
-
+; after the jump: fight the actor and both Freedom assault squads -- the sim rules keep them apart
+; (no smart in common), so without this the jumpers and Freedom ignored each other
+combat_ignore_cond = {!is_enemy_actor !enemy_in_squad(val_smart_terrain_2_1_freedom) !enemy_in_squad(val_smart_terrain_2_2_freedom)}
 [smartcover@jumper3]
 cover_name = val_killer_3_jumper_smartcover_1
 target_path = val_killer_3_jumper_smartcover_1_target
 
-;-----------------------------------------------------------------------------
+; after the jump: fight the actor and both Freedom assault squads -- the sim rules keep them apart
+; (no smart in common), so without this the jumpers and Freedom ignored each other
+combat_ignore_cond = {!is_enemy_actor !enemy_in_squad(val_smart_terrain_2_1_freedom) !enemy_in_squad(val_smart_terrain_2_2_freedom)}
 
+;-----------------------------------------------------------------------------
 [logic@work400]
 active = walker@start_work4
 suitable = {=check_npc_name(val_killer_sniper_9)} true
@@ -157,18 +168,25 @@ def_state_moving2 = assault
 def_state_moving3 = assault
 on_signal = smart_cover | smartcover@jumper4
 radius = 10 
-
+; after the jump: fight the actor and both Freedom assault squads -- the sim rules keep them apart
+; (no smart in common), so without this the jumpers and Freedom ignored each other
+combat_ignore_cond = {!is_enemy_actor !enemy_in_squad(val_smart_terrain_2_1_freedom) !enemy_in_squad(val_smart_terrain_2_2_freedom)}
 [smartcover@jumper4]
 cover_name = val_killer_4_jumper_smartcover_1
 target_path = val_killer_4_jumper_smartcover_1_target
 on_info = {=fighting_dist_le(5)} remark@work4_1
-
+; after the jump: fight the actor and both Freedom assault squads -- the sim rules keep them apart
+; (no smart in common), so without this the jumpers and Freedom ignored each other
+combat_ignore_cond = {!is_enemy_actor !enemy_in_squad(val_smart_terrain_2_1_freedom) !enemy_in_squad(val_smart_terrain_2_2_freedom)}
 [remark@work4_1]
 out_restr = val_smart_terrain_1_2_defence
 on_info = {=fighting_dist_ge(5)} smartcover@jumper4
 
-;-----------------------------------------------------------------------------
+; after the jump: fight the actor and both Freedom assault squads -- the sim rules keep them apart
+; (no smart in common), so without this the jumpers and Freedom ignored each other
+combat_ignore_cond = {!is_enemy_actor !enemy_in_squad(val_smart_terrain_2_1_freedom) !enemy_in_squad(val_smart_terrain_2_2_freedom)}
 
+;-----------------------------------------------------------------------------
 [logic@work500]
 active = walker@start_work5
 suitable = {=check_npc_name(val_killer_sniper_10)} true
@@ -205,12 +223,19 @@ def_state_moving2 = assault
 def_state_moving3 = assault
 on_signal = smart_cover | smartcover@jumper5
 radius = 10 
-
+; after the jump: fight the actor and both Freedom assault squads -- the sim rules keep them apart
+; (no smart in common), so without this the jumpers and Freedom ignored each other
+combat_ignore_cond = {!is_enemy_actor !enemy_in_squad(val_smart_terrain_2_1_freedom) !enemy_in_squad(val_smart_terrain_2_2_freedom)}
 [smartcover@jumper5]
 cover_name = val_killer_5_jumper_smartcover_1
 target_path = val_killer_5_jumper_smartcover_1_target
 on_info = {=fighting_dist_le(5)} remark@work5_1
-
+; after the jump: fight the actor and both Freedom assault squads -- the sim rules keep them apart
+; (no smart in common), so without this the jumpers and Freedom ignored each other
+combat_ignore_cond = {!is_enemy_actor !enemy_in_squad(val_smart_terrain_2_1_freedom) !enemy_in_squad(val_smart_terrain_2_2_freedom)}
 [remark@work5_1]
 out_restr = val_smart_terrain_1_2_defence
 on_info = {=fighting_dist_ge(5)} smartcover@jumper5
+; after the jump: fight the actor and both Freedom assault squads -- the sim rules keep them apart
+; (no smart in common), so without this the jumpers and Freedom ignored each other
+combat_ignore_cond = {!is_enemy_actor !enemy_in_squad(val_smart_terrain_2_1_freedom) !enemy_in_squad(val_smart_terrain_2_2_freedom)}

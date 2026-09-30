@@ -10,7 +10,7 @@ cform                   = skeleton
 class                   = WP_AK74
 min_radius              = 10	; orig 50 (GS wpn_vintorez)
 max_radius              = 150
-description             = st_wpn_vintorez_descr
+description             = gunsl_wpn_vintorez_descr	; orig st_wpn_vintorez_descr
 
 ef_main_weapon_type     = 3
 ef_weapon_type          = 6	; orig 8 (sniper); GS has 7. This key is the NPC burst-length
@@ -189,6 +189,8 @@ grenade_launcher_y      = 30
 ;звуки
 snd_draw                = weapons\vss\vss_draw
 snd_holster             = weapons\vss\vss_hide
+snd_shoot				= weapons\vss\vss_shoot_alt, -1.1
+
 
 snd_empty               = weapons\glock17\glock17_dry
 snd_changefiremode	= weapons\vss\vss_firemode
@@ -285,6 +287,8 @@ silencer_bullet_speed   = 600
 
 ;silencer_flame_particles  = weapons\generic_weapon01
 silencer_smoke_particles   = ghost_particles\weapons\suppressor_smoke_ar_common
+
+snd_silncer_shot        = weapons\vss\vss_shoot_alt, -1.1
 
 silencer_light_color    = 0.6,0.5,0.3
 silencer_light_range    = 0.01

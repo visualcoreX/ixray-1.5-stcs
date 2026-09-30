@@ -10,7 +10,7 @@ cform                   = skeleton
 class                      = WP_VAL
 min_radius              = 0	; orig 30 (GS wpn_val)
 max_radius              = 100
-description             = st_wpn_val_descr
+description             = gunsl_wpn_val_descr	; orig st_wpn_val_descr
 
 ef_main_weapon_type        = 2
 ef_weapon_type          = 6	; restored: 8 broke the AI queue length (select_queue_params keys on ef_weapon_type)
@@ -183,6 +183,8 @@ grenade_launcher_y      = 30
 ;звуки
 snd_draw                = weapons\vss\vss_draw
 snd_holster             = weapons\vss\vss_hide
+snd_shoot               = weapons\vss\vss_shoot_alt, -1.1
+
 
 snd_empty               = weapons\glock17\glock17_dry
 snd_reload              = weapons\vss\vss_reload_old
@@ -278,6 +280,8 @@ silencer_bullet_speed   = 600
 
 ;silencer_flame_particles  = weapons\generic_weapon01
 silencer_smoke_particles   = ghost_particles\weapons\suppressor_smoke_ar_common
+
+snd_silncer_shot        = weapons\vss\vss_shoot_alt, -1.1
 
 silencer_light_color    = 0.6,0.5,0.3
 silencer_light_range    = 0.01

@@ -224,6 +224,80 @@ float3 pp_purple_fringe(float2 z_0, float2 z_1, float3 image)
 	return image;
 }
 
+// INTOXICATION FISHEYE (gunsl_peredoz.script -> level.set_intox_screen_fx -> CActor). m_pp_warp.x = how
+// far the outer part of the screen is pulled (0 = off; it swells with the pulse), y = the strength of
+// the colour swim, z = a slow wave rippling the same part, w = time in seconds. All three go through
+// one mask (pp_warp_mask): the middle of the picture is left alone, the edges take it all.
+uniform float4 m_pp_warp;
+#define PP_WARP_R0 0.25f	// the mask: untouched inside this elliptical radius...
+#define PP_WARP_R1 1.45f	// ...full strength past this one (1 = the middle of a screen edge)
+// The MASK is an ellipse the shape of the screen (per-axis radius: 1 at the middle of each edge,
+// 1.41 in a corner), after the reference the user drew. The fade is deliberately LONG and quintic
+// (zero slope AND zero curvature at both ends): a short smoothstep(0.7, 1.3) left a visible line where
+// the effect began. Now it creeps in from a quarter of the way out and the eye finds no border.
+float pp_warp_mask(float2 uv)
+{
+	float  r	= length((uv - 0.5f) / 0.5f);
+	float  x	= saturate((r - PP_WARP_R0) / (PP_WARP_R1 - PP_WARP_R0));
+	return x * x * x * (x * (x * 6.0f - 15.0f) + 10.0f);
+}
+
+// The colour swim, as gunsl_peredoz.script drew it into the PPE: three sines at 0.07 Hz and its 1/1.5
+// and 1.5 multiples, normalised so it wanders through the hues instead of pulsing brighter. Returns
+// the colour_add equivalent; the caller doubles it like the pp mad does.
+float3 pp_intox_colour()
+{
+	float  arg	= 6.2831853f * 0.07f * m_pp_warp.w;
+	float3 c	= abs(float3(sin(arg), sin(arg / 1.5f), sin(arg * 1.5f)));
+	float  m	= length(c) * 3.0f;
+	return (m > 0.0f) ? c * (m_pp_warp.y / m) : float3(0.0f, 0.0f, 0.0f);
+}
+
+float2 pp_warp_uv(float2 uv)
+{
+	if (m_pp_warp.x <= 0.0001f)	return uv;
+	float2 d	= uv - 0.5f;
+	float  t	= pp_warp_mask(uv);
+	float2 w	= 0.5f + d * (1.0f - m_pp_warp.x * t);
+	// the wave: two slow sines across each other, fading in with the same ring, so the centre stays
+	// steady and only the edges shimmer
+	if (m_pp_warp.z > 0.0f)
+		w += float2(sin(uv.y * 9.0f + m_pp_warp.w * 1.3f), sin(uv.x * 7.0f - m_pp_warp.w * 1.1f))
+			 * (m_pp_warp.z * t);
+	return saturate(w);
+}
+
+// INTOXICATION BLUR over the finished picture (m_pp_blur.x = amount 0..1, y = h/w so the kernel is round).
+// Only while a 3D lens is aimed: the aim owns the DOF there and the lens samples a capture taken before
+// the DOF pass, so the pulse blurs everything here instead -- lens and weapon alike. The same poisson
+// pattern as dof.h; PP_BLUR_R is the radius at full amount, in screen uv.
+uniform float4 m_pp_blur;
+#define PP_BLUR_R 0.006f
+static const float2 PP_BLUR_TAPS[12] = {
+	float2(-0.326212f, -0.405810f), float2(-0.840144f, -0.073580f), float2(-0.695914f,  0.457137f),
+	float2(-0.203345f,  0.620716f), float2( 0.962340f, -0.194983f), float2( 0.473434f, -0.480026f),
+	float2( 0.519456f,  0.767022f), float2( 0.185461f, -0.893124f), float2( 0.507431f,  0.064425f),
+	float2( 0.896420f,  0.412458f), float2(-0.321940f, -0.932615f), float2(-0.791559f, -0.597710f) };
+float3 pp_blur0(float2 uv, float3 c)
+{
+	if (m_pp_blur.x <= 0.001f)	return c;
+	float2 rad	= float2(m_pp_blur.y, 1.0f) * (PP_BLUR_R * m_pp_blur.x);
+	float3 sum	= c;
+	for (int i = 0; i < 12; i++)
+		sum += tex2D(s_base0, uv + PP_BLUR_TAPS[i] * rad).rgb;
+	return sum / 13.0f;
+}
+
+float3 pp_blur1(float2 uv, float3 c)
+{
+	if (m_pp_blur.x <= 0.001f)	return c;
+	float2 rad	= float2(m_pp_blur.y, 1.0f) * (PP_BLUR_R * m_pp_blur.x);
+	float3 sum	= c;
+	for (int i = 0; i < 12; i++)
+		sum += tex2D(s_base1, uv + PP_BLUR_TAPS[i] * rad).rgb;
+	return sum / 13.0f;
+}
+
 float pp_mask_factor(float2 uv)
 {
 	if (m_pp_mask.z <= 0.0f)	return 1.0f;
@@ -231,15 +305,63 @@ float pp_mask_factor(float2 uv)
 	return 1.0f - smoothstep(0.95f, 1.0f, length(d));	// the fade lands under the scope body
 }
 
+// 2D NIGHT SCOPE BRIGHTNESS. The tint comes from the scope's PPE, whose green gain is a u32 colour and
+// clamps at 1.0 from the lowest brightness step up -- so the steps used to change only its noise. The
+// game fills m_pp_nv only while a night scope's flat picture owns m_pp_mask:
+//   x = a gain for the picture inside the eyepiece: 1 at the bottom step, pp_nv_2d_max_gain at the top
+//       (never below 1 -- the dimmest setting is the picture the PPE alone gives);
+//   y = the gauss's lens tint (model_scope_gauss.ps, m_zoom_deviation.z there): its night picture has no
+//       gain, it lifts the image to a grey-blue by this much -- 0 at the bottom step leaves it untouched.
+uniform float4 m_pp_nv;
+float3 pp_nv_gain(float3 image)
+{
+	if (m_pp_mask.z <= 0.0f)	return image;
+	if (m_pp_nv.z > 0.5f)	return image;	// chained: .x is the brightness there, see pp_nv_chain_lens
+	if (m_pp_nv.y > 0.0f)
+	{
+		float gray	= (image.r + image.g + image.b) * m_pp_nv.y * 7.0f;
+		image		= image * (1.0f - m_pp_nv.y) + gray;
+		image.b	   += 0.4f * m_pp_nv.y;
+	}
+	if (m_pp_nv.x > 1.0f)		image *= m_pp_nv.x;
+	return image;
+}
+
+// CHAINED 2D (the suit's night vision looking through a 2D night scope, m_pp_nv.z): the same picture the 3D lens
+// makes -- model_scope_lense_night (pnv.h calc_night_vision_effect: z*(1,2,1)*lum, plus its scanlines, noise and
+// flicker), or the gauss lens's grey-blue lift (m_pp_nv.y) -- over the UNGRADED scene, with z = the scope's own
+// brightness (m_pp_nv.x). main() then grades it with the goggles' effectors, as the 3D frame's grading lands on the
+// lens. It used to be the goggles' grading times a flat gain (2..5x) -- far weaker than the lens (9*z on green).
+float3 pp_nv_chain_lens(float3 plain, float2 tc)
+{
+	float z = m_pp_nv.x;
+	if (m_pp_nv.y > 0.5f)
+	{
+		float gray	= (plain.r + plain.g + plain.b) * z * 7.0f;
+		float3 c	= plain * (1.0f - z) + gray;
+		c.b		   += 0.4f * z;
+		return c;
+	}
+	float	lum		= dot(plain, float3(0.3f, 0.38f, 0.22f) * 5.0f);
+	float3	c		= z * float3(1.0f, 2.0f, 1.0f) * lum;
+	float	noise	= frac(sin(dot(tc, float2(12.0f, 78.0f) + (timers.x * 1.17f))) * 43758.0f);
+	c += 0.015f * sin(tc.y * screen_res.y * 2.0f);	// scanlines
+	c += noise * 0.13f;								// noise
+	c += 0.003f * sin(timers.x * 60.0f);			// flicker
+	return c;
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////
 // Pixel
 float4 	main	( v2p I )	: COLOR
 {
-	float2	z_0		= pp_zoom_uv(I.tc0);
-	float2	z_1		= pp_zoom_uv(I.tc1);
+	float2	z_0		= pp_zoom_uv(pp_warp_uv(I.tc0));	// intoxication fisheye first, then the eyepiece
+	float2	z_1		= pp_zoom_uv(pp_warp_uv(I.tc1));
 	float	soft	= pp_zoom_soft(z_0);			// only inside a magnified eyepiece
 	float3	t_0 	= pp_cubic0(z_0, soft);
-	float3	t_1 	= pp_cubic1(z_1, soft);	
+	float3	t_1 	= pp_cubic1(z_1, soft);
+	t_0		= pp_blur0(z_0, t_0);				// the intoxication blur while a 3D lens is aimed
+	t_1		= pp_blur1(z_1, t_1);	
 	float3 	image	= (t_0+t_1)*0.5f;					// add_d2
 	{	float2 ab = pp_abber_offset(z_0);			// the glass splits the colours towards its rim
 		if (ab.x > 0.0f)
@@ -255,10 +377,28 @@ float4 	main	( v2p I )	: COLOR
 	float3 	noised 	= image*t_noise*2.0f;                     		// mul_2x
 		image	= lerp 		(noised,image,I.color.w); 	// lrp ?
 		image	= (image * I.color + c_brightness)*2.0f;		// mad
+	// the intoxication's colour swim, through the edge mask (m_pp_warp.y, see pp_intox_colour)
+	// .x too: the colour only ever runs with the intoxication itself (a stray default lit it in the menu)
+	if (m_pp_warp.y > 0.0f && m_pp_warp.x > 0.0001f)	image += 2.0f * pp_intox_colour() * pp_warp_mask(I.tc0);
 //		image	= (image + c_brightness) * I.color;		// mad ?
 
 	// out
-	image	*= pp_scope_shadow(I.tc0);			// the eye off the optic's axis
-	image	= lerp(plain, image, pp_mask_factor(I.tc0));	// outside the eyepiece: the scene, untouched
+	float3	graded	= image;					// the effectors' grading, before the scope's own gain
+	image	= pp_nv_gain(image);				// the night scope's brightness step
+	if (m_pp_nv.z > 0.5f && m_pp_mask.z > 0.0f)
+	{
+		// chained with the suit's NV: the lens picture, then the very same grading as above
+		float3	lens	= pp_nv_chain_lens(plain, I.tc0);
+		lens	= lerp(dot(lens, I.gray), lens, I.gray.w);
+		lens	= lerp(lens * t_noise * 2.0f, lens, I.color.w);
+		image	= (lens * I.color + c_brightness) * 2.0f;
+	}
+	float	sh		= pp_scope_shadow(I.tc0);		// the eye off the optic's axis
+	image	*= sh;
+	graded	*= sh;
+	// Outside the eyepiece: the scene untouched -- the scope's tint belongs inside the optic. Unless the
+	// suit's night vision is on (m_pp_nv.z, chained): the scope's own tint is then off, what the effectors
+	// grade is the GOGGLES, and those cover the whole screen -- the mask only bounds the scope's gain.
+	image	= lerp((m_pp_nv.z > 0.5f) ? graded : plain, image, pp_mask_factor(I.tc0));
 	return  float4	(image, 1.0f);					// +mov
 }

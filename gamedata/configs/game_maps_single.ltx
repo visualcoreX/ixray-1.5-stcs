@@ -9,6 +9,12 @@
 	weathers			= dynamic_default
 
 [agroprom_underground]
+; The level has its own map picture (map\map_agroprom_underground, level.ltx [level_map],
+; bound_rect 180x360 m) but no honest spot on the world map -- it lies UNDER Agroprom.
+; local_map_only puts it on the global map only while the player is down there, so the PDA
+; shows the underground instead of the world map, and the world map stays clean otherwise.
+; global_rect keeps the level's own 1:2 aspect (84x168) and is centred on the Agroprom square
+; (164,1848 - 332,2016), which is exactly where these tunnels are.
 	global_rect			= 206.0, 1848.0, 290.0, 2016.000000
 	local_map_only			= true
 	music_tracks			= agroprom_u_musics

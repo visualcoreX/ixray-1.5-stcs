@@ -10,7 +10,7 @@ cform                   = skeleton
 class                = WP_AK74         ; class of the weapon that corresponding to CPP class
 min_radius              = 5	; orig 30 (GS an94)
 max_radius           = 100          ; [] for AI
-description          = st_wpn_abakan_descr
+description          = gunsl_wpn_an94_descr	; orig st_wpn_abakan_descr
 
 ef_main_weapon_type     = 2
 ef_weapon_type          = 6	; restored: 7 broke the AI queue length (select_queue_params keys on ef_weapon_type)
@@ -193,11 +193,13 @@ grenade_launcher_y      = 27	; orig 24 (GS an94)
 snd_draw                = weapons\ak74\ak74_draw
 snd_kick                = weapons\ak74\ak74_bayonet	; GS: bayonet stab sound
 snd_holster             = weapons\p90\p90_hide
+snd_shoot               = weapons\l85\l85_shoot, -1.1
 
 snd_empty               = weapons\glock17\glock17_dry
 snd_reload              = weapons\ak74\ak74_reload
 snd_reload_empty        = weapons\ak74\ak74_reload_full
 snd_reload_jammed		= weapons\ak74\ak74_revival
+snd_shoot_grenade       = weapons\ak74\ak74_gl_shoot
 snd_reload_grenade      = weapons\ak74\ak74_gl_reload
 snd_change_grenade      = weapons\ak74\ak74_gl_grenadechange	; GS an94 -- the grenade-type swap was silent
 snd_switch              = weapons\ak74\ak74_gl_deactivate	; orig weapons\ak74\ak74_gl_activate (GS an94)
@@ -314,6 +316,8 @@ silencer_bullet_speed   = 600
 
 ;silencer_flame_particles  = weapons\generic_weapon01
 silencer_smoke_particles   = ghost_particles\weapons\suppressor_smoke_ar_common
+
+snd_silncer_shot        = weapons\w_ak74_shot1, -1.1
 
 silencer_light_color    = 0.6,0.5,0.3
 silencer_light_range    = 0.01

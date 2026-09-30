@@ -121,6 +121,13 @@ public:
 public:
 	DetailVec						objects;
 	vis_list						m_visibles	[3];	// 0=still, 1=Wave1, 2=Wave2
+	// The sun cascades' share: only the slots close enough to cast a grass shadow (UpdateVisibleM, r2_sun_details_radius),
+	// re-filtered per cascade into m_visibles_shadow by RenderShadow. hw_Render_dump draws whatever m_render_visibles
+	// points at -- the camera lists outside RenderShadow.
+	xr_vector<Slot*>				m_shadow_slots;
+	vis_list						m_visibles_shadow[3];
+	xr_vector<xr_vector<float> >	m_visibles_shadow_fade[3];	// per m_visibles_shadow entry: 1 inside, 0 at the radius
+	vis_list*						m_render_visibles = m_visibles;
 
 #ifndef _EDITOR    
 	xrXRC							xrc;
@@ -196,6 +203,7 @@ public:
 	void							Load			();
 	void							Unload			();
 	void							Render			();
+	void							RenderShadow	(const CFrustum& cascade);
 
 	/// MT stuff
 	xrCriticalSection				MT;

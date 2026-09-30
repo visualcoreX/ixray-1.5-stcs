@@ -46,6 +46,7 @@ void createWpnScopeXML()
 
 CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 {
+	m_unload_into				= NULL;
 	m_eSoundShow				= ESoundTypes(SOUND_TYPE_ITEM_TAKING | eSoundType);
 	m_eSoundHide				= ESoundTypes(SOUND_TYPE_ITEM_HIDING | eSoundType);
 	m_eSoundShot				= ESoundTypes(SOUND_TYPE_WEAPON_SHOOTING | eSoundType);
@@ -850,7 +851,8 @@ void CWeaponMagazined::UnloadMagazine(bool spawn_ammo, u32 keep_count)
 		// A weapon lying in an inventory BOX belongs to no CInventory at all, and unloading one is
 		// offered in exactly the same menu -- so there may be nothing to top up here. SpawnAmmo below
 		// still puts the rounds where the weapon is (H_Parent).
-		CWeaponAmmo *l_pA = m_pInventory ? smart_cast<CWeaponAmmo*>(m_pInventory->GetAny(l_it->first)) : NULL;
+		CInventory* l_inv = m_unload_into ? &m_unload_into->inventory() : m_pInventory;
+		CWeaponAmmo *l_pA = l_inv ? smart_cast<CWeaponAmmo*>(l_inv->GetAny(l_it->first)) : NULL;
 		if(l_pA)
 		{
 			u16 l_free = l_pA->m_boxSize - l_pA->m_boxCurr;
@@ -860,14 +862,22 @@ void CWeaponMagazined::UnloadMagazine(bool spawn_ammo, u32 keep_count)
 			// -- CWeaponAmmo::Get does it when a round LEAVES a box, and there is no counterpart for
 			// one going back in. Every UI that watches ModifyFrame (the trade panel, the corpse
 			// panel) therefore kept drawing the old count, which reads as "the rounds vanished".
-			m_pInventory->InvalidateState();
+			l_inv->InvalidateState();
 		}
 		// NOTE `unlimited_ammo()` (the g_unlimitedammo cheat) swallows the leftovers here: the rounds
 		// leave the magazine and no box is ever spawned for them. That is stock behaviour and it is
 		// what "unloading a weapon in a corpse eats the ammo" turned out to be -- not a bug in the
 		// transfer, just the cheat being on.
-		if(l_it->second && !unlimited_ammo()) SpawnAmmo(l_it->second, l_it->first);
+		if(l_it->second && !unlimited_ammo())
+			SpawnAmmo(l_it->second, l_it->first, m_unload_into ? m_unload_into->object_id() : 0xffffffff);
 	}
+}
+
+void CWeaponMagazined::UnloadMagazineInto(CInventoryOwner* owner)
+{
+	m_unload_into	= owner;
+	UnloadMagazine	();
+	m_unload_into	= NULL;
 }
 
 void CWeaponMagazined::ReloadMagazine() 

@@ -342,4 +342,10 @@
 	<string id="ui_inv_weight">
 		<text>Weight</text>
 	</string>
+
+	<!-- a loaded gun lying in the world: a short USE picks it up, holding USE unloads it into the
+	     inventory (CActor::TryStartWorldUnload) -- shown instead of inventory_item_use -->
+	<string id="inventory_item_use_unload">
+		<text>Pick up item ($$ACTION_USE$$)\nUnload (hold $$ACTION_USE$$)</text>
+	</string>
 </string_table>

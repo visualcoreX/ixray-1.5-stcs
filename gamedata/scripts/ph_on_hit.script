@@ -1,62 +1,27 @@
-----------------------------------------------------------------------------------------------------
--- Physics hit checker
-----------------------------------------------------------------------------------------------------
--- Разработчик: Andrey Fidrya (Zmey) af@svitonline.com
-----------------------------------------------------------------------------------------------------
-
 class "ph_on_hit"
 
-function ph_on_hit:__init(obj, storage)
-	self.object = obj
-	self.st = storage
+function ph_on_hit:__init(storage)
+	self.info = storage.info
 end
 
-function ph_on_hit:reset_scheme()
-end
-
-function ph_on_hit:update(delta)
-end
-
-function ph_on_hit:hit_callback(obj, amount, local_direction, who, bone_index)
-	local who_name
-	if who then
-		who_name = who:name()
-	else
-		who_name = "nil"
+function ph_on_hit:hit_callback(obj)
+	if self.info then
+		xr_logic.pick_section_from_condlist(db.actor, obj, self.info)
 	end
+end
 
-	printf("_bp: ph_on_hit:hit_callback: obj='%s', amount=%d, who='%s', bone='%s'", obj:name(), amount, who_name, tostring(bone_index))
-	
-	if db.storage[self.object:id()].active_scheme then
-		if xr_logic.try_switch_to_another_section(obj, self.st, db.actor) then
-			return
+--------------------------------------------------------------------------------
+-- binder
+--------------------------------------------------------------------------------
+
+function add_to_binder(obj, ini, scheme, section, storage)
+
+	if ini:section_exist(section) then
+
+		if ini:line_exist(section, "on_info") then
+			storage.info = xr_logic.parse_condlist(nil, nil, nil, ini:r_string(section, "on_info"))
 		end
+
+		xr_logic.subscribe_action_for_events(obj, storage, this.ph_on_hit(storage))
 	end
-end
-function ph_on_hit:deactivate()
-	printf("PH_ON_HIT: deactivate")
-end
-
----------------------------------------------------------------------------------------------------------------------
-function add_to_binder(npc, ini, scheme, section, storage)
---	printf("DEBUG PH_ON_HIT: add_to_binder: npc:name()='%s', scheme='%s', section='%s'", npc:name(), scheme, section)
- 	local action = ph_on_hit(npc, storage)
-	storage.action = action
-end
-
-function set_scheme(npc, ini, scheme, section, gulag_name)
---	printf("DEBUG PH_ON_HIT: set_scheme: npc:name()='%s', scheme='%s', section='%s'", npc:name(), scheme, section)
-
-	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
-	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
-	print_table(st.logic)
-	xr_logic.subscribe_action_for_events(npc, st, st.action)	
-end
-
-function disable_scheme(npc, scheme)
---	printf("DEBUG PH_ON_HIT: disable_scheme: npc:name()='%s', scheme='%s'", npc:name(), scheme)
-	local st = db.storage[npc:id()][scheme]
-	if st then
-		xr_logic.unsubscribe_action_from_events(npc, st, st.action)
-	end	
 end

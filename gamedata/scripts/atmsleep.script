@@ -1,0 +1,620 @@
+----------------------------------------------------
+-- file : atmsleep
+-- copyright (c) 2009 Atempad  (atem.pad@mail.ru)
+-- "Sleep for ClearSky" v 1.0
+----------------------------------------------------
+
+local sleep_time     = 1     -- Time of sleep.
+local min_sleep_time = 1     -- Min value of time.
+local max_sleep_time = 12    -- Max value of time.
+
+local best_enemy     = nil   -- Best enamy.
+local danger         = 0     -- Danger value.
+
+-- ...and the second, sturdier criterion: standing inside a "no weapon" restrictor. Every faction base
+-- has one (esc_stalker_base_no_weapon_zone, agr_duty_base_no_weapon_zone_1/2, val_freedom_base_...,
+-- gar_..._bandit_base_no_weapon, mar_..._csky_base_no_weapon, yan_..._no_weapon_actor_base_cut2 and
+-- so on) -- they are exactly the places the designers already marked as peaceful, which is a far
+-- better answer to "am I somewhere safe" than a radius around a body. Their logic lives in
+-- configs\scripts\<level>\*.ltx, not in all.spawn, which is why grepping the spawn file finds
+-- almost nothing.
+-- Purely geometric on purpose: it does not care whether sr_no_weapon actually holsters the weapon,
+-- only that this restrictor is the active scheme here and the actor is inside it. Restrictors are in
+-- db.storage (restrictor_binder:reinit puts them there) and xr_logic keeps the scheme in active_scheme.
+local function in_no_weapon_zone()
+	local actor = db.actor
+	if actor == nil then return false end
+	local c = actor:center()
+	local object_by_id = level.object_by_id
+	for id, st in pairs (db.storage) do
+		if type(st) == "table" and st.active_scheme == "sr_no_weapon" then
+			local obj = object_by_id(id)
+			if obj and obj:inside(c) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- Levels where the wake-up spawn never happens, whatever the danger reading says. Scripted, tightly
+-- built places where a mutant materialising out of nowhere would be plain wrong. Keys are the level
+-- names level.name() returns, i.e. the section names in configs\game_maps_single.ltx.
+local no_spawn_levels =
+{
+	["stancia_2"] = true,   -- ChNPP (the final level; weathers = stancia2)
+	["hospital"]  = true,   -- Hospital
+}
+
+-- The one place that answers "is it safe to sleep here": a banned level, or a "no weapon" restrictor.
+local function sleep_is_safe()
+	if no_spawn_levels[level.name()] then
+		return true
+	end
+	return in_no_weapon_zone()
+end
+
+local hr = game.translate_string("st_sleepingbag_h")
+
+local mutants =
+{
+	[clsid.bloodsucker_s] = 1,
+	[clsid.boar_s]        = 2,
+	[clsid.dog_s]         = 4,
+	[clsid.flesh_s]       = 2,
+	[clsid.pseudodog_s]   = 3,
+--	[clsid.burer_s]       = 1,
+--	[clsid.cat_s]         = 2,
+--	[clsid.chimera_s]     = 1,
+--	[clsid.fracture_s]    = 2,
+	[clsid.gigant_s]      = 1,
+--	[clsid.zombie_s]      = 3,
+	[clsid.snork_s]       = 3,
+	[clsid.tushkano_s]    = 5,
+	[clsid.psy_dog_s]     = 4
+}
+
+------------------------------------------------------------------------------------------------
+-- Func: Creating of npc or a mutant.
+------------------------------------------------------------------------------------------------
+
+local function sim_create(section, position, lvid, gvid)
+	local sim = _G.sim
+	local sobj_id = sim:create(section, position, lvid, gvid).id
+	sim:set_switch_online(sobj_id, true)
+	sim:set_switch_offline(sobj_id, false)
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Maintenance of health.
+------------------------------------------------------------------------------------------------
+
+local function health_cr(slptime)
+	local actor = db.actor
+	if actor.health < 1 then
+		local health = actor.health + slptime / 6
+		if health >= 1 then
+			actor.health = 1
+		else
+			actor.health = health
+		end
+	end
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Surprise.
+------------------------------------------------------------------------------------------------
+
+local function surprise()
+	-- Safe here means: a level on the no-spawn list, or inside a "no weapon" restrictor. Nothing is
+	-- spawned at all then -- not even the danger > 100 case, which drops the mutant right on top of
+	-- the actor. See sleep_is_safe().
+	if sleep_is_safe() then
+		return
+	end
+	local dirs = {
+		vector():set(1,  0,  0),
+		vector():set(1,  0,  1),
+		vector():set(0,  0,  1),
+		vector():set(-1, 0,  1),
+		vector():set(-1, 0,  0),
+		vector():set(-1, 0, -1),
+		vector():set(0,  0, -1),
+		vector():set(1,  0, -1)
+	}
+	local lvid = db.actor:level_vertex_id()
+	local gvid = db.actor:game_vertex_id()
+	-- 100 is the ceiling evaluation() allows, and it is only reachable with no friendly stalker
+	-- within 30 m -- so "the reading is pinned at maximum and you slept alone" is exactly the case
+	-- that drops a mutant right on top of the actor. Any company at all pulls it below 100 and this
+	-- branch cannot fire.
+	if danger >= 100 then                                                        -- actor death
+		if best_enemy == nil then
+			sim_create("bloodsucker_redhunter", db.actor:position(), lvid, gvid) -- spawn default mutant
+		else
+			sim_create(best_enemy:section(), db.actor:position(), lvid, gvid)    -- spawn the nearest enemy
+		end
+--		db.actor:kill(db.actor)
+		return
+	end
+	if danger * 10 >= math.random(1, 1000) then                                  -- mutants spawn
+		if best_enemy == nil then                                                -- mutants not near actor
+			for i = 1, 2 do
+				local dir = dirs[math.random(1, #dirs)]
+				local start_point_id = level.vertex_in_direction(lvid, dir, math.random(15, 20))
+				sim_create("bloodsucker_redhunter", level.vertex_position(start_point_id), start_point_id, gvid)
+			end
+		elseif best_enemy:alive() then                                           -- nearby to actor
+			local amount = math.random(1, 2)
+			if mutants[get_clsid(best_enemy)] then
+				amount = mutants[get_clsid(best_enemy)]
+			end		
+			for i = 1, amount do
+				local dir = dirs[math.random(1, #dirs)]
+				local start_point_id = level.vertex_in_direction(lvid, dir, math.random(15, 20))
+				sim_create(best_enemy:section(), level.vertex_position(start_point_id), start_point_id, gvid)
+			end
+		else                                                                     -- corpse
+			local amount = 2
+			local mutant = "bloodsucker_redhunter"                               -- default mutant
+			if mutants[get_clsid(best_enemy)] then
+				mutant = best_enemy:section()                                    -- the nearest enemy
+				amount = mutants[get_clsid(best_enemy)]
+			end
+			for i = 1, amount do
+				local dir = dirs[math.random(1, #dirs)]
+				local start_point_id = level.vertex_in_direction(lvid, dir, math.random(15, 20))
+				sim_create(mutant, level.vertex_position(start_point_id), start_point_id, gvid)
+			end
+		end
+	end
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Emissions during sleep.
+------------------------------------------------------------------------------------------------
+-- The surge runs on a game clock now (xr_surge_hide.update_surge_schedule, every 20-28 in-game
+-- hours), and sleeping skips hours outright -- so a surge can fall due while the actor is asleep.
+-- Two outcomes, decided by where they lay down:
+--   * inside a surge shelter (an `actor_hides` restrictor -- the same place the hide task sends you):
+--     they sleep right through it, the clock is restarted, and a news tip says so on waking;
+--   * out in the open: the sleep is cut short at the hour the surge is due and the surge starts as
+--     soon as they are on their feet.
+-- Nothing happens on a level that cannot have a surge (or whose condlist is false) -- exactly as
+-- while awake, the emission just stays overdue.
+
+local surge_on_wake      = nil		-- surge length to start in sleep_stop (out in the open)
+local surge_slept_through = false	-- slept through one in a shelter -> tip on waking
+local surge_running_end  = false	-- one was ALREADY running when we lay down (shelter only)
+
+-- Returns how many hours the actor actually gets to sleep (< slptime when a surge cuts it short).
+local function plan_surge(slptime)
+	surge_on_wake       = nil
+	surge_slept_through = false
+	surge_running_end   = false
+
+	-- A surge is running right now. UISleep only lets us get here from inside a shelter, so the
+	-- actor sits it out: sleep the whole time and end it on the way (see sleep_start).
+	if xr_surge_hide.surge_activated or xr_surge_hide.start_surge then
+		if xr_surge_hide.actor_in_hide() then
+			surge_running_end   = true
+			surge_slept_through = true
+		end
+		return slptime
+	end
+
+	local left = xr_surge_hide.seconds_until_surge()
+	if left == nil or left >= slptime * 3600 then
+		return slptime					-- nothing scheduled inside this sleep
+	end
+
+	local surge_time = xr_surge_hide.surge_can_be_started(level.name())
+	if not surge_time then
+		return slptime					-- this level/condlist does not allow one
+	end
+
+	if xr_surge_hide.actor_in_hide() then
+		surge_slept_through = true		-- the shelter did its job; sleep the whole time
+		return slptime
+	end
+
+	surge_on_wake = surge_time
+	return left / 3600					-- wake up at the moment it starts
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Activation of sleep.
+------------------------------------------------------------------------------------------------
+
+local function sleep_start(slptime)
+	game.start_tutorial("atmdream")
+	db.actor:stop_talk()
+	level.hide_indicators_safe()
+	-- ...but drop the invulnerability it raises. Sleep needed it back when it ran the world at 480x
+	-- for the length of the sound; the clock now jumps in a single frame, so nothing can reach the
+	-- actor anyway. The god flag also froze the whole condition step, so none of the slept hours
+	-- counted towards hunger, radiation or bleeding.
+	level.set_actor_invulnerable(false)
+	get_hud():HideActorMenu()
+	-- Jump the clock outright, the way CoP's sleeping bag does it, instead of the old
+	-- level.set_time_factor(slptime * 480). The factor trick only advanced the right number of hours
+	-- if the black screen lasted exactly as long as sleep_4.ogg, and it left the whole world running
+	-- at 480x for those seconds -- mutants closing in, anomalies firing. change_game_time moves both
+	-- the ALife clock (m_game_time) and the environment clock in one frame, so the skip is exact and
+	-- nothing gets to act during it. Timestamp-driven things (artefact respawn, smart terrains) see
+	-- the elapsed hours correctly; per-tick offline simulation is not replayed, which the factor
+	-- trick did not really do either.
+	-- A surge falling due mid-sleep may shorten it (see plan_surge), so the clock jump, the healing
+	-- and the wake-up handling all go by the hours actually slept, not by what was asked for.
+	local hours = plan_surge(slptime)
+	local h = math.floor(hours)
+	local m = math.floor((hours - h) * 60)
+	if h <= 0 and m <= 0 then	m = 1 end		-- always move the clock at least a minute forward
+	level.change_game_time(0, h, m)
+	if surge_running_end then
+		surge_running_end = false
+		-- straight after the jump, before the hide task gets a tick with the moved clock
+		xr_surge_hide.end_surge_slept_through()
+	end
+	if surge_slept_through then
+		xr_surge_hide.schedule_next_surge()		-- AFTER the jump: the next one is 20-28 h from waking
+		-- A slept-through surge is still a surge as far as the anomalies are concerned. When one was
+		-- already running (surge_running_end above) the roll would have come from the falling edge of
+		-- surge_activated on the next actor tick; when it merely fell due during the sleep, nothing
+		-- ever set that flag and the anomalies would have been skipped entirely. Rolling here covers
+		-- both, and apply_surge disarms the falling edge so the first case cannot roll twice.
+		-- After the clock jump, so the zones are stamped with the time the actor wakes up.
+		surge_artefacts.apply_surge()
+	end
+	health_cr(hours)
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Deactivation of sleep.
+------------------------------------------------------------------------------------------------
+
+function sleep_stop()
+	level.show_indicators()
+	level.add_pp_effector("teleport.ppe", 2006, false)
+	surprise()
+	-- No time_factor to put back any more (sleep_start no longer touches it), and restoring it from
+	-- [alife] unconditionally would also have stomped any factor set elsewhere.
+	local weather_manager = level_weathers.get_weather_manager()
+	weather_manager:reset() -- reset weather
+	level.add_cam_effector("camera_effects\\prison_1.anm", 25, false, "")
+	level.add_cam_effector("camera_effects\\hit_back_left.anm", 26, false, "")
+
+	-- Emission handling comes last, after the weather reset above (a starting surge sets its own
+	-- weather effect and would otherwise be wiped a line later).
+	if surge_slept_through then
+		surge_slept_through = false
+		news_manager.send_tip(db.actor, game.translate_string("st_surge_while_asleep"))
+	elseif surge_on_wake then
+		local surge_time = surge_on_wake
+		surge_on_wake = nil
+		xr_surge_hide.activate_surge(surge_time)
+	end
+end
+
+------------------------------------------------------------------------------------------------
+-- Class: UI interface for sleep.
+------------------------------------------------------------------------------------------------
+
+class "UISleep" (CUIScriptWnd)
+
+function UISleep:__init() super()
+	self.mbox_mode = 0
+	best_enemy = nil
+	danger = 0
+	self:init_interface()
+	self:init_callbacks()
+end
+
+function UISleep:__finalize()
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Initialize UI interface.
+------------------------------------------------------------------------------------------------
+
+function UISleep:init_interface()
+
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_sleep.xml")
+
+	self.message_box = CUIMessageBoxEx()
+	self:Register(self.message_box, "message_box")
+
+	-- Background.
+
+	self.background = xml:InitStatic("background", self)
+	self:SetWndPos(vector2():set(100, 100))
+	self:SetWndSize(vector2():set(self.background:GetWidth(), self.background:GetHeight()))
+	self.background:SetWndPos(vector2():set(0, 0))
+
+	-- Indicator.
+
+	self.safetybar = xml:InitStatic("safetybar", self)
+	self.fearbar = xml:InitStatic("fearbar", self)
+	self:set_level_danger()
+
+	-- Display for show hours of sleeping.
+
+	self.display = xml:InitStatic("display", self)
+	self.display:SetTextX(44)
+
+	-- Button for activation of sleeping.
+
+	self.button_sleep = xml:InitButton("button_sleep", self)
+	self:Register(self.button_sleep, "button_sleep")
+
+	-- Button for quit.
+
+	self.button_quit = xml:InitButton("button_quit", self)
+	self:Register(self.button_quit, "button_quit")
+
+	-- Button for add of hour.
+
+	self.button_left = xml:InitButton("button_left", self)
+	self:Register(self.button_left, "button_left")
+
+	-- Button for sub of hour.
+
+	self.button_right = xml:InitButton("button_right", self)
+	self:Register(self.button_right, "button_right")
+
+	-- Text for safety.
+
+	self.text_safety = xml:InitStatic("text_safety", self)
+
+	-- Text for duration.
+
+	self.text_duration = xml:InitStatic("text_duration", self)
+
+	-- Clock: the time now, and the time the chosen sleep ends at.
+
+	self.text_now  = xml:InitStatic("text_now", self)
+	self.text_wake = xml:InitStatic("text_wake", self)
+	self:update_clock()
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Show what time it is and what time the actor will wake up at.
+------------------------------------------------------------------------------------------------
+
+function UISleep:update_clock()
+	if not self.text_now or not self.text_wake then
+		return
+	end
+	local h = level.get_time_hours()
+	local m = level.get_time_minutes()
+	self.clock_minute = m
+	-- sleep_start advances the clock with level.change_game_time(0, hours, 0) -- whole hours, so the
+	-- minutes the actor wakes on are the ones showing right now. A surge can still cut the sleep short
+	-- (plan_surge), and then the real wake-up is earlier than this.
+	local wake = math.floor(math.fmod(h + sleep_time, 24))	-- fmod gives a float; %02d wants a whole one
+	self.text_now:SetText(string.format("%s %02d:%02d",
+		game.translate_string("st_sleepingbag_clock_now"), h, m))
+	self.text_wake:SetText(string.format("%s %02d:%02d",
+		game.translate_string("st_sleepingbag_clock_wake"), wake, m))
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Set level of danger for indicator.
+------------------------------------------------------------------------------------------------
+
+function UISleep:set_level_danger()
+	-- evaluation() already caps its threat half at 100 and then subtracts the friendly bonus, so
+	-- the value can reach 100 only with nobody friendly around -- see the note there.
+	local threat, relief
+	danger, threat, relief = analyzer():evaluation()
+	-- Inside a "no weapon" restrictor the bar reads zero. Nothing is going to be spawned there anyway
+	-- (surprise() bails on the same test), so a bar still glowing red would just be lying to the player.
+	-- Zeroing the shared `danger` rather than only the drawing is deliberate: surprise() then agrees
+	-- with what was shown, and the danger >= 100 "mutant on top of you" branch cannot fire either.
+	-- Called once and reused -- the check walks db.storage.
+	local safe_zone = sleep_is_safe()
+	if safe_zone then
+		danger = 0
+	end
+	-- one line so the log can settle "why did/didn't the safe camp trigger"
+	level.log(string.format("~ atmsleep: level=%s  danger=%.1f (threat %.1f capped, friends -%.1f)  safe=%s (banned_level=%s)",
+		level.name(), danger, threat, relief, tostring(safe_zone),
+		tostring(no_spawn_levels[level.name()] == true)))
+	if danger <= 0 then
+		self.fearbar:SetOriginalRect(Frect():set(0,0,0,0)) -- empty
+	else
+		local c = 21 -- rectangle (x1, y1, x2, y2)
+		local i = 195
+		local j = 206
+		local k = 203
+		local j2 = c + (j - c) * (danger / 100) -- 21 + 1.85 * danger
+		if j2 > j then 
+			j2 = j
+		end
+		self.fearbar:SetOriginalRect(Frect():set(c,i,j2,k))
+	end
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Quit menu.
+------------------------------------------------------------------------------------------------
+
+function UISleep:Quit()
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: On press OK.
+------------------------------------------------------------------------------------------------
+
+function UISleep:OnMsgOk()
+	self.mbox_mode = 0
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Set callbacks for buttons.
+------------------------------------------------------------------------------------------------
+
+function UISleep:init_callbacks()
+	self:AddCallback("button_sleep", ui_events.BUTTON_CLICKED,         self.sleep,       self)
+	self:AddCallback("button_quit",  ui_events.BUTTON_CLICKED,         self.ui_quit,     self)
+	self:AddCallback("button_right", ui_events.BUTTON_CLICKED,         self.add_to_time, self)
+	self:AddCallback("button_left",  ui_events.BUTTON_CLICKED,         self.sub_to_time, self)
+	self:AddCallback("message_box",  ui_events.MESSAGE_BOX_OK_CLICKED, self.OnMsgOk,     self)
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Activation of sleep and exit.
+------------------------------------------------------------------------------------------------
+
+function UISleep:sleep()
+	-- A surge no longer blocks sleep outright: inside a shelter (the same actor_hides restrictor
+	-- the hide task sends you to) the actor may sit it out asleep.
+	-- "Running" starts at start_surge, not at surge_activated: the latter is only set once the hide task is
+	-- handed out, tens of seconds of weather omens later. In that gap the actor woken by the surge could lie
+	-- straight back down, and since activate_surge had already moved the schedule 20-28 h on, plan_surge saw
+	-- nothing due and skipped the clock right over the emission.
+	local surge_running = xr_surge_hide.surge_activated or xr_surge_hide.start_surge
+	if not surge_running or xr_surge_hide.actor_in_hide() then
+		sleep_start(sleep_time)
+		self:ui_quit()
+	else
+		self.message_box:InitMessageBox("message_box_no_sleep")
+		self:GetHolder():start_stop_menu(self.message_box, true)
+	end
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Add hour to time of sleep.
+------------------------------------------------------------------------------------------------
+
+function UISleep:add_to_time()
+	if sleep_time < max_sleep_time then
+		sleep_time = sleep_time + 1
+		self.display:SetText(sleep_time..hr)
+		self.display:SetTextX(44)
+		self:update_clock()
+	end
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Sub hour to time of sleep.
+------------------------------------------------------------------------------------------------
+
+function UISleep:sub_to_time()
+	if sleep_time > min_sleep_time then
+		sleep_time = sleep_time - 1
+		self.display:SetText(sleep_time..hr)
+		self.display:SetTextX(44)
+		self:update_clock()
+	end
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Keep the clock honest -- the world clock keeps running while this window is open, so redraw
+-- the line when the minute turns. Comparing the minute first keeps it to two engine calls a frame.
+------------------------------------------------------------------------------------------------
+
+function UISleep:Update()
+	CUIScriptWnd.Update(self)
+	if self.clock_minute ~= level.get_time_minutes() then
+		self:update_clock()
+	end
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Binding for keyboard.
+------------------------------------------------------------------------------------------------
+
+function UISleep:OnKeyboard(DIK, KeyboardAction)
+	CUIScriptWnd.OnKeyboard(self, DIK, KeyboardAction)
+	if KeyboardAction == ui_events.WINDOW_KEY_PRESSED then
+		if DIK == DIK_keys.DIK_ESCAPE then
+			self:ui_quit()
+		end
+	end
+	return true
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Exit.
+------------------------------------------------------------------------------------------------
+
+function UISleep:ui_quit()
+	sleep_time = 1
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+------------------------------------------------------------------------------------------------
+-- Class: Analyzer of danger for UI indicator.
+------------------------------------------------------------------------------------------------
+
+class "analyzer"
+
+function analyzer:__init()
+--	self.danger   = 0
+--	self.objects  = {}
+--	self.actorpos = db.actor:position()
+end
+
+------------------------------------------------------------------------------------------------
+-- Func: Evaluate danger.
+------------------------------------------------------------------------------------------------
+
+-- Returns: danger, threat, relief.
+-- The two halves are kept apart on purpose. `threat` (mutants, hostile humans, corpses) is capped at
+-- 100 BEFORE the friendly bonus is taken off, so a den full of mutants saturates at 100 -- which is
+-- the "a bloodsucker lands on you" case in surprise() -- and every friendly stalker sleeping nearby
+-- pulls the reading back below it. Capping the sum instead would make company worthless: the raw
+-- figure runs into the hundreds, and -12 per friend never showed.
+function analyzer:evaluation()
+	local threat = 0
+	local relief = 0
+	local min_dist = 300
+	local object_by_id = level.object_by_id
+	local actor = db.actor
+	local actor_pos = actor:position()
+	local actor_id = actor:id()
+	for npc_id in pairs (db.storage) do                                     -- iterate over online entities
+		local obj = (npc_id ~= actor_id) and object_by_id(npc_id) or nil
+		-- ...the ACTOR is in db.storage too, and he passes IsStalker. Unskipped he is a friendly human
+		-- at 0.0 m from himself, which handed every sleep the -12 "friends nearby" bonus (a bug in the
+		-- original mod) and, once the safe camp went in, made every spot safe. Log line that caught it:
+		-- "nearest friend=single_player at 0.0m".
+		if obj then
+			if IsMonster(obj) then
+				local dist = obj:position():distance_to(actor_pos)
+				if dist <= 150 then
+					if dist < min_dist then
+						min_dist = dist
+						best_enemy = obj                                    -- nearest mutant within 150m of player is best_enemy
+					end
+					if obj:alive() then
+						threat = threat + (700 / dist)                      -- live mutant increases danger by 700 / dist
+					else
+						threat = threat + (300 / dist)                      -- mutant corpse increases danger by 300 / dist
+					end
+				end
+			elseif IsStalker(obj) then
+				local dist = obj:position():distance_to(actor_pos)
+				if dist <= 150 then
+					if obj:alive() then
+						if obj:relation(actor) == game_object.enemy then
+							threat = threat + (700 / dist)                  -- live human enemy increases danger by 700 / dist
+						elseif dist <= 30 then
+							relief = relief + 12                            -- live human non-enemy within 30m decreases danger by 12
+						end
+					else
+						threat = threat + (300 / dist)                      -- human corpse increases danger by 300 / dist
+					end
+				end
+			end
+		end
+	end
+	if threat > 100 then
+		threat = 100                                                    -- ceiling: 100 is as bad as it gets
+	end
+	local danger = threat - relief
+	return (danger < 0 and 0 or danger), threat, relief
+end

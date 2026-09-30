@@ -101,6 +101,12 @@ public:
 			void		RestoreEffectorDOF		();							// "out" speed
 			bool		DofChanged				() const	{ return m_dof_changed; }
 
+	// Intoxication: how far the focus is pulled towards the ACTION dof (the reload blur) right now, 0..1.
+	// Filled by CActor with the pulse; blended in GetCurrentDof ON TOP of whatever owns the effector
+	// (aim, reload, a pick zone), so it never takes the effector from them. The render draws DOF only
+	// with r2_dof_enable on -- with it off this changes nothing, which is what the user asked for.
+	float				m_intox_dof;
+
 	// GS DOF tuning, read once from [gunslinger_base] (gunslinger_params.ltx) under GS's own key
 	// names, with GS's own fallbacks. Speeds are 1/seconds: 5 = the vanilla 0.2s, 1 = a full second.
 	struct SDofDefaults

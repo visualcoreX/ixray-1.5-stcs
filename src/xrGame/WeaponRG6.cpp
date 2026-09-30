@@ -151,6 +151,9 @@ void CWeaponRG6::FireStart ()
 
 		d.normalize();
 		d.mul(m_fLaunchSpeed);
+		// GS LaunchGrenade_controller_Correct, as for the underbarrel GL: under a controller the grenade is
+		// DROPPED at the victim's feet -- (0,-2,0), whatever the barrel points at
+		if (suicide_muzzle)	d.set(0.f, -2.f, 0.f);
 		VERIFY2(_valid(launch_matrix),"CWeaponRG6::FireStart. Invalid launch_matrix");
 		CRocketLauncher::LaunchRocket(launch_matrix, d, zero_vel);
 

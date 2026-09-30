@@ -11,139 +11,206 @@ weather_surge = true
 time_before_surge = 0
 initialization_time = game.get_game_time()
 phase = 0
+
 local state_tbl = {"wait", "sit", "sit_ass", "sit_knee"}
-base_prop = 15
-cur_prop = 15
-local add_prop = 10
-levels_surge_table = {
---	                    marsh       = {condlist="{+mar_story_go_to_escape_done} true", surge_time=30},
-											escape      = {condlist="{+esc_bring_habar_complete} true", surge_time=40},
-											garbage     = {condlist="{+gar_story_got_info_from_digger -val_deliver_pda_done} true, {+agr_garbage_end} true", surge_time=45},
-											darkvalley  = {condlist="{+val_deliver_pda_done} true", surge_time=45},
-											agroprom    = {condlist="{+agru_go_out_end_task_complete} true", surge_time=30},
-											red_forest  = {condlist="{+red_strelok_task_end -red_bridge_scene_begin} true, {+red_bridge_finished} true, {+red_bridge_actor_fail} true", surge_time=30},
-											military    = {condlist="{+mil_actor_go_to_limansk} true", surge_time=30},
-										 }
+local RUN_DIST = 30          -- metres to cover beyond which an NPC runs there instead of walking
+local V_PROBE  = 8           -- metres to search up and down the anchor's column for a standable node
+local V_STEP   = 0.5         -- step of that vertical search
+local ARRIVE_R = 2           -- metres from the chosen node that count as "arrived" under cover
+local cur_prop = 15		-- UNUSED since the surge went on a clock (see below); kept only because the save packet stores it
+local levels_surge_table = {
+
+-- marsh	= {condlist = "{+mar_story_go_to_escape_done} true", surge_time = 30},
+escape		= {condlist = "{+esc_bring_habar_complete} true", surge_time = 40},
+garbage		= {condlist = "{+gar_story_got_info_from_digger -val_deliver_pda_done} true, {+agr_garbage_end} true", surge_time = 45},
+darkvalley	= {condlist = "{+val_deliver_pda_done} true", surge_time = 45},
+agroprom	= {condlist = "{+agru_go_out_end_task_complete} true", surge_time = 30},
+red_forest	= {condlist = "{+red_strelok_task_end -red_bridge_scene_begin} true, {+red_bridge_finished} true, {+red_bridge_actor_fail} true", surge_time = 30},
+military	= {condlist = "{+mil_actor_go_to_limansk} true", surge_time = 30}
+
+}
 
 ---------------------------------------------------------------------------------------------------------------------
---Evaluators
-----------------------------------------------------------------------------------------------------------------------
+-- Evaluators -------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------
+
 -- Script end condition
+
 class "evaluator_surge_hide_end" (property_evaluator)
+
 function evaluator_surge_hide_end:__init(name, storage) super (nil, name)
 	self.st = storage
 end
+
 function evaluator_surge_hide_end:evaluate()
 	return not xr_logic.is_active(self.object, self.st)
 end
+
 -- Are we on position
+
 class "evaluator_surge_hide_on_position" (property_evaluator)
+
 function evaluator_surge_hide_on_position:__init(name, storage) super (nil, name)
 	self.st = storage
 end
+
+-- "Arrived" for a dynamic cover means UNDER COVER and standing on the node we picked -- not merely
+-- within 5 m of the marker. The bare 5 m test is what left people outside: a shelter's pivot is
+-- reached from the street long before the doorway is, so anyone who started within five metres of
+-- it never took a step, and anyone walking in stopped the moment the wall was that close. Those two
+-- cases are exactly "sits outside next to it" and "stops in the doorway".
 function evaluator_surge_hide_on_position:evaluate()
-	if(self.st.pp:distance_to(self.object:position())<5) then
-		return true
+	local st  = self.st
+	local pos = self.object:position()
+
+	if st.cover_zone ~= nil then
+		if not st.cover_zone:inside(pos) then
+			return false
+		end
+		if st.pos_vertex == nil then
+			return false          -- let go_position run once and choose the spot
+		end
+		return level.vertex_position(st.pos_vertex):distance_to(pos) < ARRIVE_R
 	end
-	return false
+
+	return st.pp:distance_to(pos) < 5
 end
-----------------------------------------------------------------------------------------------------------------------
---Actions
-----------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------------------
+-- Actions ----------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------
+
 -- Go to point
+
 class "action_surge_hide_go_position" (action_base)
+
 function action_surge_hide_go_position:__init(npc, action_name, storage) super(nil, action_name)
 	self.st = storage
 	self.move_mgr = db.storage[npc:id()].move_mgr
 	self.update_time = 0
 end
+
 function action_surge_hide_go_position:initialize()
 	action_base.initialize(self)
-	self.object:set_desired_position()
-	self.object:set_desired_direction()
-	self.st.signals = {}
-	if self.st.path_walk_info == nil then
-		self.st.path_walk_info = utils.path_parse_waypoints(self.st.path_walk)
+	local sobj = self.object
+	local self_st = self.st
+	sobj:set_desired_position()
+	sobj:set_desired_direction()
+	self_st.signals = {}
+	-- path_walk is absent under `dynamic_cover`: surge_cover sends NPCs to shelters that have no
+	-- way-path of their own, so there are no waypoints to parse.
+	if self_st.path_walk ~= nil and self_st.path_walk_info == nil then
+		self_st.path_walk_info = utils.path_parse_waypoints(self_st.path_walk)
 	end
 end
+
 function action_surge_hide_go_position:execute()
 	action_base.execute(self)
-	if(self.update_time<=0) then
+	if self.update_time <= 0 then
 		self.update_time = 200
-		local tmp_pos_vertex, npc_position_num = get_dest_vertex(self.object, self.st.pp, self.st.position, self.st.npc_pos)
-		if(self.st.npc_position_num~=npc_position_num) then
-			self.st.pp = patrol(self.st.path_walk):point(0)
-			local dir = vector():set(math.random(-1,1), 0, math.random(-1,1))
-			local delta_dist = math.random(0,0.5)
-			self.st.pp.x = self.st.pp.x + dir.x * delta_dist
-			self.st.pp.z = self.st.pp.z + dir.z * delta_dist
+		local tmp_pos_vertex, npc_position_num = get_dest_vertex(self.object, self.st.pp, self.st.position, self.st.npc_pos, self.st.cover_zone)
+		if self.st.npc_position_num ~= npc_position_num then
+			local a = self.st.anchor
+			self.st.pp = vector():set(a.x, a.y, a.z)
+
+			-- The ~0.5 m scatter is for open-air cover points, where standing on top of each other
+			-- looks wrong. Inside a shelter it only risks nudging someone back through a doorway,
+			-- so a dynamic cover is aimed at dead centre.
+			if self.st.cover_zone == nil then
+				local dir = vector():set(math.random(-1,1), 0, math.random(-1,1))
+				local delta_dist = math.random(0,0.5)
+				self.st.pp.x = self.st.pp.x + dir.x * delta_dist
+				self.st.pp.z = self.st.pp.z + dir.z * delta_dist
+			end
 
 			self.object:set_dest_level_vertex_id(tmp_pos_vertex)
 			local dd = vector():sub(self.st.pp, level.vertex_position(tmp_pos_vertex))
-			if(dd) and not(utils.vector_cmp(dd, vector():set(0,0,0))) then
+			if dd and not utils.vector_cmp(dd, vector():set(0,0,0)) then
 				dd:normalize()
 				self.object:set_desired_direction(dd)
 			end
 
 			self.object:set_path_type(game_object.level_path)
-			state_mgr.set_state(self.object, "walk")
-        	self.st.npc_position_num = npc_position_num
+		self.st.npc_position_num = npc_position_num
 			self.st.pos_vertex = tmp_pos_vertex
+		end
+
+		-- Pace, decided ONCE when the scheme started (st.run_to_cover) and held all the way in.
+		-- Re-testing the distance every tick made them slow to a walk for the last 30 m, which is
+		-- the stretch they are least likely to have time for. Someone who began inside 30 m never
+		-- had far to go and can take it at a walk.
+		-- "run" is the unpanicked gait: state_lib gives run and sprint the same move.run, and only
+		-- sprint adds anim.panic on top.
+		local want = self.st.run_to_cover and "run" or "walk"
+		if self.st.move_state ~= want then
+			state_mgr.set_state(self.object, want)
+			self.st.move_state = want
 		end
 	else
 		self.update_time = self.update_time - 1
 	end
 end
+
 function action_surge_hide_go_position:finalize()
 	action_base.finalize(self)
 end
+
 -- Wait surge's end
+
 class "action_surge_hide_wait" (action_base)
+
 function action_surge_hide_wait:__init(npc, action_name, storage) super (nil, action_name)
 	self.st = storage
 	self.update_time = 0
 end
+
 function action_surge_hide_wait:initialize()
 	action_base.initialize(self)
 	self.st.signals = {}
 end
+
 function action_surge_hide_wait:execute()
 	action_base.execute(self)
-	if(self.update_time<=0) then
-		self.update_time = math.random(30000, 50000)
-		local state = math.random(1,4)
+	if self.update_time <= 0 then
+		local rand = math.random
+		self.update_time = rand(30000, 50000)
+		local state = rand(1, 4)
 		state_mgr.set_state(self.object, state_tbl[state], nil, nil, {look_position = self.st.pp}, nil, nil, nil)
 	else
 		self.update_time = self.update_time - 1
 	end
 end
+
 function action_surge_hide_wait:finalize()
 	action_base.finalize(self)
 end
---------------------------------------------------------------------------------
--- Binder ----------------------------------------------------------------------
---------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------------------
+-- Binder -----------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------
+
 function add_to_binder(object, ini, scheme, section, storage)
-	local actions = {
-						surge_hide_go_position = xr_actions_id.peace_sh_base + 1,
-						surge_hide_wait = xr_actions_id.peace_sh_base + 2
-					}
-	local evaluators = {
-						surge_hide_end = xr_evaluators_id.peace_sh_base + 1,
-						surge_hide_on_position = xr_evaluators_id.peace_sh_base + 2
-						 }
+
+	local actions = {surge_hide_go_position = xr_actions_id.peace_sh_base + 1,
+			surge_hide_wait = xr_actions_id.peace_sh_base + 2}
+
+	local evaluators = {surge_hide_end = xr_evaluators_id.peace_sh_base + 1,
+			surge_hide_on_position = xr_evaluators_id.peace_sh_base + 2}
 
 	local manager = object:motivation_action_manager()
+
 	-- Evaluators
+
 	manager:add_evaluator(evaluators.surge_hide_end, this.evaluator_surge_hide_end("surge_hide_end", storage, "surge_hide_end"))
 	manager:add_evaluator(evaluators.surge_hide_on_position, this.evaluator_surge_hide_on_position("surge_hide_on_position", storage, "surge_hide_on_position"))
 
 	-- Actions
+
 	local action = this.action_surge_hide_wait(object, "action_surge_hide_wait", storage)
 	action:add_precondition(world_property(stalker_ids.property_alive, true))
 	action:add_precondition(world_property(xr_evaluators_id.smartcover_action + 3, false))
-	action:add_precondition		(world_property(stalker_ids.property_danger,false))
-	action:add_precondition		(world_property(stalker_ids.property_enemy,	false))
+	action:add_precondition(world_property(stalker_ids.property_danger, false))
+	action:add_precondition(world_property(stalker_ids.property_enemy, false))
 	xr_motivator.addCommonPrecondition(action)
 	action:add_precondition(world_property(evaluators.surge_hide_on_position, true))
 	action:add_effect(world_property(evaluators.surge_hide_end, true))
@@ -153,8 +220,8 @@ function add_to_binder(object, ini, scheme, section, storage)
 	action = this.action_surge_hide_go_position(object, "action_surge_hide_go_position", storage)
 	action:add_precondition(world_property(stalker_ids.property_alive, true))
 	action:add_precondition(world_property(xr_evaluators_id.smartcover_action + 3, false))
-	action:add_precondition		(world_property(stalker_ids.property_danger,false))
-	action:add_precondition		(world_property(stalker_ids.property_enemy,	false))
+	action:add_precondition(world_property(stalker_ids.property_danger, false))
+	action:add_precondition(world_property(stalker_ids.property_enemy, false))
 	xr_motivator.addCommonPrecondition(action)
 	action:add_precondition(world_property(evaluators.surge_hide_on_position, false))
 	action:add_effect(world_property(evaluators.surge_hide_on_position, true))
@@ -163,37 +230,107 @@ function add_to_binder(object, ini, scheme, section, storage)
 	action = manager:action(xr_actions_id.alife)
 	action:add_precondition(world_property(evaluators.surge_hide_end, true))
 end
+
 -- Scheme start
+
 function set_scheme(npc, ini, scheme, section, gulag_name)
+
 	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+
 	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
-	st.path_walk = utils.cfg_get_string(ini, section, "path_walk", npc, true,  gulag_name)
-	st.pp = patrol(st.path_walk):point(0)
-	st.position = {
-                    {dir = vector():set(1, 0, 0),   used = nil},
-                    {dir = vector():set(1, 0, 1),   used = nil},
-                    {dir = vector():set(0, 0, 1),   used = nil},
-                    {dir = vector():set(-1, 0, 1),  used = nil},
-                    {dir = vector():set(-1, 0, 0),  used = nil},
-                    {dir = vector():set(-1, 0, -1), used = nil},
-                    {dir = vector():set(0, 0, -1),  used = nil},
-                    {dir = vector():set(1, 0, -1),  used = nil}
-                  }
+
+	-- Two ways to say where to hide. Gulag surge jobs name a way-path (`path_walk`), which is what
+	-- vanilla always did. `dynamic_cover` instead means "ask surge_cover where the nearest shelter
+	-- is", because the covers it can pick -- actor_hides restrictors -- have no way-path attached,
+	-- and because the answer must be recomputed rather than stored (see configs\scripts\surge_cover.ltx).
+	local cover_name
+	if utils.cfg_get_bool(ini, section, "dynamic_cover", npc, false, false) then
+		st.path_walk = nil
+		st.anchor, st.cover_zone, cover_name = surge_cover.cover_for(npc)
+		if st.anchor == nil then
+			-- No shelter to be had. Stand fast rather than break the scheme.
+			local p = npc:position()
+			st.anchor = vector():set(p.x, p.y, p.z)
+			st.cover_zone = nil
+		end
+	else
+		st.path_walk = utils.cfg_get_string(ini, section, "path_walk", npc, true, gulag_name)
+		st.anchor = patrol(st.path_walk):point(0)
+		st.cover_zone = nil
+	end
+
+	-- Pace is latched here, not re-tested while running: how far he has to go is decided by where
+	-- he was standing when the surge caught him.
+	st.run_to_cover = npc:position():distance_to(st.anchor) > RUN_DIST
+	st.move_state = nil
+
+	surge_cover.log_assignment(npc, st, cover_name)
+
+	st.pp = vector():set(st.anchor.x, st.anchor.y, st.anchor.z)
+
+	local T =	{
+			{dir = vector():set(1, 0, 0),	used = nil},
+			{dir = vector():set(1, 0, 1),	used = nil},
+			{dir = vector():set(0, 0, 1),	used = nil},
+			{dir = vector():set(-1, 0, 1),	used = nil},
+			{dir = vector():set(-1, 0, 0),	used = nil},
+			{dir = vector():set(-1, 0, -1), used = nil},
+			{dir = vector():set(0, 0, -1),	used = nil},
+			{dir = vector():set(1, 0, -1),	used = nil}
+			}
+
+	st.position = T
+
 	st.npc_pos = {}
 	local free = {}
-	for k,v in pairs(st.position) do
-		if v.used == nil then
-			table.insert(free, k)
-		end
+
+	local c = 0
+	for k, v in pairs (T) do
+--		if v.used == nil then	-- always true
+			c = c + 1
+			free[c] = k
+--			table.insert(free, k)
+--		end
 	end
-	if(#free>0) then
-		local rr = math.random(#free)
-		st.position[free[rr]].used = npc:id()
-		st.npc_pos[npc:id()] = free[rr]
+
+	local num_free = #free
+	if num_free > 0 then
+		local npc_id = npc:id()
+		local selected_index = free[math.random(num_free)]
+		T[selected_index].used = npc_id
+		st.npc_pos[npc_id] = selected_index
 	end
 end
+
 -- Get position move to
-function get_dest_vertex(npc, pp, pos_tbl, npc_pos)
+
+-- `zone`, when given, is the shelter the anchor belongs to, and the answer must lie INSIDE it.
+-- Without that test the spread below walks people out of the building: everyone is placed on a
+-- compass heading ~3 m from the anchor, which from inside a basement or a hut lands through a wall
+-- often enough, and the AI node found out there is perfectly valid -- so they settle in the open
+-- next to the shelter instead of in it.
+-- One shelter, many stalkers: without this every one of them is aimed at the SAME node (the anchor
+-- column below), so a squad ordered to hide indoors walks into a single tile and wedges itself in
+-- the doorway or on the stairs leading to it. Each NPC therefore claims the node he is sent to, and
+-- the others look further out -- still inside the shelter, still nearest-first.
+--
+-- A claim is just a stamp: the owner refreshes it every 200 ms from the go_position action, so one
+-- that has not been touched for five seconds belongs to someone who died, went offline or left, and
+-- is free to take. Nothing has to be released by hand, and a savegame load simply rebuilds the table.
+local vertex_claims = {}
+local CLAIM_TTL = 5000
+
+local function claim_free(v, npc_id, now)
+	local c = vertex_claims[v]
+	return c == nil or c.id == npc_id or (now - c.tm) > CLAIM_TTL
+end
+
+local function claim_take(v, npc_id, now)
+	vertex_claims[v] = { id = npc_id, tm = now }
+	return v
+end
+
+function get_dest_vertex(npc, pp, pos_tbl, npc_pos, zone)
 	local npc_id = npc:id()
 	local dir = pos_tbl[npc_pos[npc_id]].dir
 
@@ -201,93 +338,154 @@ function get_dest_vertex(npc, pp, pos_tbl, npc_pos)
 	dir.z = dir.z + math.random(-1,1)/5
 	dir:normalize()
 
-	local radius = 3 + math.random(-0.3,0.3)
- 	local dest_vertex = 4294967295
+	if zone ~= nil then
+		-- STRAIGHT TO THE POINT, no spread at all: ringing people around the anchor is what put them
+		-- on the far side of a wall, and a cellar is not somewhere to stand in a circle.
+		--
+		-- The search is VERTICAL FIRST. A restrictor's position is its pivot, which is almost never
+		-- at floor height, and a shelter is often a cellar or a second storey -- so the node we want
+		-- can be several metres above or below it. level.vertex_id() snaps by XZ and takes whatever
+		-- node is nearest in Y, which for stacked floors is regularly the wrong one; the old code
+		-- then handed that to accessible_nearest and got a doorway. Probing the anchor's own column
+		-- outwards from dy = 0 finds the standable floor of the room the pivot is actually in.
+		local now = time_global()
+		local function usable(v)
+			return v ~= 4294967295 and v ~= 4294967296
+			       and zone:inside(level.vertex_position(v)) and npc:accessible(v)
+			       and claim_free(v, npc_id, now)
+		end
 
- 	while(dest_vertex==4294967295) or (dest_vertex==4294967296) do
- 		local tmp_pos = vector():set(0,0,0)
-		tmp_pos.x = pp.x + dir.x * radius
-		tmp_pos.z = pp.z + dir.z * radius
-		tmp_pos.y = pp.y
-	 	dest_vertex = level.vertex_id(tmp_pos)
-	 	if(dest_vertex==4294967295) or (dest_vertex==4294967296) then
-	 		if radius >= 1 then
-	 			radius = radius - 0.5
-			else
-				abort("Invalid AI map at kamp[surge_hide] point [%s]", self.path_walk)
-	 		end
-	 	end
- 	end
-	if not npc:accessible(dest_vertex) then
-		local vp = level.vertex_position(dest_vertex)
-		local nearest_vertex = npc:accessible_nearest(vp, vector():set(0,0,0))
-		return nearest_vertex, npc_pos[npc_id]
+		local function probe_column(x, z)
+			local dy = 0
+			while dy <= V_PROBE do
+				local up   = level.vertex_id(vector():set(x, pp.y + dy, z))
+				if usable(up) then return up end
+				if dy > 0 then
+					local down = level.vertex_id(vector():set(x, pp.y - dy, z))
+					if usable(down) then return down end
+				end
+				dy = dy + V_STEP
+			end
+			return nil
+		end
+
+		local v = probe_column(pp.x, pp.z)
+		if v ~= nil then
+			surge_cover.log_dest(npc, "column", v, zone)
+			return claim_take(v, npc_id, now), npc_pos[npc_id]
+		end
+
+		-- Nothing standable in the anchor's own column. Widen outwards, probing each ring the same
+		-- way, nearest ring first, so we still land as close to the middle as the room allows.
+		for r = 1, 8 do
+			for i = 1, #pos_tbl do
+				local d = pos_tbl[i].dir
+				local cv = probe_column(pp.x + d.x * r, pp.z + d.z * r)
+				if cv ~= nil then
+					surge_cover.log_dest(npc, "ring"..r, cv, zone)
+					return claim_take(cv, npc_id, now), npc_pos[npc_id]
+				end
+			end
+		end
+
+		-- Nothing inside the shelter is reachable at all -- which means movement restrictions, not
+		-- geometry. Standing at the anchor still beats walking off to whatever node is nearest.
+		local at = level.vertex_id(pp)
+		if at ~= 4294967295 and at ~= 4294967296 and npc:accessible(at) then
+			surge_cover.log_dest(npc, "anchor_only", at, zone)
+			return claim_take(at, npc_id, now), npc_pos[npc_id]
+		end
+		local near = npc:accessible_nearest(pp, vector():set(0,0,0))
+		surge_cover.log_dest(npc, "give_up", near, zone)
+		return near, npc_pos[npc_id]
 	end
-	return dest_vertex, npc_pos[npc_id]
+
+	local radius = 3 + math.random(-0.3, 0.3)
+
+	-- Vanilla path-based covers keep the ring: those points are laid out in the open on purpose.
+	while radius >= 0 do
+		local tmp_pos = vector():set(pp.x + dir.x * radius, pp.y, pp.z + dir.z * radius)
+		local v = level.vertex_id(tmp_pos)
+
+		-- zone is nil here by construction: the covered case returned above.
+		if v ~= 4294967295 and v ~= 4294967296 then
+			if npc:accessible(v) then
+				return v, npc_pos[npc_id]
+			end
+			return npc:accessible_nearest(level.vertex_position(v), vector():set(0,0,0)), npc_pos[npc_id]
+		end
+
+		radius = radius - 0.5
+	end
+
+	-- Nothing usable around the anchor. Vanilla aborted here -- and did it through `self.path_walk`,
+	-- which is nil in this free function, so the abort itself crashed with "attempt to index global
+	-- 'self'". Covers picked at runtime can legitimately land off the AI map, so degrade instead.
+	return npc:accessible_nearest(pp, vector():set(0,0,0)), npc_pos[npc_id]
 end
 
 function stalker_can_switch_offline(npc)
 	local board = npc.board
 	local is_commander = false
-	if not(npc:alive()) then
+	if not npc:alive() then
 		return false
 	end
 	local npc_squad_id = npc.squad_id
-	if(db.actor) and (db.storage[npc.id] and db.storage[npc.id].object) and (db.actor:alive()) then
-		if(distance_between(db.storage[npc.id].object, db.actor)<100) or (db.actor:see(db.storage[npc.id].object)) then
+	if db.actor and db.storage[npc.id] and db.storage[npc.id].object and db.actor:alive() then
+		if distance_between(db.storage[npc.id].object, db.actor) < 100 or db.actor:see(db.storage[npc.id].object) then
 			return false
 		end
 	end
-		if(npc_squad_id==nil) then
-			return surge_activated
-		else
-			if board and (board.squads) and (board.squads[npc_squad_id]) and (board.squads[npc_squad_id].commander_id==npc.id) then
-				is_commander = true
-			end
-			if(surge_activated) then
-				local npc_smart_id = board.squads[npc_squad_id].smart_id
-				if(board.smarts[npc_smart_id].smrt.surge_hide_avaliable) then
+	if npc_squad_id == nil then
+		return surge_activated
+	else
+		if board and board.squads and board.squads[npc_squad_id] and board.squads[npc_squad_id].commander_id == npc.id then
+			is_commander = true
+		end
+		if surge_activated then
+			local npc_smart_id = board.squads[npc_squad_id].smart_id
+			if board.smarts[npc_smart_id].smrt.surge_hide_avaliable then
 				local tm = npc.tm
 				local task = nil
-				for k,v in pairs(tm.inited_tasks) do
-					if(v.type=="hide_from_surge") then
+				for k, v in pairs (tm.inited_tasks) do
+					if v.type == "hide_from_surge" then
 						task = v
 						break
 					end
 				end
-				if(task==nil) then
-					if(is_commander) then
+				if task == nil then
+					if is_commander then
 						board.squads[npc_squad_id].show_disabled = false
 					end
 					return false
 				end
 				local inside = false
-				for k,v in pairs(task.hide_tbl) do
+				for k, v in pairs (task.hide_tbl) do
 					local st = db.storage[v.id]
 					if st and st.object:inside(npc.position) then
 						inside = true
 						break
 					end
 				end
-				if(inside) then
-					if(is_commander) then
+				if inside then
+					if is_commander then
 						board.squads[npc_squad_id].show_disabled = false
 					end
 					return false
 				else
-					if(is_commander) then
+					if is_commander then
 						board.squads[npc_squad_id].show_disabled = true
 					end
 					return true
 				end
-            else
-				if(is_commander) then
+			else
+				if is_commander then
 					board.squads[npc_squad_id].show_disabled = true
 				end
 				return true
 			end
 		else
-			if(is_commander) then
+			if is_commander then
 				board.squads[npc_squad_id].show_disabled = false
 			end
 			return false
@@ -313,7 +511,7 @@ function load(reader)
 	surge_finished = reader:r_bool()
 	surge_activated = reader:r_bool()
 	start_surge = reader:r_bool()
-	if(start_surge) then
+	if start_surge then
 		weather_surge = false
 	end
 	time_before_surge = reader:r_u32()
@@ -325,7 +523,7 @@ end
 
 function activate_surge(time)
 	if phase == 0 then
-		if time==nil  then
+		if time == nil then
 			abort("Surge time is not set!")
 		end
 		if level.name() == "marsh" then
@@ -333,82 +531,278 @@ function activate_surge(time)
 		else
 			level.set_weather_fx("fx_surge_day_1")
 		end
-        initialization_time = game.get_game_time()
-        time_before_surge = tonumber(time)
-        start_surge = true
-        phase = 1
-    elseif phase == 1 then
-        weather_surge = false
-        xr_sound.set_sound_play(db.actor:id(), "blowout_begin")
-        level.add_cam_effector("camera_effects\\shell_shock.anm", 20080501, false, "")
-        level.add_pp_effector("snd_shock.ppe", 20080401, false)
-        level.set_pp_effector_factor(20080401, 0, 1)
-        phase = 2
+		initialization_time = game.get_game_time()
+		time_before_surge = tonumber(time)
+		start_surge = true
+		phase = 1
+		-- restart the 20-28 h clock from HERE, so a story-scripted or cheat-menu surge also pushes the
+		-- next scheduled one away instead of letting it land right on top.
+		schedule_next_surge()
+	elseif phase == 1 then
+		weather_surge = false
+		xr_sound.set_sound_play(0, "blowout_begin") -- 0 = actor ID
+		level.add_cam_effector("camera_effects\\shell_shock.anm", 20080501, false, "")
+		level.add_pp_effector("snd_shock.ppe", 20080401, false)
+		level.set_pp_effector_factor(20080401, 0, 1)
+		phase = 2
 	elseif phase == 2 then
 		phase = 3
 		local board = sim_board.get_sim_board()
 		local hide_tbl = {}
 		local n = 0
-		for k,v in pairs(board.smarts) do
-			if v.smrt.actor_hides~=nil then
-				for kk,vv in pairs(v.smrt.actor_hides) do
-					local obj = alife():object(vv)
-					if(obj) then
+		local sim = _G.sim
+		for k, v in pairs (board.smarts) do
+			local actor_hide_spots = v.smrt.actor_hides
+			if actor_hide_spots ~= nil then
+				for kk, vv in pairs (actor_hide_spots) do
+					local obj = sim:object(vv)
+					if obj then
 						n = n + 1
 						hide_tbl[n] = obj
 					end
 				end
 			end
 		end
-		if n==0 then
+		if n == 0 then
 			abort("Surge covers are not set!")
 		end
 		local nearest_cover_id = hide_tbl[1].id
 		local nearest_cover_dist = 0
-		if game_graph():vertex(hide_tbl[1].m_game_vertex_id):level_id()~=alife():level_id() then
+		local level_id = sim:level_id()
+		local GG = game_graph()
+		local actor = db.actor
+		local actor_pos = actor:position()
+		if GG:vertex(hide_tbl[1].m_game_vertex_id):level_id() ~= level_id then
 			nearest_cover_dist = 10000
 		else
-			nearest_cover_dist = hide_tbl[1].position:distance_to(db.actor:position())
+			nearest_cover_dist = hide_tbl[1].position:distance_to(actor_pos)
 		end
-        for i = 2, n do
-            local dist = 0
-            if game_graph():vertex(hide_tbl[i].m_game_vertex_id):level_id()~=alife():level_id() then
-                dist = 10000
-            else
-                dist = hide_tbl[i].position:distance_to(db.actor:position())
-            end
-            if dist<nearest_cover_dist then
-                nearest_cover_dist = dist
-                nearest_cover_id = hide_tbl[i].id
-            end
-        end
-
-        local task = task_manager.get_task_manager():select_task("hide_from_surge", nearest_cover_id, db.actor:character_community())
-        if task and task.status~="selected" then
-            task.wait_time = time*60
-            task:give_task(db.actor:character_community())
-            surge_finished = false
-            surge_activated = true
-            news_manager.send_tip(db.actor, game.translate_string("hide_from_surge_text1").." "..time.." "..game.translate_string("hide_from_surge_text2"))
-        end
-    end
+		for i = 2, n do
+			local dist = 0
+			if GG:vertex(hide_tbl[i].m_game_vertex_id):level_id() ~= level_id then
+				dist = 10000
+			else
+				dist = hide_tbl[i].position:distance_to(actor_pos)
+			end
+			if dist < nearest_cover_dist then
+				nearest_cover_dist = dist
+				nearest_cover_id = hide_tbl[i].id
+			end
+		end
+		local actor_faction = actor:character_community()
+		local task = task_manager.get_task_manager():select_task("hide_from_surge", nearest_cover_id, actor_faction)
+		if task and task.status ~= "selected" then
+			task.wait_time = time * 60
+			task:give_task(actor_faction)
+			surge_finished = false
+			surge_activated = true
+			local trans = game.translate_string
+			news_manager.send_tip(actor, trans("hide_from_surge_text1").." "..time.." "..trans("hide_from_surge_text2"))
+		end
+	end
 end
 
 function surge_can_be_started(level)
-	if levels_surge_table[level] ~= nil then
-		local condlist = xr_logic.parse_condlist(nil, "xr_surge_hide", "condlist", levels_surge_table[level].condlist)
-		if db.actor then
-			local cond = xr_logic.pick_section_from_condlist(db.actor, db.actor, condlist)
+	local level_surge_data = levels_surge_table[level]
+	if level_surge_data ~= nil then
+		local actor = db.actor
+		if actor then
+			local condlist = xr_logic.parse_condlist(nil, nil, nil, level_surge_data.condlist)
+			local cond = xr_logic.pick_section_from_condlist(actor, actor, condlist)
 			if cond == "true" and not surge_activated then
-				local surge = math.random(100)
-				if surge <= cur_prop then
-					cur_prop = base_prop
-					return math.random(levels_surge_table[level].surge_time-10, levels_surge_table[level].surge_time+10)
-				else
-					cur_prop = cur_prop + add_prop
-				end
+				-- the 15% (cur_prop) roll that used to sit here is gone: WHEN a surge happens is now
+				-- decided by the game clock (update_surge_schedule), this function only answers
+				-- WHETHER this level allows one right now.
+				return math.random(level_surge_data.surge_time - 10, level_surge_data.surge_time + 10)
 			end
 		end
 	end
 	return nil
+end
+
+---------------------------------------------------------------------------------------------------------------------
+-- Surge schedule -----------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------
+-- Vanilla CS rolled cur_prop (15%) once per level entry, so a surge was a lottery you could dodge by
+-- staying put. Now it is a game-clock event: the next one falls due 20-28 in-game hours after the
+-- previous one. The level/condlist gate above is UNCHANGED -- when the clock is up but the actor is on
+-- a level that may not have a surge (or its condlist is false), the surge stays overdue and fires the
+-- moment they are somewhere that allows it.
+--
+-- The due time is kept in the actor's pstor, NOT in this scheme's save packet, so saves made before
+-- this change still load (a save without the key simply schedules from the moment it is loaded).
+
+surge_period_min_h = 20		-- in-game hours
+surge_period_max_h = 28
+
+-- Once the clock is up, the surge no longer fires the instant the actor steps somewhere that
+-- allows one. Arriving (or being there when the timer runs out) only starts a spread: a random
+-- delay of up to this many in-game hours, after which it breaks. Leaving the allowed spot drops
+-- the pending delay, so coming back rolls a fresh one.
+surge_grace_max_h = 2		-- in-game hours
+
+local PSTOR_NEXT_AT  = "surge_next_at"
+local PSTOR_GRACE_AT = "surge_grace_at"	-- 0 = no delay pending
+
+-- Absolute in-game seconds against a fixed epoch. A CTime cannot go into the pstor but this integer
+-- can (pstor keeps integers exact below 2^31; the game clock sits around 3.8e8 seconds past 2000).
+local epoch_ctime
+local function game_sec()
+	if not epoch_ctime then
+		epoch_ctime = game.CTime()
+		epoch_ctime:set(2000, 1, 1, 0, 0, 0, 0)
+	end
+	return game.get_game_time():diffSec(epoch_ctime)
+end
+
+local function actor_has_pstor(actor)
+	return actor ~= nil and db.storage[actor:id()] ~= nil
+end
+
+function schedule_next_surge()
+	local actor = db.actor
+	if not actor_has_pstor(actor) then
+		return
+	end
+	local period = math.random(surge_period_min_h * 3600, surge_period_max_h * 3600)
+	xr_logic.pstor_store(actor, PSTOR_NEXT_AT, game_sec() + period)
+	xr_logic.pstor_store(actor, PSTOR_GRACE_AT, 0)
+end
+
+-- Called every ~200 ms from bind_stalker actor_binder:update.
+function update_surge_schedule()
+	if start_surge or surge_activated or phase ~= 0 then
+		return		-- one is already running
+	end
+
+	local actor = db.actor
+	if not actor_has_pstor(actor) then
+		return
+	end
+
+	local due = xr_logic.pstor_retrieve(actor, PSTOR_NEXT_AT, nil)
+	if due == nil then
+		schedule_next_surge()		-- new game, or a save from before the schedule existed
+		return
+	end
+
+	if game_sec() < due then
+		return
+	end
+
+	local time = surge_can_be_started(level.name())
+	if not time then
+		-- not here: forget any delay we had started, the next arrival rolls a new one
+		if xr_logic.pstor_retrieve(actor, PSTOR_GRACE_AT, 0) ~= 0 then
+			xr_logic.pstor_store(actor, PSTOR_GRACE_AT, 0)
+		end
+		return
+	end
+
+	local grace = xr_logic.pstor_retrieve(actor, PSTOR_GRACE_AT, 0)
+	if grace == 0 then
+		-- first update in a spot that allows a surge while one is due: start the spread
+		xr_logic.pstor_store(actor, PSTOR_GRACE_AT, game_sec() + math.random(0, surge_grace_max_h * 3600))
+		return
+	end
+
+	if game_sec() < grace then
+		return
+	end
+
+	xr_logic.pstor_store(actor, PSTOR_GRACE_AT, 0)
+	activate_surge(time)		-- this reschedules the clock itself (phase 0 branch)
+end
+
+-- In-game seconds left until the next scheduled surge, or nil when nothing is scheduled yet.
+-- 0 means it is already due (and only the level/condlist gate is holding it back).
+function seconds_until_surge()
+	local actor = db.actor
+	if not actor_has_pstor(actor) then
+		return nil
+	end
+	local due = xr_logic.pstor_retrieve(actor, PSTOR_NEXT_AT, nil)
+	if due == nil then
+		return nil
+	end
+	local left = due - game_sec()
+
+	-- A pending arrival spread pushes the real moment back past the due time.
+	local grace = xr_logic.pstor_retrieve(actor, PSTOR_GRACE_AT, 0)
+	if grace ~= 0 then
+		local g = grace - game_sec()
+		if g > left then
+			left = g
+		end
+	end
+
+	if left < 0 then
+		left = 0
+	end
+	return left
+end
+
+-- Is the actor standing in a surge shelter right now? These are the very restrictors the hide task
+-- sends them to: the `actor_hides` of the smart terrains (see activate_surge, which picks the nearest
+-- one). Used by the sleeping bag to decide whether a surge that falls due during sleep is slept
+-- through or wakes the actor up.
+function actor_in_hide()
+	local actor = db.actor
+	if actor == nil then
+		return false
+	end
+
+	local board = sim_board.get_sim_board()
+	if board == nil then
+		return false
+	end
+
+	local sim = _G.sim
+	local storage = db.storage
+	local pos = actor:position()
+	local level_name = level.name()
+
+	for k, v in pairs (board.smarts) do
+		local smrt = v.smrt
+		local actor_hide_spots = smrt.actor_hides
+		-- smarts on other levels cannot hold the actor, and skipping them keeps the name lookup
+		-- below (a linear scan over every server object) down to this level's handful of hides.
+		if actor_hide_spots ~= nil and smrt.smart_level == level_name then
+			for kk, vv in pairs (actor_hide_spots) do
+				-- actor_hides holds restrictor NAMES, not ids (see any smart's custom_data:
+				-- 'actor_hides = mar_vibros, mar_vibros_0000, ...'), so resolve name -> server object
+				-- -> client object, exactly the way activate_surge and CHideFromSurgeTask do it.
+				local se = sim:object(vv)
+				if se then
+					local st = storage[se.id]
+					local obj = (st and st.object) or level.object_by_id(se.id)
+					if obj and obj:inside(pos) then
+						return true
+					end
+				end
+			end
+		end
+	end
+
+	return false
+end
+
+-- The actor went to sleep inside a shelter while a surge was already running (atmsleep lets
+-- that through). Close the hide task as if it had run its course and reset the scheme, so the
+-- jumped clock cannot drop the task straight into its final phase -- the one that kills anyone
+-- caught outside -- the moment they wake up.
+function end_surge_slept_through()
+	local tm = task_manager.get_task_manager()
+	if tm ~= nil then
+		for k, task in pairs (tm.task_info) do
+			if task.type == "hide_from_surge" and task.finish_slept_through ~= nil then
+				task:finish_slept_through()
+			end
+		end
+	end
+
+	surge_finished  = true
+	start_surge     = false
+	phase           = 0
+	surge_activated = false
 end

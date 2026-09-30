@@ -10,7 +10,7 @@ cform                   = skeleton
 class                = WP_AK74         ; class of the weapon that corresponding to CPP class
 min_radius           = 30           ; [] for AI
 max_radius           = 100          ; [] for AI
-description          = st_wpn_ak74u_descr
+description          = gunsl_wpn_ak74u_descr	; orig st_wpn_ak74u_descr
 
 ; ---- GS bone visibility (verbatim from GS's base.ltx; the GS meshes are installed) ----
 ; every upgrade part is hidden until its node reveals it
@@ -211,6 +211,7 @@ grenade_launcher_y      = 30	; GS
 ;звуки
 snd_draw                = weapons\p90\p90_draw
 snd_holster             = weapons\p90\p90_hide
+snd_shoot               = weapons\aks74u\aks74u_shoot, -0.9
 
 snd_empty               = weapons\glock17\glock17_dry
 snd_changefiremode	= weapons\vss\vss_firemode
@@ -342,6 +343,8 @@ snd_indoor_fadeout_db             = 6
 
 ;silencer_flame_particles  = weapons\generic_weapon01
 silencer_smoke_particles   = ghost_particles\weapons\suppressor_smoke_ar_common
+
+snd_silncer_shot        = weapons\aks74u\aks74u_shoot_sil, -1.1
 
 silencer_light_color    = 0.6,0.5,0.3
 silencer_light_range    = 0.01

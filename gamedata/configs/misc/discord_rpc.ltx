@@ -1,3 +1,15 @@
+; Discord Rich Presence (engine: src\xrGame\discord_rpc.cpp, console: discord_rpc).
+; Every key here is optional -- with the section missing the engine uses these same values.
+; client_id is this mod's own Discord application ("S.T.A.L.K.E.R. CSGM") -- the title
+; Discord prints as "Playing ..." is that application's NAME and can only be changed
+; there, at discord.com/developers, never from this file.
+; The image keys below must exist as Art Assets of that same application (Rich Presence
+; > Art Assets; keys are lowercased on upload). NOTE that the application ICON set on the
+; General Information page is a DIFFERENT thing and cannot be named here -- and with no
+; large_image resolving there is no hover text either, because large_text is that image's
+; caption. The faction patches originally came from the rpc4stalker application
+; 890702387025702922, which also carries ones this mod has no faction for: army, ecolog,
+; greh, isg, monolith, renegade.
 [discord_rpc]
 client_id                       = 1541182300086345779
 large_image                     = csga_dirt_skull

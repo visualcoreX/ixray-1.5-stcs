@@ -4,7 +4,7 @@
 	     you are on fire and not yet beating the flames out. The string table scans this whole folder,
 	     so the file just has to be here (see CStringTable: text\<lang>\*.xml). -->
 	<string id="st_gwr_actor_burned">
-		<text>You are on fire! Beat the flames out.</text>
+		<text>You are on fire! Press [$$ACTION_use$$] to beat the flames out.</text>
 	</string>
 	<string id="kb_wpn_laser">
 		<text>Laser sight</text>
@@ -83,8 +83,5 @@
 	</string>
 	<string id="ui_st_discord_in_menu">
 		<text>In the main menu</text>
-	</string>
-	<string id="agroprom_underground">
-		<text>Agroprom Underground</text>
 	</string>
 </string_table>

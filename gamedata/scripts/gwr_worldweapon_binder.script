@@ -1,0 +1,17 @@
+-- Gunslinger world-weapon binders, ported piece by piece.
+-- Kept under GS's own file/function names so GS config keys (script_binding = gwr_worldweapon_binder.<f>)
+-- can be copied verbatim.
+--
+-- init_rpg_rocket: the flying RPG-7 rocket plays its "idle" motion (wpn_rpg7_missile_animation.omf) --
+-- that is what makes the fins deploy / the rocket spin in flight instead of gliding as a static mesh.
+
+function init_rpg_rocket(obj)
+	local new_binder = gunsl_rpg_rocket_binder(obj)
+	obj:bind_object(new_binder)
+end
+
+class "gunsl_rpg_rocket_binder" (object_binder)
+
+function gunsl_rpg_rocket_binder:__init(obj) super(obj)
+	self.object:play_cycle("idle")
+end

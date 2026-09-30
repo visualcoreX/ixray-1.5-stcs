@@ -132,6 +132,7 @@ scope_hud_fov_aim		= 0.18	; HUD fov while scoped -- smaller = sight closer to th
 scope_lens_factor		= 4.0
 
 [scope_pso1_ak74m]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.02, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; inventory-icon offset of this optic (GS keeps it per scope, aks74/scopes.ltx)
 scope_x = 39
 scope_y = 5
@@ -150,6 +151,7 @@ aim_hud_offset_pos_16x9	= 0.014650,-0.009400,0.17
 aim_hud_offset_rot_16x9	= 0.000000,0.000000,0.000000
 
 [scope_pso1m2x1_ak74m]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.02, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; inventory-icon offset of this optic (GS keeps it per scope, aks74/scopes.ltx)
 scope_x = 39
 scope_y = 5
@@ -227,6 +229,7 @@ aim_hud_offset_pos_16x9	= 0.012500,-0.008300,0.05
 aim_hud_offset_rot_16x9	= 0.000000,0.000000,0.0
 
 [scope_kashtan_ak74m]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; inventory-icon offset of this optic (GS keeps it per scope, aks74/scopes.ltx)
 scope_x = 54
 scope_y = 2
@@ -242,6 +245,7 @@ aim_hud_offset_pos_16x9	= 0.002500,-0.005800,0.05
 aim_hud_offset_rot_16x9	= 0.000000,0.000000,0.0
 
 [scope_nvas_ak74m]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; GS screen night vision (std_1pn93x1.ltx): the tint/noise pass the optic itself applies.
 ; _2d = only while the vanilla 2D scope image is up. With the 3D lens ON the lens shader draws
 ; the night picture inside the optic itself, so the fullscreen tint must stay off.
@@ -269,6 +273,7 @@ aim_hud_offset_pos_16x9	= 0.023400,-0.021200,0.12
 aim_hud_offset_rot_16x9	= 0.000000,0.000000,0.000000
 
 [scope_nvsn_ak74m]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; GS screen night vision (std_1pn93x1.ltx): the tint/noise pass the optic itself applies.
 ; _2d = only while the vanilla 2D scope image is up. With the 3D lens ON the lens shader draws
 ; the night picture inside the optic itself, so the fullscreen tint must stay off.
@@ -371,6 +376,7 @@ zoom_mouse_sense_koef   = 0.5
 scope_x                 = 62
 scope_y                 = 1
 bones                   = scope3, scope4_sight
+overriding_hide_bones   = rail	; GS: the PU sits on its own mount -- the weaver rail (upgrade) hides under it
 aim_hud_offset_pos      = -0.009800,-0.0183000,-0.15
 aim_hud_offset_rot      = 0.007000,0.000000,0.000000
 aim_hud_offset_pos_16x9 = -0.009800,-0.0183000,-0.15
@@ -604,6 +610,7 @@ inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_winchester1300]
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
 scope_nightvision_2d       = scope_nightvision
 scope_nightvision_min_factor = 0.5
@@ -714,6 +721,7 @@ inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_winchester1300_trapper]
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
 scope_nightvision_2d       = scope_nightvision
 scope_nightvision_min_factor = 0.5
@@ -822,6 +830,7 @@ inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_protecta]
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
 scope_nightvision_2d       = scope_nightvision
 scope_nightvision_min_factor = 0.5
@@ -937,6 +946,7 @@ inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_mp5]
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
 scope_nightvision_2d       = scope_nightvision
 scope_nightvision_min_factor = 0.5
@@ -1042,6 +1052,7 @@ inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_mp5sd]
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
 scope_nightvision_2d       = scope_nightvision
 scope_nightvision_min_factor = 0.5
@@ -1149,6 +1160,7 @@ inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_ump]
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
 scope_nightvision_2d       = scope_nightvision
 scope_nightvision_min_factor = 0.5
@@ -1301,6 +1313,7 @@ aim_hud_offset_pos      = 0.019050,-0.022600,0.12
 aim_hud_offset_rot      = 0.000000,0.000000,0.000000
 aim_hud_offset_pos_16x9 = 0.019050,-0.022600,0.12
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+scoped_hud_offset_pos	= 0, -0.04, 0
 
 [scope_pso1m2x1_an94]:scope_pso1m2x1_ak74m
 scope_texture		= crosshair_2d_pso1as	; GS parity: the stock reticle has no illumination levels
@@ -1312,6 +1325,7 @@ aim_hud_offset_pos      = 0.020100,-0.020400,0.08
 aim_hud_offset_rot      = 0.000000,0.000000,0.000000
 aim_hud_offset_pos_16x9 = 0.020100,-0.020400,0.08
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+scoped_hud_offset_pos	= 0, -0.04, 0
 
 [scope_cobra_an94]:scope_cobra_ak74m
 scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
@@ -1336,6 +1350,7 @@ aim_hud_offset_pos_16x9 = 0.020200,-0.020600,0.0
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
 
 [scope_kashtan_an94]:scope_kashtan_ak74m
+scoped_hud_offset_pos			= 0, -0.05, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
 scope_x                 = 55
 scope_y                 = 3
@@ -1347,6 +1362,7 @@ aim_hud_offset_pos_16x9 = 0.008400,-0.022300,0.02
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
 
 [scope_nvas_an94]:scope_nvas_ak74m
+scoped_hud_offset_pos			= 0, -0.05, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 scope_texture		= crosshair_2d_1pn93x1	; GS parity: the stock reticle has no illumination levels
 scope_x                 = 29
 scope_y                 = 6
@@ -1358,6 +1374,7 @@ aim_hud_offset_pos_16x9 = 0.029650,-0.037600,0.08
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
 
 [scope_nvsn_an94]:scope_nvsn_ak74m
+scoped_hud_offset_pos			= 0, -0.05, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 scope_texture		= crosshair_2d_1pn93x4	; GS parity: the stock reticle has no illumination levels
 scope_x                 = 29
 scope_y                 = 6
@@ -1502,9 +1519,10 @@ gl_hud_offset_pos_16x9  = 0.0,0.012,-0.05
 gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
 inertion_aim_origin_offset = 0.015
 inertion_aim_speed      = 10
-prohibit_aim_for_grenade_mode = true
+;prohibit_aim_for_grenade_mode = true ; was true: GL aiming allowed with the ELCAN on the L85
 
 [scope_pn23_l85a2]
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
 scope_nightvision_2d       = scope_nightvision
 scope_nightvision_min_factor = 0.5
@@ -1535,115 +1553,6 @@ gl_hud_offset_pos       = 0.0,0.012,0.12
 gl_hud_offset_rot       = 0.0,0.0,0.0
 gl_hud_offset_pos_16x9  = 0.0,0.012,0.07
 gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
-
-;==============================================================================
-; SIG SG 552 optics -- GS assault\sig552\scopes.ltx
-;==============================================================================
-[scope_eotech_sig552]
-scope_name              = wpn_addon_scope_susat_x1.6
-scope_texture           = zero_alpha
-scope_zoom_factor       = 98
-collimator              = true
-need_lens_frame         = false
-scope_abberation        = 0.001
-use_scope_anims         = true
-scope_hud_fov_aim       = 0.506	; GS hud_fov_zoom_factor 0.9 x 0.5625
-scope_x                 = 79
-scope_y                 = -1
-bones                   = scope1
-overriding_hide_bones   = ironsight, ironsight_sight
-overriding_show_bones   = ironsight_rail
-aim_hud_offset_pos      = 0.0001,-0.0221,0.0
-aim_hud_offset_rot      = 0.0,0.0,0.0
-aim_hud_offset_pos_16x9 = 0.0001,-0.0221,0.0
-aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
-
-[scope_aimpoint_sig552]
-scope_name              = wpn_addon_scope_susat_dusk
-scope_texture           = zero_alpha
-scope_zoom_factor       = 98
-collimator              = true
-need_lens_frame         = false
-scope_abberation        = 0.005
-use_scope_anims         = true
-scope_hud_fov_aim       = 0.281	; GS hud_fov_zoom_factor 0.5 x 0.5625
-scope_x                 = 72
-scope_y                 = -6
-bones                   = scope2
-overriding_hide_bones   = ironsight, ironsight_sight
-overriding_show_bones   = ironsight_rail
-aim_hud_offset_pos      = 0.0002,-0.0253,0.0
-aim_hud_offset_rot      = 0.0,0.0,0.0
-aim_hud_offset_pos_16x9 = 0.0002,-0.0253,0.0
-aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
-
-[scope_elcan_sig552]
-scope_name              = wpn_addon_scope_susat_custom
-scope_texture           = crosshair_2d_elcan
-scope_zoom_factor       = 28
-need_lens_frame         = true
-scope_lens_factor       = 4.0
-zoom_mouse_sense_koef   = 0.5
-scope_abberation        = 0.005
-max_night_brightness    = 3.0
-min_night_brightness    = 0.0
-steps_brightness        = 3
-default_brightness_step = 0
-min_lens_factor         = 1.8
-max_lens_factor         = 10
-lens_factor_levels_count = 1
-default_lens_factor_step = 0
-alter_zoom_allowed      = true
-alter_zoom_time         = 0.25
-scope_hud_fov_alter_aim = 0.478	; GS hud_fov_alter_zoom_factor 0.85 x 0.5625
-use_scope_anims         = true
-scope_hud_fov_aim       = 0.478	; GS hud_fov_zoom_factor 0.85 x 0.5625
-scope_x                 = 48
-scope_y                 = -4
-bones                   = scope3
-overriding_hide_bones   = ironsight, ironsight_sight
-overriding_show_bones   = ironsight_rail
-aim_hud_offset_pos      = 0.0,-0.029,-0.12
-aim_hud_offset_rot      = 0.0,0.0,0.0
-aim_hud_offset_pos_16x9 = 0.0,-0.029,-0.12
-aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
-prohibit_aim_for_grenade_mode = true
-
-[scope_pn23_sig552]
-; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
-scope_nightvision_2d       = scope_nightvision
-scope_nightvision_min_factor = 0.5
-scope_name              = wpn_addon_scope_susat_night
-scope_texture           = crosshair_2d_pn23
-scope_zoom_factor       = 28
-need_lens_frame         = true
-scope_lens_factor       = 15
-zoom_mouse_sense_koef   = 0.13
-scope_abberation        = 0
-max_night_brightness    = 7.0
-min_night_brightness    = 0.5
-steps_brightness        = 7
-default_brightness_step = 0
-jitter_brightness       = 0.3
-use_scope_anims         = true
-scope_hud_fov_aim       = 0.281	; GS hud_fov_zoom_factor 0.5 x 0.5625
-scope_x                 = 42
-scope_y                 = -8
-bones                   = scope4
-overriding_hide_bones   = ironsight, ironsight_sight
-overriding_show_bones   = ironsight_rail
-aim_hud_offset_pos      = 0.0,-0.05,0.05
-aim_hud_offset_rot      = 0.0,0.0,0.0
-aim_hud_offset_pos_16x9 = 0.0,-0.05,0.05
-aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
 inertion_aim_origin_offset = 0.015
 inertion_aim_speed      = 10
 
@@ -1728,9 +1637,10 @@ aim_hud_offset_pos_16x9 = 0.000200,-0.027400,-0.12
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
 inertion_aim_origin_offset = 0.015
 inertion_aim_speed      = 10
-prohibit_aim_for_grenade_mode = true
+;prohibit_aim_for_grenade_mode = true ; was true: GL aiming allowed with the ELCAN on the SIG 550
 
 [scope_pn23_sig550]
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
 scope_nightvision_2d       = scope_nightvision
 scope_nightvision_min_factor = 0.5
@@ -1750,6 +1660,90 @@ use_scope_anims         = true
 scope_hud_fov_aim       = 0.281	; GS hud_fov_zoom_factor 0.5 x 0.5625
 scope_x                 = 33
 scope_y                 = -9
+bones                   = scope4
+overriding_hide_bones   = ironsight, ironsight_sight
+overriding_show_bones   = ironsight_rail
+aim_hud_offset_pos      = 0.0,-0.05,0.05
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0,-0.05,0.05
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+
+;==============================================================================
+; SIG SG 552 optics -- GS assault\sig552\scopes.ltx
+;==============================================================================
+[scope_eotech_sig552]
+scope_name              = wpn_addon_scope_susat_x1.6
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.001
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.506	; GS hud_fov_zoom_factor 0.9 x 0.5625
+scope_x                 = 79
+scope_y                 = -1
+bones                   = scope1
+overriding_hide_bones   = ironsight, ironsight_sight
+overriding_show_bones   = ironsight_rail
+aim_hud_offset_pos      = 0.0001,-0.0221,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0001,-0.0221,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_aimpoint_sig552]
+scope_name              = wpn_addon_scope_susat_dusk
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.281	; GS hud_fov_zoom_factor 0.5 x 0.5625
+scope_x                 = 72
+scope_y                 = -6
+bones                   = scope2
+overriding_hide_bones   = ironsight, ironsight_sight
+overriding_show_bones   = ironsight_rail
+aim_hud_offset_pos      = 0.0002,-0.0253,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0002,-0.0253,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_elcan_sig552]:scope_elcan_sig550
+; SIG 552's own ELCAN (GS assault\sig552\scopes.ltx differs from the 550's only in the icon offset and a
+; hair in the 16:9 alter pose). The aim poses stay INHERITED on purpose: GS gives both rifles the same
+; ones, and ours on the 550 are hand-tuned (-0.0274 / -0.0647 vs GS -0.029 / -0.0651) -- the 552 wants
+; the same tuning, not GS's raw numbers.
+scope_x                 = 48	; orig 38 (inherited from scope_elcan_sig550)
+scope_y                 = -4	; orig -6
+
+[scope_pn23_sig552]
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
+; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
+scope_nightvision_2d       = scope_nightvision
+scope_nightvision_min_factor = 0.5
+scope_name              = wpn_addon_scope_susat_night
+scope_texture           = crosshair_2d_pn23
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 15
+zoom_mouse_sense_koef   = 0.13
+scope_abberation        = 0
+max_night_brightness    = 7.0
+min_night_brightness    = 0.5
+steps_brightness        = 7
+default_brightness_step = 0
+jitter_brightness       = 0.3
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.281	; GS hud_fov_zoom_factor 0.5 x 0.5625
+scope_x                 = 42
+scope_y                 = -8
 bones                   = scope4
 overriding_hide_bones   = ironsight, ironsight_sight
 overriding_show_bones   = ironsight_rail
@@ -1916,6 +1910,7 @@ inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_groza]
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
 scope_nightvision_2d       = scope_nightvision
 scope_nightvision_min_factor = 0.5
@@ -2110,6 +2105,7 @@ inertion_aim_speed      = 10
 additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
 additional_icon_element_offset_x = 50
 additional_icon_element_offset_y = 0
+scoped_hud_offset_pos 	= 0, -0.04, 0
 
 [scope_nvas_svu]:scope_nvas_ak74m
 scope_texture		= crosshair_2d_1pn93x1	; GS parity: the stock reticle has no illumination levels
@@ -2128,6 +2124,7 @@ inertion_aim_speed      = 10
 additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
 additional_icon_element_offset_x = 50
 additional_icon_element_offset_y = 0
+scoped_hud_offset_pos 	= 0, -0.04, 0
 
 [scope_cobra_svu]:scope_cobra_ak74m
 scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
@@ -2448,6 +2445,7 @@ inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_lr300]
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
 scope_nightvision_2d       = scope_nightvision
 scope_nightvision_min_factor = 0.5
@@ -2489,6 +2487,7 @@ prohibit_aim_for_grenade_mode = true
 ; defaults (crosshair texture, lens factor, use_scope_anims).
 ; ============================================================================
 [scope_pso1_bizon]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.02, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 scope_lens_factor		= 15		; was missing: it inherited 4.0 from the base while its
 								; zoom_mouse_sense_koef was copied from scope_pso1_ak74m (15x)
 scope_name 					= wpn_addon_scope
@@ -2521,6 +2520,7 @@ min_night_brightness	= 0.0
 ; metka6 child, so there is no reticle-glow bone to toggle here.
 
 [scope_pso1m2x1_bizon]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.02, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 scope_lens_factor		= 10		; was missing: it inherited 4.0 from the base while its
 								; zoom_mouse_sense_koef was copied from scope_pso1m2x1_ak74m (10x)
 scope_name 					= wpn_addon_scope_x2.7
@@ -2552,6 +2552,7 @@ min_night_brightness	= 0.0
 scope_illum_bones		= metka4	; reticle glow (child of scope4)
 
 [scope_nvsn_bizon]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.04, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 scope_lens_factor		= 15		; was missing: it inherited 4.0 from the base while its
 								; zoom_mouse_sense_koef was copied from scope_nvsn_ak74m (15x)
 ; GS screen night vision (std_1pn93x1.ltx): the tint/noise pass the optic itself applies.
@@ -2594,6 +2595,7 @@ jitter_brightness		= 0.3
 default_brightness_step	= 4
 
 [scope_nvas_bizon]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 scope_lens_factor		= 10		; was missing: it inherited 4.0 from the base while its
 								; zoom_mouse_sense_koef was copied from scope_nvas_ak74m (10x)
 ; GS screen night vision (std_1pn93x1.ltx): the tint/noise pass the optic itself applies.
@@ -2680,6 +2682,7 @@ need_lens_frame			= false
 zoom_mouse_sense_koef	= 0.5
 
 [scope_kashtan_bizon]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.02, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 scope_name 					= wpn_addon_scope_kashtan
 scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
 scope_x              	= 66                ; offset in inventory icon
@@ -2707,6 +2710,7 @@ zoom_mouse_sense_koef	= 0.5
 ; ==========================================================================
 
 [scope_pso1_saiga12]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.02, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 scope_name 					= wpn_addon_scope
 scope_texture		= crosshair_2d_pso1sn	; GS parity: the stock reticle has no illumination levels
 scope_x              	= 37                 ; offset in inventory icon
@@ -2740,6 +2744,7 @@ min_night_brightness      = 0.0
 scope_illum_bones         = metka_pso_sniper
 
 [scope_pso1m2x1_saiga12]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.02, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 scope_name 					= wpn_addon_scope_x2.7
 scope_texture		= crosshair_2d_pso1as	; GS parity: the stock reticle has no illumination levels
 scope_x              	= 37                 ; offset in inventory icon
@@ -2772,6 +2777,7 @@ min_night_brightness      = 0.0
 scope_illum_bones         = metka_pso_assault
 
 [scope_nvsn_saiga12]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; GS screen night vision (std_1pn93x1.ltx): the tint/noise pass the optic itself applies.
 ; _2d = only while the vanilla 2D scope image is up. With the 3D lens ON the lens shader draws
 ; the night picture inside the optic itself, so the fullscreen tint must stay off.
@@ -2815,6 +2821,7 @@ jitter_brightness         = 0.3
 default_brightness_step   = 4
 
 [scope_nvas_saiga12]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 ; GS screen night vision (std_1pn93x1.ltx): the tint/noise pass the optic itself applies.
 ; _2d = only while the vanilla 2D scope image is up. With the 3D lens ON the lens shader draws
 ; the night picture inside the optic itself, so the fullscreen tint must stay off.
@@ -2903,6 +2910,7 @@ zoom_mouse_sense_koef     = 0.5
 scope_zoom_factor         = 98
 
 [scope_kashtan_saiga12]:scope_ak74m_base
+scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 scope_name 					= wpn_addon_scope_kashtan
 scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
 scope_x              	= 62                ; offset in inventory icon
@@ -3019,3 +3027,9 @@ snd_night_vision_broken		= weapons\nv_off
 pp_eff_name = nightvision_scope.ppe
 pp_eff_cyclic = 1
 pp_eff_overlap = false
+; 2D picture: gain for the image inside the eyepiece at the TOP brightness step; the bottom step is
+; always x1 (the picture this ppe alone gives), linear in between. Engine default 2.5.
+pp_nv_2d_max_gain = 2.5
+; with the suit's NV on too, the goggles grade the picture and this optic only amplifies: the step's
+; gain times this (2.0 = the green gain this ppe's own tint gave)
+pp_nv_2d_chain_gain = 2.0

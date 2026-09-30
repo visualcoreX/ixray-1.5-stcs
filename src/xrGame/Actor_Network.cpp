@@ -715,6 +715,10 @@ BOOL CActor::net_Spawn		(CSE_Abstract* DC)
 
 void CActor::net_Destroy	()
 {
+	// the intoxication warp must not outlive the actor (main menu, the next level before the script runs)
+	if (g_pGamePersistent)	g_pGamePersistent->pp_screen_warp.set(0.f, 1.f, 0.f, 0.f);
+	if (CGamePersistent* gp = smart_cast<CGamePersistent*>(g_pGamePersistent))	gp->m_intox_dof = 0.f;
+	if (g_pGamePersistent)	g_pGamePersistent->pp_blur = 0.f;
 	inherited::net_Destroy	();
 
 	if (m_holder_id != ALife::_OBJECT_ID(-1))

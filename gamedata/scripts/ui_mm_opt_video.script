@@ -15,8 +15,26 @@ function opt_video:InitControls(x, y, xml, handler)
 	
 	self.bk = xml:InitFrame			("frame", self)
 
-	xml:InitStatic					("tab_video:cap_fullscreen",		self)
-	xml:InitCheck					("tab_video:check_fullscreen",		self)
+	-- Rows on this tab are placed by absolute x/y in ui_mm_opt[_16].xml, so the order of the calls
+	-- below is not the order on screen. That one lives right under the resolution row.
+	-- windowed / borderless / fullscreen in one list (rs_window_mode). It was two checkboxes that
+	-- had to be kept mutually exclusive by hand; the flags underneath are unchanged.
+	xml:InitStatic					("tab_video:cap_window_mode",		self)
+	xml:InitComboBox				("tab_video:list_window_mode",		self)
+
+	-- pause the game while the window is not focused (g_pause_on_minimize, on by default).
+	xml:InitStatic					("tab_video:cap_pause_on_minimize",	self)
+	xml:InitCheck					("tab_video:check_pause_on_minimize",	self)
+
+	-- CoP press-any-key gate at the end of a load (keypress_on_start). Sits here because it is
+	-- about the window/presentation, like the two above, not about gameplay rules.
+	xml:InitStatic					("tab_video:cap_keypress_on_start",	self)
+	xml:InitCheck					("tab_video:check_keypress_on_start",	self)
+
+	-- Discord Rich Presence: level / faction / active task shown to the player's friends
+	-- (discord_rpc, on by default). Presentation again, like the three above.
+	xml:InitStatic					("tab_video:cap_discord_rpc",		self)
+	xml:InitCheck					("tab_video:check_discord_rpc",		self)
 
 	xml:InitStatic					("tab_video:cap_brightness",		self)
 	xml:InitTrackBar				("tab_video:track_brightness",		self)

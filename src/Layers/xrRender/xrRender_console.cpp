@@ -112,6 +112,7 @@ int			ps_r__LightSleepFrames		= 10	;
 float		ps_r__Detail_l_ambient		= 0.9f	;
 float		ps_r__Detail_l_aniso		= 0.25f	;
 float		ps_r__Detail_density		= 0.3f	;
+int			ps_r2_sun_details_radius	= 40	;	// metres; grass casts sun shadows only this close (r2_sun_details)
 int			ps_r__Detail_radius			= 48	;	// metres; the engine's own long-standing distance -- raise it in the options if you want more
 float		ps_r__Detail_rainbow_hemi	= 0.75f	;
 
@@ -830,6 +831,7 @@ void		xrRender_initconsole	()
 
 	CMD3(CCC_Mask,		"r2_sun",				&ps_r2_ls_flags,			R2FLAG_SUN		);
 	CMD3(CCC_Mask,		"r2_sun_details",		&ps_r2_ls_flags,			R2FLAG_SUN_DETAILS);
+	CMD4(CCC_Integer,	"r2_sun_details_radius",&ps_r2_sun_details_radius,	8,		181		);
 	CMD3(CCC_Mask,		"r2_sun_focus",			&ps_r2_ls_flags,			R2FLAG_SUN_FOCUS);
 //	CMD3(CCC_Mask,		"r2_exp_splitscene",	&ps_r2_ls_flags,			R2FLAG_EXP_SPLIT_SCENE);
 //	CMD3(CCC_Mask,		"r2_exp_donttest_uns",	&ps_r2_ls_flags,			R2FLAG_EXP_DONT_TEST_UNSHADOWED);
