@@ -166,7 +166,7 @@ void CRender::render_menu	()
 	// Distort
 	{
 		Target->u_setrt						(Target->rt_Generic_1,0,0,HW.pBaseZB);		// Now RT is a distortion mask
-		CHK_DX(HW.pDevice->Clear			( 0L, NULL, D3DCLEAR_TARGET, color_rgba(127,127,0,127), 1.0f, 0L));
+		CHK_DX(HW.pDevice->Clear			( 0L, NULL, D3DCLEAR_TARGET, color_rgba(127,127,0,0), 1.0f, 0L));	// A = coverage, as in phase_combine
 		g_pGamePersistent->OnRenderPPUI_PP	()	;	// PP-UI
 	}
 

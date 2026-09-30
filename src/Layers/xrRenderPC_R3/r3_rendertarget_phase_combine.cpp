@@ -304,7 +304,8 @@ void	CRenderTarget::phase_combine	()
 			RCache.set_Stencil			(FALSE);
 			RCache.set_ColorWriteEnable	();
 			//CHK_DX(HW.pDevice->Clear	( 0L, NULL, D3DCLEAR_TARGET, color_rgba(127,127,0,127), 1.0f, 0L));
-			FLOAT ColorRGBA[4] = { 127.0f/255.0f, 127.0f/255.0f, 0.0f, 127.0f/255.0f};
+			// A = 0: every distorting draw raises it, so the combine can tell "under the haze" from "in front of it"
+			FLOAT ColorRGBA[4] = { 127.0f/255.0f, 127.0f/255.0f, 0.0f, 0.0f};
 			HW.pDevice->ClearRenderTargetView( rt_Generic_1->pRT, ColorRGBA);
 			RImplementation.r_dsgraph_render_distort	();
 			if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_PP()	;	// PP-UI

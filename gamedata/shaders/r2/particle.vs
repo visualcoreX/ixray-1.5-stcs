@@ -17,6 +17,7 @@ struct vf
 	float4 tctexgen	: TEXCOORD1;
 #endif	//	USE_SOFT_PARTICLES
     float fog : FOG;
+	float vdepth	: TEXCOORD2;	// view depth, for particle_distort (DX9 PS has no SV_Position.w)
 };
 
 vf main (vv v)
@@ -35,5 +36,6 @@ vf main (vv v)
 #endif	//	USE_SOFT_PARTICLES
 
     o.fog = saturate(calc_fogging(v.P)); // fog, input in world coords
+	o.vdepth	= o.hpos.w;
 	return o;
 }

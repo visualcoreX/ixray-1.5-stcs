@@ -67,7 +67,17 @@ float4 main( v2p_aa_AA I ) : SV_Target
 
 //	float 	depth_x	= tex2D 	(s_position, center).z	;
 	float 	depth_x	= gbdx.P.z;
-	if ((depth_x+EPSDEPTH)<depth)	center	= I.Tex0;	// discard new sample
+	// Only a surface IN FRONT of the haze must not be pulled into it. Such a surface hid the haze from
+	// the depth-tested mask pass, so the mask's alpha (cleared to 0, raised by every distorting draw)
+	// is empty there. The old test -- anything nearer than this pixel -- also caught trees and poles
+	// BEHIND the haze and, as the sky has depth 0, every edge against the sky: the object stayed put
+	// on its own pixels while its neighbours pulled a shifted copy in, i.e. it doubled.
+#ifndef USE_MSAA
+	float	cover_x	= s_distort.Sample(smp_nofilter, center).a;
+#else // USE_MSAA
+	float	cover_x	= s_distort.Load( int3( center * pos_decompression_params2.xy, 0 ), iSample ).a;
+#endif // USE_MSAA
+	if (cover_x<(0.5h/255.0h) && depth_x>EPSDEPTH && (depth_x+EPSDEPTH)<depth)	center	= I.Tex0;	// discard new sample
 #else // USE_DISTORT
 	float2	center 	= I.Tex0;
 #endif
