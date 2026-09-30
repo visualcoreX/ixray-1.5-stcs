@@ -53,16 +53,25 @@ float4 	main		( v2p I )	: COLOR
 
 #ifdef 	USE_DISTORT
 	float4 	distort	= tex2D		(s_distort, I.tc0);
-	float2	doffs	= (distort.xy-0.5f)*def_distort;
+	float2	doffs	= (distort.xy-(127.0f/255.0f))*def_distort;	// the mask is cleared to 127, not 128
 	float2	center	= I.tc0 + doffs;
+
+	// Same as combine_2_NAA: don't pull a surface that is IN FRONT of the haze (nearer than this pixel
+	// and not covered by the mask -- its alpha is 0 where nothing distorting was drawn) into it.
+	// Sky has depth 0 and is never in front.
+	float	depth_x	= tex2D		(s_position, center).z;
+	float	cover_x	= tex2D		(s_distort, center).a;
+	if (cover_x<(0.5f/255.0f) && depth_x>0.001f && (depth_x+0.001f)<dc.z)	center	= I.tc0;	// discard new sample
 #else
 	float2	center 	= I.tc0;
 #endif
 
   // Smoothed color
   // (a-c)*w + c = a*w + c(1-w)
+  // Taps are the neighbours of the DISTORTED pixel: center + (tc_i-tc0)*w. The old
+  // center*(1-w) + tc_i*w dropped the distortion by doffs*w, so it faded out on AA edges.
 
-	float2	offset 	=  center * (1-w);
+	float2	offset 	=  center - I.tc0.xy*w;
   float4 	s0 	=  tex2D	(s_image, offset + I.tc1*w);
   float4 	s1 	=  tex2D	(s_image, offset + I.tc2*w);
   float4 	s2 	=  tex2D	(s_image, offset + I.tc3*w);
@@ -70,5 +79,9 @@ float4 	main		( v2p I )	: COLOR
 
 	float3 	final	=  mblur	(center, dc, (s0+s1+s2+s3)/4.0f);
 
-  return combine_bloom(final,tex2D	(s_bloom, I.tc0));
+	float4	bloom	=  tex2D	(s_bloom, center);
+#ifdef 	USE_DISTORT
+			final	=  lerp	(final, bloom*def_hdr, distort.z);	// mask B = blur, as in combine_2_NAA
+#endif
+  return combine_bloom(final,bloom);
 }

@@ -1,5 +1,7 @@
 #include "common.h"
 
+#define	DISTORT_REF_DIST	10.0	// metres: nearer than this the haze keeps its full strength
+
 struct 	v2p
 {
  	float2 	tc0	: 	TEXCOORD0;	// base
@@ -21,7 +23,14 @@ float4 main ( v2p I ) : SV_Target
 {
 //	float4	distort	= tex2D		(s_distort,I.tc0);
 	float4	distort	= s_distort.Sample( smp_linear, I.tc0 );
-	float    factor	= distort.a * dot(I.c.rgb,0.33h);	
+	float    factor	= distort.a * dot(I.c.rgb,0.33h);
+
+	// The combine turns the mask into a SCREEN-space offset, so without this a haze 50 m away shifted
+	// the picture as far as one at arm's length -- more than the width of a distant pole or tree,
+	// which then showed up twice. Refraction through a layer of air shrinks with distance like
+	// everything else does: full strength up to DISTORT_REF_DIST, then 1/depth.
+	// SV_Position.w is the clip-space w, i.e. view depth, whichever vertex shader fed this one.
+	distort.xy	= 0.5h + (distort.xy-0.5h)*saturate(DISTORT_REF_DIST/I.hpos.w);
 /*
 #ifdef	USE_SOFT_PARTICLES
 	float2	zero = float2( 0.5, 0.5);
