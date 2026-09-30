@@ -56,6 +56,46 @@ cbuffer FluidRenderConfig
 	float		maxGridDim;
 	float		gridScaleFactor = 1.0;
 	float4		eyeOnGrid;	//	float3
+
+	// Per-sample smoke lighting (dx103DFluidRenderer::CalculateLighting). DiffuseLight above is the even
+	// part (hemi + ambient); these are the dynamic lights, weighed at every ray sample instead of being
+	// folded into DiffuseLight for the whole volume -- which lit all of the smoke from one torch.
+	float4x4	GridToWorld;		// grid (0..1 texture) space -> world
+	float4		FluidLightPos0;		// xyz world pos, w range
+	float4		FluidLightPos1;
+	float4		FluidLightPos2;
+	float4		FluidLightPos3;
+	float4		FluidLightColor0;	// rgb colour, w 1 = spot
+	float4		FluidLightColor1;
+	float4		FluidLightColor2;
+	float4		FluidLightColor3;
+	float4		FluidLightDir0;		// xyz spot direction, w cos(half cone)
+	float4		FluidLightDir1;
+	float4		FluidLightDir2;
+	float4		FluidLightDir3;
+}
+
+float3 FluidOneLight(float3 P, float4 lpos, float4 lcol, float4 ldir)
+{
+	float3	d		= P - lpos.xyz;
+	float	dist	= length(d);
+	float	att		= saturate(1.0 - dist / lpos.w);		// the same ramp the engine used at the volume centre
+	if (lcol.w > 0.5)
+	{
+		float	c	= dot(d / max(dist, 0.0001), ldir.xyz);
+		att		*= smoothstep(ldir.w, ldir.w + (1.0 - ldir.w) * 0.35, c);	// soft cone edge
+	}
+	return lcol.rgb * att;
+}
+
+float3 FluidLightAt(float3 O)
+{
+	float3 P = mul(GridToWorld, float4(O, 1)).xyz;
+	return DiffuseLight.rgb
+		+ FluidOneLight(P, FluidLightPos0, FluidLightColor0, FluidLightDir0)
+		+ FluidOneLight(P, FluidLightPos1, FluidLightColor1, FluidLightDir1)
+		+ FluidOneLight(P, FluidLightPos2, FluidLightColor2, FluidLightDir2)
+		+ FluidOneLight(P, FluidLightPos3, FluidLightColor3, FluidLightDir3);
 }
 
 //static	float		edgeThreshold = 0.2;
@@ -239,7 +279,8 @@ void DoSample(float weight, float3 O, inout float4 color )
 	float4 sample = weight * abs(Sample(colorTex, texcoords));
 	sample.a = (sample.r) * 0.1;
 	t = sample.a * (1.0-color.a);
-	color.rgb += t * sample.r;
+	// lit here, per sample, instead of the copy pass multiplying the whole result by DiffuseLight
+	color.rgb += t * sample.r * FluidLightAt(O);
 	color.a += t;
 #else	//	RENDER_FIRE
 	//render fire and smoke with back to front blending 
