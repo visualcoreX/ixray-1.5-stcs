@@ -1,0 +1,3 @@
+# The game reads these configs straight from the repo through a junction:
+# keep them byte for byte (cp1251, CRLF/LF/mixed as they are), never convert line endings.
+gamedata/configs/** -text
