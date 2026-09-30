@@ -30,8 +30,13 @@ function set_cs_strelok_progress_health(strelok, amount)
         printf("CS_CALLBACK: obj health : ["..strelok_hp.."] ")
         if strelok_hp > 0 then
 			printf("PL:cs_strelok_health[5]")
+			-- strelok_progress is a module upvalue and is NOT part of save(). If the custom static
+			-- ever outlived the module state, this would be nil while the branch above still runs,
+			-- and indexing it would take the game down. Health keeps ticking either way.
+			if strelok_progress ~= nil then
             strelok_progress:Show(true)
             strelok_progress:SetProgressPos(strelok_hp)
+			end
 		--	xr_effects.stc_strelok_particle()
         elseif not has_alife_info("stc_strelok_dead") then
 			printf("PL:cs_strelok_health[6]")
@@ -94,16 +99,30 @@ function hit_callback(obj, who, amount )
 	if has_alife_info("stc_strelok_dead") then
 		return
 	end
-		
-	if who:id() == db.actor:id() and db.actor:active_item():section() == "wpn_gauss_aes" and (strelok_last_hit_time == nil or (strelok_last_hit_time <= time_global() - 5000))  then -- and head_bones[bone_index] == true then
-		
+
+	-- xr_motivator calls this for EVERY hit Strelok takes, from anyone and anything, so neither of
+	-- the two things the stock line dereferenced is guaranteed to exist:
+	--   * `who` is nil for a hit with no source object (anomaly, script hit, the environment);
+	--   * db.actor:active_item() is nil whenever the actor's hands are empty -- much easier to hit
+	--     here than in stock CS, since we added a pile of states that put the weapon away (ladder,
+	--     3D PDA, animated item use, sleeping bag, quick grenade throw).
+	-- Either one crashed the game with "script:98: attempt to index a nil value" mid-fight.
+	if who == nil or db.actor == nil then
+		return
+	end
+	local active = db.actor:active_item()
+
+	if who:id() == db.actor:id() and active ~= nil and active:section() == "wpn_gauss_aes" and (strelok_last_hit_time == nil or (strelok_last_hit_time <= time_global() - 5000))  then -- and head_bones[bone_index] == true then
+
 		local multiplier = game_difficulty_multiplier[tostring(level.get_game_difficulty())]
-		
+
 		local fake_hit = 15*multiplier
 		
 		for k,v in pairs(zone_infos_table) do
 			local zone = db.zone_by_name[k]
-			if zone:inside(obj:position()) then
+			-- same class of crash one line further down: a restrictor that is not registered yet
+			-- (or not on this level at all) leaves a nil here
+			if zone and zone:inside(obj:position()) then
 				db.actor:give_info_portion(v)
 				fake_hit = 5*multiplier
 			end
@@ -147,12 +166,26 @@ function load(packet)
 	else
 		strelok_hp = tonumber(r_strelok_hp)
 	end
+	-- THE BUG BEHIND "the Gauss stops hurting Strelok".
+	-- strelok_last_hit_time is time_global(), i.e. MILLISECONDS SINCE THE ENGINE STARTED, and that
+	-- clock restarts at zero with every launch of the game. Saving it and comparing it after a
+	-- restart is meaningless: a value stamped 40 minutes into the previous session comes back as
+	-- ~2400000 while time_global() is only a few tens of thousands, so the gate in hit_callback
+	--     strelok_last_hit_time <= time_global() - 5000
+	-- is false for as long as the new session is younger than the old one was -- the hit is thrown
+	-- away silently, no error, the bar simply never moves. Our quicksave ring makes players reload
+	-- far more often than stock CS did, which is why this vanilla latent bug surfaced now.
+	-- A stale stamp is worth nothing anyway (the gate only stops double hits within 5 seconds), so
+	-- drop it. The packet layout is untouched on purpose -- old saves stay readable.
 	if r_strelok_last_hit_time == "nil" then
 		strelok_last_hit_time = nil
 	else
 		strelok_last_hit_time = tonumber(r_strelok_last_hit_time)
+		if strelok_last_hit_time ~= nil and strelok_last_hit_time > time_global() then
+			strelok_last_hit_time = nil
+		end
 	end
-	set_save_marker(packet, "load", true, "strelok_health")		
+	set_save_marker(packet, "load", true, "strelok_health")
 end
 
 

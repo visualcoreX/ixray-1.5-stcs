@@ -1,13 +1,14 @@
 function tutorial_give_equipment(first_speaker, second_speaker)
 	dialogs.relocate_item_section_to_actor(first_speaker, second_speaker, "ammo_12x70_buck", 5)
 	dialogs.relocate_item_section_to_actor(first_speaker, second_speaker, "ammo_9x18_fmj", 2)
-	dialogs.relocate_item_section_to_actor(first_speaker, second_speaker, "wpn_bm16")
+	dialogs.relocate_item_section_to_actor(first_speaker, second_speaker, "wpn_bm16_obrez_full")
 	dialogs.relocate_item_section_to_actor(first_speaker, second_speaker, "wpn_pm")
 	dialogs.relocate_item_section_to_actor(first_speaker, second_speaker, "wpn_knife")
 	dialogs.relocate_item_section_to_actor(first_speaker, second_speaker, "detector_simple")
 	dialogs.relocate_item_section_to_actor(first_speaker, second_speaker, "bandage", 5)
 	dialogs.relocate_item_section_to_actor(first_speaker, second_speaker, "medkit", 2)
 	dialogs.relocate_item_section_to_actor(first_speaker, second_speaker, "antirad", 1)
+	dialogs.relocate_item_section_to_actor(first_speaker, second_speaker, "detector_torch", 1)
 end
 
 function disable_input()

@@ -58,12 +58,43 @@ end
 
 function GetRPM(wpn_section, upgr_sections) --' скорострельность
 	local rpm = read_float(wpn_section, upgr_sections, "rpm")
+	-- left alone on purpose: this is the one bar whose range already works on our configs
+	-- (p10..p90 = 10..62). CoP uses 1150 here.
 	return normalize(rpm, 0, 1300)
 end
 
+-- Damage one shot of the weapon's first (default) cartridge actually carries: hit_power x k_hit x
+-- pellets. The Gunslinger damage model puts much of the damage in the cartridge (5.45 FMJ 0.33,
+-- 9x39 PAB-9 0.65, 7.62x54 1.5), so hit_power alone ranked weapons wrongly: the 5.45 Groza
+-- (hit_power 1.15) showed 79 against the 9x39 Groza's 50 while hitting ~40% softer.
+-- Armour is not counted: vs an unarmoured target pistols (0.55..0.75) do out-hit rifles (0.30..0.38).
+-- Grenade rounds have buck_shot 0 (their k_hit is unused), so pellets are floored at 1.
+function shot_damage(wpn_section, upgr_sections)
+	local ltx = system_ini()
+	local dmg = read_float(wpn_section, upgr_sections, "hit_power")
+	if ltx:line_exist(wpn_section, "ammo_class") then
+		local ammo = string.match(ltx:r_string(wpn_section, "ammo_class"), "^%s*([^,%s]+)")
+		if ammo and ltx:section_exist(ammo) then
+			local pellets = read_if_exist(ammo, "buck_shot", 1)
+			if pellets < 1 then
+				pellets = 1
+			end
+			dmg = dmg * read_if_exist(ammo, "k_hit", 1) * pellets
+		end
+	end
+	return dmg
+end
+
 function GetDamage(wpn_section, upgr_sections) --' повреждение
-	local hit_power = read_float(wpn_section, upgr_sections, "hit_power")
-	return normalize(hit_power, 0, 1.1)	
+	-- orig normalize(hit_power, 0.6, 1.3) -- hit_power alone, see shot_damage above.
+	-- Square root over 0..1.7 (the SVU, 1.63, is the top non-special weapon): a linear window
+	-- squeezes all rifles into 18..22; this gives rifles 42..47, pistols 54..66, Groza 60,
+	-- 5.45 Groza 47, SVD 94. Shotguns (4..6.6 for all pellets) and the gauss sit at a full bar.
+	local d = 100 * math.sqrt(shot_damage(wpn_section, upgr_sections) / 1.7)
+	if d > 100 then
+		d = 100
+	end
+	return d
 end
 
 function GetDamageMP(wpn_section, upgr_sections) -- ??? (повреждениеMP)
@@ -85,12 +116,20 @@ function GetHandling(wpn_section, upgr_sections) --' удобность
 		control_inertion_factor = read_float(wpn_section, upgr_sections, "control_inertion_factor")
 	end	
 	
-	control_inertion_factor = 4 - control_inertion_factor 
-	return normalize(control_inertion_factor, 0, 3) 
+	-- window retuned; orig "4 - x" over 0..3. control_inertion_factor divides the actor's mouse
+	-- scale (CActor::GetLookFactor), so higher = heavier weapon = worse handling -- the sign is
+	-- right, only the range was: ours run 1.0..2.2, so 0..3 parked 37 of 102 weapons at a full
+	-- bar. 2.4 - x over 0..1.6 gives p10..p90 = 56..88.
+	control_inertion_factor = 2.4 - control_inertion_factor
+	return normalize(control_inertion_factor, 0, 1.6)
 end
 
 function GetAccuracy(wpn_section, upgr_sections) --' точность
     local fire_dispersion_base	= read_float(wpn_section, upgr_sections, "fire_dispersion_base")
-	fire_dispersion_base = 1.5 - fire_dispersion_base
-	return normalize(fire_dispersion_base, 0, 1.5)
+	-- window retuned; orig "1.5 - x" over 0..1.5, which was tuned for vanilla Clear Sky where
+	-- fire_dispersion_base ran around 0.70. The Gunslinger/CoP ports brought it down to a median
+	-- of 0.23, and the old window squeezed the whole arsenal into 80..90. 0.42 - x over 0..0.42
+	-- gives p10..p90 = 29..64.
+	fire_dispersion_base = 0.42 - fire_dispersion_base
+	return normalize(fire_dispersion_base, 0, 0.42)
 end

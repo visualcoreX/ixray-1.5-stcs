@@ -1,0 +1,41 @@
+--[[
+	gwr_agr_psy_blockade.script
+
+	A pack of psi blockade lying at the entrance of the Agroprom underground. It is the actor's
+	telepathic protection in this build (halved psi damage + no controller grab for three minutes),
+	so the level that opens with a controller gets one dose to find.
+
+	Spawned ONCE per playthrough: the info portion is stored in the save, so re-entering the level or
+	reloading does not pile up packs. Same shape as the sleeping bag in bind_stalker:net_spawn.
+
+	Called from bind_stalker.script (actor_binder:net_spawn), where the level name is already known.
+]]
+
+local LEVEL   = "agroprom_underground"
+local SECTION = "drug_psy_blockade"
+local INFO    = "gwr_agr_psy_blockade_spawned"
+
+-- world positions (x, y, z)
+local SPOTS =
+{
+	{ 115.31, -7.05, -59.00 },
+}
+
+function spawn_once()
+
+	if db.actor == nil then return end
+	if level.name() ~= LEVEL then return end
+	if has_alife_info(INFO) then return end
+
+	-- the actor is on this level here, so his game vertex is this level's
+	local gvid = db.actor:game_vertex_id()
+
+	for i = 1, #SPOTS do
+		local p   = SPOTS[i]
+		local pos = vector():set(p[1], p[2], p[3])
+		-- level_vertex_id from the position itself: the pack is not at the actor's feet
+		alife():create(SECTION, pos, level.vertex_id(pos), gvid)
+	end
+
+	db.actor:give_info_portion(INFO)
+end

@@ -1,134 +1,256 @@
---'******************************************************
---'*  Биндер объекта зоны аномалий .
---'******************************************************
-function printf()
-end
-artefact_ways_by_id					= {}
-parent_zones_by_artefact_id			= {}
+-- Pavlov ??.??.2008: Fixed the incorrect counting and saving of artifacts belonging to an anomalous zone.
+-- Decane 31.01.2013: Removed some old code which could trigger a crash due to an undefined variable: 'se_pos'.
+--        25.10.2014: Fixed the borked savegame persistence of the respawn timer.
+
+artefact_ways_by_id = {}
+parent_zones_by_artefact_id = {}
+
+-- Every anomaly zone that is currently online, so a surge can find them all at once without
+-- walking the alife object list. Deliberately NOT saved: it is rebuilt from net_spawn/net_destroy,
+-- and touching this binder's save packet would break existing savegames. See surge_artefacts.
+zones_by_id = {}
 
 function bind(obj)
 	obj:bind_object(anomaly_zone_binder(obj))
 end
 
+--------------------------------------------------------------------------------
+
 class "anomaly_zone_binder" (object_binder)
+
 function anomaly_zone_binder:__init(obj) super(obj)
-	local ini				= obj:spawn_ini()
-	local path				= utils.cfg_get_string(ini, "anomal_zone", "artefact_ways", nil, true, "", nil)	
-	local artefacts			= utils.cfg_get_string(ini, "anomal_zone", "artefacts", nil, true, "", nil)
-	self.artefact_count		= utils.cfg_get_number(ini, "anomal_zone", "artefact_count", nil, false, 1)
-	self.idle_time			= utils.cfg_get_number(ini, "anomal_zone", "idle_time", nil, false, 14400) * 1000
-	self.applying_force_xz	= utils.cfg_get_number(ini, "anomal_zone", "applying_force_xz", nil, false, 200)
-	self.applying_force_y	= utils.cfg_get_number(ini, "anomal_zone", "applying_force_y", nil, false, 400)
-	if path == nil then 
-		abort("There is no field 'artefact_ways' in section [anomal_zone] in obj [%s]", obj:name()) 
+
+	local get_string       = utils.cfg_get_string
+	local get_number       = utils.cfg_get_number
+	local ini              = obj:spawn_ini()
+
+	self.artefact_count    = get_number(ini, "anomal_zone", "artefact_count",    nil, false, 1)
+	self.idle_time         = get_number(ini, "anomal_zone", "idle_time",         nil, false, 14400) * level.get_time_factor() -- artifacts respawn after 14400 / 60 / 60 = 4 real hours
+	self.applying_force_xz = get_number(ini, "anomal_zone", "applying_force_xz", nil, false, 200)
+	self.applying_force_y  = get_number(ini, "anomal_zone", "applying_force_y",  nil, false, 400)
+
+	self.path_table        = parse_names(get_string(ini, "anomal_zone", "artefact_ways", obj, true, "", nil))
+	self.artefacts_table   = parse_names(get_string(ini, "anomal_zone", "artefacts",     obj, true, "", nil))
+	self.spawned_count     = 0
+	self.idle_time_start   = nil
+end
+
+function anomaly_zone_binder:net_spawn(se_abstract)
+	if not object_binder.net_spawn(self, se_abstract) then
+		return false
 	end
-	self.path_table			= parse_names(path)
-	if artefacts == nil then 
-		abort("There is no field 'artefacts' in section [anomal_zone] in obj [%s]", obj:name()) 
+	zones_by_id[self.object:id()] = self
+
+	if self.idle_time_start == nil then
+		-- Never stocked: this is the zone's starting hoard, the one vanilla laid out at the
+		-- beginning of a game. Kept exactly as it was; surges add on top of it from here on.
+		for i = 1, self.artefact_count - self.spawned_count do
+			self:spawn_artefact_randomly()
+		end
+		surge_artefacts.mark_current(self)
+	else
+		-- Back online: collect whatever the surges dropped here while nobody was watching.
+		surge_artefacts.catch_up(self)
 	end
-	self.artefacts_table	= parse_names(artefacts)
-	self.spawned_count = 0
-	self.idle_time_end = 0
+
+	return true
+end
+
+function anomaly_zone_binder:net_destroy() -- missing in vanilla
+	zones_by_id[self.object:id()] = nil
+	object_binder.net_destroy(self)
+end
+
+local object_binder_update = object_binder.update
+
+function anomaly_zone_binder:update(delta)
+	object_binder_update(self, delta)
+	-- The timed respawn used to live here: while the zone held fewer than `artefact_count`, one
+	-- artefact appeared every `idle_time` (~4 real hours). Replaced by the surge roll in
+	-- surge_artefacts.script. `idle_time`/`artefact_count` are still read from the zone's config
+	-- and still saved, so putting this back is a matter of restoring these four lines.
+	self:rescue_sunken_artefacts()
+end
+
+--------------------------------------------------------------------------------
+-- An artefact can end up UNDER the level and stay there for good. The zone throws loose objects
+-- about (applying_force_xz / applying_force_y), a thrown physics item lands hard, and where the
+-- map has a second collision surface below the terrain -- mar_anomal_zone_2 on the Marsh sits over
+-- one such dome -- it goes through and comes to rest beneath the ground. Nothing ever brings it
+-- back, and the zone still counts it as spawned, so that slot is lost for the rest of the game.
+--
+-- "Below the waypoints" is NOT a usable test: on broken ground an artefact rolls downhill and ends up
+-- metres lower while lying perfectly on the surface. The question is not how low it is, it is whether
+-- there is ground ABOVE it -- so the reference has to be the terrain at the artefact's OWN x/z.
+-- level.vertex_id(pos) gives exactly that: it only ever returns a node from the same ai-map cell (and
+-- u32(-1) if that cell has none), picking the one closest in height -- so for something buried it
+-- hands back the surface node overhead. More than SUNK_DEPTH below that node = under the map.
+-- No ai node in the cell -> we do nothing: not rescuing is always safer than teleporting an artefact
+-- that is lying somewhere legitimate.
+
+local RESCUE_PERIOD	= 5000		-- ms between checks; the fall is a rare event, no need to poll hard
+local SUNK_DEPTH	= 1.0		-- metres below the walkable surface at its own x/z = it fell through
+local RESCUE_RANGE	= 25.0		-- ...and it has to still be somewhere around the zone, horizontally
+local INVALID_VID	= 4294967295	-- u32(-1); level.valid_vertex_id is not exported to Lua
+local path_cache = {}
+
+-- The path's points, worked out once per path.
+local function path_info(path_name)
+	local info = path_cache[path_name]
+	if info then return info end
+	local p, pts = patrol(path_name), {}
+	for i = 0, p:count() - 1 do
+		pts[#pts + 1] = p:point(i)
+	end
+	info = { pts = pts }
+	path_cache[path_name] = info
+	return info
+end
+
+-- Horizontal distance to the nearest waypoint. The height test alone is not enough: an artefact the
+-- player carried off and dropped in a cellar is also "below the path", and taking THAT away to
+-- respawn it in the anomaly would be robbery. Only something still lying at the zone counts.
+local function xz_dist_to_path(info, pos)
+	local best
+	for _, pt in ipairs(info.pts) do
+		local dx, dz = pos.x - pt.x, pos.z - pt.z
+		local d = dx * dx + dz * dz
+		if not best or d < best then best = d end
+	end
+	return best and math.sqrt(best) or 1e9
+end
+
+function anomaly_zone_binder:rescue_sunken_artefacts()
+
+	local now = time_global()
+	if self.rescue_tm and now - self.rescue_tm < RESCUE_PERIOD then return end
+	self.rescue_tm = now
+
+	local sim = _G.sim
+	if not sim then return end
+
+	-- Collected first: releasing inside the pairs() loop would edit the very tables being walked.
+	local sunken = nil
+	for art_id, path_name in pairs(artefact_ways_by_id) do
+		if rawequal(parent_zones_by_artefact_id[art_id], self) then
+			local se = sim:object(art_id)
+			-- parent_id ~= 65535 means somebody is carrying it: not our business, and its position
+			-- is the owner's anyway.
+			if se and se.parent_id == 65535 then
+				local obj = level.object_by_id(art_id)
+				local pos = obj and obj:position() or se.position
+				local vid = level.vertex_id(pos)
+				if vid ~= INVALID_VID
+				   and pos.y < level.vertex_position(vid).y - SUNK_DEPTH
+				   and xz_dist_to_path(path_info(path_name), pos) < RESCUE_RANGE then
+					sunken = sunken or {}
+					sunken[#sunken + 1] = { id = art_id, path = path_name, sect = se:section_name() }
+				end
+			end
+		end
+	end
+	if not sunken then return end
+
+	for _, a in ipairs(sunken) do
+		sim:release(sim:object(a.id), true)
+		artefact_ways_by_id[a.id] = nil
+		parent_zones_by_artefact_id[a.id] = nil
+		self.spawned_count = self.spawned_count - 1
+
+		-- ...and put an identical one back on its own path, so the count and the loot stay the same.
+		-- Same bookkeeping as spawn_artefact_randomly, minus the random section: an artefact the
+		-- player may already have seen lying there should not change into another one.
+		local p = patrol(a.path)
+		local new_id = sim:create(a.sect, p:point(math.random(0, p:count() - 1)),
+								  self.object:level_vertex_id(), self.object:game_vertex_id()).id
+		artefact_ways_by_id[new_id] = a.path
+		parent_zones_by_artefact_id[new_id] = self
+		self.spawned_count = self.spawned_count + 1
+	end
+end
+
+--------------------------------------------------------------------------------
+
+function anomaly_zone_binder:on_artefact_take()
+	self.spawned_count = self.spawned_count - 1
+	self.idle_time_start = game.get_game_time()
 end
 
 function anomaly_zone_binder:spawn_artefact_randomly()
-	local rnd_artefact			= self.artefacts_table[math.random(1, #self.artefacts_table)]
-	local rnd_path_name			= self.path_table[math.random(1, #self.path_table)]
-	local rnd_path				= patrol(rnd_path_name)
-	local rnd_path_point		= math.random(0, rnd_path:count() - 1)
-	local artefact_obj			= alife():create( rnd_artefact,
-										rnd_path:point(rnd_path_point),
-										self.object:level_vertex_id(),
-										self.object:game_vertex_id())	
-	 artefact_ways_by_id[artefact_obj.id] = rnd_path_name	
-	 parent_zones_by_artefact_id[artefact_obj.id] = self
-	 self.spawned_count = self.spawned_count + 1
-	 printf("artefact [%s] spawned at position %s by zone [%s]",artefact_obj:name(), vec_to_str(artefact_obj.position),self.object:name())
+
+	local math_random = math.random
+	local rnd_artefact = self.artefacts_table[math_random(1, #self.artefacts_table)]
+	local rnd_path_name = self.path_table[math_random(1, #self.path_table)]
+	local rnd_path = patrol(rnd_path_name)
+	local rnd_path_point = math_random(0, rnd_path:count() - 1)
+	local artefact_id = _G.sim:create(rnd_artefact, rnd_path:point(rnd_path_point), self.object:level_vertex_id(), self.object:game_vertex_id()).id
+
+	artefact_ways_by_id[artefact_id] = rnd_path_name
+	parent_zones_by_artefact_id[artefact_id] = self
+
+	self.spawned_count = self.spawned_count + 1
+	-- Vanilla cleared idle_time_start here. It must NOT be cleared any more: with the timed respawn
+	-- gone, that field is what records how far this zone has caught up with the surges, and nil now
+	-- means "never stocked" (see net_spawn). Callers set the mark themselves.
 end
 
+--------------------------------------------------------------------------------
 
-function anomaly_zone_binder:net_spawn(server_object)
-	if not object_binder.net_spawn(self, server_object) then
-		return false
-	end
-	-- пускаем цикл по количеству артефактов artefact_count.
-	if(self.spawned_count<self.artefact_count) and (self.idle_time_end<time_global()) then
-		for i=1,self.artefact_count-self.spawned_count do 
-			self:spawn_artefact_randomly()
-		end	
-	end
-	printf("spawned artefact!!!")
-	
-	
-	return true
-end
-
-function anomaly_zone_binder:update(delta)
-	object_binder.update(self, delta)
-	for k,v in pairs(artefact_ways_by_id) do
-		local cl_pos = (db.storage[k] and db.storage[k].object and db.storage[k].object:position())
-		
-		local art = alife():object(k)
-		if cl_pos ~= nil then
-			printf("pl:art [%s] se_pos %s cl_pos %s", art:name(), vec_to_str(art.position), vec_to_str(cl_pos))
-		else
-			printf("pl:art [%s] se_pos %s", art:name(), vec_to_str(art.position))
-		end
-	end
-	if self.spawned_count <  self.artefact_count and self.idle_time_end < time_global() then
-		self:spawn_artefact_randomly()
-		self.idle_time_end = time_global() + self.idle_time
-	end
-end
-  
-function anomaly_zone_binder:on_artefact_take()
-	self.spawned_count = self.spawned_count - 1
-	self.idle_time_end = time_global() + self.idle_time
-end
-
--- Standart function for save
 function anomaly_zone_binder:net_save_relevant()
 	return true
 end
--- Saving anomaly zone
+
 function anomaly_zone_binder:save(thread)
+
 	set_save_marker(thread, "save", false, "anomaly_zone_binder")
+
 	object_binder.save(self, thread)
 
 	local count = 0
-	for k,v in pairs(artefact_ways_by_id) do
-		count = count + 1
+
+	for art_id in pairs (artefact_ways_by_id) do
+		if parent_zones_by_artefact_id[art_id] ~= nil then
+			if rawequal(parent_zones_by_artefact_id[art_id], self) then -- only count artefacts that belong to this anomal zone
+				count = count + 1
+			end
+		end
 	end
-	thread:w_u16(count)
-	for k,v in pairs(artefact_ways_by_id) do
-		thread:w_u16(k)
-		thread:w_stringZ(v)
+
+	thread:w_u8(count) -- was u16, but no anomaly zone will have more than 255 artifacts in it at once, so let's save a byte
+
+	for art_id, path_name in pairs (artefact_ways_by_id) do
+		if parent_zones_by_artefact_id[art_id] ~= nil then
+			if rawequal(parent_zones_by_artefact_id[art_id], self) then -- only store artefacts that belong to this anomal zone
+				thread:w_u16(art_id)
+				thread:w_stringZ(path_name)
+			end
+		end
 	end
+
 	thread:w_u8(self.spawned_count)
-	local time_diff = self.idle_time_end-time_global()
-	if(time_diff<=0) then
-		thread:w_u32(0)
-	else
-		thread:w_u32(time_diff)
-	end
+
+	utils.w_CTime(thread, self.idle_time_start)
 
 	set_save_marker(thread, "save", true, "anomaly_zone_binder")
 end
--- Loading anomaly zone
+
 function anomaly_zone_binder:load(thread)
+
 	set_save_marker(thread, "load", false, "anomaly_zone_binder")
+
 	object_binder.load(self, thread)
 
-	local count = thread:r_u16()
-	for i=1,count do 
+	local count = thread:r_u8()
+
+	for i = 1, count do
 		local art_id = thread:r_u16()
 		artefact_ways_by_id[art_id] = thread:r_stringZ()
 		parent_zones_by_artefact_id[art_id] = self
 	end
+
 	self.spawned_count = thread:r_u8()
-	local time_diff = thread:r_u32()
-	printf(time_diff)
-	self.idle_time_end = time_global()+time_diff
+
+	self.idle_time_start = utils.r_CTime(thread)
 
 	set_save_marker(thread, "load", true, "anomaly_zone_binder")
 end

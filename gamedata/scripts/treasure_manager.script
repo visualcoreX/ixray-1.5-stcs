@@ -1,261 +1,323 @@
-local rank_table = {}
-rank_table["novice"] = 0
-rank_table["stalker"] = 300
-rank_table["veteran"] = 600
-rank_table["master"] = 900
+--[[
+
+The variable self.flag can take a value of:
+
+0:	coordinates not given, treasure not emptied
+1:	coordinates given
+2:	treasure emptied
+
+]]
+
+enable_stash_filler = false -- do not change this
+
+local math_random = math.random
+local trans = game.translate_string
+
+local get_bool = utils.cfg_get_bool
+local get_number = utils.cfg_get_number
+local get_string = utils.cfg_get_string
+local parse_spawns = utils.parse_spawns
+
+-- every map spot a stash can carry; the emptied-stash cleanup has to try them all
+local TREASURE_SPOTS = {"treasure", "treasure_upgrade"}
+
+local treasures = {}
 local treasure_by_target = {}
-
-
+local rank_table = {["novice"] = 0, ["stalker"] = 300, ["veteran"] = 600, ["master"] = 900}
 
 class "CTreasure"
+
 function CTreasure:__init(ini, section)
-	self.section		= section
-	self.target			= utils.cfg_get_string(ini, section, "target", nil, true, "")
-	self.name			= utils.cfg_get_string(ini, section, "name", nil, true, "")
-	self.description	= utils.cfg_get_string(ini, section, "description", nil, true, "")
-	local items 		= utils.cfg_get_string(ini, section, "items", nil, true, "", "nil")
-	if items~="nil" then
-		self.items 		= utils.parse_spawns(items)
-	    if self.items == nil then
-	        abort("cant find 'items' in %s", id)
-	    end
+
+	self.section            = section
+	local target            = get_string(ini, section, "target", nil, true, "")
+	self.target             = target
+	self.name               = get_string(ini, section, "name", nil, true, "")
+	self.description        = get_string(ini, section, "description", nil, true, "")
+	self.items              = parse_spawns(get_string(ini, section, "items", nil, true, ""))
+
+	self.rank               = get_string(ini, section, "rank", nil, false, "", "novice")
+	self.treasure_cost      = get_number(ini, section, "treasure_cost", nil, false, 0)
+	self.say_item_name      = get_bool(ini, section, "say_item_name", nil, false, true)
+	self.on_empty           = xr_logic.parse_condlist(nil, nil, nil, get_string(ini, section, "on_empty", nil, false, "", "false"))
+	self.community          = parse_names_to_hash(get_string(ini, section, "community", nil, false, "", "stalker, bandit, dolg, freedom, csky, renegade"))
+
+	local tbt = treasure_by_target[target]
+
+	if tbt == nil then
+		tbt = {}
+		treasure_by_target[target] = tbt
 	end
-	self.rank			= utils.cfg_get_string(ini, section, "rank", nil, false, "", "novice")
-	self.treasure_cost	= utils.cfg_get_number(ini, section, "treasure_cost", nil, false, 0)	-- 24.04.08
-	self.say_item_name	= utils.cfg_get_bool(ini, section, "say_item_name", nil, false, true)	-- 24.04.08
-	local community		= parse_names(utils.cfg_get_string(ini, section, "community", nil, false, "", "stalker, bandit, dolg, freedom, csky, renegade"))
-	self.on_empty		= xr_logic.parse_condlist(db.actor, section, "on_empty", utils.cfg_get_string(ini, section, "on_empty", nil, false, "", "false"))
-	self.community = {}
-	for k,v in pairs(community) do
-		self.community[v] = true
+
+	tbt[#tbt + 1] = self
+
+	self.condlist           = xr_logic.parse_condlist(nil, nil, nil, get_string(ini, section, "condlist", nil, false, "", "false"))
+	self.flag               = 0
+end
+
+-- Which map spot this stash deserves. A stash holding an upgrade flash drive (`flesh_up_*` -- GSC's
+-- own typo for "flash") gets the red variant so it stands out from ordinary loot.
+-- Read from self.items rather than marked per treasure in the configs: only four treasure_*.ltx are
+-- loose here, the rest come from configs.db, so a config-side list would miss whole levels.
+function CTreasure:spot_type()
+
+	for _, item in pairs (self.items) do
+		local section = item.section
+		if section ~= nil and string.find(section, "flesh_up_", 1, true) == 1 then
+			return "treasure_upgrade"
+		end
 	end
-	if treasure_by_target[self.target] == nil then
-		treasure_by_target[self.target] = {}
-	end
-	table.insert(treasure_by_target[self.target], self)
-	self.condlist		= xr_logic.parse_condlist(db.actor, section, "condlist", utils.cfg_get_string(ini, section, "condlist", nil, false, "", "false"))
+
+	return "treasure"
 end
 
 function CTreasure:give_treasure()
-	local obj = alife():object(self.target)
-	if obj ~= nil then
-		if(self.name==game.translate_string(self.name)) then
-			abort("Treasure name [%s] is not set in xml file", self.name)
-		end
-		if(self.description==game.translate_string(self.description)) then
-			abort("Treasure description [%s] is not set in xml file", self.description)
-		end
 
-		news_manager.send_treasure(self.name)
+	local sim = _G.sim
+	local obj = sim:object(self.target)
+	local treasure_name = self.name
 
-		--' Пометить на карте
-		local text = "%c[255,238,155,23]"..game.translate_string(self.name).."\\n".."%c[default]"..game.translate_string(self.description)
-
-		level.map_add_object_spot_ser(obj.id, "treasure", text)
-		--' Сгенерить вещи
-		if self.items then
-	        for kk,vv in pairs(self.items) do
-	            if ammo_section[vv.section] == true then
-	                local t=se_respawn.create_ammo(vv.section,
-	                        obj.position,
-	                        obj.m_level_vertex_id,
-	                        obj.m_game_vertex_id,
-	                        obj.id,
-	                        vv.prob)
-	            else
-	                for i=1,vv.prob do
-	                    local t=alife():create(vv.section,
-	                            obj.position,
-	                            obj.m_level_vertex_id,
-	                            obj.m_game_vertex_id,
-	                            obj.id)
-	                end
-	            end
-	        end
-		end
-		--' Пометим тайник как выданный
-		self.active = true
-	else
-		printf("TREASURE [%s], target doesnt exist", self.section)
+	if obj == nil then
+		abort("[treasure_manager.give_treasure]: Treasure target '%s' for treasure '%s' does not exist.", self.target, treasure_name)
 	end
+--[[
+	-- If the treasure name or description is not set in the XML file then abort.
+
+	if treasure_name == trans(treasure_name) then
+		abort("[treasure_manager.give_treasure]: Treasure name '%s' is not set in the XML file.", tostring(treasure_name))
+	end
+
+	if self.description == trans(self.description) then
+		abort("[treasure_manager.give_treasure]: Treasure description '%s' is not set in the XML file.", tostring(self.description))
+	end
+]]
+	-- Give the treasure news, info, and map spot.
+
+	news_manager.send_treasure(treasure_name)
+
+	local text = "%c[255,238,155,23]"..trans(treasure_name).."\\n".."%c[default]"..trans(self.description)
+	local obj_id = obj.id
+	level.map_add_object_spot_ser(obj_id, self:spot_type(), text)
+
+	-- Spawn the treasure.
+
+	local ammo_sections = ammo_section
+	local vec = vector()
+
+	for kk, vv in pairs (self.items) do
+		local section = vv.section
+		if ammo_sections[section] == true then
+			se_respawn.create_ammo(section, vec, 0, 0, obj_id, vv.prob)
+		else
+			for i = 1, vv.prob do
+				sim:create(section, vec, 0, 0, obj_id)
+			end
+		end
+	end
+
+	-- Set the treasure status to "given".
+
+	self.flag = 1
 end
 
 function CTreasure:check_rank_and_community(npc)
-	return (npc:character_rank()>rank_table[self.rank]) and (self.community[npc:character_community()]==true)
-end
-function CTreasure:check_for_used_target()
-	for k,v in pairs(treasure_by_target[self.target]) do
-		if v.active == true then
-			return false
-		end
-	end
-	return true
+	return npc:character_rank() > rank_table[self.rank] and self.community[npc:character_community()] == true
 end
 
-function CTreasure:reset_treasure()
-	printf("treasure_manager: reset_treasure [%s]", self.section)
-	self.active = false
--- 24.04.08
-    if(self.treasure_cost>=0) then
-		self.treasure_cost = -1
-	end
-end
+-- function use_box(box, actor)
+-- end
 
-function use_box(box, actor)
-end
+local function treasure_empty(box)
 
-function use(npc)
-	printf("treasure_manager: npc[%s] is used by actor", npc:name())
-	local available_treasures = {}
-	local selected_treasure = nil
-	for k,v in pairs(treasures) do
---[[
-		printf("found treasure %s", tostring(v.section))
-		-- Проверить доступность по кондлисту.
-		printf("    condlist %s", tostring(xr_logic.pick_section_from_condlist(db.actor, npc, v.condlist)))
-		-- Проверить доступность по рангу.
-		printf("    rank %s", tostring(v:check_rank_and_community(npc)))
-		-- Проверить не выдан ли он уже.
-		printf("    active %s", tostring(v.active))
-		-- Проверить не выдан ли другой тайник на этот же таргет.
-		printf("    used %s", tostring(v:check_for_used_target()))
-		printf("    cost=%d", v.treasure_cost)
-]]
-		if xr_logic.pick_section_from_condlist(db.actor, npc, v.condlist) == "true" and
-			v:check_rank_and_community(npc) == true and v.active ~= true and v:check_for_used_target() == true and (v.treasure_cost==0) then	-- 24.04.08
-			table.insert(available_treasures, v)
-		end
-	end
-	if #available_treasures == 0 or math.random(100) > 20 then
-		return
-	end
-	selected_treasure = available_treasures[math.random(1, #available_treasures)]
-	selected_treasure:give_treasure()
-end
+	-- If this is not a treasure box then do nothing.
 
-function treasure_empty(box, box_story_id)
-	printf("!!! treasure empty")
-	local treasures = treasure_by_target[box_story_id] or treasure_by_target[box:name()]
-
+	local treasures = treasure_by_target[box:name()]
 	if treasures == nil then
 		return
 	end
 
-	for k,v in pairs(treasures) do
-		if v.active then
-	        xr_logic.pick_section_from_condlist(db.actor, box, v.on_empty)
-	        v:reset_treasure()
+	-- For all treasures suitable for this box, if the box was populated with the given treasure then:
+
+	local act = db.actor
+
+	for k, v in pairs (treasures) do
+
+		if v.flag == 1 then
+
+			-- Execute on_empty effect(s) if any.
+
+			xr_logic.pick_section_from_condlist(act, box, v.on_empty)
+
+			-- Set the treasure status to "emptied".
+
+			v.flag = 2
+
+			-- Remove its map spot.
+
+			local id = box:id()
+			-- the spot may be either type, and only the matching one can be removed
+			for _, spot in pairs (TREASURE_SPOTS) do
+				if level.map_has_object_spot(id, spot) ~= 0 then
+					level.map_remove_object_spot(id, spot)
+				end
+			end
+
+			-- Increase the 'stashes found' counter by 1.
+
+			xr_statistic.inc_founded_secrets_counter()
+
+			-- Give the actor a 'stash emptied' news update.
+
+--			act:give_game_news(trans("st_stash_emptied"), trans(level.name())..": "..trans(v.name), "ui_iconsTotal_found_thing", 0, 3000)
+
+--			dbglog("Emptied box with name "..box:name().." and ID "..id..".")
 		end
 	end
-	if level.map_has_object_spot(box:id(), "treasure") ~= 0 then
-		level.map_remove_object_spot(box:id(), "treasure")
-	end
-    xr_statistic.inc_founded_secrets_counter()
 end
 
-function take_item_from_box(box, box_story_id, item)
-	printf("!!! take item from box")
+function take_item_from_box(box)
 	if box:is_inv_box_empty() == true then
-		treasure_empty(box, box_story_id)
+		treasure_empty(box)
 	end
+end
+
+function use(npc)
+
+	-- orig 20. Vanilla rolled the other way (random < 16 -> return) and handed out a stash on
+	-- 85% of searches; SRP cut that to 20, this cuts it again.
+	if math_random(100) > 5 then
+		return
+	end
+
+	local act = db.actor
+	local c = 0
+	local available_treasures = {}
+
+	for k, v in pairs (treasures) do
+		if xr_logic.pick_section_from_condlist(act, npc, v.condlist) == "true" then
+			if v:check_rank_and_community(npc) == true then
+				if v.flag == 0 then
+					if v.treasure_cost == 0 then
+						c = c + 1
+						available_treasures[c] = v
+					end
+				end
+			end
+		end
+	end
+
+	local num_avail = #available_treasures
+
+	if num_avail == 0 then
+		return
+	end
+
+	available_treasures[math_random(1, num_avail)]:give_treasure()
 end
 
 function load_treasures()
+
 	local treasure_ini = ini_file("misc\\treasure_manager.ltx")
 
-	--' Итерируемся по списку тем.
-    if not treasure_ini:section_exist("list") then
-		abort("There is no section [list] in treasure_manager.ltx")
+	if not treasure_ini:section_exist("list") then
+		abort("[treasure_manager.load_treasures]: There is no 'list' section in treasure_manager.ltx.")
 	end
-	local n = treasure_ini:line_count("list")
-	local id, value = "",""
-	local category = ""
 
-	--' начальная установка
-	treasures = {}
-
-	for i=0,n-1 do
-		result, section, value  = treasure_ini:r_line("list",i,"","")
+	for i = 0, treasure_ini:line_count("list") - 1 do
+		local result, section = treasure_ini:r_line("list", i, "", "")
 		treasures[section] = CTreasure(treasure_ini, section)
-    end
+	end
 end
 
 function save(thread)
+
 	set_save_marker(thread, "save", false, "treasure_manager")
-	for k,v in pairs(treasures) do
-		thread:w_bool(v.active==true)
-        thread:w_bool(v.treasure_cost == -1)
+
+	for k, v in pairs (treasures) do
+		thread:w_u8(v.flag)
+--		dbglog("Saved self.flag = "..tostring(v.flag).." for treasure with name "..tostring(v.name)..".")
 	end
+
 	set_save_marker(thread, "save", true, "treasure_manager")
 end
 
 function load(thread)
+
 	set_save_marker(thread, "load", false, "treasure_manager")
-	for k,v in pairs(treasures) do
-		v.active = thread:r_bool()
-		local cost = thread:r_bool()
-		if cost == true then
-			v.treasure_cost = -1
-		end
+
+	for k, v in pairs (treasures) do
+		v.flag = thread:r_u8()
+--		dbglog("Loaded self.flag = "..tostring(v.flag).." for treasure with name "..tostring(v.name)..".")
 	end
+
 	set_save_marker(thread, "load", true, "treasure_manager")
 end
--- Функция для выдачи тайника из xr_effect-ов.
-function give_treasure(treasure_id)
-	if treasures[treasure_id] ~= nil then
-		if treasures[treasure_id].active ~= true then
-			treasures[treasure_id]:give_treasure()
-		else
-			local active_treasure = get_active_treasure_by_target(treasures[treasure_id].target)
-			abort("Unable to give treasure [%s] because inventory box is already in use by treasure [%s]", treasure_id, active_treasure)
-		end
-	else
-		abort("There is no treasure with id [%s]", treasure_id)
-	end
-end
-function get_active_treasure_by_target(target)
-	for k,v in pairs(treasure_by_target[target]) do
-		if v.active == true then
+
+local function get_active_treasure_by_target(target)
+	for k, v in pairs (treasure_by_target[target]) do
+		if v.flag == 1 then
 			return v.section
 		end
 	end
 	return "nil"
 end
+
+function give_treasure(treasure_id)
+	local t = treasures[treasure_id]
+	if t ~= nil then
+		if t.flag ~= 1 then
+			t:give_treasure()
+		else
+			local active_treasure = get_active_treasure_by_target(t.target)
+			abort("[treasure_manager.give_treasure]: Unable to give treasure '%s' because inventory box is already in use by treasure '%s'.", tostring(treasure_id), tostring(active_treasure))
+		end
+	else
+		abort("[treasure_manager.give_treasure]: There is no treasure with ID '%s'.", tostring(treasure_id))
+	end
+end
+
 --------------------------------------------------------------------------------
--- 24.04.08
+
 local dt = nil
-function select_dialog_treasures(npc)
+
+local function select_dialog_treasures(npc)
+
+	local act = db.actor
+	local c = 0
 	local available_treasures = {}
-	for k,v in pairs(treasures) do
---[[
-		printf("found treasure %s", tostring(v.section))
-		printf("    condlist %s", tostring(xr_logic.pick_section_from_condlist(db.actor, npc, v.condlist)))
-		printf("    rank %s", tostring(v:check_rank_and_community(npc)))
-		printf("    active %s", tostring(v.active))
-		printf("    used %s", tostring(v:check_for_used_target()))
-		printf("    cost=%d", v.treasure_cost)
-]]
-		if xr_logic.pick_section_from_condlist(db.actor, npc, v.condlist)=="true" and
-			(v:check_rank_and_community(npc)) and not(v.active) and (v:check_for_used_target()) and (v.treasure_cost>0) then
-			table.insert(available_treasures, v)
+
+	for k, v in pairs (treasures) do
+		if xr_logic.pick_section_from_condlist(act, npc, v.condlist) == "true" then
+			if v:check_rank_and_community(npc) then
+				if v.flag == 0 then
+					if v.treasure_cost > 0 then
+						c = c + 1
+						available_treasures[c] = v
+					end
+				end
+			end
 		end
 	end
-	if(#available_treasures==0) then
+
+	local num_avail = #available_treasures
+
+	if num_avail == 0 then
 		return nil
 	end
-	dt = available_treasures[math.random(1, #available_treasures)]
+
+	dt = available_treasures[math_random(1, num_avail)]
 	return dt
 end
 
-function is_dialog_treasure(npc,ss)
-	return select_dialog_treasures(npc)~=nil
+function is_dialog_treasure(npc)
+	return select_dialog_treasures(npc) ~= nil
 end
 
-function is_not_dialog_treasure(npc,ss)
-	return select_dialog_treasures(npc)==nil
+function is_not_dialog_treasure(npc)
+	return select_dialog_treasures(npc) == nil
 end
 
-function give_treasure_from_dialog(npc,ss)
+function give_treasure_from_dialog(npc)
 	dialogs.relocate_money(npc, dt.treasure_cost, "out")
 	dt:give_treasure()
 end
@@ -263,33 +325,33 @@ end
 function get_treasure_cost()
 	return tostring(dt.treasure_cost)
 end
+
 function have_money()
-	return dt.treasure_cost<=db.actor:money()
+	return dt.treasure_cost <= db.actor:money()
 end
+
 function have_no_money()
-	return dt.treasure_cost>db.actor:money()
+	return dt.treasure_cost > db.actor:money()
 end
+
 function get_treasure_desc()
-	return game.translate_string(dt.description)
+	return trans(dt.description)
 end
+
 function is_item_name()
 	return dt.say_item_name
 end
+
 function is_not_item_name()
-	return not(dt.say_item_name)
+	return not dt.say_item_name
 end
+
 function get_item_name()
+	local dt_items = dt.items
 	local ini = system_ini()
-	if dt.items then
-        local str = game.translate_string(ini:r_string(dt.items[1].section, "inv_name"))
-        for i = 2,#dt.items do
-            str = str..", "..game.translate_string(ini:r_string(dt.items[i].section, "inv_name"))
-        end
-        str = str.."."
-        return str
-	else
-		printf("ERROR! items are not set in treasure [%s]", dt.section)
-        return game.translate_string("treasure_dialog_11131")
+	local str = trans(ini:r_string(dt_items[1].section, "inv_name"))
+	for i = 2, #dt_items do
+		str = str..", "..trans(ini:r_string(dt_items[i].section, "inv_name"))
 	end
---	return game.translate_string(system_ini():r_string(dt.items[1].section, "inv_name"))
+	return str.."."
 end

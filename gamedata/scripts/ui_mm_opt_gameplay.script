@@ -16,16 +16,67 @@ function opt_gameplay:InitControls(x, y, xml, handler)
 	self.bk = xml:InitFrame("frame_gameplay", self)
 	
 	xml:InitStatic("tab_gameplay:cap_difficulty",		self)
-	
-	xml:InitCheck("tab_gameplay:check_tips",			self)
-	xml:InitCheck("tab_gameplay:check_crosshair",		self)
-	xml:InitCheck("tab_gameplay:check_dyn_crosshair", 	self)
-	xml:InitCheck("tab_gameplay:check_show_weapon", 	self)
-	xml:InitCheck("tab_gameplay:check_dist", 			self)
-	xml:InitCheck("tab_gameplay:check_autoreload", 		self)
-	xml:InitComboBox("tab_gameplay:list_difficulty",	self)
 
-	local btn
-	btn = xml:Init3tButton	("tab_gameplay:btn_check_updates", self)
-	handler:Register		(btn, "btn_check_updates")
+	local chk_tips = xml:InitCheck("tab_gameplay:check_tips", self)
+	local chk_crosshair = xml:InitCheck("tab_gameplay:check_crosshair",	self)
+	local chk_dyn_crosshair = xml:InitCheck("tab_gameplay:check_dyn_crosshair", self)
+	xml:InitCheck("tab_gameplay:check_show_weapon", 	self)
+	local chk_dist = xml:InitCheck("tab_gameplay:check_dist", self)
+	xml:InitCheck("tab_gameplay:check_autoreload", 		self)
+	-- GS pda_autozoom / pda_savezoomstate: the xml node alone is not enough, every control on this
+	-- tab has to be constructed here by name or it simply never appears.
+	-- pda_3d is the master switch: off = the stock full-screen PDA, and the two below mean nothing,
+	-- so they are hung off it as depend controls and grey out with it (CUICheckButton::Update).
+	local chk_pda_3d		= xml:InitCheck("tab_gameplay:check_pda_3d",			self)
+	local chk_pda_autozoom	= xml:InitCheck("tab_gameplay:check_pda_autozoom",	self)
+	local chk_pda_savezoom	= xml:InitCheck("tab_gameplay:check_pda_savezoom",	self)
+	chk_pda_3d:AddDependControl(chk_pda_autozoom)
+	chk_pda_3d:AddDependControl(chk_pda_savezoom)
+	-- The 3D PDA is an R2/R3 thing (gwr_pda_3d_enabled), so while R1 is RUNNING the switch is greyed out,
+	-- and its two dependants follow it (CUICheckButton::Update reads the master's IsEnabled). The running
+	-- renderer, not the one picked in the list: a new pick only starts after a restart.
+	chk_pda_3d:Enable(not render_is_r1())
+	-- show the quick-use slot icons on the hud (display only, the keys keep working)
+	local chk_quick_slots = xml:InitCheck("tab_gameplay:check_show_quick_slots", self)
+	-- the whole interface on/off (hud_draw)
+	local chk_hud = xml:InitCheck("tab_gameplay:check_hud",	self)
+	-- GS medicine intoxication (gunsl_peredoz.script). Off = vanilla: a medkit has no
+	-- aftermath at all.
+	local chk_intox = xml:InitCheck("tab_gameplay:check_intoxication",	self)
+	-- Sprint on hold: the key is held instead of toggled, and a new sprint waits for the
+	-- sprint-out animation to finish. Off = the stock toggle.
+	xml:InitCheck("tab_gameplay:check_sprint_on_hold",	self)
+	-- ...and, separately from the mode above, whether a reload ends the sprint.
+	xml:InitCheck("tab_gameplay:check_reload_in_sprint",	self)
+
+	local list_difficulty = xml:InitComboBox("tab_gameplay:list_difficulty", self)
+	-- Master means playing blind: no interface, no crosshair, and no way to turn either back on --
+	-- the engine holds both flags down and the console refuses them too (CCC_HudMask). Grey the two
+	-- boxes out the moment master is picked, so the menu says the same thing the game does.
+	-- 3 = egdMaster (game_cl_single.h, difficulty_type_token).
+	list_difficulty:AddDisabledOnValue(3, chk_hud)
+	-- The crosshair goes one difficulty EARLIER than the rest of the interface -- Gunslinger drops it
+	-- from veteran up (CanDrawCrosshairNow), and the engine holds hud_crosshair down from there too,
+	-- so grey it (and the two settings that only mean something with a crosshair on screen) at both
+	-- veteran and master. 2 = egdVeteran, 3 = egdMaster.
+	list_difficulty:AddDisabledOnValue(2, chk_crosshair)
+	list_difficulty:AddDisabledOnValue(3, chk_crosshair)
+	list_difficulty:AddDisabledOnValue(2, chk_dyn_crosshair)
+	list_difficulty:AddDisabledOnValue(3, chk_dyn_crosshair)
+	list_difficulty:AddDisabledOnValue(2, chk_dist)
+	list_difficulty:AddDisabledOnValue(3, chk_dist)
+	-- NPC identification is drawn AT the crosshair and reads whatever is under it, so it belongs to
+	-- the crosshair group and goes at the same veteran threshold (the engine holds hud_info down too).
+	list_difficulty:AddDisabledOnValue(2, chk_tips)
+	list_difficulty:AddDisabledOnValue(3, chk_tips)
+	-- The quick-slot panel is part of the interface, and on master there is no interface at all, so
+	-- the setting has nothing to act on: the engine holds hud_show_quick_slots down there and gives
+	-- the player's own choice back at a lower difficulty (CCC_HudMask). Grey it to say so.
+	list_difficulty:AddDisabledOnValue(3, chk_quick_slots)
+
+	-- Novice has no intoxication whatever the box says: Gunslinger exempts the easiest
+	-- difficulty outright (gunsl_peredoz zeroes the level there), so grey it out and let the
+	-- menu say the same thing the game does. 0 = egdNovice.
+	list_difficulty:AddDisabledOnValue(0, chk_intox)
+
 end

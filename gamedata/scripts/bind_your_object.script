@@ -1,0 +1,6 @@
+class "bind_your_object" (object_binder)
+
+function bind_your_object:net_spawn(data)
+    self.object:play_cycle("static_bandit_01_idle")
+    return true
+end

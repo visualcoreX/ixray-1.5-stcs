@@ -1,5 +1,5 @@
-function printf()
-end
+--function printf()
+--end
 
 local dist_walk = 10 -- < dist_run
 local dist_run = 2500
@@ -7,7 +7,7 @@ local dist_run = 2500
 local walk_min_time = 3000
 local run_min_time = 2000
 
-local keep_state_min_time = 1500 -- Ð¿ÐµÑ€ÐµÐºÐ»ÑŽÑ‡Ð¸Ð²ÑˆÐ¸ÑÑŒ Ð² ÑÐ¾ÑÑ‚Ð¾ÑÐ½Ð¸Ðµ (Ð±ÐµÐ³, Ñ…Ð¾Ð´ÑŒÐ±Ð°, ÑÐ¿Ñ€Ð¸Ð½Ñ‚), Ð½Ðµ Ð¿ÐµÑ€ÐµÐºÐ»ÑŽÑ‡Ð°Ñ‚ÑŒÑÑ Ð² Ð´Ñ€ÑƒÐ³Ð¾Ðµ N ms
+local keep_state_min_time = 1500 -- ïåðåêëþ÷èâøèñü â ñîñòîÿíèå (áåã, õîäüáà, ñïðèíò), íå ïåðåêëþ÷àòüñÿ â äðóãîå N ms
 
 local default_wait_time = 10000
 local default_state_standing = "guard"
@@ -25,23 +25,23 @@ local state_standing = 2
 local sync = {}
 -------------------------------------------------------------------------------------------------------------------------
 function choose_look_point(patrol_look, path_look_info, search_for)
-	local this_val -- Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ Ñ„Ð»Ð°Ð³Ð¾Ð² Ñ‚ÐµÐºÑƒÑ‰ÐµÐ¹ Ñ‚Ð¾Ñ‡ÐºÐ¸
-	local pts_found_total_weight = 0 -- ÐºÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ð¾ Ð½Ð°Ð¹Ð´ÐµÐ½Ð½Ñ‹Ñ… Ñ‚Ð¾Ñ‡ÐµÐº (Ñ Ð½ÑƒÐ¶Ð½Ñ‹Ð¼Ð¸ Ñ„Ð»Ð°Ð³Ð°Ð¼Ð¸)
-	local pt_chosen_idx = nil -- Ð¸Ð½Ð´ÐµÐºÑ Ð²Ñ‹Ð±Ñ€Ð°Ð½Ð½Ð¾Ð¹ Ñ‚Ð¾Ñ‡ÐºÐ¸
+	local this_val -- çíà÷åíèå ôëàãîâ òåêóùåé òî÷êè
+	local pts_found_total_weight = 0 -- êîëè÷åñòâî íàéäåííûõ òî÷åê (ñ íóæíûìè ôëàãàìè)
+	local pt_chosen_idx = nil -- èíäåêñ âûáðàííîé òî÷êè
 	local r
 	local num_equal_pts = 0
 	for look_idx = 0, patrol_look:count() - 1 do
 		this_val = path_look_info[look_idx].flags
 		if this_val:equal(search_for) then
 			num_equal_pts = num_equal_pts + 1
-			-- ÐÐ°ÑˆÐ»Ð¸ Ñ‚Ð¾Ñ‡ÐºÑƒ Ñ Ð½ÑƒÐ¶Ð½Ñ‹Ð¼Ð¸ Ñ„Ð»Ð°Ð³Ð°Ð¼Ð¸, Ð½Ð¾ Ð¿Ð¾ÑÐºÐ¾Ð»ÑŒÐºÑƒ Ð² Ð¿ÑƒÑ‚Ð¸ Ð¼Ð¾Ð³ÑƒÑ‚ Ð±Ñ‹Ñ‚ÑŒ ÐµÑ‰Ðµ Ñ‚Ð°ÐºÐ¸Ðµ-Ð¶Ðµ
-			-- Ñ‚Ð¾Ñ‡ÐºÐ¸, Ð²Ð¾Ð·ÑŒÐ¼ÐµÐ¼ Ñ‚ÐµÐºÑƒÑ‰ÑƒÑŽ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ñ Ð½ÐµÐºÐ¾Ñ‚Ð¾Ñ€Ð¾Ð¹ Ð²ÐµÑ€Ð¾ÑÑ‚Ð½Ð¾ÑÑ‚ÑŒÑŽ:
-			-- Ð¨Ð°Ð½Ñ, Ñ ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ð¼ Ð½Ð° Ñ‚Ð¾Ñ‡ÐºÑƒ Ð¿Ð¾ÑÐ¼Ð¾Ñ‚Ñ€Ð¸Ñ‚ Ð¿ÐµÑ€ÑÐ¾Ð½Ð°Ð¶:
+			-- Íàøëè òî÷êó ñ íóæíûìè ôëàãàìè, íî ïîñêîëüêó â ïóòè ìîãóò áûòü åùå òàêèå-æå
+			-- òî÷êè, âîçüìåì òåêóùóþ òîëüêî ñ íåêîòîðîé âåðîÿòíîñòüþ:
+			-- Øàíñ, ñ êîòîðûì íà òî÷êó ïîñìîòðèò ïåðñîíàæ:
 			local point_look_weight = path_look_info[look_idx]["p"]
 			if point_look_weight then
 				point_look_weight = tonumber(point_look_weight)
 			else
-				point_look_weight = 100 -- Ð¿Ð¾ ÑƒÐ¼Ð¾Ð»Ñ‡Ð°Ð½Ð¸ÑŽ Ñƒ Ð²ÑÐµÑ… Ñ‚Ð¾Ñ‡ÐµÐº Ð²ÐµÑ = 100
+				point_look_weight = 100 -- ïî óìîë÷àíèþ ó âñåõ òî÷åê âåñ = 100
 			end
 			pts_found_total_weight = pts_found_total_weight + point_look_weight
 			r = math.random(1, pts_found_total_weight)
@@ -70,7 +70,7 @@ function move_mgr:initialize(npc)
 
 	self.object:set_callback(callback.patrol_path_in_point, self.waypoint_callback, self)
 end
---' Ð£Ð´Ð¾ÑÑ‚Ð¾Ð²ÐµÑ€ÑÐµÑ‚ÑÑ, Ñ‡Ñ‚Ð¾ Ð¿ÑƒÑ‚Ð¸ Ð¸ Ñ„Ð»Ð°Ð¶ÐºÐ¸ Ð½Ð° Ð½Ð¸Ñ… Ð¿Ñ€Ð¾ÑÑ‚Ð°Ð²Ð»ÐµÐ½Ñ‹ ÐºÐ¾Ñ€Ñ€ÐµÐºÑ‚Ð½Ð¾
+--' Óäîñòîâåðÿåòñÿ, ÷òî ïóòè è ôëàæêè íà íèõ ïðîñòàâëåíû êîððåêòíî
 function move_mgr:validate_paths()
 	if self.no_validation then
 		return
@@ -86,7 +86,7 @@ end
 
 function move_mgr:extrapolate_callback(npc)
 	self.can_use_get_current_point_index = true
-	self.current_point_init_time = time_global()
+--	self.current_point_init_time = time_global()
 	self.current_point_index = self.object:get_current_point_index()
 end
 
@@ -101,25 +101,25 @@ function move_mgr:standing_on_terminal_waypoint()
 	return false
 end
 
---' ÐœÐ¾Ð¶ÐµÑ‚ Ð±Ñ‹Ñ‚ÑŒ Ð²Ñ‹Ð·Ð²Ð°Ð½Ð¾ Ð²Ð½ÐµÑˆÐ½Ð¸Ð¼ ÑÐºÑ€Ð¸Ð¿Ñ‚Ð¾Ð¼ Ð¿Ð¾ÑÐ»Ðµ Ð²Ñ‹Ð·Ð¾Ð²Ð° reset() Ð¸ Ð´Ð¾ Ð²Ñ‹Ð·Ð¾Ð²Ð° finalize()
---' Ð’Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ true, ÐµÑÐ»Ð¸ Ð¿ÐµÑ€ÑÐ¾Ð½Ð°Ð¶ Ð¿Ñ€Ð¸Ð±Ñ‹Ð» Ð² ÐºÐ¾Ð½ÐµÑ‡Ð½ÑƒÑŽ Ñ‚Ð¾Ñ‡ÐºÑƒ Ð¿ÑƒÑ‚Ð¸
+--' Ìîæåò áûòü âûçâàíî âíåøíèì ñêðèïòîì ïîñëå âûçîâà reset() è äî âûçîâà finalize()
+--' Âîçâðàùàåò true, åñëè ïåðñîíàæ ïðèáûë â êîíå÷íóþ òî÷êó ïóòè
 function move_mgr:at_terminal_waypoint()
 	return self.at_terminal_waypoint_flag
 end
 
---' Ð˜Ð· move_cb Ð²ÐµÑ€Ð½ÑƒÑ‚ÑŒ true, Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð¿Ñ€Ð¸Ð¾ÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ Ñ€Ð°Ð±Ð¾Ñ‚Ñƒ ÑÑ…ÐµÐ¼Ñ‹. Ð§Ñ‚Ð¾Ð±Ñ‹ Ð¿Ñ€Ð¾Ð´Ð¾Ð»Ð¶Ð¸Ñ‚ÑŒ Ð´Ð²Ð¸Ð¶ÐµÐ½Ð¸Ðµ,
---' Ð½ÑƒÐ¶Ð½Ð¾ Ð²Ñ‹Ð·Ð²Ð°Ñ‚ÑŒ Ð¼ÐµÑ‚Ð¾Ð´ set_movement_state, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ð¹ Ð²ÐºÐ»ÑŽÑ‡Ð¸Ñ‚ Ð¿ÐµÑ€ÐµÐ¼ÐµÑ‰ÐµÐ½Ð¸Ðµ Ð¿Ð¾ Ð²ÐµÐ¹Ð¿Ð¾Ð¸Ð½Ñ‚Ð°Ð¼ Ñ Ð½ÑƒÐ¶Ð½Ð¾Ð¹
---' ÑÐºÐ¾Ñ€Ð¾ÑÑ‚ÑŒÑŽ.
+--' Èç move_cb âåðíóòü true, ÷òîáû ïðèîñòàíîâèòü ðàáîòó ñõåìû. ×òîáû ïðîäîëæèòü äâèæåíèå,
+--' íóæíî âûçâàòü ìåòîä set_movement_state, êîòîðûé âêëþ÷èò ïåðåìåùåíèå ïî âåéïîèíòàì ñ íóæíîé
+--' ñêîðîñòüþ.
 function move_mgr:reset(path_walk, path_walk_info, path_look, path_look_info, team, suggested_state, move_cb_info, no_validation, continue, use_default_sound)
-	printf("move_mgr:reset() [%s]", self.object:name())
+	--printf("move_mgr:reset() [%s]", self.object:name())
 
-	--' ÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð¶Ð´Ð°Ñ‚ÑŒ Ð² Ñ‚Ð¾Ñ‡ÐºÐµ, Ð³Ð´Ðµ Ð¸Ð³Ñ€Ð°ÐµÐ¼ Ð°Ð½Ð¸Ð¼Ð°Ñ†Ð¸ÑŽ 
+	--' ñêîëüêî æäàòü â òî÷êå, ãäå èãðàåì àíèìàöèþ 
 	self.pt_wait_time = default_wait_time
 
-	--' Ð—Ð°Ð¿Ð¾Ð¼Ð¸Ð½Ð°ÐµÐ¼ Ð¼Ð°ÑÑÐ¸Ð² Ñ†ÐµÐ»Ð¸ÐºÐ¾Ð¼ Ð½Ð° ÑÐ»ÑƒÑ‡Ð°Ð¹, ÐµÑÐ»Ð¸ Ð¿Ñ€Ð¸Ð´ÐµÑ‚ÑÑ ÑÐµÐ±Ñ ÑÐ±Ñ€Ð¾ÑÐ¸Ñ‚ÑŒ, Ð¿Ð¾Ð²Ñ‚Ð¾Ñ€Ð½Ð¾
-	--' Ð²Ñ‹Ð·Ð²Ð°Ð² reset():
+	--' Çàïîìèíàåì ìàññèâ öåëèêîì íà ñëó÷àé, åñëè ïðèäåòñÿ ñåáÿ ñáðîñèòü, ïîâòîðíî
+	--' âûçâàâ reset():
 	self.suggested_state = suggested_state
-	--' ÐŸÐ¾ÑÐ»Ðµ ÑÑ‚Ð¾Ð³Ð¾ Ñ€Ð°ÑÐ¿Ð°Ñ€ÑÐ¸Ð²Ð°ÐµÐ¼ Ð¼Ð°ÑÑÐ¸Ð²:
+	--' Ïîñëå ýòîãî ðàñïàðñèâàåì ìàññèâ:
 	if not suggested_state then
 		self.default_state_standing = default_state_standing
 		self.default_state_moving1 = default_state_moving1
@@ -132,21 +132,21 @@ function move_mgr:reset(path_walk, path_walk_info, path_look, path_look_info, te
 		self.default_state_moving3 = if_then_else(suggested_state.moving, suggested_state.moving, default_state_moving3)
 	end
 
-	self.default_state_standing = xr_logic.parse_condlist(self.object, "move_mgr", "def_state", self.default_state_standing)
-	self.default_state_moving1  = xr_logic.parse_condlist(self.object, "move_mgr", "def_state", self.default_state_moving1)
-	self.default_state_moving2  = xr_logic.parse_condlist(self.object, "move_mgr", "def_state", self.default_state_moving2)
-	self.default_state_moving3  = xr_logic.parse_condlist(self.object, "move_mgr", "def_state", self.default_state_moving3)
+	self.default_state_standing = xr_logic.parse_condlist(nil, nil, nil, self.default_state_standing)
+	self.default_state_moving1  = xr_logic.parse_condlist(nil, nil, nil, self.default_state_moving1)
+	self.default_state_moving2  = xr_logic.parse_condlist(nil, nil, nil, self.default_state_moving2)
+	self.default_state_moving3  = xr_logic.parse_condlist(nil, nil, nil, self.default_state_moving3)
 
-	--' Ð¡ Ð¼Ð¾Ð¼ÐµÐ½Ñ‚Ð° Ð²ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ñ ÑÑ…ÐµÐ¼Ñ‹ Ð´Ð¾Ð»Ð¶Ð½Ð° Ð¿Ñ€Ð¾Ð¹Ñ‚Ð¸ ÐºÐ°Ðº Ð¼Ð¸Ð½Ð¸Ð¼ÑƒÐ¼ ÑÐµÐºÑƒÐ½Ð´Ð°, Ð¿Ñ€ÐµÐ¶Ð´Ðµ Ñ‡ÐµÐ¼
-	--' Ð¿Ñ€Ð¾Ð²ÐµÑ€ÑÑ‚ÑŒ ÑÐ¾ÑÑ‚Ð¾ÑÐ½Ð¸Ðµ ÑÐ¸Ð½Ñ…Ñ€Ð¾Ð½Ð¸Ð·Ð°Ñ†Ð¸Ð¸ Ñ Ð´Ñ€ÑƒÐ³Ð¸Ð¼Ð¸ ÑÑ‚Ð°Ð»ÐºÐµÑ€Ð°Ð¼Ð¸ (Ð¸Ð½Ð°Ñ‡Ðµ Ð¿Ð¾ÑÐ»Ðµ Ð»Ð¾Ð°Ð´Ð°
-	--' Ð¾Ð½Ð¸ Ð¼Ð¾Ð³ÑƒÑ‚ Ð½Ðµ ÑƒÑÐ¿ÐµÑ‚ÑŒ Ð·Ð°ÑÐ¿Ð°Ð²Ð½Ð¸Ñ‚ÑŒÑÑ).
+	--' Ñ ìîìåíòà âêëþ÷åíèÿ ñõåìû äîëæíà ïðîéòè êàê ìèíèìóì ñåêóíäà, ïðåæäå ÷åì
+	--' ïðîâåðÿòü ñîñòîÿíèå ñèíõðîíèçàöèè ñ äðóãèìè ñòàëêåðàìè (èíà÷å ïîñëå ëîàäà
+	--' îíè ìîãóò íå óñïåòü çàñïàâíèòüñÿ).
 	self.syn_signal_set_tm = time_global() + 1000
 	self.syn_signal = nil
 
 	self.move_cb_info = move_cb_info
 	 
-	--' Ð’Ð¾Ð·Ð¼Ð¾Ð¶Ð½Ñ‹Ðµ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ
-	--' Ð˜Ð·Ð¼ÐµÐ½Ð¸Ð»Ð°ÑÑŒ ÐºÐ¾Ð¼Ð°Ð½Ð´Ð°
+	--' Âîçìîæíûå èçìåíåíèÿ
+	--' Èçìåíèëàñü êîìàíäà
 	if team ~= self.team then
 		self.team = team
 		if self.team then
@@ -159,7 +159,7 @@ function move_mgr:reset(path_walk, path_walk_info, path_look, path_look_info, te
 		end
 	end
 
-	--' Ð˜Ð·Ð¼ÐµÐ½Ð¸Ð»Ð¸ÑÑŒ Ð¿ÑƒÑ‚Ð¸
+	--' Èçìåíèëèñü ïóòè
 	if self.path_walk ~= path_walk or self.path_look ~= path_look then
 
 		self.no_validation = no_validation
@@ -202,8 +202,8 @@ function move_mgr:reset(path_walk, path_walk_info, path_look, path_look_info, te
 		self.retval_after_rotation = nil
 		self.sound_after_anim_start = nil
 
-		--' ÐŸÐ¾ÐºÐ° ÑÑ‚Ð¾Ñ‚ Ñ„Ð»Ð°Ð³ Ð½Ðµ ÑÑ‚Ð°Ð½ÐµÑ‚ true (Ð¾Ð½ Ð±ÑƒÐ´ÐµÑ‚ ÑƒÑÑ‚Ð°Ð½Ð¾Ð²Ð»ÐµÐ½ Ð² extrapolate_callback), Ð½ÐµÐ»ÑŒÐ·Ñ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÑŒ
-		--' Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ, ÐºÐ¾Ñ‚Ð¾Ñ€Ð¾Ðµ Ð²Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ get_current_point_index().
+		--' Ïîêà ýòîò ôëàã íå ñòàíåò true (îí áóäåò óñòàíîâëåí â extrapolate_callback), íåëüçÿ èñïîëüçîâàòü
+		--' çíà÷åíèå, êîòîðîå âîçâðàùàåò get_current_point_index().
 		self.can_use_get_current_point_index = false
 		self.current_point_index = nil
 		self.walk_until = time_global() + walk_min_time
@@ -221,10 +221,10 @@ function move_mgr:reset(path_walk, path_walk_info, path_look, path_look_info, te
 	self:setup_movement_by_patrol_path()
 end
 
---' Ð¿Ñ€Ð¾Ð´Ð¾Ð»Ð¶Ð¸Ñ‚ÑŒ Ð´Ð²Ð¸Ð¶ÐµÐ½Ð¸Ðµ ÑÐ¾ ÑÐ»ÐµÐ´ÑƒÑŽÑ‰ÐµÐ¹ Ñ‚Ð¾Ñ‡ÐºÐ¸, Ð° Ð½Ðµ Ñ Ð±Ð»Ð¸Ð¶Ð°Ð¹ÑˆÐµÐ¹.
---' ÑÐ¾ÑÑ‚Ð¾ÑÐ½Ð¸Ðµ move manager-a Ð½Ðµ ÑÐ±Ñ€Ð°ÑÑ‹Ð²Ð°ÐµÑ‚ÑÑ.
+--' ïðîäîëæèòü äâèæåíèå ñî ñëåäóþùåé òî÷êè, à íå ñ áëèæàéøåé.
+--' ñîñòîÿíèå move manager-a íå ñáðàñûâàåòñÿ.
 function move_mgr:continue()
-	printf("_bp: object '%s': continue moving", self.object:name())
+	--printf("_bp: object '%s': continue moving", self.object:name())
 	self:setup_movement_by_patrol_path()
 end
 
@@ -243,11 +243,11 @@ function move_mgr:setup_movement_by_patrol_path()
 
 	local is_term, idx = self:standing_on_terminal_waypoint()
 	if is_term then
-		printf("_bp: object '%s': TERMINAL WAYPOINT", self.object:name())
-		-- Ð¡Ñ‚Ð¾Ð¸Ð¼ Ð½Ð° Ñ‚ÐµÑ€Ð¼Ð¸Ð½Ð°Ð»ÑŒÐ½Ð¾Ð¹ Ð²ÐµÑ€ÑˆÐ¸Ð½Ðµ Ð¿ÑƒÑ‚Ð¸  - ÑÑ€Ð°Ð·Ñƒ Ð¸Ð¼Ð¼Ð¸Ñ‚Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ð¿Ñ€Ð¸Ð±Ñ‹Ñ‚Ð¸Ðµ
+		--printf("_bp: object '%s': TERMINAL WAYPOINT", self.object:name())
+		-- Ñòîèì íà òåðìèíàëüíîé âåðøèíå ïóòè  - ñðàçó èììèòèðîâàòü ïðèáûòèå
 		self:waypoint_callback(self.object, nil, idx)
 	else
-		-- Ð ÐµÐ°Ð»ÑŒÐ½Ð¾ Ð¸Ð´ÐµÐ¼ Ð² Ð²ÐµÑ€ÑˆÐ¸Ð½Ñƒ
+		-- Ðåàëüíî èäåì â âåðøèíó
 		self:update_movement_state()
 	end
 
@@ -259,8 +259,8 @@ function move_mgr:arrived_to_first_waypoint()
 end
 
 
---' ÐŸÑ€Ð¾Ð²ÐµÑ€ÐºÐ° ÑÐ¸Ð½Ñ…Ñ€Ð¾Ð½Ð¸Ð·Ð°Ñ†Ð¸Ð¸ Ñ Ð¾ÑÑ‚Ð°Ð»ÑŒÐ½Ñ‹Ð¼Ð¸ ÑÐ¾Ð»Ð´Ð°Ñ‚Ð°Ð¼Ð¸ Ð½Ð° Ð¿ÑƒÑ‚Ð¸.
---' Ð’Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ true, ÐµÑÐ»Ð¸ Ð´Ð°Ð»ÑŒÐ½ÐµÐ¹ÑˆÐµÐµ Ð´Ð²Ð¸Ð¶ÐµÐ½Ð¸Ðµ Ñ€Ð°Ð·Ñ€ÐµÑˆÐµÐ½Ð¾.
+--' Ïðîâåðêà ñèíõðîíèçàöèè ñ îñòàëüíûìè ñîëäàòàìè íà ïóòè.
+--' Âîçâðàùàåò true, åñëè äàëüíåéøåå äâèæåíèå ðàçðåøåíî.
 function move_mgr:sync_ok()
 	if self.team then
 		local s = sync[self.team]
@@ -297,8 +297,8 @@ function move_mgr:update()
 			self.keep_state_until = t + keep_state_min_time
 
 			local cur_pt = self.current_point_index
-			-- self.patrol_walk Ð·Ð´ÐµÑÑŒ Ð¿Ð¾ Ð¸Ð´ÐµÐµ Ñ‚Ð¾ Ð¶Ðµ ÑÐ°Ð¼Ð¾Ðµ, Ñ‡Ñ‚Ð¾ Ð²ÐµÑ€Ð½ÐµÑ‚ patrol(self.object:patrol()),
-			-- Ð¿Ð¾ÑÑ‚Ð¾Ð¼Ñƒ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÑŽ ÐµÐ³Ð¾ Ð´Ð»Ñ Ð¾Ð¿Ñ‚Ð¸Ð¼Ð¸Ð·Ð°Ñ†Ð¸Ð¸.
+			-- self.patrol_walk çäåñü ïî èäåå òî æå ñàìîå, ÷òî âåðíåò patrol(self.object:patrol()),
+			-- ïîýòîìó èñïîëüçóþ åãî äëÿ îïòèìèçàöèè.
 			local dist = self.object:position():distance_to(self.patrol_walk:point(cur_pt))
 			--printf("_bp: move_mgr: distance to destination waypoint: %d", dist)
 			if dist <= dist_walk or t < self.walk_until then
@@ -323,7 +323,7 @@ function move_mgr:finalize(npc)
 	if self.team then
 		sync[self.team][self.object:id()] = nil
 	end
-	-- Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð¸Ð·Ð±ÐµÐ¶Ð°Ñ‚ÑŒ Ð´Ð°Ð»ÑŒÐ½ÐµÐ¹ÑˆÐµÐ³Ð¾ Ð´Ð²Ð¸Ð¶ÐµÐ½Ð¸Ñ Ð¿Ð¾ Ð¿ÑƒÑ‚Ð¸ Ð¿Ñ€Ð¸ ÑƒÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐµ Ñ€ÐµÑÑ‚Ñ€Ð¸ÐºÑ‚Ð¾Ñ€Ð¾Ð²
+	-- ÷òîáû èçáåæàòü äàëüíåéøåãî äâèæåíèÿ ïî ïóòè ïðè óñòàíîâêå ðåñòðèêòîðîâ
 	self.object:set_path_type(game_object.level_path)
 end
 
@@ -331,12 +331,12 @@ end
 --' IMPLEMENTATION
 --'-----------------------------------------------------------------------------
 function move_mgr:update_movement_state()
-	printf("%s UPDATE movement state to %s", self.object:name(), self.cur_state_moving)
+	--printf("%s UPDATE movement state to %s", self.object:name(), self.cur_state_moving)
 	state_mgr.set_state(self.object, self.cur_state_moving, nil, nil, nil)
 end
 
 function move_mgr:update_standing_state(look_pos, snd)
-	printf("_bp [%s]: update_standing_state: snd='%s', pt_wait_time = %s path = %s", self.object:name(), utils.to_str(snd), utils.to_str(self.pt_wait_time),  self.path_walk)
+	--printf("_bp [%s]: update_standing_state: snd='%s', pt_wait_time = %s path = %s", self.object:name(), utils.to_str(snd), utils.to_str(self.pt_wait_time),  self.path_walk)
 	state_mgr.set_state(self.object, self.cur_state_standing,
 		{ obj = self, func = self.time_callback, turn_end_func = self.turn_end_callback },
 		self.pt_wait_time,
@@ -346,27 +346,27 @@ function move_mgr:update_standing_state(look_pos, snd)
 end
 
 function move_mgr:time_callback()
-	printf("_bp [%s]: time_callback", self.object:name())
+	--printf("_bp [%s]: time_callback", self.object:name())
 	local sigtm = self.path_look_info[self.last_look_index]["sigtm"]
 	if sigtm then
 		self:scheme_set_signal(sigtm)
 	end
-	--' Ð•ÑÐ»Ð¸ Ð½ÐµÑ‚ Ð°ÐºÑ‚Ð¸Ð²Ð½Ð¾Ð¹ ÑÑ…ÐµÐ¼Ñ‹ - Ð¸Ð³Ð½Ð¾Ñ€Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ.
+	--' Åñëè íåò àêòèâíîé ñõåìû - èãíîðèðîâàòü.
 	if db.storage[self.object:id()].active_scheme == nil then
 		return
 	end
 	if self.last_index and self.patrol_walk:terminal(self.last_index) then
 		if utils.stalker_at_waypoint(self.object, self.patrol_walk, self.last_index) then
-			--' Ð•ÑÐ»Ð¸ ÑÑ‚Ð¾Ð¸Ð¼ Ð½Ð° ÐºÐ¾Ð½ÐµÑ‡Ð½Ð¾Ð¹ Ñ‚Ð¾Ñ‡ÐºÐµ Ð¿ÑƒÑ‚Ð¸ Ð¸ Ñ Ð½ÐµÐµ Ð½Ð¸ÐºÑƒÐ´Ð° Ð½Ðµ ÑÐ´Ð²Ð¸Ð½ÑƒÐ»Ð¸ÑÑŒ,
-			--' ÑÑ€Ð°Ð·Ñƒ Ð¸Ð¼Ð¼Ð¸Ñ‚Ð¸Ñ€ÑƒÐµÐ¼ callback Ð½Ð° Ð¿Ñ€Ð¸Ð±Ñ‹Ñ‚Ð¸Ðµ, Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð²ÐºÐ»ÑŽÑ‡Ð¸Ñ‚ÑŒ look.
+			--' Åñëè ñòîèì íà êîíå÷íîé òî÷êå ïóòè è ñ íåå íèêóäà íå ñäâèíóëèñü,
+			--' ñðàçó èììèòèðóåì callback íà ïðèáûòèå, ÷òîáû âêëþ÷èòü look.
 			self:waypoint_callback(self.object, nil, self.last_index)
 			return
 		end
-		--' Ð¡Ñ‚Ð¾Ð¸Ð¼ Ð½Ð° ÐºÐ¾Ð½ÐµÑ‡Ð½Ð¾Ð¹ Ñ‚Ð¾Ñ‡ÐºÐµ Ð¿ÑƒÑ‚Ð¸, Ð½Ð¾ Ð½ÐµÑ‚Ð¾Ñ‡Ð½Ð¾. Ð§Ñ‚Ð¾Ð±Ñ‹ Ð²ÐµÑ€Ð½ÑƒÑ‚ÑŒÑÑ Ð½Ð° Ð±Ð»Ð¸Ð¶Ð°Ð¹ÑˆÑƒÑŽ
-		--' Ñ‚Ð¾Ñ‡ÐºÑƒ Ð¿ÑƒÑ‚Ð¸, ÑÐ±Ñ€Ð°ÑÑ‹Ð²Ð°ÐµÐ¼ ÑÑ…ÐµÐ¼Ñƒ. ÐžÐ±Ñ€Ð°Ñ‚Ð¸Ñ‚Ðµ Ð²Ð½Ð¸Ð¼Ð°Ð¸Ð½Ðµ, Ñ‡Ñ‚Ð¾ Ð·Ð´ÐµÑÑŒ Ð½ÐµÐ»ÑŒÐ·Ñ
-		--' Ð¿Ñ€Ð¾ÑÑ‚Ð¾ Ð²Ñ‹Ð·Ð²Ð°Ñ‚ÑŒ update_movement_state, Ð¿Ð¾Ñ‚Ð¾Ð¼Ñƒ Ñ‡Ñ‚Ð¾ Ð¼Ñ‹ Ð£Ð–Ð• Ð±Ñ‹Ð»Ð¸ Ð²
-		--' ÐºÐ¾Ð½ÐµÑ‡Ð½Ð¾Ð¹ Ñ‚Ð¾Ñ‡ÐºÐµ Ð¿ÑƒÑ‚Ð¸ Ð¸ Ð´Ð°Ð»ÑŒÑˆÐµ Ð¸Ð´Ñ‚Ð¸ Ð½ÐµÐºÑƒÐ´Ð°, Ð° reset_scheme ÑÐ±Ñ€Ð¾ÑÐ¸Ñ‚
-		--' Ð½Ð°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ¸ movement manager-Ð° Ð¸ Ð²Ñ‹Ð±ÐµÑ€ÐµÑ‚ Ð±Ð»Ð¸Ð¶Ð°Ð¹ÑˆÑƒÑŽ Ñ‚Ð¾Ñ‡ÐºÑƒ, ÐºÑƒÐ´Ð° Ð¸ Ð¿Ð¾Ð¹Ð´ÐµÑ‚.
+		--' Ñòîèì íà êîíå÷íîé òî÷êå ïóòè, íî íåòî÷íî. ×òîáû âåðíóòüñÿ íà áëèæàéøóþ
+		--' òî÷êó ïóòè, ñáðàñûâàåì ñõåìó. Îáðàòèòå âíèìàèíå, ÷òî çäåñü íåëüçÿ
+		--' ïðîñòî âûçâàòü update_movement_state, ïîòîìó ÷òî ìû ÓÆÅ áûëè â
+		--' êîíå÷íîé òî÷êå ïóòè è äàëüøå èäòè íåêóäà, à reset_scheme ñáðîñèò
+		--' íàñòðîéêè movement manager-à è âûáåðåò áëèæàéøóþ òî÷êó, êóäà è ïîéäåò.
 		self:reset(self.path_walk, self.path_walk_info,
 			self.path_look, self.path_look_info,
 			self.team,
@@ -374,7 +374,7 @@ function move_mgr:time_callback()
 			self.move_cb_info,
 			self.no_validation)
 	else
-		self:update_movement_state() -- Ð¸Ð´Ñ‚Ð¸ Ð´Ð°Ð»ÑŒÑˆÐµ
+		self:update_movement_state() -- èäòè äàëüøå
 		local syn = self.path_look_info[self.last_look_index]["syn"]
 		if syn then
 			abort("object '%s': path_walk '%s': syn flag used on non-terminal waypoint",
@@ -386,8 +386,7 @@ end
 function move_mgr:scheme_set_signal(sig)
 	local npc_id = self.object:id()
 	local stor = db.storage[npc_id]
-	printf("_bp: object '%s': move_mgr: scheme_set_signal '%s', active scheme '%s'",
-		self.object:name(), sig, utils.to_str(stor.active_scheme))
+	--printf("_bp: object '%s': move_mgr: scheme_set_signal '%s', active scheme '%s'", self.object:name(), sig, utils.to_str(stor.active_scheme))
 	if stor ~= nil and stor[stor.active_scheme] ~= nil then
 		local signals = stor[stor.active_scheme].signals
 		if signals ~= nil then
@@ -404,7 +403,7 @@ function move_mgr:turn_end_callback()
 			abort("object '%s': path_look '%s': syn flag uset without sig flag", self.object:name(), self.path_look)
 		end
 
-		-- ÐžÑ‚Ð¼ÐµÑ‚Ð¸Ñ‚ÑŒ, Ñ‡Ñ‚Ð¾ Ð¼Ñ‹ ÑÐ°Ð¼Ð¸ ÑƒÐ¶Ðµ Ð¿Ñ€Ð¸Ð±Ñ‹Ð»Ð¸ Ð² Ñ‚Ð¾Ñ‡ÐºÑƒ ÑÐ¸Ð½Ñ…Ñ€Ð¾Ð½Ð¸Ð·Ð°Ñ†Ð¸Ð¸:		
+		-- Îòìåòèòü, ÷òî ìû ñàìè óæå ïðèáûëè â òî÷êó ñèíõðîíèçàöèè:		
 		if self.team then
 			sync[self.team][self.object:id()] = true
 		end
@@ -420,7 +419,7 @@ function move_mgr:turn_end_callback()
 
 	local anim_synced_snd = nil
 	if self.sound_after_anim_start then
-		-- ÐŸÑ€Ð¾Ð¸Ð³Ñ€Ð°Ñ‚ÑŒ Ð·Ð²ÑƒÐº ÑÑ€Ð°Ð·Ñƒ Ð¿Ð¾ÑÐ»Ðµ Ð¾ÐºÐ¾Ð½Ñ‡Ð°Ð½Ð¸Ñ Ð¿Ð¾Ð²Ð¾Ñ€Ð¾Ñ‚Ð°:
+		-- Ïðîèãðàòü çâóê ñðàçó ïîñëå îêîí÷àíèÿ ïîâîðîòà:
 		anim_synced_snd = self.sound_after_anim_start
 		self.sound_after_anim_start = nil
 	end
@@ -431,16 +430,16 @@ function move_mgr:turn_end_callback()
 				"callback function wasn't registered in move_mgr:reset()",
 				self.object:name(), self.path_look)
 		end
-		--' ÐžÑ‚ÐºÐ»ÑŽÑ‡Ð°ÐµÐ¼ Ñ‚Ð°Ð¹Ð¼ÐµÑ€ Ð¿ÑƒÑ‚ÐµÐ¼ ÑƒÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ¸ Ñ‚Ð¾Ð³Ð¾ Ð¶Ðµ ÑÐ°Ð¼Ð¾Ð³Ð¾ ÑÐ¾ÑÑ‚Ð¾ÑÐ½Ð¸Ñ, Ð½Ð¾ Ð±ÐµÐ· Ñ‚Ð°Ð¹Ð¼ÐµÑ€Ð°,
-		--' Ð·Ð°Ñ‚ÐµÐ¼ Ð²Ñ‹Ð·Ñ‹Ð²Ð°ÐµÐ¼ callback.
-		--' Ð•ÑÐ»Ð¸ callback Ð²ÐµÑ€Ð½ÑƒÐ» false, Ñ‚.Ðµ. Ñ€ÐµÑˆÐ¸Ð» Ð½Ðµ Ð²Ð¼ÐµÑˆÐ¸Ð²Ð°Ñ‚ÑŒÑÑ Ð² Ð¿ÐµÑ€ÐµÐ¼ÐµÑ‰ÐµÐ½Ð¸Ðµ,
-		--' Ñ‚Ð¾ Ð²ÐºÐ»ÑŽÑ‡Ð°ÐµÐ¼ Ð¾Ð¿ÑÑ‚ÑŒ Ñ‚Ð°Ð¹Ð¼ÐµÑ€.
-		--' Ð•ÑÐ»Ð¸ callback Ð²ÐµÑ€Ð½ÑƒÐ» true - Ð½Ðµ Ð²Ð¾ÑÑÑ‚Ð°Ð½Ð°Ð²Ð»Ð¸Ð²Ð°ÐµÐ¼ Ñ‚Ð°Ð¹Ð¼ÐµÑ€ Ñ‚.Ðº. ÑÑ‚Ð¾ Ð¼Ð¾Ð³Ð»Ð¸ ÑÐ´ÐµÐ»Ð°Ñ‚ÑŒ Ð²
-		--' ÑÐ°Ð¼Ð¾Ð¼ callback-Ðµ.
+		--' Îòêëþ÷àåì òàéìåð ïóòåì óñòàíîâêè òîãî æå ñàìîãî ñîñòîÿíèÿ, íî áåç òàéìåðà,
+		--' çàòåì âûçûâàåì callback.
+		--' Åñëè callback âåðíóë false, ò.å. ðåøèë íå âìåøèâàòüñÿ â ïåðåìåùåíèå,
+		--' òî âêëþ÷àåì îïÿòü òàéìåð.
+		--' Åñëè callback âåðíóë true - íå âîññòàíàâëèâàåì òàéìåð ò.ê. ýòî ìîãëè ñäåëàòü â
+		--' ñàìîì callback-å.
 		
-		--' 1) ÐžÑ‚ÐºÐ»ÑŽÑ‡Ð°ÐµÐ¼ Ñ‚Ð°Ð¹Ð¼ÐµÑ€
+		--' 1) Îòêëþ÷àåì òàéìåð
 		state_mgr.set_state(self.object, self.cur_state_standing, nil, nil, nil)
-		--' 2) Ð’Ñ‹Ð·Ñ‹Ð²Ð°ÐµÐ¼ callback
+		--' 2) Âûçûâàåì callback
 		if not self.move_cb_info then
 			abort("object '%s': path_look '%s': ret flag is set, but " ..
 				"callback function wasn't registered in move_mgr:reset()",
@@ -449,20 +448,20 @@ function move_mgr:turn_end_callback()
 
 		if self.move_cb_info.func(self.move_cb_info.obj, this.arrival_after_rotation, self.retval_after_rotation, self.last_index)
 		then
-			--' Callback Ñ€ÐµÑˆÐ¸Ð» Ð¿ÐµÑ€ÐµÑ…Ð²Ð°Ñ‚Ð¸Ñ‚ÑŒ ÑƒÐ¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ Ð¿ÐµÑ€ÐµÐ¼ÐµÑ‰ÐµÐ½Ð¸ÐµÐ¼, Ð½Ðµ Ð²Ð¾ÑÑÑ‚Ð°Ð½Ð°Ð²Ð»Ð¸Ð²Ð°ÐµÐ¼ Ñ‚Ð°Ð¹Ð¼ÐµÑ€
+			--' Callback ðåøèë ïåðåõâàòèòü óïðàâëåíèå ïåðåìåùåíèåì, íå âîññòàíàâëèâàåì òàéìåð
 			return
 		end
-		--' Callback Ð½Ðµ Ð¿ÐµÑ€ÐµÑ…Ð²Ð°Ñ‚Ð¸Ð» ÑƒÐ¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ, Ð½ÑƒÐ¶Ð½Ð¾ Ð²Ð¾ÑÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ Ñ‚Ð°Ð¹Ð¼ÐµÑ€:
+		--' Callback íå ïåðåõâàòèë óïðàâëåíèå, íóæíî âîññòàíîâèòü òàéìåð:
 		local look_pos = self.patrol_look:point(self.last_look_index)
 		self:update_standing_state(look_pos, anim_synced_snd)
 	end
 end
 
 function move_mgr:waypoint_callback(obj, action_type, index)
-	printf("move_mgr:waypoint_callback(): name=%s, index=%d", self.object:name(), index)
+	--printf("move_mgr:waypoint_callback(): name=%s, index=%d", self.object:name(), index)
 	
 	if index == -1 or index == nil then
-		printf("ERROR: move_mgr: waypoint_callback: index is -1 or nil")
+		--printf("ERROR: move_mgr: waypoint_callback: index is -1 or nil")
 		return
 	end
 
@@ -470,13 +469,14 @@ function move_mgr:waypoint_callback(obj, action_type, index)
 
 	if self.patrol_walk:terminal(index) then
 		self.at_terminal_waypoint_flag = true
+		self:scheme_set_signal("path_end") -- moved here from below
 	end
 
 	local suggested_state_moving = self.path_walk_info[index]["a"]
 	if suggested_state_moving then
 		self.cur_state_moving = xr_logic.pick_section_from_condlist(db.actor, self.object, suggested_state_moving)
 		if tostring(self.cur_state_moving) == "true" then
-			print_table(suggested_state_moving)
+			--print_table(suggested_state_moving)
 			abort("!!!!!")
 		end
 	else
@@ -489,7 +489,7 @@ function move_mgr:waypoint_callback(obj, action_type, index)
 
 	local retv = self.path_walk_info[index]["ret"]
 	if retv then
-		printf("retv = %s", retv)
+		--printf("retv = %s", retv)
 		local retv_num = tonumber(retv)
 		
 		if not self.move_cb_info then
@@ -501,32 +501,40 @@ function move_mgr:waypoint_callback(obj, action_type, index)
 			return
 		end
 	end
+--[[
+	The block below contains 2 mistakes:
 
+	1. The elseif-statement should instead be a plain if-statement to ensure
+	   a defined signal does not clobber the 'path_end' signal.
+
+	2. #self.path_walk_info should not be decremented because '#' ignores the
+	   value at index 0.
+]]
 	local sig = self.path_walk_info[index]["sig"]
 	if sig then
 		self:scheme_set_signal(sig)
-	elseif index == #self.path_walk_info -1 then
-		self:scheme_set_signal("path_end")
+--	elseif index == #self.path_walk_info - 1 then
+--		self:scheme_set_signal("path_end")
 	end
 
 	local stop_probability = self.path_walk_info[index]["p"]
 	
 	if not self.patrol_look or
 	   (stop_probability and tonumber(stop_probability) < math.random(1, 100)) then
-		self:update_movement_state() --' Ð¸Ð´Ñ‚Ð¸ Ð´Ð°Ð»ÑŒÑˆÐµ
+		self:update_movement_state() --' èäòè äàëüøå
 		return
 	end
 
-	-- Ð—Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ Ñ„Ð»Ð°Ð³Ð¾Ð² Ñ‚Ð¾Ñ‡ÐºÐ¸, ÐºÐ¾Ñ‚Ð¾Ñ€ÑƒÑŽ Ð±ÑƒÐ´ÐµÐ¼ Ð¸ÑÐºÐ°Ñ‚ÑŒ:
+	-- Çíà÷åíèå ôëàãîâ òî÷êè, êîòîðóþ áóäåì èñêàòü:
 	local search_for = self.path_walk_info[index].flags
 
 	if search_for:get() == 0 then
-		self:update_movement_state() --' Ð¸Ð´Ñ‚Ð¸ Ð´Ð°Ð»ÑŒÑˆÐµ
+		self:update_movement_state() --' èäòè äàëüøå
 		return
 	end
 
 	local pt_chosen_idx, num_equal_pts = choose_look_point(self.patrol_look, self.path_look_info, search_for)
-	printf("_bp [%s]: pt_chosen_idx = %s", self.object:name(), utils.to_str(pt_chosen_idx))
+	--printf("_bp [%s]: pt_chosen_idx = %s", self.object:name(), utils.to_str(pt_chosen_idx))
 	if pt_chosen_idx then
 		local suggested_anim_set = self.path_look_info[pt_chosen_idx]["a"]
 		if suggested_anim_set then
@@ -564,8 +572,8 @@ function move_mgr:waypoint_callback(obj, action_type, index)
 
 		self.state = state_standing
 
-		--' Ð¡Ñ€Ð°Ð·Ñƒ Ð¶Ðµ ÑÑ‚Ð°Ñ€Ñ‚Ð¾Ð²Ð°Ñ‚ÑŒ update, Ð½Ðµ Ð¶Ð´Ð°Ñ‚ÑŒ execute. Ð¢Ð¾Ð³Ð´Ð°, ÐµÑÐ»Ð¸ Ð¼Ñ‹ ÑƒÐ¶Ðµ ÑÐ¼Ð¾Ñ‚Ñ€Ð¸Ð¼
-		--' Ð² Ð½ÑƒÐ¶Ð½ÑƒÑŽ ÑÑ‚Ð¾Ñ€Ð¾Ð½Ñƒ - Ð½Ðµ Ð±ÑƒÐ´ÐµÑ‚ Ð¿Ð°ÑƒÐ·Ñ‹ Ð² Ð½ÐµÑÐºÐ¾Ð»ÑŒÐºÐ¾ Ð¼Ð¸Ð»Ð»Ð¸ÑÐµÐºÑƒÐ½Ð´ Ð½Ð° Ð¿Ð¾Ð²Ð¾Ñ€Ð¾Ñ‚.
+		--' Ñðàçó æå ñòàðòîâàòü update, íå æäàòü execute. Òîãäà, åñëè ìû óæå ñìîòðèì
+		--' â íóæíóþ ñòîðîíó - íå áóäåò ïàóçû â íåñêîëüêî ìèëëèñåêóíä íà ïîâîðîò.
 		self:update()
 	else
 		abort("object '%s': path_walk '%s', index %d: cannot find corresponding point(s) on path_look '%s'",

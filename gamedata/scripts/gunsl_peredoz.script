@@ -1,0 +1,310 @@
+--[[
+	gunsl_peredoz.script -- Gunslinger medicine intoxication, ported to Clear Sky (IX-Ray 1.5 STCS).
+	Original: GS scripts/gunsl_peredoz.script (Sin!, 01 Dec 2016).
+
+	Every medkit, antirad and drug leaves a toxicity level behind. It decays on its own, so one
+	portion is never a problem; taking them one after another is, because most items add a term
+	PROPORTIONAL to what is already in the blood on top of their flat dose. Past 1.0 the screen
+	starts to swim in colour and noise, and past a difficulty-dependent threshold health drains.
+
+	Entirely script-side, like thirst: the level is one number in the actor's pstor (so it rides the
+	save), fed by bind_stalker.on_use_item and drained by the actor binder every update.
+
+	The doses live on the items themselves, on the same *_eatable sections that carry the engine's
+	eat_* values and gunsl_thirst's thirst_factor, and are applied in this order:
+		lsd_factor_sqprop  tox += factor * sqrt(tox)   -- nothing when clean, brutal when loaded
+		lsd_factor         tox += factor               -- the flat dose (lsd_factor_master on veteran+)
+		lsd_factor_mul     tox *= factor
+		lsd_time/_increment                            -- a drip of increment per second for N seconds
+		lsd_clear          wipe it out, drip included  -- ours, not GS's; the antidote
+	A negative value is a cure; water carries one, worth a flat 1.0 -- a bottle is always the same
+	relief, whatever the level happens to be. The antidote instead carries lsd_clear, because with
+	no ceiling on the level "cures it completely" cannot be expressed as a number.
+
+	The switch is the `g_intoxication` console flag (AF_INTOXICATION, the "medicine intoxication" checkbox
+	in the gameplay options). Off = vanilla, medicine has no aftermath. GS additionally exempts
+	novice difficulty, which is kept here.
+
+	Not ported: GS's black-pill hud indicator, which shares the slot with the thirst one, and the
+	medic dialogue that cures the toxicity -- Clear Sky has no such dialogue.
+]]--
+
+local PSTOR = "gunsl_peredoz"
+
+local detox_time_normal   = 40000   -- ms of real time to clear 1.0 of toxicity
+local detox_time_veteran  = 50000   -- ...and on veteran/master, where it lingers longer
+local max_health_dec_per_second = 0.03
+local increase_time       = 5       -- seconds for the post-effect to reach full strength
+local decrease_time       = 4       -- ...and to fade back out
+local freq                = 0.07    -- Hz of the colour swim
+local pp_lifetime         = 5       -- seconds; the effector re-creates itself before it expires
+local EPS                 = 0.00001
+
+local PP_ID               = 201     -- post-effect slot; thirst uses 13, the engine's own are 50..62
+
+local ini = system_ini()
+
+local pp                  = nil     -- the running effector, or nil
+local pp_wanted           = false   -- ...and whether the chain below should keep it alive
+local lsd_remains_time    = 0       -- the antidote-style drip: ms left
+local lsd_per_second      = 0       -- ...and how much it adds each second
+
+local function aid()
+	return db.actor:id()
+end
+
+local function get()
+	local st = db.storage[aid()]
+	if st == nil or st.pstor == nil then return nil end
+	st.pstor[PSTOR] = st.pstor[PSTOR] or 0
+	return st.pstor[PSTOR]
+end
+
+local function set(v)
+	-- no upper bound, as in GS: past 3.0 on stalker (1.625 on veteran and master) the post-effect
+	-- is at its cap and the health drain past 2.0 (1.5), so a higher level is only a longer wait
+	if v < 0 then v = 0 end
+	local st = db.storage[aid()]
+	if st ~= nil and st.pstor ~= nil then st.pstor[PSTOR] = v end
+end
+
+local function enabled()
+	return get_console():get_bool("g_intoxication")
+end
+
+-- `g_intoxication_dbg 1` in the console. Runtime only, never written to user.ltx. level.log is the
+-- binding that actually reaches the log in a Release build -- the plain log()/printf are stubs here.
+local dbg_next = 0
+local function dbg()
+	return get_console():get_integer("g_intoxication_dbg") ~= 0
+end
+
+-- current toxicity: 0 = clean, 1 = where it starts to show, and there is no upper bound.
+-- nil before the actor storage exists.
+function GetIntoxication()
+	if db.actor == nil then return nil end
+	return get()
+end
+
+function ResetIntoxication()
+	if db.actor == nil then return end
+	set(0)
+end
+
+--------------------------------------------------------------------------------------------------
+-- The post-effect: colour swimming through the whole picture plus grain, both scaled by how far
+-- past 1.0 the toxicity is.
+--------------------------------------------------------------------------------------------------
+class "PeredozPP" (effector)
+function PeredozPP:__init() super(PP_ID, pp_lifetime)
+	self.target_power     = 0
+	self.cur_power        = 0
+	self.effect_start_time= time_global()
+	self.zero_phase_time  = time_global()
+	self.last_time        = time_global()
+
+	self.params           = effector_params()
+	self.params.color_add = color(0.0, 0.0, 0.0)
+
+	self:start()
+end
+
+function PeredozPP:process(ppc)
+	local dt           = time_global() - self.last_time
+	local dt_from_zero = time_global() - self.zero_phase_time
+
+	if self.target_power > self.cur_power then
+		self.cur_power = self.cur_power + dt / (increase_time * 1000)
+		if self.cur_power > self.target_power then self.cur_power = self.target_power end
+	elseif self.target_power < self.cur_power then
+		self.cur_power = self.cur_power - dt / (decrease_time * 1000)
+		if self.cur_power < self.target_power then self.cur_power = self.target_power end
+	end
+
+	local arg = 2 * math.pi * freq * dt_from_zero / 1000
+
+	-- three sines at different rates, normalised so the tint wanders through the hues instead of
+	-- just pulsing brighter; squared power so it comes up slowly and then bites.
+	local a = self.cur_power * self.cur_power
+	local r = math.abs(math.sin(arg))
+	local g = math.abs(math.sin(arg / 1.5))
+	local b = math.abs(math.sin(arg * 1.5))
+
+	local m = math.sqrt(r * r + b * b + g * g) * 3
+	if m > 0 then
+		r = r / m
+		g = g / m
+		b = b / m
+	end
+
+	-- The colour swim is NOT put into this PPE any more: a PPE colour is summed with every other effector
+	-- and covers the whole screen. The engine draws the very same swim (these three sines, this
+	-- normalisation) in the pp pass through the edge mask instead -- strong at the edges, nothing in the
+	-- middle; its strength is INTOX_COLOUR in Actor.cpp. r/g/b above are kept only for the reference.
+	self.params.color_add = color(0.0, 0.0, 0.0)
+	self.params.noise     = noise(self.cur_power, math.abs(math.sin(arg / 2)), 120)
+
+	-- ...so the whole look lives in the engine: the colours, a slow pulse stretching the screen edges,
+	-- a wave rippling them and a touch of fov (CActor::UpdateCL). It follows this power and goes to zero
+	-- by itself half a second after the last call, so the chain ending is enough to switch it off.
+	if level.set_intox_screen_fx then level.set_intox_screen_fx(self.cur_power) end
+
+	ppc:assign(self.params)
+	effector.process(self, ppc)
+
+	-- A script effector lives for the time it was constructed with and there is no way to extend
+	-- it, so half a second before the end it hands over to a fresh one with the same phase and
+	-- power. pp_wanted is what ends the chain: GS had no such guard, so once the trip was over the
+	-- effector kept re-creating itself at zero power for the rest of the session.
+	if pp_wanted and time_global() - self.effect_start_time > pp_lifetime * 1000 - 500 then
+		pp = PeredozPP()
+		pp.zero_phase_time = self.zero_phase_time
+		pp.target_power    = self.target_power
+		pp.cur_power       = self.cur_power
+	end
+
+	self.last_time = time_global()
+	return true
+end
+
+--------------------------------------------------------------------------------------------------
+
+-- Called from bind_stalker.on_use_item for every used item, with the section that was actually
+-- consumed -- for anything that goes through gwr_eatable that is the hidden *_eatable one, which
+-- is where the doses are written.
+function OnItemUsed(sect)
+	if db.actor == nil or get() == nil then return end
+	if not enabled() then return end
+
+	local tox = get()
+
+	-- proportional first: this is the term that makes a SECOND portion cost more than the first
+	if ini:line_exist(sect, "lsd_factor_sqprop") then
+		tox = tox + ini:r_float(sect, "lsd_factor_sqprop") * math.sqrt(tox)
+	end
+
+	if (level.get_game_difficulty() >= game_difficulty.veteran) and ini:line_exist(sect, "lsd_factor_master") then
+		tox = tox + ini:r_float(sect, "lsd_factor_master")
+	elseif ini:line_exist(sect, "lsd_factor") then
+		tox = tox + ini:r_float(sect, "lsd_factor")
+	end
+
+	if ini:line_exist(sect, "lsd_factor_mul") then
+		tox = tox * ini:r_float(sect, "lsd_factor_mul")
+	end
+
+	if ini:line_exist(sect, "lsd_time") then
+		lsd_remains_time = ini:r_float(sect, "lsd_time") * 1000
+		lsd_per_second   = ini:r_float(sect, "lsd_increment")
+	end
+
+	-- last, so it wins over anything the same section may also have added, and it takes the drip
+	-- with it -- a cure that left a running drip behind would keep changing the level afterwards
+	if ini:line_exist(sect, "lsd_clear") and ini:r_bool(sect, "lsd_clear") then
+		tox              = 0
+		lsd_remains_time = 0
+		lsd_per_second   = 0
+	end
+
+	local was = get()
+	set(tox)
+	if dbg() then
+		level.log(string.format("~ intox: %s -> %.3f (was %.3f)", sect, get(), was))
+	end
+end
+
+-- Let a running effector fade out and then die: target 0 makes it shrink at decrease_time, and
+-- once it is down the chain is stopped, so the last instance simply expires.
+local function fade_out()
+	if pp == nil then return end
+	if pp.cur_power < EPS then
+		pp_wanted = false
+		pp = nil
+	else
+		pp.target_power = 0
+	end
+end
+
+function Update(delta)
+	if db.actor == nil or not db.actor:alive() then return end
+	if get() == nil then return end
+
+	-- a frame that took longer than this is a load or a menu, not gameplay
+	if delta > 100 then delta = 100 end
+
+	local diff = level.get_game_difficulty()
+
+	if not enabled() or diff < game_difficulty.stalker then
+		-- off, or novice: GS exempts the easiest difficulty entirely. Clear what is stored so the
+		-- state does not sit in the save waiting to bite when the setting comes back on.
+		if get() > 0 then set(0) end
+		lsd_remains_time = 0
+		fade_out()
+		return
+	end
+
+	local detox_time = (diff >= game_difficulty.veteran) and detox_time_veteran or detox_time_normal
+	local tox = get() - delta / detox_time
+
+	-- the antidote-style drip, if one is running
+	if lsd_remains_time > 0 then
+		tox = tox + lsd_per_second * delta / 1000
+		lsd_remains_time = lsd_remains_time - delta
+		if lsd_remains_time < 0 then lsd_remains_time = 0 end
+	end
+
+	set(tox)
+	tox = get()
+
+	if dbg() and tox > 0 then
+		local now = time_global()
+		if now >= dbg_next then
+			dbg_next = now + 1000
+			local hit_at = (diff >= game_difficulty.veteran) and 1.0 or 1.5
+			level.log(string.format(
+				"~ intox: %.3f  effect %s  health %s  clears in %.0f s%s",
+				tox,
+				(tox < 1) and "-" or string.format("%.2f", (diff == game_difficulty.stalker)
+					and math.min((tox - 1) / 2, 1) or math.min((tox - 1) * 1.6, 1)),
+				(tox > hit_at) and string.format("-%.3f/s", max_health_dec_per_second
+					* math.min((tox - hit_at) * 2, 1)) or "-",
+				tox * detox_time / 1000,
+				(lsd_remains_time > 0) and string.format("  drip %.0f s @ %+.2f/s",
+					lsd_remains_time / 1000, lsd_per_second) or ""))
+		end
+	end
+
+	if tox < 1 then
+		fade_out()
+		return
+	end
+
+	if pp == nil then
+		pp_wanted = true
+		pp = PeredozPP()
+	end
+
+	-- how strong the trip gets: veteran and master reach full strength almost twice as early
+	if diff == game_difficulty.stalker then
+		pp.target_power = (tox - 1) / 2
+	else
+		pp.target_power = (tox - 1) * 1.6
+	end
+	if pp.target_power > 1 then pp.target_power = 1 end
+
+	-- ...and where it starts costing health
+	local hit_threshold = (diff >= game_difficulty.veteran) and 1.0 or 1.5
+	if tox > hit_threshold then
+		local hit = (tox - hit_threshold) * 2
+		if hit > 1 then hit = 1 end
+		-- health is an ADDITIVE property here, so this is a loss
+		db.actor.health = (-1) * max_health_dec_per_second * hit * delta / 1000
+	end
+end
+
+function on_netdestroy()
+	pp_wanted        = false
+	pp               = nil
+	lsd_remains_time = 0
+	lsd_per_second   = 0
+end

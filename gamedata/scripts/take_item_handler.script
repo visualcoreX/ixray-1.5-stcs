@@ -1,0 +1,161 @@
+local snd = sound_object("weapons\\f1_explode")
+
+local function str(id)
+    return game.translate_string(id)
+end
+
+function on_item_take(obj)
+    if obj and obj:name() == "mar_detector_elite" then
+    
+        local actor = db.actor
+        if not actor then return end
+
+        local actor_position = db.actor:position()
+        
+        snd:play_at_pos(db.actor, actor_position, 0, sound_object.s3d)
+        
+        level.add_cam_effector("camera_effects\\scenario_cam\\marsh\\fusker_lox.anm", 1, false)
+        
+        level.add_pp_effector("gar_ambush_hit.ppe", 1, false)
+
+        alife():release(alife():object(obj:name()))
+        
+        level.disable_input()
+        
+        level.hide_indicators()
+        
+        actor:hide_weapon()
+		
+		rob_actor_by_name("mar_recover_item_2_box", nil)
+        
+        god_timers.start_timer("play_sound_lox", 5, "characters_voice\\scenario\\marsh\\gar_bandit_ambush_talk_lox")
+        
+        god_timers.start_timer("play_effector_lox", 3, "camera_effects\\scenario_cam\\marsh\\lox_cam.anm")
+        
+        god_timers.start_timer("activate_input", 23, "")
+        
+        god_timers.start_timer("play_effector_lox_wake", 18, "gar_ambush_wake.ppe")
+        
+        god_timers.start_timer("play_rotate_actor", 22, "")
+        
+        local bandit_lox_1 = alife():create("prop_bandit_01",
+                        vector():set(-181.74, 2.1, 536.6),
+                        0,
+						0)
+        
+        local bandit_lox_2 = alife():create("prop_bandit_02",
+                        vector():set(-181.74, 2.1, 535),
+                        0,
+                        0)
+		
+		god_timers.start_timer("remove_bandits_rob_lox", 23, bandit_lox_1:name())
+		
+		god_timers.start_timer("remove_bandits_rob_lox", 23, bandit_lox_2:name())
+		
+		board = sim_board.get_sim_board()
+		local smarts_by_name = board.smarts_by_names
+		local smart = smarts_by_name["mar_smart_terrain_3_3"]
+		
+		xr_effects.clear_smart_terrain(nil,nil,{"mar_smart_terrain_3_3"})
+		
+		board:create_squad("renegade", sim_squad_scripted.sim_squad_scripted, smart, nil, "mar_renegade_lox")
+		
+--		god_timers.start_timer("show_message_lox", 26, "ui_npc_small_bandit_1")
+--		god_timers.start_timer("show_message_lox_2", 30, renegade_name)
+--		god_timers.start_timer("show_message_lox_3", 35, renegade_name)
+
+		db.actor:give_game_news(str("mar_lox_sender"), str("mar_lox_sub_1"), "ui_npc_small_bandit_3", 6000, 10000)
+		db.actor:give_game_news(str("mar_lox_sender2"), str("mar_lox_sub_2"), "ui_npc_small_bandit_4", 14000, 10000)
+
+		db.actor:give_game_news(str("mar_lox_sender"), str("mar_lox_msg_1"), "ui_npc_small_bandit_3", 26000, 10000)
+		god_timers.start_timer("play_message1_sound", 25.5, "")
+			
+		db.actor:give_game_news(str("mar_lox_sender"), str("mar_lox_msg_2"), "ui_npc_small_bandit_3", 30000, 10000)
+		god_timers.start_timer("play_message1_sound", 29.5, "")
+		
+		db.actor:give_game_news(str("mar_lox_sender"), str("mar_lox_msg_3"), "ui_npc_small_bandit_3", 35000, 10000)
+		god_timers.start_timer("play_message1_sound", 34.5, "")
+		
+		db.actor:give_game_news(str("mar_lox_sender"), str("mar_lox_msg_4"), "ui_npc_small_bandit_3", 40000, 10000)
+		god_timers.start_timer("play_message1_sound", 39.5, "")
+		
+		god_timers.start_timer("recover_lox_item_quest", 25, "")
+		
+		god_timers.start_timer("give_mar_quest_redemption", 36, "")
+		
+		alife():create("medkit",
+                        vector():set(-181.6, 2.09, 533.16),
+                        0,
+                        0)
+		alife():create("vodka",
+                        vector():set(-181.75, 2.09, 533.36),
+                        0,
+                        0)
+		alife():create("vodka",
+                        vector():set(-181.63, 2.09, 533.33),
+                        0,
+                        0)
+		alife():create("kolbasa",
+                        vector():set(-181.9, 2.1, 533.50),
+                        0,
+                        0)
+		local pistol_lox = alife():create("wpn_pm",
+                        vector():set(-181.71, 3.76, 533.53),
+                        0,
+                        0)
+						
+		god_timers.start_timer("set_ammo", 1, pistol_lox.id)
+		god_timers.start_timer("set_pistol_condition", 1, pistol_lox.id)
+		
+		god_timers.start_timer("camera_wake", 23, "")
+		god_timers.start_timer("teleport_actor_lox", 22, "")
+    end
+end
+
+local actor_inventory = {}
+
+local function get_actor_inv(item)
+    actor_inventory[item:id()] = item
+end
+
+local function get_object_by_name(name)
+    local se_obj = alife():object(name)
+    if not se_obj then return nil end
+    return level.object_by_id(se_obj.id)
+end
+
+function rob_actor_by_name(box_name, money_to_take)
+    local actor = db.actor
+    if not actor then return end
+
+    local money = money_to_take or actor:money()
+    if money > actor:money() then
+        money = actor:money()
+    end
+	if money > 0 then
+		actor:give_money(-money)
+		god_timers.start_timer("show_message_money_out", 24, tostring(money))
+	end
+    local inv_box = get_object_by_name(box_name)
+    if not inv_box then
+        abort("box not found: "..box_name)
+        return
+    end
+
+    actor:inventory_for_each(get_actor_inv)
+
+    for k, v in pairs(actor_inventory) do
+        actor:transfer_item(v, inv_box)
+    end
+
+    actor_inventory = {}
+
+    -- the broken veles goes into the box together with everything that was taken off the actor.
+    -- Passing the box id as the parent is what puts the item INSIDE the container instead of on the
+    -- ground next to it; position/lvid/gvid still have to be the box's own, the spawn needs a place.
+    alife():create("detector_elite_broken",
+                   inv_box:position(),
+                   inv_box:level_vertex_id(),
+                   inv_box:game_vertex_id(),
+                   inv_box:id())
+end

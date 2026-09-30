@@ -1,0 +1,143 @@
+---------------------------------------------------------------------------------------------
+-- Night stealth against the Cordon blockpost minigun.
+--
+-- The blockpost stops noticing the actor while ALL of these hold:
+--   * game time is between NIGHT_FROM and NIGHT_TO (22:00 .. 06:00)
+--   * the actor is crouched (either depth)
+--   * no light of his is on -- headlamp, handheld torch or weapon flashlight
+--   * he has not fired a shot in the last SHOT_QUIET milliseconds
+--   * he is at least SAFE_DIST metres away from the gun
+--
+-- Break any one of them while the gun can actually see him and it behaves exactly as in vanilla --
+-- and keeps behaving so until it loses sight of him for real. Crouching back down or switching the
+-- lamp off under its nose changes nothing until contact is broken.
+--
+-- Two entry points:
+--   * actor_seen_by()   -- from ph_minigun.script (action_mgun:target_visible), asked about the actor
+--   * actor_hidden_now() -- from the `actor_not_hidden` condition used by the alarm logic .ltx files
+---------------------------------------------------------------------------------------------
+
+local NIGHT_FROM = 22        -- inclusive, game hours
+local NIGHT_TO   = 6         -- exclusive
+local SAFE_DIST  = 70        -- metres; closer than this the gun spots him regardless
+local SHOT_QUIET = 30000     -- ms of not shooting before the blockpost settles down again
+local ALERT_DIST = 100       -- metres: standing up this close to the gun gives you away by itself
+local PATROL_STANDDOWN_DIST = 200  -- metres from the gun: past this the search patrol is called off, once
+local LEVELS     = { escape = true }   -- only the Cordon gun; every other minigun stays vanilla
+
+-- Guns that currently hold contact: [gun object id] = true. Cleared the moment the engine itself
+-- reports the actor out of sight, which is what "until it loses him" means.
+local spotted = {}
+
+-- Something to measure the distance rules from. The gun's client object only exists once its scheme
+-- has started, and the alarm restrictors reach out to 350 m -- far enough that the actor trips them
+-- while the gun is still offline. So the position comes from the SERVER object, which exists from
+-- the moment the level is loaded; the client object is used when available (same spot, but exact).
+local GUN_NAME = "esc_m_car"     -- the Cordon blockpost minigun
+local gun_obj  = nil
+local gun_pos  = nil
+
+function register_gun(obj)
+	if LEVELS[level.name()] then
+		gun_obj = obj
+	end
+end
+
+local function gun_position()
+	if gun_obj ~= nil then return gun_obj:position() end
+	if gun_pos ~= nil then return gun_pos end
+	local sim = alife()
+	local se  = sim and sim:object(GUN_NAME)
+	if se ~= nil then gun_pos = se.position end
+	return gun_pos
+end
+
+local function is_night()
+	local h = level.get_time_hours()
+	if NIGHT_FROM > NIGHT_TO then          -- window wraps midnight
+		return h >= NIGHT_FROM or h < NIGHT_TO
+	end
+	return h >= NIGHT_FROM and h < NIGHT_TO
+end
+
+local function actor_is_hidden()
+	if db.actor == nil then return false end
+	if not LEVELS[level.name()] then return false end
+	if not is_night() then return false end
+	if not level.actor_crouch() then return false end
+	if level.actor_light_on() then return false end
+	-- A shot gives him away wherever he is: gunfire carries, and the blockpost stays alert for a
+	-- while afterwards. (The gun's own "keeps looking until it loses him" rule is separate, below.)
+	if level.actor_time_since_shot() < SHOT_QUIET then return false end
+	local pos = gun_position()
+	if pos == nil then return false end
+	return pos:distance_to(db.actor:position()) >= SAFE_DIST
+end
+
+--- Same test, for callers that have no gun of their own: the alarm restrictors and the
+--  `actor_not_hidden` condition used from the logic .ltx files.
+function actor_hidden_now()
+	return actor_is_hidden()
+end
+
+--- Called every actor update (from bind_stalker).
+--
+-- Vanilla only ever raises the alarm from one narrow restrictor across the approach: cross it and
+-- the blockpost knows, sneak through it and nothing else ever checks again. That leaves a hole the
+-- moment stealth exists -- slip past crouched, then stand up 80 m from the gun in plain sight and
+-- nobody reacts. So while the actor is NOT hidden and stands this close, hand the blockpost the same
+-- info portion the restrictor would have given it, and the vanilla chain (shout -> siren -> esc_fire
+-- -> the gun opens up) runs exactly as it always did. The chain clears the portion itself.
+function update()
+	if db.actor == nil then return end
+	if not LEVELS[level.name()] then return end
+
+	-- The search patrol (esc_military_base_logic.ltx work4-6, jobs gated on esc_mil_patrol) is sent out
+	-- by the gun once it loses the actor, and nothing ever took the portion back -- vanilla's own
+	-- on_signal/on_info there only ADD portions -- so three soldiers ran their routes for the rest of
+	-- the game. Call it off the first time the actor is this far away, like the megaphone that speaks
+	-- once and never again: esc_mil_patrol_gone marks it done, and the gun's timer that gives
+	-- esc_mil_patrol is one-shot already (esc_mil_minigun_hide_info). Checked before the esc_fire exit
+	-- below, which after the first alarm skips the rest of this function for good.
+	if has_alife_info("esc_mil_patrol") and not has_alife_info("esc_mil_patrol_gone") then
+		local pos = gun_position()
+		if pos ~= nil and pos:distance_to(db.actor:position()) >= PATROL_STANDDOWN_DIST then
+			db.actor:disable_info_portion("esc_mil_patrol")
+			db.actor:give_info_portion("esc_mil_patrol_gone")
+		end
+	end
+
+	if has_alife_info("esc_actor_target") then return end        -- already reported
+	if has_alife_info("esc_fire") then return end                -- alarm already up
+	if actor_is_hidden() then return end
+
+	local pos = gun_position()
+	if pos == nil then return end
+	if pos:distance_to(db.actor:position()) > ALERT_DIST then return end
+
+	db.actor:give_info_portion("esc_actor_target")
+end
+
+--- Answer for the minigun scheme.
+-- @param gun    the gun's game object
+-- @param real   what the engine's own line-of-sight test says
+-- @return       whether the gun should consider the actor seen
+function actor_seen_by(gun, real)
+	local id = gun:id()
+
+	if not real then
+		spotted[id] = nil               -- contact broken: stealth may take hold again
+		return false
+	end
+
+	if spotted[id] then                 -- already blown, stay vanilla until he breaks contact
+		return true
+	end
+
+	if actor_is_hidden() then
+		return false
+	end
+
+	spotted[id] = true
+	return true
+end
