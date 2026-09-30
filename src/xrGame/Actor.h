@@ -414,6 +414,7 @@ protected:
 	shared_str				m_sDeadCharacterUseOrDragAction;
 	shared_str				m_sCarCharacterUseAction;
 	shared_str				m_sInventoryItemUseAction;
+	shared_str				m_sInventoryItemUseUnloadAction;	// a loaded world gun: pick up / hold to unload
 	shared_str				m_sInventoryBoxUseAction;
 
 	//����� ���������� ���������
@@ -431,6 +432,17 @@ protected:
 public:
 	void					PickupModeOn		();
 	void					PickupModeOff		();
+
+protected:
+	// Hold USE on a loaded gun lying in the world to empty it into the inventory; a short press still picks it
+	// up (ActorInput.cpp). USE going down on such a gun only remembers it here instead of picking it up at once.
+	bool					TryStartWorldUnload	();		// USE pressed: a loaded world gun under the crosshair?
+	void					UpdateWorldUnload	();		// every frame: held long enough -> unload; looked away -> plain USE
+	void					EndWorldUnload		();		// USE released before that: pick the gun up after all
+	u16						m_world_unload_id;			// the gun USE went down on, u16(-1) = none
+	u32						m_world_unload_start;		// Device.dwTimeGlobal of that press
+	ref_sound				m_world_unload_snd;			// feedback when it happens: [actor] world_unload_snd
+public:
 
 
 

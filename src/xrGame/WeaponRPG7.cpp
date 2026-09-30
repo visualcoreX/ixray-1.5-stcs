@@ -96,6 +96,12 @@ void CWeaponRPG7::UnloadMagazine(bool spawn_ammo)
 	UpdateMissileVisibility		();
 }
 
+void CWeaponRPG7::UnloadMagazineInto(CInventoryOwner* owner)
+{
+	inherited::UnloadMagazineInto	(owner);
+	UpdateMissileVisibility			();
+}
+
 void CWeaponRPG7::ReloadMagazine() 
 {
 	inherited::ReloadMagazine();

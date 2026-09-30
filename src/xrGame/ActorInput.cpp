@@ -327,6 +327,9 @@ void CActor::IR_OnKeyboardPress(int cmd)
 		// On fire? USE beats the flames out instead of poking at the world -- Gunslinger takes the
 		// key over the same way. Only while actually burning, so normal use is untouched.
 		if (gwr_try_burn_use(this))	break;
+		// On a loaded gun lying in the world the press only arms a hold: held on -> it is unloaded into the
+		// inventory, let go early -> picked up as before (UpdateWorldUnload / EndWorldUnload).
+		if (TryStartWorldUnload())	break;
 		ActorUse();
 		break;
 	case kDROP:
@@ -515,7 +518,10 @@ void CActor::IR_OnKeyboardRelease(int cmd)
 	if (g_Alive())	
 	{
 		if (cmd == kUSE) 
+		{
+			EndWorldUnload();
 			PickupModeOff();
+		}
 
 		if(m_holder)
 		{
@@ -695,6 +701,77 @@ bool CActor::use_Holder				(CHolderCustom* holder)
 
 		return b;
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Unloading a gun that lies in the world: hold USE on it. A short press still picks it up, so the press on a world
+// gun is only remembered; what happens is decided by how long USE stays down (and whether the look stays on it).
+// An empty gun is treated the same -- a hold leaves it lying (nothing to unload), only a short press takes it.
+// ---------------------------------------------------------------------------------------------------------------
+static const u32 WORLD_UNLOAD_HOLD_MS = 300;	// how long USE has to stay down on the gun
+
+bool CActor::TryStartWorldUnload()
+{
+	m_world_unload_id = u16(-1);
+	if (m_holder || !IsGameTypeSingle())
+		return false;
+	CGameObject* O = m_pObjectWeLookingAt;
+	if (!O || O->H_Parent())
+		return false;
+	CWeaponMagazined* W = smart_cast<CWeaponMagazined*>(O);
+	if (!W)
+		return false;	// not a magazine gun (knife, binoculars...): USE picks it up at once, as always
+	// the same tests PickupModeUpdate makes before it takes an item -- if a press could not pick it up, a hold
+	// must not empty it either
+	PIItem item = O->cast_inventory_item();
+	if (!item || !item->Useful() || !m_pUsableObject || !m_pUsableObject->nonscript_usable() ||
+		Level().m_feel_deny.is_object_denied(O))
+		return false;
+	m_world_unload_id		= O->ID();
+	m_world_unload_start	= Device.dwTimeGlobal;
+	return true;
+}
+
+void CActor::UpdateWorldUnload()
+{
+	if (m_world_unload_id == u16(-1))
+		return;
+	CGameObject* O = m_pObjectWeLookingAt;
+	if (!O || O->ID() != m_world_unload_id || O->H_Parent())
+	{
+		// looked away from it (or it was taken): USE is still down -- carry on as a plain held USE
+		m_world_unload_id = u16(-1);
+		PickupModeOn();
+		return;
+	}
+	if (Device.dwTimeGlobal < m_world_unload_start + WORLD_UNLOAD_HOLD_MS)
+		return;
+	m_world_unload_id = u16(-1);		// done: letting go of USE now does nothing more (an empty gun just stays)
+	CWeaponMagazined* W = smart_cast<CWeaponMagazined*>(O);
+	if (W && W->HasAmmoToUnload())
+	{
+		W->UnloadMagazineInto(this);
+		if (m_world_unload_snd._handle())
+			m_world_unload_snd.play(NULL, sm_2D);
+	}
+}
+
+void CActor::EndWorldUnload()
+{
+	if (m_world_unload_id == u16(-1))
+		return;
+	const u16 id = m_world_unload_id;
+	m_world_unload_id = u16(-1);
+	CGameObject* O = m_pObjectWeLookingAt;
+	if (!g_Alive() || !O || O->ID() != id || O->H_Parent())
+		return;
+	// a short press: what ActorUse + PickupModeUpdate would have done with it
+	if (m_pUsableObject)
+		m_pUsableObject->use(this);
+	NET_Packet		P;
+	u_EventGen		(P, GE_OWNERSHIP_TAKE, ID());
+	P.w_u16			(id);
+	u_EventSend		(P);
 }
 
 void CActor::ActorUse()

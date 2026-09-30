@@ -43,6 +43,7 @@
 #include "trade.h"
 #include "inventory.h"
 #include "Weapon.h"				// CWeapon::render_strapped (rifle on the back)
+#include "WeaponMagazined.h"		// hold-USE unload hint on world guns
 #include "inventory_space.h"	// RIFLE_SLOT
 #include "Physics.h"
 #include "level.h"
@@ -304,6 +305,8 @@ CActor::CActor() : CEntityAlive()
 	m_pVehicleWeLookingAt	= NULL;
 	m_pObjectWeLookingAt	= NULL;
 	m_bPickupMode			= false;
+	m_world_unload_id		= u16(-1);
+	m_world_unload_start	= 0;
 
 	pStatGraph				= NULL;
 
@@ -360,6 +363,7 @@ CActor::~CActor()
 	m_HeavyBreathSnd.destroy();
 	m_BloodSnd.destroy		();
 	m_DangerSnd.destroy		();
+	m_world_unload_snd.destroy	();
 
 	xr_delete				(m_pActorEffector);
 
@@ -516,6 +520,9 @@ if(!g_dedicated_server)
 		m_HeavyBreathSnd.create	(pSettings->r_string(section,"heavy_breath_snd"), st_Effect,SOUND_TYPE_MONSTER_INJURING);
 		m_BloodSnd.create		(pSettings->r_string(section,"heavy_blood_snd"), st_Effect,SOUND_TYPE_MONSTER_INJURING);
 		m_DangerSnd.create		(pSettings->r_string(section,"heavy_danger_snd"), st_Effect,SOUND_TYPE_MONSTER_INJURING);
+		// hold USE on a world gun -> unloaded into the inventory (ActorInput.cpp): the click of a magazine coming off
+		m_world_unload_snd.create	(READ_IF_EXISTS(pSettings, r_string, section, "world_unload_snd", "interface\\inv_detach_addon"),
+									 st_Effect, SOUND_TYPE_ITEM_TAKING);
 	}
 }
 	if( psActorFlags.test(AF_PSP) )
@@ -553,6 +560,7 @@ if(!g_dedicated_server)
 	m_sDeadCharacterUseOrDragAction	= "dead_character_use_or_drag";
 	m_sCarCharacterUseAction		= "car_character_use";
 	m_sInventoryItemUseAction		= "inventory_item_use";
+	m_sInventoryItemUseUnloadAction	= "inventory_item_use_unload";
 	m_sInventoryBoxUseAction		= "inventory_box_use";
 	//---------------------------------------------------------------------
 	m_sHeadShotParticle	= READ_IF_EXISTS(pSettings,r_string,section,"HeadShotParticle",0);
@@ -1217,6 +1225,8 @@ void CActor::UpdateCL	()
 
 
 	if (g_Alive()) 
+		UpdateWorldUnload	();		// before the pickup: a USE held on a loaded world gun
+	if (g_Alive()) 
 		PickupModeUpdate	();	
 
 	PickupModeUpdate_COD();
@@ -1621,7 +1631,12 @@ void CActor::shedule_Update	(u32 DT)
 				else if (	m_pObjectWeLookingAt && 
 							m_pObjectWeLookingAt->cast_inventory_item() && 
 							m_pObjectWeLookingAt->cast_inventory_item()->CanTake() )
-					m_sDefaultObjAction = m_sInventoryItemUseAction;
+				{
+					// a loaded gun lying in the world also offers the hold-USE unload (ActorInput.cpp)
+					CWeaponMagazined* W = smart_cast<CWeaponMagazined*>(m_pObjectWeLookingAt);
+					m_sDefaultObjAction = (W && !W->H_Parent() && W->HasAmmoToUnload())
+										? m_sInventoryItemUseUnloadAction : m_sInventoryItemUseAction;
+				}
 				else 
 					m_sDefaultObjAction = NULL;
 			}

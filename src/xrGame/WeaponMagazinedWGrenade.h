@@ -120,6 +120,11 @@ public:
 	virtual void UpdateGrenadeVisibility(bool visibility);
 	virtual bool IsGrenadeMode	() const { return m_bGrenadeMode; }
 
+	// Both magazines, not only the active one: a loaded launcher's grenade sits in m_magazine2 while the rifle is
+	// in bullet mode (and the rifle rounds do while the launcher is up). The inventory menu's unload leaves it be.
+	virtual void UnloadMagazineInto	(CInventoryOwner* owner);
+	virtual bool HasAmmoToUnload	() const { return inherited::HasAmmoToUnload() || !m_magazine2.empty(); }
+
 	// The "_empty" animation token follows the RIFLE's magazine, never the launcher (GS ModifierStd uses
 	// GetAmmoInMagCount, which is the main magazine in either mode). PerformSwitchGL swaps m_magazine with
 	// m_magazine2 and rewrites iAmmoElapsed from it, so in grenade mode the base implementation was reading

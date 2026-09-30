@@ -800,6 +800,19 @@ bool CWeaponMagazinedWGrenade::Attach(PIItem pIItem, bool b_send_event)
         return inherited::Attach(pIItem, b_send_event);
 }
 
+void CWeaponMagazinedWGrenade::UnloadMagazineInto(CInventoryOwner* owner)
+{
+	inherited::UnloadMagazineInto(owner);		// the active magazine, whichever mode is up
+	if (!m_magazine2.empty())
+	{
+		// the stored one: swap it in, unload, swap back -- the same move Detach makes for a loaded launcher
+		PerformSwitchGL();
+		inherited::UnloadMagazineInto(owner);
+		PerformSwitchGL();
+	}
+	iAmmoElapsed2 = (int)m_magazine2.size();
+}
+
 bool CWeaponMagazinedWGrenade::Detach(LPCSTR item_section_name, bool b_spawn_item)
 {
 	if (ALife::eAddonAttachable == m_eGrenadeLauncherStatus &&
