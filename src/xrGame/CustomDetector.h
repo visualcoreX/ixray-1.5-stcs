@@ -7,8 +7,10 @@
 #include "ai_sounds.h"
 #include "ui/ArtefactDetectorUI.h"
 #include "../xrEngine/Render.h"		// ref_light / ref_glow for the GS handheld torch
+#include "../xrEngine/TorchDustRender.h"
 
 class CCustomZone;
+struct attachable_hud_item;
 class CInventoryOwner;
 
 struct ITEM_TYPE
@@ -199,6 +201,11 @@ protected:
 			// the emitter/cone geometry on the model is shown and hidden WITH the light, so a drawn
 			// but not yet lit torch has a dark lens
 			void	UpdateTorchBones	(bool on);
+			// Dust in the light cone, drawn procedurally by the renderer (R3 only, see TorchDustRender.h),
+			// published every frame the light is on. `torch_dust_section` in the item section names the
+			// section with the torch_dust_* keys; no key = no dust.
+			void	LoadTorchDust		(LPCSTR section);
+			void	PublishTorchDust	(attachable_hud_item* hi, const Fvector& light_pos, const Fvector& light_dir);
 
 			bool			m_bTorchInstalled;
 			bool			m_bTorchOn;
@@ -222,6 +229,17 @@ protected:
 			ref_light		m_pTorchSpot;
 			ref_light		m_pTorchOmni;
 			ref_glow		m_pTorchGlow;
+			bool			m_bTorchDust;
+			STorchDustRender m_TorchDust;			// the constant part, from the config; the rest per frame
+			float			m_fTorchDustMaxLength;	// m: the cone never runs further, whatever it hits
+			Fvector			m_vTorchDustDrift;		// m/s, world: drift of the motes...
+			Fvector			m_vTorchDustNoiseDrift;	// ...and of the noise that clumps them
+			float			m_fTorchDustWind;		// share of the weather's wind added to both
+			Fvector2		m_vTorchDustHemi;		// torch_dust_hemi: full dust below x, none above y (x >= y = everywhere)
+			bool			m_bTorchDustHemiDebug;	// torch_dust_hemi_debug: log the owner's hemi while lit
+			u32				m_dwTorchDustHemiLog;	// runtime: next time the hemi may be logged
+			Fvector			m_vTorchDustAcc1;		// runtime: integrated drifts, wrapped to their repeats
+			Fvector			m_vTorchDustAcc2;
 public:
 
 	void			ToggleDetector		(bool bFastMode);

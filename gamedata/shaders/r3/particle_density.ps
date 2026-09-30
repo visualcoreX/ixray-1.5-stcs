@@ -1,0 +1,21 @@
+#include "common.h"
+
+// Added up (one, one) into the 4-channel $user$laser_dens, cleared to 0:
+//   r = sum of alpha        = how much of the pixel the smoke covers,
+//   g = sum of alpha*depth  -> laser_beam.ps reads the smoke's depth back as g / r.
+// b, a are the rain drops' (laser_dens_rain.ps), left alone here.
+
+struct v2p
+{
+	float2 tc	: TEXCOORD0;
+	float4 c	: COLOR0;
+	float  z	: TEXCOORD1;
+	float4 hpos	: SV_Position;
+};
+
+float4 main(v2p I) : SV_Target
+{
+	float a = I.c.a * s_base.Sample(smp_base, I.tc).a;
+	clip(a - 1.0 / 255.0);
+	return float4(a, a * I.z, 0.0, 0.0);
+}

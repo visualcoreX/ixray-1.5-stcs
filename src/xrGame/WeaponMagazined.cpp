@@ -1520,14 +1520,13 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 	if (m_bLaserInstalled)
 	{
 		extern float g_electronics_problems;
-		const float laser_lvl = READ_IF_EXISTS(pSettings, r_float, "gwr_blowout", "laser_disabling_level", 8.f);
-		const bool  surge_off = m_bLaserEnabled && (laser_lvl > 0.f) && (g_electronics_problems >= laser_lvl);
+		const bool  surge_off = m_bLaserEnabled && (m_fLaserDisablingLevel > 0.f) && (g_electronics_problems >= m_fLaserDisablingLevel);
 		LPCSTR rb = m_sLaserRayBones.size() ? m_sLaserRayBones.c_str() : (m_sLaserBone.size() ? m_sLaserBone.c_str() : nullptr);
 		// Symmetric: SHOW them when the laser is on. An upgrade-installed laser gets that for free from the
 		// node's show_bones, but a weapon whose designator is PERMANENT (the P90 -- laser_installed on the
 		// weapon section, no node) has nothing to re-show the beam, so it stayed hidden forever.
 		if (rb)
-			gwr_SetBones(rb, (m_bLaserEnabled && !surge_off) ? TRUE : FALSE);
+			gwr_SetBones(rb, (m_bLaserEnabled && !surge_off && !LaserBeamHidesMesh()) ? TRUE : FALSE);
 	}
 
 	// GS bayonet: the blade (shown by the bayonet upgrade's show_bones) is REMOVED when a silencer or GL is

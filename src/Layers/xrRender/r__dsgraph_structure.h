@@ -165,6 +165,8 @@ public:
 	void		r_dsgraph_render_hud_ui							();
 	void		r_dsgraph_render_lods							(bool	_setup_zb,	bool _clear);
 	void		r_dsgraph_render_sorted							();
+	void		r_dsgraph_render_sorted_world					();
+	void		r_dsgraph_render_sorted_hud						();
 	void		r_dsgraph_render_emissive						();
 	void		r_dsgraph_render_wmarks							();
 	void		r_dsgraph_render_distort						();

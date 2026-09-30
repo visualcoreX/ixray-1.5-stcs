@@ -85,6 +85,8 @@ public:
 	virtual void		OnRenderForward			();
 	virtual bool		OnRenderPdaUI			();	// 3D PDA: draw the window for the $user$ui snapshot
 	virtual void		RenderFirstPersonLegs	();	// g_legs: the invisible actor's stand-in body
+	virtual u32			GetLaserBeams			(const SLaserBeamRender*& beams);	// laser designator beams (WeaponLaserBeam.cpp)
+	virtual u32			GetTorchDust			(const STorchDustRender*& cones);	// handheld torch dust (CustomDetector.cpp)
 	virtual bool		OnRenderScopeActive		();	// 3D PiP scope: true while aiming through a lensed scope
 	virtual bool		ComputeLensFrame		(float& out_fov);	// 3D PiP double-render: decide lens frame + magnified FOV
 	virtual bool		HudFovBase				(float& out_fov);	// 2D scope: the fov the WEAPON keeps while the world zooms

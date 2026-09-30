@@ -12,6 +12,7 @@
 
 CExplosiveRocket::CExplosiveRocket() 
 {
+	m_explode_dir_world_up = false;
 }
 
 CExplosiveRocket::~CExplosiveRocket() 
@@ -30,6 +31,7 @@ void CExplosiveRocket::Load(LPCSTR section)
 	inherited::Load(section);
 	CInventoryItem::Load(section);
 	CExplosive::Load(section);
+	m_explode_dir_world_up = !!READ_IF_EXISTS(pSettings, r_bool, section, "explode_dir_world_up", FALSE);
 }
 
 BOOL CExplosiveRocket::net_Spawn(CSE_Abstract* DC) 
@@ -49,7 +51,7 @@ void CExplosiveRocket::Contact(const Fvector &pos, const Fvector &normal)
 	if(eCollide == m_eState) return;
 
 	if(m_bLaunched)
-		CExplosive::GenExplodeEvent(pos,normal);
+		CExplosive::GenExplodeEvent(pos, m_explode_dir_world_up ? Fvector().set(0.f,1.f,0.f) : normal);
 
 	inherited::Contact(pos, normal);
 }

@@ -1,0 +1,20 @@
+#include "common.h"
+
+// The weather's rain streaks, redrawn into $user$laser_dens right after the rain itself
+// (dxRainRender -> CRenderTarget::phase_laser_density_rain). Same input as particle_density.vs.
+// Added up (one, one):  b = sum of alpha,  a = sum of alpha*depth  (r, g are the smoke's).
+
+struct v2p
+{
+	float2 tc	: TEXCOORD0;
+	float4 c	: COLOR0;
+	float  z	: TEXCOORD1;
+	float4 hpos	: SV_Position;
+};
+
+float4 main(v2p I) : SV_Target
+{
+	float a = I.c.a * s_base.Sample(smp_base, I.tc).a;
+	clip(a - 1.0 / 255.0);
+	return float4(0.0, 0.0, a, a * I.z);
+}

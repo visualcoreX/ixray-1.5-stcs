@@ -169,6 +169,22 @@ void	CBlender_Particle::Compile	(CBlender_Compile& C)
 		}
 		C.r_End				();
 		break;
+	case 3:		// laser-beam smoke density (CRenderTarget::phase_laser_density)
+		// Only BLEND particles -- smoke, dust -- are the "stuff in the air" a laser lights up. The pass
+		// has no depth buffer (the MSAA one cannot sit with a 1-sample target), so it writes the
+		// particle's view depth next to its opacity and the beam shader does the depth matching.
+		// out = (a, a*depth, 0, 0) added up: R = coverage, G/R = depth of what covers it. Additive,
+		// so the rain drops can share the buffer in B/A without the two disturbing each other.
+		if (1 == oBlend.IDselected)
+		{
+			C.r_Pass			("particle_density",	"particle_density",	FALSE,	FALSE,FALSE,	TRUE,	D3DBLEND_ONE,	D3DBLEND_ONE,	FALSE,0);
+			C.r_dx10Texture		("s_base",	C.L_textures[0]);
+			u32 hSampler = 	C.r_dx10Sampler("smp_base");
+			if (oClamp.value&&(hSampler!=(u32)-1))
+				C.i_dx10Address( hSampler, D3DTADDRESS_CLAMP);
+			C.r_End				();
+		}
+		break;
 	case 4: 	// deffer-EMAP
 		break;
 	};

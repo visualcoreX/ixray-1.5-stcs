@@ -13,6 +13,9 @@
 #include "WeaponMagazined.h"
 #include "../xrEngine/motion.h"		// ESMFlags (esmStopAtEnd) - one-shot vs looping companion
 #include "WeaponMagazined.h"
+#include "WeaponLaserBeam.h"		// LaserBeam_HudPointToWorld for the torch dust
+#include "../xrEngine/IGame_Persistent.h"
+#include "../xrEngine/Environment.h"
 #include "WeaponPistol.h"		// CWeaponPistol -- "one-handed" test for detector coexistence (slots are interchangeable now)
 
 ITEM_INFO::ITEM_INFO()
@@ -687,6 +690,9 @@ CCustomDetector::CCustomDetector()
 	m_bTorchOn			= false;
 	m_dwTorchSwitchAt	= 0;
 	m_bTorchPending		= false;
+	m_bTorchDust		= false;
+	m_vTorchDustAcc1.set(0.f, 0.f, 0.f);
+	m_vTorchDustAcc2.set(0.f, 0.f, 0.f);
 }
 
 CCustomDetector::~CCustomDetector() 
@@ -774,6 +780,66 @@ void CCustomDetector::LoadTorchParams(LPCSTR section)
 	m_bTorchGlow		= !!READ_IF_EXISTS(pSettings, r_bool,  section, "create_glow", TRUE);
 	m_sTorchGlowTex		= READ_IF_EXISTS(pSettings, r_string, section, "torch_glow_texture", "glow\\glow_torch_r2");
 	m_fTorchGlowRadius	= READ_IF_EXISTS(pSettings, r_float,  section, "torch_glow_radius", 0.3f);
+	LoadTorchDust		(section);
+}
+
+// The torch_dust_* keys live in their own section, named from the item's by `torch_dust_section` (the
+// laser's volumetric beam is set up the same way). Defaults are for a hand torch's white light.
+void CCustomDetector::LoadTorchDust(LPCSTR section)
+{
+	m_bTorchDust	= false;
+	LPCSTR s		= READ_IF_EXISTS(pSettings, r_string, section, "torch_dust_section", NULL);
+	if (!s || !s[0])					return;
+	if (!pSettings->section_exist(s))	{ Msg("! [%s] torch_dust_section: no section [%s]", section, s); return; }
+	// Only R3 draws it (r3_rendertarget_phase_laser.cpp) -- the RUNNING renderer, as for the laser beam
+	if (!::Render || ::Render->get_dx_level() < 0x000A0000)	return;
+
+	STorchDustRender& D	= m_TorchDust;
+	Fvector color		= READ_IF_EXISTS(pSettings, r_fvector3, s, "torch_dust_color", Fvector().set(m_TorchColor.r, m_TorchColor.g, m_TorchColor.b));
+	D.color.mul			(color, READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_intensity", 1.5f));
+	// full angle, like torch_spot_angle, which it defaults to: the dust fills exactly the lit cone
+	float angle			= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_angle", rad2deg(m_fTorchCone));
+	clamp				(angle, 1.f, 170.f);
+	D.cos_half			= _cos(deg2rad(angle) * 0.5f);
+	D.edge				= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_edge", 0.35f);
+	D.range				= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_range", 6.f);
+	m_fTorchDustMaxLength = READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_max_length", 10.f);
+	D.fade_cam_start	= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_fade_cam_start", 1.5f);
+	D.fade_cam_end		= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_fade_cam_end", 4.f);
+	D.fade_start		= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_fade_start", 0.15f);
+
+	D.cell				= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_cell", 0.08f);
+	D.density			= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_density", 0.3f);
+	D.radius			= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_radius", 0.0012f);
+	D.radius_var		= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_radius_var", 0.5f);
+	D.twinkle			= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_twinkle", 0.6f);
+	D.twinkle_speed		= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_twinkle_speed", 3.f);
+
+	D.noise_scale		= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_noise_scale", 0.3f);
+	D.noise_threshold	= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_noise_threshold", 0.35f);
+	D.noise_contrast	= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_noise_contrast", 4.f);
+	D.noise_amount		= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_noise_amount", 0.8f);
+	D.noise_depth		= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_noise_depth", 2.f);
+	D.texture			= READ_IF_EXISTS(pSettings, r_string, s, "torch_dust_texture", "fx\\fx_laser_dust");
+
+	m_vTorchDustDrift		= READ_IF_EXISTS(pSettings, r_fvector3, s, "torch_dust_drift", Fvector().set(0.01f, -0.006f, 0.008f));
+	m_vTorchDustNoiseDrift	= READ_IF_EXISTS(pSettings, r_fvector3, s, "torch_dust_noise_drift", Fvector().set(-0.03f, 0.005f, 0.02f));
+	m_fTorchDustWind		= READ_IF_EXISTS(pSettings, r_float, s, "torch_dust_wind", 0.01f);
+	// Indoors only: the owner's hemi (the share of open sky his light probe sees -- the one the renderer
+	// lights him and the hud with) fades the dust out between the two values. No key = dust everywhere.
+	m_vTorchDustHemi		= READ_IF_EXISTS(pSettings, r_fvector2, s, "torch_dust_hemi", Fvector2().set(1.f, 0.f));
+	m_bTorchDustHemiDebug	= !!READ_IF_EXISTS(pSettings, r_bool, s, "torch_dust_hemi_debug", FALSE);
+	m_dwTorchDustHemiLog	= 0;
+
+	clamp				(D.cell, 0.01f, 1.f);
+	clamp				(D.density, 0.f, 1.f);
+	clamp				(D.edge, 0.001f, 1.f);
+	clamp				(D.radius_var, 0.f, 0.95f);
+	clamp				(D.noise_scale, 0.01f, 100.f);
+	clamp				(D.noise_amount, 0.f, 1.f);
+	D.range				= _max(D.range, 0.1f);
+	D._reserved[0] = D._reserved[1] = D._reserved[2] = 0.f;
+	m_bTorchDust		= true;
 }
 
 // GS torch_enable_time_<alias> / torch_disable_time_<alias> (hud section, SECONDS from the start of
@@ -806,6 +872,136 @@ void CCustomDetector::StopTorch()
 	if (m_pTorchSpot)	m_pTorchSpot->set_active(false);
 	if (m_pTorchOmni)	m_pTorchOmni->set_active(false);
 	if (m_pTorchGlow)	m_pTorchGlow->set_active(false);
+}
+
+// A hidden bone is not calculated at all (CKinematics::CLBone skips it) and LL_SetBoneVisible(FALSE)
+// scales its matrix to zero -- read raw, that is the model origin with a zero basis. The torch's
+// fire_bone is exactly such a bone: CSimpleDetector hardcodes light_bone_2 as its find-flash and keeps
+// it hidden. So rebuild it from the nearest VISIBLE ancestor plus the bind pose below it (bind_transform
+// is parent-local), which holds as long as the hidden chain is not animated on its own.
+static void HudBoneTransform(IKinematics* K, u16 bid, Fmatrix& out)
+{
+	if (K->LL_GetBoneVisible(bid))	{ out.set(K->LL_GetTransform(bid)); return; }
+
+	Fmatrix rel		= K->LL_GetData(bid).bind_transform;
+	u16 p			= K->LL_GetData(bid).GetParentID();
+	while (p != BI_NONE && !K->LL_GetBoneVisible(p))
+	{
+		Fmatrix t;	t.mul_43(K->LL_GetData(p).bind_transform, rel);
+		rel			= t;
+		p			= K->LL_GetData(p).GetParentID();
+	}
+	if (p == BI_NONE)	out.set(rel);
+	else				out.mul_43(K->LL_GetTransform(p), rel);
+}
+
+// ---- this frame's dust cones, for the renderer (IGame_Persistent::GetTorchDust) ---------------------
+static xr_vector<STorchDustRender>	s_torch_dust;
+static u32							s_torch_dust_frame = u32(-1);
+
+u32 TorchDust_Get(const STorchDustRender*& cones)
+{
+	// published from UpdateCL, which stops while the game is paused -- the menu still renders the
+	// level behind it, so keep the last frame's cones then (the laser beams do the same)
+	if (s_torch_dust.empty() || (s_torch_dust_frame != Device.dwFrame && !Device.Paused()))
+	{
+		cones = nullptr;
+		return 0;
+	}
+	cones = &s_torch_dust.front();
+	return (u32)s_torch_dust.size();
+}
+
+// The motes' hash repeats every TORCH_DUST_REPEAT cells (torch_dust.ps has the same number), so whole
+// repeats can be taken off the coordinates next to the eye and the shader's numbers stay small
+#define TORCH_DUST_REPEAT	64.f
+
+static void torch_dust_wrap(Fvector& v, float tile)
+{
+	v.x -= tile * floorf(v.x / tile);
+	v.y -= tile * floorf(v.y / tile);
+	v.z -= tile * floorf(v.z / tile);
+}
+
+// what the shader adds to a world point to get its place in the drifting grid / noise
+static void torch_dust_offset(Fvector& out, const Fvector& acc, float tile)
+{
+	const Fvector& e = Device.vCameraPosition;
+	out.set(-acc.x - tile * floorf(e.x / tile),
+			-acc.y - tile * floorf(e.y / tile),
+			-acc.z - tile * floorf(e.z / tile));
+}
+
+// The cone starts at the lens -- the hud section's fire_bone/fire_point, pulled into the world
+// projection like the laser beam's start, so it sits on the lens on screen -- and runs along the spot
+// light's own axis up to the first thing the light hits.
+void CCustomDetector::PublishTorchDust(attachable_hud_item* hi, const Fvector& light_pos, const Fvector& light_dir)
+{
+	if (!m_bTorchDust || !g_pGamePersistent)	return;
+
+	// Indoors only, if asked. The owner's ROS is refreshed every frame in first person too: the hud is
+	// rendered with him as the lighting object (CHUDManager::Render_First/Render_Last -> set_Object).
+	float indoor = 1.f;
+	CObject* owner = H_Parent();
+	if (owner && owner->ROS() && (m_vTorchDustHemi.x < m_vTorchDustHemi.y || m_bTorchDustHemiDebug))
+	{
+		const float hemi = owner->ROS()->get_luminocity_hemi();
+		if (m_bTorchDustHemiDebug && Device.dwTimeGlobal >= m_dwTorchDustHemiLog)
+		{
+			Msg("* torch dust: hemi %.3f", hemi);
+			m_dwTorchDustHemiLog = Device.dwTimeGlobal + 500;
+		}
+		if (m_vTorchDustHemi.x < m_vTorchDustHemi.y)
+		{
+			float t = (hemi - m_vTorchDustHemi.x) / (m_vTorchDustHemi.y - m_vTorchDustHemi.x);
+			clamp(t, 0.f, 1.f);
+			indoor = 1.f - t * t * (3.f - 2.f * t);
+		}
+	}
+	if (indoor <= 0.f)	return;
+
+	Fvector apex = light_pos;
+	const hud_item_measures& m = hi->m_measures;
+	if (m.m_prop_flags.test(hud_item_measures::e_fire_point) && m.m_fire_bone < hi->m_model->LL_BoneCount())
+	{
+		Fmatrix bone;	HudBoneTransform(hi->m_model, m.m_fire_bone, bone);
+		Fmatrix xf;		xf.mul_43(hi->m_item_transform, bone);
+		xf.transform_tiny(apex, m.m_fire_point_offset);
+	}
+	if (GetHUDmode())	LaserBeam_HudPointToWorld(apex);
+	if (!_valid(apex))	return;
+
+	float len = m_fTorchDustMaxLength;
+	collide::rq_result R;
+	if (Level().ObjectSpace.RayPick(apex, light_dir, len, collide::rqtBoth, R, H_Parent()))
+		len = R.range;
+	if (len < 0.05f)	return;
+
+	// drift: its own plus a share of the weather's wind, integrated so a change of wind speeds the
+	// dust up instead of making it jump
+	STorchDustRender D	= m_TorchDust;
+	CEnvDescriptor& E	= *g_pGamePersistent->Environment().CurrentEnv;
+	Fvector wind;		wind.setHP(E.wind_direction, 0.f);
+	wind.mul			(E.wind_velocity * m_fTorchDustWind);
+	const float dt		= Device.Paused() ? 0.f : Device.fTimeDelta;
+	const float tile1	= D.cell * TORCH_DUST_REPEAT;
+	const float tile2	= 1.f / D.noise_scale;
+	m_vTorchDustAcc1.mad(m_vTorchDustDrift, dt);		m_vTorchDustAcc1.mad(wind, dt);	torch_dust_wrap(m_vTorchDustAcc1, tile1);
+	m_vTorchDustAcc2.mad(m_vTorchDustNoiseDrift, dt);	m_vTorchDustAcc2.mad(wind, dt);	torch_dust_wrap(m_vTorchDustAcc2, tile2);
+
+	D.color.mul			(indoor);
+	D.apex				= apex;
+	D.length			= len;
+	D.dir				= light_dir;
+	torch_dust_offset	(D.mote_offset, m_vTorchDustAcc1, tile1);
+	torch_dust_offset	(D.noise_offset, m_vTorchDustAcc2, tile2);
+
+	if (s_torch_dust_frame != Device.dwFrame)
+	{
+		s_torch_dust.clear	();
+		s_torch_dust_frame	= Device.dwFrame;
+	}
+	s_torch_dust.push_back	(D);
 }
 
 // UpdateTorch is the ONLY thing that ever switches the emitters off, and it runs from UpdateCL --
@@ -935,6 +1131,7 @@ void CCustomDetector::UpdateTorch()
 		m_pTorchGlow->set_direction	(dir);
 		m_pTorchGlow->set_active	(true);
 	}
+	PublishTorchDust			(hi, pos, dir);
 }
 
 

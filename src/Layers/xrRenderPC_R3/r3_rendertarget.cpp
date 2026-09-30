@@ -396,6 +396,9 @@ CRenderTarget::CRenderTarget		()
 		rt_scope.create(r2_RT_scope, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
 		rt_scope_save.create("$user$scope_save", s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
 		rt_scope_ui.create(r2_RT_scope_ui, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
+		// laser beams: smoke coverage + depth, half-res (it only has to follow puffs of smoke)
+		rt_laser_dens.create(r2_RT_laser_dens, _max(s_dwWidth / 2, 1u), _max(s_dwHeight / 2, 1u), D3DFMT_A16B16G16R16F, 1);
+		m_laser_dens_valid = false;
 		rt_Generic_1.create(r2_RT_generic1, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, SampleCount);
 		if (RImplementation.o.dx10_msaa)
 		{
@@ -694,6 +697,7 @@ CRenderTarget::CRenderTarget		()
 		s_combine_dbg_Accumulator.create	("effects\\screen_set",		r2_RT_accum			);
 		g_combine_VP.create					(dwDecl,		RCache.Vertex.Buffer(), RCache.QuadIB);
 		g_combine.create					(FVF::F_TL,		RCache.Vertex.Buffer(), RCache.QuadIB);
+		g_laser_beam.create					(FVF::F_V,		RCache.Vertex.Buffer(), RCache.QuadIB);
 		g_combine_2UV.create				(FVF::F_TL2uv,	RCache.Vertex.Buffer(), RCache.QuadIB);
 		g_combine_cuboid.create				(dwDecl,	RCache.Vertex.Buffer(), RCache.Index.Buffer());
 
