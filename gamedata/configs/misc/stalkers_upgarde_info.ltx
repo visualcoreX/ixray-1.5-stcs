@@ -1,54 +1,132 @@
+; DC260818: Fixed a few instances of a mechanic not being able to upgrade a pre-upgraded variant of a weapon even if they could upgrade the base weapon.
+
 ;************************************************
 ;************** Marsh CS mechanic ***************
 ;************************************************
 
 [mar_csky_tech]
-wpn_bm16
-wpn_toz34
-wpn_pm
-wpn_pm_up
-wpn_pm_9x19
-wpn_pb
-wpn_fort
-wpn_fort_up
-wpn_hpsa
-wpn_wincheaster1300
-wpn_spas12
-wpn_mp5
-wpn_ak74u
-wpn_ak74
-wpn_ak74_up
-wpn_ak74_up2
+agr_quest_duty_abakan ; DC260818
+agr_quest_wpn_spas12 ; DC260818
+;esc_quest_akm47
+;gar_quest_wpn_desert_eagle
+gar_quest_wpn_pm ; DC260818
+gar_quest_wpn_wincheaster1300 ; DC260818
+mar_quest_wpn_ak74u_1 ; DC260818
+mar_quest_wpn_pm_1 ; DC260818
+;red_quest_tank_minigun
 wpn_abakan
 wpn_abakan_up2
-wpn_l85
-wpn_lr300
-wpn_sig550
-wpn_sig550_up2
+wpn_ak74
+wpn_ak101
+wpn_ak74_up
+wpn_ak74_up2
+wpn_ak74u
+wpn_ak74u_snag
+;wpn_beretta
+wpn_bm16
+wpn_bm16_obrez1
+wpn_bm16_obrez2
+wpn_bm16_obrez_full
+;wpn_colt1911
+;wpn_colt1911_up2
+;wpn_desert_eagle
+;wpn_desert_eagle_nimble
+;wpn_desert_eagle_up
 wpn_fn2000
+wpn_fiveseven
+wpn_fort_snag
+wpn_fort
+wpn_fort_up
 wpn_g36
 wpn_g36_up2
+wpn_glock17
+wpn_gauss
 wpn_groza
+wpn_groza_nimble
+wpn_hpsa
+wpn_l85
+wpn_lr300
+wpn_lr300_up2 ; DC260818
+wpn_mp5
+wpn_mp5sd
+wpn_ump45
+wpn_mp5_nimble
+wpn_pb
 wpn_pkm
+wpn_pm
+wpn_pm_9x19
+wpn_pmm	; PMM (GS uniq of the PM)
+wpn_pm_up
+wpn_rg-6
+;wpn_rpg7
+;wpn_sig220
+;wpn_sig220_nimble
+wpn_sig550
+wpn_sig552
+wpn_sig550_luckygun
+wpn_sig550_up2
+wpn_spas12
+wpn_protecta_nimble
+;wpn_svd
+;wpn_svu
+wpn_toz34
+wpn_toz34_obrez1
+wpn_toz34_obrez2
+wpn_toz34_obrez_full
+wpn_toz34_scoped
+;wpn_usp
+;wpn_usp_nimble
+;wpn_val
+;wpn_vintorez
+;wpn_vintorez_up
+;wpn_walther
+;wpn_walther_up2
+wpn_wincheaster1300
+wpn_wincheaster1300_trapper
 
-novice_outfit
+; csga weapons
+
+
 bandit_outfit
-cs_light_outfit
 cs_heavy_outfit
+cs_light_outfit
+;dolg_heavy_outfit
+;dolg_outfit
+;exo_outfit
+;gar_quest_novice_outfit
+mar_quest_novice_outfit_1 ; DC260818
+;military_outfit
+novice_outfit
+;scientific_outfit
+;specops_outfit
 stalker_outfit
 stalker_outfit_up_stalk
+;svoboda_exo_outfit
+;svoboda_heavy_outfit
+;svoboda_light_outfit
 
+; csga outfits
+monolith_outfit
+shram_coat_brown
+wpn_saiga12
+wpn_grach
+wpn_gsh18
+wpn_sr1m
+wpn_p90
+wpn_tt33
+wpn_stechkin
+wpn_apb
 [mar_csky_tech_upgr]
 up_sect_ac_ak74u = false
-up_sect_ac_mp5 = {+info_up_ac_mp5}
-up_sect_bd_mp5 = {+info_up_bd_mp5}
 up_sect_a_novice_outfit = {+info_up_a_novice_outfit}
-up_sect_a_bandit_outfit = {+info_up_a_novice_outfit}
 up_sect_a_cs_light_outfit = {+info_up_a_novice_outfit}
 up_sect_a_cs_heavy_outfit = {+info_up_a_novice_outfit}
 up_sect_a_stalker_outfit = {+info_up_a_novice_outfit}
+up_sect_a_monolith_outfit = {+info_up_a_novice_outfit}
+up_sect_a_killer_outfit = {+info_up_a_novice_outfit}
+up_sect_a_svoboda_warrior_outfit = {+info_up_a_novice_outfit}
 
-up_sect_ac_wincheaster1300 = false 
+up_sect_ac_wincheaster1300 = false
 up_sect_bd_wincheaster1300 = false
 up_sect_bd_spas12 = false
 up_sect_ac_spas12 = false
@@ -59,43 +137,173 @@ up_sect_abcd_pkm = false
 up_sect_fh_scientific_outfit = false
 up_sect_aceg_scientific_outfit = false
 up_sect_bdfh_scientific_outfit = false
+
+up_sect_mp5_barrel_speed                       = {+info_up_ac_mp5}
+up_sect_mp5_barrel_compensator                 = {+info_up_ac_mp5}
+up_sect_mp5_body_coating                       = {+info_up_ac_mp5}
+up_sect_mp5_body_weight                        = {+info_up_ac_mp5}
+up_sect_mp5_extractor                          = {+info_up_bd_mp5}
+up_sect_mp5_usm_rpm                            = {+info_up_bd_mp5}
+up_sect_mp5_usm_accuracy                       = {+info_up_bd_mp5}
+
+; laser sights: only Duty and Freedom mount them (and there without a flash drive)
+up_sect_ak101_laser                            = false
+up_sect_ak74_laser                             = false
+up_sect_aks74u_laser                           = false
+up_sect_aks74ub_laser                          = false
+up_sect_bizon_laser                            = false
+up_sect_fiveseven_torch                        = false
+up_sect_fort17_flashlaser                      = false
+up_sect_glock17_torch                          = false
+up_sect_grach_flashlaser                       = false
+up_sect_groza_laser                            = false
+up_sect_groza_nimble_laser                     = false
+up_sect_mp5_laser                              = false
+up_sect_mp5sd_laser                            = false
+up_sect_protecta_laser                         = false
+up_sect_protecta_nimble_laser                  = false
+up_sect_sig220r_flashlaser                     = false
+up_sect_sig550_flashlaser                      = false
+up_sect_sig552_flashlaser                      = false
+up_sect_sr1m_flashlaser                        = false
+up_sect_ump45_laser                            = false
+up_sect_val_laser                              = false
+up_sect_vintorez_laser                         = false
+up_sect_wincheaster1300_flashlaser             = false
+up_sect_wincheaster1300_trapper_flashlaser     = false
+up_sect_wpn_deagle_flashlaser                  = false
+up_sect_wpn_l85_flashlaser                     = false
+up_sect_wpn_usp_flashlaser                     = false
+up_sect_wpn_walther_flashlaser                 = false
+
+; Suit flashlight: this one does not wire a lamp into a suit until the Cordon storyline is done.
+; The gate is the infoportion Sidorovich gives when the loot is handed over (task esc_bring_habar);
+; the Cordon trader already uses the same one for his better prices and stock. Only THIS mechanic
+; is gated -- the others carry no key for these nodes, which in this file means unrestricted.
+up_sect_torch_bandit_outfit                    = {+esc_bring_habar_complete}
+up_sect_torch_cs_heavy_outfit                  = {+esc_bring_habar_complete}
+up_sect_torch_cs_light_outfit                  = {+esc_bring_habar_complete}
+up_sect_torch_dolg_outfit                      = {+esc_bring_habar_complete}
+up_sect_torch_exo_outfit                       = {+esc_bring_habar_complete}
+up_sect_torch_novice_outfit                    = {+esc_bring_habar_complete}
+up_sect_torch_specops_outfit                   = {+esc_bring_habar_complete}
+up_sect_torch_stalker_outfit                   = {+esc_bring_habar_complete}
+up_sect_torch_svoboda_exo_outfit               = {+esc_bring_habar_complete}
+up_sect_torch_svoboda_heavy_outfit             = {+esc_bring_habar_complete}
+up_sect_torch_svoboda_light_outfit             = {+esc_bring_habar_complete}
+
 ;************************************************
 ;************** Escape stalker mechanic *********
 ;************************************************
 
-
 [esc_tech_stalkerbase]
-wpn_pm
-wpn_pm_up
-wpn_pm_9x19
-wpn_pb
-wpn_fort
-wpn_fort_up
-wpn_hpsa
-wpn_bm16
-wpn_toz34
-wpn_wincheaster1300
-wpn_mp5
-wpn_ak74u
+;agr_quest_duty_abakan
+;agr_quest_wpn_spas12
+;esc_quest_akm47
+;gar_quest_wpn_desert_eagle
+gar_quest_wpn_pm ; DC260818
+gar_quest_wpn_wincheaster1300 ; DC260818
+mar_quest_wpn_ak74u_1 ; DC260818
+mar_quest_wpn_pm_1 ; DC260818
+;red_quest_tank_minigun
+;wpn_abakan
+;wpn_abakan_up2
 wpn_ak74
+wpn_ak101
 wpn_ak74_up
 wpn_ak74_up2
+wpn_ak74u
+wpn_ak74u_snag
+;wpn_beretta
+wpn_bizon
+wpn_bm16
+wpn_bm16_obrez1
+wpn_bm16_obrez2
+wpn_bm16_obrez_full
+;wpn_colt1911
+;wpn_colt1911_up2
+;wpn_desert_eagle
+;wpn_desert_eagle_nimble
+;wpn_desert_eagle_up
+;wpn_fn2000
+wpn_fort_snag
+wpn_fort
+wpn_fort_up
+;wpn_g36
+;wpn_g36_up2
+wpn_glock17
+wpn_gauss
+;wpn_groza
+wpn_hpsa
 wpn_l85
+;wpn_lr300
+;wpn_lr300_up2
+wpn_mp5
+wpn_mp5sd
+wpn_ump45
+wpn_mp5_nimble
+wpn_pb
+;wpn_pkm
+wpn_pm
+wpn_pm_9x19
+wpn_pmm	; PMM (GS uniq of the PM)
+wpn_pm_up
+wpn_rg-6
+;wpn_rpg7
+;wpn_sig220
+;wpn_sig220_nimble
+;wpn_sig550
+;wpn_sig550_up2
+;wpn_spas12
+;wpn_protecta_nimble
+;wpn_svd
+;wpn_svu
+wpn_toz34
+wpn_toz34_obrez1
+wpn_toz34_obrez2
+wpn_toz34_obrez_full
+wpn_toz34_scoped
+;wpn_usp
+;wpn_usp_nimble
+;wpn_val
+;wpn_vintorez
+;wpn_vintorez_up
+;wpn_walther
+;wpn_walther_up2
+wpn_wincheaster1300
+wpn_wincheaster1300_trapper
 
-novice_outfit
+; csga weapons
+
 bandit_outfit
+;cs_heavy_outfit
+;cs_light_outfit
+;dolg_heavy_outfit
+;dolg_outfit
+;exo_outfit
+;gar_quest_novice_outfit
+mar_quest_novice_outfit_1 ; DC260818
+;military_outfit
+novice_outfit
+;scientific_outfit
+;specops_outfit
 stalker_outfit
 stalker_outfit_up_stalk
+;svoboda_exo_outfit
+;svoboda_heavy_outfit
+;svoboda_light_outfit
 
+; csga outfits
+bandit_coat_brown
+shram_coat_brown
+bandit_coat_black
+wpn_saiga12
+wpn_grach
+wpn_tt33
 [esc_tech_stalkerbase_upgr]
 up_sect_ac_mp5 = false
 up_sect_bd_mp5 = false
 
-up_sect_ac_wincheaster1300 = {+info_up_ac_wincheaster1300} 
-up_sect_bd_wincheaster1300 = {+info_up_bd_wincheaster1300}
-up_sect_bd_spas12 = {+info_up_ac_wincheaster1300}
-up_sect_ac_spas12 = {+info_up_bd_wincheaster1300}
-up_sect_ac_ak74u = {+info_up_ac_ak74u}
 
 up_sect_aceg_ak74 = false
 up_sect_aceg_abakan = false
@@ -107,54 +315,171 @@ up_sect_bdfh_abakan = false
 up_sect_bdfh_l85 = false
 up_sect_bdfh_lr300 = false
 up_sect_bdfh_sig550 = false
+
+up_sect_wincheaster1300_barrel_speed           = {+info_up_ac_wincheaster1300}
+up_sect_wincheaster1300_barrel_dispersion      = {+info_up_ac_wincheaster1300}
+up_sect_wincheaster1300_barrel_short           = {+info_up_ac_wincheaster1300}
+up_sect_wincheaster1300_mag                    = {+info_up_ac_wincheaster1300}
+up_sect_wincheaster1300_body_reliability       = {+info_up_bd_wincheaster1300}
+up_sect_wincheaster1300_soft_trigger           = {+info_up_bd_wincheaster1300}
+up_sect_wincheaster1300_patronnik_accuracy     = {+info_up_bd_wincheaster1300}
+up_sect_wincheaster1300_usm_reliability_details = {+info_up_bd_wincheaster1300}
+up_sect_wincheaster1300_usm_accuracy           = {+info_up_bd_wincheaster1300}
+up_sect_wincheaster1300_usm_recoil             = {+info_up_bd_wincheaster1300}
+up_sect_wincheaster1300_usm_light_details      = {+info_up_bd_wincheaster1300}
+up_sect_aks74u_usm_accuracy                    = {+info_up_ac_ak74u}
+up_sect_aks74u_usm_rpm                         = {+info_up_ac_ak74u}
+up_sect_aks74u_lightdetails                    = {+info_up_ac_ak74u}
+up_sect_aks74u_reliability                     = {+info_up_ac_ak74u}
+
+; laser sights: only Duty and Freedom mount them (and there without a flash drive)
+up_sect_ak101_laser                            = false
+up_sect_ak74_laser                             = false
+up_sect_aks74u_laser                           = false
+up_sect_aks74ub_laser                          = false
+up_sect_bizon_laser                            = false
+up_sect_fiveseven_torch                        = false
+up_sect_fort17_flashlaser                      = false
+up_sect_glock17_torch                          = false
+up_sect_grach_flashlaser                       = false
+up_sect_groza_laser                            = false
+up_sect_groza_nimble_laser                     = false
+up_sect_mp5_laser                              = false
+up_sect_mp5sd_laser                            = false
+up_sect_protecta_laser                         = false
+up_sect_protecta_nimble_laser                  = false
+up_sect_sig220r_flashlaser                     = false
+up_sect_sig550_flashlaser                      = false
+up_sect_sig552_flashlaser                      = false
+up_sect_sr1m_flashlaser                        = false
+up_sect_ump45_laser                            = false
+up_sect_val_laser                              = false
+up_sect_vintorez_laser                         = false
+up_sect_wincheaster1300_flashlaser             = false
+up_sect_wincheaster1300_trapper_flashlaser     = false
+up_sect_wpn_deagle_flashlaser                  = false
+up_sect_wpn_l85_flashlaser                     = false
+up_sect_wpn_usp_flashlaser                     = false
+up_sect_wpn_walther_flashlaser                 = false
+
 ;************************************************
 ;************** Garbage bandit mechanic *********
 ;************************************************
 
 [gar_bandit_fixer]
-wpn_pm
-wpn_pm_up
-wpn_pm_9x19
-wpn_pb
-wpn_fort
-wpn_fort_up
-wpn_hpsa
+agr_quest_duty_abakan ; DC260818
+agr_quest_wpn_spas12 ; DC260818
+;esc_quest_akm47
+gar_quest_wpn_desert_eagle ; DC260818
+gar_quest_wpn_pm ; DC260818
+gar_quest_wpn_wincheaster1300 ; DC260818
+mar_quest_wpn_ak74u_1 ; DC260818
+mar_quest_wpn_pm_1 ; DC260818
+;red_quest_tank_minigun
+wpn_abakan
+wpn_abakan_up2
+wpn_ak74
+wpn_ak101
+wpn_ak74_up
+wpn_ak74_up2
+wpn_ak74u
+wpn_ak74u_snag
+;wpn_beretta
+wpn_bizon
+wpn_bm16
+wpn_bm16_obrez1
+wpn_bm16_obrez2
+wpn_bm16_obrez_full
 wpn_colt1911
 wpn_colt1911_up2
 wpn_desert_eagle
-wpn_bm16
-wpn_toz34
-wpn_wincheaster1300
-wpn_spas12
-wpn_mp5
-wpn_ak74u
-wpn_ak74
-wpn_ak74_up
-wpn_ak74_up2
-wpn_abakan
-wpn_abakan_up2
+wpn_desert_eagle_nimble
+wpn_desert_eagle_up ; DC260818
+wpn_fn2000
+wpn_fort_snag
+wpn_fort
+wpn_fort_up
+wpn_g36
+wpn_g36_up2
+wpn_glock17
+wpn_gauss
+wpn_groza
+wpn_groza_nimble
+wpn_hpsa
 wpn_l85
 wpn_lr300
 wpn_lr300_up2
+wpn_mp5
+wpn_mp5sd
+wpn_ump45
+wpn_mp5_nimble
+wpn_pb
+;wpn_pkm
+wpn_pm
+wpn_pm_9x19
+wpn_pmm	; PMM (GS uniq of the PM)
+wpn_pm_up
+wpn_rg-6
+;wpn_rpg7
+;wpn_sig220
+;wpn_sig220_nimble
 wpn_sig550
+wpn_sig552
+wpn_sig550_luckygun
 wpn_sig550_up2
-wpn_g36
-wpn_g36_up2
-wpn_groza
-wpn_vintorez
+wpn_spas12
+wpn_protecta_nimble
+;wpn_svd
+;wpn_svu
+wpn_toz34
+wpn_toz34_obrez1
+wpn_toz34_obrez2
+wpn_toz34_obrez_full
+wpn_toz34_scoped
+;wpn_usp
+;wpn_usp_nimble
 wpn_val
+wpn_vintorez
+wpn_vintorez_nimble
+wpn_vintorez_up
+;wpn_walther
+;wpn_walther_up2
+wpn_wincheaster1300
+wpn_wincheaster1300_trapper
 
-novice_outfit
+; csga weapons
+
 bandit_outfit
+;cs_heavy_outfit
+;cs_light_outfit
+;dolg_heavy_outfit
+;dolg_outfit
+exo_outfit
+;gar_quest_novice_outfit
+mar_quest_novice_outfit_1 ; DC260818
+military_outfit
+novice_outfit
+scientific_outfit
+specops_outfit
 stalker_outfit
 stalker_outfit_up_stalk
-specops_outfit
-scientific_outfit
-military_outfit
-exo_outfit
+;svoboda_exo_outfit
+;svoboda_heavy_outfit
+;svoboda_light_outfit
 
+; csga outfits
+bandit_coat_black
+bandit_coat_brown
+shram_coat_brown
+killer_outfit
+wpn_saiga12
+wpn_grach
+wpn_gsh18
+wpn_tt33
+wpn_stechkin
+wpn_apb
 [gar_bandit_fixer_upgr]
-up_sect_ac_wincheaster1300 = false 
+up_sect_ac_wincheaster1300 = false
 up_sect_bd_wincheaster1300 = false
 up_sect_ac_spas12 = false
 up_sect_bd_spas12 = false
@@ -164,52 +489,151 @@ up_sect_aceg_abakan = false
 up_sect_bdfh_abakan = false
 
 up_sect_fh_scientific_outfit = {+info_up_fh_scientific_outfit}
-up_sect_aceg_scientific_outfit = {+info_up_bdfh_scientific_outfit}
-up_sect_bdfh_scientific_outfit = {+info_up_aceg_scientific_outfit}
+up_sect_aceg_scientific_outfit = {+info_up_aceg_scientific_outfit} ; {+info_up_bdfh_scientific_outfit} ; SRP fix
+up_sect_bdfh_scientific_outfit = {+info_up_bdfh_scientific_outfit} ; {+info_up_aceg_scientific_outfit} ; SRP fix
+
+; laser sights: only Duty and Freedom mount them (and there without a flash drive)
+up_sect_ak101_laser                            = false
+up_sect_ak74_laser                             = false
+up_sect_aks74u_laser                           = false
+up_sect_aks74ub_laser                          = false
+up_sect_bizon_laser                            = false
+up_sect_fiveseven_torch                        = false
+up_sect_fort17_flashlaser                      = false
+up_sect_glock17_torch                          = false
+up_sect_grach_flashlaser                       = false
+up_sect_groza_laser                            = false
+up_sect_groza_nimble_laser                     = false
+up_sect_mp5_laser                              = false
+up_sect_mp5sd_laser                            = false
+up_sect_protecta_laser                         = false
+up_sect_protecta_nimble_laser                  = false
+up_sect_sig220r_flashlaser                     = false
+up_sect_sig550_flashlaser                      = false
+up_sect_sig552_flashlaser                      = false
+up_sect_sr1m_flashlaser                        = false
+up_sect_ump45_laser                            = false
+up_sect_val_laser                              = false
+up_sect_vintorez_laser                         = false
+up_sect_wincheaster1300_flashlaser             = false
+up_sect_wincheaster1300_trapper_flashlaser     = false
+up_sect_wpn_deagle_flashlaser                  = false
+up_sect_wpn_l85_flashlaser                     = false
+up_sect_wpn_usp_flashlaser                     = false
+up_sect_wpn_walther_flashlaser                 = false
+
+;************************************************
+;************** Garbage digger mechanic *********
+;************************************************
 
 [gar_digger_fixer]
-wpn_pm
-wpn_pm_up
-wpn_pm_9x19
-wpn_pb
-wpn_fort
-wpn_fort_up
-wpn_hpsa
-wpn_beretta
-wpn_walther
-wpn_walther_up2
-wpn_colt1911
-wpn_colt1911_up2
-wpn_usp
-wpn_sig220
-wpn_desert_eagle
-wpn_bm16
-wpn_toz34
-wpn_wincheaster1300
-wpn_spas12
-wpn_mp5
-wpn_ak74u
-wpn_ak74
-wpn_ak74_up
-wpn_ak74_up2
+agr_quest_duty_abakan ; DC260818
+agr_quest_wpn_spas12 ; DC260818
+;esc_quest_akm47
+gar_quest_wpn_desert_eagle ; DC260818
+gar_quest_wpn_pm ; DC260818
+gar_quest_wpn_wincheaster1300 ; DC260818
+mar_quest_wpn_ak74u_1 ; DC260818
+mar_quest_wpn_pm_1 ; DC260818
+;red_quest_tank_minigun
 wpn_abakan
 wpn_abakan_up2
+wpn_ak74
+wpn_ak101
+wpn_ak74_up
+wpn_ak74_up2
+wpn_ak74u
+wpn_ak74u_snag
+wpn_beretta
+wpn_bm16
+wpn_bm16_obrez1
+wpn_bm16_obrez2
+wpn_bm16_obrez_full
+wpn_colt1911
+wpn_colt1911_up2
+wpn_desert_eagle
+wpn_desert_eagle_nimble
+wpn_desert_eagle_up ; DC260818
+wpn_fn2000
+wpn_fort_snag
+wpn_fort
+wpn_fort_up
+;wpn_g36
+;wpn_g36_up2
+wpn_gauss
+;wpn_groza
+wpn_hpsa
 wpn_l85
 wpn_lr300
 wpn_lr300_up2
+wpn_mp5
+wpn_mp5sd
+wpn_ump45
+wpn_mp5_nimble
+wpn_pb
+;wpn_pkm
+wpn_pm
+wpn_pm_9x19
+wpn_pmm	; PMM (GS uniq of the PM)
+wpn_pm_up
+wpn_rg-6
+;wpn_rpg7
+wpn_sig220
+wpn_sig220_nimble
 wpn_sig550
+wpn_sig552
+wpn_sig550_luckygun
 wpn_sig550_up2
+wpn_spas12
+wpn_protecta_nimble
+;wpn_svd
+;wpn_svu
+wpn_toz34
+wpn_toz34_obrez1
+wpn_toz34_obrez2
+wpn_toz34_obrez_full
+wpn_toz34_scoped
+wpn_usp
+wpn_usp_nimble
+;wpn_val
+;wpn_vintorez
+;wpn_vintorez_up
+wpn_walther
+wpn_walther_up2
+wpn_wincheaster1300
+wpn_wincheaster1300_trapper
 
-novice_outfit
+; csga weapons
+
 bandit_outfit
+;cs_heavy_outfit
+;cs_light_outfit
+;dolg_heavy_outfit
+;dolg_outfit
+;exo_outfit
+;gar_quest_novice_outfit
+mar_quest_novice_outfit_1 ; DC260818
+;military_outfit
+novice_outfit
+;scientific_outfit
+specops_outfit
 stalker_outfit
 stalker_outfit_up_stalk
-specops_outfit
+;svoboda_exo_outfit
+;svoboda_heavy_outfit
+;svoboda_light_outfit
 
+; csga outfits
+bandit_coat_brown
+shram_coat_brown
+bandit_coat_black
+wpn_grach
+wpn_gsh18
+wpn_tt33
 [gar_digger_fixer_upgr]
 up_sect_ac_mp5 = false
 up_sect_bd_mp5 = false
-up_sect_ac_wincheaster1300 = false 
+up_sect_ac_wincheaster1300 = false
 up_sect_bd_wincheaster1300 = false
 up_sect_ac_spas12 = false
 up_sect_bd_spas12 = false
@@ -251,59 +675,150 @@ up_sect_bd_sig550 = false
 up_sect_fh_sig550 = false
 up_sect_bdfh_sig550 = false
 
+; laser sights: only Duty and Freedom mount them (and there without a flash drive)
+up_sect_ak101_laser                            = false
+up_sect_ak74_laser                             = false
+up_sect_aks74u_laser                           = false
+up_sect_aks74ub_laser                          = false
+up_sect_bizon_laser                            = false
+up_sect_fiveseven_torch                        = false
+up_sect_fort17_flashlaser                      = false
+up_sect_glock17_torch                          = false
+up_sect_grach_flashlaser                       = false
+up_sect_groza_laser                            = false
+up_sect_groza_nimble_laser                     = false
+up_sect_mp5_laser                              = false
+up_sect_mp5sd_laser                            = false
+up_sect_protecta_laser                         = false
+up_sect_protecta_nimble_laser                  = false
+up_sect_sig220r_flashlaser                     = false
+up_sect_sig550_flashlaser                      = false
+up_sect_sig552_flashlaser                      = false
+up_sect_sr1m_flashlaser                        = false
+up_sect_ump45_laser                            = false
+up_sect_val_laser                              = false
+up_sect_vintorez_laser                         = false
+up_sect_wincheaster1300_flashlaser             = false
+up_sect_wincheaster1300_trapper_flashlaser     = false
+up_sect_wpn_deagle_flashlaser                  = false
+up_sect_wpn_l85_flashlaser                     = false
+up_sect_wpn_usp_flashlaser                     = false
+up_sect_wpn_walther_flashlaser                 = false
+
 ;************************************************
 ;************** Valley freedom mechanic *********
 ;************************************************
 
 [val_freedom_fixer]
-wpn_pm
-wpn_pm_up
-wpn_pm_9x19
-wpn_pb
-wpn_fort
-wpn_fort_up
-wpn_hpsa
-wpn_beretta
-wpn_walther
-wpn_walther_up2
-wpn_colt1911
-wpn_colt1911_up2
-wpn_usp
-wpn_sig220
-wpn_bm16
-wpn_toz34
-wpn_wincheaster1300
-wpn_spas12
-wpn_mp5
-wpn_ak74u
+agr_quest_duty_abakan ; DC260818
+agr_quest_wpn_spas12 ; DC260818
+;esc_quest_akm47
+gar_quest_wpn_desert_eagle	; enabled: the Freedom mechanic already carries a deagle node gate (up_sect_wpn_deagle_flashlaser)
+gar_quest_wpn_pm ; DC260818
+gar_quest_wpn_wincheaster1300 ; DC260818
+mar_quest_wpn_ak74u_1 ; DC260818
+mar_quest_wpn_pm_1 ; DC260818
+;red_quest_tank_minigun
+wpn_abakan
+wpn_abakan_up2 ; DC260818
 wpn_ak74
+wpn_ak101
 wpn_ak74_up
 wpn_ak74_up2
-wpn_abakan
+wpn_ak74u
+wpn_ak74u_snag
+wpn_beretta
+wpn_bm16
+wpn_bm16_obrez1
+wpn_bm16_obrez2
+wpn_bm16_obrez_full
+wpn_colt1911
+wpn_colt1911_up2
+wpn_desert_eagle	; enabled: the Freedom mechanic already carries a deagle node gate (up_sect_wpn_deagle_flashlaser)
+wpn_desert_eagle_nimble	; enabled: the Freedom mechanic already carries a deagle node gate (up_sect_wpn_deagle_flashlaser)
+wpn_desert_eagle_up	; enabled: the Freedom mechanic already carries a deagle node gate (up_sect_wpn_deagle_flashlaser)
+wpn_fn2000
+wpn_fiveseven
+wpn_fort_snag
+wpn_fort
+wpn_fort_up
+wpn_g36
+wpn_g36_up2
+wpn_glock17
+wpn_gauss
+;wpn_groza
+wpn_hpsa
 wpn_l85
 wpn_lr300
 wpn_lr300_up2
+wpn_mp5
+wpn_mp5sd
+wpn_ump45
+wpn_mp5_nimble
+wpn_pb
+;wpn_pkm
+wpn_pm
+wpn_pm_9x19
+wpn_pmm	; PMM (GS uniq of the PM)
+wpn_pm_up
+wpn_rg-6
+;wpn_rpg7
+wpn_sig220
+wpn_sig220_nimble
 wpn_sig550
+wpn_sig552
+wpn_sig550_luckygun
 wpn_sig550_up2
-wpn_g36
-wpn_g36_up2
-wpn_val
-wpn_vintorez
+wpn_spas12
+wpn_protecta_nimble
 wpn_svd
 wpn_svu
+wpn_svu_nimble
+wpn_toz34
+wpn_toz34_obrez1
+wpn_toz34_obrez2
+wpn_toz34_obrez_full
+wpn_toz34_scoped
+wpn_usp
+wpn_usp_nimble
+wpn_val
+wpn_vintorez
+wpn_vintorez_nimble
+wpn_vintorez_up
+wpn_walther
+wpn_walther_up2
+wpn_wincheaster1300
+wpn_wincheaster1300_trapper
 
-stalker_outfit
-stalker_outfit_up_stalk
+; csga weapons
+
+;bandit_outfit
+;cs_heavy_outfit
+;cs_light_outfit
+;dolg_heavy_outfit
+;dolg_outfit
+exo_outfit
+;gar_quest_novice_outfit
+;mar_quest_novice_outfit_1
+military_outfit
+;novice_outfit
 scientific_outfit
 specops_outfit
-military_outfit
-svoboda_light_outfit
-svoboda_heavy_outfit
+stalker_outfit
+stalker_outfit_up_stalk
 svoboda_exo_outfit
-exo_outfit
+svoboda_heavy_outfit
+svoboda_light_outfit
 
+; csga outfits
+svoboda_warrior_outfit
+killer_outfit
+wpn_saiga12
+wpn_grach
+wpn_p90
+wpn_tt33
 [val_freedom_fixer_upgr]
-up_sect_ac_wincheaster1300 = false 
+up_sect_ac_wincheaster1300 = false
 up_sect_bd_wincheaster1300 = false
 up_sect_ac_spas12 = false
 up_sect_bd_spas12 = false
@@ -313,67 +828,175 @@ up_sect_bdfh_scientific_outfit = false
 up_sect_aceg_ak74 = false
 up_sect_aceg_abakan = false
 up_sect_aceg_l85 = false
-up_sect_aceg_lr300 = false
 up_sect_aceg_sig550 = false
-up_sect_aceg_g36 = false
 
-up_sect_ab_svu = {+info_up_ab_svu}
-up_sect_cd_svu = {+info_up_cd_svu}
-up_sect_abcd_svu = {+info_up_abcd_svu}
+up_sect_wpn_svu_gascam                         = {+info_up_ab_svu}
+up_sect_wpn_svu_light_tsevie                   = {+info_up_ab_svu}
+up_sect_wpn_svu_barrel_recoil                  = {+info_up_ab_svu}
+up_sect_wpn_svu_barrel_bullet_speed            = {+info_up_ab_svu}
+up_sect_wpn_svu_barrel_accuracy                = {+info_up_ab_svu}
+up_sect_wpn_svu_usm_rpm                        = {+info_up_cd_svu}
+up_sect_wpn_svu_usm_reliability                = {+info_up_cd_svu}
+up_sect_wpn_svu_zatvor_reliability             = {+info_up_cd_svu}
+up_sect_wpn_svu_zatvor_accuracy                = {+info_up_cd_svu}
+up_sect_wpn_svu_zatvor_balancer_recoil         = {+info_up_cd_svu}
+up_sect_wpn_svu_mag                            = {+info_up_abcd_svu}
+up_sect_wpn_svu_mag_lock                       = {+info_up_abcd_svu}
+up_sect_wpn_svu_pokritie                       = {+info_up_abcd_svu}
+up_sect_wpn_svd_gascam                         = {+info_up_ab_svu}
+up_sect_wpn_svd_light_tsevie                   = {+info_up_ab_svu}
+up_sect_wpn_svd_barrel_reliability             = {+info_up_ab_svu}
+up_sect_wpn_svd_barrel_accuracy                = {+info_up_ab_svu}
+up_sect_wpn_svd_barrel_bullet_speed            = {+info_up_ab_svu}
+up_sect_wpn_svd_zatvor_balanser                = {+info_up_cd_svu}
+up_sect_wpn_svd_zatvor_reliability             = {+info_up_cd_svu}
+up_sect_wpn_svd_usm_reliability                = {+info_up_cd_svu}
+up_sect_wpn_svd_usm_accuracy                   = {+info_up_cd_svu}
+up_sect_wpn_svd_usm_rpm                        = {+info_up_cd_svu}
+up_sect_wpn_svd_light_priklad                  = {+info_up_abcd_svu}
+up_sect_wpn_svd_pokritie                       = {+info_up_abcd_svu}
 
-up_sect_ab_svd = {+info_up_ab_svu}
-up_sect_cd_svd = {+info_up_cd_svu}
-up_sect_abcd_svd = {+info_up_abcd_svu}
+; Freedom fixer: laser mounts unlock once all three SVU flash drives are handed over
+up_sect_ak101_laser                            = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_ak74_laser                             = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_aks74u_laser                           = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_aks74ub_laser                          = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_bizon_laser                            = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_fort17_flashlaser                      = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_fiveseven_torch                        = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_glock17_torch                          = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_grach_flashlaser                       = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_groza_laser                            = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_groza_nimble_laser                     = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_mp5_laser                              = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_mp5sd_laser                            = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_protecta_laser                         = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_protecta_nimble_laser                  = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_sig220r_flashlaser                     = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_sig550_flashlaser                      = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_sig552_flashlaser                      = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_sr1m_flashlaser                        = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_ump45_laser                            = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_val_laser                              = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_vintorez_laser                         = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_wincheaster1300_flashlaser             = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_wincheaster1300_trapper_flashlaser     = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_wpn_deagle_flashlaser                  = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_wpn_l85_flashlaser                     = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_wpn_usp_flashlaser                     = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
+up_sect_wpn_walther_flashlaser                 = {+info_up_ab_svu +info_up_cd_svu +info_up_abcd_svu}
 
 ;************************************************
 ;************** Agroprom duty mechanic **********
 ;************************************************
 
 [agr_duty_base_mechanic]
-wpn_pm
-wpn_pm_up
-wpn_pm_9x19
-wpn_pb
-wpn_fort
-wpn_fort_up
-wpn_hpsa
-wpn_beretta
-wpn_walther
-wpn_walther_up2
-wpn_colt1911
-wpn_colt1911_up2
-wpn_usp
-wpn_sig220
-wpn_desert_eagle
-wpn_bm16
-wpn_toz34
-wpn_wincheaster1300
-wpn_spas12
-wpn_ak74u
-wpn_ak74
-wpn_ak74_up
-wpn_ak74_up2
+agr_quest_duty_abakan ; DC260818
+agr_quest_wpn_spas12 ; DC260818
+;esc_quest_akm47
+gar_quest_wpn_desert_eagle ; DC260818
+gar_quest_wpn_pm ; DC260818
+gar_quest_wpn_wincheaster1300 ; DC260818
+mar_quest_wpn_ak74u_1 ; DC260818
+mar_quest_wpn_pm_1 ; DC260818
+;red_quest_tank_minigun
 wpn_abakan
 wpn_abakan_up2
+wpn_ak74
+wpn_ak101
+wpn_ak74_up
+wpn_ak74_up2
+wpn_ak74u
+wpn_ak74u_snag
+wpn_beretta
+wpn_bizon
+wpn_bm16
+wpn_bm16_obrez1
+wpn_bm16_obrez2
+wpn_bm16_obrez_full
+wpn_colt1911
+wpn_colt1911_up2
+wpn_desert_eagle
+wpn_desert_eagle_nimble
+wpn_desert_eagle_up ; DC260818
+wpn_fn2000
+wpn_fort_snag
+wpn_fort
+wpn_fort_up
+;wpn_g36
+;wpn_g36_up2
+wpn_glock17
+wpn_gauss
+wpn_groza
+wpn_groza_nimble
+wpn_hpsa
 wpn_l85
 wpn_lr300
 wpn_lr300_up2
+;wpn_mp5
+wpn_pb
+wpn_pkm
+wpn_pm
+wpn_pm_9x19
+wpn_pmm	; PMM (GS uniq of the PM)
+wpn_pm_up
+wpn_rg-6
+;wpn_rpg7
+wpn_sig220
+wpn_sig220_nimble
 wpn_sig550
+wpn_sig552
+wpn_sig550_luckygun
 wpn_sig550_up2
-wpn_groza
+wpn_spas12
+wpn_protecta_nimble
+;wpn_svd
+;wpn_svu
+wpn_toz34
+wpn_toz34_obrez1
+wpn_toz34_obrez2
+wpn_toz34_obrez_full
+wpn_toz34_scoped
+wpn_usp
+wpn_usp_nimble
 wpn_val
 wpn_vintorez
-wpn_pkm
+wpn_vintorez_nimble
+wpn_vintorez_up
+wpn_walther
+wpn_walther_up2
+wpn_wincheaster1300
+wpn_wincheaster1300_trapper
 
+; csga weapons
+
+;bandit_outfit
+;cs_heavy_outfit
+;cs_light_outfit
+dolg_heavy_outfit
+dolg_outfit
+exo_outfit
+;gar_quest_novice_outfit
+;mar_quest_novice_outfit_1
+military_outfit
+;novice_outfit
+scientific_outfit
+specops_outfit
 stalker_outfit
 stalker_outfit_up_stalk
-specops_outfit
-scientific_outfit
-military_outfit
-dolg_outfit
-dolg_heavy_outfit
-exo_outfit
+;svoboda_exo_outfit
+;svoboda_heavy_outfit
+;svoboda_light_outfit
 
+; csga outfits
+scientific_outfit_dolg
+wpn_saiga12
+wpn_grach
+wpn_gsh18
+wpn_sr1m
+wpn_tt33
+wpn_stechkin
+wpn_apb
 [agr_duty_base_mechanic_upgr]
 up_sect_ac_ak74u = false
 up_sect_aceg_scientific_outfit = false
@@ -385,50 +1008,150 @@ up_sect_bdfh_lr300 = false
 up_sect_bdfh_sig550 = false
 
 up_sect_ab_pkm = {+info_up_ab_pkm}
-up_sect_cd_pkm = {+info_up_ab_pkm}
-up_sect_abcd_pkm = {+info_up_ab_pkm}
+up_sect_cd_pkm = {+info_up_cd_pkm} ; {+info_up_ab_pkm} ; SRP fix
+up_sect_abcd_pkm = {+info_up_abcd_pkm} ; {+info_up_ab_pkm} ; SRP fix
+
+; Duty mechanic: laser mounts unlock once all three PKM flash drives are handed over
+up_sect_ak101_laser                            = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_ak74_laser                             = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_aks74u_laser                           = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_aks74ub_laser                          = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_bizon_laser                            = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_fort17_flashlaser                      = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_fiveseven_torch                        = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_glock17_torch                          = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_grach_flashlaser                       = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_groza_laser                            = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_groza_nimble_laser                     = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_mp5_laser                              = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_mp5sd_laser                            = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_protecta_laser                         = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_protecta_nimble_laser                  = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_sig220r_flashlaser                     = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_sig550_flashlaser                      = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_sig552_flashlaser                      = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_sr1m_flashlaser                        = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_ump45_laser                            = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_val_laser                              = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_vintorez_laser                         = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_wincheaster1300_flashlaser             = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_wincheaster1300_trapper_flashlaser     = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_wpn_deagle_flashlaser                  = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_wpn_l85_flashlaser                     = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_wpn_usp_flashlaser                     = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
+up_sect_wpn_walther_flashlaser                 = {+info_up_ab_pkm +info_up_cd_pkm +info_up_abcd_pkm}
 
 ;************************************************
 ;************** Agroprom stalker mechanic *******
 ;************************************************
 
-
 [agr_stalker_base_mechanic]
-wpn_pm
-wpn_pm_up
-wpn_pm_9x19
-wpn_pb
-wpn_fort
-wpn_fort_up 
-wpn_hpsa
+;agr_quest_duty_abakan
+agr_quest_wpn_spas12 ; DC260818
+;esc_quest_akm47
+gar_quest_wpn_desert_eagle ; DC260818
+gar_quest_wpn_pm ; DC260818
+gar_quest_wpn_wincheaster1300 ; DC260818
+mar_quest_wpn_ak74u_1 ; DC260818
+mar_quest_wpn_pm_1 ; DC260818
+;red_quest_tank_minigun
+;wpn_abakan
+;wpn_abakan_up2
+wpn_ak74
+wpn_ak101
+wpn_ak74_up ; DC260818
+wpn_ak74_up2 ; DC260818
+wpn_ak74u
+wpn_ak74u_snag
 wpn_beretta
-wpn_walther
-wpn_walther_up2
+wpn_bm16
+wpn_bm16_obrez1
+wpn_bm16_obrez2
+wpn_bm16_obrez_full
 wpn_colt1911
 wpn_colt1911_up2
-wpn_usp
-wpn_sig220
 wpn_desert_eagle
-wpn_bm16
-wpn_toz34
-wpn_wincheaster1300
-wpn_spas12
-wpn_ak74u
-wpn_mp5
-wpn_ak74
+wpn_desert_eagle_nimble
+wpn_desert_eagle_up ; DC260818
+wpn_fn2000
+wpn_fort_snag
+wpn_fort
+wpn_fort_up
+;wpn_g36
+;wpn_g36_up2
+wpn_glock17
+wpn_gauss
+;wpn_groza
+wpn_hpsa
 wpn_l85
 wpn_lr300
 wpn_lr300_up2
+wpn_mp5
+wpn_mp5sd
+wpn_ump45
+wpn_mp5_nimble
+wpn_pb
+;wpn_pkm
+wpn_pm
+wpn_pm_9x19
+wpn_pmm	; PMM (GS uniq of the PM)
+wpn_pm_up
+wpn_rg-6
+;wpn_rpg7
+wpn_sig220
+wpn_sig220_nimble
 wpn_sig550
+wpn_sig552
+wpn_sig550_luckygun
 wpn_sig550_up2
+wpn_spas12
+wpn_protecta_nimble
+;wpn_svd
+;wpn_svu
+wpn_toz34
+wpn_toz34_obrez1
+wpn_toz34_obrez2
+wpn_toz34_obrez_full
+wpn_toz34_scoped
+wpn_usp
+wpn_usp_nimble
+;wpn_val
+;wpn_vintorez
+;wpn_vintorez_up
+wpn_walther
+wpn_walther_up2
+wpn_wincheaster1300
+wpn_wincheaster1300_trapper
 
-stalker_outfit
+; csga weapons
+
+;bandit_outfit
+;cs_heavy_outfit
+;cs_light_outfit
+;dolg_heavy_outfit
+;dolg_outfit
+;exo_outfit
+;gar_quest_novice_outfit
+;mar_quest_novice_outfit_1
+;military_outfit
+;novice_outfit
+;scientific_outfit
 specops_outfit
-
+stalker_outfit
+stalker_outfit_up_stalk ; DC260818
+;svoboda_exo_outfit
+;svoboda_heavy_outfit
+;svoboda_light_outfit
+wpn_saiga12
+wpn_grach
+wpn_gsh18
+wpn_tt33
+wpn_stechkin
+wpn_apb
 [agr_stalker_base_mechanic_upgr]
 up_sect_ac_mp5 = false
 up_sect_bd_mp5 = false
-up_sect_ac_wincheaster1300 = false 
+up_sect_ac_wincheaster1300 = false
 up_sect_bd_wincheaster1300 = false
 up_sect_ac_ak74u = false
 up_sect_aceg_scientific_outfit = false
@@ -458,9 +1181,55 @@ up_sect_bd_sig550 = false
 up_sect_fh_sig550 = false
 up_sect_bdfh_sig550 = false
 
-up_sect_ac_desert_eagle = {+info_up_ac_desert_eagle}
-up_sect_bd_desert_eagle = {+info_up_bd_desert_eagle}
-up_sect_ac_spas12 = {+info_up_ac_spas12}
+up_sect_wpn_deagle_barrel_compensator          = {+info_up_ac_desert_eagle}
+up_sect_wpn_deagle_barrel_hp                   = {+info_up_ac_desert_eagle}
+up_sect_wpn_deagle_barrel_accuracy             = {+info_up_ac_desert_eagle}
+up_sect_wpn_deagle_usm_accuracy                = {+info_up_ac_desert_eagle}
+up_sect_wpn_deagle_usm_rpm                     = {+info_up_ac_desert_eagle}
+up_sect_wpn_deagle_usm_recoil                  = {+info_up_ac_desert_eagle}
+up_sect_wpn_deagle_usm_reliability             = {+info_up_ac_desert_eagle}
+up_sect_wpn_deagle_mag_uderzhatel              = {+info_up_bd_desert_eagle}
+up_sect_wpn_deagle_mag_balance                 = {+info_up_bd_desert_eagle}
+up_sect_wpn_deagle_patronnik                   = {+info_up_bd_desert_eagle}
+up_sect_wpn_deagle_pokritie                    = {+info_up_bd_desert_eagle}
+up_sect_wpn_deagle_zapiratel                   = {+info_up_bd_desert_eagle}
+up_sect_protecta_usm_recoil                    = {+info_up_ac_spas12}
+up_sect_protecta_usm_rpm                       = {+info_up_ac_spas12}
+up_sect_protecta_barrel_silencer               = {+info_up_ac_spas12}
+up_sect_protecta_barrel_narezka                = {+info_up_ac_spas12}
+up_sect_protecta_ejector                       = {+info_up_ac_spas12}
+up_sect_protecta_light_details                 = {+info_up_ac_spas12}
+up_sect_protecta_body_reliability              = {+info_up_ac_spas12}
+
+; laser sights: only Duty and Freedom mount them (and there without a flash drive)
+up_sect_ak101_laser                            = false
+up_sect_ak74_laser                             = false
+up_sect_aks74u_laser                           = false
+up_sect_aks74ub_laser                          = false
+up_sect_bizon_laser                            = false
+up_sect_fiveseven_torch                        = false
+up_sect_fort17_flashlaser                      = false
+up_sect_glock17_torch                          = false
+up_sect_grach_flashlaser                       = false
+up_sect_groza_laser                            = false
+up_sect_groza_nimble_laser                     = false
+up_sect_mp5_laser                              = false
+up_sect_mp5sd_laser                            = false
+up_sect_protecta_laser                         = false
+up_sect_protecta_nimble_laser                  = false
+up_sect_sig220r_flashlaser                     = false
+up_sect_sig550_flashlaser                      = false
+up_sect_sig552_flashlaser                      = false
+up_sect_sr1m_flashlaser                        = false
+up_sect_ump45_laser                            = false
+up_sect_val_laser                              = false
+up_sect_vintorez_laser                         = false
+up_sect_wincheaster1300_flashlaser             = false
+up_sect_wincheaster1300_trapper_flashlaser     = false
+up_sect_wpn_deagle_flashlaser                  = false
+up_sect_wpn_l85_flashlaser                     = false
+up_sect_wpn_usp_flashlaser                     = false
+up_sect_wpn_walther_flashlaser                 = false
 
 ;************************************************
 ;************** Red forest forester *************
@@ -468,62 +1237,38 @@ up_sect_ac_spas12 = {+info_up_ac_spas12}
 
 [red_forester]
 he_upgrade_nothing
-wpn_pm
-wpn_pm_up
-wpn_pm_9x19		
-wpn_pb		
-wpn_fort
-wpn_fort_up	
-wpn_hpsa
-wpn_beretta
-wpn_walther
-wpn_walther_up2
-wpn_colt1911
-wpn_colt1911_up2
-wpn_usp
-wpn_sig220
-wpn_desert_eagle
-wpn_bm16	
-wpn_toz34
-wpn_winche
-wpn_spas12
-wpn_ak74u
-wpn_mp5		
-wpn_ak74
-wpn_ak74_up
-wpn_ak74_up2	
-wpn_abakan
-wpn_abakan_up2
-wpn_l85		
-wpn_lr300
-wpn_lr300_up2
-wpn_sig550
-wpn_sig550_up2
-wpn_g36		
-wpn_fn2000
-wpn_groza
-wpn_val		
-wpn_vintorez
-wpn_svu		
-wpn_svd		
-wpn_pkm
-
-novice_outfit
-bandit_outfit
-specops_outfit
-military_outfit
-stalker_outfit
-scientific_outfit
-exo_outfit
-svoboda_light_outfit
-svoboda_heavy_outfit
-svoboda_exo_outfit
-cs_light_outfit
-cs_heavy_outfit
-dolg_outfit	
-dolg_heavy_outfit	
 
 [red_forester_upgr]
+
+; laser sights: only Duty and Freedom mount them (and there without a flash drive)
+up_sect_ak101_laser                            = false
+up_sect_ak74_laser                             = false
+up_sect_aks74u_laser                           = false
+up_sect_aks74ub_laser                          = false
+up_sect_bizon_laser                            = false
+up_sect_fiveseven_torch                        = false
+up_sect_fort17_flashlaser                      = false
+up_sect_glock17_torch                          = false
+up_sect_grach_flashlaser                       = false
+up_sect_groza_laser                            = false
+up_sect_groza_nimble_laser                     = false
+up_sect_mp5_laser                              = false
+up_sect_mp5sd_laser                            = false
+up_sect_protecta_laser                         = false
+up_sect_protecta_nimble_laser                  = false
+up_sect_sig220r_flashlaser                     = false
+up_sect_sig550_flashlaser                      = false
+up_sect_sig552_flashlaser                      = false
+up_sect_sr1m_flashlaser                        = false
+up_sect_ump45_laser                            = false
+up_sect_val_laser                              = false
+up_sect_vintorez_laser                         = false
+up_sect_wincheaster1300_flashlaser             = false
+up_sect_wincheaster1300_trapper_flashlaser     = false
+up_sect_wpn_deagle_flashlaser                  = false
+up_sect_wpn_l85_flashlaser                     = false
+up_sect_wpn_usp_flashlaser                     = false
+up_sect_wpn_walther_flashlaser                 = false
 
 ;************************************************
 ;************** Limansk cs com ******************
@@ -533,3 +1278,33 @@ dolg_heavy_outfit
 he_upgrade_nothing
 
 [kat_cs_commander_upgr]
+
+; laser sights: only Duty and Freedom mount them (and there without a flash drive)
+up_sect_ak101_laser                            = false
+up_sect_ak74_laser                             = false
+up_sect_aks74u_laser                           = false
+up_sect_aks74ub_laser                          = false
+up_sect_bizon_laser                            = false
+up_sect_fiveseven_torch                        = false
+up_sect_fort17_flashlaser                      = false
+up_sect_glock17_torch                          = false
+up_sect_grach_flashlaser                       = false
+up_sect_groza_laser                            = false
+up_sect_groza_nimble_laser                     = false
+up_sect_mp5_laser                              = false
+up_sect_mp5sd_laser                            = false
+up_sect_protecta_laser                         = false
+up_sect_protecta_nimble_laser                  = false
+up_sect_sig220r_flashlaser                     = false
+up_sect_sig550_flashlaser                      = false
+up_sect_sig552_flashlaser                      = false
+up_sect_sr1m_flashlaser                        = false
+up_sect_ump45_laser                            = false
+up_sect_val_laser                              = false
+up_sect_vintorez_laser                         = false
+up_sect_wincheaster1300_flashlaser             = false
+up_sect_wincheaster1300_trapper_flashlaser     = false
+up_sect_wpn_deagle_flashlaser                  = false
+up_sect_wpn_l85_flashlaser                     = false
+up_sect_wpn_usp_flashlaser                     = false
+up_sect_wpn_walther_flashlaser                 = false

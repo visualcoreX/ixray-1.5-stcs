@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_ammo_7.62x25">
+		<text>7.62x25mm TT rounds</text>
+	</string>
+	<string id="gunsl_ammo_7.62x25_short">
+		<text>7.62x25mm TT</text>
+	</string>
+	<string id="gunsl_ammo_7.62x25_descr">
+		<text>Soviet pistol 7.62x25 Tokarev cartridge that proved itself during World War 2 and had not lost its popularity even until the 1990s. Due to large reserves of this type of ammunition left in army warehouses and its relatively, the round low price received widespread use in the Zone. Has decent armor-piercing characteristics, but lacks in stopping power compared to modern counterparts.</text>
+	</string>
+</string_table>

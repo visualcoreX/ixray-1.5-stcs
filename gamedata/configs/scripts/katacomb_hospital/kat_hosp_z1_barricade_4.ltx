@@ -125,7 +125,7 @@ radius = 5
 no_retreat = true
 def_state_moving = sneak_run
 meet = no_meet
-on_signal = minigun | {-minigun_off} remark %=play_sound(clear_sky_kill_gunner:csky)%, camper@final3
+on_signal = minigun | {-minigun_off} remark %=play_sound(clear_sky_kill_gunner:csky:st_ui_pda_legend_squad)%, camper@final3
 invulnerable = true
 
 [remark]
@@ -135,8 +135,13 @@ danger = danger_condition
 anim = search
 target = barricade_final_4_look,0
 on_info = {+minigun_off} camper@final2
-on_game_timer = 40 | %+minigun_off%
-on_game_timer2 = 50 | camper@final2 %=barrel_explode(208) +lim_z1_minigun_off_2%
+; The 40 s timer used to set +minigun_off on its own, and cfg_get_switch_conditions always puts
+; on_info BEFORE on_game_timer, so the very next update took the on_info branch out of this state
+; and the 50 s timer -- the one that actually detonates the charge -- was never reached. Both
+; beats are 10 GAME seconds apart (~2 real ones), so they are merged into the single 50 s line.
+on_game_timer = 50 | camper@final2 %=barrel_explode(208) +minigun_off +lim_z1_minigun_off_2%
+; orig: on_game_timer = 40 | %+minigun_off%
+; orig: on_game_timer2 = 50 | camper@final2 %=barrel_explode(208) +lim_z1_minigun_off_2%
 meet = no_meet
 invulnerable = true
 

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_wincheaster1300_trapper_up_barrel_short_name">
+     <text>Укороченный ствол</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_barrel_short_descr">
+     <text>Делает оружие более компактным и уменьшает его массу - к сожалению, ценой снижения точности и увеличения площади разлёта пуль, а также лишения оружия возможности установки глушителя.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_barrel_voronenie_name">
+     <text>Воронение ствола</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_barrel_voronenie_descr">
+     <text>Особое термостойкое покрытие делает ствол оружия более стойким к неблагоприятным условиям окружающей среды, повышая надёжность оружия.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_barrel_speed_name">
+     <text>Доработка канала ствола</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_barrel_speed_descr">
+     <text>Позволяет увеличить начальную скорость пули, благодаря чему она меньше отклоняется от ожидаемой траектории и быстрее достигает цели. Полезно для стрельбы на большие дистанции.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_body_reliability_name">
+     <text>Защитное покрытие</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_body_reliability_descr">
+     <text>Нанесение специального напыления на внутренние детали позволяет замедлить износ оружия.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_usm_reliability_details_name">
+     <text>Износостойкий УСМ</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_usm_reliability_details_descr">
+     <text>Замена деталей стандартного УСМ на аналоги повышенной прочности позволяет продлить срок службы оружия и обеспечить его безотказную работу в суровых условиях Зоны.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_tactical_handle_name">
+     <text>Тактическая рукоять</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_tactical_handle_descr">
+     <text>Установка подствольной рукояти позволяет сделать оружие более удобным в обращении, благодаря чему производить стрельбу и компенсировать отдачу становится значительно легче.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_usm_accuracy_name">
+     <text>Калибровка УСМ</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_usm_accuracy_descr">
+     <text>Индивидуальная подгонка деталей ударно-спускового механизма позволяет добиться более высокой точности стрельбы при одновременном снижении отдачи.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_flashlaser_name">
+     <text>Тактический модуль</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_flashlaser_descr">
+     <text>Установка на оружие специального тактического блока, который сочетает в себе функции лазерного целеуказателя и тактического фонаря. Незаменимая вещь для ведения боя в ночных условиях.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_mag_name">
+     <text>Расширение магазина</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_mag_descr">
+     <text>Установка расширителя, делающего магазин более длинным, позволяет заряжать в оружие больше патронов, делая перезарядки более редкими.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_rail_name">
+     <text>Рельсовое крепление</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_rail_descr">
+     <text>Позволяет устанавливать на оружие различные виды прицелов.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_pompa_kompensator_name">
+     <text>Компенсатор отдачи</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_pompa_kompensator_descr">
+     <text>Внедрение в конструкцию оружия специального полимерного демпфера позволяет немного снизить ощущаемую стрелком отдачу.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_usm_recoil_name">
+     <text>Балансировка УСМ</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_usm_recoil_descr">
+     <text>Балансировка стандартных деталей ударно-спускового механизма уменьшает увод ствола с линии прицеливания при выстреле.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_shell_ejector_name">
+     <text>Улучшенная отсечка</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_shell_ejector_descr">
+     <text>Модификация системы выброса гильз снижает вероятность возникновения при стрельбе задержек, связанных с прихватом гильзы после выстрела.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_light_stock_name">
+     <text>Облегченный приклад</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_light_stock_descr">
+     <text>Полости в прикладе позволяют облегчить оружие.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_soft_trigger_name">
+     <text>Мягкий спуск УСМ</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_soft_trigger_descr">
+     <text>Позволяет снизить отдачу, способствуя более точной стрельбе.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_usm_light_details_name">
+     <text>Легкосплавные детали</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_usm_light_details_descr">
+     <text>Замена стандартных деталей на аналоги из легких сплавов позволяет снизить массу оружия без существенного вреда для его остальных тактико-технических характеристик.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_patronnik_accuracy_name">
+     <text>Юстировка патронника</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_patronnik_accuracy_descr">
+     <text>Позволяет улучшить обтюрацию и добиться более высокой точности стрельбы.</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_barrel_dispersion_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_wincheaster1300_trapper_up_barrel_dispersion_descr">
+     <text>Позволяет снизить разброс пуль, что благоприятным образом сказывается на точности ведения огня.</text>
+</string>
+</string_table>

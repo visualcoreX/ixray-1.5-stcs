@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_apb">
+		<text>APB</text>
+	</string>
+	<string id="gunsl_wpn_apb_descr">
+		<text>Silenced variant of the famous APS, retrofit commissioned by special forces. Adopted in 1972, 14 years after its predecessor was taken out of production. Surprisingly, there are few differences between the two - notably a threaded barrel for the suppressor and a folding stock (which this gun unfortunately does not have).</text>
+	</string>
+</string_table>

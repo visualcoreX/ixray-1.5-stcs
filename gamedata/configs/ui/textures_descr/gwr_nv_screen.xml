@@ -1,0 +1,5 @@
+<w>
+    <file name="ui\ui_nv_screen_mask">
+		<texture id="ui_gwr_nv_screen_mask" x="0" y="0" width="512" height="512" stretch="1"/>
+	</file>
+</w>

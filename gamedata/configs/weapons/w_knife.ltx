@@ -99,7 +99,7 @@ PDM_disp_crouch_no_acc 	= 1.0
 use_aim_bullet			= true		;Поддерживается ли первая суппер пуля
 time_to_aim				= 1.0
 
-fire_distance           = 1.6 ;1.4
+fire_distance           = 1.8 ;1.4
 bullet_speed		 	= 1000
 rpm                     = 1000
 rpm_empty_click 	 	= 1000
@@ -138,55 +138,92 @@ grenade_launcher_status				= 0
 zoom_enabled					= false
 
 ;звуки
-snd_draw							= weapons\walther_draw
-snd_holster						= weapons\generic_holster
-snd_shoot						= weapons\knife_1
+snd_draw							= weapons\knife\knife_draw
+snd_holster						= weapons\knife\knife_hide
+snd_shoot						= weapons\knife\knife_kick_1
 snd_empty						= weapons\pistol_empty
 snd_reload						= weapons\pm_reload, 0.8
 snd_close						= weapons\generic_close
+; GS controller-suicide sounds (verbatim from GS other/knife/base.ltx)
+snd_start_suicide					= weapons\suicide_start
+snd_selfkill						= weapons\knife\knife_suicide
+snd_stop_suicide					= weapons\suicide_end
 
 
 [wpn_knife_hud]:hud_base
 zoom_hide_crosshair			= true
-
-hands_position				= -0.021000,-0.160000,0.002500
-hands_orientation			= -0.500000,1.000000,1.149999
-hands_position_16x9				= 0.033000,-0.189500,0.039000
-hands_orientation_16x9			= 2.349998,2.749999,2.849998
-
-
-item_position				= 0.003164,-0.002989,0.000906
-item_orientation			= 175.276352,-184.681427,-545.486328
-
+hands_position				= 0.0,-0.13,0.03
+hands_orientation			= 0.0,0.0,0.0
+hands_position_16x9				= 0.0,-0.13,0.03
+hands_orientation_16x9			= 0.0,0.0,0.0
+item_position				= 0.000000,0.000000,0.000000
+item_orientation			= 0.000000,0.000000,0.000000
 item_visual             	= dynamics\weapons\wpn_knife\wpn_knife_hud.ogf
+fire_mode_bone             = pred
 attach_place_idx				= 0
-
 shell_point						= 0,0,0
 shell_bone              	= wpn_body
-
 fire_point						= 0.004500,0.062500,-0.178499
 fire_bone               	= knife
-
-
-anm_show			= knife_draw
-anm_show_empty			= knife_draw
-anm_hide             		= knife_holster
-anm_idle             		= knife_idle
-anm_idle_aim			= knife_idle
-anm_attack			= knife_kick_1
-anm_attack_e			= knife_kick_end1	;--remove me
-anm_attack2			= knife_kick_2
-anm_attack2_e			= knife_kick_end2 	;--remove me
-anm_idle_moving 		= knife_idle_moving
-anm_idle_sprint			= knife_idle_sprint
-anm_bore			= knife_idle_bore
-
 aim_hud_offset_pos			= -0.077000,0.022000,0.000000
 aim_hud_offset_rot			= 0.000000,0.005000,-0.015000
-
-
 gl_hud_offset_pos				= 0,0,0
 gl_hud_offset_rot				= 0,0,0
-
 lean_hud_offset_pos			= 0,0,0
 lean_hud_offset_rot			= 0,0,0
+
+; ==================== SEMI-AUTO / BASE ANIMATION SET (from Gunslinger) ====================
+
+; ---- show / draw ----
+anm_show = knife_draw
+anm_show_empty = knife_draw
+enable_anm_show_suicide = true	; GS: draw the knife with knife_suicide_draw when a controller forces it
+anm_show_suicide = knife_suicide_draw
+
+; ---- hide / holster ----
+anm_hide = knife_hide
+
+; ---- bore ----
+anm_bore = knife_sprint_start
+
+; ---- sprint (enter / loop / exit) ----
+anm_idle_sprint_start = knife_sprint_start
+anm_idle_sprint = knife_sprint
+anm_idle_sprint_end = knife_sprint_end
+
+; ---- aim idle (in / out / hold) ----
+anm_idle_aim = knife_idle
+
+; ---- walk (fwd / slow / crouch) ----
+anm_idle_moving = knife_walk
+anm_idle_moving_slow = knife_slow
+anm_idle_moving_crouch = knife_slow_down
+anm_idle_moving_crouch_slow = knife_slow_super
+
+; ---- idle ----
+anm_idle = knife_idle
+anm_idle_slow = knife_idle
+anm_idle_crouch = knife_idle
+anm_idle_crouch_slow = knife_idle
+
+; ---- headlamp on / off ----
+anm_headlamp_on = knife_headflash
+anm_headlamp_off = knife_headflash
+
+; ---- night vision on / off ----
+anm_nv_on = knife_headflash
+anm_nv_off = knife_headflash
+
+; ---- bayonet / kick / attack ----
+anm_attack = knife_kick_1
+anm_attack_e = knife_kick_1
+anm_attack2 = knife_kick_2
+anm_attack2_e = knife_kick_2
+
+; ---- misc ----
+anm_prepare_suicide = knife_suicide
+anm_selfkill = knife_suicide_kick
+anm_stop_suicide = knife_suicide_end
+anm_selfkick = knife_hit_from_burer
+
+; ==================== AUTO-FIRE MODE ANIMATION SET (mask_firemode_a = _auto) ====================

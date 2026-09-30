@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_gsh18_up_barrel_speed_name">
+     <text>Перенарезка ствола</text>
+</string>
+<string id="gunsl_gsh18_up_barrel_speed_descr">
+     <text>Изменение шага нарезов в канале ствола оружия позволяет увеличить начальную скорость пули и снизить разброс попаданий при стрельбе.</text>
+</string>
+<string id="gunsl_gsh18_up_barrel_recoil_name">
+     <text>Компенсатор отдачи</text>
+</string>
+<string id="gunsl_gsh18_up_barrel_recoil_descr">
+     <text>Ствол с интегрированным компенсатором снижает ощущаемую от выстрела отдачу.</text>
+</string>
+<string id="gunsl_gsh18_up_barrel_accuracy_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_gsh18_up_barrel_accuracy_descr">
+     <text>Позволяет снизить разброс пуль при стрельбе из оружия, что повышает кучность и точность ведения огня.</text>
+</string>
+<string id="gunsl_gsh18_up_body_reliability_name">
+     <text>Защитное покрытие</text>
+</string>
+<string id="gunsl_gsh18_up_body_reliability_descr">
+     <text>Нанесение специального напыления на детали оружия позволяет замедлить их износ.</text>
+</string>
+<string id="gunsl_gsh18_up_usm_recoil_name">
+     <text>Мягкий спуск УСМ</text>
+</string>
+<string id="gunsl_gsh18_up_usm_recoil_descr">
+     <text>Позволяет снизить отдачу, способствуя более точной стрельбе.</text>
+</string>
+<string id="gunsl_gsh18_up_handle_name">
+     <text>Прорезиненная рукоять</text>
+</string>
+<string id="gunsl_gsh18_up_handle_descr">
+     <text>Обеспечивает более удобный хват и тем самым позволяет добиться лучших результатов при стрельбе.</text>
+</string>
+<string id="gunsl_gsh18_up_patronnik_obturation_name">
+     <text>Подгонка запирающего механизма</text>
+</string>
+<string id="gunsl_gsh18_up_patronnik_obturation_descr">
+     <text>За счет более плотного запирания канала ствола улучшается обтюрация канала ствола и повышается начальная скорость пули.</text>
+</string>
+<string id="gunsl_gsh18_up_patronnik_dispersion_name">
+     <text>Юстировка патронника</text>
+</string>
+<string id="gunsl_gsh18_up_patronnik_dispersion_descr">
+     <text>Устранение люфтов позволяет добиться более высокой точности стрельбы.</text>
+</string>
+<string id="gunsl_gsh18_up_ramka_name">
+     <text>Усиленная рамка</text>
+</string>
+<string id="gunsl_gsh18_up_ramka_descr">
+     <text>Усиление рамки позволяет увеличить срок службы оружия.</text>
+</string>
+<string id="gunsl_gsh18_up_shell_ejector_name">
+     <text>Доработка экстрактора</text>
+</string>
+<string id="gunsl_gsh18_up_shell_ejector_descr">
+     <text>Позволяет уменьшить число задержек, связанных с прихватом гильз, выбрасываемых из пистолета после выстрела.</text>
+</string>
+<string id="gunsl_gsh18_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_gsh18_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_gsh18_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_gsh18_up_usm_rpm_descr">
+     <text>Перенастройка УСМ с доработкой некоторых его деталей позволяет вести огонь в более высоком темпе. К сожалению, оружие от этого начинает изнашиваться немного быстрее.</text>
+</string>
+<string id="gunsl_gsh18_up_polymer_buffer_name">
+     <text>Полимерный буфер</text>
+</string>
+<string id="gunsl_gsh18_up_polymer_buffer_descr">
+     <text>Внедрение в возвратный механизм дополнительного полимерного буфера снижает ощущаемую стрелком отдачу.</text>
+</string>
+<string id="gunsl_gsh18_up_usm_reliability_name">
+     <text>Износостойкий УСМ</text>
+</string>
+<string id="gunsl_gsh18_up_usm_reliability_descr">
+     <text>Замена деталей стандартного УСМ на аналоги повышенной прочности позволяет продлить срок службы оружия и обеспечить его безотказную работу в суровых условиях Зоны.</text>
+</string>
+</string_table>

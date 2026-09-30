@@ -1,4 +1,5 @@
 [wpn_l85]:identity_immunities,weapon_probability,default_weapon_params
+bullet_material				= objects\bullet_automatic	; wallmark/impact/ricochet pair on hit
 GroupControlSection     = spawn_group
 discovery_dependency    =
 $spawn               	= "weapons\l85"      ; option for Level Editor
@@ -7,29 +8,29 @@ $prefetch               = 8
 scheduled               = off                                ; option for ALife Simulator
 cform                   = skeleton
 class                   = WP_AK74
-min_radius              = 30
+min_radius              = 5	; orig 30 (GS wpn_l85)
 max_radius              = 100
 description          	= st_wpn_l85_descr
 
 ef_main_weapon_type     = 2
-ef_weapon_type          = 6
+ef_weapon_type          = 6	; restored: 7 broke the AI queue length (select_queue_params keys on ef_weapon_type)
 
 default_to_ruck         = false
 sprint_allowed       	= true
-control_inertion_factor = 1.0
+control_inertion_factor = 1.4f	; orig 1.0 (GS wpn_l85)
 
 ;---DOF-------------------------------------------------------------------------
 zoom_dof						= 0.5, 1.0, 180
-reload_dof					= 0.0, 0.5, 5, 1.7
+reload_dof              = 0.0, 0.5, 5, 2	; orig 0.0, 0.5, 5, 1.7 (GS wpn_l85)
 ;-------------------------------------------------------------------------------
 
 ;-------------------------------------------------------------------------------
 holder_range_modifier   = 1.85             ; во сколько раз увеличивается eye_range
-holder_fov_modifier     = 0.3              ; во сколько раз увеличивается eye_fov
+holder_fov_modifier     = 1.0	; orig 0.3 (GS wpn_l85)
 ;-------------------------------------------------------------------------------
-upgrades                = up_gr_ab_l85, up_gr_cd_l85, up_gr_ef_l85, up_gr_gh_l85, up_gr_i_l85, up_gr_j_l85
+upgrades                = vartree_wpn_l85_podacha, vartree_wpn_l85_perevodchik, vartree_wpn_l85_mag45, vartree_wpn_l85_sights, vartree_wpn_l85_priklad, vartree_wpn_l85_grip, vartree_wpn_l85_bayonet	; orig stock CS grid up_gr_*_l85
 installed_upgrades      =
-upgrade_scheme          = upgrade_scheme_u16a
+upgrade_scheme          = upgrade_scheme_wpn_l85	; orig upgrade_scheme_u16a
 
 
 cost                    = 5000
@@ -37,11 +38,11 @@ weapon_class            = assault_rifle        ; Type of the weapon
 
 ammo_limit              = 210
 ammo_current            = 180
-ammo_elapsed            = 30
+ammo_elapsed            = 31	; orig 30 (GS wpn_l85)
 
-ammo_mag_size           = 30
+ammo_mag_size           = 31	; orig 30 (GS wpn_l85)
 ammo_class              = ammo_5.56x45_ss190, ammo_5.56x45_ap
-grenade_class           = ammo_m209
+grenade_class           = ammo_m209, ammo_m397a1	; orig ammo_m209 (GS base.ltx:68) -- the airburst round
 fire_modes              = 1, -1
 launch_speed            = 0
 hand_dependence         = 1
@@ -49,15 +50,18 @@ single_handed           = 0
 
 slot                    = 2                ; // secondary
 animation_slot          = 2                ; type of the animation that will be used
+actor_anim_group          = bullpup	; xrMPE actor (third-person) animation set from stalker_animation_new.omf
+actor_anim_group_gl_off   = bullpup_gloff
+actor_anim_group_gl_on    = bullpup_glon
 
 inv_name          		= st_wpn_l85
 inv_name_short       	= st_wpn_l85
-inv_weight           	= 5
+inv_weight              = 3.82	; orig 5 (GS wpn_l85)
 
 inv_grid_width          = 5
 inv_grid_height         = 2
-inv_grid_x           	= 0
-inv_grid_y           	= 12
+inv_grid_x           = 20	; orig 0 -- GS puts the raw rect on the EMPTY slot (element_icon_* draws the art)
+inv_grid_y           = 0	; orig 12 -- GS puts the raw rect on the EMPTY slot (element_icon_* draws the art)
 
 kill_msg_x           	= 84
 kill_msg_y           	= 28
@@ -66,72 +70,71 @@ kill_msg_height         = 30
 
 ;-------------------------------------------------------------------------------
 ;базовая дисперсия
-fire_dispersion_base    = 0.8 ;0.16   ;угол (в градусах) базовой дисперсии оружия (оружия зажатого в тисках)
+fire_dispersion_base    = 0.21	; orig 0.8 (GS wpn_l85)
 control_inertion_factor = 1.4f
 
 ;отдача
 cam_relax_speed         = 5      ;скорость возврата в исходное положение
 cam_relax_speed_ai      = 360
-cam_dispersion          = 0.4      ;увеличения угла (в градусах) с первым выстрелом
+cam_dispersion          = 0.75	; orig 0.4 (GS wpn_l85)
 cam_dispersion_inc      = 0.4    ;увеличениe cam_dispersion с каждым выстрелом
-cam_dispersion_frac     = 0.7    ;ствол будет подыматься на cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
-cam_max_angle           = 7.0         ;максимальный угол отдачи
-cam_max_angle_horz      = 7.0      ;(degree) maximum shot horizontal degree
+cam_dispersion_frac     = 1.0	; orig 0.7 (GS wpn_l85)
+cam_max_angle           = 50.0	; orig 7.0 (GS wpn_l85)
+cam_max_angle_horz      = 50.0	; orig 7.0 (GS wpn_l85)
 cam_step_angle_horz     = 2.0    ;(degree) size of step camera moved in horizontal position while shooting
 
 zoom_cam_relax_speed         = 5     ; scope & ironsight
 zoom_cam_relax_speed_ai      = 360
-zoom_cam_dispersion          = 0.3
+zoom_cam_dispersion     = 0.4	; orig 0.3 (GS wpn_l85)
 zoom_cam_dispersion_inc      = 0.3
-zoom_cam_dispersion_frac     = 0.7
-zoom_cam_max_angle           = 7.0
-zoom_cam_max_angle_horz      = 7.0
-zoom_cam_step_angle_horz     = 1.5
+zoom_cam_dispersion_frac= 0.8	; orig 0.7 (GS wpn_l85)
+zoom_cam_max_angle           = 50.0	; orig 7.0 (GS wpn_l85) -- MaxAngleVert also divides the horizontal drift
+zoom_cam_max_angle_horz      = 50.0	; orig 7.0 (GS wpn_l85) -- MaxAngleVert also divides the horizontal drift
+zoom_cam_step_angle_horz     = 1.8	; orig 1.5 (GS wpn_l85) -- MaxAngleVert also divides the horizontal drift
 
-fire_dispersion_condition_factor = 5        ;увеличение дисперсии в процентах при максимальном износе
+fire_dispersion_condition_factor= 11	; orig 5 (GS wpn_l85)
 misfire_probability     = 0.03        ;вероятность осечки при максимальном износе
 misfire_condition_k     = 0.05
-condition_shot_dec      = 0.0003 ;увеличение износа при каждом выстреле
+condition_shot_dec      = 0.0005	; orig 0.0003 (GS wpn_l85)
 ;-------------------------------------------------------------------------------
 
 position                = -0.026, -0.135, 0.0
 orientation             = 0, 0, 0
 
 fire_point              = 0.0,0.186,0.435
-fire_point2             = 0.0, 0.106, 0.468
+fire_point2             = 0.0, 0.136, 0.468	; orig 0.0, 0.106, 0.468 (GS wpn_l85)
 
-flame_particles         = weapons\generic_weapon05
-smoke_particles         = weapons\generic_shoot_00
-grenade_flame_particles = weapons\generic_weapon01
+flame_particles		   	= ghost_particles\weapons\flame_556_lr300
+smoke_particles		   	= ghost_particles\weapons\smoke_556_lr300
+grenade_flame_particles = ghost_particles\weapons\flame_40mm_m320
 
 shell_point             = -0.020000,0.167000,0.082000
 shell_dir               = 0.0, 0.0, 0.4
-shell_particles         = weapons\generic_shells
+;shell_particles         = weapons\generic_shells
 
-PDM_disp_base           = 1.0
-PDM_disp_vel_factor     = 1.45
-PDM_disp_accel_factor   = 1.45
+PDM_disp_base           = 1.2	; orig 1.0 (GS wpn_l85)
+PDM_disp_vel_factor     = 2.0	; orig 1.45 (GS wpn_l85)
+PDM_disp_accel_factor   = 2.0	; orig 1.45 (GS wpn_l85)
 PDM_disp_crouch         = 1.0
 PDM_disp_crouch_no_acc  = 1.0
 
 ; ttc
-hit_power               = 0.4, 0.4, 0.4, 0.4
+hit_power               = 0.9, 0.9, 0.9, 0.9	; orig 0.4, 0.4, 0.4, 0.4 (GS wpn_l85)
 hit_impulse             = 100
 hit_type				= fire_wound
-rpm                     = 650
 
 hit_probability_gd_novice  = 0.80
 hit_probability_gd_stalker = 0.80
 hit_probability_gd_veteran = 0.80
 hit_probability_gd_master  = 0.80
 
-fire_distance           = 150
-bullet_speed            = 400        ;начальная скорость пули
-rpm                     = 600
+fire_distance           = 200	; orig 150 (GS wpn_l85)
+bullet_speed            = 500	; orig 400 (GS wpn_l85)
+rpm                     = 610	; orig 600 (GS wpn_l85)
 rpm_empty_click         = 200
 ; end ttc
 
-use_aim_bullet          = true                ;Поддерживается ли первая суппер пуля
+use_aim_bullet          = false	; orig true (GS wpn_l85)
 time_to_aim             = 3.0
 
 hud                     = wpn_l85_hud
@@ -157,131 +160,1233 @@ ph_mass                 = 5
 ;cost                   = 2100
 
 ;addons
-scope_status            = 1
+scope_status            = 2	; orig 1 (GS wpn_l85)
 silencer_status         = 2
-grenade_launcher_status = 0
+grenade_launcher_status = 2	; orig 0 (GS wpn_l85)
 
 zoom_enabled            = true                                                ; (on,off)zoom mode (right mouse button)
 zoom_rotate_time		= 0.25
-scope_zoom_factor       = 30                                                ; fov for zoom mode
+scope_zoom_factor       = 98                                                ; fov for zoom mode
 
 scope_texture				= wpn_crosshair_l85
 
-scope_name 					= wpn_addon_scope
+scope_name 					= wpn_addon_scope_susat	; orig wpn_addon_scope (GS wpn_l85)
 scope_x 						= 60
 scope_y 						= -2
-silencer_name  				= wpn_addon_silencer
-silencer_x 					= 196
-silencer_y 					= 11
-grenade_launcher_name 	= wpn_addon_grenade_launcher_m203
-grenade_launcher_x 		= 128
-grenade_launcher_y 		= 28
+silencer_name  				= wpn_silencer_m4_2000
+silencer_x 		= 193
+silencer_y 		= 12
+grenade_launcher_name 	= wpn_addon_grenade_launcher_l123a2	; orig wpn_addon_grenade_launcher_m203 (GS wpn_l85)
+grenade_launcher_x      = 110
+grenade_launcher_y      = 0
 
 ;звуки
-snd_draw                = weapons\ak74_draw
-snd_holster             = weapons\generic_holster
-snd_shoot					= weapons\n_l85_shot
+snd_draw                	= weapons\ak74\ak74_draw
+snd_kick                = weapons\ak74\ak74_bayonet	; GS: bayonet stab sound
+snd_holster             	= weapons\p90\p90_hide
+snd_shoot					= weapons\l85\l85_shoot, -1.1
 
-snd_empty               = weapons\gen_empty, 0.5
-snd_reload					= weapons\l85_reload
-snd_shoot_grenade			= weapons\gen_grenshoot
-snd_reload_grenade			= weapons\l85_grenload
-snd_switch					= weapons\groza_switch, 1.0, 0.5
-snd_bore				= weapons\draw_silent
-snd_bore1				= weapons\mp5_bore
+snd_empty               	= weapons\glock17\glock17_dry
+snd_changefiremode	= weapons\l85\l85_firemode
+snd_reload					= weapons\l85\l85_reload
+snd_reload_jammed			= weapons\l85\l85_revival
+snd_reload_empty        	= weapons\l85\l85_reload_empty
+snd_shoot_grenade			= weapons\l85\l85_gl_shoot
+snd_reload_grenade			= weapons\l85\l85_gl_reload
+snd_changecartridgetype		= weapons\l85\l85_reload	; GS base.ltx:225 -- the RIFLE ammo-type change
+snd_switch					= weapons\l85\l85_gl_deactivate
+snd_switch_g				= weapons\l85\l85_gl_activate	; orig weapons\l85\l85_gl_deactivate (GS: raising the GL)
+
+snd_shoot_dist          = weapons\shared\gen_rifle_556_shoot_dist_01, -1.1
+snd_shoot_dist1         = weapons\shared\gen_rifle_556_shoot_dist_02, -1.1
+snd_shoot_dist2         = weapons\shared\gen_rifle_556_shoot_dist_03, -1.1
+snd_shoot_dist3         = weapons\shared\gen_rifle_556_shoot_dist_04, -1.1
+snd_shoot_dist4         = weapons\shared\gen_rifle_556_shoot_dist_05, -1.1
+snd_shoot_dist5         = weapons\shared\gen_rifle_556_shoot_dist_06, -1.1
+snd_shoot_blend_dist_start = 30   ; необязательно, по умолчанию 40
+snd_shoot_blend_dist_end   = 60   ; необязательно, по умолчанию 60
+
+snd_shoot_indoor_1p          = weapons\shared\gen_tail_indoor_medium_1p_01
+snd_shoot_indoor_1p1         = weapons\shared\gen_tail_indoor_medium_1p_02
+snd_shoot_indoor_1p2         = weapons\shared\gen_tail_indoor_medium_1p_03
+snd_shoot_indoor_1p3         = weapons\shared\gen_tail_indoor_medium_1p_04
+snd_shoot_indoor_1p4         = weapons\shared\gen_tail_indoor_medium_1p_05
+snd_shoot_indoor_1p5         = weapons\shared\gen_tail_indoor_medium_1p_06
+snd_shoot_indoor             = weapons\shared\gen_tail_indoor_medium_3p_01
+snd_shoot_indoor1            = weapons\shared\gen_tail_indoor_medium_3p_02
+snd_shoot_indoor2            = weapons\shared\gen_tail_indoor_medium_3p_03
+snd_shoot_indoor3            = weapons\shared\gen_tail_indoor_medium_3p_04
+snd_shoot_indoor4            = weapons\shared\gen_tail_indoor_medium_3p_05
+snd_shoot_indoor5            = weapons\shared\gen_tail_indoor_medium_3p_06
+volume_snd_shoot_indoor      = 80
+volume_snd_shoot_indoor_1p   = 100
+snd_indoor_fadeout_start     = 0.1
+snd_indoor_fadeout_end       = 0.5
+snd_indoor_fadeout_db        = 6
 
 ;настройки для глушителя
-silencer_hit_power      = 0.55, 0.55, 0.55, 0.55
-silencer_hit_impulse    = 120
-silencer_fire_distance  = 250
-silencer_bullet_speed   = 600
 
 ;silencer_flame_particles  = weapons\generic_weapon01
-silencer_smoke_particles   = weapons\generic_shoot_00
+silencer_smoke_particles   = ghost_particles\weapons\suppressor_smoke_ar_common
 
-snd_silncer_shot        = weapons\w_ak74_shot1
+snd_silncer_shot        = weapons\l85\l85_shoot_silencer, 0.9
 
 silencer_light_color    = 0.6,0.5,0.3
 silencer_light_range    = 0.01
 silencer_light_var_color= 0.05
-silencer_light_var_range= 0.5
-silencer_light_time     = 0.2
+silencer_light_var_range= 0.01	; orig 0.5 (GS wpn_l85)
+silencer_light_time     = 0.01	; orig 0.2 (GS wpn_l85)
 
+
+
+; ---- added by the Gunslinger port (wpn_l85) ----
+ammo_in_chamber         = true
+misfire_start_condition = 0.85
+misfire_end_condition   = 0.25
+misfire_start_prob      = 0.004
+misfire_end_prob        = 0.08
+condition_queue_shot_dec= 0.0008
+snd_jammed_click        = weapons\glock17\glock17_dry
+snd_breechblock         = $silent
+crosshair_inertion      = 6.20
+cam_return              = 1
+repair_group            = l85
+def_show_bones          = sight_handle, sight_iron2, mag30, handguard, handler
+def_hide_bones          = scope1, scope2, scope3, scope4, scope5, rail, handguard_rail, mag45, mag60, tac_handler, flash, light, rope, sight, sight_top, bayonet, laser, line, mag40, handler2
+; the launcher takes the place of the handguard (GS def_hide_bones_override_when_gl_attached)
+def_hide_bones_override_when_gl_attached = handguard, handguard_rail, tac_handler
+bayonet_bone            = bayonet	; this model's blade bone (engine default is the AK's `knife`)
+scopes_sect             = scope_eotech_l85a2, scope_aimpoint_l85a2, scope_susat_l85a2, scope_elcan_l85a2, scope_pn23_l85a2
+allowed_upgrades        = up_wpn_l85_
+element_icon_0          = icon_element_l85_body
+element_icon_offset_x_0 = 0
+element_icon_offset_y_0 = 0
+element_icon_1          = icon_element_l85_mag_default
+element_icon_offset_x_1 = 50
+element_icon_offset_y_1 = 0
+element_icon_2          = icon_element_l85_handle
+element_icon_offset_x_2 = 62
+element_icon_offset_y_2 = 0
+
+; world (3rd person) model animations -- GS assault/l85/base.ltx
+use_world_anims=true
+wanm_idle        = idle
+wanm_idle_a      = idle_auto
+wanm_idle_w_gl   = idle_gloff
+wanm_idle_a_w_gl = idle_gloff_auto
+wanm_idle_g      = idle_glon
+wanm_idle_a_g    = idle_glon_auto
+wanm_idle_empty        = idle
+wanm_idle_empty_a      = idle_auto
+wanm_idle_empty_w_gl   = idle_gloff
+wanm_idle_empty_a_w_gl = idle_gloff_auto
+wanm_idle_empty_g      = idle_glon
+wanm_idle_empty_a_g    = idle_glon_auto
+wanm_idle_jammed        = idle_jammed
+wanm_idle_jammed_a      = idle_auto_jammed
+wanm_idle_jammed_w_gl   = idle_gloff_jammed 
+wanm_idle_jammed_a_w_gl = idle_gloff_auto_jammed
+wanm_idle_jammed_g      = idle_glon_jammed
+wanm_idle_jammed_a_g    = idle_glon_auto_jammed
+wanm_shoot        = shoot
+wanm_shoot_a      = shoot_auto
+wanm_shoot_w_gl   = shoot_gloff
+wanm_shoot_a_w_gl = shoot_gloff_auto
+wanm_shoot_g      = idle_glon
+wanm_shoot_a_g    = idle_glon_auto
+wanm_shoot_jammed        = idle_jammed
+wanm_shoot_jammed_a      = idle_auto_jammed
+wanm_shoot_jammed_w_gl   = idle_gloff_jammed
+wanm_shoot_jammed_a_w_gl = idle_gloff_auto_jammed
+wanm_shoot_jammed_g      = idle_glon_jammed
+wanm_shoot_jammed_a_g    = idle_glon_auto_jammed
+wanm_shoot_last        = shoot
+wanm_shoot_last_a      = shoot_auto
+wanm_shoot_last_w_gl   = shoot_gloff
+wanm_shoot_last_a_w_gl = shoot_gloff_auto
+wanm_shoot_last_g      = idle_glon
+wanm_shoot_last_a_g    = idle_glon_auto
+wanm_shoot_last_jammed        = idle_jammed
+wanm_shoot_last_jammed_a      = idle_auto_jammed
+wanm_shoot_last_jammed_w_gl   = idle_gloff_jammed
+wanm_shoot_last_jammed_a_w_gl = idle_gloff_auto_jammed
+wanm_shoot_last_jammed_g      = idle_glon_jammed
+wanm_shoot_last_jammed_a_g    = idle_glon_auto_jammed
+wanm_reload        = idle
+wanm_reload_a      = idle_auto
+wanm_reload_w_gl   = idle_gloff
+wanm_reload_a_w_gl = idle_gloff_auto
+wanm_reload_g      = idle_glon
+wanm_reload_a_g    = idle_glon_auto
+wanm_reload_empty        = idle
+wanm_reload_empty_a      = idle_auto
+wanm_reload_empty_w_gl   = idle_gloff
+wanm_reload_empty_a_w_gl = idle_gloff_auto
+wanm_reload_empty_g      = idle_glon
+wanm_reload_empty_a_g    = idle_glon_auto
+wanm_reload_jammed        = idle
+wanm_reload_jammed_a      = idle_auto
+wanm_reload_jammed_w_gl   = idle_gloff
+wanm_reload_jammed_a_w_gl = idle_gloff_auto
+wanm_reload_jammed_g      = idle_glon_jammed
+wanm_reload_jammed_a_g    = idle_glon_auto_jammed
+
+; --- tactical block (installed by the GS flashlaser upgrade node) ---
+laser_params_section      = l85_laser
+flashlight_params_section = l85_flashlight
+flashlight_bone           = light	; the lit lens toggled on/off; the `flash` device body stays visible
+snd_laser_on              = weapons\l85\l85_lam
+snd_laser_off             = weapons\l85\l85_lam
+snd_torch_on              = weapons\l85\l85_lam
+snd_torch_off             = weapons\l85\l85_lam
+; scope brightness clicks (GS base.ltx) -- loaded from the WEAPON section, not the scope one.
+; ChangeLensStep reuses the same pair for the ELCAN magnifier's lens-power detent.
+snd_scope_brightness_plus = weapons\nv_intensity
+snd_scope_brightness_minus = weapons\nv_intensity
+snd_change_grenade        = weapons\l85\l85_gl_changegrenade	; GS an94 lesson: the swap is silent without it
+
+
+; ---- added by the Gunslinger port (wpn_l85) ----
+element_icon_banned_addons_mask_2= 1
+element_icon_3          = icon_element_l85_fore_stock
+element_icon_offset_x_3 = 100
+element_icon_offset_y_3 = 0
+element_icon_banned_addons_mask_3= 2
+
+; --- quick bayonet stab (GS keeps these in [base_bayonet], a section CS lacks -- ak74 values) ---
+bayonet_hit_time        = 210   ; ms after the quick-kick key when the stab lands (engine default 250)
+kick_distance           = 3.0   ; GS base_bayonet (vs 2.0 for the knife phantom)
+kick_hit_power          = 1.5
+kick_hit_impulse        = 10
+kick_wallmark_size      = 0.05
+
+[l85_laser]
+laser_installed                = true
+laser_ray_bones                = line
+laser_beam_section             = laser_beam_red	; volumetric beam + procedural dot on R3 (configs\weapons\laser_beams.ltx)
+particles_count                = 4
+laserdot_particle_0            = laser\red_dot
+laserdot_particle_1            = laser\red_dot1
+laserdot_dist_1                = 0.1
+laserdot_particle_2            = laser\red_dot2
+laserdot_dist_2                = 7
+laserdot_particle_3            = laser\red_dot3
+laserdot_dist_3                = 15
+laserdot_attach_bone           = line
+; GS-universal emitter offset on the `line` bone
+laserdot_attach_offset_x       = 0.0
+laserdot_attach_offset_y       = 0.017
+laserdot_attach_offset_z       = -0.6
+laserdot_correction            = true	; GS default
+laserdot_hud_point_koef        = 0.0
+laserdot_zero_dist             = 3
+; world (3rd person) dot origin -- from the GS up_sect_wpn_l85_flashlaser node
+laserdot_world_attach_offset_x = -0.020
+laserdot_world_attach_offset_y = 0.228
+laserdot_world_attach_offset_z = 0.194
+laserdot_dists_count           = 3
+laserdot_dist_treshold_1       = 0.5
+laserdot_dist_scale_1          = 0.08
+laserdot_dist_treshold_2       = 10
+laserdot_dist_scale_2          = 0.03
+laserdot_dist_treshold_3       = 40
+laserdot_dist_scale_3          = 0.05
+laserdot_surface_pull          = 0.85
+
+[l85_flashlight]
+torch_light_bone               = wpn_body	; GS tactical_torch: source on the body, `light` is the lens (weapon flashlight_bone)
+torch_attach_offset_x          = -0.008	; GS tactical_torch values
+torch_attach_offset_y          = 0.048
+torch_attach_offset_z          = 0.45	; orig 0.0 -- emitter pushed past the muzzle: at ~0 the weapon and the camera sit inside the cone (screen-wide glare, bright at the edges)
+torch_world_attach_offset_x    = 0.020
+torch_world_attach_offset_y    = 0.234
+torch_world_attach_offset_z    = 0.194
+torch_omni_attach_offset_x     = 0.0
+torch_omni_attach_offset_y     = 0.0
+torch_omni_attach_offset_z     = 0.0
+torch_omni_world_attach_offset_x = 0.020
+torch_omni_world_attach_offset_y = 0.234
+torch_omni_world_attach_offset_z = 0.194
+torch_spot_angle               = 60
+torch_spot_texture             = internal\internal_light_torch_tactical_r2
+torch_r2_range                 = 50
+torch_r2_color_r               = 0.6
+torch_r2_color_g               = 0.55
+torch_r2_color_b               = 0.55
+torch_r2_color_a               = 1.0
+torch_r2_omni_range            = 0.25
+torch_r2_omni_color_r          = 1.0
+torch_r2_omni_color_g          = 1.0
+torch_r2_omni_color_b          = 1.0
+torch_r2_omni_color_a          = 1.0
+
+; GL grenade bones per grenade type (GS assault/l85/ammo.ltx): all_bones lists every grenade
+; bone on the model, configuration_1 the one shown for that ammo type.
+[wpn_l85_ammo_bones_m209]
+all_bones = wpn_launcher_grenade_red, wpn_launcher_grenade_blue
+configuration_1 = wpn_launcher_grenade_blue
+
+[wpn_l85_ammo_bones_m397a1]
+all_bones = wpn_launcher_grenade_red, wpn_launcher_grenade_blue
+configuration_1 = wpn_launcher_grenade_red
 
 [wpn_l85_hud]:hud_base
-zoom_hide_crosshair		= true
+; GS: blend one shot of a burst into the next instead of cutting (WeaponAnims NeedShootMix).
+; Enabled on the same weapons GS enables it on -- its automatics.
+mix_shoot_after_shoot_in_queue = true
+zoom_hide_crosshair			= true
 attach_place_idx			= 0
 item_visual					= dynamics\weapons\wpn_l85\wpn_l85_hud.ogf
-
-hands_position				= -0.076000,-0.167000,0.237499
-hands_orientation			= -2.449999,2.899998,-3.149999
-hands_position_16x9				= -0.080000,-0.176500,0.244999
-hands_orientation_16x9			= -3.099998,3.949998,-4.449999
-
-item_position				= 0.002926,0.000089,0.001182
-item_orientation			= 1.598515,-1.348796,363.621826
-
-shell_point					= 0.02,0.06,-0.119
+fire_mode_bone              = firemode
+hands_position          = 0.0,-0.01,0.08	; orig -0.076000,-0.167000,0.237499 (GS wpn_l85)
+hands_orientation       = 0.0,0.0,0.0	; orig -2.449999,2.899998,-3.149999 (GS wpn_l85)
+hands_position_16x9     = 0.0,-0.01,0.03	; orig 0.0,-0.01,0.07 (GS wpn_l85)
+hands_orientation_16x9			= 0.0,0.0,0.0
+item_position				= 0.0,0.0,0.0
+item_orientation			= 0.0,0.0,0.0
+shell_point             = 0.02,0.06,-0.119
 shell_dir               = 0.0, 1.0, 0.0
-shell_bone					= wpn_body
-
-fire_point		= 0,0.054,0.469
-fire_bone      	      = wpn_body
-fire_point2					= 0.0,-0.029,0.525
+shell_bone              = wpn_body
+fire_point              = 0,0.003,0.711	; orig 00,0.003,0.711 (GS wpn_l85)
+fire_bone      	      		= wpn_body
+fire_point2					= 0.0,-0.075,0.697
 fire_bone2					= wpn_body
-
-anm_show             	= l85_draw
-anm_hide             	= l85_holster
-anm_idle             	= l85_idle
-anm_idle_sprint         = l85_idle_sprint
-anm_idle_moving 	= l85_idle_moving
-anm_shots               = l85_shoot
-anm_reload              = l85_reload
-anm_idle_aim           	= l85_idle_aim
-
-anm_switch              = l85_switch_off
-anm_switch_g            = l85_switch_on
-anm_bore						= l85_idle_bore
-
-anm_hide_w_gl           = l85_holster_w_gl
-anm_show_w_gl           = l85_draw_w_gl
-anm_idle_w_gl           = l85_idle_w_gl
-anm_shots_w_gl          = l85_shoot_w_gl
-anm_reload_w_gl         = l85_reload_w_gl
-anm_idle_w_gl_aim       = l85_idle_w_gl_aim
-anm_idle_sprint_w_gl		= l85_idle_sprint_w_gl
-anm_idle_moving_w_gl		= l85_idle_moving_w_gl
-anm_bore_w_gl				= l85_idle_bore_w_gl
-
-anm_show_g         		= l85_draw_grenade
-anm_hide_g       		  	= l85_holster_grenade
-anm_idle_g         		= l85_idle_grenade
-anm_reload_g       		= l85_reload_grenade
-anm_idle_g_aim     		= l85_idle_grenade
-anm_shots_g        		= l85_shoot_grenade
-anm_idle_sprint_g			= l85_idle_sprint_grenade
-anm_idle_moving_g			= l85_idle_moving_grenade
-anm_bore_g					= l85_idle_bore_grenade
-
-
-aim_hud_offset_pos		= -0.102000,0.019500,-0.148000
-aim_hud_offset_rot		= 0.010000,0.002500,-0.010000
-
-aim_hud_offset_pos_16x9		= -0.092500,0.019000,-0.126500
-aim_hud_offset_rot_16x9		= 0.015000,0.010000,-0.067500
-
-
-gl_hud_offset_pos			= 0,0,0;-0.053000,-0.059000,0.000000
-gl_hud_offset_rot			= 0,0,0;-0.145000,0.000000,0.000000
-
-gl_hud_offset_pos_16x9			= 0,0,0;-0.053000,-0.059000,0.000000
-gl_hud_offset_rot_16x9			= 0,0,0;-0.145000,0.000000,0.000000
-
+aim_hud_offset_pos		= 0.0,0.012,0.0
+aim_hud_offset_rot		= 0.0,0.0,0.0
+aim_hud_offset_pos_16x9		= 0.0,0.012,0.0
+aim_hud_offset_rot_16x9		= 0.0,0.0,0.0
+gl_hud_offset_pos			= 0.0,0.012,-0.05;-0.053000,-0.059000,0.000000
+gl_hud_offset_rot			= 0.0,0.0,0.0;-0.145000,0.000000,0.000000
+gl_hud_offset_pos_16x9			= 0.0,0.012,-0.1
+gl_hud_offset_rot_16x9			= 0.0,0.0,0.0
 lean_hud_offset_pos		= 0,0,0
 lean_hud_offset_rot		= 0,0,0
 
+; ==================== SEMI-AUTO / BASE ANIMATION SET (from Gunslinger) ====================
 
-;-----------------------------------------------------------------------------
-; Уникальные
-;-----------------------------------------------------------------------------
+; ---- show / draw ----
+anm_show = l85_draw
+anm_show_empty = l85_draw
+anm_show_jammed = l85_draw, idle_jammed
+anm_show_w_gl = l85_gloff_draw, l85_gloff_idle
+anm_show_empty_w_gl = l85_gloff_draw, l85_gloff_idle
+anm_show_jammed_w_gl = l85_gloff_draw, l85_gloff_idle_jammed
+anm_show_g = l85_glon_draw, l85_glon_idle
+anm_show_empty_g = l85_glon_draw, l85_glon_idle
+anm_show_jammed_g = l85_glon_draw, l85_glon_idle_jammed
 
+; ---- hide / holster ----
+anm_hide = l85_hide
+anm_hide_empty = l85_hide
+anm_hide_jammed = l85_hide, idle_jammed
+anm_hide_w_gl = l85_gloff_hide, l85_gloff_idle
+anm_hide_empty_w_gl = l85_gloff_hide, l85_gloff_idle
+anm_hide_jammed_w_gl = l85_gloff_hide, l85_gloff_idle_jammed
+anm_hide_g = l85_glon_hide, l85_glon_idle
+anm_hide_empty_g = l85_glon_hide, l85_glon_idle
+anm_hide_jammed_g = l85_glon_hide, l85_glon_idle_jammed
+
+; ---- bore ----
+anm_bore = l85_draw
+anm_bore_empty = l85_draw
+anm_bore_jammed = l85_draw, idle_jammed
+anm_bore_w_gl = l85_gloff_draw, l85_gloff_idle
+anm_bore_empty_w_gl = l85_gloff_draw, l85_gloff_idle
+anm_bore_jammed_w_gl = l85_gloff_draw, l85_gloff_idle_jammed
+anm_bore_g = l85_glon_draw, l85_glon_idle
+anm_bore_empty_g = l85_glon_draw, l85_glon_idle
+anm_bore_jammed_g = l85_glon_draw, l85_glon_idle_jammed
+
+; ---- sprint (enter / loop / exit) ----
+anm_idle_sprint_start = l85_sprint_start
+anm_idle_sprint_start_empty = l85_sprint_start
+anm_idle_sprint_start_jammed = l85_sprint_start, idle_jammed
+anm_idle_sprint_start_w_gl = l85_gloff_sprint_start, l85_gloff_idle
+anm_idle_sprint_start_empty_w_gl = l85_gloff_sprint_start, l85_gloff_idle
+anm_idle_sprint_start_jammed_w_gl = l85_gloff_sprint_start, l85_gloff_idle_jammed
+anm_idle_sprint_start_g = l85_glon_sprint_start, l85_glon_idle
+anm_idle_sprint_start_empty_g = l85_glon_sprint_start, l85_glon_idle
+anm_idle_sprint_start_jammed_g = l85_glon_sprint_start, l85_glon_idle_jammed
+anm_idle_sprint = l85_sprint
+anm_idle_sprint_empty = l85_sprint
+anm_idle_sprint_jammed = l85_sprint, idle_jammed
+anm_idle_sprint_w_gl = l85_tac_sprint, l85_gloff_idle
+anm_idle_sprint_empty_w_gl = l85_tac_sprint, l85_gloff_idle
+anm_idle_sprint_jammed_w_gl = l85_tac_sprint, l85_gloff_idle_jammed
+anm_idle_sprint_g = l85_tac_sprint, l85_glon_idle
+anm_idle_sprint_empty_g = l85_tac_sprint, l85_glon_idle
+anm_idle_sprint_jammed_g = l85_tac_sprint, l85_glon_idle_jammed
+anm_idle_sprint_end = l85_sprint_end
+anm_idle_sprint_end_empty = l85_sprint_end
+anm_idle_sprint_end_jammed = l85_sprint_end, idle_jammed
+anm_idle_sprint_end_w_gl = l85_gloff_sprint_end, l85_gloff_idle
+anm_idle_sprint_end_empty_w_gl = l85_gloff_sprint_end, l85_gloff_idle
+anm_idle_sprint_end_jammed_w_gl = l85_gloff_sprint_end, l85_gloff_idle_jammed
+anm_idle_sprint_end_g = l85_glon_sprint_end, l85_glon_idle
+anm_idle_sprint_end_empty_g = l85_glon_sprint_end, l85_glon_idle
+anm_idle_sprint_end_jammed_g = l85_glon_sprint_end, l85_glon_idle_jammed
+
+; ---- aim walk (directional) ----
+anm_idle_aim_moving_forward = l85_aim_walk, l85_aim
+anm_idle_aim_moving_forward_empty = l85_aim_walk, l85_aim
+anm_idle_aim_moving_forward_jammed = l85_aim_walk, l85_aim_jammed
+anm_idle_aim_moving_forward_w_gl = l85_gloff_aim_walk, l85_gloff_aim
+anm_idle_aim_moving_forward_empty_w_gl = l85_gloff_aim_walk, l85_gloff_aim
+anm_idle_aim_moving_forward_jammed_w_gl = l85_gloff_aim_walk, l85_gloff_aim_jammed
+anm_idle_aim_moving_forward_g = l85_glon_aim_walk, l85_glon_idle
+anm_idle_aim_moving_forward_empty_g = l85_glon_aim_walk, l85_glon_idle
+anm_idle_aim_moving_forward_jammed_g = l85_glon_aim_walk, l85_glon_idle_jammed
+anm_idle_aim_moving_back = l85_aim_walk, l85_aim
+anm_idle_aim_moving_back_empty = l85_aim_walk, l85_aim
+anm_idle_aim_moving_back_jammed = l85_aim_walk, l85_aim_jammed
+anm_idle_aim_moving_back_w_gl = l85_gloff_aim_walk, l85_gloff_aim
+anm_idle_aim_moving_back_empty_w_gl = l85_gloff_aim_walk, l85_gloff_aim
+anm_idle_aim_moving_back_jammed_w_gl = l85_gloff_aim_walk, l85_gloff_aim_jammed
+anm_idle_aim_moving_back_g = l85_glon_aim_walk, l85_glon_idle
+anm_idle_aim_moving_back_empty_g = l85_glon_aim_walk, l85_glon_idle
+anm_idle_aim_moving_back_jammed_g = l85_glon_aim_walk, l85_glon_idle_jammed
+anm_idle_aim_moving_left = l85_aim_walk_left, l85_aim
+anm_idle_aim_moving_left_empty = l85_aim_walk_left, l85_aim
+anm_idle_aim_moving_left_jammed = l85_aim_walk_left, l85_aim_jammed
+anm_idle_aim_moving_left_w_gl = l85_gloff_aim_walk_left, l85_gloff_aim
+anm_idle_aim_moving_left_empty_w_gl = l85_gloff_aim_walk_left, l85_gloff_aim
+anm_idle_aim_moving_left_jammed_w_gl = l85_gloff_aim_walk_left, l85_gloff_aim_jammed
+anm_idle_aim_moving_left_g = l85_glon_aim_walk_left, l85_glon_idle
+anm_idle_aim_moving_left_empty_g = l85_glon_aim_walk_left, l85_glon_idle
+anm_idle_aim_moving_left_jammed_g = l85_glon_aim_walk_left, l85_glon_idle_jammed
+anm_idle_aim_moving_right = l85_aim_walk_right, l85_aim
+anm_idle_aim_moving_right_empty = l85_aim_walk_right, l85_aim
+anm_idle_aim_moving_right_jammed = l85_aim_walk_right, l85_aim_jammed
+anm_idle_aim_moving_right_w_gl = l85_gloff_aim_walk_right, l85_gloff_aim
+anm_idle_aim_moving_right_empty_w_gl = l85_gloff_aim_walk_right, l85_gloff_aim
+anm_idle_aim_moving_right_jammed_w_gl = l85_gloff_aim_walk_right, l85_gloff_aim_jammed
+anm_idle_aim_moving_right_g = l85_glon_aim_walk_right, l85_glon_idle
+anm_idle_aim_moving_right_empty_g = l85_glon_aim_walk_right, l85_glon_idle
+anm_idle_aim_moving_right_jammed_g = l85_glon_aim_walk_right, l85_glon_idle_jammed
+anm_idle_aim_moving_forward_left = l85_aim_walk, l85_aim
+anm_idle_aim_moving_forward_left_empty = l85_aim_walk, l85_aim
+anm_idle_aim_moving_forward_left_jammed = l85_aim_walk, l85_aim_jammed
+anm_idle_aim_moving_forward_left_w_gl = l85_gloff_aim_walk, l85_gloff_aim
+anm_idle_aim_moving_forward_left_empty_w_gl = l85_gloff_aim_walk, l85_gloff_aim
+anm_idle_aim_moving_forward_left_jammed_w_gl = l85_gloff_aim_walk, l85_gloff_aim_jammed
+anm_idle_aim_moving_forward_left_g = l85_glon_aim_walk, l85_glon_idle
+anm_idle_aim_moving_forward_left_empty_g = l85_glon_aim_walk, l85_glon_idle
+anm_idle_aim_moving_forward_left_jammed_g = l85_glon_aim_walk, l85_glon_idle_jammed
+anm_idle_aim_moving_forward_right = l85_aim_walk, l85_aim
+anm_idle_aim_moving_forward_right_empty = l85_aim_walk, l85_aim
+anm_idle_aim_moving_forward_right_jammed = l85_aim_walk, l85_aim_jammed
+anm_idle_aim_moving_forward_right_w_gl = l85_gloff_aim_walk, l85_gloff_aim
+anm_idle_aim_moving_forward_right_empty_w_gl = l85_gloff_aim_walk, l85_gloff_aim
+anm_idle_aim_moving_forward_right_jammed_w_gl = l85_gloff_aim_walk, l85_gloff_aim_jammed
+anm_idle_aim_moving_forward_right_g = l85_glon_aim_walk, l85_glon_idle
+anm_idle_aim_moving_forward_right_empty_g = l85_glon_aim_walk, l85_glon_idle
+anm_idle_aim_moving_forward_right_jammed_g = l85_glon_aim_walk, l85_glon_idle_jammed
+anm_idle_aim_moving_back_left = l85_aim_walk, l85_aim
+anm_idle_aim_moving_back_left_empty = l85_aim_walk, l85_aim
+anm_idle_aim_moving_back_left_jammed = l85_aim_walk, l85_aim_jammed
+anm_idle_aim_moving_back_left_w_gl = l85_gloff_aim_walk, l85_gloff_aim
+anm_idle_aim_moving_back_left_empty_w_gl = l85_gloff_aim_walk, l85_gloff_aim
+anm_idle_aim_moving_back_left_jammed_w_gl = l85_gloff_aim_walk, l85_gloff_aim_jammed
+anm_idle_aim_moving_back_left_g = l85_glon_aim_walk, l85_glon_idle
+anm_idle_aim_moving_back_left_empty_g = l85_glon_aim_walk, l85_glon_idle
+anm_idle_aim_moving_back_left_jammed_g = l85_glon_aim_walk, l85_glon_idle_jammed
+anm_idle_aim_moving_back_right = l85_aim_walk, l85_aim
+anm_idle_aim_moving_back_right_empty = l85_aim_walk, l85_aim
+anm_idle_aim_moving_back_right_jammed = l85_aim_walk, l85_aim_jammed
+anm_idle_aim_moving_back_right_w_gl = l85_gloff_aim_walk, l85_gloff_aim
+anm_idle_aim_moving_back_right_empty_w_gl = l85_gloff_aim_walk, l85_gloff_aim
+anm_idle_aim_moving_back_right_jammed_w_gl = l85_gloff_aim_walk, l85_gloff_aim_jammed
+anm_idle_aim_moving_back_right_g = l85_glon_aim_walk, l85_glon_idle
+anm_idle_aim_moving_back_right_empty_g = l85_glon_aim_walk, l85_glon_idle
+anm_idle_aim_moving_back_right_jammed_g = l85_glon_aim_walk, l85_glon_idle_jammed
+anm_idle_aim_scope_moving = l85_aim_walk_scope, l85_aim
+anm_idle_aim_scope_moving_empty = l85_aim_walk_scope, l85_aim
+anm_idle_aim_scope_moving_jammed = l85_aim_walk_scope, l85_aim_jammed
+anm_idle_aim_scope_moving_w_gl = l85_gloff_aim_walk_scope, l85_gloff_aim
+anm_idle_aim_scope_moving_empty_w_gl = l85_gloff_aim_walk_scope, l85_gloff_aim
+anm_idle_aim_scope_moving_jammed_w_gl = l85_gloff_aim_walk_scope, l85_gloff_aim_jammed
+anm_idle_aim_scope_moving_g = l85_glon_aim_walk, l85_glon_idle
+anm_idle_aim_scope_moving_empty_g = l85_glon_aim_walk, l85_glon_idle
+anm_idle_aim_scope_moving_jammed_g = l85_glon_aim_walk, l85_glon_idle_jammed
+
+; ---- aim idle (in / out / hold) ----
+anm_idle_aim_start = l85_aim_start
+anm_idle_aim_start_empty = l85_aim_start
+anm_idle_aim_start_jammed = l85_aim_start, l85_aim_start_jammed
+anm_idle_aim_start_w_gl = l85_gloff_aim_start
+anm_idle_aim_start_empty_w_gl = l85_gloff_aim_start
+anm_idle_aim_start_jammed_w_gl = l85_gloff_aim_start, l85_gloff_aim_start_jammed
+anm_idle_aim_start_g = l85_glon_aim_start, l85_glon_idle
+anm_idle_aim_start_empty_g = l85_glon_aim_start, l85_glon_idle
+anm_idle_aim_start_jammed_g = l85_glon_aim_start, l85_glon_idle_jammed
+anm_idle_aim = l85_aim
+anm_idle_aim_empty = l85_aim
+anm_idle_aim_jammed = l85_aim, l85_aim_jammed
+anm_idle_aim_scope = l85_aim
+anm_idle_aim_scope_empty = l85_aim
+anm_idle_aim_scope_jammed = l85_aim, l85_aim_jammed
+anm_idle_aim_w_gl = l85_gloff_aim
+anm_idle_aim_empty_w_gl = l85_gloff_aim
+anm_idle_aim_jammed_w_gl = l85_gloff_aim, l85_gloff_aim_jammed
+anm_idle_aim_scope_w_gl = l85_gloff_aim
+anm_idle_aim_scope_empty_w_gl = l85_gloff_aim
+anm_idle_aim_scope_jammed_w_gl = l85_gloff_aim, l85_gloff_aim_jammed
+anm_idle_aim_g = l85_glon_aim, l85_glon_idle
+anm_idle_aim_empty_g = l85_glon_aim, l85_glon_idle
+anm_idle_aim_jammed_g = l85_glon_aim, l85_glon_idle_jammed
+anm_idle_aim_scope_g = l85_glon_aim, l85_glon_idle
+anm_idle_aim_scope_empty_g = l85_glon_aim, l85_glon_idle
+anm_idle_aim_scope_jammed_g = l85_glon_aim, l85_glon_idle_jammed
+anm_idle_aim_end = l85_aim_end
+anm_idle_aim_end_empty = l85_aim_end
+anm_idle_aim_end_jammed = l85_aim_end, l85_aim_end_jammed
+anm_idle_aim_end_w_gl = l85_gloff_aim_end
+anm_idle_aim_end_empty_w_gl = l85_gloff_aim_end
+anm_idle_aim_end_jammed_w_gl = l85_gloff_aim_end, l85_gloff_aim_end_jammed
+anm_idle_aim_end_g = l85_glon_aim_end, l85_glon_idle
+anm_idle_aim_end_empty_g = l85_glon_aim_end, l85_glon_idle
+anm_idle_aim_end_jammed_g = l85_glon_aim_end, l85_glon_idle_jammed
+
+; ---- walk (fwd / slow / crouch) ----
+anm_idle_moving = l85_walk
+anm_idle_moving_jammed = l85_walk, idle_jammed
+anm_idle_moving_empty = l85_walk
+anm_idle_moving_w_gl = l85_gloff_walk, l85_gloff_idle
+anm_idle_moving_jammed_w_gl = l85_gloff_walk, l85_gloff_idle_jammed
+anm_idle_moving_empty_w_gl = l85_gloff_walk, l85_gloff_idle
+anm_idle_moving_g = l85_glon_walk, l85_glon_idle
+anm_idle_moving_jammed_g = l85_glon_walk, l85_glon_idle_jammed
+anm_idle_moving_empty_g = l85_glon_walk, l85_glon_idle
+anm_idle_moving_slow = l85_walk_slow
+anm_idle_moving_slow_jammed = l85_walk_slow, idle_jammed
+anm_idle_moving_slow_empty = l85_walk_slow
+anm_idle_moving_slow_w_gl = l85_gloff_walk_slow, l85_gloff_idle
+anm_idle_moving_slow_jammed_w_gl = l85_gloff_walk_slow, l85_gloff_idle_jammed
+anm_idle_moving_slow_empty_w_gl = l85_gloff_walk_slow, l85_gloff_idle
+anm_idle_moving_slow_g = l85_glon_walk_slow, l85_glon_idle
+anm_idle_moving_slow_jammed_g = l85_glon_walk_slow, l85_glon_idle_jammed
+anm_idle_moving_slow_empty_g = l85_glon_walk_slow, l85_glon_idle
+anm_idle_moving_crouch = l85_walk_slow_down
+anm_idle_moving_crouch_jammed = l85_walk_slow_down, idle_jammed
+anm_idle_moving_crouch_empty = l85_walk_slow_down
+anm_idle_moving_crouch_w_gl = l85_gloff_walk_slow_down, l85_gloff_idle
+anm_idle_moving_crouch_jammed_w_gl = l85_gloff_walk_slow_down, l85_gloff_idle_jammed
+anm_idle_moving_crouch_empty_w_gl = l85_gloff_walk_slow_down, l85_gloff_idle
+anm_idle_moving_crouch_g = l85_glon_walk_slow_down, l85_glon_idle
+anm_idle_moving_crouch_jammed_g = l85_glon_walk_slow_down, l85_glon_idle_jammed
+anm_idle_moving_crouch_empty_g = l85_glon_walk_slow_down, l85_glon_idle
+anm_idle_moving_crouch_slow = l85_walk_slow_super
+anm_idle_moving_crouch_slow_jammed = l85_walk_slow_super, idle_jammed
+anm_idle_moving_crouch_slow_empty = l85_walk_slow_super
+anm_idle_moving_crouch_slow_w_gl = l85_gloff_walk_slow_super, l85_gloff_idle
+anm_idle_moving_crouch_slow_jammed_w_gl = l85_gloff_walk_slow_super, l85_gloff_idle_jammed
+anm_idle_moving_crouch_slow_empty_w_gl = l85_gloff_walk_slow_super, l85_gloff_idle
+anm_idle_moving_crouch_slow_g = l85_glon_walk_slow_super, l85_glon_idle
+anm_idle_moving_crouch_slow_jammed_g = l85_glon_walk_slow_super, l85_glon_idle_jammed
+anm_idle_moving_crouch_slow_empty_g = l85_glon_walk_slow_super, l85_glon_idle
+
+; ---- idle ----
+anm_idle = l85_idle
+anm_idle_empty = l85_idle
+anm_idle_jammed = l85_idle, idle_jammed
+anm_idle_slow = l85_idle
+anm_idle_slow_empty = l85_idle
+anm_idle_slow_jammed = l85_idle, idle_jammed
+anm_idle_crouch = l85_idle
+anm_idle_crouch_empty = l85_idle
+anm_idle_crouch_jammed = l85_idle, idle_jammed
+anm_idle_crouch_slow = l85_idle
+anm_idle_crouch_slow_empty = l85_idle
+anm_idle_crouch_slow_jammed = l85_idle, idle_jammed
+anm_idle_w_gl = l85_gloff_idle
+anm_idle_empty_w_gl = l85_gloff_idle
+anm_idle_jammed_w_gl = l85_gloff_idle, l85_gloff_idle_jammed
+anm_idle_slow_w_gl = l85_gloff_idle
+anm_idle_slow_empty_w_gl = l85_gloff_idle
+anm_idle_slow_jammed_w_gl = l85_gloff_idle, l85_gloff_idle_jammed
+anm_idle_crouch_w_gl = l85_gloff_idle
+anm_idle_crouch_empty_w_gl = l85_gloff_idle
+anm_idle_crouch_jammed_w_gl = l85_gloff_idle, l85_gloff_idle_jammed
+anm_idle_crouch_slow_w_gl = l85_gloff_idle
+anm_idle_crouch_slow_empty_w_gl = l85_gloff_idle
+anm_idle_crouch_slow_jammed_w_gl = l85_gloff_idle, l85_gloff_idle_jammed
+anm_idle_g = l85_glon_idle
+anm_idle_empty_g = l85_glon_idle
+anm_idle_jammed_g = l85_glon_idle, l85_glon_idle_jammed
+anm_idle_slow_g = l85_glon_idle
+anm_idle_slow_empty_g = l85_glon_idle
+anm_idle_slow_jammed_g = l85_glon_idle, l85_glon_idle_jammed
+anm_idle_crouch_g = l85_glon_idle
+anm_idle_crouch_empty_g = l85_glon_idle
+anm_idle_crouch_jammed_g = l85_glon_idle, l85_glon_idle_jammed
+anm_idle_crouch_slow_g = l85_glon_idle
+anm_idle_crouch_slow_empty_g = l85_glon_idle
+anm_idle_crouch_slow_jammed_g = l85_glon_idle, l85_glon_idle_jammed
+
+; ---- shots ----
+anm_shoot_suicide = l85_suicide_shoot, l85_shoot
+anm_shoot_suicide_sil = l85_suicide_shoot, l85_shoot
+anm_shoot_last_suicide = l85_suicide_shoot, l85_shoot
+anm_shoot_last_suicide_sil = l85_suicide_shoot, l85_shoot
+anm_shoot_suicide_w_gl = l85_suicide_shoot, l85_gloff_shoot
+anm_shoot_suicide_sil_w_gl = l85_suicide_shoot, l85_gloff_shoot
+anm_shoot_last_suicide_w_gl = l85_suicide_shoot, l85_gloff_shoot
+anm_shoot_last_suicide_sil_w_gl = l85_suicide_shoot, l85_gloff_shoot
+anm_shoot_suicide_g = l85_suicide_shoot, l85_glon_shoot
+anm_shoot_suicide_empty_g = l85_suicide_shoot, l85_glon_shoot
+anm_shoot_suicide_jammed_g = l85_suicide_shoot, l85_glon_shoot_jammed
+anm_shoot = l85_shoot
+anm_shoot_sil = l85_shoot
+anm_shoot_jammed = l85_shoot, idle_jammed
+anm_shoot_jammed_sil = l85_shoot, idle_jammed
+anm_shoot_last = l85_shoot
+anm_shoot_last_sil = l85_shoot
+anm_shoot_aim = l85_aim_shoot
+anm_shoot_aim_sil = l85_aim_shoot
+anm_shoot_aim_jammed = l85_aim_shoot, l85_aim_jammed
+anm_shoot_aim_jammed_sil = l85_aim_shoot, l85_aim_jammed
+anm_shoot_aim_last = l85_aim_shoot
+anm_shoot_aim_last_sil = l85_aim_shoot
+anm_shoot_aim_scope = l85_aim_shoot_scope, l85_aim_shoot
+anm_shoot_aim_scope_sil = l85_aim_shoot_scope, l85_aim_shoot
+anm_shoot_aim_scope_last = l85_aim_shoot_scope, l85_aim_shoot
+anm_shoot_aim_scope_last_sil = l85_aim_shoot_scope, l85_aim_shoot
+anm_shoot_aim_scope_jammed = l85_aim_shoot_scope, l85_aim_jammed
+anm_shoot_aim_scope_jammed_sil = l85_aim_shoot_scope, l85_aim_jammed
+anm_shoot_w_gl = l85_gloff_shoot
+anm_shoot_sil_w_gl = l85_gloff_shoot
+anm_shoot_jammed_w_gl = l85_gloff_shoot, l85_gloff_idle_jammed
+anm_shoot_jammed_sil_w_gl = l85_gloff_shoot, l85_gloff_idle_jammed
+anm_shoot_last_w_gl = l85_gloff_shoot
+anm_shoot_last_sil_w_gl = l85_gloff_shoot
+anm_shoot_aim_w_gl = l85_gloff_aim_shoot
+anm_shoot_aim_sil_w_gl = l85_gloff_aim_shoot
+anm_shoot_aim_jammed_w_gl = l85_gloff_aim_shoot, l85_gloff_aim_jammed
+anm_shoot_aim_jammed_sil_w_gl = l85_gloff_aim_shoot, l85_gloff_aim_jammed
+anm_shoot_aim_last_w_gl = l85_gloff_aim_shoot
+anm_shoot_aim_last_sil_w_gl = l85_gloff_aim_shoot
+anm_shoot_aim_scope_w_gl = l85_gloff_aim_shoot_scope, l85_gloff_aim_shoot
+anm_shoot_aim_scope_sil_w_gl = l85_gloff_aim_shoot_scope, l85_gloff_aim_shoot
+anm_shoot_aim_scope_last_w_gl = l85_gloff_aim_shoot_scope, l85_gloff_aim_shoot
+anm_shoot_aim_scope_last_sil_w_gl = l85_gloff_aim_shoot_scope, l85_gloff_aim_shoot
+anm_shoot_aim_scope_jammed_w_gl = l85_gloff_aim_shoot_scope, l85_gloff_aim_jammed
+anm_shoot_aim_scope_jammed_sil_w_gl = l85_gloff_aim_shoot_scope, l85_gloff_aim_jammed
+anm_shoot_g = l85_glon_shoot
+anm_shoot_empty_g = l85_glon_shoot
+anm_shoot_jammed_g = l85_glon_shoot, l85_glon_shoot_jammed
+anm_shoot_aim_g = l85_glon_aim_shoot, l85_glon_shoot
+anm_shoot_aim_empty_g = l85_glon_aim_shoot, l85_glon_shoot
+anm_shoot_aim_jammed_g = l85_glon_aim_shoot, l85_glon_shoot_jammed
+
+; ---- dry fire ----
+anm_fakeshoot_empty = l85_dry_empty
+anm_fakeshoot_aim_empty = l85_aim_dry, l85_aim
+anm_fakeshoot_jammed = l85_dry, idle_jammed
+anm_fakeshoot_aim_jammed = l85_aim_dry, l85_aim_jammed
+anm_fakeshoot_w_gl = l85_gloff_dry, l85_gloff_idle	; intermediate: the engine inserts _jammed before the GL suffix
+anm_fakeshoot_aim_w_gl = l85_gloff_aim_dry, l85_gloff_aim
+anm_fakeshoot_empty_w_gl = l85_gloff_dry_empty, l85_gloff_idle
+anm_fakeshoot_aim_empty_w_gl = l85_gloff_aim_dry, l85_gloff_aim
+anm_fakeshoot_jammed_w_gl = l85_gloff_dry, l85_gloff_idle_jammed
+anm_fakeshoot_aim_jammed_w_gl = l85_gloff_aim_dry, l85_gloff_aim_jammed
+anm_fakeshoot_g = l85_glon_dry_empty, l85_glon_idle
+anm_fakeshoot_aim_g = l85_glon_aim_dry, l85_glon_idle
+anm_fakeshoot_jammed_g = l85_glon_dry_empty, l85_glon_idle_jammed
+anm_fakeshoot_aim_jammed_g = l85_glon_aim_dry, l85_glon_idle_jammed
+anm_fakeshoot_empty_g = l85_glon_dry_empty, l85_glon_idle
+anm_fakeshoot_aim_empty_g = l85_glon_aim_dry, l85_glon_idle
+anm_fakeshoot = l85_dry	; (kept: not in GS set)
+anm_fakeshoot_aim = l85_aim_dry	; (kept: not in GS set)
+
+; ---- reload ----
+anm_reload_g = l85_gl_reload
+anm_reload_empty_g = l85_gl_reload
+anm_reload_jammed_g = l85_gl_reload, l85_gl_reload_jammed
+anm_reload_ammochange_g = l85_gl_changegrenade
+anm_reload_empty_ammochange_g = l85_gl_changegrenade
+anm_reload_jammed_ammochange_g = l85_gl_changegrenade, l85_gl_changegrenade_jammed
+anm_reload = l85_reload
+anm_reload_empty = l85_reload_empty
+anm_reload_jammed = l85_revival_scope, l85_revival
+anm_reload_jammed_last = l85_revival_scope, l85_revival
+anm_reload_ammochange = l85_reload
+anm_reload_w_gl = l85_gloff_reload
+anm_reload_empty_w_gl = l85_gloff_reload_empty
+anm_reload_jammed_w_gl = l85_gloff_revival_scope, l85_gloff_revival
+anm_reload_jammed_last_w_gl = l85_gloff_revival_scope, l85_gloff_revival
+anm_reload_ammochange_w_gl = l85_gloff_reload
+anm_reload_jammed_noscope = l85_revival
+anm_reload_jammed_last_noscope = l85_revival
+anm_reload_jammed_w_gl_noscope = l85_gloff_revival
+anm_reload_jammed_last_w_gl_noscope = l85_gloff_revival
+
+; ---- GL switch ----
+anm_switch = l85_gl_deactivate
+anm_switch_w_gl = l85_gl_deactivate
+anm_switch_empty_w_gl = l85_gl_deactivate
+anm_switch_jammed_w_gl = l85_gl_deactivate, l85_gl_deactivate_jammed
+anm_switch_g = l85_gl_activate
+anm_switch_empty_g = l85_gl_activate
+anm_switch_jammed_g = l85_gl_activate, l85_gl_activate_jammed
+
+; ---- firemode change ----
+anm_changefiremode_from_1_to_a = l85_firemode_1_to_a
+anm_changefiremode_from_1_to_a_jammed = l85_firemode_1_to_a, idle_jammed
+anm_changefiremode_from_1_to_a_empty = l85_firemode_1_to_a
+anm_changefiremode_from_1_to_a_w_gl = l85_gloff_firemode_1_to_a, l85_gloff_idle
+anm_changefiremode_from_1_to_a_jammed_w_gl = l85_gloff_firemode_1_to_a, l85_gloff_idle_jammed
+anm_changefiremode_from_1_to_a_empty_w_gl = l85_gloff_firemode_1_to_a, l85_gloff_idle
+anm_changefiremode_from_1_to_a_g = l85_glon_firemode_1_to_a, l85_glon_idle
+anm_changefiremode_from_1_to_a_jammed_g = l85_glon_firemode_1_to_a, l85_glon_idle_jammed
+anm_changefiremode_from_1_to_a_empty_g = l85_glon_firemode_1_to_a, l85_glon_idle
+anm_changefiremode_from_a_to_1 = l85_firemode_a_to_1
+anm_changefiremode_from_a_to_1_jammed = l85_firemode_a_to_1, idle_jammed
+anm_changefiremode_from_a_to_1_empty = l85_firemode_a_to_1
+anm_changefiremode_from_a_to_1_w_gl = l85_gloff_firemode_a_to_1, l85_gloff_idle
+anm_changefiremode_from_a_to_1_jammed_w_gl = l85_gloff_firemode_a_to_1, l85_gloff_idle_jammed
+anm_changefiremode_from_a_to_1_empty_w_gl = l85_gloff_firemode_a_to_1, l85_gloff_idle
+anm_changefiremode_from_a_to_1_g = l85_glon_firemode_1_to_a, l85_glon_idle
+anm_changefiremode_from_a_to_1_jammed_g = l85_glon_firemode_1_to_a, l85_glon_idle_jammed
+anm_changefiremode_from_a_to_1_empty_g = l85_glon_firemode_1_to_a, l85_glon_idle
+
+; ---- unload magazine ----
+anm_unload_mag = l85_draw
+anm_unload_mag_jammed = l85_draw
+anm_unload_mag_empty = l85_draw
+anm_unload_mag_w_gl = l85_gloff_draw, l85_gloff_idle
+anm_unload_mag_jammed_w_gl = l85_gloff_draw, l85_gloff_idle
+anm_unload_mag_empty_w_gl = l85_gloff_draw, l85_gloff_idle
+anm_unload_mag_g = l85_glon_draw, l85_glon_idle
+anm_unload_mag_jammed_g = l85_glon_draw, l85_glon_idle
+anm_unload_mag_empty_g = l85_glon_draw, l85_glon_idle
+
+; ---- laser on / off ----
+anm_laser_on = l85_tac_lam
+anm_laser_on_empty = l85_tac_lam
+anm_laser_on_jammed = l85_tac_lam, idle_jammed
+anm_laser_on_w_gl = l85_gloff_lam, l85_gloff_idle
+anm_laser_on_empty_w_gl = l85_gloff_lam, l85_gloff_idle
+anm_laser_on_jammed_w_gl = l85_gloff_lam, l85_gloff_idle_jammed
+anm_laser_on_g = l85_glon_lam, l85_glon_idle
+anm_laser_on_empty_g = l85_glon_lam, l85_glon_idle
+anm_laser_on_jammed_g = l85_glon_lam, l85_glon_idle_jammed
+anm_laser_off = l85_tac_lam
+anm_laser_off_empty = l85_tac_lam
+anm_laser_off_jammed = l85_tac_lam, idle_jammed
+anm_laser_off_w_gl = l85_gloff_lam, l85_gloff_idle
+anm_laser_off_empty_w_gl = l85_gloff_lam, l85_gloff_idle
+anm_laser_off_jammed_w_gl = l85_gloff_lam, l85_gloff_idle_jammed
+anm_laser_off_g = l85_glon_lam, l85_glon_idle
+anm_laser_off_empty_g = l85_glon_lam, l85_glon_idle
+anm_laser_off_jammed_g = l85_glon_lam, l85_glon_idle_jammed
+
+; ---- flashlight on / off ----
+anm_torch_on = l85_tac_lam
+anm_torch_on_empty = l85_tac_lam
+anm_torch_on_jammed = l85_tac_lam, idle_jammed
+anm_torch_on_w_gl = l85_gloff_lam, l85_gloff_idle
+anm_torch_on_empty_w_gl = l85_gloff_lam, l85_gloff_idle
+anm_torch_on_jammed_w_gl = l85_gloff_lam, l85_gloff_idle_jammed
+anm_torch_on_g = l85_glon_lam, l85_glon_idle
+anm_torch_on_empty_g = l85_glon_lam, l85_glon_idle
+anm_torch_on_jammed_g = l85_glon_lam, l85_glon_idle_jammed
+anm_torch_off = l85_tac_lam
+anm_torch_off_empty = l85_tac_lam
+anm_torch_off_jammed = l85_tac_lam, idle_jammed
+anm_torch_off_w_gl = l85_gloff_lam, l85_gloff_idle
+anm_torch_off_empty_w_gl = l85_gloff_lam, l85_gloff_idle
+anm_torch_off_jammed_w_gl = l85_gloff_lam, l85_gloff_idle_jammed
+anm_torch_off_g = l85_glon_lam, l85_glon_idle
+anm_torch_off_empty_g = l85_glon_lam, l85_glon_idle
+anm_torch_off_jammed_g = l85_glon_lam, l85_glon_idle_jammed
+
+; ---- headlamp on / off ----
+anm_headlamp_on = l85_headflash
+anm_headlamp_on_empty = l85_headflash
+anm_headlamp_on_jammed = l85_headflash, idle_jammed
+anm_headlamp_on_w_gl = l85_gloff_headflash, l85_gloff_idle
+anm_headlamp_on_empty_w_gl = l85_gloff_headflash, l85_gloff_idle
+anm_headlamp_on_jammed_w_gl = l85_gloff_headflash, l85_gloff_idle_jammed
+anm_headlamp_on_g = l85_glon_headflash, l85_glon_idle
+anm_headlamp_on_empty_g = l85_glon_headflash, l85_glon_idle
+anm_headlamp_on_jammed_g = l85_glon_headflash, l85_glon_idle_jammed
+anm_headlamp_off = l85_headflash
+anm_headlamp_off_empty = l85_headflash
+anm_headlamp_off_jammed = l85_headflash, idle_jammed
+anm_headlamp_off_w_gl = l85_gloff_headflash, l85_gloff_idle
+anm_headlamp_off_empty_w_gl = l85_gloff_headflash, l85_gloff_idle
+anm_headlamp_off_jammed_w_gl = l85_gloff_headflash, l85_gloff_idle_jammed
+anm_headlamp_off_g = l85_glon_headflash, l85_glon_idle
+anm_headlamp_off_empty_g = l85_glon_headflash, l85_glon_idle
+anm_headlamp_off_jammed_g = l85_glon_headflash, l85_glon_idle_jammed
+
+; ---- night vision on / off ----
+anm_nv_on = l85_headflash
+anm_nv_on_empty = l85_headflash
+anm_nv_on_jammed = l85_headflash, idle_jammed
+anm_nv_on_w_gl = l85_gloff_headflash, l85_gloff_idle
+anm_nv_on_empty_w_gl = l85_gloff_headflash, l85_gloff_idle
+anm_nv_on_jammed_w_gl = l85_gloff_headflash, l85_gloff_idle_jammed
+anm_nv_on_g = l85_glon_headflash, l85_glon_idle
+anm_nv_on_empty_g = l85_glon_headflash, l85_glon_idle
+anm_nv_on_jammed_g = l85_glon_headflash, l85_glon_idle_jammed
+anm_nv_off = l85_headflash
+anm_nv_off_empty = l85_headflash
+anm_nv_off_jammed = l85_headflash, idle_jammed
+anm_nv_off_w_gl = l85_gloff_headflash, l85_gloff_idle
+anm_nv_off_empty_w_gl = l85_gloff_headflash, l85_gloff_idle
+anm_nv_off_jammed_w_gl = l85_gloff_headflash, l85_gloff_idle_jammed
+anm_nv_off_g = l85_glon_headflash, l85_glon_idle
+anm_nv_off_empty_g = l85_glon_headflash, l85_glon_idle
+anm_nv_off_jammed_g = l85_glon_headflash, l85_glon_idle_jammed
+
+; ---- bayonet / kick / attack ----
+anm_kick = l85_bayonet
+anm_kick_empty = l85_bayonet
+anm_kick_jammed = l85_bayonet, idle_jammed
+anm_kick_w_gl = l85_bayonet
+anm_kick_empty_w_gl = l85_bayonet
+anm_kick_jammed_w_gl = l85_bayonet
+anm_kick_g = l85_bayonet
+anm_kick_empty_g = l85_bayonet
+anm_kick_jammed_g = l85_bayonet
+
+; ---- misc ----
+anm_suicide = l85_suicide
+anm_stop_suicide = l85_suicide_end
+anm_suicide_w_gl = l85_gloff_suicide, l85_gloff_idle
+anm_stop_suicide_w_gl = l85_gloff_suicide_end, l85_gloff_idle
+anm_suicide_g = l85_glon_suicide, l85_glon_idle
+anm_suicide_empty_g = l85_glon_suicide, l85_glon_idle
+anm_suicide_jammed_g = l85_glon_suicide, l85_glon_idle_jammed
+anm_stop_suicide_g = l85_glon_suicide_end, l85_glon_idle
+anm_stop_suicide_empty_g = l85_glon_suicide_end, l85_glon_idle
+anm_stop_suicide_jammed_g = l85_glon_suicide_end, l85_glon_idle_jammed
+
+; ---- GS controller-suicide animation block (verbatim from GS assault/l85/huds.ltx). The alias
+; alone is not enough: without lock_time_anm_suicide the engine uses a hardcoded 3 s and the
+; shot lands in the middle of the gesture. ----
+custom_suicide_shot                = true
+lock_time_anm_suicide              = 7.37
+lock_time_anm_stop_suicide         = 1.37
+lock_time_anm_suicide_w_gl         = 7.37
+lock_time_anm_stop_suicide_w_gl    = 1.37
+suicide_delay                      = 0.25
+lock_time_anm_suicide_g            = 7.37
+lock_time_anm_suicide_empty_g      = 7.37
+lock_time_anm_suicide_jammed_g     = 7.37
+lock_time_anm_stop_suicide_g       = 1.37
+lock_time_anm_stop_suicide_empty_g = 1.37
+lock_time_anm_stop_suicide_jammed_g = 1.37
+
+; ---- GS controller-suicide flags (defines.ltx defaults are the opposite: a weapon
+; that does not set these is dropped for the knife). Values from GS's own huds.ltx. ----
+prohibit_suicide                 = false
+suicide_by_animation             = true
+controller_can_shoot_gl          = true
+controller_shoot_gl_min_dist     = 10
+controller_can_switch_gl         = false
+
+; ==================== AUTO-FIRE MODE ANIMATION SET (mask_firemode_a = _auto) ====================
+
+
+; ---- added by the Gunslinger port (wpn_l85) ----
+gl_ammo_params_section_0= wpn_l85_ammo_bones_m209
+gl_ammo_params_section_1= wpn_l85_ammo_bones_m397a1
+
+; --- laser dot / GL bone timing ---
+laserdot_hud_treshold   = 90	; GS: cull the dot only when pointing away (engine default 10 deg)
+hud_recalc_koef         = 1.2
+gl_reload_insert_mark   = 0.2	; the PLAIN GL reload only (GS leaves it unlocked and loads at the
+				; animation end); the grenade-CHANGE now follows its lock_time_start instead
+; GS huds.ltx: the grenade-change reload seats the new round at 1.5 s and runs 2.15 s more
+lock_time_start_anm_reload_ammochange_g = 1.5
+lock_time_end_anm_reload_ammochange_g   = 2.15
+
+; --- laser/torch toggle timings, GS assault/l85/huds.ltx (per weapon: 0.35 / 0.55) ---
+lock_time_start_anm_laser_on = 0.35
+lock_time_end_anm_laser_on = 0.55
+lock_time_start_anm_laser_on_empty = 0.35
+lock_time_end_anm_laser_on_empty = 0.55
+lock_time_start_anm_laser_on_jammed = 0.35
+lock_time_end_anm_laser_on_jammed = 0.55
+lock_time_start_anm_laser_on_w_gl = 0.35
+lock_time_end_anm_laser_on_w_gl = 0.55
+lock_time_start_anm_laser_on_empty_w_gl = 0.35
+lock_time_end_anm_laser_on_empty_w_gl = 0.55
+lock_time_start_anm_laser_on_jammed_w_gl = 0.35
+lock_time_end_anm_laser_on_jammed_w_gl = 0.55
+lock_time_start_anm_laser_on_g = 0.35
+lock_time_end_anm_laser_on_g = 0.55
+lock_time_start_anm_laser_on_empty_g = 0.35
+lock_time_end_anm_laser_on_empty_g = 0.55
+lock_time_start_anm_laser_on_jammed_g = 0.35
+lock_time_end_anm_laser_on_jammed_g = 0.55
+lock_time_start_anm_laser_off = 0.35
+lock_time_end_anm_laser_off = 0.55
+lock_time_start_anm_laser_off_empty = 0.35
+lock_time_end_anm_laser_off_empty = 0.55
+lock_time_start_anm_laser_off_jammed = 0.35
+lock_time_end_anm_laser_off_jammed = 0.55
+lock_time_start_anm_laser_off_w_gl = 0.35
+lock_time_end_anm_laser_off_w_gl = 0.55
+lock_time_start_anm_laser_off_empty_w_gl = 0.35
+lock_time_end_anm_laser_off_empty_w_gl = 0.55
+lock_time_start_anm_laser_off_jammed_w_gl = 0.35
+lock_time_end_anm_laser_off_jammed_w_gl = 0.55
+lock_time_start_anm_laser_off_g = 0.35
+lock_time_end_anm_laser_off_g = 0.55
+lock_time_start_anm_laser_off_empty_g = 0.35
+lock_time_end_anm_laser_off_empty_g = 0.55
+lock_time_start_anm_laser_off_jammed_g = 0.35
+lock_time_end_anm_laser_off_jammed_g = 0.55
+lock_time_start_anm_torch_on = 0.35
+lock_time_end_anm_torch_on = 0.55
+lock_time_start_anm_torch_on_empty = 0.35
+lock_time_end_anm_torch_on_empty = 0.55
+lock_time_start_anm_torch_on_jammed = 0.35
+lock_time_end_anm_torch_on_jammed = 0.55
+lock_time_start_anm_torch_on_w_gl = 0.35
+lock_time_end_anm_torch_on_w_gl = 0.55
+lock_time_start_anm_torch_on_empty_w_gl = 0.35
+lock_time_end_anm_torch_on_empty_w_gl = 0.55
+lock_time_start_anm_torch_on_jammed_w_gl = 0.35
+lock_time_end_anm_torch_on_jammed_w_gl = 0.55
+lock_time_start_anm_torch_on_g = 0.35
+lock_time_end_anm_torch_on_g = 0.55
+lock_time_start_anm_torch_on_empty_g = 0.35
+lock_time_end_anm_torch_on_empty_g = 0.55
+lock_time_start_anm_torch_on_jammed_g = 0.35
+lock_time_end_anm_torch_on_jammed_g = 0.55
+lock_time_start_anm_torch_off = 0.35
+lock_time_end_anm_torch_off = 0.55
+lock_time_start_anm_torch_off_empty = 0.35
+lock_time_end_anm_torch_off_empty = 0.55
+lock_time_start_anm_torch_off_jammed = 0.35
+lock_time_end_anm_torch_off_jammed = 0.55
+lock_time_start_anm_torch_off_w_gl = 0.35
+lock_time_end_anm_torch_off_w_gl = 0.55
+lock_time_start_anm_torch_off_empty_w_gl = 0.35
+lock_time_end_anm_torch_off_empty_w_gl = 0.55
+lock_time_start_anm_torch_off_jammed_w_gl = 0.35
+lock_time_end_anm_torch_off_jammed_w_gl = 0.55
+lock_time_start_anm_torch_off_g = 0.35
+lock_time_end_anm_torch_off_g = 0.55
+lock_time_start_anm_torch_off_empty_g = 0.35
+lock_time_end_anm_torch_off_empty_g = 0.55
+lock_time_start_anm_torch_off_jammed_g = 0.35
+lock_time_end_anm_torch_off_jammed_g = 0.55
+
+; --- bayonet stab timing (like the ak74): lock_time_* ends the action before the motion's
+; dead tail so the stab can be interrupted; start/end are GS's own values from its huds.ltx ---
+lock_time_anm_kick = 0.9
+lock_time_anm_kick_empty = 0.9
+lock_time_anm_kick_jammed = 0.9
+lock_time_anm_kick_w_gl = 0.9
+lock_time_anm_kick_empty_w_gl = 0.9
+lock_time_anm_kick_jammed_w_gl = 0.9
+lock_time_anm_kick_g = 0.9
+lock_time_anm_kick_empty_g = 0.9
+lock_time_anm_kick_jammed_g = 0.9
+lock_time_start_anm_kick = 0.17
+lock_time_end_anm_kick = 1.0
+lock_time_start_anm_kick_empty = 0.17
+lock_time_end_anm_kick_empty = 1.0
+lock_time_start_anm_kick_jammed = 0.17
+lock_time_end_anm_kick_jammed = 1.0
+lock_time_start_anm_kick_w_gl = 0.17
+lock_time_end_anm_kick_w_gl = 1.0
+lock_time_start_anm_kick_empty_w_gl = 0.17
+lock_time_end_anm_kick_empty_w_gl = 1.0
+lock_time_start_anm_kick_jammed_w_gl = 0.17
+lock_time_end_anm_kick_jammed_w_gl = 1.0
+lock_time_start_anm_kick_g = 0.17
+lock_time_end_anm_kick_g = 1.0
+lock_time_start_anm_kick_empty_g = 0.17
+lock_time_end_anm_kick_empty_g = 1.0
+lock_time_start_anm_kick_jammed_g = 0.17
+lock_time_end_anm_kick_jammed_g = 1.0
+
+; extended magazine fitted (mag40/mag60 upgrade): its own reload anims
+; --- lock_time values copied verbatim from GS huds.ltx (audit 2026-08-07) ---
+lock_time_anm_changefiremode_from_1_to_a = 1.17
+lock_time_anm_changefiremode_from_1_to_a_empty = 1.17
+lock_time_anm_changefiremode_from_1_to_a_empty_g = 1.17
+lock_time_anm_changefiremode_from_1_to_a_empty_w_gl = 1.17
+lock_time_anm_changefiremode_from_1_to_a_g = 1.17
+lock_time_anm_changefiremode_from_1_to_a_jammed = 1.17
+lock_time_anm_changefiremode_from_1_to_a_jammed_g = 1.17
+lock_time_anm_changefiremode_from_1_to_a_jammed_w_gl = 1.17
+lock_time_anm_changefiremode_from_1_to_a_w_gl = 1.17
+lock_time_anm_changefiremode_from_a_to_1 = 1.17
+lock_time_anm_changefiremode_from_a_to_1_empty = 1.17
+lock_time_anm_changefiremode_from_a_to_1_empty_g = 1.17
+lock_time_anm_changefiremode_from_a_to_1_empty_w_gl = 1.17
+lock_time_anm_changefiremode_from_a_to_1_g = 1.17
+lock_time_anm_changefiremode_from_a_to_1_jammed = 1.17
+lock_time_anm_changefiremode_from_a_to_1_jammed_g = 1.17
+lock_time_anm_changefiremode_from_a_to_1_jammed_w_gl = 1.17
+lock_time_anm_changefiremode_from_a_to_1_w_gl = 1.17
+lock_time_anm_fakeshoot_aim_empty = 0.20
+lock_time_anm_fakeshoot_aim_empty_g = 0.20
+lock_time_anm_fakeshoot_aim_empty_w_gl = 0.20
+lock_time_anm_fakeshoot_aim_g = 0.20
+lock_time_anm_fakeshoot_aim_jammed = 0.20
+lock_time_anm_fakeshoot_aim_jammed_g = 0.20
+lock_time_anm_fakeshoot_aim_jammed_w_gl = 0.20
+lock_time_anm_fakeshoot_empty = 0.20
+lock_time_anm_fakeshoot_empty_g = 0.20
+lock_time_anm_fakeshoot_empty_w_gl = 0.20
+lock_time_anm_fakeshoot_g = 0.20
+lock_time_anm_fakeshoot_jammed = 0.90
+lock_time_anm_fakeshoot_jammed_g = 0.20
+lock_time_anm_fakeshoot_jammed_w_gl = 0.90
+lock_time_anm_idle_aim_end = 0.25
+lock_time_anm_idle_aim_end_empty = 0.25
+lock_time_anm_idle_aim_end_empty_g = 0.25
+lock_time_anm_idle_aim_end_empty_w_gl = 0.25
+lock_time_anm_idle_aim_end_g = 0.25
+lock_time_anm_idle_aim_end_jammed = 0.25
+lock_time_anm_idle_aim_end_jammed_g = 0.25
+lock_time_anm_idle_aim_end_jammed_w_gl = 0.25
+lock_time_anm_idle_aim_end_w_gl = 0.25
+lock_time_anm_idle_aim_start = 0.2
+lock_time_anm_idle_aim_start_empty = 0.2
+lock_time_anm_idle_aim_start_empty_g = 0.2
+lock_time_anm_idle_aim_start_empty_w_gl = 0.2
+lock_time_anm_idle_aim_start_g = 0.2
+lock_time_anm_idle_aim_start_jammed = 0.2
+lock_time_anm_idle_aim_start_jammed_g = 0.2
+lock_time_anm_idle_aim_start_jammed_w_gl = 0.2
+lock_time_anm_idle_aim_start_w_gl = 0.2
+lock_time_anm_idle_sprint_end = 0.35
+lock_time_anm_idle_sprint_end_empty = 0.35
+lock_time_anm_idle_sprint_end_empty_g = 0.35
+lock_time_anm_idle_sprint_end_empty_w_gl = 0.35
+lock_time_anm_idle_sprint_end_g = 0.35
+lock_time_anm_idle_sprint_end_jammed = 0.35
+lock_time_anm_idle_sprint_end_jammed_g = 0.35
+lock_time_anm_idle_sprint_end_jammed_w_gl = 0.35
+lock_time_anm_idle_sprint_end_w_gl = 0.35
+lock_time_anm_idle_sprint_start = 0.15
+lock_time_anm_idle_sprint_start_empty = 0.15
+lock_time_anm_idle_sprint_start_empty_g = 0.15
+lock_time_anm_idle_sprint_start_empty_w_gl = 0.15
+lock_time_anm_idle_sprint_start_g = 0.15
+lock_time_anm_idle_sprint_start_jammed = 0.15
+lock_time_anm_idle_sprint_start_jammed_g = 0.15
+lock_time_anm_idle_sprint_start_jammed_w_gl = 0.15
+lock_time_anm_idle_sprint_start_w_gl = 0.15
+lock_time_anm_unload_mag = 0.8
+lock_time_anm_unload_mag_empty = 0.8
+lock_time_anm_unload_mag_empty_g = 0.8
+lock_time_anm_unload_mag_empty_w_gl = 0.8
+lock_time_anm_unload_mag_g = 0.8
+lock_time_anm_unload_mag_jammed = 0.8
+lock_time_anm_unload_mag_jammed_g = 0.8
+lock_time_anm_unload_mag_jammed_w_gl = 0.8
+lock_time_anm_unload_mag_w_gl = 0.8
+lock_time_end_anm_headlamp_off = 0.5
+lock_time_end_anm_headlamp_off_empty = 0.5
+lock_time_end_anm_headlamp_off_empty_g = 0.5
+lock_time_end_anm_headlamp_off_empty_w_gl = 0.5
+lock_time_end_anm_headlamp_off_g = 0.5
+lock_time_end_anm_headlamp_off_jammed = 0.5
+lock_time_end_anm_headlamp_off_jammed_g = 0.5
+lock_time_end_anm_headlamp_off_jammed_w_gl = 0.5
+lock_time_end_anm_headlamp_off_w_gl = 0.5
+lock_time_end_anm_headlamp_on = 0.5
+lock_time_end_anm_headlamp_on_empty = 0.5
+lock_time_end_anm_headlamp_on_empty_g = 0.5
+lock_time_end_anm_headlamp_on_empty_w_gl = 0.5
+lock_time_end_anm_headlamp_on_g = 0.5
+lock_time_end_anm_headlamp_on_jammed = 0.5
+lock_time_end_anm_headlamp_on_jammed_g = 0.5
+lock_time_end_anm_headlamp_on_jammed_w_gl = 0.5
+lock_time_end_anm_headlamp_on_w_gl = 0.5
+lock_time_end_anm_reload_empty_ammochange_g = 2.15
+lock_time_end_anm_reload_jammed_ammochange_g = 2.15
+lock_time_start_anm_headlamp_off = 0.58
+lock_time_start_anm_headlamp_off_empty = 0.58
+lock_time_start_anm_headlamp_off_empty_g = 0.58
+lock_time_start_anm_headlamp_off_empty_w_gl = 0.58
+lock_time_start_anm_headlamp_off_g = 0.58
+lock_time_start_anm_headlamp_off_jammed = 0.58
+lock_time_start_anm_headlamp_off_jammed_g = 0.58
+lock_time_start_anm_headlamp_off_jammed_w_gl = 0.58
+lock_time_start_anm_headlamp_off_w_gl = 0.58
+lock_time_start_anm_headlamp_on = 0.58
+lock_time_start_anm_headlamp_on_empty = 0.58
+lock_time_start_anm_headlamp_on_empty_g = 0.58
+lock_time_start_anm_headlamp_on_empty_w_gl = 0.58
+lock_time_start_anm_headlamp_on_g = 0.58
+lock_time_start_anm_headlamp_on_jammed = 0.58
+lock_time_start_anm_headlamp_on_jammed_g = 0.58
+lock_time_start_anm_headlamp_on_jammed_w_gl = 0.58
+lock_time_start_anm_headlamp_on_w_gl = 0.58
+lock_time_start_anm_reload_empty_ammochange_g = 1.5
+lock_time_start_anm_reload_jammed_ammochange_g = 1.5
+[wpn_l85_long_mag_hud]:wpn_l85_hud
+anm_reload                           = l85_reload_lm
+anm_reload_empty                     = l85_reload_empty_lm
+anm_reload_ammochange                = l85_reload_lm
+anm_reload_empty_ammochange          = l85_reload_empty_lm
+anm_reload_w_gl                      = l85_gloff_reload_lm
+anm_reload_empty_w_gl                = l85_gloff_reload_empty_lm
+anm_reload_ammochange_w_gl           = l85_gloff_reload_lm
+anm_reload_empty_ammochange_w_gl     = l85_gloff_reload_empty_lm
+
+; tactical foregrip fitted: its own hand anims across the board
+[wpn_l85_handler_hud]:wpn_l85_hud
+anm_suicide			= l85_tac_suicide
+anm_stop_suicide 		= l85_tac_suicide_end
+anm_shoot_suicide               = l85_suicide_shoot, l85_shoot
+anm_shoot_suicide_sil           = l85_suicide_shoot, l85_shoot
+anm_shoot_last_suicide          = l85_suicide_shoot, l85_shoot
+anm_shoot_last_suicide_sil      = l85_suicide_shoot, l85_shoot
+anm_show                   = l85_tac_draw
+anm_show_empty             = l85_tac_draw
+anm_show_jammed            = l85_tac_draw, idle_jammed
+anm_hide                   = l85_tac_hide
+anm_hide_empty             = l85_tac_hide
+anm_hide_jammed            = l85_tac_hide, idle_jammed
+anm_idle                            = l85_tac_idle
+anm_idle_empty                      = l85_tac_idle
+anm_idle_jammed                     = l85_tac_idle, idle_jammed
+anm_idle_slow                       = l85_tac_idle
+anm_idle_slow_empty                 = l85_tac_idle
+anm_idle_slow_jammed                = l85_tac_idle, idle_jammed
+anm_idle_crouch                     = l85_tac_idle
+anm_idle_crouch_empty               = l85_tac_idle
+anm_idle_crouch_jammed              = l85_tac_idle, idle_jammed
+anm_idle_crouch_slow                = l85_tac_idle
+anm_idle_crouch_slow_empty          = l85_tac_idle
+anm_idle_crouch_slow_jammed         = l85_tac_idle, idle_jammed
+anm_idle_aim_start             = l85_tac_aim_start, l85_aim_start
+anm_idle_aim_start_empty       = l85_tac_aim_start, l85_aim_start
+anm_idle_aim_start_jammed      = l85_tac_aim_start, l85_aim_start_jammed
+anm_idle_aim                   = l85_tac_aim, l85_aim
+anm_idle_aim_empty             = l85_tac_aim, l85_aim
+anm_idle_aim_jammed            = l85_tac_aim, l85_aim_jammed
+anm_idle_aim_scope             = l85_tac_aim, l85_aim
+anm_idle_aim_scope_empty       = l85_tac_aim, l85_aim
+anm_idle_aim_scope_jammed      = l85_tac_aim, l85_aim_jammed
+anm_idle_aim_end               = l85_tac_aim_end, l85_aim_end
+anm_idle_aim_end_empty         = l85_tac_aim_end, l85_aim_end
+anm_idle_aim_end_jammed        = l85_tac_aim_end, l85_aim_end_jammed
+anm_idle_moving 					= l85_tac_walk
+anm_idle_moving_jammed 					= l85_tac_walk, idle_jammed
+anm_idle_moving_empty					= l85_tac_walk
+anm_idle_moving_slow 					= l85_tac_walk_slow
+anm_idle_moving_slow_jammed 				= l85_tac_walk_slow, idle_jammed
+anm_idle_moving_slow_empty				= l85_tac_walk_slow
+anm_idle_moving_crouch 					= l85_tac_walk_slow_down
+anm_idle_moving_crouch_jammed 				= l85_tac_walk_slow_down, idle_jammed
+anm_idle_moving_crouch_empty				= l85_tac_walk_slow_down
+anm_idle_moving_crouch_slow 				= l85_tac_walk_slow_super
+anm_idle_moving_crouch_slow_jammed 			= l85_tac_walk_slow_super, idle_jammed
+anm_idle_moving_crouch_slow_empty			= l85_tac_walk_slow_super
+anm_idle_aim_moving_forward                             = l85_tac_aim_walk, l85_aim
+anm_idle_aim_moving_forward_empty                       = l85_tac_aim_walk, l85_aim
+anm_idle_aim_moving_forward_jammed                      = l85_tac_aim_walk, l85_aim_jammed
+anm_idle_aim_moving_back                                = l85_tac_aim_walk, l85_aim
+anm_idle_aim_moving_back_empty                          = l85_tac_aim_walk, l85_aim
+anm_idle_aim_moving_back_jammed                         = l85_tac_aim_walk, l85_aim_jammed
+anm_idle_aim_moving_left                                = l85_tac_aim_walk_left, l85_aim
+anm_idle_aim_moving_left_empty                          = l85_tac_aim_walk_left, l85_aim
+anm_idle_aim_moving_left_jammed                         = l85_tac_aim_walk_left, l85_aim_jammed
+anm_idle_aim_moving_right                               = l85_tac_aim_walk_right, l85_aim
+anm_idle_aim_moving_right_empty                         = l85_tac_aim_walk_right, l85_aim
+anm_idle_aim_moving_right_jammed                        = l85_tac_aim_walk_right, l85_aim_jammed
+anm_idle_aim_moving_forward_left                        = l85_tac_aim_walk, l85_aim
+anm_idle_aim_moving_forward_left_empty                  = l85_tac_aim_walk, l85_aim
+anm_idle_aim_moving_forward_left_jammed                 = l85_tac_aim_walk, l85_aim_jammed
+anm_idle_aim_moving_forward_right                       = l85_tac_aim_walk, l85_aim
+anm_idle_aim_moving_forward_right_empty                 = l85_tac_aim_walk, l85_aim
+anm_idle_aim_moving_forward_right_jammed                = l85_tac_aim_walk, l85_aim_jammed
+anm_idle_aim_moving_back_left                           = l85_tac_aim_walk, l85_aim
+anm_idle_aim_moving_back_left_empty                     = l85_tac_aim_walk, l85_aim
+anm_idle_aim_moving_back_left_jammed                    = l85_tac_aim_walk, l85_aim_jammed
+anm_idle_aim_moving_back_right                          = l85_tac_aim_walk, l85_aim
+anm_idle_aim_moving_back_right_empty                    = l85_tac_aim_walk, l85_aim
+anm_idle_aim_moving_back_right_jammed                   = l85_tac_aim_walk, l85_aim_jammed
+anm_idle_aim_scope_moving	                        = l85_tac_aim_walk_scope, l85_aim
+anm_idle_aim_scope_moving_empty		                = l85_tac_aim_walk_scope, l85_aim
+anm_idle_aim_scope_moving_jammed	                = l85_tac_aim_walk_scope, l85_aim_jammed
+anm_idle_sprint_start             = l85_tac_sprint_start
+anm_idle_sprint_start_empty       = l85_tac_sprint_start
+anm_idle_sprint_start_jammed      = l85_tac_sprint_start, idle_jammed
+anm_idle_sprint                   = l85_tac_sprint
+anm_idle_sprint_empty             = l85_tac_sprint
+anm_idle_sprint_jammed            = l85_tac_sprint, idle_jammed
+anm_idle_sprint_end              = l85_tac_sprint_end
+anm_idle_sprint_end_empty        = l85_tac_sprint_end
+anm_idle_sprint_end_jammed       = l85_tac_sprint_end, idle_jammed
+anm_bore                   = l85_tac_draw
+anm_bore_empty             = l85_tac_draw
+anm_bore_jammed            = l85_tac_draw, idle_jammed
+anm_shoot                      = l85_tac_shoot
+anm_shoot_sil                  = l85_tac_shoot
+anm_shoot_jammed	       = l85_tac_shoot, idle_jammed
+anm_shoot_jammed_sil	       = l85_tac_shoot, idle_jammed
+anm_shoot_last                 = l85_tac_shoot
+anm_shoot_last_sil             = l85_tac_shoot
+anm_shoot_aim                  = l85_tac_aim_shoot
+anm_shoot_aim_sil              = l85_tac_aim_shoot
+anm_shoot_aim_jammed	       = l85_tac_aim_shoot, l85_aim_jammed
+anm_shoot_aim_jammed_sil       = l85_tac_aim_shoot, l85_aim_jammed
+anm_shoot_aim_last             = l85_tac_aim_shoot
+anm_shoot_aim_last_sil         = l85_tac_aim_shoot
+anm_shoot_aim_scope            = l85_tac_aim_shoot_scope, l85_aim_shoot
+anm_shoot_aim_scope_sil        = l85_tac_aim_shoot_scope, l85_aim_shoot
+anm_shoot_aim_scope_last       = l85_tac_aim_shoot_scope, l85_aim_shoot
+anm_shoot_aim_scope_last_sil   = l85_tac_aim_shoot_scope, l85_aim_shoot
+anm_shoot_aim_scope_jammed     = l85_tac_aim_shoot_scope, l85_aim_jammed
+anm_shoot_aim_scope_jammed_sil = l85_tac_aim_shoot_scope, l85_aim_jammed
+anm_fakeshoot_empty                = l85_tac_dry_empty
+anm_fakeshoot_aim_empty            = l85_tac_aim_dry, l85_aim
+anm_fakeshoot_jammed               = l85_tac_dry, idle_jammed
+anm_fakeshoot_aim_jammed           = l85_tac_aim_dry, l85_aim_jammed
+anm_reload                           = l85_tac_reload, l85_reload
+anm_reload_empty                     = l85_tac_reload_empty, l85_reload_empty
+anm_reload_jammed                    = l85_tac_revival_scope, l85_revival
+anm_reload_jammed_last               = l85_tac_revival_scope, l85_revival
+anm_reload_ammochange                = l85_tac_reload, l85_reload
+anm_reload_empty_ammochange          = l85_tac_reload_empty, l85_reload_empty
+anm_reload_jammed_noscope            = l85_tac_revival, l85_revival
+anm_reload_jammed_last_noscope       = l85_tac_revival, l85_revival
+anm_changefiremode_from_1_to_a			             = l85_tac_firemode_1_to_a
+anm_changefiremode_from_1_to_a_jammed		             = l85_tac_firemode_1_to_a, idle_jammed
+anm_changefiremode_from_1_to_a_empty		             = l85_tac_firemode_1_to_a
+anm_changefiremode_from_a_to_1			             = l85_tac_firemode_a_to_1
+anm_changefiremode_from_a_to_1_jammed		             = l85_tac_firemode_a_to_1, idle_jammed
+anm_changefiremode_from_a_to_1_empty		             = l85_tac_firemode_a_to_1
+anm_unload_mag                               = l85_tac_draw
+anm_unload_mag_jammed                        = l85_tac_draw
+anm_unload_mag_empty                         = l85_tac_draw
+anm_headlamp_on                             = l85_tac_headflash
+anm_headlamp_on_empty                       = l85_tac_headflash
+anm_headlamp_on_jammed                      = l85_tac_headflash, idle_jammed
+anm_headlamp_off                            = l85_tac_headflash
+anm_headlamp_off_empty                      = l85_tac_headflash
+anm_headlamp_off_jammed                     = l85_tac_headflash, idle_jammed
+anm_nv_on                                   = l85_tac_headflash
+anm_nv_on_empty                             = l85_tac_headflash
+anm_nv_on_jammed                            = l85_tac_headflash, idle_jammed
+anm_nv_off                                  = l85_tac_headflash
+anm_nv_off_empty                            = l85_tac_headflash
+anm_nv_off_jammed                           = l85_tac_headflash, idle_jammed
+anm_kick = l85_tac_bayonet
+anm_kick_empty = l85_tac_bayonet
+anm_kick_jammed = l85_tac_bayonet, idle_jammed
+
+; tactical foregrip + extended magazine
+[wpn_l85_handler_long_mag_hud]:wpn_l85_handler_hud
+anm_reload                           = l85_tac_reload_lm, l85_reload_lm
+anm_reload_empty                     = l85_tac_reload_empty_lm, l85_reload_empty_lm
+anm_reload_ammochange                = l85_tac_reload_lm, l85_reload_lm
+anm_reload_empty_ammochange          = l85_tac_reload_empty_lm, l85_reload_empty_lm
+anm_reload_w_gl                      = l85_gloff_reload_lm
+anm_reload_empty_w_gl                = l85_gloff_reload_empty_lm
+anm_reload_ammochange_w_gl           = l85_gloff_reload_lm
+anm_reload_empty_ammochange_w_gl     = l85_gloff_reload_empty_lm

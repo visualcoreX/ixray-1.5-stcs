@@ -1,0 +1,11 @@
+<w>
+	<!-- Medicine-intoxication glyph, drawn by the thirst indicator (gunsl_thirst.script) in place of
+	     its own icon while gunsl_peredoz reports a trip -- the same slot Gunslinger uses for its
+	     black pill. Hand-made and placed in the hud atlas next to the thirst one, same 22x22 as the
+	     rad/fire/acid/psi/food glyphs.
+	     x/y are the TOP-LEFT corner of the cell, not its centre: the glyph is centred on (984,866)
+	     and therefore occupies 973..994 by 855..876, immediately left of the thirst bottle. -->
+	<file name="ui\ui_hud">
+		<texture id="ui_gunsl_peredoz_indicator" x="973" y="855" width="22" height="22" />
+	</file>
+</w>

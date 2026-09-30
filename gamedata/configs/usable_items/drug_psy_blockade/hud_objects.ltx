@@ -1,0 +1,41 @@
+; Hud-model phantom (slot 10) + its animation section. Values are GS's, minus the multi-use
+; variants (drug_psy_blockade_hud_model2/3): we only port the single-use item, so anm_show is
+; always `drug`. `drug_last` also sits in the omf if a last-dose variant is ever wanted.
+; timing/effect_delay are GS's timing/timing_early.
+
+[drug_psy_blockade_hud_model]:gwr_base_usable
+; world model for THIRD PERSON. gwr_base_usable gives every phantom
+; gwr_base_usable gives them all an empty stand-in visual, so there was nothing to draw in hand.
+visual			= gwr\equipment\drug_psy_blockade\drug_psy_blockade_hud.ogf
+; GS trash: the empty thrown away at timing_trash (see usable_items/trash_objects.ltx).
+; GS's own value shifted by the gap between our `timing` and GS's, so it lands at the same
+; point relative to the END of the animation.
+trash_object       = drug_psy_blockade_trash
+timing_trash       = 3333
+$spawn             = "weapons\drug_psy_blockade_hud_model"
+hud                = drug_psy_blockade_hud
+timing             = 4333
+snd_using          = items\drug\drug_last
+snd_delay          = 250
+snd_delay_detector = 250   ; shorter delay when only a detector is in hands (it holsters faster)
+gwr_eatable_object = drug_psy_blockade_eatable
+effect_delay       = 4000  ; GS timing_early -- the moment the pills actually go down
+
+visual             = dynamics\equipments\medical\drug_psy_blockade.ogf
+description        = gunsl_eatable_psy_blockade_descr
+inv_name           = gunsl_eatable_psy_blockade
+inv_name_short     = gunsl_eatable_psy_blockade
+inv_weight         = 0.0	; orig 0.03 -- phantom, see gwr_base_usable
+; no icon of its own -- phantom, inherits the blank cell from the base section
+
+[drug_psy_blockade_hud]:gwr_base_usable_hud
+hands_position      = 0.0,-0.02,0.0
+hands_position_16x9 = 0.0,-0.02,0.0
+item_visual     = gwr\equipment\drug_psy_blockade\drug_psy_blockade_hud
+anm_show        = drug_last
+anm_hide        = zaglushka
+anm_idle        = zaglushka
+anm_idle_aim    = zaglushka
+anm_idle_moving = zaglushka
+anm_idle_sprint = zaglushka
+anm_bore        = zaglushka

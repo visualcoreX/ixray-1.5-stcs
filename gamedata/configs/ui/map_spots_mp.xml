@@ -1,3 +1,11 @@
+<!-- Повелитель Зоны -->
+      <name_location>
+              <level_map spot="loc_spot"                        pointer="quest_pointer"/>
+      </name_location>
+      <loc_spot  x="0" y="0" width="80" height="80" stretch="1" alignment="c" xform_anim="map_spot_new_xform" xform_anim_cyclic="0">
+              <texture></texture>
+      </loc_spot>
+
 	
 <!-- multiplayer -->
 	<mp_team_base_0_location hint="team_base_1">

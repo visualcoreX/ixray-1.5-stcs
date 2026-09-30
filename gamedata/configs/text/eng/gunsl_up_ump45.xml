@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_ump45_up_sights_name">
+     <text>Tritium sights</text>
+</string>
+<string id="gunsl_ump45_up_sights_descr">
+     <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+</string>
+<string id="gunsl_ump45_up_sil_name">
+     <text>Suppressor mount</text>
+</string>
+<string id="gunsl_ump45_up_sil_descr">
+     <text>Special threading used for attaching a suppressor.</text>
+</string>
+<string id="gunsl_ump45_up_rail_name">
+     <text>Rail mount</text>
+</string>
+<string id="gunsl_ump45_up_rail_descr">
+     <text>Allows to install various types of sights.</text>
+</string>
+<string id="gunsl_ump45_up_handle_name">
+     <text>Tactical foregrip</text>
+</string>
+<string id="gunsl_ump45_up_handle_descr">
+     <text>Improves handling, therefore facilitates recoil management. Includes a tactical handguard replacement, that is equipped with Weaver rails. Allows to install additional tactical accessories.</text>
+</string>
+<string id="gunsl_ump45_up_laser_name">
+     <text>Laser sight</text>
+</string>
+<string id="gunsl_ump45_up_laser_descr">
+     <text>Provides a visual point of reference, visually marks the expected point of impact, facilitates and speeds up aiming, and has a demoralizing effect on the enemy. Does not interfere with the tactical flashlight and can be installed along with it.</text>
+</string>
+<string id="gunsl_ump45_up_torch_name">
+     <text>Tactical flashlight</text>
+</string>
+<string id="gunsl_ump45_up_torch_descr">
+     <text>Long-range narrow beam flashlight is essential for night raids, as well as to seach and clear poorly lit rooms. Does not interfere with the laser sight and can be installed along with it.</text>
+</string>
+<string id="gunsl_ump45_up_stock_name">
+     <text>Recoil pad</text>
+</string>
+<string id="gunsl_ump45_up_stock_descr">
+     <text>Hard rubber recoil pad reduces felt recoil.</text>
+</string>
+<string id="gunsl_ump45_up_max_fixator_name">
+     <text>Improved feeding mechanism</text>
+</string>
+<string id="gunsl_ump45_up_max_fixator_descr">
+     <text>Individual adjustment of every part of the feeding mechanism decreases the probability of feeding issues.</text>
+</string>
+<string id="gunsl_ump45_up_usm_rpm_name">
+     <text>Trigger tuning</text>
+</string>
+<string id="gunsl_ump45_up_usm_rpm_descr">
+     <text>Modification of the trigger mechanism increases rate of fire, at the cost of durability.</text>
+</string>
+<string id="gunsl_ump45_up_usm_accuracy_name">
+     <text>Trigger calibration</text>
+</string>
+<string id="gunsl_ump45_up_usm_accuracy_descr">
+     <text>Individual adjustment and balancing of the standard parts of the trigger mechanism improve accuracy, while simultaneously lowering recoil.</text>
+</string>
+<string id="gunsl_ump45_up_barrel_speed_name">
+     <text>Rebored barrel</text>
+</string>
+<string id="gunsl_ump45_up_barrel_speed_descr">
+     <text>Increases muzzle velocity, thus increasing the flatness of the trajectory. Useful for long range fire.</text>
+</string>
+<string id="gunsl_ump45_up_barrel_compensator_name">
+     <text>Recoil compensator</text>
+</string>
+<string id="gunsl_ump45_up_barrel_compensator_descr">
+     <text>Reduces felt recoil by diverting combustion gases.</text>
+</string>
+<string id="gunsl_ump45_up_zatvor_balancer_name">
+     <text>Balanced bolt</text>
+</string>
+<string id="gunsl_ump45_up_zatvor_balancer_descr">
+     <text>Balanced bolt carrier group reduces the muzzle climb and bullet dispersion.</text>
+</string>
+<string id="gunsl_ump45_up_body_coating_name">
+     <text>More durable parts</text>
+</string>
+<string id="gunsl_ump45_up_body_coating_descr">
+     <text>Parts made of extremely durable alloys and application of a protective coating to the internal mechanisms of the firearm improve its wear-resistance.</text>
+</string>
+<string id="gunsl_ump45_up_extractor_name">
+     <text>Improved ejector</text>
+</string>
+<string id="gunsl_ump45_up_extractor_descr">
+     <text>Reduces the probability of malfunctions related to ejecting an empty case from the firearm.</text>
+</string>
+<string id="gunsl_ump45_up_body_weight_name">
+     <text>Lightweight parts</text>
+</string>
+<string id="gunsl_ump45_up_body_weight_descr">
+     <text>Reduces weight by replacing weapon parts with their modern light-alloy counterparts.</text>
+</string>
+</string_table>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_eatable_antidot">
+		<text>Antidote</text>
+	</string>
+	<string id="gunsl_eatable_antidot_descr">
+		<text>The IP2 antitoxin is a complex drug comprising several antidotes, including metoclopramidum, pyridoxine, thiamine, riboxin and other pharmaceuticals. It puts agents into the bloodstream that break down protein-based poisons, along with absorbers for synthetic ones. It is not popular in the Zone -- most stalkers rely on a gas mask and a suit instead.\n\nOne dose %c[01,0,255,0]clears medicine intoxication completely%c[01,255,255,255], however bad it has become.\n\nDoses left: %c[01,0,255,0] 3 %c[01,255,255,255]</text>
+	</string>
+	<string id="gunsl_eatable_antidot_descr2">
+		<text>The IP2 antitoxin is a complex drug comprising several antidotes, including metoclopramidum, pyridoxine, thiamine, riboxin and other pharmaceuticals. It puts agents into the bloodstream that break down protein-based poisons, along with absorbers for synthetic ones. It is not popular in the Zone -- most stalkers rely on a gas mask and a suit instead.\n\nOne dose %c[01,0,255,0]clears medicine intoxication completely%c[01,255,255,255], however bad it has become.\n\nDoses left: %c[01,255,255,0] 2 %c[01,255,255,255]</text>
+	</string>
+	<string id="gunsl_eatable_antidot_descr3">
+		<text>The IP2 antitoxin is a complex drug comprising several antidotes, including metoclopramidum, pyridoxine, thiamine, riboxin and other pharmaceuticals. It puts agents into the bloodstream that break down protein-based poisons, along with absorbers for synthetic ones. It is not popular in the Zone -- most stalkers rely on a gas mask and a suit instead.\n\nOne dose %c[01,0,255,0]clears medicine intoxication completely%c[01,255,255,255], however bad it has become.\n\nDoses left: %c[01,255,0,0] 1 %c[01,255,255,255]</text>
+	</string>
+	<string id="gunsl_eatable_psy_blockade">
+		<text>Psy-blockade</text>
+	</string>
+	<string id="gunsl_eatable_psy_blockade_descr">
+		<text>A narcotic compound that damps runaway nerve impulses. It has a curious side effect: for a short while after taking it, all emotion simply drains away. In the Zone it is used against anomalous fields of raised psi activity; outside the Zone it never found a use.\n\nDuration: %c[01,0,255,0]3 minutes%c[01,255,255,255]. For that time psi damage is halved and a controller cannot take hold of your mind.</text>
+	</string>
+	<string id="gunsl_eatable_vodka_descr">
+		<text>Goes down easy and considerably lowers the effects of radiation. Should be enjoyed in moderation.\n\nDrinks left: %c[01,0,255,0] 4 %c[01,255,255,255]</text>
+	</string>
+	<string id="gunsl_eatable_vodka_descr2">
+		<text>Goes down easy and considerably lowers the effects of radiation. Should be enjoyed in moderation.\n\nDrinks left: %c[01,255,255,0] 3 %c[01,255,255,255]</text>
+	</string>
+	<string id="gunsl_eatable_vodka_descr3">
+		<text>Goes down easy and considerably lowers the effects of radiation. Should be enjoyed in moderation.\n\nDrinks left: %c[01,255,128,0] 2 %c[01,255,255,255]</text>
+	</string>
+	<string id="gunsl_eatable_vodka_descr4">
+		<text>Goes down easy and considerably lowers the effects of radiation. Should be enjoyed in moderation.\n\nDrinks left: %c[01,255,0,0] 1 %c[01,255,255,255]</text>
+	</string>
+	<string id="gunsl_eatable_water">
+		<text>Water</text>
+	</string>
+	<string id="gunsl_eatable_water_descr">
+		<text>Spring water. Refreshing and invigorating, excellently satisfies thirst.\n\n%c[01,0,255,0]Partly clears medicine intoxication.\n\n%c[01,255,255,255]Drinks left: %c[01,0,255,0] 4 %c[01,255,255,255]</text>
+	</string>
+	<string id="gunsl_eatable_water_descr2">
+		<text>Spring water. Refreshing and invigorating, excellently satisfies thirst.\n\n%c[01,0,255,0]Partly clears medicine intoxication.\n\n%c[01,255,255,255]Drinks left: %c[01,255,255,0] 3 %c[01,255,255,255]</text>
+	</string>
+	<string id="gunsl_eatable_water_descr3">
+		<text>Spring water. Refreshing and invigorating, excellently satisfies thirst.\n\n%c[01,0,255,0]Partly clears medicine intoxication.\n\n%c[01,255,255,255]Drinks left: %c[01,255,128,0] 2 %c[01,255,255,255]</text>
+	</string>
+	<string id="gunsl_eatable_water_descr4">
+		<text>Spring water. Refreshing and invigorating, excellently satisfies thirst.\n\n%c[01,0,255,0]Partly clears medicine intoxication.\n\n%c[01,255,255,255]Drinks left: %c[01,255,0,0] 1 %c[01,255,255,255]</text>
+	</string>
+	<string id="st_vodka_cossacks">
+		<text>«Cossacks» vodka</text>
+	</string>
+	<string id="st_vodka_cossacks_descr">
+		<text>Vodka produced by «GSC». Goes down easy and considerably lowers the effects of radiation, though it should be enjoyed in moderation.\n\nDrinks left: %c[01,0,255,0] 4 %c[01,255,255,255]</text>
+	</string>
+	<string id="st_vodka_cossacks_descr2">
+		<text>Vodka produced by «GSC». Goes down easy and considerably lowers the effects of radiation, though it should be enjoyed in moderation.\n\nDrinks left: %c[01,255,255,0] 3 %c[01,255,255,255]</text>
+	</string>
+	<string id="st_vodka_cossacks_descr3">
+		<text>Vodka produced by «GSC». Goes down easy and considerably lowers the effects of radiation, though it should be enjoyed in moderation.\n\nDrinks left: %c[01,255,128,0] 2 %c[01,255,255,255]</text>
+	</string>
+	<string id="st_vodka_cossacks_descr4">
+		<text>Vodka produced by «GSC». Goes down easy and considerably lowers the effects of radiation, though it should be enjoyed in moderation.\n\nDrinks left: %c[01,255,0,0] 1 %c[01,255,255,255]</text>
+	</string>
+</string_table>

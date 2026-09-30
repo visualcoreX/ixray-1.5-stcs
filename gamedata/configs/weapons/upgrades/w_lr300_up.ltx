@@ -1,12 +1,12 @@
 [up_sect_a_lr300]
 cost		      		= 2500
 value					= +15
-rpm                     = 100
+rpm                     = 40	; balance 5.56: L85 < LR300 < G36 (was 105)
 
 [up_sect_b_lr300]
 cost		      		= 2500
 value					= +10
-fire_dispersion_base	= -0.065 ;0.65
+fire_dispersion_base	= -0.02	; 0.65 ; balance 5.56: L85 < LR300 < G36 (was -0.065)
 
 [up_sect_c_lr300]
 cost		      		= 2500
@@ -46,12 +46,12 @@ grenade_launcher_y      = 28
 cost		      		= 2500
 value					= +50
 bullet_speed			= 200
-hit_power				= 0.4, 0.4, 0.4, 0.4
+hit_power				= 0.05, 0.05, 0.05, 0.05	; balance 5.56: L85 < LR300 < G36 (was 0.4, 0.4, 0.4, 0.4)
 
 [up_sect_g_lr300]
-cost	      	     	= 2500
+cost	      	     			= 2500
 value					= +15
-control_inertion_factor	= -0.5
+control_inertion_factor			= -0.18
 inv_weight				= -0.3
 
 [up_sect_h_lr300]
@@ -68,24 +68,29 @@ zoom_cam_step_angle_horz     = -0.1		;1.0
 
 [up_sect_i_lr300]
 cost		      		= 2500
-value					= +15
-ammo_mag_size           = 15
+value					= +10
+ammo_mag_size           = 10
 
-[up_sect_j_lr300]
-cost		      		= 1000
-value					= "5.45x39"
-ammo_class          	= ammo_5.45x39_fmj, ammo_5.45x39_ap
+
+; big magazine: replaces the default mag sprite on the inventory icon
+upgrade_addon_icon          = upgrade_addon_icon_lr300_mag_big
+upgrade_addon_icon_offset_x = 100
+upgrade_addon_icon_offset_y = 50
+upgrade_addon_icons_hide    = icon_element_lr300_mag
+; swap the 30-round magazine for the 40-round one on the HUD model
+hide_bones = mag30, mag30_2
+show_bones = mag40, mag40_2
 
 [up_sect_ac_lr300]
 cost		      		= 3750
 value					= +25
-rpm						= 150
+rpm						= 60	; balance 5.56: L85 < LR300 < G36 (was 175)
 
 [up_sect_bd_lr300]
 cost		      		= 3750
 value					= +50
 bullet_speed			= 200
-hit_power				= 0.45, 0.45, 0.45, 0.45
+hit_power				= 0.05, 0.05, 0.05, 0.05	; balance 5.56: L85 < LR300 < G36 (was 0.45, 0.45, 0.45, 0.45)
 
 [up_sect_eg_lr300]
 cost		      		= 3750
@@ -102,17 +107,17 @@ zoom_cam_step_angle_horz     = -0.2		;1.0
 [up_sect_fh_lr300]
 cost					= 3750
 value					= +20
-fire_dispersion_base    = -0.12 ;0.65
+fire_dispersion_base    = -0.04	; 0.65 ; balance 5.56: L85 < LR300 < G36 (was -0.13)
 
 [up_sect_aceg_lr300]
 cost		      		= 6250
 value					= +40
-rpm						= 300
+rpm						= 80	; balance 5.56: L85 < LR300 < G36 (was 280)
 
 [up_sect_bdfh_lr300]
 cost		      		= 6250
 value					= +30
-fire_dispersion_base    = -0.2 ;0.65
+fire_dispersion_base    = -0.06	; 0.65 ; balance 5.56: L85 < LR300 < G36 (was -0.195)
 
 [up_a_lr300]
 scheme_index            = 0, 0
@@ -301,27 +306,6 @@ name                    = st_upg_charger_big
 description             = st_upg_charger_big_descr
 icon                    = ui_wp_upgrade_19
 
-[up_j_lr300]
-scheme_index            = 1, 4
-known                   = 1
-effects                 = 
-section                 = up_sect_j_lr300
-property                = prop_calibre
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
-prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_j_lr300
-name                    = st_upg_calibre_5_45
-description             = st_upg_calibre_5_45_descr
-icon                    = ui_wp_upgrade_21
-
-
 [up_ac_lr300]
 scheme_index            = 1, 0
 known                   = 1
@@ -461,10 +445,6 @@ elements                = up_g_lr300, up_h_lr300
 
 [up_gr_i_lr300]
 elements                = up_i_lr300
-
-[up_gr_j_lr300]
-elements                = up_j_lr300
-
 
 [up_gr_ac_lr300]
 elements                = up_ac_lr300

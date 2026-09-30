@@ -1,0 +1,157 @@
+; Gunslinger-style 3D PDA (stage 1: it just shows up in your hands).
+;
+; Same phantom trick as the animated item-use: a WP_BINOC-class item in slot 10 that carries the
+; PDA hud model. gwr_eatable.script spawns it when the PDA window opens and releases it when the
+; window closes, restoring the slot that was active before -- so the real weapon is never touched.
+;
+; NOTE: unlike the eat/action animators this section has NO `timing`. That is deliberate: the
+; phantom must stay in hand for as long as the PDA window is open, not auto-release after N ms.
+;
+; The hands motions (pda_draw / pda_idle / pda_walk / pda_idle_<dir> / pda_click / pda_aim_*, 35 of
+; them) already ship in meshes\gwr\food\hands\hands.omf -- they came with the item-use port.
+; The item model + its own motions are meshes\dynamics\devices\dev_pda\ (copied from Gunslinger).
+; Where an alias is a single token the item model simply has no such motion (only pda_draw/pda_hide
+; and the 8 directional idles exist there) -- that is fine, the item just stays static, no crash.
+
+[pda_show_animator]:gwr_base_usable
+; NO depth of field for the PDA, at all. Every other usable item pulls the focus onto the hands as it
+; comes up, and on this one that read as a blur flashing on and off while the device was drawn -- it
+; is a screen the player is about to read, not a bottle. `disable_zoom_dof` is the engine's own
+; opt-out (GS RefreshZoomDOF) and kills the held-to-the-face blur; the draw blur is switched off by
+; use_dof_anm_show in the hud section below.
+disable_zoom_dof	= true
+; hand seat copied from xrMPE (its own attach_* pair on the real item section);
+; their angles are RADIANS on CAttachableItem, ours are DEGREES on the weapon path.
+actor_hand_bone	= bip01_l_hand
+position                = 0.139700, 0.004700, 0.076101
+orientation             = -21.849991, 6.150000, -97.500000
+; world model for THIRD PERSON. gwr_base_usable gives every phantom
+; gwr_base_usable gives them all an empty stand-in visual, so there was nothing to draw in hand.
+visual			= dynamics\devices\dev_pda\dev_pda_hud.ogf	; Gunslinger's model (GS ships no world dev_pda.ogf)
+; xrMPE has a whole named torso set for the PDA (norm_torso_pda_*); its engine calls those names
+; literally, ours reaches them through actor_anim_group. Without this the phantom falls back to
+; its numeric animation_slot -- the binocular/grenade set it happens to share.
+actor_anim_group		= pda
+$spawn					= "weapons\pda_show_animator"
+hud						= pda_show_animator_hud
+snd_using				= interface\inv_nosound
+snd_draw				= items\pda\pda_draw
+snd_blowout				= items\pda\pda_vibros
+sprint_allowed			= false
+; the base phantom has zoom off; the PDA needs it to be held to the face. Gunslinger's values:
+; an empty overlay (no scope frame) and only a slight magnification.
+zoom_enabled			= true
+scope_status			= 0
+scope_zoom_factor		= 1.05
+snd_zoomin				= interface\inv_nosound
+snd_zoomout				= interface\inv_nosound
+; override the base's gwr_eatable.init: the PDA phantom is held until the window closes, so it
+; needs the binder that does NOT auto-release after `timing` (this section has no timing at all)
+script_binding			= gwr_eatable.init_pda
+
+[pda_show_animator_hud]:gwr_base_usable_hud
+; gwr_base_usable_hud turns the draw DOF on for every usable item; the PDA opts out (see
+; disable_zoom_dof in the item section above for the reasoning).
+use_dof_anm_show		= false
+item_visual				= dynamics\devices\dev_pda\dev_pda_hud
+hands_position			= -0.015,-0.018,0.17
+hands_orientation		= 0.0,0.0,0.0
+hands_position_16x9		= -0.015,-0.018,0.15
+hands_orientation_16x9	= 0.0,0.0,0.0
+
+anm_show				= pda_draw
+; ---- opening straight to the face (Gunslinger's fastzoom; verbatim from its pda_show.ltx) ----
+; The at-face draw is SPLIT: pda_aim_draw_1stpart only lifts it partway (that's all the zoom has to
+; wait for), then pda_aim_draw_2ndpart doubles as the aim-in transition and carries it the rest of
+; the way. Playing the whole pda_aim_draw instead costs 1.23s of standing still before the zoom --
+; which is exactly the lag this is here to avoid.
+anm_show_fastzoom			= pda_aim_draw_1stpart, pda_draw
+anm_idle_fastzoom			= pda_aim_draw_idle
+anm_idle_aim_start_fastzoom	= pda_aim_draw_2ndpart
+anm_hide				= pda_hide
+anm_idle				= pda_idle
+anm_idle_moving			= pda_walk
+anm_idle_moving_slow	= pda_walk_slow
+anm_idle_sprint			= pda_walk
+anm_bore				= pda_vibros_end
+anm_blowout				= pda_vibros
+; GS emission glitch: while the electronics-problems level (surge) passes blowout_anim_level
+; the PDA loops pda_vibros in hand instead of the idle. See CHudItem::TryPlayAnimIdle.
+play_blowout_anim		= true
+blowout_anim_level		= 19.5	; hand anim fires right AFTER blackout (just above pda_black_frac*max_level = 0.97*20 = 19.4)
+
+; GS headlamp/NV toggle gestures while the PDA is in hand (pda_show.ltx): the PDA plays pda_headflash
+; (pda_aim_headflash when held to the face). Same clip for headlamp + NV, like GS.
+anm_headlamp_on			= pda_headflash
+anm_headlamp_off		= pda_headflash
+anm_headlamp_on_aim		= pda_aim_headflash
+anm_headlamp_off_aim	= pda_aim_headflash
+anm_nv_on				= pda_headflash
+anm_nv_off				= pda_headflash
+anm_nv_on_aim			= pda_aim_headflash
+anm_nv_off_aim			= pda_aim_headflash
+
+; ---- cursor "joystick": the hand tilts the PDA towards where the mouse is moving ----
+; The engine (CUIPdaWnd::Update) sums the mouse travel and picks one of 8 directions; while the
+; cursor is off-centre the idle becomes anm_idle_<dir>. These 8 ARE animated on the item model too
+; (the item omf has exactly pda_draw/pda_hide + these 8), unlike the plain idle/walk.
+pda_cursor_anims		= true
+anm_idle_up				= pda_idle_up
+anm_idle_up_right		= pda_idle_right_up
+anm_idle_right			= pda_idle_right
+anm_idle_down_right		= pda_idle_right_down
+anm_idle_down			= pda_idle_down
+anm_idle_down_left		= pda_idle_left_down
+anm_idle_left			= pda_idle_left
+anm_idle_up_left		= pda_idle_left_up
+; click gesture (console g_pda_use_clicks; Gunslinger ships the PDA with use_clicks=false)
+anm_idle_click			= pda_click
+
+; ---- held to the face (zoom). Gunslinger reuses the plain scope/aim machinery for this: an empty
+; scope overlay + a small zoom factor + the aim hud offset. The window is a dialog and eats the
+; input, so RMB is caught by the window itself (CUIPdaWnd::IR_OnKeyboardPress).
+;   Gunslinger works in ABSOLUTE DEGREES: its base [gunslinger_base] hud_fov = 40, scaled by
+;   hud_fov_factor 0.9 (lowered) and hud_fov_zoom_factor 0.29 (at the face) -> 36 deg / 11.6 deg.
+;   OUR hud_fov / hud_fov_aim are a FRACTION of the main FOV instead: the renderer does
+;   deg2rad(psHUD_FOV * Device.fFOV) (ParticleEffect.cpp), and psHUD_FOV is set from the item's
+;   GetHudFov() (ActorCameras.cpp ~290). So GS's factors CANNOT be copied across -- convert the
+;   degrees against the player's fov (user.ltx `fov`, currently 75):
+;       lowered  36   / 75 = 0.48
+;       at face  11.6 / 75 = 0.155
+;   Tune live with console g_pda_hud_fov / g_pda_hud_fov_aim (0 = use these), then write back here.
+;   SMALLER = narrower = the PDA looks BIGGER. NB these are fractions, so they follow the fov
+;   setting -- at a different `fov` the PDA's apparent size shifts.
+hud_fov					= 0.48
+hud_fov_aim				= 0.155
+; WORLD fov while the PDA is at the face, as a factor of the player's fov (user.ltx `fov`).
+; Ramped by the same aim factor as the hud fov above, so the view pushes in together with the
+; screen instead of snapping when the PDA is drawn. Gunslinger's own key for this is fov_factor
+; on the item section (ActorUtils.pas UpdateFOV), but a constant there jumps. 1.0 (or the key
+; missing) = the world stays put, which is what the engine defaults to; smaller = closer.
+; 0.95 -> 75*0.95 = 71.25 deg at full zoom (0.87 = Gunslinger's base fov 65 was far too much).
+fov_zoom_factor			= 0.95
+; (zoom_dof_near used to sit here to flatten the at-face blur; disable_zoom_dof above turns the
+;  whole aim DOF off, so the key had nothing left to do and would only mislead.)
+; Gunslinger's values, and they DO transfer: CWeapon::UpdateHudAdditonal does
+;   hud_rotation.translate_over(curr_offs); trans.mulB_43(hud_rotation)
+; i.e. the offset is applied in trans's LOCAL frame, whose +z points FORWARD (away from the eye).
+; So z=+0.15 while aiming pushes the PDA 15cm AWAY -- it does NOT pull it in. (Zeroing this was a
+; mistake: it left the PDA at hands_position z=0.17, i.e. twice as close, which is what "�����
+; ������" was.) Raise z to push it further out; lower it to bring it nearer.
+aim_hud_offset_pos		= 0.0282,0.041,0.15
+aim_hud_offset_rot		= 0.0,0.0,0.0
+aim_hud_offset_pos_16x9	= 0.02,0.041,0.15
+aim_hud_offset_rot_16x9	= 0.0,0.0,0.0
+
+anm_idle_aim			= pda_aim_idle
+anm_idle_aim_start		= pda_aim_start
+anm_idle_aim_end		= pda_aim_end
+anm_idle_aim_click		= pda_aim_click
+anm_idle_aim_up			= pda_aim_idle_up, pda_idle_up
+anm_idle_aim_up_right	= pda_aim_idle_right_up, pda_idle_right_up
+anm_idle_aim_right		= pda_aim_idle_right, pda_idle_right
+anm_idle_aim_down_right	= pda_aim_idle_right_down, pda_idle_right_down
+anm_idle_aim_down		= pda_aim_idle_down, pda_idle_down
+anm_idle_aim_down_left	= pda_aim_idle_left_down, pda_idle_left_down
+anm_idle_aim_left		= pda_aim_idle_left, pda_idle_left
+anm_idle_aim_up_left	= pda_aim_idle_left_up, pda_idle_left_up

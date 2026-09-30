@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<!-- Burning actor prompt. Ported from Gunslinger's gunsl_actor_burned; the engine shows it while
+	     you are on fire and not yet beating the flames out. The string table scans this whole folder,
+	     so the file just has to be here (see CStringTable: text\<lang>\*.xml). -->
+	<string id="st_gwr_actor_burned">
+		<text>Ты горишь! Сбивай пламя, чтобы потушить себя.</text>
+	</string>
+	<string id="kb_wpn_laser">
+		<text>ЛЦУ (лазер)</text>
+	</string>
+	<string id="kb_wpn_flashlight">
+		<text>Фонарик оружия</text>
+	</string>
+	<string id="kb_wpn_kick">
+		<text>Быстрая атака ножом</text>
+	</string>
+	<string id="gunsl_detector_torch">
+		<text>Ручной фонарь</text>
+	</string>
+	<string id="gunsl_detector_torch_descr">
+		<text>Компактный тактический фонарь. Занимает слот детектора и держится в левой руке. Загорается сам, когда вы его достаёте.</text>
+	</string>
+	<string id="kb_quick_grenade">
+		<text>Быстрый бросок гранаты</text>
+	</string>
+	<string id="kb_scope_brightness_plus">
+		<text>Подсветка сетки прицела +</text>
+	</string>
+	<string id="kb_scope_brightness_minus">
+		<text>Подсветка сетки прицела -</text>
+	</string>
+	<string id="st_scope_pso1m2x1">
+		<text>Прицел штурмовой ПСО-1М2-1</text>
+	</string>
+	<string id="st_scope_pso1m2x1_descr">
+		<text>Оптический прицел фиксированной кратности. Прицельная сетка размечена для стрельбы на средние дистанции. Для удобства прицеливания в условиях темноты прицел снабжён подсветкой прицельной сетки, которая может быть включена при необходимости. Обычно используется совместно со штурмовыми винтовками, оборудованными стандартным в странах-участницах Варшавского договора креплением типа «ласточкин хвост».</text>
+	</string>
+	<string id="st_scope_cobra">
+		<text>Прицел коллиматорный «Кобра»</text>
+	</string>
+	<string id="st_scope_cobra_descr">
+		<text>Коллиматорный прицел ПК-01ВС «Кобра» для быстрого прицеливания на близкой дистанции.</text>
+	</string>
+	<string id="st_scope_pka">
+		<text>Прицел коллиматорный ПК-А</text>
+	</string>
+	<string id="st_scope_pka_descr">
+		<text>Коллиматорный прицел ПК-А с увеличительной линзой.</text>
+	</string>
+	<string id="st_scope_kashtan">
+		<text>Прицел универсальный 1П78-1</text>
+	</string>
+	<string id="st_scope_kashtan_descr">
+		<text>Компактный оптический прицел 1П76 «Каштан».</text>
+	</string>
+	<string id="st_scope_rakurs">
+		<text>Прицел штурмовой Ракурс-ПМ</text>
+	</string>
+	<string id="st_scope_rakurs_descr">
+		<text>Коллиматорный прицел «Ракурс».</text>
+	</string>
+	<string id="st_scope_night">
+		<text>Прицел штурмовой ночной 1ПН93-1</text>
+	</string>
+	<string id="st_scope_night_descr">
+		<text>Ночной прицел 1ПН93-1 для автоматов.</text>
+	</string>
+	<string id="st_scope_detector">
+		<text>Прицел снайперский ночной 1ПН93-4</text>
+	</string>
+	<string id="st_scope_detector_descr">
+		<text>Ночной прицел 1ПН93-4 с увеличенной дальностью обнаружения.</text>
+	</string>
+	<!-- Discord Rich Presence: the line built in discord_rpc.cpp. The level ids and the
+	     community ids are string table ids already (ui_st_pda.xml), so only the wrapper
+	     text needs entries of its own. -->
+	<string id="ui_st_discord_exploring">
+		<text>Изучает:</text>
+	</string>
+	<string id="ui_st_discord_no_task">
+		<text>Без задания</text>
+	</string>
+	<string id="ui_st_discord_in_menu">
+		<text>В главном меню</text>
+	</string>
+	<string id="agroprom_underground">
+		<text>Подземка Агропрома</text>
+	</string>
+</string_table>

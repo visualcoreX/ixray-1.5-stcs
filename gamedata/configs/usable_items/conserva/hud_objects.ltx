@@ -1,0 +1,42 @@
+; conserva -- hud-model phantom + hud animation section. See usable_items\bread\hud_objects.ltx for
+; why anm_show carries two names (hands motion + item motion).
+; conserva_eat: wpn_hand_animation.omf, 253 frames = 8.43 s
+; conserva_hud: inside gwr\food\conserva\conserva_hud.ogf, 275 frames = 9.17 s
+;
+; The only food that leaves something behind: the empty can (conserva_trash, see
+; usable_items\trash_objects.ltx) is dropped straight under the actor near the end of the animation.
+
+[conserva_hud_model]:gwr_base_usable
+actor_hand_bone		= bip01_r_hand
+position			= 0.10439, 0.02726, 0.01603
+orientation			= 70, -250, -5.7
+visual				= dynamics\devices\dev_conserv\dev_conserv.ogf
+actor_torso_anim	= norm_torso_item_drink_staker	; no eat gesture in the xrMPE pack; drink is the closest
+$spawn				= "weapons\conserva_hud_model"
+description			= st_conserva_descr
+inv_name			= st_conserva
+inv_name_short		= st_conserva
+; no icon of its own -- phantom, inherits the blank cell from the base section
+hud					= conserva_hud
+timing				= 7667	; 230 frames @30 fps; orig 9100 (275 frames, the whole conserva_eat)
+snd_using			= items\conserva\conserva_use
+snd_delay			= 250
+snd_delay_detector	= 250
+gwr_eatable_object	= conserva_eatable
+effect_delay		= 7000
+; the empty can, dropped at the actor's feet just before the animation ends
+trash_object		= conserva_trash
+timing_trash		= 7167	; orig 8600 -- kept 500 ms before the end; past `timing` the phantom is
+							; already gone and gwr_eatable clamps it to timing-100 anyway
+
+[conserva_hud]:gwr_base_usable_hud
+item_visual			= gwr\food\conserva\conserva_hud
+; the models came out of the editor undersized; engine key, applied to the ITEM mesh only
+item_scale			= 1.525
+anm_show			= conserva_eat, conserva_hud
+anm_hide			= zaglushka, conserva_hud
+anm_idle			= zaglushka, conserva_hud
+anm_idle_aim		= zaglushka, conserva_hud
+anm_idle_moving		= zaglushka, conserva_hud
+anm_idle_sprint		= zaglushka, conserva_hud
+anm_bore			= zaglushka, conserva_hud

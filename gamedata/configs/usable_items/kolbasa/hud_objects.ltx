@@ -1,0 +1,36 @@
+; kolbasa -- hud-model phantom + hud animation section. See usable_items\bread\hud_objects.ltx for
+; why anm_show carries two names (hands motion + item motion).
+; kolbasa_eat: wpn_hand_animation.omf, 143 frames = 4.77 s
+; kolbasa_hud: inside gwr\food\kolbasa\kolbasa_hud.ogf, 171 frames = 5.70 s
+
+[kolbasa_hud_model]:gwr_base_usable
+actor_hand_bone		= bip01_r_hand
+position			= 0.10439, 0.02726, 0.01603
+orientation			= 70, -250, -5.7
+visual				= dynamics\devices\dev_kolbasa\dev_kolbasa.ogf
+actor_torso_anim	= norm_torso_item_drink_staker	; no eat gesture in the xrMPE pack; drink is the closest
+$spawn				= "weapons\kolbasa_hud_model"
+description			= st_kolbasa_descr
+inv_name			= st_kolbasa
+inv_name_short		= st_kolbasa
+; no icon of its own -- phantom, inherits the blank cell from the base section
+hud					= kolbasa_hud
+timing				= 5650	; kolbasa_eat = 171 frames (5700 ms)
+snd_using			= items\kolbasa\kolbasa_use
+snd_delay			= 250
+snd_delay_detector	= 250
+gwr_eatable_object	= kolbasa_eatable
+effect_delay		= 4200
+; no trash: the sausage is eaten whole
+
+[kolbasa_hud]:gwr_base_usable_hud
+item_visual			= gwr\food\kolbasa\kolbasa_hud
+; the models came out of the editor undersized; engine key, applied to the ITEM mesh only
+item_scale			= 1.525
+anm_show			= kolbasa_eat, kolbasa_hud
+anm_hide			= zaglushka, kolbasa_hud
+anm_idle			= zaglushka, kolbasa_hud
+anm_idle_aim		= zaglushka, kolbasa_hud
+anm_idle_moving		= zaglushka, kolbasa_hud
+anm_idle_sprint		= zaglushka, kolbasa_hud
+anm_bore			= zaglushka, kolbasa_hud

@@ -68,13 +68,13 @@ target = actor
 anim = wait
 combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
-on_info = remark@end %=play_sound(agr_base_leader_sergant_5:dolg:agr_duty_base_commander_name)%
-meet = meet
+on_game_timer = 5 | remark@end %=play_sound(agr_base_leader_sergant_5:dolg:agr_duty_base_commander_name)%
+meet = no_meet
 invulnerable = true
 
 [remark@end]
 target = actor
-anim = guard_rac
+anim = wait
 combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
 on_signal = sound_end | walker@2 %+agr_duty_leader_raciya_end%
@@ -90,8 +90,8 @@ meet = meet
 invulnerable = true
 
 [meet]
-meet_state 		= 5|ward@nil|10|wait@nil
-meet_state_wpn 		= 5|ward@nil|10|wait@nil
+meet_state 		= 10|wait@nil|5|ward@nil
+meet_state_wpn 		= 10|wait@nil|5|ward@nil
 victim 			= 5|actor
 victim_wpn 		= 10|actor
 use			= true
@@ -99,7 +99,7 @@ use_wpn			= true
 trade_enable 		= false
 sound_start 		= agr_duty_leader_meet
 sound_stop 		= agr_duty_leader_meet_bye
-quest_npc = true
+quest_npc		= true
 
 [use]
 on_info = {+agr_actor_inside_11} %+agr_take_reward_complete%

@@ -1,31 +1,59 @@
+#include "gunsl_addon_icons.ltx"
 #include "delayed_action_fuse.ltx"
 #include "upgrades_properties.ltx"
+#include "gunsl_silencers.ltx"		; Gunslinger per-caliber silencers (2026-07-24)
+#include "laser_beams.ltx"		; laser designator volumetric beams (R3)
+#include "actor_wpn_pos.ltx"		; actor-only world-model hand offsets (NPCs keep the vanilla ones)
 
 #include "upgrades\w_abakan_up.ltx"
 #include "upgrades\w_ak74_up.ltx"
+#include "upgrades\w_ak101_up.ltx"	; AK-101 (GS port)
 #include "upgrades\w_ak74u_up.ltx"
+#include "upgrades\w_ak74ub_up.ltx"	; AKS-74UB "Zaton B33" (GS unique)
 #include "upgrades\w_beretta_up.ltx"
+#include "upgrades\w_bizon_up.ltx"	; PP-19 Bizon (GS port)
+#include "upgrades\w_saiga12_up.ltx"	; Saiga-12 (GS port)
+#include "upgrades\w_stechkin_up.ltx"	; APS Stechkin (GS port)
+#include "upgrades\w_apb_up.ltx"	; APB (uniq variant of the stechkin)
+#include "upgrades\w_tt33_up.ltx"	; TT-33 (GS port)
+#include "upgrades\w_gsh18_up.ltx"	; GSh-18 (GS port)
+#include "upgrades\w_grach_up.ltx"	; MP-443 Grach (GS port)
+#include "upgrades\w_sr1m_up.ltx"	; SR-1M Gyurza (GS port)
+#include "upgrades\w_p90_up.ltx"	; FN P90 (GS port)
+#include "upgrades\w_fort_snag_up.ltx"	; Fort-17 "snag" (GS unique of the fort12)
 #include "upgrades\w_bm16_up.ltx"
 #include "upgrades\w_colt1911_up.ltx"
 #include "upgrades\w_desert_eagle_up.ltx"
 #include "upgrades\w_fn2000_up.ltx"
+#include "upgrades\w_fiveseven_up.ltx"	; FN Five-seveN (GS port)
+#include "upgrades\w_glock17_up.ltx"	; Glock 17 (GS port)	; FN Five-seveN (GS port)
 #include "upgrades\w_fort_up.ltx"
 #include "upgrades\w_g36_up.ltx"
+#include "upgrades\w_gauss_up.ltx"	; Gauss (GS port)
 #include "upgrades\w_groza_up.ltx"
+#include "upgrades\w_groza_nimble_up.ltx"
 #include "upgrades\w_hpsa_up.ltx"
 #include "upgrades\w_l85_up.ltx"
 #include "upgrades\w_lr300_up.ltx"
 #include "upgrades\w_mp5_up.ltx"
+#include "upgrades\w_ump45_up.ltx"	; UMP45 / wpn_mp5_nimble (GS port)
+#include "upgrades\w_mp5sd_up.ltx"	; MP5SD (GS port)
 #include "upgrades\w_pb_up.ltx"
 #include "upgrades\w_pkm_up.ltx"
+#include "upgrades\w_rg6_up.ltx"	; RGM-40 (GS port, sits on wpn_rg-6)
 #include "upgrades\w_pm_up.ltx"
+#include "upgrades\w_pmm_up.ltx"	; PMM (GS uniq variant of the PM)
 #include "upgrades\w_sig220_up.ltx"
+#include "upgrades\w_sig220r_up.ltx"
 #include "upgrades\w_sig550_up.ltx"
+#include "upgrades\w_sig552_up.ltx"
 #include "upgrades\w_spas12_up.ltx"
 #include "upgrades\w_svd_up.ltx"
 #include "upgrades\w_svu_up.ltx"
+#include "upgrades\w_svu_nimble_up.ltx"
 #include "upgrades\w_toz34_up.ltx"
 #include "upgrades\w_usp45_up.ltx"
+#include "upgrades\w_usp_nimble_up.ltx"
 #include "upgrades\w_val_up.ltx"
 #include "upgrades\w_vintorez_up.ltx"
 #include "upgrades\w_walther_up.ltx"
@@ -33,23 +61,41 @@
 
 
 #include "w_ak74.ltx"
+#include "w_ak101.ltx"	; AK-101 (GS port) -- must stay AFTER w_ak74.ltx (it inherits [wpn_ak74])
 #include "w_ak74u.ltx"
 #include "w_fn2000.ltx"
 #include "w_rpg7.ltx"
 #include "w_knife.ltx"
+#include "w_bizon.ltx"	; PP-19 Bizon (GS port)
+#include "w_saiga12.ltx"	; Saiga-12 (GS port)
+#include "w_stechkin.ltx"	; APS Stechkin (GS port)
+#include "w_tt33.ltx"	; TT-33 (GS port)
+#include "w_gsh18.ltx"	; GSh-18 (GS port)
+#include "w_grach.ltx"	; MP-443 Grach (GS port)
+#include "w_sr1m.ltx"	; SR-1M Gyurza (GS port)
+#include "w_p90.ltx"	; FN P90 (GS port)
+#include "w_fort_snag.ltx"	; Fort-17 "snag" (GS unique of the fort12)
+#include "w_fiveseven.ltx"
+#include "w_glock17.ltx"	; Glock 17 (GS port)	; FN Five-seveN (GS port)	; PP-19 Bizon (GS port)
 #include "w_bolt.ltx"
 #include "w_f1.ltx"
 #include "w_rgd5.ltx"
+#include "w_rgn.ltx"	; RGN (GS port)
+#include "w_rgo.ltx"	; RGO (GS port)
 #include "w_gd5.ltx"
 #include "w_rg6.ltx"
 
 #include "w_vintorez.ltx"
+#include "w_vintorez_nimble.ltx"
 #include "w_lr300.ltx"
 #include "w_mp5.ltx"
+#include "w_ump45.ltx"
+#include "w_mp5sd.ltx"
 #include "w_val.ltx"
 
 #include "w_gauss.ltx"
 #include "w_groza.ltx"
+#include "w_groza_nimble.ltx"
 #include "w_hpsa.ltx"
 #include "w_pm.ltx"
 #include "w_pb.ltx"
@@ -59,6 +105,7 @@
 #include "w_toz34.ltx"
 #include "w_svd.ltx"
 #include "w_svu.ltx"
+#include "w_svu_nimble.ltx"
 #include "w_binoc.ltx"
 #include "w_l85.ltx"
 #include "w_bm16.ltx"
@@ -70,15 +117,17 @@
 #include "w_desert_eagle.ltx"
 #include "w_sig220.ltx"
 #include "w_sig550.ltx"
+#include "w_sig552.ltx"
 #include "w_abakan.ltx"
 #include "w_g36.ltx"
 #include "w_pkm.ltx"
+#include "gunsl_scopes.ltx"		; Gunslinger multi-scope port (items + per-weapon scope sections)
 
 
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Огнестрельное оружие
+;; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 [bullet_manager]
@@ -88,25 +137,26 @@ fire_circle_k					= 2.0f ; means tracer_width*2
 
 tracer_width					= 0.08
 tracer_length_max				= 225 ;10.0	;24.0 ;14.0
-tracer_length_min				= 0 ;1 ;2		;0.2
+tracer_length_min				= 0 ;1 ;2		;0.2  ; per-TICK tracer segment min length (NOT a muzzle delay; capped by per-tick travel ~1.1m)
+tracer_min_fly_dist				= 3.0 ; bullet must fly this many m from the muzzle before its tracer starts drawing (0 = immediately)
 
-;расстояние после которого учитывается hit_probabilty полностью
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ hit_probabilty пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 hit_probability_max_dist		= 3;
 
 gravity_const					= 9.81
-;сопротивление воздуха, процент, который отнимается от скорости полета пули
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 air_resistance_k				= 1 ;0.4;0.3
 
-;размер шага времени (в милисекундах), по которому проигрываются
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ), пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 time_step						= 33
-;минимальная скорость (м/с), на которой пуля еще считается и показывается
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ/пїЅ), пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 min_bullet_speed				= 3.0
-;cколько процентов энергии потеряет пуля при столкновении с материалом (при падении под прямым углом)
+;cпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ)
 collision_energy_min			= 0.80 ;0.75; 0.90
-;сколько процентов энергии останется у пули при любом столкновении
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 collision_energy_max			= 0.5 ;0.7;0.50
 
-whine_sounds					= weapons\whine_1, weapons\whine_2, weapons\whine_3, weapons\whine_4, weapons\whine01, weapons\whine02
+whine_sounds					= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
 explode_particles				= explosions\expl_bullet,explosions\expl_bullet_00,explosions\expl_bullet_01
 
 
@@ -132,6 +182,7 @@ slot				= -1
 explosive			= false
 
 [ammo_9x18_fmj]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_9x18_fmj" ; option for Level Editor
@@ -157,10 +208,10 @@ inv_grid_y			= 12
 
 k_dist			= 1
 k_disp			= 1
-k_hit			= 1
+k_hit			= 0.62	; orig 1 (GS)
 k_impulse		= 1
 k_pierce		= 0.1
-k_ap			= 0.1
+k_ap			= 0.15	; orig 0.1 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= on
@@ -169,6 +220,7 @@ k_air_resistance = 1.5
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_9x18_pbp]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_9x18_pbp" ; option for Level Editor
@@ -193,10 +245,10 @@ inv_grid_y			= 12
 
 k_dist			= 1
 k_disp			= 1
-k_hit			= 1.1
+k_hit			= 0.55	; orig 0.65 -- PBP is the armour-piercing 9x18; GS only ships FMJ and PMM, so it goes one step past PMM (0.65/0.25)
 k_impulse		= 1
 k_pierce		= 0.1
-k_ap			= 0.1
+k_ap			= 0.35	; orig 0.25 -- PBP is the armour-piercing 9x18; GS only ships FMJ and PMM, so it goes one step past PMM (0.65/0.25)
 impair			= 1
 buck_shot		= 1
 tracer			= on
@@ -205,6 +257,7 @@ k_air_resistance = 1.5
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_9x18_pmm]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_9x18_pmm" ; option for Level Editor
@@ -229,18 +282,19 @@ inv_grid_y			= 12
 
 k_dist			= 1
 k_disp			= 1
-k_hit			= 1.1
+k_hit			= 0.65	; orig 1.1 (GS)
 k_impulse		= 1
 k_pierce		= 0.1
-k_ap			= 0.1
-impair			= 1
+k_ap			= 0.25	; orig 0.1 (GS)
+impair			= 1.8	; orig 1 (GS)
 buck_shot		= 1
 tracer			= on
 wm_size         = 0.05
-k_air_resistance = 1.5
+k_air_resistance = 1.4	; orig 1.5 (GS)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_9x19_fmj]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_9x19_fmj" ; option for Level Editor
@@ -266,18 +320,19 @@ inv_grid_y			= 12
 
 k_dist			= 1
 k_disp			= 1
-k_hit			= 1
+k_hit			= 0.65	; orig 1 (GS)
 k_impulse		= 1
 k_pierce		= 0.1
-k_ap			= 0.1
+k_ap			= 0.2	; orig 0.1 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= off
 wm_size         = 0.05
-k_air_resistance = 1.5
+k_air_resistance = 1.45	; orig 1.5 (GS)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_9x19_pbp]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_9x19_pbp" ; option for Level Editor
@@ -302,18 +357,19 @@ inv_grid_y		= 12
 
 k_dist			= 1
 k_disp			= 1
-k_hit			= 1.1
+k_hit			= 0.58	; orig 1.1 (GS)
 k_impulse		= 1
 k_pierce		= 0.1
-k_ap			= 0.1
+k_ap			= 0.35	; orig 0.1 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= on
 wm_size         = 0.05
-k_air_resistance = 1.5
+k_air_resistance = 1.35	; orig 1.5 (GS)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_11.43x23_fmj]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_45acp_01, weapons\shared\bullet_crack_45acp_02, weapons\shared\bullet_crack_45acp_03, weapons\shared\bullet_crack_45acp_04, weapons\shared\bullet_crack_45acp_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_11.43x23_fmj" ; option for Level Editor
@@ -337,11 +393,12 @@ inv_grid_x		= 9
 inv_grid_y		= 12
 
 k_dist			= 1
+k_air_resistance = 1.6	; GS value (we had none -> global air_resistance_k)
 k_disp			= 1
-k_hit			= 1
+k_hit			= 0.75	; orig 1 (GS)
 k_impulse		= 1
 k_pierce		= 0.1
-k_ap			= 0.1
+k_ap			= 0.15	; orig 0.1 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= off
@@ -349,6 +406,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_11.43x23_hydro]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_45acp_01, weapons\shared\bullet_crack_45acp_02, weapons\shared\bullet_crack_45acp_03, weapons\shared\bullet_crack_45acp_04, weapons\shared\bullet_crack_45acp_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_11.43x23_hydro" ; option for Level Editor
@@ -372,11 +430,12 @@ inv_grid_x			= 7
 inv_grid_y			= 12
 
 k_dist			= 1
+k_air_resistance = 1.6	; GS value (we had none -> global air_resistance_k)
 k_disp			= 1
-k_hit			= 1.2
+k_hit			= 0.55	; orig 1.2 (GS)
 k_impulse		= 1
 k_pierce		= 0.1
-k_ap			= 0.1
+k_ap			= 0.45	; orig 0.1 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= off
@@ -384,6 +443,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_5.45x39_fmj]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_545_01, weapons\shared\bullet_crack_545_02, weapons\shared\bullet_crack_545_03, weapons\shared\bullet_crack_545_04, weapons\shared\bullet_crack_545_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_5.45x39_fmj" ; option for Level Editor
@@ -409,11 +469,12 @@ inv_grid_y			= 11
 ;;inv_icon = ui_hud2_res_back
 
 k_dist			= 1
+k_air_resistance = 1.4	; GS value (we had none -> global air_resistance_k)
 k_disp			= 1
-k_hit			= 1
+k_hit			= 0.33	; orig 1 (GS)
 k_impulse		= 1
 k_pierce		= 0.6
-k_ap			= 0.6
+k_ap			= 0.45	; orig 0.6 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= on
@@ -421,6 +482,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_5.45x39_ap]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_545_01, weapons\shared\bullet_crack_545_02, weapons\shared\bullet_crack_545_03, weapons\shared\bullet_crack_545_04, weapons\shared\bullet_crack_545_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_5.45x39_ap" ; option for Level Editor
@@ -444,11 +506,12 @@ inv_grid_x			= 12
 inv_grid_y			= 11
 
 k_dist			= 1
+k_air_resistance = 1.2	; GS value (we had none -> global air_resistance_k)
 k_disp			= 1
-k_hit			= 0.7
+k_hit			= 0.28	; orig 0.7 (GS)
 k_impulse		= 1
 k_pierce		= 0.8
-k_ap			= 0.8
+k_ap			= 0.65	; orig 0.8 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= on
@@ -456,6 +519,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_5.56x45_ss190]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_556_01, weapons\shared\bullet_crack_556_02, weapons\shared\bullet_crack_556_03, weapons\shared\bullet_crack_556_04, weapons\shared\bullet_crack_556_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_5.56x45_ss190" ; option for Level Editor
@@ -480,11 +544,12 @@ inv_grid_x			= 14
 inv_grid_y			= 11
 
 k_dist			= 1
+k_air_resistance = 1.5	; GS value (we had none -> global air_resistance_k)
 k_disp			= 1
-k_hit			= 1
+k_hit			= 0.35	; orig 1 (GS)
 k_impulse		= 1
 k_pierce		= 0.6
-k_ap			= 0.6
+k_ap			= 0.5	; orig 0.6 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= on
@@ -492,6 +557,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_5.56x45_ap]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_556_01, weapons\shared\bullet_crack_556_02, weapons\shared\bullet_crack_556_03, weapons\shared\bullet_crack_556_04, weapons\shared\bullet_crack_556_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_5.56x45_ap" ; option for Level Editor
@@ -515,11 +581,12 @@ inv_grid_x			= 10
 inv_grid_y			= 11
 
 k_dist			= 1
+k_air_resistance = 1.25	; GS value (we had none -> global air_resistance_k)
 k_disp			= 1
-k_hit			= 0.7
+k_hit			= 0.3	; orig 0.7 (GS)
 k_impulse		= 1
 k_pierce		= 0.8
-k_ap			= 0.8
+k_ap			= 0.65	; orig 0.8 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= on
@@ -527,70 +594,74 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_pkm_100]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_762_01, weapons\shared\bullet_crack_762_02, weapons\shared\bullet_crack_762_03, weapons\shared\bullet_crack_762_04, weapons\shared\bullet_crack_762_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_pkm_100" ; option for Level Editor
 class			= AMMO
 cform           = skeleton
-visual          = dynamics\weapons\wpn_ammo\ammo_762x54_7h1.ogf
-description		= ammo-7.62x54-ap_descr
+visual          = dynamics\weapons\wpn_ammo\ammo_pkm.ogf
+description		= ammo-pkm_descr	; orig ammo-7.62x54-ap_descr (SRP)
 $prefetch 		= 64
 
 cost			= 1000
 
 box_size		= 100
 
-inv_name		= ammo-7.62x54-ap_s
-inv_name_short	= ammo-7.62x54-ap_s
+inv_name		= ammo-pkm	; orig ammo-7.62x54-ap_s (SRP)
+inv_name_short	= ammo-pkm_s	; orig ammo-7.62x54-ap_s (SRP)
 inv_weight		= 1.3
 
-inv_grid_width		= 2
-inv_grid_height		= 1
-inv_grid_x			= 15
-inv_grid_y			= 9
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 15
+inv_grid_y         = 32
 
 hud_icon = ui_hud2_res_back
 
 k_dist			= 1
+k_air_resistance = 2	; GS value (we had none -> global air_resistance_k)
 k_disp			= 1
-k_hit			= 1
+k_hit			= 0.5	; orig 1 (GS)
 k_impulse		= 1
 k_pierce		= 0.8
-k_ap			= 0.8
+k_ap			= 0.75	; orig 0.8 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= on
 wm_size         = 0.07
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_7.62x54_7h1]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_762_01, weapons\shared\bullet_crack_762_02, weapons\shared\bullet_crack_762_03, weapons\shared\bullet_crack_762_04, weapons\shared\bullet_crack_762_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_7.62x54_7h1" ; option for Level Editor
 class			= AMMO
 cform           = skeleton
 visual          = dynamics\weapons\wpn_ammo\ammo_762x54_7h1.ogf
-description		= ammo-7.62x54-7h14_descr
+description		= ammo-7.62x54-7h1_descr	; orig ammo-7.62x54-7h14_descr (SRP)
 $prefetch 		= 64
 
 cost			= 450
 
 box_size		= 30 ;10
 
-inv_name		= ammo-7.62x54-7h14
-inv_name_short	= ammo-7.62x54-7h14_s
+inv_name		= ammo-7.62x54-7h1	; orig ammo-7.62x54-7h14 (SRP)
+inv_name_short	= ammo-7.62x54-7h1_s	; orig ammo-7.62x54-7h14_s (SRP)
 inv_weight		= .23
 
 inv_grid_width		= 2
 inv_grid_height		= 1
-inv_grid_x			= 17	;15
+inv_grid_x			= 15	; orig 17 (SRP)
 inv_grid_y			= 9
 
 k_dist			= 1
+k_air_resistance = 0.7	; GS value (we had none -> global air_resistance_k)
 k_disp			= 1
-k_hit			= 1
+k_hit			= 1.5	; orig 1 (GS)
 k_impulse		= 1
 k_pierce		= 0.8
-k_ap			= 0.8
+k_ap			= 0.83	; orig 0.8 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= on
@@ -598,6 +669,7 @@ wm_size         = 0.05
 explosive		= off
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_7.62x54_ap]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_762_01, weapons\shared\bullet_crack_762_02, weapons\shared\bullet_crack_762_03, weapons\shared\bullet_crack_762_04, weapons\shared\bullet_crack_762_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_7.62x54_ap" ; option for Level Editor
@@ -622,10 +694,10 @@ inv_grid_y			= 10
 
 k_dist			= 1
 k_disp			= 1
-k_hit			= 1
+k_hit			= 1.4	; orig 1.5 -- no GS counterpart; sits between 7H1 (1.5/0.83) and 7H14. Cost 600
 k_impulse		= 1
 k_pierce		= 0.8
-k_ap			= 0.8
+k_ap			= 0.9	; orig 0.83 -- no GS counterpart; sits between 7H1 (1.5/0.83) and 7H14. Cost 600
 impair			= 1
 buck_shot		= 1
 tracer			= on
@@ -633,6 +705,7 @@ wm_size         = 0.05
 explosive		= on
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_7.62x54_7h14]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_762_01, weapons\shared\bullet_crack_762_02, weapons\shared\bullet_crack_762_03, weapons\shared\bullet_crack_762_04, weapons\shared\bullet_crack_762_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_7.62x54_7h14" ; option for Level Editor
@@ -657,10 +730,10 @@ inv_grid_y			= 9
 
 k_dist			= 1
 k_disp			= 1
-k_hit			= 1
+k_hit			= 1.3	; orig 1.5 -- 7H14 is the armour-piercing sniper load and the dearest of the three (1000): least punch, most penetration
 k_impulse		= 1
 k_pierce		= 0.8
-k_ap			= 0.8
+k_ap			= 0.97	; orig 0.83 -- 7H14 is the armour-piercing sniper load and the dearest of the three (1000): least punch, most penetration
 impair			= 1
 buck_shot		= 1
 tracer			= on
@@ -669,6 +742,7 @@ explosive		= on
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_223_fmj]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_556_01, weapons\shared\bullet_crack_556_02, weapons\shared\bullet_crack_556_03, weapons\shared\bullet_crack_556_04, weapons\shared\bullet_crack_556_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_223_fmj" ; option for Level Editor
@@ -705,6 +779,7 @@ explosive		= on
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_gauss]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_gauss_01, weapons\shared\bullet_crack_gauss_02, weapons\shared\bullet_crack_gauss_03, weapons\shared\bullet_crack_gauss_04, weapons\shared\bullet_crack_gauss_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_gauss" ; option for Level Editor
@@ -728,11 +803,14 @@ inv_grid_x			= 4
 inv_grid_y			= 14
 
 k_dist			= 1
+k_air_resistance = 0.1	; GS value (we had none -> global air_resistance_k)
 k_disp			= 1
+; NOT GS's 2.0 on purpose: this section is also the ammo of [wpn_gauss_aes], the quest AES
+; gauss, so a k_hit here would double that too. The factor lives on wpn_gauss's hit_power.
 k_hit			= 1
 k_impulse		= 1
 k_pierce		= 15
-k_ap			= 15
+k_ap			= 150	; orig 15 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= off
@@ -741,7 +819,25 @@ wm_size         = 0.05
 explosive		= on
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; GS `kardan_ammo` gauss upgrade: a second, home-made round (GS weapons\ammo\ammo_gauss.ltx).
+; Inherits OUR [ammo_gauss] and carries only GS's delta -- copying GS's section wholesale would drop
+; the keys our ammo_base needs. inv_grid is the USER'S atlas slot (7,14), not GS's 4,9.
+[ammo_gauss_cardan]:ammo_gauss
+$spawn			= "weapons\ammo\ammo_gauss_cardan" ; option for Level Editor
+visual          = dynamics\weapons\wpn_ammo\ammo_gauss_custom.ogf
+description		= gunsl_ammo_gauss_cardan_descr
+inv_name		= gunsl_ammo_gauss_cardan
+inv_name_short	= gunsl_ammo_gauss_cardan_short
+box_size		= 6
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 7
+inv_grid_y			= 14
+impair			= 1.5	; GS: the home-made cell accelerates the slug less -> worse accuracy
+k_air_resistance = 1.0	; GS (ours does not set it on [ammo_gauss] at all)
+
 [ammo_9x39_pab9]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_939_01, weapons\shared\bullet_crack_939_02, weapons\shared\bullet_crack_939_03, weapons\shared\bullet_crack_939_04, weapons\shared\bullet_crack_939_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_9x39_pab9" ; option for Level Editor
@@ -765,11 +861,12 @@ inv_grid_x			= 17
 inv_grid_y			= 10
 
 k_dist			= 1
+k_air_resistance = 1.1	; GS value (we had none -> global air_resistance_k)
 k_disp			= 1
-k_hit			= 1.5
+k_hit			= 0.65	; orig 1.5 (GS)
 k_impulse		= 1
 k_pierce		= 0.6
-k_ap			= 0.6
+k_ap			= 0.45	; orig 0.6 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= on
@@ -777,6 +874,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_9x39_ap]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_939_01, weapons\shared\bullet_crack_939_02, weapons\shared\bullet_crack_939_03, weapons\shared\bullet_crack_939_04, weapons\shared\bullet_crack_939_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_9x39_ap" ; option for Level Editor
@@ -800,11 +898,12 @@ inv_grid_x			= 5
 inv_grid_y			= 12
 
 k_dist			= 1
+k_air_resistance = 1.4	; GS value (we had none -> global air_resistance_k)
 k_disp			= 1
-k_hit			= 1.3
+k_hit			= 0.5	; orig 1.3 (GS)
 k_impulse		= 1
 k_pierce		= 0.9
-k_ap			= 0.9
+k_ap			= 0.85	; orig 0.9 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= on
@@ -812,6 +911,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_9x39_sp5]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_939_01, weapons\shared\bullet_crack_939_02, weapons\shared\bullet_crack_939_03, weapons\shared\bullet_crack_939_04, weapons\shared\bullet_crack_939_05
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_9x39_sp5" ; option for Level Editor
@@ -836,10 +936,10 @@ inv_grid_y			= 11
 
 k_dist			= 1
 k_disp			= 0.5
-k_hit			= 1.5
+k_hit			= 0.62	; orig 0.65 -- SP-5 is the ball load: GS has no counterpart, so it sits below its PAB-9 (0.65/0.45) -- more punch, much less penetration. Cost ladder 500 < 630 < 720
 k_impulse		= 1
 k_pierce		= 0.8
-k_ap			= 0.8
+k_ap			= 0.3	; orig 0.45 -- SP-5 is the ball load: GS has no counterpart, so it sits below its PAB-9 (0.65/0.45) -- more punch, much less penetration. Cost ladder 500 < 630 < 720
 impair			= 1
 buck_shot		= 1
 tracer			= on
@@ -847,6 +947,8 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_12x70_buck]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_12g_buck_01, weapons\shared\bullet_crack_12g_buck_02, weapons\shared\bullet_crack_12g_buck_03, weapons\shared\bullet_crack_12g_buck_04, weapons\shared\bullet_crack_12g_buck_05
+bullet_material				= objects\bullet_shotgun	; buckshot -- the material belongs to the projectile, not the barrel
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_12x70_buck" ; option for Level Editor
@@ -869,19 +971,21 @@ inv_grid_height	= 1
 inv_grid_x		= 13
 inv_grid_y		= 9
 
-k_dist			= 0.5
-k_disp			= 3
-k_hit			= 0.3
+k_dist			= 0.4	; orig 0.5 (GS value for buckshot)
+k_disp			= 17	; orig 3 (GS value: our 3 made the shot pattern ~5.7x tighter than GS)
+k_hit			= 0.36	; orig 0.3 (GS)
 k_impulse		= 0.5
 k_pierce		= 0.0
-k_ap			= 0.0
+k_ap			= 0.05	; orig 0.0 (GS)
 impair			= 1
-buck_shot		= 15
+buck_shot			= 13	; orig 15 (GS)
 tracer			= off
 wm_size         = 0.05
 k_air_resistance = 3
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_12x76_zhekan]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_12g_slug_01, weapons\shared\bullet_crack_12g_slug_02, weapons\shared\bullet_crack_12g_slug_03, weapons\shared\bullet_crack_12g_slug_04, weapons\shared\bullet_crack_12g_slug_05
+bullet_material				= objects\bullet_large	; slug -- the material belongs to the projectile, not the barrel
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_12x76_zhekan" ; option for Level Editor
@@ -905,20 +1009,26 @@ inv_grid_x			= 11
 inv_grid_y			= 10
 
 k_dist			= 1
-k_disp			= 0.8
-k_hit			= 1
+k_disp			= 1.07	; orig 0.8 (GS value)
+k_hit			= 1.18	; orig 1.35 (GS) -- picked for whole hits to kill (see memory cs-gs-damage-model-port): slug hits harder, dart pierces skin better
 k_impulse		= 1
 k_pierce		= 0.3
-k_ap			= 0.3
+k_ap			= 0.40	; orig 0.96 (GS) -- picked for whole hits to kill (see memory cs-gs-damage-model-port): slug hits harder, dart pierces skin better
 impair			= 1
 buck_shot		= 1
 tracer			= on
 wm_size         = 0.05
-explosive		= on
-k_air_resistance = 2
+explosive		= off	; orig on. Not a detonation: CBulletManager::FireShotmark takes this as
+					; "on every STATIC surface hit, also play the explode particle system"
+					; (PlayExplodePS). A lead slug has no business puffing like a grenade, and
+					; buckshot never carried the flag either. Damage is not affected by it.
+					; ammo_12x76_zhekan_heli keeps it -- it states the flag itself, not by inheritance.
+k_air_resistance = 1.1	; orig 2 (GS)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_12x76_dart]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_12g_slug_01, weapons\shared\bullet_crack_12g_slug_02, weapons\shared\bullet_crack_12g_slug_03, weapons\shared\bullet_crack_12g_slug_04, weapons\shared\bullet_crack_12g_slug_05
+bullet_material				= objects\bullet_large	; slug -- the material belongs to the projectile, not the barrel
 GroupControlSection	= spawn_group
 discovery_dependency =
 $spawn			= "weapons\ammo\ammo_12x76_dart" ; option for Level Editor
@@ -943,15 +1053,19 @@ inv_grid_y			= 10
 
 k_dist			= 1.5
 k_disp			= 0.8
-k_hit			= 1
+k_hit			= 1.08	; orig 1.7 -- picked for whole hits to kill (see memory cs-gs-damage-model-port): slug hits harder, dart pierces skin better
 k_impulse		= 1
 k_pierce		= 0.5
-k_ap			= 0.5
+k_ap			= 0.53	; orig 0.96 -- picked for whole hits to kill (see memory cs-gs-damage-model-port): slug hits harder, dart pierces skin better
 impair			= 1
 buck_shot		= 1
 tracer			= on
 wm_size         = 0.05
-explosive		= on
+explosive		= off	; orig on. Not a detonation: CBulletManager::FireShotmark takes this as
+					; "on every STATIC surface hit, also play the explode particle system"
+					; (PlayExplodePS). A lead slug has no business puffing like a grenade, and
+					; buckshot never carried the flag either. Damage is not affected by it.
+					; ammo_12x76_zhekan_heli keeps it -- it states the flag itself, not by inheritance.
 k_air_resistance = 1.5
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -977,10 +1091,10 @@ inv_name		= ammo-og-7b
 inv_name_short	= ammo-og-7b_s
 inv_weight		= 2.0
 
-inv_grid_width		= 3
-inv_grid_height		= 1
-inv_grid_x			= 15
-inv_grid_y			= 19
+inv_grid_width     = 5
+inv_grid_height    = 1
+inv_grid_x         = 6
+inv_grid_y         = 0
 
 
 k_dist			= 1
@@ -994,7 +1108,7 @@ buck_shot		= 0
 tracer			= off
 wm_size         = 0.1
 
-;могут ли боеприпасы быть неограниченными : 1 - могут, 0 - не могут
+;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ : 1 - пїЅпїЅпїЅпїЅпїЅ, 0 - пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 can_be_unlimited = true ;false
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1008,15 +1122,15 @@ $spawn			= "weapons\ammo\ammo_vog-25p" ; option for Level Editor
 class			= A_VOG25
 cform           = skeleton
 visual          = dynamics\weapons\wpn_ammo\ammo_vog_25p.ogf
-description		= ammo-vog-25_descr
+description		= ammo-vog-25p_descr
 $prefetch 		= 64
 
-cost			= 100
+cost			= 250	; orig 100 (GS port: VOG-25P is a distinct round, not a re-skin of the VOG-25)
 
 box_size		= 1
 
-inv_name		= ammo-vog-25
-inv_name_short	= ammo-vog-25_s
+inv_name		= ammo-vog-25p
+inv_name_short	= ammo-vog-25p_s
 inv_weight		= .08
 
 inv_grid_width		= 1
@@ -1043,7 +1157,15 @@ wm_size         = 0.05
 jump_height = 1
 fake_grenade_name = wpn_fake_missile1
 
-;могут ли боеприпасы быть неограниченными : 1 - могут, 0 - не могут
+; DETONATES WHEN SHOT (2026-09-13): a live round on the ground goes off like a hand grenade does.
+; The blast comes from the fake missile named above -- the same one it makes when fired. Hit types
+; 8 and 7 are OUR enum's fire_wound and explosion (GS writes the same pair as 6, 8), so a bullet
+; or another blast sets it off, and the threshold is the one the grenades use.
+explosion_on_hit = true
+explosion_hit_types = 8, 7
+detonation_threshold_hit = 0.4
+
+;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ : 1 - пїЅпїЅпїЅпїЅпїЅ, 0 - пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 can_be_unlimited = true ;false
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1089,7 +1211,15 @@ wm_size         = 0.05
 
 fake_grenade_name = wpn_fake_missile
 
-;могут ли боеприпасы быть неограниченными : 1 - могут, 0 - не могут
+; DETONATES WHEN SHOT (2026-09-13): a live round on the ground goes off like a hand grenade does.
+; The blast comes from the fake missile named above -- the same one it makes when fired. Hit types
+; 8 and 7 are OUR enum's fire_wound and explosion (GS writes the same pair as 6, 8), so a bullet
+; or another blast sets it off, and the threshold is the one the grenades use.
+explosion_on_hit = true
+explosion_hit_types = 8, 7
+detonation_threshold_hit = 0.4
+
+;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ : 1 - пїЅпїЅпїЅпїЅпїЅ, 0 - пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 can_be_unlimited = true ;false
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1136,8 +1266,166 @@ wm_size         = 0.05
 
 fake_grenade_name = wpn_fake_missile2
 
-;могут ли боеприпасы быть неограниченными : 1 - могут, 0 - не могут
+; DETONATES WHEN SHOT (2026-09-13): a live round on the ground goes off like a hand grenade does.
+; The blast comes from the fake missile named above -- the same one it makes when fired. Hit types
+; 8 and 7 are OUR enum's fire_wound and explosion (GS writes the same pair as 6, 8), so a bullet
+; or another blast sets it off, and the threshold is the one the grenades use.
+explosion_on_hit = true
+explosion_hit_types = 8, 7
+detonation_threshold_hit = 0.4
+
+;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ : 1 - пїЅпїЅпїЅпїЅпїЅ, 0 - пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 can_be_unlimited = true ;false
+
+
+; M397A1 airburst 40mm -- GS ammo/40mm_grenades.ltx:144 (the L85/SIG550 GL's second round;
+; their gl_ammo_params_section_1 already pointed at the m397a1 bones)
+[ammo_m397a1]:ammo_base
+; GS's section leans on ITS ammo_base for these; ours does not define them and the engine reads them
+; with fatal r_float/r_string -> crash on spawn. Values copied from our own [ammo_m209].
+GroupControlSection	= spawn_group
+discovery_dependency =
+slot = -1
+$prefetch 		= 64
+k_disp			= 1
+k_impulse		= 1
+impair			= 1
+wm_size         = 0.05
+cform           = skeleton
+$spawn			= "weapons\ammo\ammo_m397a1" ; option for Level Editor
+class			= A_M209	; GS writes S_M209; ours is A_M209 (see ammo_m209)
+visual          = dynamics\weapons\wpn_ammo\ammo_m397a1.ogf
+description		= gunsl_ammo_m397a1_descr
+
+cost			= 250	; orig 500 (GS port: priced level with the VOG-25P)
+
+box_size		= 1
+
+inv_name		= gunsl_ammo_m397a1
+inv_name_short	= gunsl_ammo_m397a1_short
+inv_weight		= 0.275
+
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x		= 6
+inv_grid_y		= 14
+
+kill_msg_x		= 17
+kill_msg_y		= 232
+kill_msg_width		= 21
+kill_msg_height		= 22
+
+k_hit			= 2.5
+k_dist			= 1.3
+k_pierce		= 0.25
+k_ap			= 0.25
+buck_shot		= 0
+tracer			= off
+
+fake_grenade_name = wpn_fake_missile3
+
+; DETONATES WHEN SHOT (2026-09-13): a live round on the ground goes off like a hand grenade does.
+; The blast comes from the fake missile named above -- the same one it makes when fired. Hit types
+; 8 and 7 are OUR enum's fire_wound and explosion (GS writes the same pair as 6, 8), so a bullet
+; or another blast sets it off, and the threshold is the one the grenades use.
+explosion_on_hit = true
+explosion_hit_types = 8, 7
+detonation_threshold_hit = 0.4
+
+;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ : 1 - пїЅпїЅпїЅпїЅпїЅ, 0 - пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+can_be_unlimited = true ;false
+
+; the flying/exploding body of the M397A1 (GS ammo/fake_missiles.ltx:334)
+[wpn_fake_missile3]:identity_immunities,default_weapon_params
+; our fake missiles carry these two (GS's does not; identity_immunities gives slot -1 / no_description
+; anyway, but keep the shape identical to wpn_fake_missile2 so nothing reads a stale inherited value)
+slot 				= -1
+description			=
+$prefetch 			= 32
+visual              = dynamics\weapons\wpn_ammo\ammo_m397a1_exploder.ogf
+cform               = skeleton
+class               = G_FAKE
+
+inv_weight			= 0
+
+cost				= 150
+
+blast				= 4.5;150
+blast_r				= 4
+blast_impulse		= 350
+;delete
+blast_impulse_factor = 1
+
+
+frags				= 15
+frags_r				= 10
+frag_hit			= 0.50
+frag_hit_impulse	= 50
+
+hit_type_blast		= explosion
+hit_type_frag		= fire_wound
+
+up_throw_factor		= 0.7
+
+;trail				= weapons\rpg_trail_01, weapons\rpg_trail_02
+
+explode_particles		 = ghost_particles\explosions\explosion_ins_frag_00	; orig ghost_particles\explosions\explosion_ground_00
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
+explode_dir_world_up	= false		; true: the explosion particle points up in world space, not along the surface normal
+
+light_color		    = 2.0,1.5,0.9
+light_range		    = 0.01 ;14.0
+light_time 		    = 0.01 ;0.85
+
+
+ph_mass			 = 5
+;engine_f			= 530
+;engine_u			= 90
+
+jump_height = 1
+
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+fragment_speed		= 100
+
+wm_size         	= 0.05
+;wallmarks
+wallmark_section		 = explosion_marks
+explode_duration		 = 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
+
+;пїЅпїЅпїЅпїЅпїЅ
+snd_explode = weapons\grenade\vog_explosion
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+inv_name		= ammo-m397a1
+inv_name_short	= ammo-m397a1
+inv_weight		= .2
+
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 19
+inv_grid_y			= 9
+
+kill_msg_x			= 38
+kill_msg_y			= 233
+kill_msg_width		= 21
+kill_msg_height		= 22
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ CustomRocket
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+engine_present		= false		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+lights_enabled 		= false			;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+trail_light_color 	= 0.6,0.5,0.3
+trail_light_range 	= 8.0
+force_explode_time  = 10000
+
+;///////////////////////////////////////////////////////////////////////////////////////////////
 
 [ammo_minigame]:ammo_9x18_fmj
 inv_name		= ammo_minigame_name
@@ -1161,16 +1449,16 @@ inv_weight			= 0
 
 cost				= 150
 
-blast				= 3.0
+blast				= 4.3	; orig 3.0 (GS)
 blast_r				= 4
-blast_impulse		= 250
+blast_impulse		= 100	; orig 250 (GS)
 ;delete
 blast_impulse_factor = 1
 
 
-frags				= 10
+frags				= 13	; orig 10 (GS)
 frags_r				= 10
-frag_hit			= 0.50
+frag_hit			= 0.75	; orig 0.50 (GS)
 frag_hit_impulse	= 50
 
 hit_type_blast		= explosion
@@ -1181,12 +1469,18 @@ up_throw_factor		= 0.7
 
 ;trail				= weapons\rpg_trail_01, weapons\rpg_trail_02
 
-explode_particles	= explosions\explosion_01
-
+explode_particles		 = ghost_particles\explosions\explosion_ins_frag_00	; orig ghost_particles\explosions\explosion_ground_00
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
+explode_dir_world_up	= false		; true: the explosion particle points up in world space, not along the surface normal
 
 light_color		         = 1.9,1.2,0.5
-light_range		         = 25.0
-light_time 		         = 0.5
+light_range		         = 0.01	; orig 25.0 (GS)
+light_time 		         = 0.01	; orig 0.5 (GS)
 
 
 ph_mass			 = 5
@@ -1197,17 +1491,29 @@ jump_height = 0
 
 wm_size         = 0.05
 
-;трассы от осколков
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 fragment_speed				= 100
 
-explode_duration		 = 5		;подолжительность взрыва (с)
+explode_duration		 = 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 
-;звуки
-snd_explode = weapons\f1_explode
+;sounds
+;snd_explode				 = weapons\grenade\vog_explosion2
+snd_explode					 = weapons\grenade\grenade_explode_outdoor_close_03
+snd_explode_indoor			 = weapons\grenade\grenade_explode_indoor_close_03
+snd_explode_dist			 = weapons\grenade\grenade_explode_outdoor_dist_03
+snd_explode_blend_dist_start = 25
+snd_explode_blend_dist_end   = 100
+snd_indoor_fadeout_start     = 0.01
+snd_indoor_fadeout_end       = 0.3
+snd_indoor_fadeout_db        = 12
+volume_snd_explode			 = 150
+volume_snd_explode_indoor    = 150
+volume_snd_explode_dist      = 100
+
 ;wallmarks
 wallmark_section		= explosion_marks
 
-;свойства которые читаются, но не используются
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 inv_name		= ammo-vog-25
 inv_name_short	= ammo-vog-25
 inv_weight		= .2
@@ -1222,10 +1528,10 @@ kill_msg_y			= 232
 kill_msg_width		= 21
 kill_msg_height		= 22
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Свойства CustomRocket
+;; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ CustomRocket
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-engine_present		= false		;присутствует ли в ракете двигатель
-lights_enabled		= false		;свет вокруг ракеты, во время полета
+engine_present		= false		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+lights_enabled		= false		;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 force_explode_time  = 10000
 
 [wpn_fake_missile1]:identity_immunities,default_weapon_params
@@ -1238,15 +1544,15 @@ inv_weight			= 0
 
 cost				= 150
 
-blast				= 2.00;150
-blast_r				= 4
+blast				= 3.1	; orig 2.00 (GS)
+blast_r				= 7	; orig 4 (GS)
 blast_impulse		= 350
 ;delete
 blast_impulse_factor = 1
 
 
-frags				= 15
-frags_r				= 10
+frags				= 23	; orig 15 (GS)
+frags_r				= 15	; orig 10 (GS)
 frag_hit			= 0.50
 frag_hit_impulse	= 50
 
@@ -1257,32 +1563,49 @@ up_throw_factor		= 0.7
 
 ;trail				= weapons\rpg_trail_01, weapons\rpg_trail_02
 
-explode_particles	= explosions\explosion_01
+explode_particles		 = ghost_particles\explosions\explosion_ins_frag_00	; orig ghost_particles\explosions\explosion_ground_00
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
+explode_dir_world_up	= false		; true: the explosion particle points up in world space, not along the surface normal
 
-
-light_color		    = 1.9,1.4,0.5
-light_range		    = 14.0
-light_time 		    = 0.85
+light_color		    = 2.0,1.5,0.9
+light_range		    = 0.01	; orig 14.0 (GS)
+light_time 		    = 0.01	; orig 0.85 (GS)
 
 
 ph_mass			 = 5
 ;engine_f			= 530
 ;engine_u			= 90
 
-jump_height = 1
+jump_height = 1.5	; orig 1 (GS)
 
-;трассы от осколков
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 fragment_speed		= 100
 
 wm_size         	= 0.05
 ;wallmarks
 wallmark_section		 = explosion_marks
-explode_duration		 = 5		;подолжительность взрыва (с)
+explode_duration		 = 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 
-;звуки
-snd_explode = weapons\f1_explode
+;sounds
+;snd_explode				 = weapons\grenade\vog_explosion
+snd_explode					 = weapons\grenade\grenade_explode_outdoor_close_03
+snd_explode_indoor			 = weapons\grenade\grenade_explode_indoor_close_03
+snd_explode_dist			 = weapons\grenade\grenade_explode_outdoor_dist_03
+snd_explode_blend_dist_start = 25
+snd_explode_blend_dist_end   = 100
+snd_indoor_fadeout_start     = 0.01
+snd_indoor_fadeout_end       = 0.3
+snd_indoor_fadeout_db        = 12
+volume_snd_explode			 = 150
+volume_snd_explode_indoor    = 150
+volume_snd_explode_dist      = 100
 
-;свойства которые читаются, но не используются
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 inv_name		= ammo-vog-25p
 inv_name_short	= ammo-vog-25p
 inv_weight		= .2
@@ -1299,17 +1622,17 @@ kill_msg_height		= 22
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Свойства CustomRocket
+;; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ CustomRocket
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-engine_present		= false		;присутствует ли в ракете двигатель
-lights_enabled 		= true			;свет вокруг ракеты, во время полета
+engine_present		= false		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+lights_enabled 		= false	; orig true (GS)
 trail_light_color 	= 0.6,0.5,0.3
 trail_light_range 	= 8.0
 force_explode_time  = 10000
 
 [wpn_fake_missile2]:identity_immunities,default_weapon_params
 $prefetch 		= 32
-visual              = dynamics\weapons\wpn_ammo\ammo_m209.ogf
+visual              = dynamics\weapons\wpn_ammo\ammo_m433hedp_exploder.ogf	; orig ammo_m209_exploder.ogf (GS: this round is the M433 HEDP)
 cform               = skeleton
 class               = G_FAKE
 slot 				= -1
@@ -1318,16 +1641,16 @@ inv_weight			= 0
 
 cost				= 150
 
-blast				= 3.0;150
+blast				= 3.5	; orig 3.0 (GS)
 blast_r				= 4
-blast_impulse		= 250
+blast_impulse		= 100	; orig 250 (GS)
 ;delete
 blast_impulse_factor = 1
 
 
-frags				= 10
-frags_r				= 10
-frag_hit			= 0.50
+frags				= 15	; orig 10 (GS)
+frags_r				= 7	; orig 10 (GS)
+frag_hit			= 0.60	; orig 0.50 (GS)
 frag_hit_impulse	= 50
 
 hit_type_blast		= explosion
@@ -1337,32 +1660,49 @@ up_throw_factor		= 0.7
 
 ;trail				= weapons\rpg_trail_01, weapons\rpg_trail_02
 
-explode_particles	= explosions\explosion_01
+explode_particles		 = ghost_particles\explosions\explosion_ins_frag_00	; orig ghost_particles\explosions\explosion_ground_00
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
+explode_dir_world_up	= false		; true: the explosion particle points up in world space, not along the surface normal
 
-
-light_color		         = 1.9,1.4,0.5
-light_range		         = 14.0
-light_time 		         = 0.85
+light_color		         = 2.0,1.5,0.9
+light_range		         = 0.01	; orig 14.0 (GS)
+light_time 		         = 0.01	; orig 0.85 (GS)
 
 
 ph_mass			 = 5
 ;engine_f			= 530
 ;engine_u			= 90
 
-jump_height = 1
+jump_height = 0	; orig 1 (GS)
 
-;трассы от осколков
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 fragment_speed				= 100
 ;wallmarks
 wallmark_section			= explosion_marks
 wm_size						= 0.1 ;0.05
 
-explode_duration			 = 5		;подолжительность взрыва (с)
+explode_duration			 = 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 
-;звуки
-snd_explode = weapons\f1_explode
+;sounds
+;snd_explode				 = weapons\grenade\m203_explosion
+snd_explode					 = weapons\grenade\grenade_explode_outdoor_close_03
+snd_explode_indoor			 = weapons\grenade\grenade_explode_indoor_close_03
+snd_explode_dist			 = weapons\grenade\grenade_explode_outdoor_dist_03
+snd_explode_blend_dist_start = 25
+snd_explode_blend_dist_end   = 100
+snd_indoor_fadeout_start     = 0.01
+snd_indoor_fadeout_end       = 0.3
+snd_indoor_fadeout_db        = 12
+volume_snd_explode			 = 150
+volume_snd_explode_indoor    = 150
+volume_snd_explode_dist      = 100
 
-;свойства которые читаются, но не используются
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 inv_name		= ammo-m209
 inv_name_short	= "M209"
 inv_weight		= .2
@@ -1378,10 +1718,10 @@ kill_msg_width		= 19
 kill_msg_height		= 22
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Свойства CustomRocket
+;; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ CustomRocket
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-engine_present		= false		;присутствует ли в ракете двигатель
-lights_enabled 		= true			;свет вокруг ракеты, во время полета
+engine_present		= false		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+lights_enabled 		= false	; orig true (GS)
 trail_light_color 	= 0.6,0.5,0.3
 trail_light_range 	= 8.0
 force_explode_time  = 10000
@@ -1408,7 +1748,7 @@ inv_grid_height		= 1
 inv_grid_x			= 9
 inv_grid_y			= 9
 
-;вещь невозможно подобрать
+;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 can_take			= false
 
 cost				= 50
@@ -1432,24 +1772,30 @@ up_throw_factor		= 1.0
 ;-------------------------------------------------------------------------------
 wm_size                  = 0.1
 
-explode_particles		 = explosions\explosion_fuelcan
+explode_particles		 = ghost_particles\explosions_new\expl_fcc_2	; orig explosions\explosion_fuelcan (fuel can) [balon_01.ogf -- gas cylinder, despite the section name]
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
 
 light_color		         = 1.9,1.3,0.5
 light_range		         = 30.0
 light_time 		         = 1.5
 
-;трассы от осколков
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 fragment_speed				= 100
 
-explode_duration		 = 5		;подолжительность взрыва (с)
+explode_duration		 = 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 ;wallmarks
 wallmark_section		= explosion_marks
-;звуки
+;пїЅпїЅпїЅпїЅпїЅ
 snd_explode = weapons\f1_explode
 immunities_sect			= explosive_fuelcan_immunities_sect
 
 [explosive_fuelcan_immunities_sect]
-;коэффициенты для попаданий различными типами хитов
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 burn_immunity			= 0.0
 strike_immunity			= 1.0
 shock_immunity			= 1.0
@@ -1478,7 +1824,7 @@ inv_grid_width		= 1
 inv_grid_height		= 1
 inv_grid_x			= 9
 inv_grid_y			= 9
-;вещь невозможно подобрать
+;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 can_take			= false
 
 cost				= 50
@@ -1502,25 +1848,31 @@ up_throw_factor		= 1.0
 ;-------------------------------------------------------------------------------
 wm_size                  = 0.1
 
-explode_particles		 = explosions\explosion_mobiltank
+explode_particles		 = ghost_particles\explosions_new\expl_fcc_1	; orig explosions\explosion_mobiltank (gas cylinder / tank) [kanistra.ogf -- jerry can]
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
 
 light_color		         = 1.9,1.3,0.5
 light_range		         = 30.0
 light_time 		         = 1
 
-;трассы от осколков
-fragment_speed				= 100		;скорость осколков (м/с)
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+fragment_speed				= 100		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ/пїЅ)
 
-explode_duration		 = 5		;подолжительность взрыва (с)
+explode_duration		 = 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 ;wallmarks
 wallmark_section		= explosion_marks
 
-;звуки
+;пїЅпїЅпїЅпїЅпїЅ
 snd_explode = weapons\f1_explode
 immunities_sect			= explosive_tank_immunities_sect
 
 [explosive_tank_immunities_sect]
-;коэффициенты для попаданий различными типами хитов
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 burn_immunity			= 0.0
 strike_immunity			= 1.0
 shock_immunity			= 1.0
@@ -1549,7 +1901,7 @@ inv_grid_width		= 1
 inv_grid_height		= 1
 inv_grid_x			= 9
 inv_grid_y			= 9
-;вещь невозможно подобрать
+;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 can_take			= false
 
 cost				= 500
@@ -1573,20 +1925,26 @@ up_throw_factor		= 1.0
 ;-------------------------------------------------------------------------------
 wm_size                  = 0.1
 
-explode_particles		 = explosions\explosion_barrel
+explode_particles		 = ghost_particles\explosions_new\expl_fcc_2	; orig explosions\explosion_barrel (barrel)
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
 
-light_color		         = 1.9,1.4,0.5
+light_color		         = 2.0,1.5,0.9
 light_range		         = 14.0
 light_time 		         = 0.85
 
-;трассы от осколков
-fragment_speed				= 100		;скорость осколков (м/с)
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+fragment_speed				= 100		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ/пїЅ)
 
-explode_duration		 = 5		;подолжительность взрыва (с)
+explode_duration		 = 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 
 ;wallmarks
 wallmark_section		 = explosion_marks
-;звуки
+;пїЅпїЅпїЅпїЅпїЅ
 snd_explode = weapons\f1_explode
 immunities_sect			= explosive_barrel_low_immunities_sect
 
@@ -1609,7 +1967,7 @@ inv_grid_width		= 1
 inv_grid_height		= 1
 inv_grid_x			= 9
 inv_grid_y			= 9
-;вещь невозможно подобрать
+;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 can_take			= false
 
 cost				= 500
@@ -1633,20 +1991,26 @@ up_throw_factor		= 1.0
 ;-------------------------------------------------------------------------------
 wm_size                  = 0.1
 
-explode_particles		 = explosions\explosion_01
+explode_particles		 = ghost_particles\explosions\explosion_ins_frag_00 ;explosions\explosion_01
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
 
-light_color		         = 1.9,1.4,0.5
+light_color		         = 2.0,1.5,0.9
 light_range		         = 14.0
 light_time 		         = 0.85
 
-;трассы от осколков
-fragment_speed				= 100		;скорость осколков (м/с)
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+fragment_speed				= 100		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ/пїЅ)
 
-explode_duration		 = 2		;подолжительность взрыва (с)
+explode_duration		 = 2		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 
 ;wallmarks
 wallmark_section		 = explosion_marks
-;звуки
+;пїЅпїЅпїЅпїЅпїЅ
 snd_explode = weapons\t_rgd5_explosion
 immunities_sect			= explosive_explosive_grenade_immunities_sect
 
@@ -1680,7 +2044,7 @@ inv_grid_width		= 1
 inv_grid_height		= 1
 inv_grid_x			= 9
 inv_grid_y			= 9
-;вещь невозможно подобрать
+;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 can_take			= false
 
 cost				= 500
@@ -1704,27 +2068,33 @@ up_throw_factor		= 1.0
 ;-------------------------------------------------------------------------------
 wm_size                  = 0.1
 
-explode_particles		 = explosions\explosion_01
+explode_particles		 = ghost_particles\explosions\explosion_ins_frag_00 ;explosions\explosion_01
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
 
-light_color		         = 1.9,1.4,0.5
+light_color		         = 2.0,1.5,0.9
 light_range		         = 14.0
 light_time 		         = 0.85
 
-;трассы от осколков
-fragment_speed				= 50		;скорость осколков (м/с)
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+fragment_speed				= 50		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ/пїЅ)
 
-explode_duration		 = 5		;подолжительность взрыва (с)
+explode_duration		 = 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 
 ;wallmarks
 wallmark_section		 = explosion_marks
-;звуки
+;пїЅпїЅпїЅпїЅпїЅ
 snd_explode = weapons\rpg7_explode
 immunities_sect			= explosive_hide_immunities_sect
 
 ;time_to_explode			= 0.f
 
 [explosive_hide_immunities_sect]
-;коэффициенты для попаданий различными типами хитов
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 burn_immunity			= 0.0
 strike_immunity			= 0.0
 shock_immunity			= 0.0
@@ -1752,7 +2122,7 @@ inv_grid_width		= 1
 inv_grid_height		= 1
 inv_grid_x			= 9
 inv_grid_y			= 9
-;вещь невозможно подобрать
+;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 can_take			= false
 
 cost				= 500
@@ -1777,19 +2147,25 @@ up_throw_factor		= 1.0
 wm_size                  = 0.1
 
 explode_particles		 = explosions\explosion_concrete_box
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
 
 light_color		         = 0,0,0
 light_range		         = 0.0
 light_time 		         = 0.85
 
-;трассы от осколков
-fragment_speed				= 25		;скорость осколков (м/с)
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+fragment_speed				= 25		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ/пїЅ)
 
-explode_duration		 = 2		;подолжительность взрыва (с)
+explode_duration		 = 2		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 
 ;wallmarks
 wallmark_section		 = explosion_marks
-;звуки
+;пїЅпїЅпїЅпїЅпїЅ
 snd_explode = weapons\f1_explode_
 immunities_sect			= explosive_barrel_low_immunities_sect
 
@@ -1797,7 +2173,7 @@ immunities_sect			= explosive_barrel_low_immunities_sect
 
 
 [explosive_barrel_low_immunities_sect]
-;коэффициенты для попаданий различными типами хитов
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 burn_immunity			= 1
 strike_immunity			= 1
 shock_immunity			= 1
@@ -1826,7 +2202,7 @@ inv_grid_width		= 1
 inv_grid_height		= 1
 inv_grid_x			= 9
 inv_grid_y			= 9
-;вещь невозможно подобрать
+;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 can_take			= false
 
 cost				= 500
@@ -1850,26 +2226,32 @@ up_throw_factor		= 1.0
 ;-------------------------------------------------------------------------------
 wm_size                  = 0.1
 
-explode_particles		 = explosions\explosion_barrel
+explode_particles		 = ghost_particles\explosions_new\expl_fcc_2	; orig explosions\explosion_barrel (barrel)
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
 
-light_color		         = 1.9,1.4,0.5
+light_color		         = 2.0,1.5,0.9
 light_range		         = 14.0
 light_time 		         = 0.85
 
-;трассы от осколков
-fragment_speed				= 100		;скорость осколков (м/с)
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+fragment_speed				= 100		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ/пїЅ)
 
-explode_duration		 = 5		;подолжительность взрыва (с)
+explode_duration		 = 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 
 
-;звуки
+;пїЅпїЅпїЅпїЅпїЅ
 snd_explode = weapons\f1_explode
 immunities_sect			= explosive_barrel_immunities_sect
 ;wallmarks
 wallmark_section		= explosion_marks
 
 [explosive_barrel_immunities_sect]
-;коэффициенты для попаданий различными типами хитов
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 burn_immunity			= 0.0
 strike_immunity			= 1
 shock_immunity			= 1
@@ -1898,7 +2280,7 @@ inv_grid_width		= 1
 inv_grid_height		= 1
 inv_grid_x			= 9
 inv_grid_y			= 9
-;вещь невозможно подобрать
+;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 can_take			= false
 
 cost				= 500
@@ -1922,26 +2304,32 @@ up_throw_factor		= 1.0
 ;-------------------------------------------------------------------------------
 wm_size                  = 0.1
 
-explode_particles		 = explosions\explosion_mobiltank
+explode_particles		 = ghost_particles\explosions_new\expl_fcc_1	; orig explosions\explosion_mobiltank (fuel tanker) [kanistra.ogf -- jerry can]
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
 
 light_color		         = 1.9,1.2,0.5
 light_range		         = 30.0
 light_time 		         = 1
 
-;трассы от осколков
-fragment_speed				= 100		;скорость осколков (м/с)
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+fragment_speed				= 100		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ/пїЅ)
 
-explode_duration		 = 5		;подолжительность взрыва (с)
+explode_duration		 = 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 
 
-;звуки
+;пїЅпїЅпїЅпїЅпїЅ
 snd_explode = weapons\f1_explode
 immunities_sect			= explosive_mobiltank_immunities_sect
 ;wallmarks
 wallmark_section		= explosion_marks
 
 [explosive_mobiltank_immunities_sect]
-;коэффициенты для попаданий различными типами хитов
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 burn_immunity			= 0.0
 strike_immunity			= 1.0
 shock_immunity			= 1.0
@@ -1971,7 +2359,7 @@ inv_grid_height		= 1
 inv_grid_x			= 9
 inv_grid_y			= 9
 
-;вещь невозможно подобрать
+;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 can_take			= false
 
 cost				= 50
@@ -1995,18 +2383,24 @@ up_throw_factor		= 1.0
 ;-------------------------------------------------------------------------------
 wm_size                  = 0.1
 
-explode_particles		 = explosions\explosion_dynamite
+explode_particles		 = ghost_particles\explosions_new\expl_fcc_1	; orig explosions\explosion_dynamite (dynamite)
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
 
 light_color		         = 1.9,1.3,0.5
 light_range		         = 30.0
 light_time 		         = 1.5
 
-;трассы от осколков
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 fragment_speed				= 200
 
-explode_duration		 = 5		;подолжительность взрыва (с)
+explode_duration		 = 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 
-;звуки
+;пїЅпїЅпїЅпїЅпїЅ
 snd_explode = weapons\f1_explode
 immunities_sect			= dinamit_immunities_sect
 ;condition_to_explode        =0.f
@@ -2014,7 +2408,7 @@ immunities_sect			= dinamit_immunities_sect
 wallmark_section		= explosion_marks
 
 [dinamit_immunities_sect]
-;коэффициенты для попаданий различными типами хитов
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 burn_immunity			= 0.0
 strike_immunity			= 0.0
 shock_immunity			= 0.0
@@ -2027,137 +2421,6 @@ fire_wound_immunity		= 0.05
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;	WEAPON ADDON
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-[wpn_addon_scope]:identity_immunities
-GroupControlSection	= spawn_group
-discovery_dependency =
-$spawn			= "weapons\addons\scope" ; option for Level Editor
-class			= WP_SCOPE
-cform           = skeleton
-visual          = dynamics\weapons\wpn_upgrade\wpn_scope.ogf
-$prefetch 		= 32
-description		= st_addon_scope_descr
-cost			= 1000
-
-holder_range_modifier	= 1.2
-holder_fov_modifier		= 0.3
-
-inv_name		= st_addon_scope
-inv_name_short	= st_addon_scope
-inv_weight		= .2
-
-inv_grid_width		= 2
-inv_grid_height		= 1
-inv_grid_x			= 18
-inv_grid_y			= 2
-scope_texture		= wpn_crosshair
-scope_zoom_factor	= 30		;ПСО-1 2X
-
-[wpn_addon_scope_4x]:identity_immunities
-GroupControlSection	= spawn_group
-discovery_dependency =
-$spawn			= "weapons\addons\scope_4x" ; option for Level Editor
-class			= WP_SCOPE
-cform           = skeleton
-visual          = dynamics\weapons\wpn_upgrade\wpn_scope.ogf
-$prefetch 		= 32
-description		= enc_weapons1_wpn-addon-scope
-cost			= 1000
-
-holder_range_modifier	= 1.2
-holder_fov_modifier		= 0.3
-
-inv_name		= wpn-addon-scope_4x
-inv_name_short	= wpn-addon-scope_4x
-inv_weight		= .2
-
-inv_grid_width		= 2
-inv_grid_height		= 1
-inv_grid_x			= 18
-inv_grid_y			= 2
-scope_texture		= wpn_crosshair
-scope_zoom_factor	= 15		;ПСО-1 2X
-
-
-[wpn_addon_scope_susat]:identity_immunities
-GroupControlSection	= spawn_group
-discovery_dependency =
-$spawn			= "weapons\addons\scope_susat" ; option for Level Editor
-class			= WP_SCOPE
-cform           = skeleton
-visual          = dynamics\weapons\wpn_upgrade\wpn_scope_susat.ogf
-description		= st_addon_scope_susat_descr
-slot = -1
-;$prefetch 		= 64
-
-cost			= 1500
-
-holder_range_modifier	= 1.3
-holder_fov_modifier		= 0.3
-
-inv_name		= st_addon_scope_susat
-inv_name_short	= st_addon_scope_susat
-inv_weight		= .2
-
-inv_grid_width		= 1
-inv_grid_height		= 1
-inv_grid_x			= 19
-inv_grid_y			= 1
-scope_texture		= wpn_crosshair_l85
-scope_zoom_factor	= 30		;SUSAT 2X
-
-
-[wpn_addon_silencer]:identity_immunities
-GroupControlSection	= spawn_group
-discovery_dependency =
-$spawn			= "weapons\addons\silencer" ; option for Level Editor
-class			= W_SILENC
-cform           = skeleton
-visual          = dynamics\weapons\wpn_upgrade\wpn_silencer.ogf
-description		= st_addon_silencer_descr
-$prefetch 		= 32
-slot = -1
-cost			= 200
-inv_name		= st_addon_silencer
-inv_name_short	= st_addon_silencer
-inv_weight		= 0.1
-
-inv_grid_width		= 1
-inv_grid_height		= 1
-inv_grid_x			= 18
-inv_grid_y			= 1
-
-bullet_hit_power_k		= 0.8
-bullet_hit_impulse_k	= 0.7
-bullet_speed_k	 		= 0.8
-fire_dispersion_base_k	= 1.25
-cam_dispersion_k		= 0.8
-cam_dispersion_inc_k	= 0.9
-
-[wpn_addon_silencer_rifle]:identity_immunities
-GroupControlSection	= spawn_group
-discovery_dependency =
-$spawn			= "weapons\addons\silencer_rifle" ; option for Level Editor
-class			= W_SILENC
-cform           = skeleton
-visual          = dynamics\weapons\wpn_upgrade\wpn_silencer.ogf
-description		= st_addon_silencer_rifle_descr
-$prefetch 		= 32
-slot = -1
-cost					 = 200
-inv_name		= st_addon_silencer_rifle
-inv_name_short	= st_addon_silencer_rifle
-inv_weight		= .1
-
-inv_grid_width		= 1
-inv_grid_height		= 1
-inv_grid_x			= 18
-inv_grid_y			= 1
-
-bullet_hit_power_k	= 0.8
-bullet_speed_k	 	= 0.8
-fire_dispersion_base_k = 1.25;2
-cam_dispersion_k	= 0.8
-
 [wpn_addon_grenade_launcher]:identity_immunities
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -2177,7 +2440,7 @@ inv_grid_width		= 2
 inv_grid_height		= 1
 inv_grid_x			= 18
 inv_grid_y			= 0
-grenade_vel 		= 30 ;76
+grenade_vel 		= 70	; orig 30 (GS addons/grenade_launchers/gp25.ltx:16)
 
 
 [wpn_addon_grenade_launcher_m203]:identity_immunities
@@ -2199,4 +2462,195 @@ inv_grid_width		= 2
 inv_grid_height		= 1
 inv_grid_x			= 17
 inv_grid_y			= 3
-grenade_vel 		= 30 ;76
+grenade_vel 		= 76	; orig 30 (GS addons/grenade_launchers/m203.ltx:16)
+
+; L123A2 underbarrel GL -- the L85A2's own launcher (GS addons\grenade_launchers\l123a2.ltx).
+; Class/cform/prefetch follow our wpn_addon_grenade_launcher_m203; the rest is GS's.
+[wpn_addon_grenade_launcher_groza]:identity_immunities	; GS addons/gl/groza -- the Groza's own GP-25 style launcher
+GroupControlSection	= spawn_group
+discovery_dependency =
+$spawn			= "weapons\addons\grenade_launcher_groza"
+class			= W_GLAUNC
+cform           = skeleton
+visual          = dynamics\weapons\addons\grenade_launchers\wpn_grenade_launcher_groza.ogf
+description		= gunsl_addon_gl_groza_descr
+$prefetch 		= 32
+slot = -1
+cost					 = 3000	; orig 2000
+inv_name		= gunsl_addon_gl_groza
+inv_name_short	= gunsl_addon_gl_groza
+inv_weight		= 1.3
+
+inv_grid_width     = 3
+inv_grid_height    = 1
+inv_grid_x         = 31
+inv_grid_y         = 21
+grenade_vel 		= 70
+[wpn_addon_grenade_launcher_l123a2]:identity_immunities
+GroupControlSection	= spawn_group
+discovery_dependency =
+$spawn			= "weapons\addons\grenade_launcher_l123a2" ; option for Level Editor
+class			= W_GLAUNC
+cform           = skeleton
+visual          = dynamics\weapons\addons\grenade_launchers\wpn_grenade_launcher_l123a2.ogf
+description		= gunsl_addon_gl_l123a2_descr
+$prefetch 		= 32
+slot = -1
+cost					 = 3000	; orig 2500
+inv_name		= gunsl_addon_gl_l123a2
+inv_name_short	= gunsl_addon_gl_l123a2
+inv_weight		= 1.5
+
+inv_grid_width     = 3
+inv_grid_height    = 2
+inv_grid_x         = 31
+inv_grid_y         = 19
+grenade_vel 		= 70
+
+; --- 5.7x28 (GS ammo/5.7x28.ltx), fed by the Five-seveN ---
+[ammo_5.7x28]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_57_01, weapons\shared\bullet_crack_57_02, weapons\shared\bullet_crack_57_03, weapons\shared\bullet_crack_57_04, weapons\shared\bullet_crack_57_05
+$spawn			= "weapons\ammo\ammo_5.7x28" ; option for Level Editor
+visual          = dynamics\weapons\wpn_ammo\ammo_57x28.ogf
+description		= gunsl_ammo_5.7x28_descr
+
+cost			= 600
+
+box_size		= 50
+
+inv_name		= gunsl_ammo_5.7x28
+inv_name_short	= gunsl_ammo_5.7x28_short
+inv_weight		= .3
+
+inv_grid_width	= 2
+inv_grid_height	= 1
+inv_grid_x		= 10	; orig 12 (GS)
+inv_grid_y		= 8
+
+k_hit			= 0.4
+k_pierce		= 0.55
+k_ap			= 0.55
+k_air_resistance = 1.3
+
+; our [ammo_base] does not carry the ballistic defaults GS puts in its own, so every
+; ported round must declare them itself (same as ammo_m397a1 / ammo_9x39_ap).
+GroupControlSection = spawn_group
+discovery_dependency =
+class            = AMMO      ; GS writes AMMO_S; ours is AMMO
+cform            = skeleton
+$prefetch        = 64
+k_dist           = 1
+k_disp           = 1
+k_impulse        = 1
+impair           = 1
+buck_shot        = 1
+tracer           = off
+wm_size          = 0.05
+
+; --- 7.62x25 TT (GS ammo/7.62x25.ltx), fed by the TT-33 ---
+[ammo_9x21_sp10]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
+; keys our [ammo_base] does not carry but GS's does -- values from the working
+; [ammo_762x25mm_tt] / GS base.ltx [ammo_base] (missing k_dist = r_string fatal)
+GroupControlSection   = spawn_group
+class                 = AMMO
+cform                 = skeleton
+$prefetch             = 64
+k_dist                = 1
+k_disp                = 1
+k_impulse             = 1
+impair                = 1
+buck_shot             = 1
+tracer                = off
+wm_size               = 0.05
+$spawn			= "weapons\ammo\ammo_9x21_sp10" ; option for Level Editor
+visual          = dynamics\weapons\wpn_ammo\ammo_9x21_sp10.ogf
+description		= gunsl_ammo_9x21_sp10_descr
+cost			= 400
+
+box_size		= 50
+
+inv_name		= gunsl_ammo_9x21_sp10
+inv_name_short	= gunsl_ammo_9x21_sp10_short
+inv_weight		= .6
+
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x		= 16	; orig 18 -- user's atlas slot for new cartridges
+inv_grid_y		= 5	; orig 22 -- user's atlas slot for new cartridges
+
+k_hit			= 0.66
+k_pierce		= 0.35
+k_ap			= 0.35
+k_air_resistance = 1.3
+
+[ammo_762x25mm_tt]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
+$spawn			= "weapons\ammo\ammo_762x25mm_tt" ; option for Level Editor
+visual          = dynamics\weapons\wpn_ammo\ammo_tt33.ogf
+description		= gunsl_ammo_7.62x25_descr
+cost			= 300
+
+box_size		= 50
+
+inv_name		= gunsl_ammo_7.62x25
+inv_name_short	= gunsl_ammo_7.62x25_short
+inv_weight		= .5
+
+inv_grid_width	= 2
+inv_grid_height	= 1
+inv_grid_x		= 14
+inv_grid_y		= 5	; orig 8
+
+k_hit			= 0.63
+k_pierce		= 0.15
+k_ap			= 0.38
+k_air_resistance = 1.55
+; defaults our [ammo_base] does not carry (GS keeps them in its own ammo base)
+GroupControlSection= spawn_group
+class             = AMMO
+cform             = skeleton
+$prefetch         = 64
+k_dist            = 1
+k_disp            = 1
+k_impulse         = 1
+impair            = 1
+buck_shot         = 1
+tracer            = off
+wm_size           = 0.05
+
+; ---- .50 Action Express (GS deagle caliber), ported from GS ammo\.50ae.ltx ----
+[ammo_50ae]:ammo_base
+whine_sounds	= weapons\shared\bullet_crack_45acp_01, weapons\shared\bullet_crack_45acp_02, weapons\shared\bullet_crack_45acp_03, weapons\shared\bullet_crack_45acp_04, weapons\shared\bullet_crack_45acp_05
+$spawn			= "weapons\ammo\ammo_50ae" ; option for Level Editor
+visual          = dynamics\weapons\wpn_ammo\ammo_50ae.ogf
+description		= gunsl_ammo_50ae_descr
+cost			= 700
+
+box_size		= 30
+
+inv_name		= gunsl_ammo_50ae
+inv_name_short	= gunsl_ammo_50ae_short
+inv_weight		= 0.6
+
+inv_grid_width	= 2
+inv_grid_height	= 1
+inv_grid_x		= 5	; our atlas position (GS uses 14/28)
+inv_grid_y		= 11
+
+k_hit			= 1.2
+k_pierce		= 0.65
+k_ap			= 0.65
+k_air_resistance = 1.9
+; defaults our [ammo_base] does not carry (GS keeps them in its own ammo base)
+GroupControlSection= spawn_group
+class             = AMMO
+cform             = skeleton
+$prefetch         = 64
+k_dist            = 1
+k_disp            = 1
+k_impulse         = 1
+impair            = 1
+buck_shot         = 1
+tracer            = off
+wm_size           = 0.05

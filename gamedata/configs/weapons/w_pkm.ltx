@@ -1,4 +1,5 @@
 [wpn_pkm]:identity_immunities,weapon_probability,default_weapon_params
+bullet_material				= objects\bullet	; wallmark/impact/ricochet pair on hit
 GroupControlSection     = spawn_group
 discovery_dependency    =
 $spawn                                                = "weapons\pkm"                ; option for Level Editor
@@ -37,7 +38,8 @@ ammo_limit              = 300
 ammo_current            = 200
 ammo_elapsed            = 100
 
-ammo_mag_size           = 100
+ammo_mag_size           = 101
+ammo_in_chamber         = true
 ammo_class              = ammo_pkm_100
 grenade_class           = ammo_m209
 fire_modes              = -1
@@ -47,6 +49,7 @@ single_handed           = 0
 
 slot                    = 2                ; // secondary
 animation_slot          = 2                ; type of the animation that will be used
+actor_anim_group          = machinegun	; xrMPE actor (third-person) animation set from stalker_animation_new.omf
 
 inv_name                = st_wpn_rp
 inv_name_short          = st_wpn_rp
@@ -68,19 +71,19 @@ fire_dispersion_base    = 0.85        ;угол (в градусах) базовой дисперсии оружи
 control_inertion_factor = 3.0f ; 2.2f
 
 ;отдача
-cam_relax_speed         = 15               ;скорость возврата в исходное положение
+cam_relax_speed         = 5               ;скорость возврата в исходное положение
 cam_relax_speed_ai      = 360                ;скорость возврата в исходное положение у АИ
 cam_dispersion          = 1.0                ;увеличения угла (в градусах) с каждым выстрелом
 cam_dispersion_inc      = 1.3                ;увеличениe cam_dispersion с каждым выстрелом
 cam_dispersion_frac     = 1.0                ;ствол будет подыматься на cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
-cam_max_angle           = 5.0                ;максимальный угол отдачи
-cam_max_angle_horz      = 15.0                ;(degree) maximum shot horizontal degree
+cam_max_angle           = 50.0                ;максимальный угол отдачи
+cam_max_angle_horz      = 10.0                ;(degree) maximum shot horizontal degree
 cam_step_angle_horz     = 1.8                    ;(degree) size of step camera moved in horizontal position while shooting
 
 fire_dispersion_condition_factor = 5        ;увеличение дисперсии в процентах при максимальном износе
-misfire_probability     = 0.001        ;вероятность осечки при максимальном износе
-misfire_condition_k     = 0.01
-condition_shot_dec      = 0.0001 ;увеличение износа при каждом выстреле
+misfire_probability     = 0.005
+misfire_condition_k     = 0.05
+condition_shot_dec      = 0.000133
 ;-------------------------------------------------------------------------------
 
 position                = -0.027, -0.097, 0.042
@@ -89,13 +92,13 @@ orientation             = 0, -2, 0
 fire_point              = 0.0, 0.158, 0.845 ;0.000000,0.137000,0.649000
 fire_point2             = 0.0, 0.097, 0.722
 
-flame_particles         = weapons\generic_weapon05
-smoke_particles         = weapons\generic_shoot_00
+flame_particles               = ghost_particles\weapons\flame_762_stock_rifles
+smoke_particles               = ghost_particles\weapons\smoke_762_stock_rifles
 grenade_flame_particles = weapons\generic_weapon01
 
-shell_point             = -0.020000,0.167000,0.082000
-shell_dir               = 0.0, 0.0, 0.4
-shell_particles         = weapons\generic_shells
+shell_point             = 0,-0.15,-0.15
+shell_dir               = 0.0, 1.0, 0.0
+;shell_particles         = weapons\generic_shells
 
 PDM_disp_base           = 1.5
 PDM_disp_vel_factor     = 2.45
@@ -151,22 +154,56 @@ scope_status            = 0
 silencer_status         = 0
 grenade_launcher_status = 0
 
-zoom_enabled            = false                                                ; (on,off)zoom mode (right mouse button)
+zoom_enabled            = true                                                ; (on,off)zoom mode (right mouse button)
+; How long the weapon takes to travel into the aim offset pose (and back). 0.1 made this the
+; fastest aim in the whole arsenal -- every other weapon here uses 0.25, and GS gives its own pkm
+; 0.5 (heavy/pkm/base.ltx:172), which is what wpn_bozar below already carries.
+zoom_rotate_time        = 0.3 ; orig 0.1
+scope_zoom_factor       = 98
 
-;звуки
-snd_draw                = weapons\ak74_draw
-snd_holster             = weapons\generic_holster
-snd_shoot                                        = weapons\pkm_shot
-;snd_shoot1                                        = weapons\pkm_shot
-;snd_shoot2                                        = weapons\pkm_shot
-;snd_shoot3                                        = weapons\pkm_shot
+;firing sounds (1st person)
+snd_shoot_1p               = weapons\pkm\pkm_shoot_1p_01, -1.1
+snd_shoot_1p1              = weapons\pkm\pkm_shoot_1p_02, -1.1
+snd_shoot_1p2              = weapons\pkm\pkm_shoot_1p_03, -1.1
+snd_shoot_1p3              = weapons\pkm\pkm_shoot_1p_04, -1.1
+snd_shoot_1p4              = weapons\pkm\pkm_shoot_1p_05, -1.1
+snd_shoot_1p5              = weapons\pkm\pkm_shoot_1p_06, -1.1
+snd_shoot_1p6              = weapons\pkm\pkm_shoot_1p_07, -1.1
+snd_shoot_1p7              = weapons\pkm\pkm_shoot_1p_08, -1.1
+snd_shoot_1p8              = weapons\pkm\pkm_shoot_1p_09, -1.1
+snd_shoot_1p9              = weapons\pkm\pkm_shoot_1p_10, -1.1
+snd_shoot_1p10             = weapons\pkm\pkm_shoot_1p_11, -1.1
+snd_shoot_1p11             = weapons\pkm\pkm_shoot_1p_12, -1.1
 
+;firing sounds (3rd person)
+snd_shoot               = weapons\pkm\pkm_shoot_01, -1.1
+snd_shoot1              = weapons\pkm\pkm_shoot_02, -1.1
+snd_shoot2              = weapons\pkm\pkm_shoot_03, -1.1
+snd_shoot3              = weapons\pkm\pkm_shoot_04, -1.1
+snd_shoot4              = weapons\pkm\pkm_shoot_05, -1.1
+snd_shoot5              = weapons\pkm\pkm_shoot_06, -1.1
+snd_shoot6              = weapons\pkm\pkm_shoot_07, -1.1
+snd_shoot7              = weapons\pkm\pkm_shoot_08, -1.1
+snd_shoot8              = weapons\pkm\pkm_shoot_09, -1.1
+snd_shoot9              = weapons\pkm\pkm_shoot_10, -1.1
+snd_shoot10             = weapons\pkm\pkm_shoot_11, -1.1
+snd_shoot11             = weapons\pkm\pkm_shoot_12, -1.1
 
-snd_empty               = weapons\gen_empty, 0.5
-snd_reload              = weapons\pkm_reload, 0.7
+snd_draw                = weapons\pkm\pkm_draw
+snd_holster             = weapons\pkm\pkm_holster
+snd_empty               = weapons\pkm\pkm_empty
+snd_reload              = weapons\pkm\pkm_reload
+snd_reload_empty        = weapons\pkm\pkm_reload_empty
+snd_reload_jammed      = weapons\pkm\pkm_misfire
 snd_shoot_grenade       = weapons\gen_grenshoot
 snd_reload_grenade      = weapons\gen_grenload, 1.0, 0.8
 snd_switch              = weapons\groza_switch, 1.0, 0.5
+snd_jammed_click        = weapons\glock17\glock17_dry
+; Scope brightness clicks -- loaded from the WEAPON section, not the scope one (Weapon.cpp:332).
+; [scope_elcan_pkm] declares steps_brightness, so without these the ELCAN stepped silently.
+; ChangeLensStep reuses the same pair for its magnification detent. Same wiring as the l85.
+snd_scope_brightness_plus = weapons\nv_intensity
+snd_scope_brightness_minus = weapons\nv_intensity
 
 
 ;настройки для глушителя
@@ -178,7 +215,7 @@ silencer_bullet_speed   = 600
 ;silencer_flame_particles  = weapons\generic_weapon01
 silencer_smoke_particles   = weapons\generic_shoot_00
 
-snd_silncer_shot        = weapons\w_ak74_shot1
+snd_silncer_shot        = weapons\w_ak74_shot1, -1.1
 
 silencer_light_color    = 0.6,0.5,0.3
 silencer_light_range    = 0.01
@@ -187,57 +224,116 @@ silencer_light_var_range= 0.5
 silencer_light_time     = 0.2
 
 
+misfire_start_condition = 0.5
+misfire_end_condition   = 0.1
+misfire_start_prob      = 0.003
+misfire_end_prob        = 0.033
 [wpn_pkm_hud]:hud_base
+ammo_reload_insert_mark = 0.4
+ammo_params_section     = wpn_pkm_ammo_bones
+use_advanced_ammo_bones = true
+reload_low_ammo         = 10
+; GS: a weapon with no authored suicide gesture is refused outright -- the controller makes the victim
+; throw it away and draw his knife (prohibit_suicide is exactly what GS sets on its own rgm-40). This
+; rifle has no *_suicide motion in any of its omfs and no Gunslinger counterpart to take one from, so
+; without this it fell into the animation-less branch meant for launchers and was walked to the head by
+; the hud offset instead.
+prohibit_suicide            = true
+
 zoom_hide_crosshair        = true
 attach_place_idx        = 0
 item_visual                = dynamics\weapons\wpn_pkm\wpn_pkm_hud
-
-hands_position				= -0.075500,-0.163000,0.139500
-hands_orientation			= -1.750000,5.400002,-8.100014
-
-
-hands_position_16x9				= -0.051000,-0.173500,0.173999
-hands_orientation_16x9			= -0.850000,5.400002,-6.450006
-
-item_position                                = 0.000908,0.001413,0.001031
-item_orientation                        = 2.090982,-0.985601,361.809204
-
+fire_mode_bone             = pred
+hands_position                = -0.33001,0.1281,-0.194401
+hands_orientation			= 0.000000,-0.450000,0.000000
+hands_position_16x9                = -0.33001,0.1281,-0.194401
+hands_orientation_16x9			= 0.000000,-0.450000,0.000000
+item_position                                = 0,0,0
+item_orientation                        = 0,0.15,0
 shell_point			= 0.013,0.033,0.128
 shell_dir               = 0.0, 1.0, 0.0
 shell_bone                = wpn_body
-
-
-fire_point				= 0.0,0.053,0.931
-fire_bone                            = wpn_body
-fire_point2                = -0.014000,0.010000,-0.037000
+fire_point				= 0,0,0
+fire_bone                            = muzzle
+fire_point2                = 0,0,0
 fire_bone2                = wpn_body
-
-anm_show                     = pkm_draw
-anm_hide                     = pkm_holster
-anm_idle                     = pkm_idle
-anm_idle_sprint         = pkm_idle_sprint
-anm_idle_moving                         = pkm_idle_moving
-anm_shots               = pkm_shoot
-anm_reload              = pkm_reload
-anm_idle_aim                   = pkm_idle_aim
-anm_bore                                                = pkm_idle_bore
-
-
-aim_hud_offset_pos        = 0,0,0
-aim_hud_offset_rot        = 0,0,0
-
+aim_hud_offset_pos        = 0.000000,0.004100,-0.094500
+aim_hud_offset_rot        = -0.005000,0.000000,0.000000
 gl_hud_offset_pos        = -0.053000,-0.059000,0.000000
 gl_hud_offset_rot        = -0.145000,0.000000,0.000000
-
 lean_hud_offset_pos        = 0,0,0
 lean_hud_offset_rot        = 0,0,0
+aim_hud_offset_pos_16x9        = 0.000000,0.004100,-0.094500
+aim_hud_offset_rot_16x9		= -0.005000,0.000000,0.000000
 
-aim_hud_offset_pos_16x9   = -0.032000,-0.185000,0.102500
-aim_hud_offset_rot_16x9  = 1.300000,8.400014,-6.450007
+; ==================== SEMI-AUTO / BASE ANIMATION SET (from Gunslinger) ====================
 
+; ---- show / draw ----
+anm_show = pkm_draw
 
-;********************************************************
-;********************************************************
+; ---- hide / holster ----
+anm_hide = pkm_hide
+
+; ---- bore ----
+anm_bore = pkm_idle
+
+; ---- sprint (enter / loop / exit) ----
+;anm_idle_sprint = pkm_sprint
+;lock_time_anm_idle_sprint_end = 0.35	; GS-style: fire is free this many seconds into the sprint-out, not at its end (this hud inherits hud_base, so it had no value)
+
+; ---- aim idle (in / out / hold) ----
+anm_idle_aim = pkm_aim, idle_aim
+anm_idle_aim_start = pkm_aim_start
+anm_idle_aim_end = pkm_aim_end
+
+; ---- walk (fwd / slow / crouch) ----
+anm_idle_moving = pkm_walk
+
+anm_idle_moving_crouch = pkm_walk_slow
+anm_idle_moving_crouch_slow = pkm_walk_super_slow
+anm_idle_moving_slow = pkm_walk_slow
+
+anm_idle_aim_moving_forward = pkm_aim_walk, idle_aim
+anm_idle_aim_moving_back = pkm_aim_walk, idle_aim
+anm_idle_aim_moving_right = pkm_aim_walk_right, idle_aim
+anm_idle_aim_moving_left = pkm_aim_walk_left, idle_aim
+
+; ---- idle ----
+anm_idle = pkm_idle
+
+; ---- shots ----
+;anm_shots = pkm_shoot
+anm_shoot = pkm_shoot
+anm_shoot_aim = pkm_shoot_aim, pkm_shoot_aim
+anm_fakeshoot	= pkm_dry
+anm_fakeshoot_aim = pkm_dry_aim, idle_aim
+anm_fakeshoot_empty = pkm_dry_empty
+anm_fakeshoot_jammed	= pkm_dry
+anm_fakeshoot_aim_jammed = pkm_dry_aim, idle_aim
+
+; ---- reload ----
+anm_reload = pkm_reload
+anm_reload_empty = pkm_reload_empty
+anm_reload_jammed = pkm_misfire
+anm_reload_low = pkm_reload, pkm_reload_low_ammo
+
+; ---- change cartridge type ----
+anm_changecartridgetype = pkm_reload
+
+; ---- misc ----
+anm_jamned = pkm_misfire
+anm_jamned_last = pkm_misfire
+
+; ---- head lamp on / off ----
+anm_headlamp_on = pkm_headflash
+anm_headlamp_off = pkm_headflash
+
+; ---- night vision on / off ----
+anm_nv_on = pkm_headflash
+anm_nv_off = pkm_headflash
+
+; ==================== AUTO-FIRE MODE ANIMATION SET (mask_firemode_a = _auto) ====================
+
 [wpn_bozar]:wpn_pkm
 GroupControlSection     = spawn_group
 discovery_dependency    =
@@ -261,10 +357,10 @@ inv_name                = st_wpn_bozar
 inv_name_short          = st_wpn_bozar
 
 fire_dispersion_base    = 0.000001        ;угол (в градусах) базовой дисперсии оружия (оружия зажатого в тисках)
-control_inertion_factor = 5.0f ; 2.2f
+control_inertion_factor = 1.0f ; 2.2f
 
 ;отдача
-cam_relax_speed         = 15               ;скорость возврата в исходное положение
+cam_relax_speed         = 5               ;скорость возврата в исходное положение
 cam_relax_speed_ai      = 360                ;скорость возврата в исходное положение у АИ
 cam_dispersion          = 0.00001                ;увеличения угла (в градусах) с каждым выстрелом
 cam_dispersion_inc      = 0.00001                ;увеличениe cam_dispersion с каждым выстрелом
@@ -277,12 +373,21 @@ visual                  = dynamics\weapons\wpn_svd\wpn_svd.ogf
 hud                     = wpn_svd_hud
 
 ammo_mag_size           = 300
+ammo_in_chamber         = false
 rpm						= 10000
 hit_impulse           	= 5000
 
-zoom_enabled            = true                                               ; (on,off)zoom mode (right mouse button)
+;addons
+scope_status            = 1
+
+zoom_enabled            = true                                                ; (on,off)zoom mode (right mouse button)
 zoom_rotate_time        = 0.5
-scope_zoom_factor       = 20                                                ; fov for zoom mode
+scope_zoom_factor       = 98
+
+scope_texture				= wpn_crosshair
+scope_name 					= wpn_addon_scope
+scope_x              	= 38                 ; offset in inventory icon
+scope_y                 = 9
 
 snd_draw					= weapons\svd_draw
 snd_holster					= weapons\generic_holster
@@ -290,3 +395,165 @@ snd_shoot					= weapons\n_svd_shot
 snd_empty					= weapons\gen_empty, 0.5
 snd_reload					= weapons\svd_reload
 snd_close					= weapons\generic_close
+
+; Belt rounds on the hud model. bullet1_<k+1> stays visible while at least k rounds are
+; left, so the belt empties from bullet1_12 down to bullet1_2 and the last round leaves
+; bullet1_2 alone; at 0 every link is bare. The links themselves (bullet1..bullet11) are
+; never touched. The count here is what the MAGAZINE shows -- the chambered round is
+; excluded by the engine, so 101 loaded reads as 100 here.
+misfire_start_condition = 0
+condition_shot_dec      = 0.0001
+misfire_probability     = 0.001
+misfire_condition_k     = 0.01
+[wpn_pkm_ammo_bones]
+; What appears and disappears is the CARTRIDGE in each belt link, not the link itself:
+; the hud model nests bullet1_2 under bullet1, bullet1_3 under bullet2 ... bullet1_12 under
+; bullet11 (all links parented to `mag`). Driving the links hid the rounds too, because
+; set_bone_visible recurses into children -- so the whole belt vanished instead of emptying.
+; 11 links are driven now, against 9 before.
+all_bones               = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+; Any round count not spelled out below -- [red_quest_tank_minigun] inherits this hud with
+; ammo_mag_size = 2000 -- shows the full belt.
+configuration_over      = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_0         = 
+configuration_1         = bullet1_2
+configuration_2         = bullet1_2, bullet1_3
+configuration_3         = bullet1_2, bullet1_3, bullet1_4
+configuration_4         = bullet1_2, bullet1_3, bullet1_4, bullet1_5
+configuration_5         = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6
+configuration_6         = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7
+configuration_7         = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8
+configuration_8         = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9
+configuration_9         = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10
+configuration_10        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11
+configuration_11        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_12        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_13        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_14        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_15        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_16        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_17        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_18        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_19        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_20        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_21        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_22        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_23        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_24        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_25        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_26        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_27        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_28        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_29        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_30        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_31        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_32        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_33        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_34        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_35        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_36        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_37        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_38        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_39        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_40        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_41        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_42        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_43        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_44        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_45        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_46        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_47        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_48        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_49        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_50        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_51        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_52        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_53        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_54        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_55        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_56        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_57        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_58        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_59        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_60        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_61        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_62        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_63        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_64        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_65        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_66        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_67        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_68        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_69        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_70        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_71        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_72        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_73        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_74        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_75        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_76        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_77        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_78        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_79        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_80        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_81        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_82        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_83        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_84        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_85        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_86        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_87        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_88        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_89        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_90        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_91        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_92        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_93        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_94        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_95        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_96        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_97        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_98        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_99        = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+configuration_100       = bullet1_2, bullet1_3, bullet1_4, bullet1_5, bullet1_6, bullet1_7, bullet1_8, bullet1_9, bullet1_10, bullet1_11, bullet1_12
+
+; ============================================================================
+; PKM "Nimble" -- unique variant on the zulus hud model, with a rail that takes
+; the EOTech / Aimpoint / ELCAN optics (scope1 / scope2 / scope3 on the model).
+; Everything not listed here comes from [wpn_pkm].
+; ============================================================================
+[wpn_pkm_nimble]:wpn_pkm
+
+$spawn                  = "weapons\unique\wpn_pkm_nimble"
+inv_name                = gunsl_wpn_pkm_nimble
+inv_name_short          = gunsl_wpn_pkm_nimble
+description             = gunsl_wpn_pkm_nimble_descr
+
+cost                    = 65000
+
+inv_grid_width     = 6
+inv_grid_height    = 2
+inv_grid_x         = 4
+inv_grid_y         = 38
+
+hud                     = wpn_pkm_nimble_hud
+
+visual                  = dynamics\weapons\wpn_pkm\wpn_pkm_zulus.ogf
+
+def_hide_bones          = scope1, scope2, scope3
+
+scope_status            = 2
+scope_name              = wpn_addon_scope_susat_dusk
+scope_x                 = 74
+scope_y                 = -4
+scopes_sect             = scope_eotech_pkm, scope_aimpoint_pkm, scope_elcan_pkm
+
+fire_dispersion_base    = 0.35 ; orig 0.85 (inherited)
+control_inertion_factor = 2.2f ; orig 3.0f (inherited)
+
+[wpn_pkm_nimble_hud]:wpn_pkm_hud
+item_visual             = dynamics\weapons\wpn_pkm\wpn_pkm_zulus_hud
+
+anm_reload = pkm_reload_zulus, pkm_reload
+anm_reload_empty = pkm_reload_empty_zulus, pkm_reload_empty
+anm_reload_low = pkm_reload_zulus, pkm_reload_low_ammo

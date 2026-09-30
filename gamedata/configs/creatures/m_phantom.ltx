@@ -9,7 +9,10 @@ visuals                 = monsters\phantom\pseudodog_0 ,monsters\phantom\tushkan
 
 speed                   = 2.0
 angular_speed           = 3.5
-contact_hit				= 0.1
+; Damage dealt when a phantom reaches its target (CPhantom::PsyHit, eHitTypeTelepatic). Zeroed: the
+; phantoms are atmosphere -- the Agroprom underground ones, and the ones the controller's grab spawns.
+; They still appear, fly, screech and vanish, they just do not wound.
+contact_hit				= 0.0		; orig 0.1
 
 ef_creature_type		= -1
 

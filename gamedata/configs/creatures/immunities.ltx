@@ -1,46 +1,62 @@
+; Gunslinger resistance model (ported 2026-08-09). Only the four generic classes and the new
+; exo_resistance are used by stalker visuals; the legacy *_resist block below is untouched.
+; Bullets read fire_wound_immunity only -- GS drops the 0.8 that high_resistance used to give
+; and moves exo suits to their own section.
 [no_resistance]
-burn_immunity 				= 0.8
-strike_immunity 			= 0.8
-shock_immunity 				= 0.8
-wound_immunity				= 0.8
-radiation_immunity 			= 0.8
-telepatic_immunity 			= 0.8
-chemical_burn_immunity 		= 0.8
-explosion_immunity 			= 0.8
+burn_immunity 				= 0.7				; orig 0.8
+strike_immunity 			= 0.9				; orig 0.8
+shock_immunity 				= 0.9				; orig 0.8
+wound_immunity				= 0.9				; orig 0.8
+radiation_immunity 			= 0.9				; orig 0.8
+telepatic_immunity 			= 1.0				; orig 0.8
+chemical_burn_immunity 		= 0.9				; orig 0.8
+explosion_immunity 			= 1.0				; orig 0.8
 fire_wound_immunity  		= 1.0
 
 [low_resistance]
-burn_immunity 				= 0.5
-strike_immunity 			= 0.5
-shock_immunity 				= 0.5
-wound_immunity				= 0.5
-radiation_immunity 			= 0.5
-telepatic_immunity 			= 0.5
-chemical_burn_immunity 		= 0.5
-explosion_immunity 			= 0.5
+burn_immunity 				= 0.55				; orig 0.5
+strike_immunity 			= 0.7				; orig 0.5
+shock_immunity 				= 0.7				; orig 0.5
+wound_immunity				= 0.6				; orig 0.5
+radiation_immunity 			= 0.7				; orig 0.5
+telepatic_immunity 			= 0.7				; orig 0.5
+chemical_burn_immunity 		= 0.7				; orig 0.5
+explosion_immunity 			= 1.0				; orig 0.5
 fire_wound_immunity  		= 1.0
 
 [medium_resistance]
-burn_immunity 				= 0.3
-strike_immunity 			= 0.3
-shock_immunity 				= 0.3
-wound_immunity				= 0.3
-radiation_immunity 			= 0.3
-telepatic_immunity 			= 0.3
-chemical_burn_immunity 		= 0.3
-explosion_immunity 			= 0.3
+burn_immunity 				= 0.45				; orig 0.3
+strike_immunity 			= 0.5				; orig 0.3
+shock_immunity 				= 0.5				; orig 0.3
+wound_immunity				= 0.4				; orig 0.3
+radiation_immunity 			= 0.5				; orig 0.3
+telepatic_immunity 			= 0.5				; orig 0.3
+chemical_burn_immunity 		= 0.5				; orig 0.3
+explosion_immunity 			= 0.5				; orig 0.3
 fire_wound_immunity  		= 1.0
 
 [high_resistance]
-burn_immunity 				= 0.2
-strike_immunity 			= 0.2
-shock_immunity 				= 0.2
-wound_immunity				= 0.2
-radiation_immunity 			= 0.2
-telepatic_immunity 			= 0.2
-chemical_burn_immunity 		= 0.2
+burn_immunity 				= 0.3				; orig 0.2
+strike_immunity 			= 0.3				; orig 0.2
+shock_immunity 				= 0.3				; orig 0.2
+wound_immunity				= 0.27				; orig 0.2
+radiation_immunity 			= 0.3				; orig 0.2
+telepatic_immunity 			= 0.3				; orig 0.2
+chemical_burn_immunity 		= 0.3				; orig 0.2
+explosion_immunity 			= 0.3				; orig 0.2
+fire_wound_immunity  		= 1.0				; orig 0.8
+
+; New in GS: exo suits get their own class instead of sharing high_resistance.
+[exo_resistance]
+burn_immunity 				= 0.37
+strike_immunity 			= 0.3
+shock_immunity 				= 0.3
+wound_immunity				= 0.15
+radiation_immunity 			= 0.3
+telepatic_immunity 			= 0.3
+chemical_burn_immunity 		= 0.3
 explosion_immunity 			= 0.2
-fire_wound_immunity  		= 0.8
+fire_wound_immunity  		= 0.9
 
 ;*******************************************************
 ;  UNIQ RESISTANCE, DO NOT REMOVE

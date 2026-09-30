@@ -1,4 +1,17 @@
 [wpn_pm]:identity_immunities,weapon_probability,default_weapon_params
+bullet_material				= objects\bullet	; wallmark/impact/ricochet pair on hit
+
+; GS use_light_misfire: per-shot light strike (click, no bang) -- plays anm_shoot_lightmisfire,
+; NOT a jam (just pull again). Chance rises as the pistol wears. Values from GS.
+use_light_misfire = true
+light_misfire_start_condition = 0.6
+light_misfire_end_condition = 0.1
+light_misfire_start_probability = 0.8
+light_misfire_end_probability = 0.4
+snd_light_misfire = weapons\pistol_light_misfire
+; ---- GS bone-visibility (attachments) ----
+def_hide_bones = sight, barrel_silencer
+def_show_bones = barrel
 GroupControlSection			= spawn_group
 discovery_dependency 		=
 $spawn                  	= "weapons\pm"		; option for Level Editor
@@ -17,13 +30,13 @@ ef_weapon_type				= 5
 zoom_dof					= -1000, 1.0, 1000
 reload_dof					= 0.0, 0.5, 5, 1.7
 ;-----------------------------------------------------------------------------
-upgrades                = up_gr_ab_pm, up_gr_cd_pm, up_gr_e_pm, up_gr_f_pm, up_gr_g_pm, up_gr_h_pm
+upgrades                = vartree_wpn_pm_barrel, vartree_wpn_pm_mag, vartree_wpn_pm_sights
 installed_upgrades      =
-upgrade_scheme          = upgrade_scheme_u10a
+upgrade_scheme          = upgrade_scheme_wpn_pm
 
 ;--- scope weapons -------------------------------------------------------------
-holder_range_modifier	= 1.0               ; во сколько раз увеличивается eye_range
-holder_fov_modifier		= 1.0              ; во сколько раз увеличивается eye_fov
+holder_range_modifier	= 1.0               ; пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ eye_range
+holder_fov_modifier		= 1.0              ; пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ eye_fov
 ;-------------------------------------------------------------------------------
 
 cost					= 300
@@ -32,7 +45,22 @@ ammo_limit		 		= 120
 ammo_current		 	= 96
 ammo_elapsed		 	= 8
 
-ammo_mag_size		 	= 8
+ammo_mag_size		 	= 9           ; clip (8) + 1 chambered round (GS ammo_in_chamber)
+ammo_in_chamber      = true         ; GS: reload keeps the chambered round -> 8-mag +1 in the pipe = 9
+
+; GS world-model animations (use_world_anims): the 3rd-person/dropped/NPC visual plays these motions
+; from the newly-added world OMF, mapped by weapon state. Motion names match GS (our OMFs = GS's).
+use_world_anims = true
+wanm_idle = idle
+wanm_idle_empty = idle_empty
+wanm_idle_jammed = idle_jammed
+wanm_shoot = shoot
+wanm_shoot_jammed = idle_jammed
+wanm_shoot_last = shoot_last
+wanm_shoot_last_jammed = idle_jammed
+wanm_reload = idle
+wanm_reload_empty = idle
+wanm_reload_jammed = idle
 ammo_class		 		= ammo_9x18_fmj, ammo_9x18_pmm
 
 hand_dependence		 	= 1
@@ -48,10 +76,16 @@ inv_name				= st_wpn_pm
 inv_name_short			= st_wpn_pm
 inv_weight				= 0.5
 
-inv_grid_width			= 1
-inv_grid_height			= 1
-inv_grid_x				= 18
-inv_grid_y				= 6
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 4
+inv_grid_y         = 40
+; layered icon base: base layer = the weapon's OWN inv icon, so the barrel_sil silencer overlay
+; (upgrade_addon_icon_barrel_silencer_1) can draw on top. No change to the base icon itself.
+element_icon_0 = icon_element_wpn_pm_base
+element_icon_offset_x_0 = 0
+element_icon_offset_y_0 = 0
+
 
 kill_msg_x				= 227
 kill_msg_y				= 82
@@ -59,26 +93,34 @@ kill_msg_width			= 27
 kill_msg_height			= 23
 
 ;-------------------------------------------------------------------------------
-;базовая дисперсия
-fire_dispersion_base	= 0.9 			;угол (в градусах) базовой дисперсии оружия (оружия зажатого в тисках)
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+fire_dispersion_base	= 0.25   ; orig 0.9 (GS)
 
-;отдача
-cam_relax_speed         = 8				;скорость возврата в исходное положение
+;пїЅпїЅпїЅпїЅпїЅпїЅ
+cam_relax_speed         = 5				;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 cam_relax_speed_ai      = 360
-cam_dispersion          = 0.5				;увеличения угла (в градусах) с каждым выстрелом
-cam_dispersion_inc		= 0.5				;увеличениe cam_dispersion с каждым выстрелом
-cam_dispersion_frac		= 1.0				;ствол будет подыматься на cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
-cam_max_angle			= 5.0			;максимальный угол отдачи
+cam_dispersion          = 0.8   ; orig 0.5 (GS)
+cam_dispersion_inc		= 0.8   ; orig 0.5 (GS)
+cam_dispersion_frac		= 1.0				;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
+cam_max_angle			= 35.0			;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 cam_max_angle_horz		= 5.0				;(degree) maximum shot horizontal degree
 cam_step_angle_horz		= 1.0				;(degree) size of step camera moved in horizontal position while shooting
 
-fire_dispersion_condition_factor = 5		;увеличение дисперсии в процентах при максимальном износе
-misfire_probability 		= 0.001	    	;вероятность осечки при максимальном износе
-condition_shot_dec 			= 0.0002		;увеличение износа при каждом выстреле
+fire_dispersion_condition_factor = 11   ; orig 5 (GS)
+detector_disp_factor            = 3	; GS: cone multiplier while a detector is out in the other hand (one-handed fire)
+misfire_probability 		= 0.001	    	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+; GS jam model (opt-in: active because misfire_start_condition>0; legacy misfire_probability now ignored).
+; No jams above 0.6 cond; 0.6->0.1 chance rises 0.7%->5%; below 0.1 = max. Barrel wears faster than vanilla.
+misfire_start_condition		= 0.6
+misfire_end_condition		= 0.1
+misfire_start_prob	     	= 0.007
+misfire_end_prob	     	= 0.05
+condition_queue_shot_dec	= 0.003
+condition_shot_dec 			= 0.0018   ; orig 0.0002 (GS)
 
 ;-------------------------------------------------------------------------------
 ; ttc
-hit_power           		= 0.5, 0.5, 0.5, 0.5
+hit_power           		= 0.89, 0.89, 0.89, 0.89
 hit_impulse	 		 		= 75
 hit_type 					= fire_wound
 
@@ -87,25 +129,20 @@ hit_probability_gd_stalker	= 0.80
 hit_probability_gd_veteran	= 0.80
 hit_probability_gd_master	= 0.80
 
-PDM_disp_base 				= 1.0
-PDM_disp_vel_factor 		= 0.2
+PDM_disp_base 				= 1.4   ; orig 1.0 (GS)
+PDM_disp_vel_factor 		= 1.2   ; orig 0.2 (GS)
 PDM_disp_accel_factor 		= 0.2
 PDM_disp_crouch	 			= 1.0
 PDM_disp_crouch_no_acc 		= 1.0
 
-use_aim_bullet				= true		;Поддерживается ли первая суппер пуля
+use_aim_bullet				= false
 time_to_aim					= 1.0
 
-fire_distance           = 30
-bullet_speed		 	= 200
-rpm                     = 250
-rpm_empty_click 	 	= 200
+fire_distance           = 200
+bullet_speed		 	= 145   ; orig 200 (GS)
+rpm                     = 160   ; orig 250 (GS)
+rpm_empty_click 	 	= 120
 ; end ttc
-
-silencer_hit_power      	= 0.50
-silencer_hit_impulse	 	= 80
-silencer_fire_distance  	= 100
-silencer_bullet_speed		= 220
 
 ;-------------------------------------------------------------------------------
 hud                     	= wpn_pm_hud
@@ -122,12 +159,12 @@ fire_point              	= 0.0, 0.133, 0.161
 ;strap_bone0					= bip01_spine2
 ;strap_bone1					= bip01_spine1
 
-flame_particles		   	= weapons\generic_weapon03
-smoke_particles		   	= weapons\generic_shoot_00
+flame_particles		   	= ghost_particles\weapons\flame_9mm_pm
+smoke_particles		   	= ghost_particles\weapons\smoke_9mm_pm
 
 shell_point		 				= 0.0, 0.133, 0.047
 shell_dir		 				= 0.0, 0.0, 0.4
-shell_particles	 			= weapons\generic_shells
+;shell_particles	 			= weapons\generic_shells
 
 ;-------------------------------------------------------------------------------
 ;startup_ammo           	= 90
@@ -143,109 +180,363 @@ ph_mass			 				= 1
 
 ;addons
 scope_status				= 0
-silencer_status				= 2
+silencer_status				= 0	; orig 2 (GS base=0; silencer via barrel_sil upgrade)
 grenade_launcher_status		= 0
 
 zoom_enabled					= true
 zoom_rotate_time				= 0.25
-scope_zoom_factor	    		= 55
+scope_zoom_factor	    		= 98
 
-;звуки
-snd_draw							= weapons\pm_draw
-snd_holster						= weapons\generic_holster
-snd_shoot						= weapons\n_pm_shot
+;пїЅпїЅпїЅпїЅпїЅ
+snd_draw							= weapons\m1911\draw
+snd_holster						= weapons\m1911\hide
+snd_shoot						= weapons\pm\pm_shoot, -1.1
+snd_silncer_shot				= weapons\pm\pm_shoot_sil, -1.1
+
+;ghost
+;snd_shoot						= weapons\pm\makarov_shoot_01
+;snd_shoot1						= weapons\pm\makarov_shoot_02
+;snd_shoot2						= weapons\pm\makarov_shoot_03
+;snd_shoot3						= weapons\pm\makarov_shoot_04
+;snd_shoot4						= weapons\pm\makarov_shoot_05
+;snd_shoot5						= weapons\pm\makarov_shoot_06
+;snd_silncer_shot				= weapons\pm\makarov_shoot_sil_01
+;snd_silncer_shot1				= weapons\pm\makarov_shoot_sil_02
+;snd_silncer_shot2				= weapons\pm\makarov_shoot_sil_03
+;snd_silncer_shot3				= weapons\pm\makarov_shoot_sil_04
+;snd_silncer_shot4				= weapons\pm\makarov_shoot_sil_05
+;snd_silncer_shot5				= weapons\pm\makarov_shoot_sil_06
+
+snd_shoot_dist          = weapons\shared\gen_pistol_shoot_dist_01, -1.1
+snd_shoot_dist1         = weapons\shared\gen_pistol_shoot_dist_02, -1.1
+snd_shoot_dist2         = weapons\shared\gen_pistol_shoot_dist_03, -1.1
+snd_shoot_dist3         = weapons\shared\gen_pistol_shoot_dist_04, -1.1
+snd_shoot_dist4         = weapons\shared\gen_pistol_shoot_dist_05, -1.1
+snd_shoot_dist5         = weapons\shared\gen_pistol_shoot_dist_06, -1.1
+snd_shoot_blend_dist_start = 30   ; необязательно, по умолчанию 40
+snd_shoot_blend_dist_end   = 60   ; необязательно, по умолчанию 60
+
 snd_empty						= weapons\pistol_empty
-snd_reload						= weapons\pistol_reload, 0.8
-snd_close						= weapons\generic_close
+snd_changefiremode	= weapons\vss\vss_firemode
+snd_reload						= weapons\pm\pm_reload
+snd_reload_empty				= weapons\pm\pm_reload_full
+snd_reload_jammed				= weapons\grach\grach_revival
+; the jam-clear with a detector is a different motion (pm_det_revival, 1 token) with its
+; own timing -> its own sound, like Gunslinger's snd_reload_jammed_detector
+snd_reload_jammed_detector	= weapons\grach\grach_revival_det
+snd_close						= $silent
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; silencer
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 silencer_name  				= wpn_addon_silencer		; section name for the attachable silencer
-silencer_x 						= 39						; offset in inventory icon
-silencer_y 						= -16
+silencer_x 						= 58						
+silencer_y 						= -20
 
 ;params when silencer is attached
 ;similar to corresponding params without prefix silencer_
 
 ;silencer_flame_particles 	= weapons\generic_weapon01
-silencer_smoke_particles 	= weapons\generic_shoot_00
-snd_silncer_shot				= weapons\n_pb_shot
+silencer_smoke_particles 	= ghost_particles\weapons\suppressor_smoke_pistol_common
 silencer_light_color			= 0.6,0.5,0.3
 silencer_light_range			= 0.01
 silencer_light_var_color	= 0.05
 silencer_light_var_range	= 0.5
 silencer_light_time 			= 0.2
 
-[wpn_pm_hud]:hud_base
-zoom_hide_crosshair			= false
+[icon_element_wpn_pm_base]	; = the weapon's own inv icon (base layer for silencer overlay)
+inv_grid_width  = 2
+inv_grid_height = 1
+inv_grid_x      = 4
+inv_grid_y      = 40
 
+[wpn_pm_hud]:hud_base
+use_advanced_ammo_bones = true
+ammo_reload_insert_mark_1 = 0.6       ; TACTICAL reload (1 round kept, chamber): mag shows full at 60%
+ammo_reload_insert_mark_2 = 0.5       ; EMPTY reload: earlier (was too late at 0.6)
+ammo_reload_insert_mark   = 0.5       ; fallback
+ammo_params_section = wpn_pm_ammo_bones
+lock_time_anm_idle_aim_start = 0.25
+lock_time_anm_idle_aim_end = 0.3
+zoom_hide_crosshair			= true
 hands_position				= -0.021000,-0.160000,0.002500
 hands_orientation			= -0.500000,1.000000,1.149999
-hands_position_16x9				= 0.033000,-0.189500,0.039000
-hands_orientation_16x9			= 2.349998,2.749999,2.849998
-
-
-;hands_position				= -0.025000,-0.155500,0.002500
-;hands_orientation			= 0.450000,1.300000,0.749999
-;hands_position_16x9				= 0.007500,-0.168500,0.039000
-;hands_orientation_16x9			= 0.700000,1.699999,2.8499983
-
-item_position					= 0.000746,-0.000321,0.003479
-item_orientation				= 1.239378,-0.134046,-2.052052
-
+hands_position_16x9				= 0.0,-0.13,0.03
+hands_orientation_16x9			= 0.0,0.0,0.0
+item_position					= 0.0,0.0,0.0
+item_orientation				= 0.0,0.0,0.0
 item_visual             	= dynamics\weapons\wpn_pm\wpn_pm_hud.ogf
+fire_mode_bone             = pred
 attach_place_idx				= 0
-
 shell_point						= 0.013,0.046,0.463
 shell_bone              	= wpn_body
-
-fire_point			= 0,0.045,0.142
+fire_point			= -0.010,0.11,0.37
 fire_bone               	= wpn_body
-
-;-delme begin
-anm_empty             	= walter99_idle, walter99_opened
-anm_close				= walter99_holster
-;-delme end
-anm_show						= pm_draw
-anm_show_empty					= pm_draw, pm_opened
-
-anm_hide             			= pm_holster
-anm_hide_empty             		= pm_holster
-
-anm_idle             			= pm_idle
-anm_idle_empty             		= pm_idle, pm_opened
-
-anm_shots						= pm_shoot
-anm_shot_l						= pm_shoot, pm_open
-
-anm_idle_aim					= pm_idle_aim
-anm_idle_aim_empty				= pm_idle_aim, pm_opened
-
-anm_reload						= pm_reload
-anm_reload_empty				= pm_reload, pm_close
-
-anm_idle_moving 				= pm_idle_moving
-anm_idle_moving_empty 			= pm_idle_moving, pm_opened
-
-anm_idle_sprint					= pm_idle_sprint
-anm_idle_sprint_empty			= pm_idle_sprint, pm_opened
-
-anm_bore						= pm_idle_bore
-anm_bore_empty					= pm_idle_bore, pm_opened
-
-aim_hud_offset_pos				= -0.046000,0.032500,0.000000
-aim_hud_offset_rot				= 0.000000,-0.012500,-0.035000
-
+lock_time_anm_prepare_detector	= 0.4667
+aim_hud_offset_pos				= 0.00050000,0.0170000,0.0
+aim_hud_offset_rot				= -0.0070000,0.000000,0.0
 gl_hud_offset_pos				= 0,0,0
 gl_hud_offset_rot				= 0,0,0
-
 lean_hud_offset_pos			= 0,0,0
 lean_hud_offset_rot			= 0,0,0
+aim_hud_offset_pos_16x9				= 0.00050000,0.0170000,0.0
+aim_hud_offset_rot_16x9				= -0.0070000,0.000000,0.0
 
-aim_hud_offset_pos_16x9				= -0.090000,0.056500,-0.001500
-aim_hud_offset_rot_16x9				= 0.015000,0.020000,-0.025000
+; ==================== SEMI-AUTO / BASE ANIMATION SET (from Gunslinger) ====================
+
+; ---- show / draw ----
+anm_show = pm_draw
+anm_show_empty = pm_draw, idle_empty
+anm_show_jammed = pm_draw, idle_jammed
+
+; ---- hide / holster ----
+anm_hide = pm_hide
+anm_hide_empty = pm_hide, idle_empty
+anm_hide_jammed = pm_hide, idle_jammed
+
+; ---- bore ----
+anm_bore = pm_bore
+anm_bore_empty = pm_bore, pm_bore_empty
+anm_bore_jammed = pm_bore, pm_bore_jammed
+
+; ---- sprint (enter / loop / exit) ----
+anm_idle_sprint_start = pm_sprint_start
+anm_idle_sprint_start_empty = pm_sprint_start, idle_empty
+anm_idle_sprint_start_jammed = pm_sprint_start, idle_jammed
+anm_idle_sprint = pm_sprint
+anm_idle_sprint_empty = pm_sprint, idle_empty
+anm_idle_sprint_jammed = pm_sprint, idle_jammed
+anm_idle_sprint_end = pm_sprint_end
+anm_idle_sprint_end_empty = pm_sprint_end, idle_empty
+anm_idle_sprint_end_jammed = pm_sprint_end, idle_jammed
+
+; ---- aim walk (directional) ----
+anm_idle_aim_moving_forward = pm_slow_aim
+anm_idle_aim_moving_forward_empty = pm_slow_aim, idle_empty
+anm_idle_aim_moving_forward_jammed = pm_slow_aim, idle_jammed
+anm_idle_aim_moving_back = pm_slow_aim_back
+anm_idle_aim_moving_back_empty = pm_slow_aim_back, idle_empty
+anm_idle_aim_moving_back_jammed = pm_slow_aim_back, idle_jammed
+anm_idle_aim_moving_left = pm_slow_aim_left
+anm_idle_aim_moving_left_empty = pm_slow_aim_left , idle_empty
+anm_idle_aim_moving_left_jammed = pm_slow_aim_left , idle_jammed
+anm_idle_aim_moving_right = pm_slow_aim_right
+anm_idle_aim_moving_right_empty = pm_slow_aim_right , idle_empty
+anm_idle_aim_moving_right_jammed = pm_slow_aim_right , idle_jammed
+anm_idle_aim_moving_forward_left = pm_slow_aim_left
+anm_idle_aim_moving_forward_left_empty = pm_slow_aim_left, idle_empty
+anm_idle_aim_moving_forward_left_jammed = pm_slow_aim_left, idle_jammed
+anm_idle_aim_moving_forward_right = pm_slow_aim_right
+anm_idle_aim_moving_forward_right_empty = pm_slow_aim_right, idle_empty
+anm_idle_aim_moving_forward_right_jammed = pm_slow_aim_right, idle_jammed
+anm_idle_aim_moving_back_left = pm_slow_aim_left
+anm_idle_aim_moving_back_left_empty = pm_slow_aim_left, idle_empty
+anm_idle_aim_moving_back_left_jammed = pm_slow_aim_left, idle_jammed
+anm_idle_aim_moving_back_right = pm_slow_aim_right
+anm_idle_aim_moving_back_right_empty = pm_slow_aim_right, idle_empty
+anm_idle_aim_moving_back_right_jammed = pm_slow_aim_right, idle_jammed
+
+; ---- aim idle (in / out / hold) ----
+anm_idle_aim_start = pm_aim_start
+anm_idle_aim_start_empty = pm_aim_start, idle_empty
+anm_idle_aim_start_jammed = pm_aim_start, idle_jammed
+anm_idle_aim = pm_aim
+anm_idle_aim_empty = pm_aim, idle_empty
+anm_idle_aim_jammed = pm_aim, idle_jammed
+anm_idle_aim_end = pm_aim_end
+anm_idle_aim_end_empty = pm_aim_end, idle_empty
+anm_idle_aim_end_jammed = pm_aim_end, idle_jammed
+
+; ---- walk (fwd / slow / crouch) ----
+anm_idle_moving = pm_walk
+anm_idle_moving_jammed = pm_walk, idle_jammed
+anm_idle_moving_empty = pm_walk, idle_empty
+anm_idle_moving_slow = pm_slow
+anm_idle_moving_slow_jammed = pm_slow, idle_jammed
+anm_idle_moving_slow_empty = pm_slow, idle_empty
+anm_idle_moving_crouch = pm_slow_down
+anm_idle_moving_crouch_jammed = pm_slow_down, idle_jammed
+anm_idle_moving_crouch_empty = pm_slow_down, idle_empty
+anm_idle_moving_crouch_slow = pm_slow_super
+anm_idle_moving_crouch_slow_jammed = pm_slow_super, idle_jammed
+anm_idle_moving_crouch_slow_empty = pm_slow_super, idle_empty
+
+; ---- idle ----
+anm_idle = pm_idle
+anm_idle_empty = pm_idle, idle_empty
+anm_idle_jammed = pm_idle, idle_jammed
+anm_idle_slow = pm_idle
+anm_idle_crouch = pm_idle
+anm_idle_crouch_slow = pm_idle
+anm_idle_slow_empty = pm_idle, idle_empty
+anm_idle_crouch_empty = pm_idle, idle_empty
+anm_idle_crouch_slow_empty = pm_idle, idle_empty
+anm_idle_slow_jammed = pm_idle, idle_jammed
+anm_idle_crouch_jammed = pm_idle, idle_jammed
+anm_idle_crouch_slow_jammed = pm_idle, idle_jammed
+
+; ---- shots ----
+anm_shoot_suicide = pm_suicide_shoot
+anm_shoot_suicide_sil = pm_suicide_shoot
+anm_shoot_last_suicide = pm_suicide_shoot
+anm_shoot_last_suicide_sil = pm_suicide_shoot
+anm_shoot = pm_shoot
+anm_shoot_sil = pm_shoot
+anm_shoot_jammed = pm_shoot, idle_jammed
+anm_shoot_jammed_sil = pm_shoot, idle_jammed
+anm_shoot_last = pm_shoot_empty
+anm_shoot_last_sil = pm_shoot_empty
+anm_shoot_aim = pm_aim_shoot
+anm_shoot_aim_sil = pm_aim_shoot
+anm_shoot_aim_jammed = pm_aim_shoot, idle_jammed
+anm_shoot_aim_jammed_sil = pm_aim_shoot, idle_jammed
+anm_shoot_aim_last = pm_aim_shoot_empty
+anm_shoot_aim_last_sil = pm_aim_shoot_empty
+anm_shoot_lightmisfire = pm_misfire
+lock_time_anm_shoot_lightmisfire     = 1.0    ; GS: lock re-fire for 1s (not full anim)
+anm_shoot_lightmisfire_aim = pm_aim_misfire
+lock_time_anm_shoot_lightmisfire_aim = 1.0    ; GS
+
+; ---- dry fire ----
+anm_fakeshoot_empty = pm_dry_empty, idle_empty
+anm_fakeshoot_aim_empty = pm_aim_dry, idle_empty
+anm_fakeshoot_jammed = pm_dry, idle_jammed
+anm_fakeshoot_aim_jammed = pm_aim_dry, idle_jammed
+anm_fakeshoot = pm_dry	; (kept: not in GS set)
+anm_fakeshoot_aim = pm_aim_dry	; (kept: not in GS set)
+
+; ---- reload ----
+anm_reload = pm_reload
+anm_reload_empty = pm_reload_full
+anm_reload_detector = pm_det_reload, pm_reload
+anm_reload_empty_detector = pm_det_reload_full, pm_reload_full
+anm_reload_jammed = pm_revival
+anm_reload_jammed_last = pm_revival_last
+anm_reload_ammochange = pm_reload
+anm_reload_empty_ammochange = pm_reload_full
+anm_reload_ammochange_detector = pm_det_reload, pm_reload
+anm_reload_empty_ammochange_detector = pm_det_reload_full, pm_reload_full
+anm_reload_jammed_detector = pm_det_revival
+anm_reload_jammed_last_detector = pm_det_revival_last
+
+; ---- firemode change ----
+anm_changefiremode_from_1_to_a = aps_firemode_1_to_a	; (kept: not in GS set)
+anm_changefiremode_from_1_to_a_jammed = aps_firemode_1_to_a, aps_firemode_1_to_a_jammed	; (kept: not in GS set)
+anm_changefiremode_from_a_to_1 = aps_firemode_a_to_1	; (kept: not in GS set)
+anm_changefiremode_from_a_to_1_jammed = aps_firemode_a_to_1, aps_firemode_a_to_1_jammed	; (kept: not in GS set)
+
+; ---- unload magazine ----
+anm_unload_mag = pm_draw, idle_empty
+anm_unload_mag_jammed = pm_draw, idle_jammed
+anm_unload_mag_empty = pm_draw, idle_empty
+
+; ---- headlamp on / off ----
+anm_headlamp_on = pm_headflash
+anm_headlamp_on_empty = pm_headflash, idle_empty
+anm_headlamp_on_jammed = pm_headflash, idle_jammed
+anm_headlamp_off = pm_headflash
+anm_headlamp_off_empty = pm_headflash, idle_empty
+anm_headlamp_off_jammed = pm_headflash, idle_jammed
+
+; ---- night vision on / off ----
+anm_nv_on = pm_nv_on
+anm_nv_on_empty = pm_nv_on, idle_empty
+anm_nv_on_jammed = pm_nv_on, idle_jammed
+anm_nv_off = pm_nv_off
+anm_nv_off_empty = pm_nv_off, idle_empty
+anm_nv_off_jammed = pm_nv_off, idle_jammed
+
+; ---- misc ----
+anm_suicide = pm_suicide
+anm_stop_suicide = pm_suicide_end
+
+; ---- GS controller-suicide animation block (verbatim from GS pistols/pm/huds.ltx). The alias
+; alone is not enough: without lock_time_anm_suicide the engine uses a hardcoded 3 s and the
+; shot lands in the middle of the gesture. ----
+custom_suicide_shot                = true
+lock_time_anm_suicide              = 7.37
+lock_time_anm_stop_suicide         = 1.37
+suicide_delay                      = 0.25
+
+; ---- GS controller-suicide flags (defines.ltx defaults are the opposite: a weapon
+; that does not set these is dropped for the knife). Values from GS's own huds.ltx. ----
+prohibit_suicide                 = false
+suicide_by_animation             = true
+anm_prepare_detector = pm_hand_hide
+anm_prepare_detector_jammed = pm_hand_hide, idle_jammed
+anm_prepare_detector_empty = pm_hand_hide, idle_empty
+anm_draw_detector = pm_hand_hide_end
+anm_draw_detector_jammed = pm_hand_hide_end, idle_jammed
+anm_draw_detector_empty = pm_hand_hide_end, idle_empty
+anm_finish_detector = pm_hand_draw
+anm_finish_detector_jammed = pm_hand_draw, idle_jammed
+anm_finish_detector_empty = pm_hand_draw, idle_empty
+anm_holster_detector = pm_hand_draw	; (kept: not in GS set)
+anm_holster_detector_jammed = pm_hand_draw, idle_jammed	; (kept: not in GS set)
+anm_holster_detector_empty = pm_hand_draw, idle_empty	; (kept: not in GS set)
+
+; ==================== AUTO-FIRE MODE ANIMATION SET (mask_firemode_a = _auto) ====================
+; --- lock_time values copied verbatim from GS huds.ltx (audit 2026-08-07) ---
+lock_time_anm_changefiremode_from_1_to_a = 1.1
+lock_time_anm_changefiremode_from_1_to_a_jammed = 1.1
+lock_time_anm_changefiremode_from_a_to_1 = 1.1
+lock_time_anm_changefiremode_from_a_to_1_jammed = 1.1
+lock_time_anm_draw_detector = 0.40
+lock_time_anm_draw_detector_empty = 0.40
+lock_time_anm_draw_detector_jammed = 0.40
+lock_time_anm_fakeshoot_aim_empty = 0.20
+lock_time_anm_fakeshoot_aim_jammed = 0.20
+lock_time_anm_fakeshoot_empty = 0.20
+lock_time_anm_fakeshoot_jammed = 1.0
+lock_time_anm_finish_detector = 0.60
+lock_time_anm_finish_detector_empty = 0.60
+lock_time_anm_finish_detector_jammed = 0.60
+lock_time_anm_idle_aim_end_empty = 0.3
+lock_time_anm_idle_aim_end_jammed = 0.3
+lock_time_anm_idle_aim_start_empty = 0.25
+lock_time_anm_idle_aim_start_jammed = 0.25
+lock_time_anm_idle_sprint_end = 0.4
+lock_time_anm_idle_sprint_end_empty = 0.4
+lock_time_anm_idle_sprint_end_jammed = 0.4
+lock_time_anm_idle_sprint_start = 0.15
+lock_time_anm_idle_sprint_start_empty = 0.15
+lock_time_anm_idle_sprint_start_jammed = 0.15
+lock_time_anm_prepare_detector_empty = 0.5
+lock_time_anm_prepare_detector_jammed = 0.5
+lock_time_anm_reload_jammed_detector = 2.21
+lock_time_anm_reload_jammed_last_detector = 2.21
+lock_time_anm_unload_mag = 0.8
+lock_time_anm_unload_mag_empty = 0.8
+lock_time_anm_unload_mag_jammed = 0.8
+lock_time_end_anm_headlamp_off = 0.5
+lock_time_end_anm_headlamp_off_empty = 0.5
+lock_time_end_anm_headlamp_off_jammed = 0.5
+lock_time_end_anm_headlamp_on = 0.5
+lock_time_end_anm_headlamp_on_empty = 0.5
+lock_time_end_anm_headlamp_on_jammed = 0.5
+lock_time_end_anm_reload = 1.5
+lock_time_end_anm_reload_ammochange = 1.5
+lock_time_end_anm_reload_ammochange_detector = 1.58
+lock_time_end_anm_reload_detector = 1.58
+lock_time_end_anm_reload_empty = 2.1
+lock_time_end_anm_reload_empty_ammochange = 2.1
+lock_time_end_anm_reload_empty_ammochange_detector = 2.18
+lock_time_end_anm_reload_empty_detector = 2.18
+lock_time_start_anm_headlamp_off = 0.58
+lock_time_start_anm_headlamp_off_empty = 0.58
+lock_time_start_anm_headlamp_off_jammed = 0.58
+lock_time_start_anm_headlamp_on = 0.58
+lock_time_start_anm_headlamp_on_empty = 0.58
+lock_time_start_anm_headlamp_on_jammed = 0.58
+lock_time_start_anm_reload = 1.5
+lock_time_start_anm_reload_ammochange = 1.5
+lock_time_start_anm_reload_ammochange_detector = 1.5
+lock_time_start_anm_reload_detector = 1.5
+lock_time_start_anm_reload_empty = 1.5
+lock_time_start_anm_reload_empty_ammochange = 1.5
+lock_time_start_anm_reload_empty_ammochange_detector = 1.5
+lock_time_start_anm_reload_empty_detector = 1.5
 
 [wpn_pm_minigame]:wpn_pm    ;new weapon for minigame "Shooting"
 ammo_limit      = 100
@@ -255,21 +546,118 @@ fire_modes      = 1
 $spawn          = "weapons\wpn_pm_minigame"
 cost            = 0
 quest_item 		= true
-upgrades                = up_gr_ab_pm, up_gr_cd_pm, up_gr_e_pm, up_gr_f_pm, up_gr_g_pm, up_gr_h_pm
-installed_upgrades      = up_b_pm,up_d_pm,up_bd_pm
-upgrade_scheme          = upgrade_scheme_u10a
+upgrades                = vartree_wpn_pm_barrel, vartree_wpn_pm_mag, vartree_wpn_pm_sights
+installed_upgrades      =
+upgrade_scheme          = upgrade_scheme_wpn_pm
 
 [wpn_pm_up]:wpn_pm
 $spawn                  	= "weapons\pm_up"		; option for Level Editor
 
-upgrades                = up_gr_ab_pm, up_gr_cd_pm, up_gr_e_pm, up_gr_f_pm, up_gr_g_pm, up_gr_h_pm
-installed_upgrades      = up_e_pm,up_f_pm,up_h_pm
-upgrade_scheme          = upgrade_scheme_u10a
+upgrades                = vartree_wpn_pm_barrel, vartree_wpn_pm_mag, vartree_wpn_pm_sights
+installed_upgrades      = up_wpn_pm_barrel_hp, up_wpn_pm_plastic_mag, up_wpn_pm_reliability
+upgrade_scheme          = upgrade_scheme_wpn_pm
 
 [wpn_pm_9x19]:wpn_pm
 $spawn                  	= "weapons\pm_9x19"		; option for Level Editor
 
-upgrades                = up_gr_ab_pm, up_gr_cd_pm, up_gr_e_pm, up_gr_f_pm, up_gr_g_pm, up_gr_h_pm
-installed_upgrades      = up_g_pm,up_h_pm
-upgrade_scheme          = upgrade_scheme_u10a
+upgrades                = vartree_wpn_pm_barrel, vartree_wpn_pm_mag, vartree_wpn_pm_sights
+installed_upgrades      =
+upgrade_scheme          = upgrade_scheme_wpn_pm
+
+; ============================ PMM (GS uniq variant of the PM) ============================
+; GS keeps it in pistols/pm/uniq.ltx as [wpn_pm_actor]: same skeleton, same OMFs (both wpn_pmm.ogf
+; and wpn_pmm_hud.ogf reference wpn_pm_animation / wpn_pm_hud_animation), reinforced frame, heavier
+; slide, 12-round magazine. Everything below is GS's PMM DELTA over GS's PM, applied to OUR PM --
+; our base already carries GS's PM numbers everywhere the delta touches, except weight, cost and the
+; silencer offsets, which are ours.
+[wpn_pmm]:wpn_pm
+$spawn                  	= "weapons\pmm"		; option for Level Editor
+visual                  	= dynamics\weapons\wpn_pm\wpn_pmm.ogf
+hud                     	= wpn_pmm_hud
+
+description			= gunsl_wpn_pmm_descr
+inv_name			= gunsl_wpn_pmm
+inv_name_short		= gunsl_wpn_pmm
+
+upgrades                = vartree_wpn_pmm_barrel, vartree_wpn_pmm_mag, vartree_wpn_pmm_sights
+installed_upgrades      =
+upgrade_scheme          = upgrade_scheme_wpn_pmm
+allowed_upgrades        = up_wpn_pmm_
+
+cost					= 450	; GS prices the PMM at 1.5x its PM; ours is 300, not GS's 400
+inv_weight				= 0.53	; +0.03 over our PM, same step GS takes
+
+; 12 in the magazine + the one in the chamber (ammo_in_chamber is on for the whole family)
+ammo_mag_size		 	= 13
+ammo_elapsed		 	= 13
+
+hit_power           		= 0.95, 0.95, 0.95, 0.95
+bullet_speed		 	= 160
+
+fire_dispersion_base	= 0.22
+cam_dispersion          = 0.65
+cam_dispersion_inc		= 0.75
+
+PDM_disp_base 				= 1.3
+PDM_disp_vel_factor 		= 1.1
+PDM_disp_crouch	 			= 0.85
+
+zoom_cam_dispersion         = 0.26
+zoom_cam_dispersion_inc     = 0.7
+zoom_cam_max_angle          = 25.0
+
+; wears slower than the PM, but starts misbehaving from a higher condition once it does
+misfire_start_condition		= 0.7
+misfire_end_condition		= 0.2
+misfire_start_prob	     	= 0.01
+misfire_end_prob	     	= 0.055
+condition_shot_dec      	= 0.0025
+condition_queue_shot_dec	= 0.003
+; our light-strike model mirrors the misfire thresholds, exactly as it does on [wpn_pm]
+light_misfire_start_condition = 0.7
+light_misfire_end_condition = 0.2
+
+silencer_x 					= 60	; our PM sits at 58; GS shifts its PMM +2 over its PM
+
+; inv icon: GS's PMM art, already sitting in our atlas at GS's own coordinates
+inv_grid_width			= 2
+inv_grid_height	        = 1
+inv_grid_x				= 16
+inv_grid_y				= 26
+; MUST override the inherited element_icon_0 -- it points at the PM's rect and would be drawn over
+; the PMM icon (the same trap the APB hit over the stechkin)
+element_icon_0 = icon_element_wpn_pmm_base
+element_icon_offset_x_0 = 0
+element_icon_offset_y_0 = 0
+
+uniq_icon = upgrade_addon_icon_uniq_item
+uniq_icon_offset_x = 50
+uniq_icon_offset_y = 0
+
+[icon_element_wpn_pmm_base]	; = the weapon's own inv icon (base layer for the silencer overlay)
+inv_grid_width  = 2
+inv_grid_height = 1
+inv_grid_x      = 16
+inv_grid_y      = 26
+
+[wpn_pmm_hud]:wpn_pm_hud
+item_visual             	= dynamics\weapons\wpn_pm\wpn_pmm_hud.ogf
+
+[wpn_pm_ammo_bones]
+additional_ammo_bone_when_jammed = true
+all_bones = bullet2,bullet3,bullet4,bullet5,bullet6,bullet7,bullet8,bullet9,bashmak0,bashmak1,bashmak2,bashmak3,bashmak4,bashmak5,bashmak6,bashmak7,bashmak8,bashmak9,prujina1,prujina2,prujina3,prujina4,prujina5,prujina6,prujina7,prujina8,prujina9
+configuration_0 = bashmak0, prujina1, prujina2, prujina3, prujina4, prujina5, prujina6, prujina7, prujina8
+configuration_1 = bullet2, bashmak2, prujina2, prujina3, prujina4, prujina5, prujina6, prujina7, prujina8
+configuration_2 = bullet2,bullet3, bashmak3, prujina3, prujina4, prujina5, prujina6, prujina7, prujina8
+configuration_3 = bullet2,bullet3,bullet4, bashmak4, prujina4, prujina5, prujina6, prujina7, prujina8
+configuration_4 = bullet2,bullet3,bullet4,bullet5, bashmak5, prujina5, prujina6, prujina7, prujina8
+configuration_5 = bullet2,bullet3,bullet4,bullet5,bullet6, bashmak6, prujina6, prujina7, prujina8
+configuration_6 = bullet2,bullet3,bullet4,bullet5,bullet6,bullet7, bashmak7, prujina7, prujina8
+configuration_7 = bullet2,bullet3,bullet4,bullet5,bullet6,bullet7,bullet8, bashmak8, prujina8
+configuration_8 = bullet2,bullet3,bullet4,bullet5,bullet6,bullet7,bullet8,bullet9, bashmak9
+configuration_9 = bullet2,bullet3,bullet4,bullet5,bullet6,bullet7,bullet8,bullet9, bashmak9
+configuration_10 = bullet2,bullet3,bullet4,bullet5,bullet6,bullet7,bullet8,bullet9, bashmak9
+configuration_11 = bullet2,bullet3,bullet4,bullet5,bullet6,bullet7,bullet8,bullet9, bashmak9
+configuration_12 = bullet2,bullet3,bullet4,bullet5,bullet6,bullet7,bullet8,bullet9, bashmak9
+configuration_13 = bullet2,bullet3,bullet4,bullet5,bullet6,bullet7,bullet8,bullet9, bashmak9
 

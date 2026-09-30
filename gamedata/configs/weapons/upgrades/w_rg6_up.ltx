@@ -1,0 +1,242 @@
+; ============================================================================
+;  rg-6 upgrade tree -- ported from Gunslinger (wpn_rgm-40).
+;  CS adjustments applied by gsw.py: :base_bayonet rewired, prop_weight ->
+;  prop_weight_kg, snd_silncer_shot stripped from any barrel_sil node.
+; ============================================================================
+
+;------------------------------------------rgm40_body------------------------------------------
+[up_sect_rgm40_body]
+cost = 3000
+value = +25
+condition_shot_dec = -0.007
+misfire_end_condition = -0.05
+misfire_start_condition = -0.1
+
+[up_rgm40_body]
+scheme_index = 0, 0
+known = 1
+effects = 
+section = up_sect_rgm40_body
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_rgm40_up_body_name
+description =gunsl_rgm40_up_body_descr
+icon = ui_gunsl_up_rgm40_body
+;------------------------------------------rgm40_handle------------------------------------------
+[up_sect_rgm40_handle]
+cost = 1000
+value = +10
+control_inertion_factor = -0.2
+cam_dispersion = -1.0
+zoom_cam_dispersion = -0.5
+cam_relax_speed = +0.2
+zoom_cam_relax_speed = +0.2
+
+show_bones = handler2
+hide_bones = handler
+inv_weight = -0.05
+
+PDM_disp_base = -0.5
+
+upgrade_addon_icon = upgrade_addon_icon_assault_handler_6
+upgrade_addon_icon_offset_x = 77
+upgrade_addon_icon_offset_y = 0
+
+[up_rgm40_handle]
+scheme_index = 0, 1
+known = 1
+effects = 
+section = up_sect_rgm40_handle
+property = prop_inertion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_rgm40_up_handle_name
+description =gunsl_rgm40_up_handle_descr
+icon = ui_gunsl_up_rgm40_handle
+;------------------------------------------rgm40_polymer_details------------------------------------------
+[up_sect_rgm40_polymer_details]
+cost = 1000
+value = -0.3
+inv_weight = -0.3
+
+[up_rgm40_polymer_details]
+scheme_index = 0, 2
+known = 1
+effects = vartree_rgm40_stock
+section = up_sect_rgm40_polymer_details
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_rgm40_up_polymer_details_name
+description =gunsl_rgm40_up_polymer_details_descr
+icon = ui_gunsl_up_rgm40_polymer_details
+;------------------------------------------rgm40_recoil_stock------------------------------------------
+[up_sect_rgm40_recoil_stock]
+cost = 2000
+value = -20
+zoom_cam_dispersion = -1.0
+cam_dispersion = -4
+
+cam_relax_speed = +4
+zoom_cam_relax_speed = +4
+
+[up_rgm40_recoil_stock]
+scheme_index = 0, 3
+known = 1
+effects = vartree_rgm40_speed
+section = up_sect_rgm40_recoil_stock
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_rgm40_up_recoil_stock_name
+description =gunsl_rgm40_up_recoil_stock_descr
+icon = ui_gunsl_up_rgm40_recoil_stock
+;------------------------------------------rgm40_trigger------------------------------------------
+[up_sect_rgm40_trigger]
+cost = 1000
+value = +10
+misfire_start_condition = -0.07
+condition_shot_dec = -0.004
+
+[up_rgm40_trigger]
+scheme_index = 0, 4
+known = 1
+effects = vartree_rgm40_details
+section = up_sect_rgm40_trigger
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_rgm40_up_trigger_name
+description =gunsl_rgm40_up_trigger_descr
+icon = ui_gunsl_up_rgm40_trigger
+;------------------------------------------rgm40_narezka_gren_speed------------------------------------------
+[up_sect_rgm40_narezka_gren_speed]
+cost = 3000
+value = +30
+launch_speed = +20
+
+[up_rgm40_narezka_gren_speed]
+scheme_index = 0, 5
+known = 1
+effects = 
+section = up_sect_rgm40_narezka_gren_speed
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_rgm40_up_narezka_gren_speed_name
+description =gunsl_rgm40_up_narezka_gren_speed_descr
+icon = ui_gunsl_up_rgm40_narezka_gren_speed
+;------------------------------------------rgm40_titan_details------------------------------------------
+[up_sect_rgm40_titan_details]
+cost = 2000
+value = +20
+condition_shot_dec = -0.005
+misfire_end_condition = -0.05
+misfire_start_condition = -0.05
+
+[up_rgm40_titan_details]
+scheme_index = 0, 6
+known = 1
+effects = vartree_rgm40_body
+section = up_sect_rgm40_titan_details
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_rgm40_up_titan_details_name
+description =gunsl_rgm40_up_titan_details_descr
+icon = ui_gunsl_up_rgm40_titan_details
+;------------------------------------------rgm40_light_stock------------------------------------------
+[up_sect_rgm40_light_stock]
+cost = 2000
+value = -0.5
+inv_weight = -0.5
+
+[up_rgm40_light_stock]
+scheme_index = 0, 7
+known = 1
+effects = vartree_rgm40_speed
+section = up_sect_rgm40_light_stock
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_rgm40_up_light_stock_name
+description =gunsl_rgm40_up_light_stock_descr
+icon = ui_gunsl_up_rgm40_light_stock
+;------------------------------------------rgm40_light_details------------------------------------------
+[up_sect_rgm40_light_details]
+cost = 2000
+value = -0.5
+inv_weight = -0.5
+
+[up_rgm40_light_details]
+scheme_index = 0, 8
+known = 1
+effects = vartree_rgm40_body
+section = up_sect_rgm40_light_details
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_rgm40_up_light_details_name
+description =gunsl_rgm40_up_light_details_descr
+icon = ui_gunsl_up_rgm40_light_details
+;------------------------------------------------------------------------------------
+[vartree_rgm40_trigger]
+elements = up_rgm40_trigger
+[vartree_rgm40_details]
+elements = up_rgm40_titan_details, up_rgm40_light_details
+[vartree_rgm40_body]
+elements = up_rgm40_body
+[vartree_rgm40_polymer]
+elements = up_rgm40_polymer_details
+[vartree_rgm40_stock]
+elements = up_rgm40_recoil_stock, up_rgm40_light_stock
+[vartree_rgm40_speed]
+elements = up_rgm40_narezka_gren_speed
+[vartree_rgm40_handle]
+elements = up_rgm40_handle

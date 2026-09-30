@@ -1,0 +1,144 @@
+; Gunslinger-style headlamp / night-vision toggle animators (LEFT-hand HUD).
+; class = WP_ACTAN (engine CWpnActionAnimator) auto-attaches the headflash HUD to the left hand
+; (attach_place_idx = 1) alongside the weapon -> the weapon in the right hand is NOT hidden.
+; script_binding = gwr_eatable.init_action (gwr_action_binder: plays snd_using, releases after timing).
+; Spawned from the engine on kTORCH / kNIGHT_VISION via gwr_eatable.on_headlamp_switch / on_nv_switch.
+; TUNE `timing` to the headflash animation length.
+
+[gwr_action_base]:gwr_identity_immunities
+GroupControlSection						= spawn_group
+$spawn									= "weapons\gwr_action"
+$npc									= on
+$prefetch								= 8
+class									= WP_ACTAN
+cform									= skeleton
+; cform = skeleton builds a CCF_Skeleton, and that constructor dereferences O->Visual()
+; unconditionally (xr_collide_form.cpp) -- so a section with a skeleton cform and NO visual is an
+; instant null-pointer crash the moment the phantom spawns. That is what pressing the headlamp/NV
+; key could do. The comment that used to sit here claimed gwr_base_usable handed these an empty
+; stand-in visual; it does not -- this base inherits gwr_identity_immunities, not gwr_base_usable.
+; So name the same stand-in the eatable phantoms use.
+visual								= gwr\main\fake_object
+description								= st_vodka_descr
+inv_name								= st_vodka
+inv_name_short							= st_vodka
+inv_weight								= 0.0
+; the blank atlas cell -- see the note on gwr_base_usable in usable_items\base_usable.ltx
+inv_grid_width							= 1
+inv_grid_height							= 1
+inv_grid_x								= 20	; orig 5000
+inv_grid_y								= 0		; orig 5000
+cost									= 0
+; slot is REQUIRED by CInventoryItem::Load, but slot 11 (flare) is non-activatable and
+; default_to_ruck sends the item to the ruck -> it never auto-equips / never holsters the weapon.
+slot									= 11
+default_to_ruck							= true
+sprint_allowed							= true
+control_inertion_factor					= 1.0
+scheduled								= off
+animation_slot							= 13
+hand_dependence							= 1
+single_handed							= 0
+immunities_sect							= gwr_identity_immunities
+snd_draw								= interface\inv_nosound
+snd_holster								= interface\inv_nosound
+script_binding							= gwr_eatable.init_action
+
+; left-hand HUD (attach_place_idx = 1), shared by all four animators
+[gwr_action_base_hud]:gwr_base_usable_hud
+attach_place_idx						= 1
+item_visual								= gwr\food\headflash\headflash_hud
+hands_position							= 0.0,0.0,0.0
+hands_orientation						= 0.0,0.0,0.0
+hands_position_16x9						= 0.0,0.0,0.0
+hands_orientation_16x9					= 0.0,0.0,0.0
+anm_show								= headflash
+anm_hide								= zaglushka
+anm_idle								= zaglushka
+anm_idle_aim							= zaglushka
+anm_idle_moving							= zaglushka
+anm_idle_sprint							= zaglushka
+anm_bore								= zaglushka
+; attach_place_idx=1 (left hand) => the engine looks up the "_16x9" alias on widescreen; point them at the same motions
+anm_show_16x9							= headflash
+anm_hide_16x9							= zaglushka
+anm_idle_16x9							= zaglushka
+anm_idle_aim_16x9						= zaglushka
+anm_idle_moving_16x9					= zaglushka
+anm_idle_sprint_16x9					= zaglushka
+anm_bore_16x9							= zaglushka
+
+; ---------------- headlamp ON ----------------
+[headlamp_enable_animator]:gwr_action_base
+$spawn									= "weapons\headlamp_enable_animator"
+hud										= headlamp_enable_animator_hud
+timing									= 1100
+snd_using								= weapons\headflash_on
+
+[headlamp_enable_animator_hud]:gwr_action_base_hud
+
+; ---------------- headlamp OFF ----------------
+[headlamp_disable_animator]:gwr_action_base
+$spawn									= "weapons\headlamp_disable_animator"
+hud										= headlamp_disable_animator_hud
+timing									= 1100
+snd_using								= weapons\headflash_off
+
+[headlamp_disable_animator_hud]:gwr_action_base_hud
+
+; ---------------- night-vision ON ----------------
+[nv_enable_animator]:gwr_action_base
+$spawn									= "weapons\nv_enable_animator"
+hud										= nv_enable_animator_hud
+timing									= 1100
+snd_using								= weapons\nv_act
+
+[nv_enable_animator_hud]:gwr_action_base_hud
+; NV blackout is now driven ENGINE-SIDE (CActor::SwitchNightVision / UpdateDelayedDeviceSwitch) so it
+; fires for EVERY weapon and for a fixed short window, not only for this empty-hands phantom. Keeping
+; it here too would double-darken the empty-hands case, so it's disabled.
+use_ppe_effector_anm_show				= false
+
+; ---------------- night-vision OFF ----------------
+[nv_disable_animator]:gwr_action_base
+$spawn									= "weapons\nv_disable_animator"
+hud										= nv_disable_animator_hud
+timing									= 1100
+snd_using								= weapons\nv_deact
+
+[nv_disable_animator_hud]:gwr_action_base_hud
+; NV blackout is engine-driven now (see nv_enable_animator_hud note) -- disabled here to avoid a
+; double darken on the empty-hands path.
+use_ppe_effector_anm_show				= false
+
+; ---------------- boar knocks the weapon out of the hands ----------------
+; GS equivalent: configs/action_animators/monster_kicks.ltx [boar_front_kicks] / [boar_back_kicks].
+; anm_show names the BASE motion; the hud loader also picks up the numbered variants, so
+; boar_hit_front automatically alternates with boar_hit_front1. Lengths measured in
+; wpn_hand_animation.omf: front/front1 = 32 frames (~1070 ms), back = 28 (~930 ms).
+
+[boar_kick_front_animator]:gwr_action_base
+$spawn									= "weapons\boar_kick_front_animator"
+hud										= boar_kick_front_animator_hud
+timing									= 1100
+
+[boar_kick_front_animator_hud]:gwr_action_base_hud
+hud_fov_factor							= 1.25
+anm_show								= boar_hit_front
+anm_show_16x9							= boar_hit_front
+
+[boar_kick_back_animator]:gwr_action_base
+$spawn									= "weapons\boar_kick_back_animator"
+hud										= boar_kick_back_animator_hud
+timing									= 1000
+
+[boar_kick_back_animator_hud]:gwr_action_base_hud
+hud_fov_factor							= 1.25
+anm_show								= boar_hit_back
+anm_show_16x9							= boar_hit_back
+
+; The effector the two above point at. black.ppe is stock Clear Sky (a flat -1 base colour held for
+; 3s), so nothing to ship -- the fade in/out is the effector's, the .ppe itself is just solid black.
+[gwr_effector_black]
+pp_eff_name								= black.ppe
+pp_eff_cyclic							= 1

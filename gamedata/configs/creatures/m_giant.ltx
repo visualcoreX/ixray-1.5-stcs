@@ -123,11 +123,15 @@ satiety_health_v 	= 0.001				;увеличение здоровья при уменьшении сытости
 satiety_critical 	= -1.0	;0.25		;критическое значения сытости (в процентах от 0..1) когда здоровье начианает уменьшаться
 radiation_health_v 	= 0.01	;0.006		;уменьшение здоровья при воздействии радиации
 morale_v			= 0.01				;скорость восстановления морали
-health_hit_part 	= 1	;0.8			;процент хита, уходящий на отнимание здоровья
+; TOUGHENED (user, 2026-09-13): half the hit goes into health, so a pseudogiant takes twice the
+; rounds whatever they are fired from. This stacks with [giant_protections] below, which decides
+; how much of a round gets THROUGH the skin; this decides how much of that it can take.
+health_hit_part 	= 0.5	; orig 1			;процент хита, уходящий на отнимание здоровья
 power_hit_part 		= 1	;0.9			;процент хита, уходящий на отнимание силы
 psy_health_v		= 0.1				;скорость восстановления psy-здоровья
 
 immunities_sect				= giant_immunities
+protections_sect				= giant_protections	; GS skin armour
 
 ;открытые раны
 bleeding_v					= 0.01						;потеря крови при номинальной ране в секунду
@@ -382,7 +386,7 @@ radiation_immunity 		= 0.0
 telepatic_immunity 		= 0.0
 chemical_burn_immunity	= 0.01
 explosion_immunity 		= 0.1
-fire_wound_immunity  	= 0.009
+fire_wound_immunity  	= 0.048	; orig 0.009 (GS skin armour; tuned for 140 shots FMJ / 120 AP)
 
 ;---------------------------
 ; TODO: KILL THIS LATER
@@ -410,3 +414,12 @@ rank				= 801
 spec_rank			= strong
 community			= pseudo_gigant
 
+;***************************************************************
+; Gunslinger skin armour (ported 2026-08-09, engine: CBaseMonster::Hit).
+; A bullet whose k_ap beats skin_armor is scaled by (k_ap-skin)/k_ap but never below
+; hit_fraction_monster; one that does not pierce keeps only hit_fraction_monster.
+; tuned down from GS 0.6/0.2: 140 shots FMJ / 120 AP, not GS's 379 FMJ / 125 AP
+;***************************************************************
+[giant_protections]
+skin_armor				= 0.247
+hit_fraction_monster	= 0.134

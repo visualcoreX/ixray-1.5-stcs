@@ -1,19 +1,60 @@
 <w>
    <file name="wpn\wpn_crosshair">
     <texture id="wpn_crosshair" x="0" y="0" width="1024" height="1024" />
-     <texture id="wpn_crosshair_add_l" x="0"	y="0" width="102" height="768" />
-     <texture id="wpn_crosshair_add_r" x="0"	y="0" width="102" height="768" />
+     <texture id="wpn_crosshair_add_l" x="2"	y="0" width="100" height="768" />
+     <texture id="wpn_crosshair_add_r" x="2"	y="0" width="100" height="768" />
    </file>
    <file name="wpn\wpn_crosshair_l85">
     <texture id="wpn_crosshair_l85" x="0" y="0" width="1024" height="1024" />
-   </file>
-   <file name="wpn\wpn_crosshair_g36">
-    <texture id="wpn_crosshair_g36" x="0" y="0" width="1024" height="1024" />
    </file>
    <file name="wpn\wpn_crosshair_rpg">
     <texture id="wpn_crosshair_rpg" x="0" y="0" width="1024" height="1024" />
    </file>
    <file name="wpn\wpn_crosshair_bino">
     <texture id="wpn_crosshair_bino" x="0" y="0" width="1024" height="1024" />
+   </file>
+
+   <!--GUNSLINGER Mod: xrMPE crosshairs_ui set, full-frame 16:9 reticles-->
+   <file name="crosshair\crosshairs_ui_1pn93">
+    <texture id="crosshair_2d_1pn93x1" x="0" y="0" width="1820" height="1024" />
+    <texture id="crosshair_2d_1pn93x4" x="0" y="1024" width="1820" height="1024" />
+   </file>
+   <file name="crosshair\crosshairs_ui_elcan">
+    <texture id="crosshair_2d_elcan_off" x="0" y="0" width="1820" height="1024" />
+    <texture id="crosshair_2d_elcan_on" x="0" y="1024" width="1820" height="1024" />
+   </file>
+   <file name="crosshair\crosshairs_ui_elcan_levels">
+    <texture id="crosshair_2d_elcan_l1" x="0" y="0" width="1820" height="1024" />
+    <texture id="crosshair_2d_elcan_l2" x="0" y="1024" width="1820" height="1024" />
+   </file>
+   <file name="crosshair\crosshairs_ui_gauss">
+    <texture id="crosshair_2d_gauss" x="0" y="0" width="1820" height="1024" />
+   </file>
+   <file name="crosshair\crosshairs_ui_kashtan">
+    <texture id="crosshair_2d_kashtan" x="0" y="0" width="1820" height="1024" />
+   </file>
+   <file name="crosshair\crosshairs_ui_pgo7v">
+    <texture id="crosshair_2d_pgo7v_off" x="0" y="0" width="1820" height="1024" />
+    <texture id="crosshair_2d_pgo7v_on" x="0" y="1024" width="1820" height="1024" />
+   </file>
+   <file name="crosshair\crosshairs_ui_pn23">
+    <texture id="crosshair_2d_pn23" x="0" y="0" width="1820" height="1024" />
+   </file>
+   <file name="crosshair\crosshairs_ui_pso1as">
+    <texture id="crosshair_2d_pso1as_off" x="0" y="0" width="1820" height="1024" />
+    <texture id="crosshair_2d_pso1as_on" x="0" y="1024" width="1820" height="1024" />
+   </file>
+   <file name="crosshair\crosshairs_ui_pso1sn">
+    <texture id="crosshair_2d_pso1sn_off" x="0" y="0" width="1820" height="1024" />
+    <texture id="crosshair_2d_pso1sn_on" x="0" y="1024" width="1820" height="1024" />
+   </file>
+   <file name="crosshair\crosshairs_ui_pu">
+    <texture id="crosshair_2d_pu" x="0" y="0" width="1820" height="1024" />
+   </file>
+   <file name="crosshair\crosshairs_ui_susat">
+    <texture id="crosshair_2d_susat" x="0" y="0" width="1820" height="1024" />
+   </file>
+   <file name="crosshair\crosshairs_ui_g36">
+    <texture id="wpn_crosshair_g36" x="0" y="0" width="1820" height="1024" />
    </file>
 </w>

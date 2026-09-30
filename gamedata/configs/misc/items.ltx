@@ -1,4 +1,42 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;	ATM
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[sleepingbag]:identity_immunities
+GroupControlSection	= spawn_group
+discovery_dependency 	=
+$spawn 			= "food and drugs\sleepingbag"
+$prefetch 		= 32
+class			= II_ANTIR
+cform         		= skeleton
+visual        		= dynamics\devices\dev_rukzak\dev_rukzak.ogf
+description		= st_sleepingbag_descr
+
+inv_name		= st_sleepingbag
+inv_name_short		= st_sleepingbag
+inv_weight		= 1.0
+
+inv_grid_width     = 2
+inv_grid_height    = 2
+inv_grid_x         = 15
+inv_grid_y         = 30
+cost			= 5
+
+; eatable item
+eat_health 		= 0
+eat_satiety 		= 0
+eat_power 		= 0
+eat_radiation 		= 0
+wounds_heal_perc 	= 0
+eat_portions_num 	= 1
+
+; food item
+animation_slot		= 4
+
+;hud item
+hud 			= wpn_vodka_hud
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;	FOOD
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [bread]:identity_immunities
@@ -32,19 +70,22 @@ position_offset			 = 0.0,0.0,0.0
 angle_offset			 = 1.570790,1.570790,3.92699
 
 ; eatable item
-eat_health = 0.05
-eat_satiety = 0.2
+eat_health = 0	; orig 0.05 (moved to bread_eatable)
+eat_satiety = 0	; orig 0.2 (moved to bread_eatable)
+; Gunslinger thirst: a meal makes you thirsty. Read by gunsl_thirst.OnItemUsed, not by
+; the engine; the sign is GS's -- NEGATIVE drains the water level, positive tops it up.
+thirst_factor = -0.10
 eat_power = 0
 eat_radiation = 0
 wounds_heal_perc = 0
-eat_portions_num = -1
+eat_portions_num = 1	; orig -1 (same single use; lets gwr_eatable hand it back if the animation is refused)
 
 ; food item
 slot				= -1
 animation_slot		= 4
 
 ;hud item
-hud = wpn_vodka_hud
+hud = bread_hud_model	; gwr animated use (usable_items\bread\hud_objects.ltx)
 
 
 [kolbasa]:identity_immunities
@@ -78,19 +119,22 @@ position_offset			 = 0.0,0.0,0.0
 angle_offset			 = 1.570790,1.570790,3.92699
 
 ; eatable item
-eat_health = 0.05
-eat_satiety = 0.3
+eat_health = 0	; orig 0.05 (moved to kolbasa_eatable)
+eat_satiety = 0	; orig 0.3 (moved to kolbasa_eatable)
+; Gunslinger thirst: a meal makes you thirsty. Read by gunsl_thirst.OnItemUsed, not by
+; the engine; the sign is GS's -- NEGATIVE drains the water level, positive tops it up.
+thirst_factor = -0.15
 eat_power = 0
 eat_radiation = 0
 wounds_heal_perc = 0
-eat_portions_num = -1
+eat_portions_num = 1	; orig -1 (same single use; lets gwr_eatable hand it back if the animation is refused)
 
 ; food item
 slot				= -1
 animation_slot		= 4
 
 ;hud item
-hud = wpn_vodka_hud
+hud = kolbasa_hud_model	; gwr animated use (usable_items\kolbasa\hud_objects.ltx)
 
 [conserva]:identity_immunities
 GroupControlSection	= spawn_group
@@ -113,19 +157,22 @@ inv_grid_y			= 13
 cost				= 100
 
 ; eatable item
-eat_health = 0.1
-eat_satiety = 0.4
+eat_health = 0	; orig 0.1 (moved to conserva_eatable)
+eat_satiety = 0	; orig 0.4 (moved to conserva_eatable)
+; Gunslinger thirst: a meal makes you thirsty. Read by gunsl_thirst.OnItemUsed, not by
+; the engine; the sign is GS's -- NEGATIVE drains the water level, positive tops it up.
+thirst_factor = -0.20
 eat_power = 0
 eat_radiation = 0
 wounds_heal_perc = 0
-eat_portions_num = -1
+eat_portions_num = 1	; orig -1 (same single use; lets gwr_eatable hand it back if the animation is refused)
 
 ; food item
 slot				= -1
 animation_slot		= 4
 
 ;hud item
-hud = wpn_vodka_hud
+hud = conserva_hud_model	; gwr animated use (usable_items\conserva\hud_objects.ltx)
 
 attach_angle_offset		= 0.440521, 1.378287, -0.644026
 attach_position_offset	= 0.104196, -0.010821, 0.076969
@@ -145,18 +192,18 @@ $spawn 				= "food and drugs\vodka"
 class				= II_BOTTL
 cform				= skeleton
 visual				= dynamics\devices\dev_vodka\dev_vodka.ogf
-description			= st_vodka_descr
+description			= gunsl_eatable_vodka_descr
 
 ef_weapon_type		= 0
 
 inv_name			= st_vodka
 inv_name_short		= st_vodka
-inv_weight			= 0.6	;0.2
+inv_weight			= 0.2	;0.2
 
-inv_grid_width		= 1
-inv_grid_height		= 2
-inv_grid_x			= 5
-inv_grid_y			= 2
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 5
+inv_grid_y         = 2
 cost				= 100
 
 attach_angle_offset		= 0.000000, 0.000000, 0.000000
@@ -169,12 +216,13 @@ bone_name				= bip01_r_hand
 position_offset			 = 0.0,0.0,0.0
 angle_offset			 = 1.570790,1.570790,3.92699
 
-; eatable item
-eat_health		= 0.01
-eat_satiety		= 0.01
+; eatable item -- effects moved to [vodka_eatable] (usable_items\vodka\eatable_objects.ltx) so the
+; animated use applies them after effect_delay instead of instantly. Real values zeroed here.
+eat_health		= 0
+eat_satiety		= 0
 eat_power		= 0
-eat_radiation	= -0.3
-eat_alcohol		= 0.1
+eat_radiation	= 0
+eat_alcohol		= 0
 wounds_heal_perc = 0
 eat_portions_num = -1
 
@@ -183,10 +231,126 @@ slot				= -1
 animation_slot		= 4
 
 ;hud item
-hud = wpn_vodka_hud
+hud = vodka_hud_model
+
+; --- multi-use chain (GS): four sips, each stage an inventory section of its own ------------
+; gwr_eatable walks base_object/uses_count/using_N and spawns the next stage once the sip has
+; really landed, so an interrupted animation cannot drink one. The quick-use key follows the
+; same chain (quick_use_item, ActorInput.cpp) -- the slot stores `vodka` but the bag holds
+; `vodka2` after the first swig.
+base_object         = vodka
+uses_count          = 4
+using_2             = vodka2
+using_3             = vodka3
+using_4             = vodka4
+; how full the bottle is drawn in the inventory cell -- the same bar the weapons use for wear
+visual_condition    = 1.0
 
 break_particles		= destroy_fx\destroy_bottle
 break_sound			= material\bottle\collide\bottle_break_1
+
+; Partly drunk bottles. Everything but the icon, weight, price and description is inherited;
+; `hud` picks the phantom that plays the sip (usable_items\vodka\hud_objects.ltx), and the last
+; stage throws the empty away instead of leaving a bottle behind.
+[vodka2]:vodka
+description         = gunsl_eatable_vodka_descr2
+hud                 = vodka_hud_model2
+inv_weight          = 0.17
+cost                = 60
+inv_grid_x          = 34
+inv_grid_y          = 39
+visual_condition    = 0.75
+
+[vodka3]:vodka
+description         = gunsl_eatable_vodka_descr3
+hud                 = vodka_hud_model3
+inv_weight          = 0.13
+cost                = 35
+inv_grid_x          = 35
+inv_grid_y          = 39
+visual_condition    = 0.5
+
+[vodka4]:vodka
+description         = gunsl_eatable_vodka_descr4
+hud                 = vodka_hud_model4
+inv_weight          = 0.1
+cost                = 10
+inv_grid_x          = 36
+inv_grid_y          = 39
+visual_condition    = 0.25
+
+; A second bottle for the same drink -- different model only. Values, price, weight, icon and
+; effects are inherited stage by stage from the plain vodka above, so the two can never drift
+; apart; the world/hud models, the icon and the chain links are all that is overridden.
+; ONE icon for all four stages -- there is no per-stage art for this bottle.
+
+[vodka_cossacks]:vodka
+visual              = gwr\food\vodka\vodka_cossacks.ogf
+hud                 = vodka_cossacks_hud_model
+description         = st_vodka_cossacks_descr
+inv_name            = st_vodka_cossacks
+inv_name_short      = st_vodka_cossacks
+inv_grid_width      = 1
+inv_grid_height     = 1
+inv_grid_x          = 13
+inv_grid_y          = 24
+; its OWN chain -- without these it would inherit the plain bottle's links and turn into
+; ordinary vodka after the first sip
+base_object         = vodka_cossacks
+using_2             = vodka_cossacks2
+using_3             = vodka_cossacks3
+using_4             = vodka_cossacks4
+
+[vodka_cossacks2]:vodka2
+visual              = gwr\food\vodka\vodka_cossacks.ogf
+hud                 = vodka_cossacks_hud_model2
+description         = st_vodka_cossacks_descr2
+inv_name            = st_vodka_cossacks
+inv_name_short      = st_vodka_cossacks
+inv_grid_width      = 1
+inv_grid_height     = 1
+inv_grid_x          = 13
+inv_grid_y          = 24
+; its OWN chain -- without these it would inherit the plain bottle's links and turn into
+; ordinary vodka after the first sip
+base_object         = vodka_cossacks
+using_2             = vodka_cossacks2
+using_3             = vodka_cossacks3
+using_4             = vodka_cossacks4
+
+[vodka_cossacks3]:vodka3
+visual              = gwr\food\vodka\vodka_cossacks.ogf
+hud                 = vodka_cossacks_hud_model3
+description         = st_vodka_cossacks_descr3
+inv_name            = st_vodka_cossacks
+inv_name_short      = st_vodka_cossacks
+inv_grid_width      = 1
+inv_grid_height     = 1
+inv_grid_x          = 13
+inv_grid_y          = 24
+; its OWN chain -- without these it would inherit the plain bottle's links and turn into
+; ordinary vodka after the first sip
+base_object         = vodka_cossacks
+using_2             = vodka_cossacks2
+using_3             = vodka_cossacks3
+using_4             = vodka_cossacks4
+
+[vodka_cossacks4]:vodka4
+visual              = gwr\food\vodka\vodka_cossacks.ogf
+hud                 = vodka_cossacks_hud_model4
+description         = st_vodka_cossacks_descr4
+inv_name            = st_vodka_cossacks
+inv_name_short      = st_vodka_cossacks
+inv_grid_width      = 1
+inv_grid_height     = 1
+inv_grid_x          = 13
+inv_grid_y          = 24
+; its OWN chain -- without these it would inherit the plain bottle's links and turn into
+; ordinary vodka after the first sip
+base_object         = vodka_cossacks
+using_2             = vodka_cossacks2
+using_3             = vodka_cossacks3
+using_4             = vodka_cossacks4
 
 
 [guitar_a]:identity_immunities
@@ -257,7 +421,7 @@ cost				= 300
 eat_health = 0
 eat_satiety = 0
 eat_power = 0
-eat_radiation = -0.5
+eat_radiation = 0
 wounds_heal_perc = 0
 eat_portions_num = 1
 
@@ -265,7 +429,7 @@ eat_portions_num = 1
 animation_slot		= 4
 
 ;hud item
-hud = wpn_vodka_hud
+hud = antirad_hud_model
 
 
 [medkit]:identity_immunities
@@ -281,26 +445,26 @@ inv_name			= st_medkit
 inv_name_short		= st_medkit
 inv_weight			= 0.1
 
-inv_grid_width		= 2
-inv_grid_height		= 1
-inv_grid_x			= 6
-inv_grid_y			= 14
+inv_grid_width     	= 1
+inv_grid_height    	= 1
+inv_grid_x         	= 15
+inv_grid_y         	= 19
 cost				= 300
 
-; eatable item
-eat_health			= 0.5
+; eatable item -- effect moved to [medkit_eatable], applied on a delay by gwr_eatable
+eat_health			= 0
 eat_satiety			= 0
 eat_power			= 0.0
-eat_radiation		= -0.05
-wounds_heal_perc	= 0.1
+eat_radiation		= 0
+wounds_heal_perc	= 0
 eat_portions_num	= 1
-eat_max_power		= 0.1
+eat_max_power		= 0
 
 ; food item
 animation_slot		= 4
 
 ;hud item
-hud = wpn_vodka_hud
+hud = medkit_hud_model
 
 [medkit_army]:identity_immunities
 GroupControlSection	= spawn_group
@@ -315,26 +479,26 @@ inv_name			= st_medkit_army
 inv_name_short		= st_medkit_army
 inv_weight			= 0.1	;0.2
 
-inv_grid_width		= 2
-inv_grid_height		= 1
-inv_grid_x			= 16
-inv_grid_y			= 20
+inv_grid_width     	= 1
+inv_grid_height    	= 1
+inv_grid_x         	= 16
+inv_grid_y         	= 19
 cost				= 500
 
 ; eatable item
-eat_health			= 0.75
+eat_health			= 0
 eat_satiety			= 0
 eat_power			= 0.0
-eat_radiation		= -0.1
-wounds_heal_perc	= 0.3
+eat_radiation		= 0
+wounds_heal_perc	= 0
 eat_portions_num	= 1
-eat_max_power		= 0.1
+eat_max_power		= 0
 
 ; food item
 animation_slot		= 4
 
 ;hud item
-hud = wpn_vodka_hud
+hud = medkit_army_hud_model
 
 [medkit_scientic]:identity_immunities
 GroupControlSection	= spawn_group
@@ -349,29 +513,36 @@ inv_name			= st_medkit_science
 inv_name_short		= st_medkit_science
 inv_weight			= 0.1	;0.2
 
-inv_grid_width		= 2
-inv_grid_height		= 1
-inv_grid_x			= 14
-inv_grid_y			= 20
+inv_grid_width     	= 1
+inv_grid_height    	= 1
+inv_grid_x         	= 17
+inv_grid_y         	= 19
 cost				= 1000
 
 ; eatable item
-eat_health			= 1.0
+eat_health			= 0
 eat_satiety			= 0
 eat_power			= 0.0
-eat_radiation		= -1.0
-wounds_heal_perc	= 1.0
+eat_radiation		= 0
+wounds_heal_perc	= 0
 eat_portions_num	= 1
-eat_max_power		= 0.1
+eat_max_power		= 0
 
 ; food item
 animation_slot		= 4
 
 ;hud item
-hud = wpn_vodka_hud
+hud = medkit_scientic_hud_model
 
 
 [energy_drink]:vodka
+; single use: one can, one drink. Without this it inherits vodka's four-sip chain
+; (base_object/uses_count/using_2..4) and its visual_condition -- i.e. a full "how much is left"
+; bar in the inventory cell, a vodka bottle in the bag after the first sip, and a quick slot that
+; counts VODKA instead of cans (quick_use_resolve/quick_use_count walk base_object), so the slot
+; went grey with a full stack of energy drinks in the bag.
+base_object			= energy_drink
+uses_count			= 1
 $spawn 				= "food and drugs\energy_drink"
 inv_name			= st_energy_drink
 inv_name_short		= st_energy_drink
@@ -387,17 +558,20 @@ inv_weight			= 0.2
 
 eat_health			= 0
 eat_satiety			= 0
-eat_power			= 0.5
+eat_power			= 0
 eat_alcohol			= 0
 eat_radiation		= 0
 wounds_heal_perc	= 0
 eat_portions_num	= 1
-eat_max_power		= 0.2
+eat_max_power		= 0
 
 attach_angle_offset		= 0.000000, 0.000000, 0.000000
 attach_position_offset	= 0.087266, -0.078540, 0.052360
 attach_bone_name		= bip01_r_hand
 auto_attach				= false
+
+;hud item
+hud = energy_drink_hud_model
 
 
 [bandage]:identity_immunities
@@ -425,14 +599,14 @@ eat_health = 	0.0
 eat_satiety = 	0
 eat_power = 	0.0
 eat_radiation = 0.0
-wounds_heal_perc = 0.5
+wounds_heal_perc = 0
 eat_portions_num = 1	;100
 
 ; food item
 animation_slot		= 4
 
 ;hud item
-hud = wpn_vodka_hud
+hud = bandage_hud_model
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -462,7 +636,7 @@ inv_grid_height		= 1
 inv_grid_x			= 6
 inv_grid_y			= 13
 cost				= 20
-attach_angle_offset		= 3.080506,-1.493053,-1.202040   ;устанавливается в радианах Angle*PI/180
+attach_angle_offset		= 3.080506,-1.493053,-1.202040   ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ Angle*PI/180
 attach_position_offset		= 0.080000,0.021273,0.100000
 attach_bone_name		= bip01_r_hand
 auto_attach			= false
@@ -478,8 +652,8 @@ visual				= dynamics\devices\dev_flash_1\dev_flash_1.ogf
 
 inv_grid_width		= 1
 inv_grid_height		= 1
-inv_grid_x			= 11
-inv_grid_y			= 22
+inv_grid_x			= 12
+inv_grid_y			= 24
 
 slot				= 7
 radius				= 50
@@ -535,11 +709,30 @@ inv_grid_height		= 1
 inv_grid_x			= 16
 inv_grid_y			= 12
 
-;вещью нельзя торговать
+;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 can_trade			= true
 
 position			= 0.35,0.25,0.0
 light_trace_bone		= lights_bone
+
+; task: headlamp light-position offset (guide-bone frame). Pushed forward vs the engine default so the
+; near field spills onto the hands, GS-style. Tune here (no rebuild); z = forward, y = up, x = right.
+torch_hands_offset		= -0.2, 0.1, -0.5		; orig engine default -0.2, 0.1, -0.3
+
+; task: the headlamp's HUD twin spot that lights the first-person hands/weapon, in CAMERA space
+; (x=right, y=up, z=forward). Placed ABOVE the eye like a helmet lamp so the specular blik falls on the hands
+; from above (as in GS) and they drop out of the beam when you look up. torch_hands_hud_cone (deg, <=0 = same
+; as the world spot) narrows the beam so that pitch-out happens sooner. Tune both here, no rebuild.
+torch_hands_hud_offset	= 0.0, 0.12, 0.0
+torch_hands_hud_cone	= 0
+; GS "light sphere": a hud point light co-located with the hud spot -> crisp view-dependent specular blik on
+; the hands. Small range = tight local highlight. Raise for a broader glow on the hands.
+torch_hands_hud_omni_range	= 1.0
+
+; spot cone texture override. GS's headlamp uses the STANDARD texture (the tactical ones are for the WEAPON
+; flashlight [tactical_torch] and the handheld detector torch), so we leave this OFF -> the stock texture
+; baked in dev_torch_light.ogf is used. Uncomment to force a different one.
+; torch_spot_texture		= internal\internal_light_torch_r2
 
 attach_angle_offset		= 3.062, 0.008, -1.532
 attach_position_offset		= 0.134, -0.007, 0.09
@@ -556,9 +749,9 @@ snd_night_vision_off		= weapons\nv_off
 snd_night_vision_idle		= weapons\nv_loop
 snd_night_vision_broken		= weapons\nv_off
 
-night_vision_recharge_time			= 6		;(c) время зарядки аккамулятора
-night_vision_recharge_time_min		= 2		;(c) мин. время зарядки аккамулятора, после которого уст-во уже может работать
-night_vision_discharge_time			= 20	;(c) время разрядки (работы) устройства после полной зарядки
+night_vision_recharge_time			= 6		;(c) пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+night_vision_recharge_time_min		= 2		;(c) пїЅпїЅпїЅ. пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+night_vision_discharge_time			= 20	;(c) пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 slot								= 9
 default_to_ruck						= false
 sprint_allowed						= true
@@ -571,6 +764,7 @@ disabled_maps						= ai_test,ai_test2, andy_test_
 ;;	OTHERS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [wpn_vodka_hud]:identity_immunities,hud_base
+actor_torso_anim	= norm_torso_item_drink_staker	; third-person gesture (xrMPE pack)
 fire_point               = 0.0, 0.0, 0.06
 fire_bone                = bip01_head
 orientation              = 0, 0, 0

@@ -1,0 +1,413 @@
+[veh_btr]
+class		= SCRPTCAR
+cform           = skeleton
+visual		= physics\vehicles\btr\veh_btr_u_01.ogf
+
+[veh_kamaz]
+class		= SCRPTCAR
+cform           = skeleton
+visual		= physics\vehicles\kamaz\veh_kamaz_u_01.ogf
+
+[veh_niva_g]
+class		= SCRPTCAR
+cform           = skeleton
+visual		= physics\vehicles\niva\veh_niva_u_01.ogf
+
+[veh_niva_w]
+class		= SCRPTCAR
+cform           = skeleton
+visual		= physics\vehicles\niva\veh_niva_u_02.ogf
+
+[veh_tr13]
+class		= SCRPTCAR
+cform           = skeleton
+visual		= physics\vehicles\tr13\veh_tr13_u_01.ogf
+
+[veh_uaz]
+class		= SCRPTCAR
+cform           = skeleton
+visual		= physics\vehicles\uaz\veh_uaz_u_01.ogf
+
+[veh_zaz]
+class		= SCRPTCAR
+cform           = skeleton
+visual		= physics\vehicles\zaz\veh_zaz_u_01.ogf
+
+; Зомби и НПС 
+[sm_yan_wave_zombie_1]:stalker_fresh_zombied
+$spawn                     = "respawn\yan_stalker_zombied_1"
+character_profile     = sim_default_zombied_1
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_1.ltx
+
+
+[sm_yan_wave_zombie_2]:stalker_fresh_zombied
+$spawn                     = "respawn\yan_wave_zombie_2"
+character_profile     = sim_default_zombied_2
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_2.ltx
+
+[sm_yan_wave_zombie_3]:stalker_fresh_zombied
+$spawn                     = "respawn\sm_yan_wave_zombie_3"
+character_profile     = sim_default_zombied_4
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_3.ltx
+
+[sm_yan_wave_zombie_4]:stalker_fresh_zombied
+$spawn                     = "respawn\sm_yan_wave_zombie_4"
+character_profile     = sim_default_zombied_1
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_4.ltx
+
+[sm_yan_wave_zombie_5]:stalker_fresh_zombied
+$spawn                     = "respawn\sm_yan_wave_zombie_5"
+character_profile     = sim_default_zombied_3
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_5.ltx
+
+[sm_yan_wave_zombie_6]:stalker_fresh_zombied
+$spawn                     = "respawn\sm_yan_wave_zombie_6"
+character_profile     = sim_default_zombied_1
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_6.ltx
+
+[sm_yan_wave_zombie_7]:stalker_fresh_zombied
+$spawn                     = "respawn\sm_yan_wave_zombie_7"
+character_profile     = sim_default_zombied_2
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_7.ltx
+
+[sm_yan_wave_zombie_8]:stalker_fresh_zombied
+$spawn                     = "respawn\sm_yan_wave_zombie_8"
+character_profile     = sim_default_zombied_3
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_8.ltx
+
+[sm_yan_wave_zombie_9]:stalker_fresh_zombied
+$spawn                     = "respawn\sm_yan_wave_zombie_9"
+character_profile     = sim_default_zombied_1
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_9.ltx
+
+[sm_yan_wave_zombie_10]:stalker_fresh_zombied
+$spawn                     = "respawn\sm_yan_wave_zombie_10"
+character_profile     = sim_default_zombied_4
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_10.ltx
+
+[sm_yan_wave_zombie_11]:stalker_fresh_zombied
+$spawn                     = "respawn\sm_yan_wave_zombie_11"
+character_profile     = sim_default_zombied_2
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_11.ltx
+
+[sm_yan_wave_zombie_12]:stalker_fresh_zombied
+$spawn                     = "respawn\sm_yan_wave_zombie_12"
+character_profile     = sim_default_zombied_3
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_12.ltx
+
+[sm_yan_wave_zombie_13]:stalker_fresh_zombied
+$spawn                     = "respawn\sm_yan_wave_zombie_13"
+character_profile     = sim_default_zombied_2
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_13.ltx
+
+[sm_yan_wave_zombie_20]:stalker_fresh_zombied ;-- зомби для сцены 5
+$spawn                     = "respawn\sm_yan_wave_zombie_20"
+character_profile = sim_default_zombied_4
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_20.ltx
+
+[sm_yan_wave_zombie_21]:stalker_fresh_zombied ;-- зомби для сцены 5
+$spawn                     = "respawn\sm_yan_wave_zombie_21"
+character_profile = sim_default_zombied_1
+spec_rank = regular
+community = zombied
+;custom_data = scripts\yantar\yan_zombie_21.ltx
+
+
+;Сужетные персонажы
+
+; Митяй (Долг)
+[story_1]:stalker
+$spawn                     = "respawn\agr_duty_base_trader"
+character_profile     = agr_duty_base_trader
+spec_rank = master
+community = dolg
+max_item_mass				= 10000.0
+use_single_item_rule			= false
+
+; Торгаш сталкеров
+[story_2]:stalker
+$spawn                     = "respawn\agr_stalker_base_trader"
+character_profile     = agr_stalker_base_trader
+spec_rank = master
+community = stalker
+max_item_mass				= 10000.0
+use_single_item_rule			= false
+
+; Секретный торгаш агропрома
+[story_3]:stalker
+$spawn                     = "respawn\agr_secret_trader"
+character_profile     = agr_secret_trader
+spec_rank = master
+community = stalker
+max_item_mass				= 10000.0
+use_single_item_rule			= false
+
+
+; Наливайко
+[story_4]:stalker
+$spawn                     = "respawn\agr_holeman"
+character_profile     = agr_holeman
+spec_rank = master
+community = dolg
+
+; Механик сталкеров на Агропроме
+[story_5]:stalker
+$spawn                     = "respawn\agr_stalker_base_mechanic"
+character_profile     = sim_default_stalker_2
+spec_rank = master
+community = stalker
+
+;Лидер сталкеров на Агропроме
+[story_6]:stalker
+$spawn                     = "respawn\agr_stalker_base_leader"
+character_profile     = sim_default_stalker_2
+spec_rank = master
+community = stalker
+
+
+;;; Weaponmaster
+[story_7]:stalker
+$spawn                     = "respawn\agr_weaponmaster"
+character_profile     = agr_weaponmaster
+max_item_mass				= 10000.0
+use_single_item_rule			= false
+
+;;; Bar mans Долга
+[story_8]:stalker
+$spawn                     = "respawn\agr_barman"
+character_profile     = agr_barman
+spec_rank = master
+community = dolg
+
+
+; Ашот
+[story_9]:stalker
+$spawn                     = "respawn\val_freedom_trader"
+character_profile     = val_freedom_trader
+spec_rank = expirienced
+community = freedom
+max_item_mass				= 10000.0
+use_single_item_rule			= false
+
+;Бармен Свободы
+[story_10]:stalker
+$spawn                     = "respawn\val_freedom_barmen"
+character_profile     = val_freedom_barmen
+spec_rank = expirienced
+community = freedom
+
+
+; Валерьян
+[story_11]:stalker
+$spawn                     = "respawn\esc_leader_stalkerbase"
+character_profile     = esc_leader_stalkerbase
+spec_rank = master
+community = stalker
+
+; Торгаш на базе Кордона
+[story_12]:stalker
+$spawn                     = "respawn\esc_trader_stalkerbase"
+character_profile     = esc_trader_stalkerbase
+spec_rank = master
+community = stalker
+max_item_mass				= 10000.0
+use_single_item_rule			= false
+
+; Техник сталкеров
+[story_13]:stalker
+$spawn                     = "respawn\esc_tech_stalkerbase"
+character_profile     = esc_tech_stalkerbase
+spec_rank = master
+community = stalker
+
+
+;wolf
+
+[story_14]:stalker
+$spawn                     = "respawn\esc_wolf"
+character_profile     = esc_wolf
+spec_rank = master
+community = stalker
+
+
+;Military Zak
+
+[story_15]:stalker
+$spawn                     = "respawn\esc_zak_stalkerbase"
+character_profile     = esc_zak_stalkerbase
+spec_rank = master
+community = stalker
+
+;Водитель Халецкого
+[story_16]:stalker
+$spawn                     = "respawn\esc_driver"
+character_profile     = esc_driver
+spec_rank = master
+community = military
+
+;Халецкий Милитари
+[story_17]:stalker
+$spawn                     = "esc_zak_stalkerbase_2"
+character_profile     = esc_zak_stalkerbase_2
+spec_rank = master
+community = military
+
+; Wolf brother
+
+[story_18]:stalker
+$spawn                     = "respawn\esc_wolf_brother"
+character_profile     = esc_wolf_brother
+spec_rank = master
+community = stalker
+
+; Боров
+[story_19]:stalker
+$spawn                     = "respawn\gar_bandit_barman"
+character_profile     = gar_bandit_barman
+
+; Механик
+[story_20]:stalker
+$spawn                     = "respawn\gar_bandit_fixer"
+character_profile     = gar_bandit_fixer
+
+; Лидер Бандитов
+[story_21]:stalker
+$spawn                     = "respawn\gar_bandit_leader"
+character_profile     = gar_bandit_leader
+
+; Связист бандитов
+[story_22]:stalker
+$spawn                     = "respawn\gar_bandit_trader"
+character_profile     = gar_bandit_trader
+use_single_item_rule = false
+
+; Бандит Сеня
+[story_23]:stalker
+$spawn                     = "respawn\gar_bandit_senya"
+character_profile     = gar_bandit_senya
+
+; Квестодатель Дигеров
+[story_24]:stalker
+$spawn                     = "respawn\gar_digger_quester"
+character_profile     = gar_digger_quester
+
+; Механик Дигеров
+[story_25]:stalker
+$spawn                     = "respawn\gar_digger_fixer"
+character_profile     = gar_digger_fixer
+
+; Предатель Дигеров
+[story_26]:stalker
+$spawn                     = "respawn\gar_digger_traitor"
+character_profile     = gar_digger_traitor
+
+; Лебедев
+[story_27]:stalker
+$spawn               = "respawn\mar_csky_commander"
+character_profile    = mar_csky_commander
+;need_osoznanie_mode  = true
+
+; Каланча
+[story_28]:stalker
+$spawn               = "respawn\mar_csky_scientist"
+character_profile    = mar_csky_scientist
+
+; Холод
+[story_29]:stalker
+$spawn               = "respawn\mar_csky_barman"
+character_profile    = mar_csky_barman
+;need_osoznanie_mode  = true
+
+; Механик ЧН
+[story_30]:stalker
+$spawn               = "respawn\mar_csky_tech"
+character_profile    = mar_csky_tech
+;need_osoznanie_mode  = true
+
+; Шустрый
+[story_31]:stalker
+$spawn               = "respawn\mar_csky_tactic"
+character_profile    = mar_csky_tactic
+;need_osoznanie_mode  = true
+
+; Торгаш
+[story_32]:stalker
+$spawn               = "respawn\mar_csky_trader"
+character_profile    = mar_csky_trader
+max_item_mass				= 10000.0
+use_single_item_rule			= false
+
+; ХЗ Кто
+[story_33]:stalker
+$spawn                     = "respawn\mil_freedom_speaker"
+character_profile     = mil_freedom_speaker
+spec_rank = experienced
+community = freedom
+
+; Хог
+[story_34]:stalker
+$spawn                     = "respawn\mil_hog"
+character_profile     = mil_hog
+spec_rank = experienced
+community = killer
+
+; Квестодатель свободы
+[story_35]:stalker
+$spawn                     = "respawn\mil_freedom_quest_1"
+character_profile     = mil_freedom_quest_1
+spec_rank = experienced
+community = freedom
+
+; Свобода Костик
+[story_36]:stalker
+$spawn                     = "respawn\mil_kostiuk"
+character_profile     = mil_kostiuk
+spec_rank = experienced
+community = freedom
+
+; Стрелок (Рыжий Лес)
+[story_37]:stalker
+$spawn                     = "respawn\red_pursuit_strelok"
+character_profile     = red_pursuit_strelok
+
+;Командир ЧН в РЛ
+[story_38]:stalker_die_hard
+$spawn                     = "respawn\red_bridge_csky_commander"
+character_profile     = red_csky_commander
+
+;Сахаров
+[story_39]:stalker_sakharov
+$spawn                     = "respawn\yan_stalker_levsha"
+character_profile     = yan_stalker_sakharov
+spec_rank = experienced
+community = ecolog
+
+

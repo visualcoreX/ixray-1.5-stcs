@@ -1,0 +1,75 @@
+; Gunslinger antidote (drug_antidot) -- the real inventory item, three doses to a pack.
+; GS's version is a 3-use CoP booster whose effect is chemical-burn protection with a side of
+; detox. We have no boosters, and the protection half is not wanted: here each dose does ONE thing,
+; completely -- it clears medicine intoxication (gunsl_peredoz.script) whatever the level. The
+; `lsd_clear` key on the _eatable does that.
+;
+; Multi-use works the GS way, exactly as the water and the vodka already do here: a pack is not one
+; item with a counter but a CHAIN of sections, and gwr_eatable.next_use_stage hands the next link
+; back once the dose has actually landed -- so an interrupted animation cannot eat a portion. All
+; three stages keep the same icon and differ only by weight, cost, description and the bar in the
+; cell (visual_condition), which is how GS does it too.
+;
+; Like every animated item, the eat_* here are zeroed -- the effect lives on the _eatable phantom,
+; so handing the item back after a cancelled animation can never apply it twice.
+
+[drug_antidot]:identity_immunities
+GroupControlSection = spawn_group
+discovery_dependency =
+$spawn              = "food and drugs\drug_antidot"
+$prefetch           = 8
+; II_ANTIR, not II_MEDKI: the medkit hotkey (kUSE_MEDKIT) grabs the first II_MEDKI in the
+; inventory, and this must not answer it. CAntirad is a plain CEatableItemObject with no
+; behaviour of its own, and no hotkey is bound to it.
+class               = II_ANTIR
+cform               = skeleton
+visual              = dynamics\equipments\medical\drug_antidot.ogf
+description         = gunsl_eatable_antidot_descr
+inv_name            = gunsl_eatable_antidot
+inv_name_short      = gunsl_eatable_antidot
+inv_weight          = 0.03
+cost                = 1500      ; the full pack; the part-used stages below scale with what is left
+
+inv_grid_width      = 1
+inv_grid_height     = 1
+inv_grid_x          = 7
+inv_grid_y          = 13
+
+; --- multi-use chain (GS) -------------------------------------------------------------------
+base_object         = drug_antidot  ; the full pack every stage below points back at
+uses_count          = 3             ; doses in a full pack
+using_2             = drug_antidot2 ; what is left after the first dose
+using_3             = drug_antidot3
+; --------------------------------------------------------------------------------------------
+
+; eatable item -- effects live on drug_antidot_eatable
+eat_health          = 0
+eat_satiety         = 0
+eat_power           = 0
+eat_radiation       = 0
+wounds_heal_perc    = 0
+eat_portions_num    = 1
+
+; food item
+animation_slot      = 4
+
+;hud item
+hud                 = drug_antidot_hud_model
+; how full the pack is drawn in the inventory cell -- the same bar the weapons use for wear. The
+; stages are separate sections, so there is no condition to read; this is what the cell shows
+; instead (CUICellItem::UpdateConditionProgressBar), exactly as GS does it.
+visual_condition    = 1.0
+
+[drug_antidot2]:drug_antidot
+description         = gunsl_eatable_antidot_descr2
+hud                 = drug_antidot_hud_model2
+cost                = 1000
+inv_weight          = 0.02
+visual_condition    = 0.66
+
+[drug_antidot3]:drug_antidot
+description         = gunsl_eatable_antidot_descr3
+hud                 = drug_antidot_hud_model3
+cost                = 500
+inv_weight          = 0.01
+visual_condition    = 0.33

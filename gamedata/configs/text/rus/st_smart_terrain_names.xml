@@ -528,6 +528,9 @@
 	<string id="st_name_red_bridge_ally_smart">
 		<text>Окраины Лиманска</text>
 	</string>
+	<string id="st_name_red_bridge_bandit_smart">
+		<text>Укрепления бандитов</text>
+	</string>
 	<string id="st_name_red_smart_terrain_3_1">
 		<text>Лагерь у дороги</text>
 	</string>
@@ -619,7 +622,7 @@
 		<text>Ангар дядьки Яра</text>
 	</string>
 	<string id="st_name_val_smart_terrain_7_4">
-		<text>База «Свободы»</text>
+		<text>База Свободы</text>
 	</string>
 	<string id="st_name_val_smart_terrain_7_5">
 		<text>Бар «Глоток свободы»</text>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_tt33_up_barrel_accuracy_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_tt33_up_barrel_accuracy_descr">
+     <text>Позволяет снизить разброс пуль, что благоприятно сказывается на точности ведения огня.</text>
+</string>
+<string id="gunsl_tt33_up_barrel_speed_name">
+     <text>Перенарезка ствола</text>
+</string>
+<string id="gunsl_tt33_up_barrel_speed_descr">
+     <text>Изменение шага нарезки ствола позволяет повысить начальную скорость пули.</text>
+</string>
+<string id="gunsl_tt33_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_tt33_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_tt33_up_body_reliability_name">
+     <text>Защитное покрытие</text>
+</string>
+<string id="gunsl_tt33_up_body_reliability_descr">
+     <text>Нанесение специального напыления на внутренние детали позволяет замедлить износ оружия.</text>
+</string>
+<string id="gunsl_tt33_up_podacha_name">
+     <text>Доработка узла подачи патронов</text>
+</string>
+<string id="gunsl_tt33_up_podacha_descr">
+     <text>Индивидуальная подгонка деталей узла питания позволяет уменьшить вероятность задержек при стрельбе, связанных с неподачей и перекосом патрона.</text>
+</string>
+<string id="gunsl_tt33_up_ejector_name">
+     <text>Доработка экстрактора</text>
+</string>
+<string id="gunsl_tt33_up_ejector_descr">
+     <text>Доработка выбрасывателя позволяет уменьшить число задержек, связанных с прихватом выбрасываемых из пистолета после выстрела гильз. Благоприятным образом сказывается на надежности оружия.</text>
+</string>
+<string id="gunsl_tt33_up_plastic_handle_name">
+     <text>Пластиковая накладка</text>
+</string>
+<string id="gunsl_tt33_up_plastic_handle_descr">
+     <text>Замена штатной деревянной накладки позволяет повысить удобство обращения с оружием, а также немного снижает его вес.</text>
+</string>
+<string id="gunsl_tt33_up_kurok_name">
+     <text>Мягкий спуск УСМ</text>
+</string>
+<string id="gunsl_tt33_up_kurok_descr">
+     <text>Позволяет снизить отдачу, способствуя более точной стрельбе.</text>
+</string>
+<string id="gunsl_tt33_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_tt33_up_usm_rpm_descr">
+     <text>Перенастройка УСМ с доработкой некоторых его деталей позволяет стрелку вести огонь в более высоком темпе. К сожалению, оружие от этого начинает изнашиваться немного быстрее.</text>
+</string>
+<string id="gunsl_tt33_up_light_mag_name">
+     <text>Легковесный магазин</text>
+</string>
+<string id="gunsl_tt33_up_light_mag_descr">
+     <text>Замена стандартного магазина на современный аналог из легких сплавов позволяет снизить массу оружия.</text>
+</string>
+<string id="gunsl_tt33_up_patronnik_name">
+     <text>Юстировка патронника</text>
+</string>
+<string id="gunsl_tt33_up_patronnik_descr">
+     <text>Тщательная подгонка деталей и минимизация люфтов позволяет улучшить обтюрацию и добиться более высокой точности стрельбы.</text>
+</string>
+<string id="gunsl_tt33_up_zatvor_name">
+     <text>Балансировка затвора</text>
+</string>
+<string id="gunsl_tt33_up_zatvor_descr">
+     <text>Балансировка деталей затворной группы уменьшает увод ствола с линии прицеливания при выстреле.</text>
+</string>
+<string id="gunsl_tt33_up_light_details_name">
+     <text>Легкосплавные детали</text>
+</string>
+<string id="gunsl_tt33_up_light_details_descr">
+     <text>Замена части деталей оружия на их современные легкосплавные аналоги позволяет снизить массу оружия.</text>
+</string>
+</string_table>

@@ -1,10 +1,10 @@
 bind accel kLSHIFT
 bind active_jobs kP
-bind artefact k7
+; bind artefact k7		; k7 is wpn_laser now (see below)
 bind back kS
 bind buy_menu kB
-bind cam_zoom_in kADD
-bind cam_zoom_out kSUBTRACT
+; bind cam_zoom_in kADD		; kADD is scope_brightness_plus now
+; bind cam_zoom_out kSUBTRACT	; kSUBTRACT is scope_brightness_minus now
 bind chat kCOMMA
 bind chat_team kPERIOD
 bind console kGRAVE
@@ -37,8 +37,13 @@ bind torch kL
 bind show_detector kO
 bind up kUP
 bind use kF
-bind use_bandage kRBRACKET
-bind use_medkit kLBRACKET
+; CoP quick-use slots replace the fixed medkit/bandage keys: each slot is assigned in the
+; inventory and fires whatever section the player parked there. The two old commands still
+; exist in the engine and can be bound by hand if anyone wants them back.
+bind quick_use_1 kF1
+bind quick_use_2 kF2
+bind quick_use_3 kF3
+bind quick_use_4 kF4
 bind vote kF6
 bind vote_begin kF5
 bind vote_no kF8
@@ -58,3 +63,21 @@ bind wpn_reload kR
 bind wpn_zoom mouse2
 bind alife_command kK
 bind night_vision kN
+
+; ------------------------------------------------------------------------------------------------
+; Commands added by this mod. They had no default at all, so a fresh profile (or Reset to defaults
+; in the key menu) left them unbound -- these are the keys the working setup uses.
+; ------------------------------------------------------------------------------------------------
+bind wpn_laser k7
+bind wpn_flashlight k8
+bind scope_brightness_plus kADD
+bind scope_brightness_minus kSUBTRACT
+bind wpn_alter_zoom mouse3
+bind wpn_kick kZ
+bind quick_grenade kLMENU
+
+; Stock Clear Sky commands that were missing a default here too, so the camera keys came up dead
+; after a reset. These are the vanilla keys, nothing of ours.
+bind cam_1 kNUMPAD1
+bind cam_2 kNUMPAD2
+bind cam_3 kNUMPAD3

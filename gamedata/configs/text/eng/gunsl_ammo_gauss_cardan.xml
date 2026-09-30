@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_ammo_gauss_cardan">
+		<text>Home-made batteries</text>
+	</string>
+	<string id="gunsl_ammo_gauss_cardan_short">
+		<text>H.-m. Batt.</text>
+	</string>
+	<string id="gunsl_ammo_gauss_cardan_descr">
+		<text>Batteries that use a capsulated fragment of the Flash artifact as their power source. Due to makeshift production conditions and lack of specialized equipment the capacity is smaller. Moreover, the peak amperage of the battery is much lower, compared to the original one. Thus the speed with which the projectile is propelled is lower as well, which in turn negatively affects accuracy.</text>
+	</string>
+	<string id="gunsl_up_prop_new_ammo">
+		<text>New ammo type</text>
+	</string>
+</string_table>

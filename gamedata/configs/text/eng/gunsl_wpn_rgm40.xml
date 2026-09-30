@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_wpn_rgm-40">
+		<text>RGM-40 "Kastet"</text>
+	</string>
+<string id="gunsl_wpn_rgm-40_descr">
+		<text>A Russian compact handheld single-shot grenade launcher. It is essentially a GP-30 underbarrel grenade launcher with the weapon-mounting hardware replaced by a steel tube with a folding stock. Used primarily by law enforcement for firing non-lethal ammunition, however the design also allows the use of standard widely available underbarrel grenades VOG-25 and VOG-25P.</text>
+	</string>
+</string_table>

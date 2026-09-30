@@ -84,9 +84,9 @@
                 <text font="graffiti22"  r="240" g="217" b="182" a="255" align="c"/>
         </item_used>
 
-        <gun_jammed x="200" y="70" width="600" height="50" ttl="3">
-                <text font="graffiti32"  r="240" g="217" b="182" a="255" align="c">gun_jammed</text>
-        </gun_jammed>
+        <gun_jammed x="20" y="230" width="400" height="30" ttl="3">
+		<text font="graffiti22"  r="240" g="217" b="182" a="255" align="l">gun_jammed</text>
+	</gun_jammed>
 
         <cant_walk x="200" y="650" width="600" height="30" ttl="3">
                 <text font="graffiti22"  r="240" g="217" b="182" a="255" align="c">cant_walk</text>
@@ -173,8 +173,40 @@
 		<text font="graffiti32"  r="240" g="217" b="182" a="255" align="c"/>
 	</shooting_get_ready>
 
+	<!-- Night-vision screen mask (vignette + scanlines), ported from Gunslinger's gunsl_nv_screen_mask.
+	     CTorch::SwitchNightVision adds/removes it by this name. No ttl -> it stays until removed.
+	     ui_nv_screen_effect is GS's light anim, appended to our lanims.xr; la_alpha makes it drive
+	     the mask's alpha only (a faint 247..255 flicker), not its colour. -->
+	<!-- "You're on fire" prompt, ported from Gunslinger (its Messenger + gunsl_actor_burned string).
+	     The engine adds it while the actor is burning with his hands down and drops it the moment he
+	     starts beating the flames out or the fire dies -- so its going away IS the "you stopped
+	     burning" feedback. No ttl: the engine owns its lifetime, not a timer. -->
+	<gwr_burn_msg x="100" y="660" width="800" height="30">
+		<text font="graffiti22" r="240" g="217" b="182" a="255" align="c">st_gwr_actor_burned</text>
+	</gwr_burn_msg>
+
+	<gwr_nv_screen_mask x="0" y="0" width="1024" height="768" stretch="1">
+		<auto_static width="1024" height="768" light_anim="ui_nv_screen_effect" la_cyclic="1" la_text="0" la_alpha="1" stretch="1">
+			<texture>ui_gwr_nv_screen_mask</texture>
+		</auto_static>
+	</gwr_nv_screen_mask>
+
+	<!-- GS bloodscreen (gunsl_bloodscreen.script). _main pulses while the actor is bleeding out,
+	     _end is the one-shot splash on a big single hit; ttl kills it by itself. -->
+	<gwr_bloodscreen_main x="0" y="0" width="1024" height="768" stretch="1">
+		<auto_static width="1024" height="768" light_anim="ui_bloodscreen_blinking" la_cyclic="1" la_text="0" la_alpha="1" stretch="1">
+			<texture>ui_gwr_bloodscreen</texture>
+		</auto_static>
+	</gwr_bloodscreen_main>
+
+	<gwr_bloodscreen_end x="0" y="0" width="1024" height="768" ttl="4" stretch="1">
+		<auto_static width="1024" height="768" light_anim="ui_bloodscreen_blinking_end" la_cyclic="0" la_text="0" la_alpha="1" stretch="1">
+			<texture>ui_gwr_bloodscreen</texture>
+		</auto_static>
+	</gwr_bloodscreen_end>
 
 	<text_on_screen_center x="212" y="300" width="600" height="68" complex_mode="1" light_anim="ui_slow_blinking_alpha">
 		<text font="graffiti32"  r="240" g="217" b="182" a="255" align="c"/>
 	</text_on_screen_center>
+
 </header>

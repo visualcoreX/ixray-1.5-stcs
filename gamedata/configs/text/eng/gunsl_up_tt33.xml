@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_tt33_up_barrel_accuracy_name">
+     <text>Barrel adjustment</text>
+</string>
+<string id="gunsl_tt33_up_barrel_accuracy_descr">
+     <text>Reduces bullet dispersion, which improves accuracy.</text>
+</string>
+<string id="gunsl_tt33_up_barrel_speed_name">
+     <text>Rebored barrel</text>
+</string>
+<string id="gunsl_tt33_up_barrel_speed_descr">
+     <text>Faster twist rate increases muzzle velocity and reduces bullet dispersion.</text>
+</string>
+<string id="gunsl_tt33_up_sights_name">
+     <text>Tritium sights</text>
+</string>
+<string id="gunsl_tt33_up_sights_descr">
+     <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+</string>
+<string id="gunsl_tt33_up_body_reliability_name">
+     <text>Protective coating</text>
+</string>
+<string id="gunsl_tt33_up_body_reliability_descr">
+     <text>Application of a protective coating to the internal parts significantly reduces wear.</text>
+</string>
+<string id="gunsl_tt33_up_podacha_name">
+     <text>Improved feeding mechanism</text>
+</string>
+<string id="gunsl_tt33_up_podacha_descr">
+     <text>Individual adjustment of the standard parts of the feeding mechanism decreases the probability of malfunctions related to feeding issues.</text>
+</string>
+<string id="gunsl_tt33_up_ejector_name">
+     <text>Improved ejector</text>
+</string>
+<string id="gunsl_tt33_up_ejector_descr">
+     <text>Reduces the probability of malfunctions related to ejecting an empty case from the firearm. Improves reliability.</text>
+</string>
+<string id="gunsl_tt33_up_plastic_handle_name">
+     <text>Polymer grip</text>
+</string>
+<string id="gunsl_tt33_up_plastic_handle_descr">
+     <text>Grip panels made of polymer improve handling and slightly reduce overall weight of the firearm.</text>
+</string>
+<string id="gunsl_tt33_up_kurok_name">
+     <text>Match trigger</text>
+</string>
+<string id="gunsl_tt33_up_kurok_descr">
+     <text>Reduces recoil, thus improving accuracy.</text>
+</string>
+<string id="gunsl_tt33_up_usm_rpm_name">
+     <text>Trigger tuning</text>
+</string>
+<string id="gunsl_tt33_up_usm_rpm_descr">
+     <text>Modification of the trigger mechanism increases rate of fire, at the cost of durability.</text>
+</string>
+<string id="gunsl_tt33_up_light_mag_name">
+     <text>Lightweight magazine</text>
+</string>
+<string id="gunsl_tt33_up_light_mag_descr">
+     <text>Reduces overall weight of the gun by replacing the standard magazine with a lightweight counterpart.</text>
+</string>
+<string id="gunsl_tt33_up_patronnik_name">
+     <text>Chamber adjustment</text>
+</string>
+<string id="gunsl_tt33_up_patronnik_descr">
+     <text>Precise adjustment of the internal parts and reduction of play in the chamber improves accuracy.</text>
+</string>
+<string id="gunsl_tt33_up_zatvor_name">
+     <text>Balanced slide</text>
+</string>
+<string id="gunsl_tt33_up_zatvor_descr">
+     <text>Balanced slide decreases muzzle climb and felt recoil.</text>
+</string>
+<string id="gunsl_tt33_up_light_details_name">
+     <text>Lightweight parts</text>
+</string>
+<string id="gunsl_tt33_up_light_details_descr">
+     <text>Reduces weight by replacing weapon parts with their modern light-alloy counterparts.</text>
+</string>
+</string_table>

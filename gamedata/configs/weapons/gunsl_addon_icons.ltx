@@ -1,0 +1,760 @@
+; Gunslinger upgrade-addon overlay icon sections (grid coords into ui_icon_equipment; atlas == GS's).
+; Shared layer sprites referenced by weapons' upgrade nodes via `upgrade_addon_icon = <section>`.
+; Coords copied verbatim from GS configs\weapons\addons\upgrades_addons_icons.ltx.
+
+[upgrade_addon_icon_barrel_silencer_1]
+; Walther, Sig220, Beretta, Glock17, PM, PMM, HPSA, Colt1911, Fort12, Fort17, Sr1m
+inv_grid_width  = 1
+inv_grid_height = 1
+inv_grid_x      = 33
+inv_grid_y      = 15
+
+[upgrade_addon_icon_barrel_silencer_long_1]
+; Five-seveN, Grach
+inv_grid_width  = 1
+inv_grid_height = 1
+inv_grid_x      = 32
+inv_grid_y      = 15
+
+; ===== sig220 nimble (unique) icon elements =====
+[icon_element_sig220r_body]	; nimble base body layer (element_icon_0)
+inv_grid_width	= 2
+inv_grid_height	= 1
+inv_grid_x	= 24
+inv_grid_y	= 16
+
+[icon_element_sig220_mag]	; sig220 big-mag overlay (mag11 upgrade)
+inv_grid_width	= 1
+inv_grid_height	= 2
+inv_grid_x	= 36
+inv_grid_y	= 16
+
+[upgrade_addon_icon_uniq_item]	; unique-item star overlay
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 26
+inv_grid_y	= 16
+
+[upgrade_addon_icon_laser_x5l_1]	; X5L laser+torch overlay (walther/fort17/sig220r)
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 21
+inv_grid_y	= 17
+
+[upgrade_addon_icon_laser_insight_x2_1]	; Insight X2 laser overlay (USP); GS grid coords
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 20
+inv_grid_y	= 17
+
+; ===== desert eagle icon elements (GS icons.ltx coords; atlas layout == GS) =====
+[icon_element_deagle_body]	; base body layer (element_icon_0); GS @6,25
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 14
+inv_grid_y         = 8
+
+[icon_element_deagle_body_uniq]	; nimble (silver) body layer; GS icons.ltx coords
+inv_grid_width	= 2
+inv_grid_height	= 1
+inv_grid_x	= 12
+inv_grid_y	= 26
+
+[icon_element_deagle_compensator]	; compensator overlay
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 21
+inv_grid_y	= 16
+
+[icon_element_deagle_compensator_uniq]	; nimble compensator overlay
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 22
+inv_grid_y	= 16
+
+[icon_element_deagle_rail]	; rail overlay
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 23
+inv_grid_y	= 16
+
+[upgrade_addon_icon_laser_m6x_1]	; flashlaser (tactical block) overlay; Five-seveN + Deagle; GS upgrades_addons_icons.ltx @22,15
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 22
+inv_grid_y	= 15
+
+; ===== bm16 / toz66 icon elements (GS shotguns/bm16/icons.ltx coords) =====
+[icon_element_toz66_body]
+inv_grid_width	= 3
+inv_grid_height	= 2
+inv_grid_x	= 20
+inv_grid_y	= 13
+
+[icon_element_toz66_barrel]
+inv_grid_width	= 3
+inv_grid_height	= 1
+inv_grid_x	= 38
+inv_grid_y	= 4
+
+[icon_element_toz66_stock]
+inv_grid_width	= 2
+inv_grid_height	= 2
+inv_grid_x	= 29
+inv_grid_y	= 9
+
+; ===== toz34 icon elements (GS shotguns/toz34/icons.ltx coords) =====
+[icon_element_toz34_body]
+inv_grid_width	= 3
+inv_grid_height	= 2
+inv_grid_x	= 25
+inv_grid_y	= 11
+
+[icon_element_toz34_barrel]
+inv_grid_width	= 2
+inv_grid_height	= 1
+inv_grid_x	= 33
+inv_grid_y	= 2
+
+[icon_element_toz34_stock]
+inv_grid_width	= 2
+inv_grid_height	= 2
+inv_grid_x	= 31
+inv_grid_y	= 9
+
+[upgrade_addon_icon_rail_picatiny_1]	; TOZ-34 weaver rail; GS upgrades_addons_icons.ltx @33,11
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 33
+inv_grid_y	= 11
+
+; ===== wincheaster1300 icon elements (GS shotguns/wincheaster1300/icons.ltx +
+; addons/upgrades_addons_icons.ltx coords; all verified to have art in our atlas) =====
+[icon_element_w1300_body]	; base body layer (element_icon_0)
+inv_grid_width	= 3
+inv_grid_height	= 2
+inv_grid_x	= 37
+inv_grid_y	= 7
+
+[icon_element_w1300_barrel]	; barrel layer (element_icon_1)
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 35
+inv_grid_y	= 2
+
+[icon_element_w1300_stock_regular]	; default stock (element_icon_2)
+inv_grid_width	= 1
+inv_grid_height	= 2
+inv_grid_x	= 40
+inv_grid_y	= 7
+
+[icon_element_w1300_stock_plastic]	; tactical/plastic stock upgrade
+inv_grid_width	= 2
+inv_grid_height	= 2
+inv_grid_x	= 39
+inv_grid_y	= 9
+
+[icon_element_w1300_stock_uniq]	; unique variant stock
+inv_grid_width	= 2
+inv_grid_height	= 2
+inv_grid_x	= 39
+inv_grid_y	= 5
+
+[icon_element_w1300_mag]	; extended magazine upgrade
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 23
+inv_grid_y	= 10
+
+[icon_element_w1300_fore]	; tactical handle upgrade
+inv_grid_width	= 1
+inv_grid_height	= 2
+inv_grid_x	= 24
+inv_grid_y	= 9
+
+[icon_element_w1300_rail]	; scope rail upgrade
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 35
+inv_grid_y	= 9
+
+[upgrade_addon_icon_laser_miniklesh_1]	; flashlaser block (Wincheaster 1300)
+inv_grid_width	= 1
+inv_grid_height	= 2
+inv_grid_x	= 37
+inv_grid_y	= 16
+
+; ===== protecta/striker (our spas12) icon elements -- GS shotguns/protecta/icons.ltx coords,
+; all verified to have art in our atlas =====
+[icon_element_protecta_body]	; base body layer (element_icon_0)
+inv_grid_width	= 3
+inv_grid_height	= 2
+inv_grid_x	= 28
+inv_grid_y	= 5
+
+[icon_element_protecta_stock]	; stock upgrade
+inv_grid_width	= 2
+inv_grid_height	= 2
+inv_grid_x	= 20
+inv_grid_y	= 9
+
+[icon_element_protecta_long_barrel]	; long barrel
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 31
+inv_grid_y	= 6
+
+[icon_element_protecta_sil_barrel]	; silencer barrel
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 27
+inv_grid_y	= 6
+
+[icon_element_protecta_laser]	; LAM block
+inv_grid_width	= 1
+inv_grid_height	= 2
+inv_grid_x	= 25
+inv_grid_y	= 9
+
+[icon_element_protecta_rail]	; scope rail
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 35
+inv_grid_y	= 10
+
+; ===== MP5 icon elements (GS smg\mp5\icons.ltx + addons\upgrades_addons_icons.ltx) =====
+[icon_element_mp5_body]	; base body layer (element_icon_0)
+inv_grid_width	= 2
+inv_grid_height	= 2
+inv_grid_x	= 29
+inv_grid_y	= 13
+
+[icon_element_mp5_stock_default]	; telescopic stock (element_icon_1)
+inv_grid_width	= 2
+inv_grid_height	= 2
+inv_grid_x	= 25
+inv_grid_y	= 13
+
+[icon_element_mp5_stock_up]	; plastic stock upgrade
+inv_grid_width	= 2
+inv_grid_height	= 2
+inv_grid_x	= 23
+inv_grid_y	= 13
+
+[icon_element_mp5_fore]	; foregrip (element_icon_2)
+inv_grid_width	= 2
+inv_grid_height	= 1
+inv_grid_x	= 33
+inv_grid_y	= 12
+
+[icon_element_mp5_mag]	; 30-round magazine (element_icon_3)
+inv_grid_width	= 1
+inv_grid_height	= 2
+inv_grid_x	= 31
+inv_grid_y	= 12
+
+[icon_element_mp5_mag40]	; 40-round magazine upgrade
+inv_grid_width	= 1
+inv_grid_height	= 2
+inv_grid_x	= 27
+inv_grid_y	= 12
+
+[icon_element_mp5_handle]	; tactical handle upgrade
+inv_grid_width	= 1
+inv_grid_height	= 2
+inv_grid_x	= 35
+inv_grid_y	= 13
+
+[icon_element_mp5_rail]	; scope rail upgrade
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 35
+inv_grid_y	= 12
+
+[upgrade_addon_icon_flash_ak_1]	; tactical torch block (MP5, MP5SD, UMP45)
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 26
+inv_grid_y	= 17
+
+; ===== MP5SD + UMP45 icon elements (GS smg\mp5\icons.ltx + addons\upgrades_addons_icons.ltx) =====
+[icon_element_mp5sd_fore]	; SD handguard (element_icon_2)
+inv_grid_width	= 2
+inv_grid_height	= 1
+inv_grid_x	= 31
+inv_grid_y	= 14
+
+[icon_element_mp5sd_mag]	; SD magazine (element_icon_3)
+inv_grid_width	= 1
+inv_grid_height	= 2
+inv_grid_x	= 32
+inv_grid_y	= 12
+
+[icon_element_mp5sd_handle]	; SD tactical handle upgrade
+inv_grid_width	= 2
+inv_grid_height	= 2
+inv_grid_x	= 33
+inv_grid_y	= 13
+
+[icon_element_ump45_body]	; UMP45 body (element_icon_0); GS draws it straight from inv_grid 6,39
+inv_grid_width     = 4
+inv_grid_height    = 2
+inv_grid_x         = 10
+inv_grid_y         = 21
+
+[icon_element_ump45_handle]	; UMP45 tactical handle upgrade
+inv_grid_width	= 1
+inv_grid_height	= 2
+inv_grid_x	= 36
+inv_grid_y	= 13
+
+[upgrade_addon_icon_rail_picatiny_2]	; UMP45 scope rail
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 34
+inv_grid_y	= 11
+
+; ===== AKS-74U icon elements (GS assault\aks74u\icons.ltx + addons\upgrades_addons_icons.ltx) =====
+[icon_element_aks74u_fore]	; AKS-74U rail handguard (up_aks74u_tsevie)
+inv_grid_width	= 1
+inv_grid_height	= 1
+inv_grid_x	= 26
+inv_grid_y	= 6
+
+[upgrade_addon_icon_stock_amort_3]	; recoil pad (AKS-74U / AKS-74UB / AN-94)
+inv_grid_width	= 1
+inv_grid_height	= 2
+inv_grid_x	= 40
+inv_grid_y	= 2
+
+; ===== AKS-74UB (unique) icon elements (GS) =====
+[icon_element_aks74ub_mag]	; AKS-74UB black magazine (element_icon_0)
+inv_grid_width	= 1
+inv_grid_height	= 2
+inv_grid_x	= 27
+inv_grid_y	= 4
+
+[upgrade_addon_icon_assault_handler_5]	; AKS-74UB pistol grip
+inv_grid_width	= 1
+inv_grid_height	= 2
+inv_grid_x	= 37
+inv_grid_y	= 1
+
+; ---- AK-101 layered inventory icon rects (GS assault\ak101\icons.ltx, verbatim) ----
+[icon_element_ak101_body]
+inv_grid_width      = 3
+inv_grid_height     = 2
+inv_grid_x          = 28
+inv_grid_y          = 0
+
+[icon_element_ak101_body2]
+inv_grid_width      = 2
+inv_grid_height     = 1
+inv_grid_x          = 31
+inv_grid_y          = 0
+
+[icon_element_ak101_mag]
+inv_grid_width      = 1
+inv_grid_height     = 2
+inv_grid_x          = 23
+inv_grid_y          = 4
+
+; ---- AN-94 layered inventory icon rects + its two own upgrade sprites (GS, verbatim) ----
+[icon_element_an94_body]
+inv_grid_width      = 5
+inv_grid_height     = 2
+inv_grid_x          = 33
+inv_grid_y          = 3
+
+[icon_element_an94_mag]
+inv_grid_width      = 1
+inv_grid_height     = 2
+inv_grid_x          = 26
+inv_grid_y          = 4
+
+[upgrade_addon_icon_assault_handler_4]
+inv_grid_width      = 1
+inv_grid_height     = 2
+inv_grid_x          = 36
+inv_grid_y          = 1
+
+[upgrade_addon_icon_knife_nsak_2]
+inv_grid_width      = 2
+inv_grid_height     = 1
+inv_grid_x          = 23
+inv_grid_y          = 6
+
+; ===== l85 (GS wpn_l85) =====
+[icon_element_l85_body]
+inv_grid_width		= 5
+inv_grid_height		= 2
+inv_grid_x			= 32
+inv_grid_y			= 5
+
+[icon_element_l85_mag_default]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 31
+inv_grid_y			= 4
+
+[icon_element_l85_handle]
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 36
+inv_grid_y			= 10
+
+[icon_element_l85_fore_stock]
+inv_grid_width		= 2
+inv_grid_height		= 1
+inv_grid_x			= 37
+inv_grid_y			= 10
+
+[upgrade_addon_icon_mag_556_40_1]
+inv_grid_width		= 1
+inv_grid_height		= 3
+inv_grid_x			= 36
+inv_grid_y			= 6
+
+[upgrade_addon_icon_mag_556_60_1]
+inv_grid_width		= 1
+inv_grid_height		= 3
+inv_grid_x			= 35
+inv_grid_y			= 6
+
+[icon_element_l85_fore_tac]
+inv_grid_width		= 2
+inv_grid_height		= 2
+inv_grid_x			= 37
+inv_grid_y			= 5
+
+[upgrade_addon_icon_laser_anpeq_1]
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 35
+inv_grid_y			= 11
+
+[upgrade_addon_icon_knife_l3a1_1]
+inv_grid_width		= 2
+inv_grid_height		= 1
+inv_grid_x			= 36
+inv_grid_y			= 9
+
+; ===== sig552 (GS wpn_sig552) =====
+[upgrade_addon_icon_laser_anpeq_2]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 32
+inv_grid_y			= 17
+
+[icon_element_sig552_handle]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 40
+inv_grid_y			= 15
+
+; ===== sig550 (GS wpn_sig550) =====
+[icon_element_sig550_body]
+inv_grid_width		= 3
+inv_grid_height		= 2
+inv_grid_x			= 29
+inv_grid_y			= 15
+
+[icon_element_sig550_fore]
+inv_grid_width		= 3
+inv_grid_height		= 1
+inv_grid_x			= 23
+inv_grid_y			= 15
+
+[upgrade_addon_icon_knife_kcb_1]
+inv_grid_width		= 2
+inv_grid_height		= 2
+inv_grid_x			= 27
+inv_grid_y			= 15
+
+[icon_element_sig550_fore_tac_handle]
+inv_grid_width		= 3
+inv_grid_height		= 2
+inv_grid_x			= 35
+inv_grid_y			= 15
+
+[icon_element_sig550_fore_tac]	; GS: the tac handguard WITHOUT the vertical grip -- shown when the M203 takes that spot
+inv_grid_width		= 3
+inv_grid_height		= 1
+inv_grid_x			= 32
+inv_grid_y			= 16
+
+[icon_element_sig552_body]	; = wpn_sig552's own inv_grid rect, so it covers the base picture
+inv_grid_width		= 4
+inv_grid_height		= 2
+inv_grid_x			= 14
+inv_grid_y			= 21
+
+; ===== groza (GS wpn_groza) =====
+[icon_element_oc14_body]
+inv_grid_width		= 4
+inv_grid_height		= 2
+inv_grid_x			= 28
+inv_grid_y			= 3
+
+[icon_element_oc14_handle_upper]
+inv_grid_width		= 2
+inv_grid_height		= 1
+inv_grid_x			= 28
+inv_grid_y			= 2
+
+[icon_element_oc14_mag]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 25
+inv_grid_y			= 4
+
+[icon_element_oc14_rail]
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 30
+inv_grid_y			= 2
+
+[upgrade_addon_icon_assault_handler_2]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 38
+inv_grid_y			= 0
+
+[icon_element_oc14_handle]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 32
+inv_grid_y			= 3
+
+[icon_element_oc14_handle_upper_for_scope]:icon_element_oc14_handle_upper	; GS: same rect, drawn again when the PO 4x34 is mounted
+
+; ===== val (GS wpn_val) =====
+[upgrade_addon_icon_mag_939_20]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 33
+inv_grid_y			= 8
+
+[upgrade_addon_icon_valvss_rail]
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 34
+inv_grid_y			= 10
+
+[upgrade_addon_icon_flash_ak_3]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 31
+inv_grid_y			= 17
+
+[upgrade_addon_icon_valvss_handle]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 29
+inv_grid_y			= 7
+
+[upgrade_addon_icon_stock_amort_2]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 39
+inv_grid_y			= 2
+
+; ===== vintorez (GS wpn_vintorez) =====
+[icon_element_vss_mag]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 34
+inv_grid_y			= 8
+
+[upgrade_addon_icon_scheka_1]
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 33
+inv_grid_y			= 10
+
+; ===== svu (GS wpn_svu) =====
+[icon_element_svu_body]
+inv_grid_width		= 5
+inv_grid_height		= 2
+inv_grid_x			= 36
+inv_grid_y			= 11
+
+[icon_element_svu_mag10]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 40
+inv_grid_y			= 12
+
+[icon_element_svu_handle]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 34
+inv_grid_y			= 14
+
+[icon_element_svu_sightl_on]
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 37
+inv_grid_y			= 13
+
+[icon_element_svu_sightr_on]
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 38
+inv_grid_y			= 13
+
+[icon_element_svu_handle_up]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 26
+inv_grid_y			= 14
+
+[icon_element_svu_sheka]
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 38
+inv_grid_y			= 9
+
+[icon_element_svu_sights_off]	; drawn by the scopes' additional_icon_element -- the SVU with its iron sights folded
+inv_grid_width		= 4
+inv_grid_height		= 1
+inv_grid_x			= 37
+inv_grid_y			= 14
+
+; ===== svu_nimble (GS wpn_svu_nimble) =====
+[icon_element_svu_mag20]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 39
+inv_grid_y			= 12
+
+; ===== svd (GS wpn_svd) =====
+[icon_element_svd_body]
+inv_grid_width		= 6
+inv_grid_height		= 2
+inv_grid_x			= 0
+inv_grid_y			= 0
+
+; ===== rg-6 (GS wpn_rgm-40) =====
+[upgrade_addon_icon_assault_handler_6]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 38
+inv_grid_y			= 14
+
+; ===== gauss (GS wpn_gauss) =====
+[upgrade_addon_icon_comp_gauss]
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 20
+inv_grid_y			= 16
+
+; --- bizon (GS addons/upgrades_addons_icons.ltx) ---
+[upgrade_addon_icon_rail_assault_fore_side_1]
+; Bizon
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 28
+inv_grid_y			= 13
+
+; ===== glock17 (GS wpn_glock17) =====
+[icon_element_glock17_body]
+inv_grid_width			= 2
+inv_grid_height			= 1
+inv_grid_x				= 18	; ours; orig 16 (GS)
+inv_grid_y				= 22	; ours; orig 31 (GS)
+
+[icon_element_glock17_mag_std]
+inv_grid_width			= 1
+inv_grid_height			= 1
+inv_grid_x				= 35
+inv_grid_y				= 18
+
+[icon_element_glock17_mag_19]
+inv_grid_width			= 1
+inv_grid_height			= 2
+inv_grid_x				= 33
+inv_grid_y				= 17
+
+[icon_element_glock17_mag_33]
+inv_grid_width			= 1
+inv_grid_height			= 2
+inv_grid_x				= 34
+inv_grid_y				= 17
+
+[icon_element_glock17_laser]
+inv_grid_width			= 1
+inv_grid_height			= 1
+inv_grid_x				= 36
+inv_grid_y				= 18
+
+[icon_element_glock17_barrel_compensator]
+inv_grid_width			= 1
+inv_grid_height			= 1
+inv_grid_x				= 35
+inv_grid_y				= 17
+
+; ===== saiga12 (GS wpn_saiga12) =====
+[icon_element_saiga_body]
+inv_grid_width		= 5
+inv_grid_height		= 2
+inv_grid_x			= 20
+inv_grid_y			= 11
+
+[icon_element_saiga_mag]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 23
+inv_grid_y			= 8
+
+[icon_element_saiga_supressor]
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 28
+inv_grid_y			= 14
+
+[upgrade_addon_icon_assault_handler_1]
+inv_grid_width		= 1
+inv_grid_height		= 2
+inv_grid_x			= 31
+inv_grid_y			= 1
+
+[icon_element_saiga_mag_up]
+inv_grid_width		= 1
+inv_grid_height		= 3
+inv_grid_x			= 22
+inv_grid_y			= 8
+
+; ===== grach (GS wpn_grach) =====
+[icon_element_grach_rail]
+inv_grid_width			= 1
+inv_grid_height			= 1
+inv_grid_x				= 22
+inv_grid_y				= 17
+
+[upgrade_addon_icon_laser_miniklesh_2]
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 37
+inv_grid_y			= 18
+
+; ===== stechkin (GS wpn_stechkin) =====
+[icon_element_stechkin_handle]
+inv_grid_width			= 1
+inv_grid_height			= 1
+inv_grid_x				= 24
+inv_grid_y				= 17
+
+; ===== sr1m (GS wpn_sr1m) =====
+[icon_element_sr1m_rail]
+inv_grid_width			= 1
+inv_grid_height			= 1
+inv_grid_x				= 23
+inv_grid_y				= 17
+
+; ===== p90 (GS wpn_p90) =====
+[upgrade_addon_icon_flash_p90]
+inv_grid_width		= 2
+inv_grid_height		= 1
+inv_grid_x			= 20
+inv_grid_y			= 15

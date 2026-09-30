@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+	<string id="gunsl_wpn_ak101_name">
+		<text>AK-101</text>
+	</string>	
+	<string id="gunsl_wpn_ak101_descr">
+		<text>Relatively new development by the world-famous weapon production concern, aimed at NATO markets. The main difference from regular AK-74M is AK-101 being chambered in the standard NATO caliber.</text>
+	</string>
+</string_table>

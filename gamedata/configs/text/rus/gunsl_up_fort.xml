@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_fort_up_barrel_sil_name">
+     <text>Ствол с резьбой под глушитель</text>
+</string>
+<string id="gunsl_fort_up_barrel_sil_descr">
+     <text>Замена ствола на удлиненный, с резьбой, предназначенной для установки глушителя.</text>
+</string>
+<string id="gunsl_fort_up_barrel_speed_name">
+     <text>Ствол с измененным шагом нарезки</text>
+</string>
+<string id="gunsl_fort_up_barrel_speed_descr">
+     <text>Изменение шага нарезов в канале ствола оружия позволяет увеличить начальную скорость пули и снизить разброс попаданий при стрельбе.</text>
+</string>
+<string id="gunsl_fort_up_body_name">
+     <text>Защитное покрытие</text>
+</string>
+<string id="gunsl_fort_up_body_descr">
+     <text>Нанесение специального напыления на детали оружия позволяет значительно замедлить его износ.</text>
+</string>
+<string id="gunsl_fort_up_ejector_name">
+     <text>Доработка экстрактора</text>
+</string>
+<string id="gunsl_fort_up_ejector_descr">
+     <text>Позволяет уменьшить число задержек, связанных с прихватом гильз, выбрасываемых из пистолета после выстрела. Благоприятным образом сказывается на надежности оружия.</text>
+</string>
+<string id="gunsl_fort_up_handle_name">
+     <text>Анатомическая рукоять</text>
+</string>
+<string id="gunsl_fort_up_handle_descr">
+     <text>Создана с учетом индивидуальных особенностей и предпочтений стрелка, делая хват оружия гораздо удобнее, а стрельбу - комфортнее.</text>
+</string>
+<string id="gunsl_fort_up_usm_recoil_name">
+     <text>Мягкий спуск УСМ</text>
+</string>
+<string id="gunsl_fort_up_usm_recoil_descr">
+     <text>Позволяет снизить отдачу, способствуя более точной стрельбе.</text>
+</string>
+<string id="gunsl_fort_up_light_mag_name">
+     <text>Легковесный магазин</text>
+</string>
+<string id="gunsl_fort_up_light_mag_descr">
+     <text>Замена штатного магазина оружия на облегченный позволяет немного снизить полную массу.</text>
+</string>
+<string id="gunsl_fort_up_patronnik_accuracy_name">
+     <text>Юстировка патронника</text>
+</string>
+<string id="gunsl_fort_up_patronnik_accuracy_descr">
+     <text>Позволяет улучшить обтюрацию и добиться более высокой точности стрельбы.</text>
+</string>
+<string id="gunsl_fort_up_zatvor_balancer_name">
+     <text>Балансировка затвора</text>
+</string>
+<string id="gunsl_fort_up_zatvor_balancer_descr">
+     <text>Балансировка деталей затворной группы уменьшает увод ствола с линии прицеливания при выстреле и снижает ощущаемую отдачу.</text>
+</string>
+<string id="gunsl_fort_up_light_details_name">
+     <text>Облегченные детали</text>
+</string>
+<string id="gunsl_fort_up_light_details_descr">
+     <text>Замена стандартных деталей оружия на легковесные аналоги из современных сплавов позволяет снизить массу оружия.</text>
+</string>
+<string id="gunsl_fort_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_fort_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_fort_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_fort_up_usm_rpm_descr">
+     <text>Перенастройка УСМ с доработкой некоторых его деталей позволяет стрелку вести огонь в более высоком темпе. К сожалению, оружие от этого начинает изнашиваться немного быстрее.</text>
+</string>
+<string id="gunsl_fort_up_podacha_name">
+     <text>Доработка узла подачи патронов</text>
+</string>
+<string id="gunsl_fort_up_podacha_descr">
+     <text>Индивидуальная подгонка деталей узла питания позволяет уменьшить вероятность задержек при стрельбе, связанных с неподачей и перекосом патрона.</text>
+</string>
+</string_table>

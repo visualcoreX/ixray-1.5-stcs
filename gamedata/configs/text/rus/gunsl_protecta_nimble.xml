@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_protecta_nimble">
+		<text>«Отбойник»</text>
+	</string>
+	<string id="gunsl_wpn_protecta_nimble_descr">
+		<text>В отличие от большей части попавших в Зону дробовиков Protecta, данная версия с завода оснащена более длинным стволом, благодаря чему даже без дополнительных модификаций имеет более высокую точность и кучность боя.</text>
+	</string>
+</string_table>

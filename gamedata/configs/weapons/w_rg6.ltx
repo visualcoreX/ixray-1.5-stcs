@@ -1,98 +1,104 @@
-[wpn_rg-6]:zero_immunities,weapon_probability,default_weapon_params
+[wpn_rg-6]:identity_immunities,weapon_probability,default_weapon_params
 GroupControlSection		= spawn_group
 discovery_dependency 	=
 $spawn                  = "weapons\rg-6"		; option for Level Editor
-$npc			 				= on						; option for Level Editor
-$prefetch 		 			= 2
-scheduled               = off    				; option for ALife Simulator
+$npc			 		= on				; option for Level Editor
+$prefetch 		 		= 2
+scheduled               = off              	; option for ALife Simulator
 cform                   = skeleton
 class                   = WP_RG6
 min_radius              = 0
 max_radius              = 50
-description				= st_wpn_rg6_descr
+description				= gunsl_wpn_rgm-40_descr	; orig st_wpn_rg6_descr (GS wpn_rgm-40)
 
 ef_main_weapon_type		= 4
-ef_weapon_type			= 9
+ef_weapon_type          = 9	; restored: 12 broke the AI queue length (select_queue_params keys on ef_weapon_type)
+
+sprint_allowed       	= true
+;control_inertion_factor = 1.0
 
 ;---DOF-------------------------------------------------------------------------
 zoom_dof			         = 0.5, 1.0, 180
-reload_dof  				= 0.0, 0.5,5, 1.7
+reload_dof              = 0.0, 0.5,5, 1.3	; orig 0.0, 0.5,5, 1.7 (GS wpn_rgm-40)
 ;-------------------------------------------------------------------------------
 
-;-------------------------------------------------------------------------------
-holder_range_modifier	= 1.0     ; во сколько раз увеличивается eye_range
-holder_fov_modifier		= 1.0     ; во сколько раз увеличивается eye_fov
-;-------------------------------------------------------------------------------
+cost                    = 4000	; orig 10000 (GS wpn_rgm-40)
+weapon_class			= heavy_weapon
 
-cost						= 10000
-weapon_class				= heavy_weapon
+; GS heavy/rgm-40/base.ltx:55 -- the RGM-40 is a single-shot break-open GL with ONE anm_reload, not the
+; RG-6's shell-by-shell drum: with tri-state on, the open/add/close cycle replayed the motion three times.
+tri_state_reload		= off	; orig on (GS wpn_rgm-40)
 
-tri_state_reload			= on
+ammo_limit				= 60
+ammo_current			= 10
+ammo_elapsed			= 0
 
-ammo_limit		 			= 60
-ammo_current		 		= 10
-ammo_elapsed		 		= 0
+ammo_mag_size			= 1
+ammo_class				= ammo_vog-25, ammo_vog-25p
+launch_speed			= 50
+hand_dependence         = 1
+single_handed           = 0
 
-ammo_mag_size		 		= 6
-ammo_class		 			= ammo_vog-25, ammo_vog-25p
-launch_speed				= 50 ;76
-sprint_allowed				= false
-;-------------------------------------------------------------------------------
-;базовая дисперсия
-fire_dispersion_base	= 1.0  	;угол (в градусах) базовой дисперсии оружия (оружия зажатого в тисках)
-control_inertion_factor	= 1.7f
+slot                    = 2                ; // secondary
+animation_slot          = 10                ; type of the animation that will be used
 
-;отдача
-cam_relax_speed         = 7.0		;скорость возврата в исходное положение
-cam_relax_speed_ai      = 360
-cam_dispersion          = 5.0 	;увеличения угла (в градусах) с каждым выстрелом
-cam_dispersion_inc		= 5.0 	;увеличениe cam_dispersion с каждым выстрелом
-cam_dispersion_frac		= 0.1 	;ствол будет подыматься на cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
-cam_max_angle			= 15 		;максимальный угол отдачи
-cam_max_angle_horz		= 5 		;(degree) maximum shot horizontal degree
-cam_step_angle_horz		= 5.0 	;(degree) size of step camera moved in horizontal position while shooting
+inv_name				= gunsl_wpn_rgm-40	; orig st_wpn_rg6 (GS wpn_rgm-40)
+inv_name_short			= gunsl_wpn_rgm-40	; orig st_wpn_rg6 (GS wpn_rgm-40)
+inv_weight				= 2.5
 
-fire_dispersion_condition_factor = 5	;увеличение дисперсии в процентах при максимальном износе
-misfire_probability 		= 0.0	;вероятность осечки при максимальном износе
-misfire_condition_k		= 0.0
-condition_shot_dec 		= 0.0 	;увеличение износа при каждом выстреле
-;-------------------------------------------------------------------------------
-
-position                = -0.026, -0.111, 0.
-orientation             = 0, 0, 0
-
-shell_point				= 0.0, 0.120, 0.20
-fire_point              = 0.0, 0.120, 0.452
-fire_point2             = 0.0, 0.120, 0.452
-
-hand_dependence 		= 1
-single_handed			= 0
-
-slot 					= 2
-animation_slot			= 10
-
-
-inv_name				= st_wpn_rg6
-inv_name_short			= st_wpn_rg6
-inv_weight				= 6.2
-
-inv_grid_width			= 4
-inv_grid_height			= 2
-inv_grid_x				= 0
-inv_grid_y				= 8
+inv_grid_width     		= 4
+inv_grid_height    		= 2
+inv_grid_x         		= 0
+inv_grid_y         		= 38
 
 kill_msg_x				= 0
 kill_msg_y				= 172
 kill_msg_width			= 68
 kill_msg_height			= 30
 
-flame_particles		   = weapons\generic_weapon05
-smoke_particles		   = weapons\generic_shoot_00
-rpm_empty_click 	   	= 200
+;-------------------------------------------------------------------------------
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+fire_dispersion_base	= 1.0  	;пїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
+control_inertion_factor	= 1.7f
+
+;пїЅпїЅпїЅпїЅпїЅпїЅ
+cam_relax_speed         = 5	; orig 7.0 (GS wpn_rgm-40)
+cam_relax_speed_ai      = 360
+cam_dispersion          = 10.0	; orig 5.0 (GS wpn_rgm-40)
+cam_dispersion_inc      = 1.0	; orig 5.0 (GS wpn_rgm-40)
+cam_dispersion_frac     = 0.9	; orig 0.1 (GS wpn_rgm-40)
+cam_max_angle           = 25	; orig 15 (GS wpn_rgm-40)
+cam_max_angle_horz		= 5 		;(degree) maximum shot horizontal degree
+cam_step_angle_horz		= 5.0 	;(degree) size of step camera moved in horizontal position while shooting
+
+fire_dispersion_condition_factor = 5	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+misfire_probability 		= 0.0	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+misfire_condition_k		= 0.0
+condition_shot_dec      = 0.04	; orig 0.0 (GS wpn_rgm-40)
+;-------------------------------------------------------------------------------
+
+position                = -0.026, -0.144, 0.0	; orig -0.026, 0.07, 0.0 (GS wpn_rgm-40)
+orientation             = 0, 0, 0
+
+shell_point				= 0.0, 0.120, 0.20
+fire_point              = 0.0, 0.157, 0.257
+fire_point2             = 0.0, 0.157, 0.257
+
+flame_particles			= ghost_particles\weapons\flame_40mm_m320
+smoke_particles			= ghost_particles\weapons\suppressor_smoke_pistol_common
+
+shell_dir		 			= 0.0, 0.0, 0.4
+;shell_particles	 		= weapons\generic_shells
+
+PDM_disp_base           = 2.0	; orig 1.0 (GS wpn_rgm-40)
+PDM_disp_vel_factor 		= 1.1
+PDM_disp_accel_factor 		= 1.1
+PDM_disp_crouch	 			= 1.0
+PDM_disp_crouch_no_acc 		= 1.0
 
 ; ttc
-hit_power        			= 0.75, 0.75, 0.75, 0.75
-hit_impulse      			= 150
+hit_power           		= 1.0, 1.0, 1.0, 1.0
+hit_impulse		 			= 150
 hit_type 					= fire_wound
 
 hit_probability_gd_novice		= 0.80
@@ -100,24 +106,19 @@ hit_probability_gd_stalker		= 0.80
 hit_probability_gd_veteran		= 0.80
 hit_probability_gd_master		= 0.80
 
-fire_distance       		= 100
-bullet_speed				= 76
-rpm                 		= 100
+fire_distance       	= 100
+bullet_speed            = 32	; orig 76 (GS wpn_rgm-40)
+rpm                 	= 100
+rpm_empty_click         = 200
 ; end ttc
-
-PDM_disp_base 				= 1.0
-PDM_disp_vel_factor 		= 1.1
-PDM_disp_accel_factor 	= 1.1
-PDM_disp_crouch	 				= 1.0
-PDM_disp_crouch_no_acc 		= 1.0
 
 hud                     = wpn_rg-6_hud
 
 ;--STRAP PARAMETERS-----------------------------------------------------------------
-;под мишкой
+;пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 strap_position         	= -0.26,-0.11,0.15
 strap_orientation      	= -15,-9,110
-;на спине
+;пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 strap_bone0					= bip01_spine2
 strap_bone1					= bip01_spine1
 
@@ -131,71 +132,336 @@ light_var_range		 	= 0.5
 light_time 		 			= 0.2
 
 ph_mass			 			= 3
-;cost			 				= 900
 
 ;addons
 scope_status				= 0
-silencer_status			= 0
-grenade_launcher_status	= 0
+silencer_status				= 0
+grenade_launcher_status		= 0
 
 zoom_enabled				= true
-scope_zoom_factor	    	= 55
+scope_zoom_factor			= 100
 
-;звуки
-snd_draw				      = weapons\generic_draw
-snd_holster			      = weapons\generic_holster
-snd_shoot			      = weapons\n_toz34_shot
-snd_empty			      = weapons\generic_empty
-snd_reload			      = weapons\rg6_reload
-snd_shoot_duplet			= weapons\n_toz34_shot
-snd_open_weapon			= weapons\rg6_reload_start
-snd_add_cartridge			= weapons\rg6_reload
-snd_close_weapon			= weapons\rg6_reload_end
-snd_shoot_1			      = weapons\n_toz34_shot
-snd_reload_1		      = weapons\bm16_reload_one		;reload left
+;пїЅпїЅпїЅпїЅпїЅ
+snd_draw					= weapons\ak74\ak74_draw
+snd_holster					= weapons\p90\p90_hide
+snd_empty					= weapons\glock17\glock17_dry
+; back to the plain magazined reload sounds now that tri_state_reload is off (GS base.ltx:185-186);
+; the open/add/close set below is dead with tri-state off, kept only as a record of the old RG-6
+snd_reload					= weapons\ak74\ak74_gl_reload
+snd_reload_empty			= weapons\ak74\ak74_gl_reload
+;snd_open_weapon			= $silent
+;snd_add_cartridge			= weapons\ak74\ak74_gl_reload
+;snd_close_weapon			= $silent
+;snd_close					= $silent
+; ammo-type change reload (GS base.ltx:187) -- plays with anm_reload_ammochange
+snd_changecartridgetype		= weapons\ak74\ak74_gl_grenadechange
+; jam sounds (GS base.ltx:190-194) -- our engine reads all three; anm_reload_jammed[_last] exist above
+snd_reload_jammed			= weapons\ak74\ak74_gl_grenadechange
+snd_reload_jammed_last		= weapons\ak74\ak74_gl_grenadechange
+snd_jam						= $silent
+
+;grenade launcher sounds
+snd_shoot_1p        = weapons\shared\gen_launcher_shoot_1p_01, -0.9
+snd_shoot_1p1       = weapons\shared\gen_launcher_shoot_1p_02, -0.9
+snd_shoot_1p2       = weapons\shared\gen_launcher_shoot_1p_03, -0.9
+snd_shoot_1p3       = weapons\shared\gen_launcher_shoot_1p_04, -0.9
+snd_shoot           = weapons\shared\gen_launcher_shoot_3p_01, -0.9
+snd_shoot1          = weapons\shared\gen_launcher_shoot_3p_02, -0.9
+snd_shoot2          = weapons\shared\gen_launcher_shoot_3p_03, -0.9
+snd_shoot3          = weapons\shared\gen_launcher_shoot_3p_04, -0.9
+volume_snd_shoot    = 150
+volume_snd_shoot_1p = 125
+
+; ---- added by the Gunslinger port (wpn_rgm-40) ----
+misfire_start_condition = 0.5
+misfire_end_condition   = 0.1
+misfire_start_prob      = 0.1
+misfire_end_prob        = 0.6
+condition_queue_shot_dec= 0.04
+snd_jammed_click        = weapons\glock17\glock17_dry
+snd_breechblock         = $silent
+crosshair_inertion      = 8.25
+cam_return              = 1
+repair_group            = rgm40
+def_show_bones          = handler
+def_hide_bones          = handler2
+allowed_upgrades        = up_rgm40_
+
+; world (3rd person) model animations -- GS wpn_rgm-40
+use_world_anims=true
+wanm_idle = idle
+
+
+; ---- added by the Gunslinger port (wpn_rgm-40) ----
+upgrades                = vartree_rgm40_trigger, vartree_rgm40_polymer, vartree_rgm40_handle
+installed_upgrades      = 
+upgrade_scheme          = upgrade_scheme_rgm40
 
 [wpn_rg-6_hud]:hud_base
-zoom_hide_crosshair		= false
-
-hands_position				= -0.013000,-0.176999,0.118000
-hands_orientation			= 6.250005,-0.649999,0.000000
-hands_position_16x9				= -0.029000,-0.186000,0.112000
-hands_orientation_16x9			= 1.699999,0.000001,0.600000
-
-item_position				= -0.003178,0.002246,0.000581
-item_orientation			= -181.191742,180.482727,-180.330688
-
-shell_point					= 0,0,0
-shell_dir               = 0.0, 1.0, 0.0
+zoom_hide_crosshair			= true
+attach_place_idx			= 0
+; OUR path kept on purpose: wpn_rg6_hud.ogf IS the GS rgm40 hud model, with its motion-ref repointed
+; to dynamics\weapons\wpn_rg6\wpn_rg6_hud_animation (that omf holds the rgm40_* item motions)
+item_visual             = dynamics\weapons\wpn_rg6\wpn_rg6_hud.ogf
+hands_position				= 0.0,-0.015,-0.07
+hands_orientation			= 0.0,0.0,0.0
+hands_position_16x9			= 0.0,-0.015,-0.07
+hands_orientation_16x9			= 0.0,0.0,0.0
+item_position				= 0.0,0.0,0.0
+item_orientation			= 0.0,0.0,0.0
+shell_point					= 0.0,-9.0,0.0
+shell_dir               	= 0.0,0.0,0.0
 shell_bone					= wpn_body
-
-
-fire_point				= -0.0,0.0,0.513
+fire_point		= 0.0,-0.056,0.362
 fire_bone               = wpn_body
-
-attach_place_idx		= 0
-item_visual					= dynamics\weapons\wpn_rg6\wpn_rg6_hud.ogf
-
-anm_show			      	= rg6_draw
-anm_hide			      	= rg6_holster
-anm_idle			      	= rg6_idle
-anm_idle_aim			   = rg6_idle_aim
-anm_idle_moving		   = rg6_idle_moving
-anm_idle_sprint		   = rg6_idle_sprint
-anm_open				= rg6_reload_start
-anm_add_cartridge			= rg6_reload
-anm_close					= rg6_reload_end
-anm_shots					= rg6_shoot
-anm_bore						= rg6_idle_bore
-
-
-aim_hud_offset_pos				= -0.125001,0.006000,0.156500
-aim_hud_offset_rot				= 0.015000,0.085000,-0.002500
-aim_hud_offset_pos_16x9				= -0.091000,0.000500,0.120000
-aim_hud_offset_rot_16x9				= -0.010000,-0.010000,0.000000
-
-gl_hud_offset_pos			= 0,0,0
-gl_hud_offset_rot			= 0,0,0
-
+aim_hud_offset_pos = 0.000000,0.000400,0.000000
+aim_hud_offset_rot = 0.013000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.000000,-0.001000,0.000000
+aim_hud_offset_rot_16x9 = 0.010000,0.000000,0.000000
+gl_hud_offset_pos          = 0.0,0.0,0.0
+gl_hud_offset_rot          = 0.0,0.0,0.0
+gl_hud_offset_pos_16x9     = 0.0,0.0,0.0
+gl_hud_offset_rot_16x9     = 0.0,0.0,0.0
 lean_hud_offset_pos		= 0,0,0
 lean_hud_offset_rot		= 0,0,0
+
+; ==================== SEMI-AUTO / BASE ANIMATION SET (from Gunslinger) ====================
+
+; ---- show / draw ----
+anm_show = groza_glon_draw
+anm_show_empty = groza_glon_draw
+anm_show_jammed = groza_glon_draw
+
+; ---- hide / holster ----
+anm_hide = groza_glon_hide
+anm_hide_empty = groza_glon_hide
+anm_hide_jammed = groza_glon_hide
+
+; ---- bore ----
+anm_bore = groza_glon_draw
+anm_bore_empty = groza_glon_draw
+anm_bore_jammed = groza_glon_draw
+
+; ---- sprint (enter / loop / exit) ----
+anm_idle_sprint_start = groza_glon_sprint_start
+anm_idle_sprint_start_empty = groza_glon_sprint_start
+anm_idle_sprint_start_jammed = groza_glon_sprint_start
+anm_idle_sprint = groza_sprint
+anm_idle_sprint_empty = groza_sprint
+anm_idle_sprint_jammed = groza_sprint
+anm_idle_sprint_end = groza_glon_sprint_end
+anm_idle_sprint_end_empty = groza_glon_sprint_end
+anm_idle_sprint_end_jammed = groza_glon_sprint_end
+
+; ---- aim walk (directional) ----
+anm_idle_aim_moving_forward = groza_glon_aim_walk
+anm_idle_aim_moving_forward_empty = groza_glon_aim_walk
+anm_idle_aim_moving_forward_jammed = groza_glon_aim_walk
+anm_idle_aim_moving_back = groza_glon_aim_walk
+anm_idle_aim_moving_back_empty = groza_glon_aim_walk
+anm_idle_aim_moving_back_jammed = groza_glon_aim_walk
+anm_idle_aim_moving_left = groza_glon_aim_walk_left
+anm_idle_aim_moving_left_empty = groza_glon_aim_walk_left
+anm_idle_aim_moving_left_jammed = groza_glon_aim_walk_left
+anm_idle_aim_moving_right = groza_glon_aim_walk_right
+anm_idle_aim_moving_right_empty = groza_glon_aim_walk_right
+anm_idle_aim_moving_right_jammed = groza_glon_aim_walk_right
+anm_idle_aim_moving_forward_left = groza_glon_aim_walk
+anm_idle_aim_moving_forward_left_empty = groza_glon_aim_walk
+anm_idle_aim_moving_forward_left_jammed = groza_glon_aim_walk
+anm_idle_aim_moving_forward_right = groza_glon_aim_walk
+anm_idle_aim_moving_forward_right_empty = groza_glon_aim_walk
+anm_idle_aim_moving_forward_right_jammed = groza_glon_aim_walk
+anm_idle_aim_moving_back_left = groza_glon_aim_walk
+anm_idle_aim_moving_back_left_empty = groza_glon_aim_walk
+anm_idle_aim_moving_back_left_jammed = groza_glon_aim_walk
+anm_idle_aim_moving_back_right = groza_glon_aim_walk
+anm_idle_aim_moving_back_right_empty = groza_glon_aim_walk
+anm_idle_aim_moving_back_right_jammed = groza_glon_aim_walk
+anm_idle_aim_scope_moving = groza_glon_aim_walk
+anm_idle_aim_scope_moving_empty = groza_glon_aim_walk
+anm_idle_aim_scope_moving_jammed = groza_glon_aim_walk
+
+; ---- aim idle (in / out / hold) ----
+anm_idle_aim_start = groza_glon_aim_start
+anm_idle_aim_start_empty = groza_glon_aim_start
+anm_idle_aim_start_jammed = groza_glon_aim_start
+anm_idle_aim = groza_glon_aim
+anm_idle_aim_empty = groza_glon_aim
+anm_idle_aim_jammed = groza_glon_aim
+anm_idle_aim_scope = groza_glon_aim
+anm_idle_aim_scope_empty = groza_glon_aim
+anm_idle_aim_scope_jammed = groza_glon_aim
+anm_idle_aim_end = groza_glon_aim_end
+anm_idle_aim_end_empty = groza_glon_aim_end
+anm_idle_aim_end_jammed = groza_glon_aim_end
+
+; ---- walk (fwd / slow / crouch) ----
+anm_idle_moving = groza_glon_walk
+anm_idle_moving_jammed = groza_glon_walk
+anm_idle_moving_empty = groza_glon_walk
+anm_idle_moving_slow = groza_glon_walk_slow
+anm_idle_moving_slow_jammed = groza_glon_walk_slow
+anm_idle_moving_slow_empty = groza_glon_walk_slow
+anm_idle_moving_crouch = groza_glon_walk_slow_down
+anm_idle_moving_crouch_jammed = groza_glon_walk_slow_down
+anm_idle_moving_crouch_empty = groza_glon_walk_slow_down
+anm_idle_moving_crouch_slow = groza_glon_walk_slow_super
+anm_idle_moving_crouch_slow_jammed = groza_glon_walk_slow_super
+anm_idle_moving_crouch_slow_empty = groza_glon_walk_slow_super
+
+; ---- idle ----
+anm_idle = groza_glon_idle
+anm_idle_empty = groza_glon_idle
+anm_idle_jammed = groza_glon_idle
+anm_idle_slow = groza_glon_idle
+anm_idle_slow_empty = groza_glon_idle
+anm_idle_slow_jammed = groza_glon_idle
+anm_idle_crouch = groza_glon_idle
+anm_idle_crouch_empty = groza_glon_idle
+anm_idle_crouch_jammed = groza_glon_idle
+anm_idle_crouch_slow = groza_glon_idle
+anm_idle_crouch_slow_empty = groza_glon_idle
+anm_idle_crouch_slow_jammed = groza_glon_idle
+
+; ---- shots ----
+anm_shoot = groza_glon_shoot, rgm40_shoot
+anm_shoot_sil = groza_glon_shoot, rgm40_shoot
+anm_shoot_jammed = groza_glon_dry_empty
+anm_shoot_jammed_sil = groza_glon_dry_empty
+anm_shoot_last = groza_glon_shoot, rgm40_shoot
+anm_shoot_last_sil = groza_glon_shoot, rgm40_shoot
+anm_shoot_aim = groza_glon_aim_shoot, rgm40_shoot
+anm_shoot_aim_sil = groza_glon_aim_shoot, rgm40_shoot
+anm_shoot_aim_jammed = groza_glon_aim_dry
+anm_shoot_aim_jammed_sil = groza_glon_aim_dry
+anm_shoot_aim_last = groza_glon_aim_shoot, rgm40_shoot
+anm_shoot_aim_last_sil = groza_glon_aim_shoot, rgm40_shoot
+anm_shoot_aim_w_gl = groza_glon_aim_shoot, rgm40_shoot	; (kept: not in GS set)
+anm_shoot_aim_g = groza_glon_aim_shoot, rgm40_shoot	; (kept: not in GS set)
+
+; ---- dry fire ----
+anm_fakeshoot_empty = groza_glon_dry_empty
+anm_fakeshoot_aim_empty = groza_glon_aim_dry
+anm_fakeshoot_jammed = groza_glon_check
+anm_fakeshoot_aim_jammed = groza_glon_aim_dry
+anm_fakeshoot_aim = groza_glon_aim_dry	; (kept: not in GS set)
+
+; ---- reload ----
+anm_reload = groza_gl_reload, rgm40_reload
+anm_reload_empty = groza_gl_reload, rgm40_reload
+anm_reload_jammed = groza_gl_changegrenade, rgm40_changegrenade
+anm_reload_jammed_last = groza_gl_changegrenade, rgm40_changegrenade
+anm_reload_ammochange = groza_gl_changegrenade, rgm40_changegrenade
+
+; ---- add cartridge ----
+anm_add_cartridge = groza_gl_reload, rgm40_reload	; (kept: not in GS set)
+
+; ---- open / close (shotgun) ----
+anm_open = groza_gl_reload	; (kept: not in GS set)
+anm_close = groza_gl_reload	; (kept: not in GS set)
+
+; ---- unload magazine ----
+anm_unload_mag = groza_glon_draw
+anm_unload_mag_jammed = groza_glon_draw
+anm_unload_mag_empty = groza_glon_draw
+
+; ---- headlamp on / off ----
+anm_headlamp_on = groza_glon_headflash
+anm_headlamp_on_empty = groza_glon_headflash
+anm_headlamp_on_jammed = groza_glon_headflash
+anm_headlamp_off = groza_glon_headflash
+anm_headlamp_off_empty = groza_glon_headflash
+anm_headlamp_off_jammed = groza_glon_headflash
+
+; ---- night vision on / off ----
+anm_nv_on = groza_glon_headflash
+anm_nv_on_empty = groza_glon_headflash
+anm_nv_on_jammed = groza_glon_headflash
+anm_nv_off = groza_glon_headflash
+anm_nv_off_empty = groza_glon_headflash
+anm_nv_off_jammed = groza_glon_headflash
+
+; ==================== AUTO-FIRE MODE ANIMATION SET (mask_firemode_a = _auto) ====================
+
+
+; ---- GS hud behaviour keys the value step does not carry (huds.ltx of wpn_rgm-40) ----
+no_jam_fire                              = true
+; GS has BOTH: heavy/rgm-40 sets prohibit_suicide = true (knife instead), heavy/rg-6 sets false (the
+; victim shoots himself with it). Our section carries the rgm-40 model, so the rgm-40 entry is the one
+; that applies -- user's call 2026-08-04, "sdelaj kak v ganse".
+prohibit_suicide                         = true
+hud_move_suicide_offset_pos              = 0, 0, 0.2
+hud_move_suicide_offset_rot              = 10, -50, 0
+hud_move_suicide_offset_pos_16x9         = 0, 0, 0.2
+hud_move_suicide_offset_rot_16x9         = 10, -50, 0
+suicide_delay                            = 1
+use_advanced_ammo_bones                  = true
+ammo_params_section_0                    = wpn_rgm40_ammo_bones_vog25
+ammo_params_section_1                    = wpn_rgm40_ammo_bones_vog25p
+disable_bore                             = true
+mix_shoot_after_idle                     = false
+mix_shoot_after_shoot_in_queue           = false
+autoshoot_anm_idle_aim_start             = true
+lock_time_anm_idle_aim_start             = 0.2
+autoshoot_anm_idle_aim_start_empty       = true
+lock_time_anm_idle_aim_start_empty       = 0.2
+autoshoot_anm_idle_aim_start_jammed      = true
+lock_time_anm_idle_aim_start_jammed      = 0.2
+autoshoot_anm_idle_aim_end               = true
+lock_time_anm_idle_aim_end               = 0.25
+autoshoot_anm_idle_aim_end_empty         = true
+lock_time_anm_idle_aim_end_empty         = 0.25
+autoshoot_anm_idle_aim_end_jammed        = true
+lock_time_anm_idle_aim_end_jammed        = 0.25
+enable_directions_anm_idle_aim           = true
+lock_time_anm_idle_sprint_start          = 0.15
+lock_time_anm_idle_sprint_start_empty    = 0.15
+lock_time_anm_idle_sprint_start_jammed   = 0.15
+lock_time_anm_idle_sprint_end            = 0.35
+lock_time_anm_idle_sprint_end_empty      = 0.35
+lock_time_anm_idle_sprint_end_jammed     = 0.35
+lock_time_anm_fakeshoot_empty            = 0.20
+lock_time_anm_fakeshoot_aim_empty        = 0.20
+lock_time_anm_fakeshoot_jammed           = 1.0
+lock_time_anm_fakeshoot_aim_jammed       = 0.20
+lock_time_start_anm_reload               = 0.5
+lock_time_end_anm_reload                 = 1.8
+lock_time_start_anm_reload_empty         = 0.5
+lock_time_end_anm_reload_empty           = 1.8
+lock_time_start_anm_reload_jammed        = 1.5
+lock_time_end_anm_reload_jammed          = 2.15
+lock_time_start_anm_reload_jammed_last   = 1.5
+lock_time_end_anm_reload_jammed_last     = 2.15
+lock_time_start_anm_reload_ammochange    = 1.5
+lock_time_end_anm_reload_ammochange      = 2.15
+use_unloadmag_anim                       = true
+lock_time_anm_unload_mag                 = 0.8
+lock_time_anm_unload_mag_jammed          = 0.8
+lock_time_anm_unload_mag_empty           = 0.8
+lock_time_start_anm_headlamp_on          = 0.58
+lock_time_end_anm_headlamp_on            = 0.5
+lock_time_start_anm_headlamp_on_empty    = 0.58
+lock_time_end_anm_headlamp_on_empty      = 0.5
+lock_time_start_anm_headlamp_on_jammed   = 0.58
+lock_time_end_anm_headlamp_on_jammed     = 0.5
+lock_time_start_anm_headlamp_off         = 0.58
+lock_time_end_anm_headlamp_off           = 0.5
+lock_time_start_anm_headlamp_off_empty   = 0.58
+lock_time_end_anm_headlamp_off_empty     = 0.5
+lock_time_start_anm_headlamp_off_jammed  = 0.58
+lock_time_end_anm_headlamp_off_jammed    = 0.5
+
+; ---- grenade-type bones (GS heavy/rgm-40/ammo.ltx): red = VOG-25, blue = VOG-25P ----
+[wpn_rgm40_ammo_bones_vog25]
+
+;пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+all_bones = grenade_red, grenade_blue
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ all_bones, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 
+configuration_1 =  grenade_red
+
+
+[wpn_rgm40_ammo_bones_vog25p]
+all_bones = grenade_red, grenade_blue 
+configuration_1 =  grenade_blue

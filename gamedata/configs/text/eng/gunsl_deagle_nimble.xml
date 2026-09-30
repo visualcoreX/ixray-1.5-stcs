@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_deagle_uniq">
+		<text>«Steppe Eagle»</text>
+	</string>
+	<string id="gunsl_wpn_deagle_uniq_descr">
+		<text>%c[01,255,128,0]Unusual modification of Desert Eagle. Custom wooden grip fits nicely in the hand, which allows for better control and higher accuracy. %c[01,255,255,255]</text>
+	</string>
+</string_table>

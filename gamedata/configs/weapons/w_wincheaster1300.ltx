@@ -1,4 +1,4 @@
-[wpn_wincheaster1300]:zero_immunities,weapon_probability,default_weapon_params
+[wpn_wincheaster1300]:identity_immunities,weapon_probability,default_weapon_params
 GroupControlSection			= spawn_group
 discovery_dependency 		=
 $spawn                   	= "weapons\winchester1300"					; option for Level Editor
@@ -11,67 +11,79 @@ min_radius               	= 0
 max_radius               	= 50
 description					= st_wpn_wincheaster1300_descr
 
+; ---- hide every optional/addon bone the model carries (GS base = pistol-grip pump). All these mesh bones
+; exist in wpn_winchester1300_hud.ogf and would otherwise render at once (scopes, silencer, laser, flash,
+; stock, extended mag, short barrel/sight, rails). set_bone_visible is safe on absent bones. ----
+def_hide_bones = scope1, scope2, scope3, scope4, barrel_short, flash, laser, bolt_foregrip_rail, handler, stock, sight, sight_short, stock_tactical, magazine, rail	; orig scope1, scope2, scope3, scope4, scope... (GS)
+; wpn_silencer is owned by the addon system (UpdateHUDAddonsVisibility, every frame): hidden at
+; silencer_status=2 here, so the addon system shows the bone whenever a silencer is actually attached.
+def_show_bones = barrel, bolt_foregrip, magazine_short, handler	; orig barrel, bolt_foregrip, magazine_short... (GS)
+
 ef_main_weapon_type			= 1
-ef_weapon_type				= 7
+ef_weapon_type				= 7	; restored: 9 broke the AI queue length (select_queue_params keys on ef_weapon_type)
 
 ;---DOF-------------------------------------------------------------------------
 zoom_dof					= 0.5, 1.0, 180
 ;-----------------------------------------------------------------------------
-upgrades                = up_gr_a_wincheaster1300, up_gr_b_wincheaster1300, up_gr_c_wincheaster1300, up_gr_d_wincheaster1300, up_gr_e_wincheaster1300, up_gr_f_wincheaster1300, up_gr_g_wincheaster1300
+upgrades                = vartree_wincheaster1300_voronenie, vartree_wincheaster1300_ejector, vartree_wincheaster1300_pompa, vartree_wincheaster1300_rail, vartree_wincheaster1300_sights, vartree_wincheaster1300_stock	; orig up_gr_ab_wincheaster1300, up_gr_cd_wi... (GS)
 installed_upgrades      =
-upgrade_scheme          = upgrade_scheme_u9d
+upgrade_scheme          = upgrade_scheme_wincheaster1300	; orig upgrade_scheme_u9d (GS)
 
 ;-------------------------------------------------------------------------------
-holder_range_modifier	= 1.0               ; во сколько раз увеличивается eye_range
-holder_fov_modifier		= 0.7              ; во сколько раз увеличивается eye_fov
+holder_range_modifier	= 1.0               ; пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ eye_range
+holder_fov_modifier		= 0.7              ; пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ eye_fov
 ;-------------------------------------------------------------------------------
 
 tri_state_reload			= on
+chamber_first_round			= on		; empty-start reload: the chambered (first-loaded) round fires first, then tube LIFO
 
-cost					 	= 1250
+cost					 	= 2400	; orig 1250 (GS)
 weapon_class			 	= shotgun
 
 
 ammo_limit		 			= 60
 ammo_current		 		= 10
-ammo_elapsed		 		= 0
+ammo_elapsed		 		= 5	; orig 0 (GS)
 
-ammo_mag_size		 		= 6
+ammo_mag_size		 		= 5	; orig 6 (GS)
+; GS convention: ammo_mag_size ALREADY counts the chambered round (5 = 4 in the tube + 1), so the
+; flag must accompany GS's value -- without it this would silently be a 6 -> 5 capacity CUT.
+ammo_in_chamber = true
 ammo_class		 			= ammo_12x70_buck, ammo_12x76_zhekan, ammo_12x76_dart
 fire_modes					= 1, -1
 
 ;-------------------------------------------------------------------------------
-;базовая дисперсия
-fire_dispersion_base		= 1.0  ;угол (в градусах) базовой дисперсии оружия (оружия зажатого в тисках)
-control_inertion_factor		= 1.2f
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+fire_dispersion_base		= 0.3	; orig 1.0 (GS)
+control_inertion_factor		= 1.3f	; orig 1.2f (GS)
 
-;отдача
-cam_relax_speed         = 10	;скорость возврата в исходное положение
-cam_relax_speed_ai      = 360
-cam_dispersion          = 3.0	;увеличения угла (в градусах) с каждым выстрелом
-cam_dispersion_inc		= 3.0	;увеличениe cam_dispersion с каждым выстрелом
-cam_dispersion_frac		= 0.7
-cam_max_angle			= 15.0	;максимальный угол отдачи
-cam_max_angle_horz		= 15.0	;(degree) maximum shot horizontal degree
-cam_step_angle_horz		= 3.0	;(degree) size of step camera moved in horizontal position while shooting
+;пїЅпїЅпїЅпїЅпїЅпїЅ
+cam_relax_speed         = 5		; orig 10 (GS)
+cam_relax_speed_ai      = 360	; orig 360 (GS)
+cam_dispersion          = 5.1	; orig 3.0 (GS)
+cam_dispersion_inc		= 2.4	; orig 3.0 (GS)
+cam_dispersion_frac		= 0.7	; orig 0.7 (GS)
+cam_max_angle			= 15.0	; orig 15.0 (GS)
+cam_max_angle_horz		= 15.0	; orig 15.0 (GS)
+cam_step_angle_horz		= 3.0	; orig 3.0 (GS)
 
-zoom_cam_relax_speed		= 10     ; scope & ironsight
+zoom_cam_relax_speed		= 5		; orig 10 (GS)
 zoom_cam_relax_speed_ai		= 120.75
-zoom_cam_dispersion			= 3.0
-zoom_cam_dispersion_inc		= 3.0
-zoom_cam_dispersion_frac	= 0.7
-zoom_cam_max_angle			= 10.0
-zoom_cam_max_angle_horz		= 10.0
-zoom_cam_step_angle_horz	= 3.0
+zoom_cam_dispersion			= 3.5	; orig 3.0 (GS)
+zoom_cam_dispersion_inc		= 2.9	; orig 3.0 (GS)
+zoom_cam_dispersion_frac	= 0.7	; orig 0.7 (GS)
+zoom_cam_max_angle			= 15.0	; orig 10.0 (GS)
+zoom_cam_max_angle_horz		= 15.0	; orig 10.0 (GS)
+zoom_cam_step_angle_horz	= 3.0	; orig 3.0 (GS)
 
-fire_dispersion_condition_factor = 10	;увеличение дисперсии в процентах при максимальном износе
-misfire_probability 		= 0.0	    ;вероятность осечки при максимальном износе
+fire_dispersion_condition_factor = 2.5	; orig 10 (GS)
+misfire_probability 		= 0.005	; orig 0.0 (GS)
 misfire_condition_k			= 0.0
-condition_shot_dec 			= 0.0005	;увеличение износа при каждом выстреле
+condition_shot_dec 			= 0.0038	; orig 0.0005 (GS)
 ;-------------------------------------------------------------------------------
 
 position                 	= -0.024, -0.097, 0.
-orientation              	= 0, -4, 0      ;значение устанавливается в градусах
+orientation              	= 0, -4, 0      ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
 shell_point				= 0.0, 0.180, 0.647
 fire_point              = 0.0, 0.158, 0.647
@@ -84,32 +96,32 @@ animation_slot		 		= 9		; type of the animation that will be used
 
 inv_name					= st_wpn_wincheaster1300
 inv_name_short				= st_wpn_wincheaster1300
-inv_weight					= 3.0
+inv_weight					= 3.06	; orig 3.0 (GS)
 
-inv_grid_width				= 5
-inv_grid_height				= 1
-inv_grid_x					= 10
-inv_grid_y					= 5
+inv_grid_width     = 4	; orig 4 (GS)
+inv_grid_height    = 2	; orig 1 (GS)
+inv_grid_x         = 21	; orig 10 (GS)
+inv_grid_y         = 0	; orig 5 (GS)
 
 kill_msg_x			= 171
 kill_msg_y			= 104
 kill_msg_width		= 75
 kill_msg_height		= 20
 
-flame_particles		   	= weapons\generic_weapon05
-smoke_particles		   	= weapons\generic_shoot_00
-rpm_empty_click 	   	= 200
+flame_particles		   	= ghost_particles\weapons\flame_12cal_toz34_buckshot
+smoke_particles		   	= ghost_particles\weapons\smoke_12cal_toz34_buckshot
+rpm_empty_click 	   	= 200	; orig 200 (GS)
 
-PDM_disp_base 			= 1.0
-PDM_disp_vel_factor 	= 1.7
-PDM_disp_accel_factor 	= 1.7
-PDM_disp_crouch	 			= 1.0
-PDM_disp_crouch_no_acc 		= 1.0
+PDM_disp_base 			= 2.8	; orig 1.0 (GS)
+PDM_disp_vel_factor 	= 2.0	; orig 1.7 (GS)
+PDM_disp_accel_factor 	= 2.0	; orig 1.7 (GS)
+PDM_disp_crouch	 			= 1.0	; orig 1.0 (GS)
+PDM_disp_crouch_no_acc 		= 1.0	; orig 1.0 (GS)
 
 ; ttc
 
-hit_power        			= 1.00, 1.00, 1.00, 1.00
-hit_impulse      			= 120
+hit_power        			= 0.99, 0.99, 0.99, 0.99	; orig 1.00, 1.00, 1.00, 1.00 (GS)
+hit_impulse      			= 120	; orig 120 (GS)
 hit_type 					= fire_wound
 
 hit_probability_gd_novice	= 0.70
@@ -117,15 +129,15 @@ hit_probability_gd_stalker	= 0.70
 hit_probability_gd_veteran	= 0.70
 hit_probability_gd_master	= 0.70
 
-fire_distance            	= 50
-bullet_speed			 	= 220			;начальная скорость пули
-rpm                      	= 80            ;60 = 1 секунда
+fire_distance            	= 100	; orig 50 (GS)
+bullet_speed			 	= 230	; orig 220 (GS)
+rpm                      	= 85	; orig 80 (GS)
 ; end ttc
 
 hud                      	= wpn_winchester1300_hud
 
 ;--STRAP PARAMETERS-----------------------------------------------------------------
-;под мишкой
+;пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 strap_position         		= -0.26,-0.10,0.05			; position (offset) and orientation of the weapon when it is strapped
 strap_orientation      		= -15,-9,110				; (3rd person view in degrees)
 strap_bone0					= bip01_spine2
@@ -140,76 +152,1406 @@ light_var_color		 		= 0.05
 light_var_range		 		= 0.5
 light_time 		 			= 0.2
 
+; ---- silencer params (read from this section when a silencer is attached via the barrel-mod upgrade;
+; copied from w_ak74.ltx). Fatal r_string on the silencer_light_* keys if missing -> attach crash. ----
+silencer_hit_power      = 0.55, 0.55, 0.55, 0.55
+silencer_hit_impulse    = 120
+silencer_fire_distance  = 250
+silencer_bullet_speed   = 600
+silencer_smoke_particles   = ghost_particles\weapons\suppressor_smoke_shtg_common
+snd_silncer_shot        = weapons\winchester1300\winchester1300_shoot_silencer, -1.1
+silencer_light_color    = 0.6,0.5,0.3
+silencer_light_range    = 0.01
+silencer_light_var_color= 0.05
+silencer_light_var_range= 0.5
+silencer_light_time     = 0.2
+
 ph_mass			 			= 3
 ;cost			 			= 900
 
 ;addons
-scope_status				= 0
-silencer_status				= 0
+scope_status				= 0	; GS: 0 on the weapon -- the RAIL upgrade opens the slot (it carries scope_status/scope_name/x/y)
+; GS has 2 on the base weapon. The only node touching this key is up_sect_wincheaster1300_barrel_short,
+; and it sets 0 -- a short barrel has no thread, so the upgrade TAKES the silencer away rather than
+; granting it. Our port had this backwards and kept 0 here, which made those nodes rewrite zero with
+; zero and left the silencer unattachable at every stage.
+silencer_status				= 2	; orig 0
+silencer_name				= wpn_silencer_hexagon12	; section name for the attachable silencer (GS)
+silencer_x					= 180	; GS
+silencer_y					= 14	; GS
 grenade_launcher_status		= 0
+laser_params_section		= red_laser		; laser designator (installed via the polymer-parts upgrade)
+flashlight_params_section	= winchester_flashlight	; weapon-mounted flashlight (same upgrade)
+flashlight_bone				= light		; visible flashlight mesh bone, hidden when the light is off
 
 zoom_enabled				= true
-scope_zoom_factor	    	= 55
+scope_zoom_factor	    	= 98
 
-;звуки
-snd_draw					= weapons\generic_draw
-snd_holster					= weapons\generic_holster
-snd_shoot					= weapons\n_spas12_shot
-snd_empty					= weapons\generic_empty
-snd_reload					= weapons\spas12_reload_end
-snd_shoot_duplet			= weapons\n_spas12_shot
+;пїЅпїЅпїЅпїЅпїЅ
+snd_draw					= weapons\winchester1300\winchester1300_draw
+snd_holster					= weapons\winchester1300\winchester1300_hide
+snd_shoot					= weapons\winchester1300\winchester1300_shoot, -1.1
+snd_breechblock				= weapons\winchester1300\winchester1300_pump		; pump rack, played on each shot
+snd_laser_on				= weapons\l85\l85_lam		; laser designator toggle click (GS uses l85_lam)
+snd_laser_off				= weapons\l85\l85_lam
+snd_torch_on				= weapons\l85\l85_lam		; flashlight toggle click
+snd_torch_off				= weapons\l85\l85_lam
+snd_empty					= weapons\glock17\glock17_dry
+snd_reload					= weapons\winchester1300\winchester1300_reload_start
+snd_shoot_duplet			= weapons\winchester1300\winchester1300_shoot, -1.1
 
-snd_open_weapon            = weapons\draw_silent
-snd_add_cartridge			= weapons\spas12_reload
-snd_close_weapon        = weapons\spas12_reload_end
+snd_open_weapon            	= weapons\winchester1300\winchester1300_reload_start
+snd_add_cartridge			= weapons\winchester1300\winchester1300_reload_ammo
+snd_close_weapon        	= weapons\winchester1300\winchester1300_reload_end
+; per-phase reload sounds for the empty-mag pump rack + preloaded first-shell (GS empty_preload_mode)
+snd_anm_open_empty              = weapons\winchester1300\winchester1300_reload_empty_start
+snd_anm_add_cartridge_preloaded = weapons\winchester1300\winchester1300_reload_empty_second_ammo
+snd_anm_close_preloaded         = weapons\winchester1300\winchester1300_reload_end
+
+snd_shoot_dist          = weapons\shared\gen_shotgun_shoot_dist_01, -1.1
+snd_shoot_dist1         = weapons\shared\gen_shotgun_shoot_dist_02, -1.1
+snd_shoot_dist2         = weapons\shared\gen_shotgun_shoot_dist_03, -1.1
+snd_shoot_dist3         = weapons\shared\gen_shotgun_shoot_dist_04, -1.1
+snd_shoot_dist4         = weapons\shared\gen_shotgun_shoot_dist_05, -1.1
+snd_shoot_dist5         = weapons\shared\gen_shotgun_shoot_dist_06, -1.1
+snd_shoot_blend_dist_start = 30   ; РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅРѕ, РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ 40
+snd_shoot_blend_dist_end   = 60   ; РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅРѕ, РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ 60
+
+; ---- GS parity block (ported from GS shotguns/wincheaster1300/base.ltx) ----
+crosshair_inertion = 6.85
+cam_return = 1
+snd_jammed_click = weapons\winchester1300\winchester1300_check
+; sound of the shot that jams -- plays with anm_shoot_jammed (GS base.ltx:204)
+snd_jam = weapons\winchester1300\winchester1300_pump_jammed
+; the stovepipe: the shot that jams plays its own anm_shoot_jammed instead of the plain one.
+; Opt-in since 2026-08-01 -- every weapon carries the _jammed shot aliases (bulk GS transfer),
+; so the engine-side "weapon authors one" gate had turned it on arsenal-wide.
+use_jammed_shoot_anim   = true
+; jam clear (revival) sound -- GS base.ltx:209-210; _last = the jam that also emptied the gun
+snd_reload_jammed = weapons\winchester1300\winchester1300_revival
+snd_reload_jammed_last = weapons\winchester1300\winchester1300_revival
+; scope brightness clicks (GS base.ltx) -- loaded from the WEAPON section, not the scope one
+snd_scope_brightness_plus = weapons\nv_intensity
+snd_scope_brightness_minus = weapons\nv_intensity
+
+; GS jam model
+misfire_start_condition = 0.7
+misfire_end_condition = 0.1
+misfire_start_prob = 0.002
+misfire_end_prob = 0.25
+condition_queue_shot_dec = 0.0035
+
+allowed_upgrades = up_wincheaster1300_
+
+; layered icon: GS composes the picture from 3 pieces (inv_grid slot 21,0 is deliberately empty)
+element_icon_0 = icon_element_w1300_body
+element_icon_offset_x_0 = 15
+element_icon_offset_y_0 = 0
+element_icon_1 = icon_element_w1300_barrel
+element_icon_offset_x_1 = 150
+element_icon_offset_y_1 = 0
+element_icon_2 = icon_element_w1300_stock_regular
+element_icon_offset_x_2 = 0
+element_icon_offset_y_2 = 0
+
+
+; ---- world/3rd-person model animations (GS base.ltx) -- drives the dropped + NPC-held visual ----
+; Motions live in wpn_winchester1300_animation.omf (verified: idle, idle_jammed, shoot all present;
+; GS deliberately maps shoot_last -> shoot, and every reload state -> idle).
+use_world_anims = true
+
+wanm_idle = idle
+wanm_idle_empty = idle
+wanm_idle_jammed = idle_jammed
+
+wanm_shoot = shoot
+wanm_shoot_jammed = idle_jammed
+
+wanm_shoot_last = shoot
+wanm_shoot_last_jammed = idle_jammed
+
+wanm_reload = idle
+wanm_reload_empty = idle
+wanm_reload_jammed = idle
 
 [wpn_winchester1300_hud]:hud_base
-
+lock_time_start_anm_laser_on = 0.45
+lock_time_end_anm_laser_on = 0.65
+lock_time_start_anm_laser_on_empty = 0.45
+lock_time_end_anm_laser_on_empty = 0.65
+lock_time_start_anm_laser_on_jammed = 0.45
+lock_time_end_anm_laser_on_jammed = 0.65
+lock_time_start_anm_laser_off = 0.45
+lock_time_end_anm_laser_off = 0.65
+lock_time_start_anm_laser_off_empty = 0.45
+lock_time_end_anm_laser_off_empty = 0.65
+lock_time_start_anm_laser_off_jammed = 0.45
+lock_time_end_anm_laser_off_jammed = 0.65
+lock_time_start_anm_torch_on = 0.45
+lock_time_end_anm_torch_on = 0.65
+lock_time_start_anm_torch_on_empty = 0.45
+lock_time_end_anm_torch_on_empty = 0.65
+lock_time_start_anm_torch_on_jammed = 0.45
+lock_time_end_anm_torch_on_jammed = 0.65
+lock_time_start_anm_torch_off = 0.45
+lock_time_end_anm_torch_off = 0.65
+lock_time_start_anm_torch_off_empty = 0.45
+lock_time_end_anm_torch_off_empty = 0.65
+lock_time_start_anm_torch_off_jammed = 0.45
+lock_time_end_anm_torch_off_jammed = 0.65
+laserdot_hud_treshold = 90
+hud_recalc_koef       = 1.2
+use_advanced_ammo_bones = true
+ammo_params_section   = wpn_spas12_ammo_bones_red     ; generic / dart fallback
+ammo_params_section_0 = wpn_spas12_ammo_bones_red     ; ammo_12x70_buck   (positional fallback)
+ammo_params_section_1 = wpn_spas12_ammo_bones_blue    ; ammo_12x76_zhekan (positional fallback)
+ammo_params_section_2 = wpn_spas12_ammo_bones_green   ; ammo_12x76_dart   (positional fallback)
+ammo_params_section_ammo_12x70_buck   = wpn_spas12_ammo_bones_red
+ammo_params_section_ammo_12x76_zhekan = wpn_spas12_ammo_bones_blue
+ammo_params_section_ammo_12x76_dart   = wpn_spas12_ammo_bones_green
+lock_time_anm_idle_aim_start = 0.25
+lock_time_anm_idle_aim_end = 0.25
+zoom_hide_crosshair        = true
 shell_point			= 0.02,0.072,0.228
 shell_dir                     	= 0.0, 1.0, 0.0
 shell_bone			= wpn_body
-
-
-fire_point		= 0, 0.075, 0.937
+fire_point		= 0, 0.051, 0.808
 fire_bone			= wpn_body
-
-
 attach_place_idx		= 0
 item_visual                   	= dynamics\weapons\wpn_winchester1300\wpn_winchester1300_hud
+fire_mode_bone             = pred
+hands_position                  = 0.0,0.016,-0.034	; GS value; orig -0.119500,-0.120500,0.185001
+hands_orientation               = 0.0,0.0,0.0	; GS value; orig 1.050001,1.700001,3.449997
+hands_position_16x9             = 0.0,0.016,-0.034	; GS value; orig 0.000000,0.016000,0.019500
+hands_orientation_16x9          = 0.0,0.0,0.0	; GS value; orig 0.000000,0.000000,0.000000
+item_position				= 0.0,0.0,0.0
+item_orientation			= 0.0,0.0,0.0
+aim_hud_offset_pos				= 0.000000,-0.001200,0.00
+aim_hud_offset_rot				= -0.0120000,0.000000,0.000000
+aim_hud_offset_pos_16x9				= 0.000000,-0.001200,0.00
+aim_hud_offset_rot_16x9				= -0.0120000,0.000000,0.000000;aim_hud_offset_pos_16x9				= -0.044000,0.077000,0.000000
+add_cartridge_in_open = true
+empty_preload_mode    = true
+lock_time_start_anm_open		= 0.01
+lock_time_end_anm_open			= 1.02
+lock_time_start_anm_open_empty		= 0.01
+lock_time_end_anm_open_empty		= 2.09
+lock_time_start_anm_add_cartridge		= 0.66
+lock_time_end_anm_add_cartridge			= 0.01
+lock_time_start_anm_add_cartridge_empty		= 0.66
+lock_time_end_anm_add_cartridge_empty		= 0.01
+lock_time_start_anm_add_cartridge_preloaded	= 0.99
+lock_time_end_anm_add_cartridge_preloaded	= 0.01
 
-hands_position				= -0.119500,-0.120500,0.185001
-hands_orientation			= 1.050001,1.700001,3.449997
+; ==================== SEMI-AUTO / BASE ANIMATION SET (from Gunslinger) ====================
+
+; ---- show / draw ----
+anm_show = winchester1300_pistol_draw
+anm_show_empty = winchester1300_pistol_draw
+anm_show_jammed = winchester1300_pistol_draw, idle_jammed
+
+; ---- hide / holster ----
+anm_hide = winchester1300_pistol_hide
+anm_hide_empty = winchester1300_pistol_hide
+anm_hide_jammed = winchester1300_pistol_hide, idle_jammed
+
+; ---- bore ----
+anm_bore = winchester1300_pistol_dry
+anm_bore_empty = winchester1300_pistol_dry
+anm_bore_jammed = winchester1300_pistol_dry, idle_jammed
+
+; ---- sprint (enter / loop / exit) ----
+anm_idle_sprint_start = winchester1300_pistol_sprint_start
+anm_idle_sprint_start_empty = winchester1300_pistol_sprint_start
+anm_idle_sprint_start_jammed = winchester1300_pistol_sprint_start, idle_jammed
+anm_idle_sprint_end = winchester1300_pistol_sprint_end
+anm_idle_sprint_end_empty = winchester1300_pistol_sprint_end
+anm_idle_sprint_end_jammed = winchester1300_pistol_sprint_end, idle_jammed
+anm_idle_sprint = winchester1300_pistol_sprint
+anm_idle_sprint_empty = winchester1300_pistol_sprint
+anm_idle_sprint_jammed = winchester1300_pistol_sprint, idle_jammed
+
+; ---- aim walk (directional) ----
+anm_idle_aim_moving_forward = winchester1300_pistol_aim_walk, winchester1300_aim
+anm_idle_aim_moving_forward_empty = winchester1300_pistol_aim_walk, winchester1300_aim
+anm_idle_aim_moving_forward_jammed = winchester1300_pistol_aim_walk, winchester1300_aim_jammed
+anm_idle_aim_moving_back = winchester1300_pistol_aim_walk, winchester1300_aim
+anm_idle_aim_moving_back_empty = winchester1300_pistol_aim_walk, winchester1300_aim
+anm_idle_aim_moving_back_jammed = winchester1300_pistol_aim_walk, winchester1300_aim_jammed
+anm_idle_aim_moving_left = winchester1300_pistol_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_left_empty = winchester1300_pistol_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_left_jammed = winchester1300_pistol_aim_walk_left, winchester1300_aim_jammed
+anm_idle_aim_moving_right = winchester1300_pistol_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_right_empty = winchester1300_pistol_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_right_jammed = winchester1300_pistol_aim_walk_right, winchester1300_aim_jammed
+anm_idle_aim_moving_forward_right = winchester1300_pistol_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_forward_right_empty = winchester1300_pistol_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_forward_right_jammed = winchester1300_pistol_aim_walk_right, winchester1300_aim_jammed
+anm_idle_aim_moving_forward_left = winchester1300_pistol_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_forward_left_empty = winchester1300_pistol_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_forward_left_jammed = winchester1300_pistol_aim_walk_left, winchester1300_aim_jammed
+anm_idle_aim_moving_back_right = winchester1300_pistol_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_back_right_empty = winchester1300_pistol_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_back_right_jammed = winchester1300_pistol_aim_walk_right, winchester1300_aim_jammed
+anm_idle_aim_moving_back_left = winchester1300_pistol_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_back_left_empty = winchester1300_pistol_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_back_left_jammed = winchester1300_pistol_aim_walk_left, winchester1300_aim_jammed
+anm_idle_aim_scope_moving = winchester1300_pistol_aim_walk, winchester1300_aim
+anm_idle_aim_scope_moving_empty = winchester1300_pistol_aim_walk, winchester1300_aim
+anm_idle_aim_scope_moving_jammed = winchester1300_pistol_aim_walk, winchester1300_aim_jammed
+
+; ---- aim idle (in / out / hold) ----
+anm_idle_aim_start = winchester1300_pistol_aim_start, winchester1300_aim_start
+anm_idle_aim_start_empty = winchester1300_pistol_aim_start, winchester1300_aim_start
+anm_idle_aim_start_jammed = winchester1300_pistol_aim_start, winchester1300_aim_start_jammed
+anm_idle_aim_end = winchester1300_pistol_aim_end, winchester1300_aim_end
+anm_idle_aim_end_empty = winchester1300_pistol_aim_end, winchester1300_aim_end
+anm_idle_aim_end_jammed = winchester1300_pistol_aim_end, winchester1300_aim_end_jammed
+anm_idle_aim = winchester1300_pistol_aim, winchester1300_aim
+anm_idle_aim_empty = winchester1300_pistol_aim, winchester1300_aim
+anm_idle_aim_jammed = winchester1300_pistol_aim, winchester1300_aim_jammed
+anm_idle_aim_scope = winchester1300_pistol_aim, winchester1300_aim
+anm_idle_aim_scope_empty = winchester1300_pistol_aim, winchester1300_aim
+anm_idle_aim_scope_jammed = winchester1300_pistol_aim, winchester1300_aim_jammed
+
+; ---- walk (fwd / slow / crouch) ----
+anm_idle_moving = winchester1300_pistol_walk
+anm_idle_moving_empty = winchester1300_pistol_walk
+anm_idle_moving_jammed = winchester1300_pistol_walk, idle_jammed
+anm_idle_moving_slow = winchester1300_pistol_walk_slow
+anm_idle_moving_slow_empty = winchester1300_pistol_walk_slow
+anm_idle_moving_slow_jammed = winchester1300_pistol_walk_slow, idle_jammed
+anm_idle_moving_crouch = winchester1300_pistol_walk_slow_down
+anm_idle_moving_crouch_empty = winchester1300_pistol_walk_slow_down
+anm_idle_moving_crouch_jammed = winchester1300_pistol_walk_slow_down, idle_jammed
+anm_idle_moving_crouch_slow = winchester1300_pistol_walk_slow_super
+anm_idle_moving_crouch_slow_empty = winchester1300_pistol_walk_slow_super
+anm_idle_moving_crouch_slow_jammed = winchester1300_pistol_walk_slow_super, idle_jammed
+
+; ---- idle ----
+anm_idle = winchester1300_pistol_idle
+anm_idle_empty = winchester1300_pistol_idle
+anm_idle_jammed = winchester1300_pistol_idle, idle_jammed
+anm_idle_slow = winchester1300_pistol_idle
+anm_idle_slow_empty = winchester1300_pistol_idle
+anm_idle_slow_jammed = winchester1300_pistol_idle, idle_jammed
+anm_idle_crouch = winchester1300_pistol_idle
+anm_idle_crouch_empty = winchester1300_pistol_idle
+anm_idle_crouch_jammed = winchester1300_pistol_idle, idle_jammed
+anm_idle_crouch_slow = winchester1300_pistol_idle
+anm_idle_crouch_slow_empty = winchester1300_pistol_idle
+anm_idle_crouch_slow_jammed = winchester1300_pistol_idle, idle_jammed
+
+; ---- shots ----
+anm_shoot_suicide = winchester1300_suicide_shoot
+anm_shoot_suicide_sil = winchester1300_suicide_shoot
+anm_shoot_last_suicide = winchester1300_suicide_shoot
+anm_shoot_last_suicide_sil = winchester1300_suicide_shoot
+anm_shoot = winchester1300_pistol_shoot
+anm_shoot_sil = winchester1300_pistol_shoot
+anm_shoot_last = winchester1300_pistol_shoot
+anm_shoot_last_sil = winchester1300_pistol_shoot
+anm_shoot_aim = winchester1300_pistol_aim_shoot
+anm_shoot_aim_sil = winchester1300_pistol_aim_shoot
+anm_shoot_aim_last = winchester1300_pistol_aim_shoot
+anm_shoot_aim_last_sil = winchester1300_pistol_aim_shoot
+anm_shoot_aim_scope = winchester1300_pistol_aim_shoot_scope
+anm_shoot_aim_scope_sil = winchester1300_pistol_aim_shoot_scope
+anm_shoot_aim_scope_last = winchester1300_pistol_aim_shoot_scope
+anm_shoot_aim_scope_last_sil = winchester1300_pistol_aim_shoot_scope
+anm_shoot_jammed = winchester1300_pistol_shoot_jammed, winchester1300_shoot_jammed
+anm_shoot_jammed_sil = winchester1300_pistol_shoot_jammed, winchester1300_shoot_jammed
+anm_shoot_aim_jammed = winchester1300_pistol_aim_shoot_jammed, winchester1300_aim_shoot_jammed
+anm_shoot_aim_jammed_sil = winchester1300_pistol_aim_shoot_jammed, winchester1300_aim_shoot_jammed
+anm_shoot_aim_scope_jammed = winchester1300_pistol_aim_shoot_jammed, winchester1300_aim_shoot_jammed
+anm_shoot_aim_scope_jammed_sil = winchester1300_pistol_aim_shoot_jammed, winchester1300_aim_shoot_jammed
+
+; ---- dry fire ----
+anm_fakeshoot_empty = winchester1300_pistol_dry_empty
+anm_fakeshoot_jammed = winchester1300_pistol_dry, idle_jammed
+anm_fakeshoot_aim_empty = winchester1300_pistol_aim_dry, winchester1300_aim
+anm_fakeshoot_aim_jammed = winchester1300_pistol_aim_dry, winchester1300_aim_jammed
+anm_fakeshoot = winchester1300_pistol_dry	; (kept: not in GS set)
+anm_fakeshoot_aim = winchester1300_pistol_aim_dry	; (kept: not in GS set)
+
+; ---- reload ----
+anm_reload_jammed = winchester1300_pistol_revival, winchester1300_revival
+anm_reload_jammed_last = winchester1300_pistol_revival, winchester1300_revival
+anm_reload = winchester1300_pistol_dry
+anm_reload_last = winchester1300_pistol_dry
+
+; ---- add cartridge ----
+anm_add_cartridge = winchester1300_pistol_reload_ammo, winchester1300_reload_ammo
+anm_add_cartridge_empty = winchester1300_pistol_reload_ammo, winchester1300_reload_ammo
+anm_add_cartridge_preloaded = winchester1300_pistol_reload_empty_second_ammo, winchester1300_reload_empty_second_ammo
+anm_add_cartridge_empty_preloaded = winchester1300_pistol_reload_empty_second_ammo, winchester1300_reload_empty_second_ammo
+
+; ---- open / close (shotgun) ----
+anm_open = winchester1300_pistol_reload_start, winchester1300_reload_start
+anm_open_empty = winchester1300_pistol_reload_empty_start, winchester1300_reload_empty_start
+anm_close = winchester1300_pistol_reload_end, winchester1300_reload_end
+anm_close_empty = winchester1300_pistol_reload_end, winchester1300_reload_end
+anm_close_preloaded = winchester1300_pistol_reload_empty_end, winchester1300_reload_end
+anm_close_empty_preloaded = winchester1300_pistol_reload_empty_end, winchester1300_reload_end
+
+; ---- unload magazine ----
+anm_unload_mag = winchester1300_pistol_draw
+anm_unload_mag_jammed = winchester1300_pistol_draw
+anm_unload_mag_empty = winchester1300_pistol_draw
+
+; ---- laser on / off ----
+anm_laser_on = winchester1300_pistol_tac_lam
+anm_laser_on_empty = winchester1300_pistol_tac_lam
+anm_laser_on_jammed = winchester1300_pistol_tac_lam, idle_jammed
+anm_laser_off = winchester1300_pistol_tac_lam
+anm_laser_off_empty = winchester1300_pistol_tac_lam
+anm_laser_off_jammed = winchester1300_pistol_tac_lam, idle_jammed
+
+; ---- flashlight on / off ----
+anm_torch_on = winchester1300_pistol_tac_lam
+anm_torch_on_empty = winchester1300_pistol_tac_lam
+anm_torch_on_jammed = winchester1300_pistol_tac_lam, idle_jammed
+anm_torch_off = winchester1300_pistol_tac_lam
+anm_torch_off_empty = winchester1300_pistol_tac_lam
+anm_torch_off_jammed = winchester1300_pistol_tac_lam, idle_jammed
+
+; ---- headlamp on / off ----
+anm_headlamp_on = winchester1300_pistol_headflash
+anm_headlamp_on_empty = winchester1300_pistol_headflash
+anm_headlamp_on_jammed = winchester1300_pistol_headflash, idle_jammed
+anm_headlamp_off = winchester1300_pistol_headflash
+anm_headlamp_off_empty = winchester1300_pistol_headflash
+anm_headlamp_off_jammed = winchester1300_pistol_headflash, idle_jammed
+
+; ---- night vision on / off ----
+anm_nv_on = winchester1300_pistol_headflash
+anm_nv_on_empty = winchester1300_pistol_headflash
+anm_nv_on_jammed = winchester1300_pistol_headflash, idle_jammed
+anm_nv_off = winchester1300_pistol_headflash
+anm_nv_off_empty = winchester1300_pistol_headflash
+anm_nv_off_jammed = winchester1300_pistol_headflash, idle_jammed
+
+; ---- misc ----
+anm_suicide = winchester1300_pistol_suicide
+anm_stop_suicide = winchester1300_pistol_suicide_end
+
+; ---- GS controller-suicide animation block (verbatim from GS shotguns/wincheaster1300/huds.ltx). The alias
+; alone is not enough: without lock_time_anm_suicide the engine uses a hardcoded 3 s and the
+; shot lands in the middle of the gesture. ----
+custom_suicide_shot                = true
+lock_time_anm_suicide              = 7.37
+lock_time_anm_stop_suicide         = 1.37
+suicide_delay                      = 0.25
+
+; ---- GS controller-suicide flags (defines.ltx defaults are the opposite: a weapon
+; that does not set these is dropped for the knife). Values from GS's own huds.ltx. ----
+prohibit_suicide                 = false
+suicide_by_animation             = true
+
+; ==================== AUTO-FIRE MODE ANIMATION SET (mask_firemode_a = _auto) ====================
+; --- lock_time values copied verbatim from GS huds.ltx (audit 2026-08-07) ---
+lock_time_anm_fakeshoot_aim_empty = 0.22
+lock_time_anm_fakeshoot_aim_jammed = 0.22
+lock_time_anm_fakeshoot_empty = 0.22
+lock_time_anm_fakeshoot_jammed = 1.20
+lock_time_anm_idle_aim_end_empty = 0.25
+lock_time_anm_idle_aim_end_jammed = 0.25
+lock_time_anm_idle_aim_start_empty = 0.25
+lock_time_anm_idle_aim_start_jammed = 0.25
+lock_time_anm_idle_sprint_end = 0.25
+lock_time_anm_idle_sprint_end_empty = 0.25
+lock_time_anm_idle_sprint_end_jammed = 0.25
+lock_time_anm_idle_sprint_start = 0.15
+lock_time_anm_idle_sprint_start_empty = 0.15
+lock_time_anm_idle_sprint_start_jammed = 0.15
+lock_time_anm_unload_mag = 0.8
+lock_time_anm_unload_mag_empty = 0.8
+lock_time_anm_unload_mag_jammed = 0.8
+lock_time_end_anm_headlamp_off = 0.5
+lock_time_end_anm_headlamp_off_empty = 0.5
+lock_time_end_anm_headlamp_off_jammed = 0.5
+lock_time_end_anm_headlamp_on = 0.5
+lock_time_end_anm_headlamp_on_empty = 0.5
+lock_time_end_anm_headlamp_on_jammed = 0.5
+lock_time_start_anm_headlamp_off = 0.58
+lock_time_start_anm_headlamp_off_empty = 0.58
+lock_time_start_anm_headlamp_off_jammed = 0.58
+lock_time_start_anm_headlamp_on = 0.58
+lock_time_start_anm_headlamp_on_empty = 0.58
+lock_time_start_anm_headlamp_on_jammed = 0.58
+; hold each shot for 0.75 s so the pump working plays through -- NOT from GS,
+; which keys no lock_time for this weapon's shot at all (user request 2026-08-07).
+lock_time_anm_shoot = 0.75
+lock_time_anm_shoot_sil = 0.75
+lock_time_anm_shoot_last = 0.75
+lock_time_anm_shoot_last_sil = 0.75
+lock_time_anm_shoot_aim = 0.75
+lock_time_anm_shoot_aim_sil = 0.75
+lock_time_anm_shoot_aim_last = 0.75
+lock_time_anm_shoot_aim_last_sil = 0.75
+lock_time_anm_shoot_aim_scope = 0.75
+lock_time_anm_shoot_aim_scope_sil = 0.75
+lock_time_anm_shoot_aim_scope_last = 0.75
+lock_time_anm_shoot_aim_scope_last_sil = 0.75
+
+[wpn_winchester1300_tac_hud]:wpn_winchester1300_hud
+anm_headlamp_on                          = winchester1300_pistol_tac_headflash
+anm_headlamp_on_jammed                   = winchester1300_pistol_tac_headflash, idle_jammed
+anm_headlamp_off                         = winchester1300_pistol_tac_headflash
+anm_headlamp_off_jammed                  = winchester1300_pistol_tac_headflash, idle_jammed
+anm_nv_on                                = winchester1300_pistol_tac_headflash
+anm_nv_on_jammed                         = winchester1300_pistol_tac_headflash, idle_jammed
+anm_nv_off                               = winchester1300_pistol_tac_headflash
+anm_nv_off_jammed                        = winchester1300_pistol_tac_headflash, idle_jammed
+anm_show                                 = winchester1300_pistol_tac_draw
+anm_show_jammed                          = winchester1300_pistol_tac_draw, idle_jammed
+anm_hide                                 = winchester1300_pistol_tac_hide
+anm_hide_jammed                          = winchester1300_pistol_tac_hide, idle_jammed
+anm_idle                                 = winchester1300_pistol_tac_idle
+anm_idle_jammed                          = winchester1300_pistol_tac_idle, idle_jammed
+anm_idle_aim = winchester1300_pistol_tac_aim, winchester1300_aim	; GS value (was winchester1300_pistol_tac_aim)
+anm_idle_aim_jammed                      = winchester1300_pistol_tac_aim, winchester1300_aim_jammed
+anm_idle_aim_moving_forward = winchester1300_pistol_tac_aim_walk, winchester1300_aim	; GS value (was winchester1300_pistol_tac_aim_walk)
+anm_idle_aim_moving_forward_jammed                 = winchester1300_pistol_tac_aim_walk, winchester1300_aim_jammed
+anm_idle_aim_moving_left = winchester1300_pistol_tac_aim_walk_left, winchester1300_aim	; GS value (was winchester1300_pistol_tac_aim_walk_left)
+anm_idle_aim_moving_left_jammed            = winchester1300_pistol_tac_aim_walk_left, winchester1300_aim_jammed
+anm_idle_aim_moving_right = winchester1300_pistol_tac_aim_walk_right, winchester1300_aim	; GS value (was winchester1300_pistol_tac_aim_walk_right)
+anm_idle_aim_moving_right_jammed           = winchester1300_pistol_tac_aim_walk_right, winchester1300_aim_jammed
+anm_idle_aim_start = winchester1300_pistol_tac_aim_start, winchester1300_aim_start	; GS value (was winchester1300_pistol_tac_aim_start)
+anm_idle_aim_start_jammed                = winchester1300_pistol_tac_aim_start, winchester1300_aim_start_jammed
+anm_idle_aim_end = winchester1300_pistol_tac_aim_end, winchester1300_aim_end	; GS value (was winchester1300_pistol_tac_aim_end)
+anm_idle_aim_end_jammed                  = winchester1300_pistol_tac_aim_end, winchester1300_aim_end_jammed
+anm_idle_moving                          = winchester1300_pistol_tac_walk
+anm_idle_moving_jammed                   = winchester1300_pistol_tac_walk, idle_jammed
+anm_idle_moving_crouch                   = winchester1300_pistol_tac_walk_slow_down
+anm_idle_moving_crouch_jammed            = winchester1300_pistol_tac_walk_slow_down, idle_jammed
+anm_idle_moving_crouch_slow              = winchester1300_pistol_tac_walk_slow_super
+anm_idle_moving_crouch_slow_jammed       = winchester1300_pistol_tac_walk_slow_super, idle_jammed
+anm_idle_moving_slow                     = winchester1300_pistol_tac_walk_slow
+anm_idle_moving_slow_jammed              = winchester1300_pistol_tac_walk_slow, idle_jammed
+anm_idle_sprint                          = winchester1300_pistol_tac_sprint
+anm_idle_sprint_start                    = winchester1300_pistol_tac_sprint_start
+anm_idle_sprint_end                      = winchester1300_pistol_tac_sprint_end
+anm_idle_sprint_jammed                   = winchester1300_pistol_tac_sprint, idle_jammed
+anm_idle_sprint_start_jammed             = winchester1300_pistol_tac_sprint_start, idle_jammed
+anm_idle_sprint_end_jammed               = winchester1300_pistol_tac_sprint_end, idle_jammed
+anm_bore                                 = winchester1300_pistol_tac_dry
+anm_bore_jammed                          = winchester1300_pistol_tac_dry, idle_jammed
+anm_shoot                                = winchester1300_pistol_tac_shoot
+anm_fakeshoot                                  = winchester1300_pistol_tac_dry
+anm_fakeshoot_jammed                           = winchester1300_pistol_tac_dry, idle_jammed
+anm_fakeshoot_empty                            = winchester1300_pistol_tac_dry_empty
+anm_fakeshoot_aim                              = winchester1300_pistol_tac_aim_dry
+anm_fakeshoot_aim_jammed                       = winchester1300_pistol_tac_aim_dry, winchester1300_aim_jammed
+anm_shoot_aim                            = winchester1300_pistol_tac_aim_shoot
+anm_open                                 = winchester1300_pistol_tac_reload_start, winchester1300_reload_start
+anm_open_empty                           = winchester1300_pistol_tac_reload_empty_start, winchester1300_reload_empty_start
+anm_add_cartridge                        = winchester1300_pistol_tac_reload_ammo, winchester1300_reload_ammo
+anm_add_cartridge_empty                  = winchester1300_pistol_tac_reload_ammo, winchester1300_reload_ammo
+anm_add_cartridge_preloaded              = winchester1300_pistol_tac_reload_empty_second_ammo, winchester1300_reload_empty_second_ammo
+anm_add_cartridge_empty_preloaded        = winchester1300_pistol_tac_reload_empty_second_ammo, winchester1300_reload_empty_second_ammo
+anm_close                                = winchester1300_pistol_tac_reload_end, winchester1300_reload_end
+anm_close_empty                          = winchester1300_pistol_tac_reload_end, winchester1300_reload_end
+anm_close_preloaded                      = winchester1300_pistol_tac_reload_empty_end, winchester1300_reload_end
+anm_close_empty_preloaded                = winchester1300_pistol_tac_reload_empty_end, winchester1300_reload_end
+anm_reload_jammed                       = winchester1300_pistol_tac_revival, winchester1300_revival
 
 
+; =========================================================================
+; Laser designator params (GS base_laser.ltx port). Referenced by a weapon's
+; laser_params_section. Particles live in the GS particles.xr (laser\red_dot*).
+; =========================================================================
+; verbatim GS base_laser.ltx [red_laser]; correction mode = engine default (on in every GS rspec preset).
+; The world_attach offsets are the winchester's own overrides from GS [up_sect_wincheaster1300_flashlaser].
 
-hands_position_16x9				= -0.131500,-0.138500,0.187499
-hands_orientation_16x9			= 1.699999,2.999999,3.449998
+; ---- completed from GS huds.ltx: our port only had 60 of GS's 144 tac aliases, so with an EMPTY
+; magazine (or a jam) the engine's _empty/_jammed rewrite fell through to the INHERITED base
+; aliases and the idle visibly reverted to the non-tactical grip.
+anm_suicide = winchester1300_pistol_tac_suicide
+anm_stop_suicide = winchester1300_pistol_tac_suicide_end
+anm_idle_empty = winchester1300_pistol_tac_idle
+anm_idle_slow = winchester1300_pistol_tac_idle
+anm_idle_slow_empty = winchester1300_pistol_tac_idle
+anm_idle_slow_jammed = winchester1300_pistol_tac_idle, idle_jammed
+anm_idle_crouch = winchester1300_pistol_tac_idle
+anm_idle_crouch_empty = winchester1300_pistol_tac_idle
+anm_idle_crouch_jammed = winchester1300_pistol_tac_idle, idle_jammed
+anm_idle_crouch_slow = winchester1300_pistol_tac_idle
+anm_idle_crouch_slow_empty = winchester1300_pistol_tac_idle
+anm_idle_crouch_slow_jammed = winchester1300_pistol_tac_idle, idle_jammed
+anm_idle_moving_empty = winchester1300_pistol_tac_walk
+anm_idle_moving_slow_empty = winchester1300_pistol_tac_walk_slow
+anm_idle_moving_crouch_empty = winchester1300_pistol_tac_walk_slow_down
+anm_idle_moving_crouch_slow_empty = winchester1300_pistol_tac_walk_slow_super
+anm_idle_aim_start_empty = winchester1300_pistol_tac_aim_start, winchester1300_aim_start
+anm_idle_aim_end_empty = winchester1300_pistol_tac_aim_end, winchester1300_aim_end
+anm_idle_aim_empty = winchester1300_pistol_tac_aim, winchester1300_aim
+anm_idle_aim_scope = winchester1300_pistol_tac_aim, winchester1300_aim
+anm_idle_aim_scope_empty = winchester1300_pistol_tac_aim, winchester1300_aim
+anm_idle_aim_scope_jammed = winchester1300_pistol_tac_aim, winchester1300_aim_jammed
+anm_idle_aim_moving_forward_empty = winchester1300_pistol_tac_aim_walk, winchester1300_aim
+anm_idle_aim_moving_back = winchester1300_pistol_tac_aim_walk, winchester1300_aim
+anm_idle_aim_moving_back_empty = winchester1300_pistol_tac_aim_walk, winchester1300_aim
+anm_idle_aim_moving_back_jammed = winchester1300_pistol_tac_aim_walk, winchester1300_aim_jammed
+anm_idle_aim_moving_left_empty = winchester1300_pistol_tac_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_right_empty = winchester1300_pistol_tac_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_forward_right = winchester1300_pistol_tac_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_forward_right_empty = winchester1300_pistol_tac_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_forward_right_jammed = winchester1300_pistol_tac_aim_walk_right, winchester1300_aim_jammed
+anm_idle_aim_moving_forward_left = winchester1300_pistol_tac_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_forward_left_empty = winchester1300_pistol_tac_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_forward_left_jammed = winchester1300_pistol_tac_aim_walk_left, winchester1300_aim_jammed
+anm_idle_aim_moving_back_right = winchester1300_pistol_tac_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_back_right_empty = winchester1300_pistol_tac_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_back_right_jammed = winchester1300_pistol_tac_aim_walk_right, winchester1300_aim_jammed
+anm_idle_aim_moving_back_left = winchester1300_pistol_tac_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_back_left_empty = winchester1300_pistol_tac_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_back_left_jammed = winchester1300_pistol_tac_aim_walk_left, winchester1300_aim_jammed
+anm_idle_aim_scope_moving = winchester1300_pistol_tac_aim_walk, winchester1300_aim
+anm_idle_aim_scope_moving_empty = winchester1300_pistol_tac_aim_walk, winchester1300_aim
+anm_idle_aim_scope_moving_jammed = winchester1300_pistol_tac_aim_walk, winchester1300_aim_jammed
+anm_idle_sprint_start_empty = winchester1300_pistol_tac_sprint_start
+anm_idle_sprint_end_empty = winchester1300_pistol_tac_sprint_end
+anm_idle_sprint_empty = winchester1300_pistol_tac_sprint
+anm_unload_mag = winchester1300_pistol_tac_draw
+anm_unload_mag_jammed = winchester1300_pistol_tac_draw
+anm_unload_mag_empty = winchester1300_pistol_tac_draw
+anm_bore_empty = winchester1300_pistol_tac_dry
+anm_show_empty = winchester1300_pistol_tac_draw
+anm_hide_empty = winchester1300_pistol_tac_hide
+anm_shoot_sil = winchester1300_pistol_tac_shoot
+anm_shoot_last = winchester1300_pistol_tac_shoot
+anm_shoot_last_sil = winchester1300_pistol_tac_shoot
+anm_shoot_aim_sil = winchester1300_pistol_tac_aim_shoot
+anm_shoot_aim_last = winchester1300_pistol_tac_aim_shoot
+anm_shoot_aim_last_sil = winchester1300_pistol_tac_aim_shoot
+anm_shoot_aim_scope = winchester1300_pistol_tac_aim_shoot_scope
+anm_shoot_aim_scope_sil = winchester1300_pistol_tac_aim_shoot_scope
+anm_shoot_aim_scope_last = winchester1300_pistol_tac_aim_shoot_scope
+anm_shoot_aim_scope_last_sil = winchester1300_pistol_tac_aim_shoot_scope
+anm_shoot_jammed = winchester1300_pistol_tac_shoot_jammed, winchester1300_shoot_jammed
+anm_shoot_jammed_sil = winchester1300_pistol_tac_shoot_jammed, winchester1300_shoot_jammed
+anm_shoot_aim_jammed = winchester1300_pistol_tac_aim_shoot_jammed, winchester1300_aim_shoot_jammed
+anm_shoot_aim_jammed_sil = winchester1300_pistol_tac_aim_shoot_jammed, winchester1300_aim_shoot_jammed
+anm_shoot_aim_scope_jammed = winchester1300_pistol_tac_aim_shoot_jammed, winchester1300_aim_shoot_jammed
+anm_shoot_aim_scope_jammed_sil = winchester1300_pistol_tac_aim_shoot_jammed, winchester1300_aim_shoot_jammed
+anm_fakeshoot_aim_empty = winchester1300_pistol_tac_aim_dry, winchester1300_aim
+anm_reload_jammed_last = winchester1300_pistol_tac_revival, winchester1300_revival
+anm_laser_on = winchester1300_pistol_tac_lam
+anm_laser_on_empty = winchester1300_pistol_tac_lam
+anm_laser_on_jammed = winchester1300_pistol_tac_lam, idle_jammed
+anm_laser_off = winchester1300_pistol_tac_lam
+anm_laser_off_empty = winchester1300_pistol_tac_lam
+anm_laser_off_jammed = winchester1300_pistol_tac_lam, idle_jammed
+anm_torch_on = winchester1300_pistol_tac_lam
+anm_torch_on_empty = winchester1300_pistol_tac_lam
+anm_torch_on_jammed = winchester1300_pistol_tac_lam, idle_jammed
+anm_torch_off = winchester1300_pistol_tac_lam
+anm_torch_off_empty = winchester1300_pistol_tac_lam
+anm_torch_off_jammed = winchester1300_pistol_tac_lam, idle_jammed
+anm_headlamp_on_empty = winchester1300_pistol_tac_headflash
+anm_headlamp_off_empty = winchester1300_pistol_tac_headflash
+anm_nv_on_empty = winchester1300_pistol_tac_headflash
+anm_nv_off_empty = winchester1300_pistol_tac_headflash
+; hold each shot for 0.75 s so the pump working plays through -- NOT from GS,
+; which keys no lock_time for this weapon's shot at all (user request 2026-08-07).
+lock_time_anm_shoot = 0.75
+lock_time_anm_shoot_aim = 0.75
+lock_time_anm_shoot_sil = 0.75
+lock_time_anm_shoot_last = 0.75
+lock_time_anm_shoot_last_sil = 0.75
+lock_time_anm_shoot_aim_sil = 0.75
+lock_time_anm_shoot_aim_last = 0.75
+lock_time_anm_shoot_aim_last_sil = 0.75
+lock_time_anm_shoot_aim_scope = 0.75
+lock_time_anm_shoot_aim_scope_sil = 0.75
+lock_time_anm_shoot_aim_scope_last = 0.75
+lock_time_anm_shoot_aim_scope_last_sil = 0.75
+[red_laser]
+laser_installed                = true
+laser_ray_bones                = line
+laser_beam_section             = laser_beam_red	; volumetric beam + procedural dot on R3 (configs\weapons\laser_beams.ltx)
+particles_count                = 4
+laserdot_particle_0            = laser\red_dot
+laserdot_particle_1            = laser\red_dot1
+laserdot_dist_1                = 0.1
+laserdot_particle_2            = laser\red_dot2
+laserdot_dist_2                = 7
+laserdot_particle_3            = laser\red_dot3
+laserdot_dist_3                = 15
+laserdot_attach_bone           = line
+laserdot_attach_offset_x       = 0.0
+laserdot_attach_offset_y       = 0.017
+laserdot_attach_offset_z       = -0.6
+; ---- laser behaviour (same set as usp45) ----
+laserdot_correction            = true	; GS default: camera-pull -> converge to device + center-aim + constant size (with soft particles = smooth point-blank dissolve)
+laserdot_hud_point_koef        = 0.0	; non-GS world->hud reprojection OFF
+laserdot_zero_dist             = 3	; parallax zero: dot centered from 10m outward (aiming), converges to the device closer, gun sway preserved. Fine-tune y offset above if the close-up dot is off the device
+laserdot_world_attach_offset_x = 0.010
+laserdot_world_attach_offset_y = 0.087
+laserdot_world_attach_offset_z = 0.506
+laserdot_dists_count           = 3
+laserdot_dist_treshold_1       = 0.5
+laserdot_dist_scale_1          = 0.08
+laserdot_dist_treshold_2       = 10
+laserdot_dist_scale_2          = 0.03
+laserdot_dist_treshold_3       = 40
+laserdot_dist_scale_3          = 0.05
+laser_breaking_params          = 0.15, 0.14, 1.0
+laser_problems_level           = 3
 
-item_position				= 0.003519,0.010573,-0.003368
-item_orientation			= 0.045015,1.047468,0.056850
+; =========================================================================
+; Weapon-mounted flashlight params (GS base_torch.ltx [tactical_torch] port). Attached to the `flash`
+; bone; installed by the polymer upgrade (torch_installed). Textures = standard CS torch light set
+; (guaranteed in the base archives; swap to the GS tactical variant if you have those assets).
+; =========================================================================
+[winchester_flashlight]
+torch_light_bone               = light
+torch_attach_offset_x          = 0.0
+torch_attach_offset_y          = 0.0
+torch_attach_offset_z          = 0.45	; orig 0.0 -- emitter pushed past the muzzle: at ~0 the weapon and the camera sit inside the cone (screen-wide glare, bright at the edges)
+torch_spot_angle               = 60
+; GS weapon-torch texture (soft edge); orig internal\internal_light_torch_r2
+torch_spot_texture             = internal\internal_light_torch_tactical_r2
+torch_r2_range                 = 50
+torch_r2_color_r               = 0.6
+torch_r2_color_g               = 0.55
+torch_r2_color_b               = 0.55
+torch_r2_color_a               = 1.0
+torch_r2_omni_range            = 0.25
+torch_r2_omni_color_r          = 1.0
+torch_r2_omni_color_g          = 1.0
+torch_r2_omni_color_b          = 1.0
+torch_r2_omni_color_a          = 0.0
+create_glow                    = true
+torch_glow_texture             = glow\glow_torch_r2
+torch_glow_radius              = 0.3
 
-aim_hud_offset_pos				= -0.110000,0.093500,0.000000
-aim_hud_offset_rot				= 0.042500,0.012500,-0.02500
+;==============================================================================
+; UNIQUE "Trapper" (GS wpn_wincheaster1300_trapper): wood-stock variant of the same models --
+; the difference is BONE-driven (def_show_bones stock vs stock_tactical), so no new meshes.
+; Its hud swaps the whole anim set from the base PISTOL-grip motions (winchester1300_pistol_*)
+; to the full-stock ones (winchester1300_*); both live in our OMFs.
+;==============================================================================
+[wpn_wincheaster1300_trapper]:wpn_wincheaster1300
+$spawn                   	= "weapons\wpn_wincheaster1300_trapper"					; option for Level Editor
+inv_name					= gunsl_wpn_wincheaster1300_trapper
+description					= gunsl_wpn_wincheaster1300_trapper_descr
 
-aim_hud_offset_pos_16x9				= -0.100500,0.115500,0.000000
-aim_hud_offset_rot_16x9				= 0.067500,0.022500,-0.017500
-;aim_hud_offset_pos_16x9				= -0.044000,0.077000,0.000000
-;aim_hud_offset_rot_16x9				= 0.032500,0.002500,0.000000
+upgrades = vartree_wincheaster1300_trapper_voronenie, vartree_wincheaster1300_trapper_ejector, vartree_wincheaster1300_trapper_pompa, vartree_wincheaster1300_trapper_rail, vartree_wincheaster1300_trapper_sights, vartree_wincheaster1300_trapper_stock
+installed_upgrades = 
+upgrade_scheme = upgrade_scheme_wincheaster1300_trapper
+allowed_upgrades = up_wincheaster1300_trapper_
 
-anm_show			= winchester1300_draw
-anm_hide			= winchester1300_holster
+def_hide_bones = scope1, scope2, scope3, scope4, barrel_short, flash, laser, bolt_foregrip_rail, handler, stock_tactical, sight, sight_short, handler, magazine, rail
+def_show_bones = barrel, bolt_foregrip, magazine_short, stock
+
+hud = wpn_wincheaster1300_trapper_hud
+
+cost					 	= 10000
+
+rpm                      	= 85  ;60 = 1 пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+hit_power        			= 1.4, 1.4, 1.4, 1.4
+hit_impulse      			= 150
+
+misfire_start_condition		= 0.6
+condition_shot_dec      	= 0.003
+
+
+inv_grid_width				= 5
+inv_grid_height				= 2
+inv_grid_x					= 20
+inv_grid_y					= 0
+
+element_icon_0 = icon_element_w1300_body
+element_icon_offset_x_0 = 65
+element_icon_offset_y_0 = 0
+element_icon_1 = icon_element_w1300_barrel
+element_icon_offset_x_1 = 200
+element_icon_offset_y_1 = 0
+element_icon_2 = icon_element_w1300_stock_uniq
+element_icon_offset_x_2 = 0
+element_icon_offset_y_2 = 0
+
+uniq_icon = upgrade_addon_icon_uniq_item
+uniq_icon_offset_x = 200
+uniq_icon_offset_y = 50
+
+upgr_icon_x			= 2
+upgr_icon_y			= 540
+upgr_icon_width		= 298
+upgr_icon_height   	= 39
+
+silencer_x = 230
+silencer_y  = 14
+
+cam_dispersion          = 4.5
+cam_dispersion_inc		= 2.0
+
+zoom_cam_dispersion			= 3.0
+zoom_cam_dispersion_inc		= 2.5
+
+[wpn_wincheaster1300_trapper_hud]:wpn_winchester1300_hud 
+
+anm_suicide			= winchester1300_suicide
+lock_time_anm_suicide 		= 7.37
+anm_stop_suicide 		= winchester1300_suicide_end
+lock_time_anm_stop_suicide 	= 1.37
+suicide_delay = 0.25 ;0.5
+
+anm_shoot_suicide                = winchester1300_suicide_shoot
+anm_shoot_suicide_sil            = winchester1300_suicide_shoot
+anm_shoot_last_suicide           = winchester1300_suicide_shoot
+anm_shoot_last_suicide_sil       = winchester1300_suicide_shoot
+
+hud_move_suicide_offset_pos = 0, 0, 0
+hud_move_suicide_offset_rot = 0,0,0
+
+hud_move_suicide_offset_pos_16x9 = 0, 0, 0
+hud_move_suicide_offset_rot_16x9 = 0,0,0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+
 anm_idle			= winchester1300_idle
-anm_idle_aim			= winchester1300_idle_aim
-anm_idle_moving			= winchester1300_idle_moving
-anm_idle_sprint			= winchester1300_idle_sprint
-anm_bore			= winchester1300_idle_bore
+anm_idle_empty			= winchester1300_idle
+anm_idle_jammed			= winchester1300_idle, idle_jammed
 
-anm_shots			= winchester1300_shoot
+;пїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_slow			= winchester1300_idle
+anm_idle_slow_empty		= winchester1300_idle
+anm_idle_slow_jammed		= winchester1300_idle, idle_jammed
 
+;пїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_crouch			= winchester1300_idle
+anm_idle_crouch_empty		= winchester1300_idle
+anm_idle_crouch_jammed		= winchester1300_idle, idle_jammed
+
+;пїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_crouch_slow		= winchester1300_idle
+anm_idle_crouch_slow_empty	= winchester1300_idle
+anm_idle_crouch_slow_jammed	= winchester1300_idle, idle_jammed
+
+;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_moving			        = winchester1300_walk
+anm_idle_moving_empty		        = winchester1300_walk
+anm_idle_moving_jammed		        = winchester1300_walk, idle_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_moving_slow			= winchester1300_walk_slow
+anm_idle_moving_slow_empty		= winchester1300_walk_slow
+anm_idle_moving_slow_jammed		= winchester1300_walk_slow, idle_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_moving_crouch			= winchester1300_walk_slow_down
+anm_idle_moving_crouch_empty		= winchester1300_walk_slow_down
+anm_idle_moving_crouch_jammed		= winchester1300_walk_slow_down, idle_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_moving_crouch_slow		= winchester1300_walk_slow_super
+anm_idle_moving_crouch_slow_empty	= winchester1300_walk_slow_super
+anm_idle_moving_crouch_slow_jammed	= winchester1300_walk_slow_super, idle_jammed
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+enable_directions_anm_idle_aim = true
+
+
+
+;пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_start		= winchester1300_aim_start
+anm_idle_aim_start_empty	= winchester1300_aim_start
+anm_idle_aim_start_jammed	= winchester1300_aim_start, winchester1300_aim_start_jammed
+
+autoshoot_anm_idle_aim_start = true
+autoshoot_anm_idle_aim_start_empty = true
+autoshoot_anm_idle_aim_start_jammed = true
+
+lock_time_anm_idle_aim_start = 0.25
+lock_time_anm_idle_aim_start_empty = 0.25
+lock_time_anm_idle_aim_start_jammed = 0.25
+
+;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_end		= winchester1300_aim_end
+anm_idle_aim_end_empty		= winchester1300_aim_end
+anm_idle_aim_end_jammed		= winchester1300_aim_end, winchester1300_aim_end_jammed
+
+autoshoot_anm_idle_aim_end = true
+autoshoot_anm_idle_aim_end_empty = true
+autoshoot_anm_idle_aim_end_jammed = true
+
+lock_time_anm_idle_aim_end = 0.25
+lock_time_anm_idle_aim_end_empty = 0.25
+lock_time_anm_idle_aim_end_jammed = 0.25
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim			= winchester1300_aim
+anm_idle_aim_empty		= winchester1300_aim
+anm_idle_aim_jammed		= winchester1300_aim, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_scope			= winchester1300_aim
+anm_idle_aim_scope_empty		= winchester1300_aim
+anm_idle_aim_scope_jammed		= winchester1300_aim, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_forward		= winchester1300_aim_walk, winchester1300_aim
+anm_idle_aim_moving_forward_empty	= winchester1300_aim_walk, winchester1300_aim
+anm_idle_aim_moving_forward_jammed	= winchester1300_aim_walk, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_back		= winchester1300_aim_walk, winchester1300_aim
+anm_idle_aim_moving_back_empty		= winchester1300_aim_walk, winchester1300_aim
+anm_idle_aim_moving_back_jammed		= winchester1300_aim_walk, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_left		= winchester1300_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_left_empty		= winchester1300_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_left_jammed		= winchester1300_aim_walk_left, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_right		= winchester1300_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_right_empty		= winchester1300_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_right_jammed	= winchester1300_aim_walk_right, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_forward_right		= winchester1300_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_forward_right_empty		= winchester1300_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_forward_right_jammed	= winchester1300_aim_walk_right, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_forward_left		= winchester1300_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_forward_left_empty		= winchester1300_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_forward_left_jammed		= winchester1300_aim_walk_left, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_back_right			= winchester1300_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_back_right_empty		= winchester1300_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_back_right_jammed		= winchester1300_aim_walk_right, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_back_left			= winchester1300_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_back_left_empty		= winchester1300_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_back_left_jammed		= winchester1300_aim_walk_left, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_scope_moving		        = winchester1300_aim_walk, winchester1300_aim
+anm_idle_aim_scope_moving_empty	                = winchester1300_aim_walk, winchester1300_aim
+anm_idle_aim_scope_moving_jammed	        = winchester1300_aim_walk, winchester1300_aim_jammed
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_sprint_start             = winchester1300_sprint_start
+anm_idle_sprint_start_empty       = winchester1300_sprint_start
+anm_idle_sprint_start_jammed      = winchester1300_sprint_start, idle_jammed
+
+lock_time_anm_idle_sprint_start = 0.15
+lock_time_anm_idle_sprint_start_empty = 0.15
+lock_time_anm_idle_sprint_start_jammed = 0.15
+
+;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_sprint_end             = winchester1300_sprint_end
+anm_idle_sprint_end_empty       = winchester1300_sprint_end
+anm_idle_sprint_end_jammed      = winchester1300_sprint_end, idle_jammed
+
+lock_time_anm_idle_sprint_end = 0.25	; orig 0.4 (GS wpn_winchester1300_hud; same animation as the base section, which is 0.25)
+lock_time_anm_idle_sprint_end_empty = 0.25	; orig 0.4 (GS wpn_winchester1300_hud; same animation as the base section, which is 0.25)
+lock_time_anm_idle_sprint_end_jammed = 0.25	; orig 0.4 (GS wpn_winchester1300_hud; same animation as the base section, which is 0.25)
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_sprint			= winchester1300_sprint
+anm_idle_sprint_empty		= winchester1300_sprint
+anm_idle_sprint_jammed		= winchester1300_sprint, idle_jammed
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 anm_open			= winchester1300_reload_start
-anm_add_cartridge		= winchester1300_reload
-anm_close			= winchester1300_reload_end
+anm_open_empty		        = winchester1300_reload_empty_start
 
-;-----------------------------------------------------------------------------
-; Уникальные
-;-----------------------------------------------------------------------------
+add_cartridge_in_open = true	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ open пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+empty_preload_mode = true	;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ anm_open_empty пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ add_cartridge_preloaded пїЅпїЅпїЅ close_preloaded (пїЅ.пїЅ. пїЅ anm_open_empty пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
+
+lock_time_start_anm_open =  0.01 ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅпїЅпїЅ  (пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ open, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ lock_time_anm_open)
+lock_time_end_anm_open = 1.02 	;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+				;пїЅпїЅпїЅпїЅ lock_time_start + lock_time_end пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ! пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ 100пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+lock_time_start_anm_open_empty = 0.01	
+lock_time_end_anm_open_empty = 2.09 	
+
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_add_cartridge			    = winchester1300_reload_ammo
+anm_add_cartridge_empty			    = winchester1300_reload_ammo 	                ; пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ add_cartridge_in_open=true пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 
+anm_add_cartridge_preloaded		    = winchester1300_reload_empty_second_ammo
+anm_add_cartridge_empty_preloaded           = winchester1300_reload_empty_second_ammo 	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ anm_add_cartridge_preloaded, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+
+lock_time_start_anm_add_cartridge           = 0.66		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ open
+lock_time_end_anm_add_cartridge             = 0.01
+lock_time_start_anm_add_cartridge_empty	    = 0.66		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ open
+lock_time_end_anm_add_cartridge_empty	    = 0.01
+lock_time_start_anm_add_cartridge_preloaded = 0.99		
+lock_time_end_anm_add_cartridge_preloaded   = 0.01
+
+
+;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_close			            = winchester1300_reload_end
+anm_close_empty			            = winchester1300_reload_end	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ add_cartridge_in_open=true; пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+anm_close_preloaded		            = winchester1300_reload_empty_end, winchester1300_reload_end
+anm_close_empty_preloaded                   = winchester1300_reload_empty_end, winchester1300_reload_end 	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ anm_close_preloaded, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+use_unloadmag_anim = true
+lock_time_anm_unload_mag = 0.8
+anm_unload_mag                               = winchester1300_draw
+lock_time_anm_unload_mag_jammed = 0.8
+anm_unload_mag_jammed                        = winchester1300_draw  
+lock_time_anm_unload_mag_empty = 0.8
+anm_unload_mag_empty                         = winchester1300_draw
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+disable_bore = true
+
+anm_bore			= winchester1300_dry
+anm_bore_empty			= winchester1300_dry
+anm_bore_jammed			= winchester1300_dry, idle_jammed
+
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_show			= winchester1300_draw
+anm_show_empty			= winchester1300_draw
+anm_show_jammed			= winchester1300_draw, idle_jammed
+
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_hide			= winchester1300_hide
+anm_hide_empty			= winchester1300_hide
+anm_hide_jammed			= winchester1300_hide, idle_jammed
+
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_shoot						= winchester1300_shoot
+anm_shoot_sil					= winchester1300_shoot
+anm_shoot_last					= winchester1300_shoot
+anm_shoot_last_sil				= winchester1300_shoot
+anm_shoot_aim					= winchester1300_aim_shoot
+anm_shoot_aim_sil				= winchester1300_aim_shoot
+anm_shoot_aim_last				= winchester1300_aim_shoot
+anm_shoot_aim_last_sil			= winchester1300_aim_shoot
+anm_shoot_aim_scope				= winchester1300_aim_shoot_scope
+anm_shoot_aim_scope_sil			= winchester1300_aim_shoot_scope
+anm_shoot_aim_scope_last		= winchester1300_aim_shoot_scope
+anm_shoot_aim_scope_last_sil	= winchester1300_aim_shoot_scope
+
+; пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+anm_shoot_jammed				= winchester1300_shoot_jammed
+anm_shoot_jammed_sil			= winchester1300_shoot_jammed
+anm_shoot_aim_jammed			= winchester1300_aim_shoot_jammed
+anm_shoot_aim_jammed_sil		= winchester1300_aim_shoot_jammed
+anm_shoot_aim_scope_jammed		= winchester1300_aim_shoot_jammed
+anm_shoot_aim_scope_jammed_sil	= winchester1300_aim_shoot_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_fakeshoot_empty 		= winchester1300_dry_empty
+anm_fakeshoot_jammed 		= winchester1300_dry, idle_jammed
+anm_fakeshoot_aim_empty         = winchester1300_aim_dry, winchester1300_aim
+anm_fakeshoot_aim_jammed        = winchester1300_aim_dry, winchester1300_aim_jammed
+
+lock_time_anm_fakeshoot_empty = 0.22
+lock_time_anm_fakeshoot_jammed = 1.20
+lock_time_anm_fakeshoot_aim_empty = 0.22
+lock_time_anm_fakeshoot_aim_jammed = 0.22
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_reload_jammed			= winchester1300_revival
+anm_reload_jammed_last			= winchester1300_revival
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_laser_on = winchester1300_tac_lam
+lock_time_start_anm_laser_on = 0.45
+lock_time_end_anm_laser_on = 0.65
+
+anm_laser_on_empty = winchester1300_tac_lam
+lock_time_start_anm_laser_on_empty = 0.45
+lock_time_end_anm_laser_on_empty = 0.65
+
+anm_laser_on_jammed = winchester1300_tac_lam, idle_jammed
+lock_time_start_anm_laser_on_jammed = 0.45
+lock_time_end_anm_laser_on_jammed = 0.65
+
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_laser_off = winchester1300_tac_lam
+lock_time_start_anm_laser_off = 0.45
+lock_time_end_anm_laser_off = 0.65
+
+anm_laser_off_empty = winchester1300_tac_lam
+lock_time_start_anm_laser_off_empty = 0.45
+lock_time_end_anm_laser_off_empty = 0.65
+
+anm_laser_off_jammed = winchester1300_tac_lam, idle_jammed
+lock_time_start_anm_laser_off_jammed = 0.45
+lock_time_end_anm_laser_off_jammed = 0.65
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_torch_on = winchester1300_tac_lam
+lock_time_start_anm_torch_on = 0.45
+lock_time_end_anm_torch_on = 0.65
+
+anm_torch_on_empty = winchester1300_tac_lam
+lock_time_start_anm_torch_on_empty = 0.45
+lock_time_end_anm_torch_on_empty = 0.65
+
+anm_torch_on_jammed = winchester1300_tac_lam, idle_jammed
+lock_time_start_anm_torch_on_jammed = 0.45
+lock_time_end_anm_torch_on_jammed = 0.65
+
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_torch_off = winchester1300_tac_lam
+lock_time_start_anm_torch_off = 0.45
+lock_time_end_anm_torch_off = 0.65
+
+anm_torch_off_empty = winchester1300_tac_lam
+lock_time_start_anm_torch_off_empty = 0.45
+lock_time_end_anm_torch_off_empty = 0.65
+
+anm_torch_off_jammed = winchester1300_tac_lam, idle_jammed
+lock_time_start_anm_torch_off_jammed = 0.45
+lock_time_end_anm_torch_off_jammed = 0.65
+
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_headlamp_on = winchester1300_headflash
+lock_time_start_anm_headlamp_on = 0.58
+lock_time_end_anm_headlamp_on = 0.5
+
+anm_headlamp_on_empty = winchester1300_headflash
+lock_time_start_anm_headlamp_on_empty = 0.58
+lock_time_end_anm_headlamp_on_empty = 0.5
+
+anm_headlamp_on_jammed = winchester1300_headflash, idle_jammed
+lock_time_start_anm_headlamp_on_jammed = 0.58
+lock_time_end_anm_headlamp_on_jammed = 0.5
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_headlamp_off = winchester1300_headflash
+lock_time_start_anm_headlamp_off = 0.58
+lock_time_end_anm_headlamp_off = 0.5
+
+anm_headlamp_off_empty = winchester1300_headflash
+lock_time_start_anm_headlamp_off_empty = 0.58
+lock_time_end_anm_headlamp_off_empty = 0.5
+
+anm_headlamp_off_jammed = winchester1300_headflash, idle_jammed
+lock_time_start_anm_headlamp_off_jammed = 0.58
+lock_time_end_anm_headlamp_off_jammed = 0.5
+
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_nv_on = winchester1300_headflash
+anm_nv_on_empty = winchester1300_headflash
+anm_nv_on_jammed = winchester1300_headflash, idle_jammed
+
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_nv_off = winchester1300_headflash
+anm_nv_off_empty = winchester1300_headflash
+anm_nv_off_jammed = winchester1300_headflash, idle_jammed
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_reload			= winchester1300_dry
+anm_reload_last			= winchester1300_dry
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+; hold each shot for 0.75 s so the pump working plays through -- NOT from GS,
+; which keys no lock_time for this weapon's shot at all (user request 2026-08-07).
+lock_time_anm_shoot = 0.75
+lock_time_anm_shoot_sil = 0.75
+lock_time_anm_shoot_last = 0.75
+lock_time_anm_shoot_last_sil = 0.75
+lock_time_anm_shoot_aim = 0.75
+lock_time_anm_shoot_aim_sil = 0.75
+lock_time_anm_shoot_aim_last = 0.75
+lock_time_anm_shoot_aim_last_sil = 0.75
+lock_time_anm_shoot_aim_scope = 0.75
+lock_time_anm_shoot_aim_scope_sil = 0.75
+lock_time_anm_shoot_aim_scope_last = 0.75
+lock_time_anm_shoot_aim_scope_last_sil = 0.75
+
+[wpn_wincheaster1300_tac_trapper_hud]:wpn_winchester1300_tac_hud
+
+anm_suicide			= winchester1300_tac_suicide
+anm_stop_suicide 		= winchester1300_tac_suicide_end
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+
+anm_idle			    = winchester1300_tac_idle
+anm_idle_empty			= winchester1300_tac_idle
+anm_idle_jammed			= winchester1300_tac_idle, idle_jammed
+
+;пїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_slow			= winchester1300_tac_idle
+anm_idle_slow_empty		= winchester1300_tac_idle
+anm_idle_slow_jammed	= winchester1300_tac_idle, idle_jammed
+
+;пїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_crouch			= winchester1300_tac_idle
+anm_idle_crouch_empty	= winchester1300_tac_idle
+anm_idle_crouch_jammed	= winchester1300_tac_idle, idle_jammed
+
+;пїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_crouch_slow		= winchester1300_tac_idle
+anm_idle_crouch_slow_empty	= winchester1300_tac_idle
+anm_idle_crouch_slow_jammed	= winchester1300_tac_idle, idle_jammed
+
+;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_moving			            = winchester1300_tac_walk
+anm_idle_moving_empty		        = winchester1300_tac_walk
+anm_idle_moving_jammed		        = winchester1300_tac_walk, idle_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_moving_slow			= winchester1300_tac_walk_slow
+anm_idle_moving_slow_empty		= winchester1300_tac_walk_slow
+anm_idle_moving_slow_jammed		= winchester1300_tac_walk_slow, idle_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_moving_crouch			    = winchester1300_tac_walk_slow_down
+anm_idle_moving_crouch_empty		= winchester1300_tac_walk_slow_down
+anm_idle_moving_crouch_jammed		= winchester1300_tac_walk_slow_down, idle_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_moving_crouch_slow		    = winchester1300_tac_walk_slow_super
+anm_idle_moving_crouch_slow_empty	= winchester1300_tac_walk_slow_super
+anm_idle_moving_crouch_slow_jammed	= winchester1300_tac_walk_slow_super, idle_jammed
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_start		    = winchester1300_tac_aim_start, winchester1300_aim_start
+anm_idle_aim_start_empty	= winchester1300_tac_aim_start, winchester1300_aim_start
+anm_idle_aim_start_jammed	= winchester1300_tac_aim_start, winchester1300_aim_start_jammed
+
+;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_end		    = winchester1300_tac_aim_end, winchester1300_aim_end
+anm_idle_aim_end_empty		= winchester1300_tac_aim_end, winchester1300_aim_end
+anm_idle_aim_end_jammed		= winchester1300_tac_aim_end, winchester1300_aim_end_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim			= winchester1300_tac_aim, winchester1300_aim
+anm_idle_aim_empty		= winchester1300_tac_aim, winchester1300_aim
+anm_idle_aim_jammed		= winchester1300_tac_aim, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_scope			    = winchester1300_tac_aim, winchester1300_aim
+anm_idle_aim_scope_empty		= winchester1300_tac_aim, winchester1300_aim
+anm_idle_aim_scope_jammed		= winchester1300_tac_aim, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_forward		    = winchester1300_tac_aim_walk, winchester1300_aim
+anm_idle_aim_moving_forward_empty	= winchester1300_tac_aim_walk, winchester1300_aim
+anm_idle_aim_moving_forward_jammed	= winchester1300_tac_aim_walk, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_back		    = winchester1300_tac_aim_walk, winchester1300_aim
+anm_idle_aim_moving_back_empty		= winchester1300_tac_aim_walk, winchester1300_aim
+anm_idle_aim_moving_back_jammed		= winchester1300_tac_aim_walk, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_left		    = winchester1300_tac_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_left_empty		= winchester1300_tac_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_left_jammed		= winchester1300_tac_aim_walk_left, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_right		    = winchester1300_tac_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_right_empty		= winchester1300_tac_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_right_jammed	= winchester1300_tac_aim_walk_right, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_forward_right		    = winchester1300_tac_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_forward_right_empty		= winchester1300_tac_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_forward_right_jammed	= winchester1300_tac_aim_walk_right, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_forward_left		    = winchester1300_tac_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_forward_left_empty		= winchester1300_tac_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_forward_left_jammed		= winchester1300_tac_aim_walk_left, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_back_right			    = winchester1300_tac_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_back_right_empty		= winchester1300_tac_aim_walk_right, winchester1300_aim
+anm_idle_aim_moving_back_right_jammed		= winchester1300_tac_aim_walk_right, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_moving_back_left			    = winchester1300_tac_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_back_left_empty		    = winchester1300_tac_aim_walk_left, winchester1300_aim
+anm_idle_aim_moving_back_left_jammed		= winchester1300_tac_aim_walk_left, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_aim_scope_moving		                = winchester1300_tac_aim_walk, winchester1300_aim
+anm_idle_aim_scope_moving_empty	                = winchester1300_tac_aim_walk, winchester1300_aim
+anm_idle_aim_scope_moving_jammed	            = winchester1300_tac_aim_walk, winchester1300_aim_jammed
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_sprint_start             = winchester1300_tac_sprint_start
+anm_idle_sprint_start_empty       = winchester1300_tac_sprint_start
+anm_idle_sprint_start_jammed      = winchester1300_tac_sprint_start, idle_jammed
+
+;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_sprint_end             = winchester1300_tac_sprint_end
+anm_idle_sprint_end_empty       = winchester1300_tac_sprint_end
+anm_idle_sprint_end_jammed      = winchester1300_tac_sprint_end, idle_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_idle_sprint			    = winchester1300_tac_sprint
+anm_idle_sprint_empty		= winchester1300_tac_sprint
+anm_idle_sprint_jammed		= winchester1300_tac_sprint, idle_jammed
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_open			        = winchester1300_tac_reload_start, winchester1300_reload_start
+anm_open_empty		        = winchester1300_tac_reload_empty_start, winchester1300_reload_empty_start	
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_add_cartridge			        = winchester1300_tac_reload_ammo, winchester1300_reload_ammo
+anm_add_cartridge_empty			    = winchester1300_tac_reload_ammo, winchester1300_reload_ammo 	                ; пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ add_cartridge_in_open=true пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 
+anm_add_cartridge_preloaded		    = winchester1300_tac_reload_empty_second_ammo, winchester1300_reload_empty_second_ammo
+anm_add_cartridge_empty_preloaded   = winchester1300_tac_reload_empty_second_ammo, winchester1300_reload_empty_second_ammo 	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ anm_add_cartridge_preloaded, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+
+;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_close			                = winchester1300_tac_reload_end, winchester1300_reload_end
+anm_close_empty			            = winchester1300_tac_reload_end, winchester1300_reload_end	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ add_cartridge_in_open=true; пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+anm_close_preloaded		            = winchester1300_tac_reload_empty_end, winchester1300_reload_end
+anm_close_empty_preloaded           = winchester1300_tac_reload_empty_end, winchester1300_reload_end 	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ anm_close_preloaded, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_unload_mag                               = winchester1300_tac_draw
+anm_unload_mag_jammed                        = winchester1300_tac_draw  
+anm_unload_mag_empty                         = winchester1300_tac_draw
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+anm_bore			    = winchester1300_tac_dry
+anm_bore_empty			= winchester1300_tac_dry
+anm_bore_jammed			= winchester1300_tac_dry, idle_jammed
+
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_show			    = winchester1300_tac_draw
+anm_show_empty			= winchester1300_tac_draw
+anm_show_jammed			= winchester1300_tac_draw, idle_jammed
+
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_hide			    = winchester1300_tac_hide
+anm_hide_empty			= winchester1300_tac_hide
+anm_hide_jammed			= winchester1300_tac_hide, idle_jammed
+
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_shoot			     		= winchester1300_tac_shoot
+anm_shoot_sil			     	= winchester1300_tac_shoot
+anm_shoot_last			 		= winchester1300_tac_shoot
+anm_shoot_last_sil			 	= winchester1300_tac_shoot
+anm_shoot_aim			 		= winchester1300_tac_aim_shoot
+anm_shoot_aim_sil			 	= winchester1300_tac_aim_shoot
+anm_shoot_aim_last				= winchester1300_tac_aim_shoot
+anm_shoot_aim_last_sil			= winchester1300_tac_aim_shoot
+anm_shoot_aim_scope				= winchester1300_tac_aim_shoot_scope
+anm_shoot_aim_scope_sil			= winchester1300_tac_aim_shoot_scope
+anm_shoot_aim_scope_last 		= winchester1300_tac_aim_shoot_scope
+anm_shoot_aim_scope_last_sil 	= winchester1300_tac_aim_shoot_scope
+
+; пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+anm_shoot_jammed		    	= winchester1300_tac_shoot_jammed, winchester1300_shoot_jammed
+anm_shoot_jammed_sil		    = winchester1300_tac_shoot_jammed, winchester1300_shoot_jammed
+anm_shoot_aim_jammed			= winchester1300_tac_aim_shoot_jammed, winchester1300_aim_shoot_jammed
+anm_shoot_aim_jammed_sil		= winchester1300_tac_aim_shoot_jammed, winchester1300_aim_shoot_jammed
+anm_shoot_aim_scope_jammed		= winchester1300_tac_aim_shoot_jammed, winchester1300_aim_shoot_jammed
+anm_shoot_aim_scope_jammed_sil	= winchester1300_tac_aim_shoot_jammed, winchester1300_aim_shoot_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅ
+anm_fakeshoot_empty 		    = winchester1300_tac_dry_empty
+anm_fakeshoot_jammed 		    = winchester1300_tac_dry, idle_jammed
+anm_fakeshoot_aim_empty         = winchester1300_tac_aim_dry, winchester1300_aim
+anm_fakeshoot_aim_jammed        = winchester1300_tac_aim_dry, winchester1300_aim_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+anm_reload_jammed			= winchester1300_tac_revival, winchester1300_revival
+anm_reload_jammed_last		= winchester1300_tac_revival, winchester1300_revival
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_laser_on = winchester1300_tac_lam
+
+anm_laser_on_empty = winchester1300_tac_lam
+
+anm_laser_on_jammed = winchester1300_tac_lam, idle_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_laser_off = winchester1300_tac_lam
+
+anm_laser_off_empty = winchester1300_tac_lam
+
+anm_laser_off_jammed = winchester1300_tac_lam, idle_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_torch_on = winchester1300_tac_lam
+
+anm_torch_on_empty = winchester1300_tac_lam
+
+anm_torch_on_jammed = winchester1300_tac_lam, idle_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_torch_off = winchester1300_tac_lam
+
+anm_torch_off_empty = winchester1300_tac_lam
+
+anm_torch_off_jammed = winchester1300_tac_lam, idle_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_headlamp_on = winchester1300_tac_headflash
+
+anm_headlamp_on_empty = winchester1300_tac_headflash
+
+anm_headlamp_on_jammed = winchester1300_tac_headflash, idle_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_headlamp_off = winchester1300_tac_headflash
+
+anm_headlamp_off_empty = winchester1300_tac_headflash
+
+anm_headlamp_off_jammed = winchester1300_tac_headflash, idle_jammed
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_nv_on = winchester1300_tac_headflash
+anm_nv_on_empty = winchester1300_tac_headflash
+anm_nv_on_jammed = winchester1300_tac_headflash, idle_jammed
+
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
+anm_nv_off = winchester1300_tac_headflash
+anm_nv_off_empty = winchester1300_tac_headflash
+anm_nv_off_jammed = winchester1300_tac_headflash, idle_jammed
+; hold each shot for 0.75 s so the pump working plays through -- NOT from GS,
+; which keys no lock_time for this weapon's shot at all (user request 2026-08-07).
+lock_time_anm_shoot = 0.75
+lock_time_anm_shoot_sil = 0.75
+lock_time_anm_shoot_last = 0.75
+lock_time_anm_shoot_last_sil = 0.75
+lock_time_anm_shoot_aim = 0.75
+lock_time_anm_shoot_aim_sil = 0.75
+lock_time_anm_shoot_aim_last = 0.75
+lock_time_anm_shoot_aim_last_sil = 0.75
+lock_time_anm_shoot_aim_scope = 0.75
+lock_time_anm_shoot_aim_scope_sil = 0.75
+lock_time_anm_shoot_aim_scope_last = 0.75
+lock_time_anm_shoot_aim_scope_last_sil = 0.75

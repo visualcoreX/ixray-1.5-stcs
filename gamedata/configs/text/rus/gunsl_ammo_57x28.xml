@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_ammo_5.7x28">
+		<text>Патроны 5,7x28 FN</text>
+	</string>
+	<string id="gunsl_ammo_5.7x28_short">
+		<text>5,7x28 FN</text>
+	</string>
+	<string id="gunsl_ammo_5.7x28_descr">
+		<text>Патрон 5,7x28 (SS190) был изначально разработан специально для пистолета-пулемета FN P90 в середине 1980-х годов. Позже под этот же патрон дополнительно был спроектирован пистолет-компаньон «Five SeveN». Пуля обладает большим останавливающим действием и способна пробить большинство бронежилетов.</text>
+	</string>
+</string_table>

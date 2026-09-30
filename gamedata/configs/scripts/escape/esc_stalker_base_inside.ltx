@@ -2,6 +2,4 @@
 active = sr_idle@1
 
 [sr_idle@1]
-on_actor_inside = {!gulag_enemy_actor(esc_smart_terrain_5_7) +esc_reach_trader_complete} sr_idle@2 %+esc_actor_inside_stalkerbase%
-
-[sr_idle@2]
+on_actor_inside = {+esc_reach_trader_complete !gulag_enemy_actor(esc_smart_terrain_5_7) =is_smart_captured(esc_smart_terrain_5_7)} nil %+esc_actor_inside_stalkerbase%

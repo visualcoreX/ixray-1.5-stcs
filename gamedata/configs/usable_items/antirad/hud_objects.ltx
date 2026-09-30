@@ -1,0 +1,57 @@
+[antirad_hud_model]:gwr_base_usable
+; measured in the editor, translate given in CENTIMETRES -> /100 for X-Ray metres
+;   editor  10.063, 0.483, -1.4 cm  ->  0.10063, 0.00483, 0.014 m
+; NOTE the Z translate flips SIGN between the editor and X-Ray; X and Y carry over as they are.
+; rotate is degrees, but `orientation` is fed to Fmatrix::setHPB -- heading/pitch/bank,
+; i.e. the order is Y, X, Z and NOT X, Y, Z as the editor lists them. So:
+;   editor  X -9.144  Y -80  Z 0   ->   here  -80 (Y), -9.144 (X), 0 (Z)
+actor_hand_bone	= bip01_r_hand
+position		= 0.10063, 0.00483, 0.014
+orientation		= -80.0, -9.144, 0.0
+actor_hand_scale	= 0.634
+; world model for THIRD PERSON. gwr_base_usable gives every phantom
+; gwr_base_usable gives them all an empty stand-in visual, so there was nothing to draw in hand.
+visual			= gwr\equipment\antirad\antirad_hud.ogf
+actor_torso_anim	= norm_torso_item_antirad	; third-person gesture from the xrMPE actor pack
+; GS trash: the empty thrown away at timing_trash (see usable_items/trash_objects.ltx).
+; GS's own value shifted by the gap between our `timing` and GS's, so it lands at the same
+; point relative to the END of the animation.
+trash_object       = antirad_trash
+timing_trash       = 5766
+$spawn          = "weapons\antirad_hud_model"
+hud             = antirad_hud
+hud_exo         = antirad_exo_hud_model
+timing          = 6266
+snd_using       = items\antirad\injector
+snd_delay       = 250
+snd_delay_detector = 250   ; shorter delay when only a detector is in hands (it holsters faster)
+gwr_eatable_object = antirad_eatable
+effect_delay       = 4000
+
+[antirad_hud]:gwr_base_usable_hud
+hands_position      = 0.0,-0.025,0.1
+hands_position_16x9 = 0.0,-0.025,0.05
+item_visual     = gwr\equipment\antirad\antirad_hud
+anm_show        = antirad
+anm_hide        = zaglushka
+anm_idle        = zaglushka
+anm_idle_aim    = zaglushka
+anm_idle_moving = zaglushka
+anm_idle_sprint = zaglushka
+anm_bore        = zaglushka
+
+; --- exoskeleton variant (picked in gwr_eatable.OnItemUsed when an exo outfit is worn) ---
+; timing/snd_delay/effect_delay inherited from antirad_hud_model -- TUNE to the exo animation length
+[antirad_exo_hud_model]:antirad_hud_model
+; GS: the exo injects through the suit in one motion -- nothing is discarded
+no_trash           = true
+hud             = antirad_exo_hud
+snd_using       = items\medkit\medkit_exo_alt
+effect_delay        = 2300
+timing          	= 3000
+
+[antirad_exo_hud]:antirad_hud
+item_visual         = gwr\equipment\medkit_exo\medkit_exo_hud
+anm_show            = medkit_exo_antirad
+hands_position      = 0.0,-0.015,0.04
+hands_position_16x9 = 0.0,-0.015,-0.01

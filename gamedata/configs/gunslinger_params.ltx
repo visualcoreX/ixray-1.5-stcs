@@ -1,0 +1,125 @@
+; Gunslinger port: global engine-feature params (values ported verbatim from GS gunslinger_params.ltx
+; [gunslinger_base]). Currently used: actor camera-height inertia + landing dips (ActorCameras.cpp).
+[gunslinger_base]
+; smooth camera height approach (crouch/stand transitions)
+default_actor_camera_speed                  = 18
+actor_camera_speed_pow                      = 1.2
+; landing dip: soft landing (mcLanding)
+actor_camera_landing_offset                 = -0.2
+actor_camera_landing_time                   = 0.125
+actor_camera_landing_speed_factor           = 0.5
+actor_camera_landing_speed_pow_factor       = 0.7
+; landing dip: hard landing (mcLanding2)
+actor_camera_landing2_offset                = -0.8
+actor_camera_landing2_time                  = 0.125
+actor_camera_landing2_speed_factor          = 0.5
+actor_camera_landing2_speed_pow_factor      = 0.7
+; recovery phase after the soft landing
+actor_camera_finish_landing_time            = 0.3
+actor_camera_finish_landing_speed_factor    = 0.5
+actor_camera_finish_landing_speed_pow_factor = 0.9
+
+; ---- hud turn-inertion defaults (GS magnitudes; SIGNS FLIPPED vs GS's raw values -- IX-Ray's
+; update_inertion reconstruction interprets them opposite to the CoP asm slots GS patches, confirmed
+; in-game: GS raw signs swayed the wrong way) ----
+inertion_default_pitch_offset_r = 0.017
+inertion_default_pitch_offset_n = 0.012
+inertion_default_pitch_offset_d = 0.02
+inertion_default_origin_offset  = -0.09
+inertion_default_speed          = 5
+inertion_aim_default_pitch_offset_r = 0
+inertion_aim_default_pitch_offset_n = 0
+inertion_aim_default_pitch_offset_d = 0
+inertion_aim_default_origin_offset  = -0.02   ; orig -0.04 (halved: less weapon sway when moving the mouse while aiming)
+inertion_aim_default_speed          = 7
+
+; ---- lean (Q/E) camera roll: amplified + nonlinear approach (verbatim GS) ----
+lookout_speed        = 6.0
+lookout_ampl_k       = 1.5
+lookout_ampl_dx_pow  = 0.6
+
+
+; ==== Controller psi grab / suicide (engine: CActor + CControllerPsyHit). Values verbatim from GS
+; gunslinger_params.ltx [gunslinger_base]; a weapon hud section may override controller_time. ====
+controller_time                     = 5     ; sec the victim stays controlled (hud `controller_time` wins)
+controller_prepare_time             = 3     ; sec of the psi-attack WINDUP: the blocks are already on
+controller_psyblocked_time          = 10    ; sec of hand jitter when the grab is psi-blocked
+; camera reaction to the psi attack: the VANILLA effector with its flight cut out, which is what GS's
+; binary patches leave -- only its small random wobble (amplitude is engine-side, 0.5 deg per axis).
+controller_psi_cam_turn_time        = 1.1   ; sec the wobble lasts; 0 disables the reaction
+actor_shock_time                    = 5     ; sec of hand jitter after the grab lets go
+controlled_actor_speed_koef         = 0.5   ; movement speed while controlled
+controller_phantoms_min             = 1
+controller_phantoms_max             = 2
+controller_phantoms_min_radius      = 3
+controller_phantoms_max_radius      = 5
+controller_min_feel_dist            = 6     ; closer than this the grab always lands even unseen
+controller_max_feel_dist            = 12    ; farther than this it needs line of sight
+controller_queue_stop_prob          = 0.75  ; chance the grab cuts a burst the victim is firing
+; Telepathic protection. GS uses a booster, which CS has none of, so ours is a timer the psi blockade
+; item starts (psi_blockade_time on its eatable section). While it runs, incoming TELEPATHIC damage
+; (controller aura and tube, poltergeist, psi dog) is cut by the fraction below, 0 disables the cut.
+; Being drunk does NOT cut damage -- vodka only refuses the controller's GRAB, same as the blockade,
+; and both go through the unblock roll below.
+psi_blockade_protection             = 0.5   ; drug_psy_blockade: 0.5 = half the telepathic damage while it runs
+psi_blockade_max_time               = 600   ; hard ceiling in SECONDS on the blockade timer; a saved
+                                          ; remainder is clamped to it both ways (see CActor::StartPsiBlockade)
+controller_psi_unblock_mindist      = 5     ; telepathic protection fails this often, by distance
+controller_psi_unblock_maxdist      = 19
+controller_psi_unblock_mindist_prob = 0.75
+controller_psi_unblock_maxdist_prob = 0.05
+controller_mouse_sense_min          = 0.4   ; mouse control while grabbed: sensitivity scale range
+controller_mouse_sense_max          = 0.7
+controller_mouse_offset_min         = -3    ; and a random jitter added to every mouse frame
+controller_mouse_offset_max         = 3
+base_jitter_pos_amplitude           = 0.0015
+base_jitter_rot_amplitude           = 0.08
+
+; ---- hud visuals warmed at level load (engine player_hud::load). These models are otherwise created
+; the first time their gesture runs, which is a visible hitch: the 3D PDA loads its model the moment
+; you open it. List the HUD sections; the engine takes item_visual from each. ----
+preload_hud_visuals = pda_show_animator_hud, medkit_hud, bandage_hud, quick_kick_hud, detector_simple_hud, detector_advanced_hud, detector_elite_hud
+
+; ==== Emission/blowout electronics failure (engine CActor::UpdateElectronicsProblems) ====
+; A level ramps 0..max_level across the surge hide window (0 at the hide task, 1.0 at the sky-red climax).
+; The PDA screen cycle + device cut-outs read it. All keys optional (engine defaults shown). Tune freely.
+; ---- depth of field (GS ActorDOF.pas / gunsl_config.pas, GS's own names and values) ----
+; Aim DOF. Weapons override per hud section with zoom_dof_near / _focus / _far.
+default_zoom_dof_near                       = 0.5
+default_zoom_dof_focus                      = 0.8
+default_zoom_dof_far                        = 10000
+; Action DOF -- what a reload pulls focus to. Per alias: dof_<anim>_near / _focus / _far.
+; When a reload animation has no hand-timed lock_time_start_<alias>, the magazine is seated at
+; this fraction of the animation instead of at its very end (engine: ArmReloadLockTimes).
+; GS's own hand-timed reloads sit at 0.35-0.56 of their animation. 0 = off.
+default_reload_insert                       = 0.55
+
+default_action_dof_near                     = 0
+default_action_dof_focus                    = 0.5
+default_action_dof_far                      = 5
+; Blend speeds, in 1/seconds: 5 = the vanilla 0.2s, 3 = 0.33s, 1 = a full second.
+; Aiming in is quick, coming back out is slow -- that asymmetry is the point.
+default_dof_speed                           = 5
+default_dof_speed_in                        = 3
+default_dof_speed_out                       = 1
+; When the action DOF lets go, relative to the animation. Negative = that many seconds BEFORE it
+; ends, so focus is already back by the time the hands settle. Per alias: dof_time_offset_<anim>.
+default_dof_time_offset                     = -0.5
+
+[gwr_blowout]
+max_level               = 20      ; level at the sky-red climax; the *_level thresholds below use this 0..max scale
+recover_per_sec         = 2       ; how fast the level falls after the surge (bigger = shorter boot/power-on screen)
+pda_fade_in_sec         = 5       ; smooth fade-in of the screen glitch at surge START (seconds); 0 = instant
+; ---- PDA screen: the surge runs 0..1; the screen has 3 phases by fraction ----
+;   0 .. pda_noise_frac   : LIVE readable screen + light noise  (most of the surge)
+;   noise_frac .. black_frac : ui_deadpda dark/dying screen     (THIS is the "blackening" you saw)
+;   black_frac .. 1        : FULL black                          (then the hand anim, then the boot screen)
+; So to make the screen go dark LATER: RAISE pda_noise_frac toward 1.0 (you had 0.80 = very early).
+; To skip the dark deadpda phase entirely (stay readable until the black): set pda_noise_frac = pda_black_frac.
+pda_noise_frac          = 0.8    ; live+noise screen holds until here; then the VISIBLE ui_deadpda sequence plays until pda_black_frac
+pda_black_frac          = 1.05 ; FULL black + hand anim at this fraction. 1.0 = the sky-red climax; >1.0 = into the post-climax wave (max ~1.15, else the surge ends first)
+; ---- device disable thresholds (on the 0..max_level scale) ----
+disabling_level         = 10      ; night-vision green effector cuts out at/above this
+laser_disabling_level   = 8       ; laser dot + beam suppressed at/above this
+nv_disabling_speed      = 1.0     ; NV effector fade time on cut-out
+; NOTE: the PDA hand-anim trigger blowout_anim_level lives in configs\usable_items\pda\hud_objects.ltx

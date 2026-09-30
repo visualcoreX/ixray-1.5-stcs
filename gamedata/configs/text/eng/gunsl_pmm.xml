@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_pmm">
+		<text>PMM-12</text>
+	</string>
+	<string id="gunsl_wpn_pmm_descr">
+		<text>The modernized Makarov pistol was a redesign of the PM made in the 1990s. In the process of modernization the frame was reinforced and the weight of the slide was increased. However, about 70% of the parts are interchangeable with the original PM. Spiral grooves were added to the chamber to allow the use of a higher pressure round.</text>
+	</string>
+</string_table>

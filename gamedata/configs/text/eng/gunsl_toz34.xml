@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_toz34">
+		<text>TOZ-34</text>
+	</string>
+	<string id="gunsl_wpn_toz34_descr">
+		<text>Extremely common "over/under" hunting rifle. Thanks to its accuracy and stopping power, is quite effective against mutants and enemies in light armor. Extremely cheap and available compared to most fireams, this used mostly by rookies and bandits on the outskirts of the Zone.</text>
+	</string>
+</string_table>

@@ -20,22 +20,12 @@ on_info = {+gar_quest_kill_digger_traitor_explained} walker@caution %=set_squad_
 [walker@caution]
 path_walk = traitor_walk
 path_look = traitor_look
-on_info = {=dist_to_actor_ge(80) !actor_see_npc} walker@stop %+gar_quest_kill_digger_traitor_gone%
+on_info = {=dist_to_actor_ge(80) !actor_see_npc} %=destroy_object +gar_quest_kill_digger_traitor_gone%
 meet = meet@end
-
-[walker@stop]
-path_walk = traitor_walk
-path_look = traitor_look
-meet = meet@end
-
-;[kamp@main]
-;center_point = kamp_1
-;path_walk = kamp_1_task
-;on_info = {=dist_to_actor_ge(70) !actor_see_npc} nil %+gar_quest_kill_digger_traitor_gone =destroy_object%
 
 [meet]
-meet_state 		= 40|hello@nil|15|wait@nil
-meet_state_wpn 	= 40|hello@nil|15|wait@nil
+meet_state = 40 | hello@nil | 15 | wait@nil
+meet_state_wpn = 40 | hello@nil | 15 | wait@nil
 use = true
 use_wpn = true
 victim = 50 | actor

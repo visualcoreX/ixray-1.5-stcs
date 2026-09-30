@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_addon_scope_pgo7v">
+		<text>PGO-7V Grenade launcher optical sight</text>
+	</string>
+<string id="gunsl_addon_scope_pgo7v_descr">
+		<text>Soviet-made optical sight, developed for use with portable rocket grenade launchers of RPG-7 series. Despite the miniscule improvement in accuracy for poorly trained stalkers (however, precision fire is not required from this kind of weaponry), firing the launcher with a scope is more comfortable. The reticle can be lit up for better use in a poorly illuminated environment.</text>
+	</string>
+<string id="gunsl_wpn_rpg7">
+		<text>RPG-7V</text>
+	</string>
+<string id="gunsl_wpn_rpg7_descr">
+		<text>Soviet grenade launcher, developed in the 1960s made its way into the Zone from army depots. Smoothbore single-shot recoilless launch system with an open-rear tube. Although its huge size and weight make it an unlikely choice for stalkers, given its huge destructive power and ease of use, it has found admirers in the Zone.</text>
+	</string>
+</string_table>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_fort17">
+		<text>FORT-17</text>
+	</string>
+	<string id="gunsl_wpn_fort17_descr">
+		<text>Ukrainian-made semi-automatic pistol, developed and manufactured by RPC Fort. "Fort-17" is a modification of "Fort-12" pistol with a polymer frame made of fiberglass reinforced shock-resistant polyamide with a detachable grip that allows for better fit. Equipped with a Picatinny rail, which allows installation of tactical accessories, like laser sight or flashlight. Use of polymers allowed decrease weight and manufacturing costs.</text>
+	</string>
+</string_table>

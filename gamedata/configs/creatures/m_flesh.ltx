@@ -24,7 +24,7 @@ smart_terrain_choose_interval	= 00:15:00
 
 
 Spawn_Inventory_Item_Section = mutant_flesh_eye
-Spawn_Inventory_Item_Probability = 0.0
+Spawn_Inventory_Item_Probability = 0.2
 
 ef_creature_type	 = 7				; option for evaluation functions
 ef_weapon_type		 = 2
@@ -123,6 +123,7 @@ power_hit_part 		= 1.0		;0.9			;яЁюЎхэЄ їшЄр, єїюф 	шщ эр юЄэшьрэшх ёшыv
 psy_health_v		= 0.1						;скорость восстановления psy-здоровья
 
 immunities_sect				= flesh_immunities
+protections_sect				= flesh_protections	; GS skin armour
 
 ;открытые раны
 bleeding_v					= 0.04						;потеря крови при номинальной ране в секунду
@@ -297,7 +298,7 @@ radiation_immunity 		= 0.0
 telepatic_immunity 		= 1.0
 chemical_burn_immunity 	= 1.0
 explosion_immunity 		= 0.55
-fire_wound_immunity  	= 0.15
+fire_wound_immunity  	= 0.2228; orig 0.15 (x2 tougher: was 0.4455)
 
 
 ;===========================================================================
@@ -370,7 +371,7 @@ radiation_immunity		= 0.0
 telepatic_immunity		= 0.0
 chemical_burn_immunity	= 0.3
 explosion_immunity		= 0.5
-fire_wound_immunity		= 0.3
+fire_wound_immunity		= 0.4455; orig 0.3 (x2 tougher: was 0.891)
 
 [flesh_attack_params_weak]
 ;---------------------------------------------------------------------------------------------------------------------------------------------
@@ -409,7 +410,7 @@ radiation_immunity		= 0.0
 telepatic_immunity		= 0.0
 chemical_burn_immunity	= 0.3
 explosion_immunity		= 0.5
-fire_wound_immunity		= 0.3
+fire_wound_immunity		= 0.4455; orig 0.3 (x2 tougher: was 0.891)
 
 [flesh_attack_params_normal]
 ;---------------------------------------------------------------------------------------------------------------------------------------------
@@ -448,7 +449,7 @@ radiation_immunity		= 0.0
 telepatic_immunity		= 0.0
 chemical_burn_immunity	= 0.2
 explosion_immunity		= 0.5
-fire_wound_immunity		= 0.2
+fire_wound_immunity		= 0.297; orig 0.2 (x2 tougher: was 0.594)
 
 [flesh_attack_params_strong]
 ;---------------------------------------------------------------------------------------------------------------------------------------------
@@ -512,3 +513,13 @@ bip01_l_thigh
 [flesh_zoo]:m_flesh_e
 $spawn				= "monsters\fleshes\flesh_02_zoo"
 species				= zoo_monster
+
+;***************************************************************
+; Gunslinger skin armour (ported 2026-08-09, engine: CBaseMonster::Hit).
+; A bullet whose k_ap beats skin_armor is scaled by (k_ap-skin)/k_ap but never below
+; hit_fraction_monster; one that does not pierce keeps only hit_fraction_monster.
+; GS values as-is
+;***************************************************************
+[flesh_protections]
+skin_armor				= 0.1
+hit_fraction_monster	= 0.34

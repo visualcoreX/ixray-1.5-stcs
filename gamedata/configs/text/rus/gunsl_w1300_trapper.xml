@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_wincheaster1300_trapper">
+		<text>«Хищник»</text>
+	</string>
+	<string id="gunsl_wpn_wincheaster1300_trapper_descr">
+		<text>Собранный на заказ дробовик - бывшая собственность Зверобоя. Главным требованием владельца к этому оружию была способность валить самого живучего мутанта одним выстрелом.</text>
+	</string>
+</string_table>

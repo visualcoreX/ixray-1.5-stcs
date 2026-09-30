@@ -1,0 +1,62 @@
+; Water hud-model phantoms, one per stage. The first three play `water`, the last one `water_last`
+; and drops the empty. timing/effect_delay are GS's timing/timing_early.
+; Idle aliases are `zaglushka` to match the vodka, which uses the same model family and works.
+
+[water_hud_model]:gwr_base_usable
+; held in the LEFT hand like the other bottles; third-person values taken from the vodka, same pose
+actor_hand_bone     = bip01_l_hand
+position            = 0.079, 0.023, 0.032
+orientation         = 57, -201.5, 8.0
+actor_torso_anim    = norm_torso_item_drink_staker
+visual              = gwr\food\water\water_hud.ogf
+$spawn              = "weapons\water_hud_model"
+description         = gunsl_eatable_water_descr
+inv_name            = gunsl_eatable_water
+inv_name_short      = gunsl_eatable_water
+; no icon of its own -- phantom, inherits the blank cell from the base section
+hud                 = water_hud
+timing              = 6770
+snd_using           = items\water\water_drink
+snd_delay           = 250
+snd_delay_detector  = 250
+gwr_eatable_object  = water_eatable
+effect_delay        = 4800
+
+[water_hud_model2]:water_hud_model
+$spawn              = "weapons\water_hud_model2"
+hud                 = water_hud2
+; no icon of its own -- phantom, inherits the blank cell from the base section
+
+[water_hud_model3]:water_hud_model
+$spawn              = "weapons\water_hud_model3"
+hud                 = water_hud3
+; no icon of its own -- phantom, inherits the blank cell from the base section
+
+; last sip: different sound, and the empty bottle is thrown away instead of coming back to the bag
+[water_hud_model4]:water_hud_model
+$spawn              = "weapons\water_hud_model4"
+hud                 = water_hud4
+; no icon of its own -- phantom, inherits the blank cell from the base section
+snd_using           = items\water\water_drink_last
+timing              = 6500
+trash_object        = water_trash
+timing_trash        = 6100
+
+[water_hud]:gwr_base_usable_hud
+hands_position      = 0.0,-0.02,0.14
+hands_position_16x9 = 0.0,-0.02,0.14
+item_visual         = gwr\food\water\water_hud
+anm_show            = water
+anm_hide            = zaglushka
+anm_idle            = zaglushka
+anm_idle_aim        = zaglushka
+anm_idle_moving     = zaglushka
+anm_idle_sprint     = zaglushka
+anm_bore            = zaglushka
+
+[water_hud2]:water_hud
+
+[water_hud3]:water_hud
+
+[water_hud4]:water_hud
+anm_show            = water_last

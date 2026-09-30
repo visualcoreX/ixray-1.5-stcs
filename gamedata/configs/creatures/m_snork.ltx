@@ -10,7 +10,7 @@ icon					= ui_npc_monster_snork
 DynamicObjectsCount		= 32
 
 Spawn_Inventory_Item_Section = mutant_snork_leg
-Spawn_Inventory_Item_Probability = 0.0
+Spawn_Inventory_Item_Probability = 0.2
 
 ;---OFFLINE ALIFE------------------------------------------------------------------
 Scheduled						= on			; option for ALife Simulator
@@ -111,6 +111,7 @@ psy_health_v = 0.1						;скорость восстановления psy-здоровья
 
 ;Immunities
 immunities_sect				= snork_immunities
+protections_sect				= snork_protections	; GS skin armour
 
 ;открытые раны
 bleeding_v					= 0.04						;потеря крови при номинальной ране в секунду
@@ -301,7 +302,7 @@ radiation_immunity		= 0.01	;0.5
 telepatic_immunity		= 1.0
 chemical_burn_immunity	= 0.8
 explosion_immunity		= 0.8
-fire_wound_immunity		= 0.18
+fire_wound_immunity		= 0.7749; orig 0.18 (x2 tougher: was 1.5498)
 
 
 ;*********************************************************************************
@@ -328,7 +329,7 @@ radiation_immunity		= 0.0
 telepatic_immunity		= 0.0
 chemical_burn_immunity	= 0.4
 explosion_immunity		= 0.4
-fire_wound_immunity		= 0.4
+fire_wound_immunity		= 1.722; orig 0.4 (x2 tougher: was 3.444)
 
 [snork_attack_params_weak]
 ;---------------------------------------------------------------------------------------------------------------------------------------------
@@ -367,7 +368,7 @@ radiation_immunity		= 0.0
 telepatic_immunity		= 0.0
 chemical_burn_immunity	= 0.3
 explosion_immunity		= 0.3
-fire_wound_immunity		= 0.3
+fire_wound_immunity		= 1.2915; orig 0.3 (x2 tougher: was 2.583)
 
 [snork_attack_params_normal]
 ;---------------------------------------------------------------------------------------------------------------------------------------------
@@ -406,7 +407,7 @@ radiation_immunity		= 0.0
 telepatic_immunity		= 0.0
 chemical_burn_immunity	= 0.2
 explosion_immunity		= 0.2
-fire_wound_immunity		= 0.2
+fire_wound_immunity		= 0.861; orig 0.2 (x2 tougher: was 1.722)
 
 [snork_attack_params_strong]
 ;---------------------------------------------------------------------------------------------------------------------------------------------
@@ -479,3 +480,13 @@ jump_factor					= 1.2
 jump_min_distance			= 3
 jump_max_distance			= 30
 jump_max_angle				= 0.8
+
+;***************************************************************
+; Gunslinger skin armour (ported 2026-08-09, engine: CBaseMonster::Hit).
+; A bullet whose k_ap beats skin_armor is scaled by (k_ap-skin)/k_ap but never below
+; hit_fraction_monster; one that does not pierce keeps only hit_fraction_monster.
+; tuned down from GS 0.5/0.23 to keep FMJ at the old CS level
+;***************************************************************
+[snork_protections]
+skin_armor				= 0.29
+hit_fraction_monster	= 0.106

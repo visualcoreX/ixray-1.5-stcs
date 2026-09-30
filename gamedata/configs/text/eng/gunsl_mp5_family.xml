@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_mp5sd">
+		<text>HK MP5SD</text>
+	</string>
+	<string id="gunsl_wpn_mp5sd_descr">
+		<text>Suppressed MP5 variant with an integrated suppressor and ported barrel. Extremely popular due to its reliability, ease of use, and high accuracy. In service with special forces and police units worldwide. Not surprisingly, having flooded the global black markets, it eventually made its way to the Zone.</text>
+	</string>
+	<string id="gunsl_wpn_ump45">
+		<text>HK UMP45</text>
+	</string>
+	<string id="gunsl_wpn_ump45_descr">
+		<text>Submachine gun developed in the 1990s as addition to the MP5 family of submachine guns. Aim of the development was a next generation CQC firearm: larger-caliber than a typical submachine gun with high rate of fire and decent accuracy.</text>
+	</string>
+</string_table>

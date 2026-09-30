@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_wincheaster1300_trapper">
+		<text>«Predator»</text>
+	</string>
+	<string id="gunsl_wpn_wincheaster1300_trapper_descr">
+		<text>Custom pump-action shotgun, which belonged to Trapper. The hunter's only requirement in respect of his weapon was that it needed to kill even the tenacious predators in one shot.</text>
+	</string>
+</string_table>

@@ -62,6 +62,67 @@ cr_run_rs_0				=	1,	  0.2,	    0.1,   0.65,     0.1
 cr_turn_left_0				=	1,	  0.2,	    0.1,   0.65,     0.1
 cr_turn_right_0				=	1,	  0.2,	    0.1,   0.65,     0.1
 
+; Relaxed ("_1") leg set. The xrMPE pack ships a second stance next to the stock braced one and
+; the actor plays it with nothing in hand (console actor_legs_relaxed). Only the _fwd_1 cycles were
+; listed here, so the step manager found no params for the back/strafe ones and the footsteps went
+; silent in every direction but forward. Values mirror the matching _0 lines.
+norm_walk_back_1			=	1,	  0.2,	    0.25,   0.65,     0.25
+norm_walk_ls_1			=	1,	  0.2,	    0.25,   0.65,     0.25
+norm_walk_rs_1			=	1,	  0.2,	    0.25,   0.65,     0.25
+
+norm_run_back_1			=	1,	  0.2,	    0.8,   0.65,     0.8
+norm_run_ls_1			=	1,	  0.2,	    0.8,   0.65,     0.8
+norm_run_rs_1			=	1,	  0.2,	    0.8,   0.65,     0.8
+
+; Same for the crouch base.
+cr_walk_fwd_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_walk_back_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_walk_ls_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_walk_rs_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+
+cr_run_fwd_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_run_back_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_run_ls_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_run_rs_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+
+; Diagonal cycles (moving forward/back AND strafing), both stances. Off by default in the engine
+; (actor_legs_diagonal 0), listed here so turning them on does not silence the steps the same way.
+norm_walk_fwd_ls_0			=	1,	  0.2,	    0.25,   0.65,     0.25
+norm_walk_fwd_rs_0			=	1,	  0.2,	    0.25,   0.65,     0.25
+norm_walk_back_ls_0			=	1,	  0.2,	    0.25,   0.65,     0.25
+norm_walk_back_rs_0			=	1,	  0.2,	    0.25,   0.65,     0.25
+norm_walk_fwd_ls_1			=	1,	  0.2,	    0.25,   0.65,     0.25
+norm_walk_fwd_rs_1			=	1,	  0.2,	    0.25,   0.65,     0.25
+norm_walk_back_ls_1			=	1,	  0.2,	    0.25,   0.65,     0.25
+norm_walk_back_rs_1			=	1,	  0.2,	    0.25,   0.65,     0.25
+
+norm_run_fwd_ls_0			=	1,	  0.2,	    0.9,   0.65,     0.9
+norm_run_fwd_rs_0			=	1,	  0.2,	    0.9,   0.65,     0.9
+norm_run_back_ls_0			=	1,	  0.2,	    0.8,   0.65,     0.8
+norm_run_back_rs_0			=	1,	  0.2,	    0.8,   0.65,     0.8
+norm_run_fwd_ls_1			=	1,	  0.2,	    0.9,   0.65,     0.9
+norm_run_fwd_rs_1			=	1,	  0.2,	    0.9,   0.65,     0.9
+norm_run_back_ls_1			=	1,	  0.2,	    0.8,   0.65,     0.8
+norm_run_back_rs_1			=	1,	  0.2,	    0.8,   0.65,     0.8
+
+cr_walk_fwd_ls_0			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_walk_fwd_rs_0			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_walk_back_ls_0			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_walk_back_rs_0			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_walk_fwd_ls_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_walk_fwd_rs_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_walk_back_ls_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_walk_back_rs_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+
+cr_run_fwd_ls_0			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_run_fwd_rs_0			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_run_back_ls_0			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_run_back_rs_0			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_run_fwd_ls_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_run_fwd_rs_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_run_back_ls_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+cr_run_back_rs_1			=	1,	  0.2,	    0.1,   0.65,     0.1
+
 ; ЗНАЧЕНИЯ visibility_threshold ДОЛЖНЫ БЫТЬ РАВНЫ для денжера и фри,
 ; иначе возникают артефакты с потерей видимости при переходе от денжера во фри.
 [stalker_vision_free]
@@ -96,21 +157,21 @@ transparency_threshold	 	= 0.4				; 0.25
 [stalker_damage]
 default						= 1.0, -1, 1.0
 
-bip01_pelvis 				= 0.3, 1, 0.3
-bip01_spine 		 		= 0.3, 1, 0.8
-bip01_spine1 		 		= 0.3, 1, 0.8
-bip01_spine2 		 		= 0.3, 1, 0.8
-bip01_neck 			 		= 0.3, 0, 1.0
-bip01_head 			 		= 3, 0, 1.0 , 3
-eyelid_1 			 		= 3, 0, 1.0 , 3
-eye_left 			 		= 3, 0, 1.0 , 3
-eye_right 			 		= 3, 0, 1.0 , 3
-jaw_1 		 		 		= 3, 0, 1.0
+bip01_pelvis 				= 1.2, 1, 0.3	; orig 0.3 (GS)
+bip01_spine 		 		= 1.2, 1, 1.0	; orig 0.3, 0.8 (GS)
+bip01_spine1 		 		= 1.2, 1, 1.0	; orig 0.3, 0.8 (GS)
+bip01_spine2 		 		= 1.2, 1, 0.8	; orig 0.3 (GS)
+bip01_neck 			 		= 2, 0, 1.0	; orig 0.3 (GS)
+bip01_head 			 		= 4, 0, 1.0 , 3	; orig 3 (GS)
+eyelid_1 			 		= 4, 0, 1.0 , 3	; orig 3 (GS)
+eye_left 			 		= 4, 0, 1.0 , 3	; orig 3 (GS)
+eye_right 			 		= 4, 0, 1.0 , 3	; orig 3 (GS)
+jaw_1 		 		 		= 4, 0, 1.0	; orig 3 (GS)
 
-bip01_l_clavicle	 		= 0.3, 10, 0.7
-bip01_l_upperarm	 		= 0.3, 10, 0.6
-bip01_l_forearm	 	 	    = 0.3, 10, 0.5
-bip01_l_hand	 	 	    = 0.1, -1, 0.2
+bip01_l_clavicle	 		= 1.2, 10, 0.7	; orig 0.3 (GS)
+bip01_l_upperarm	 		= 1.1, 10, 0.6	; orig 0.3 (GS)
+bip01_l_forearm	 	 	    = 1, 10, 0.5	; orig 0.3 (GS)
+bip01_l_hand	 	 	    = 0.2, -1, 0.2	; orig 0.1 (GS)
 bip01_l_finger0	 	 	    = 0.05, -1, 0.1
 bip01_l_finger01	 		= 0.05, -1, 0.1
 bip01_l_finger02	 		= 0.05, -1, 0.1
@@ -121,10 +182,10 @@ bip01_l_finger2	 	 	    = 0.05, -1, 0.1
 bip01_l_finger21	 		= 0.05, -1, 0.1
 bip01_l_finger22	 		= 0.05, -1, 0.1
 
-bip01_r_clavicle	 		= 0.3, 8, 0.7
-bip01_r_upperarm	 		= 0.3, 8, 0.6
-bip01_r_forearm	 	 		= 0.1, 8, 0.5
-bip01_r_hand	 	 		= 0.05, -1, 0.2
+bip01_r_clavicle	 		= 1.2, 8, 0.7	; orig 0.3 (GS)
+bip01_r_upperarm	 		= 1.1, 8, 0.6	; orig 0.3 (GS)
+bip01_r_forearm	 	 		= 1, 8, 0.5	; orig 0.1 (GS)
+bip01_r_hand	 	 		= 0.2, -1, 0.2	; orig 0.05 (GS)
 bip01_r_finger0	 	 		= 0.05, -1, 0.1
 bip01_r_finger01	 		= 0.05, -1, 0.1
 bip01_r_finger02	 		= 0.05, -1, 0.1
@@ -135,14 +196,14 @@ bip01_r_finger2	 	 	 	= 0.05, -1, 0.1
 bip01_r_finger21	 		= 0.05, -1, 0.1
 bip01_r_finger22	 		= 0.05, -1, 0.1
 
-bip01_l_thigh	 	 		= 0.3, 4, 0.5
-bip01_l_calf	 	 		= 0.3, 4, 0.4
-bip01_l_foot	 	 		= 0.1, 4, 0.3
-bip01_l_toe0	 	 		= 0.05, -1, 0.2
-bip01_r_thigh	 	 		= 0.5, 6, 0.5
-bip01_r_calf	 	 		= 0.5, 6, 0.4
-bip01_r_foot	 	 		= 0.1, 6, 0.3
-bip01_r_toe0	 	 		= 0.05, -1, 0.2
+bip01_l_thigh	 	 		= 1, 4, 0.5	; orig 0.3 (GS)
+bip01_l_calf	 	 		= 1, 4, 0.4	; orig 0.3 (GS)
+bip01_l_foot	 	 		= 0.6, 4, 0.3	; orig 0.1 (GS)
+bip01_l_toe0	 	 		= 0.1, -1, 0.2	; orig 0.05 (GS)
+bip01_r_thigh	 	 		= 1, 6, 0.5	; orig 0.5 (GS)
+bip01_r_calf	 	 		= 1, 6, 0.4	; orig 0.5 (GS)
+bip01_r_foot	 	 		= 0.6, 6, 0.3	; orig 0.1 (GS)
+bip01_r_toe0	 	 		= 0.1, -1, 0.2	; orig 0.05 (GS)
 
 [critical_wound_head_section]
 	bip01_head
@@ -220,11 +281,13 @@ wound_immunity				= 0.5
 radiation_immunity 			= 0.5
 telepatic_immunity 			= 0.5
 chemical_burn_immunity 		= 0.5
-explosion_immunity 			= 1.0
+explosion_immunity 			= 0.5	; orig 1.0 (GS)
 fire_wound_immunity  		= 1.0
 wound_2_immunity  			= 1.0
 
-[stalker_condition]
+; Gunslinger bleeding model (ported 2026-08-09): wounded NPCs bleed out. Traders and
+; story NPCs stay on the nobleeding variant so they do not die on their own.
+[stalker_condition_nobleeding]
 satiety_v					= 0.00001				;скорость уменьшения сытости со временем
 radiation_v					= 0.0001				;скорость уменьшения радиации
 satiety_power_v				= 0.0005				;увеличение силы при уменьшении сытости
@@ -249,6 +312,15 @@ limping_threshold			= 0.5
 ;открытые раны
 bleeding_v					= 0.0						;потеря крови при номинальной ране в секунду
 wound_incarnation_v			= 0.001					;крутизна кривой заживления (какой процент раны останется после заживления в игровую секунду)
+min_wound_size				= 0.01
+
+[stalker_condition]:stalker_condition_nobleeding
+; GS runs bleeding_v = 0.0007 and then scales bullet wounds down with two per-hit-type keys
+; our engine does not read (wound_factor_for_hit_type_6 = 0.7, bleeding_factor_for_hit_type_6
+; = 0.5). 0.0007 * 0.7 * 0.5 = 0.00025 reproduces GS's actual bullet bleed rate with the one
+; key we do read. Raise it if wounded NPCs should bleed out faster.
+bleeding_v					= 0.00025	; orig 0.0 (GS 0.0007 before its per-hit-type factors)
+wound_incarnation_v			= 0.003		; orig 0.001 (GS)
 min_wound_size				= 0.01
 
 [stalker_terrain]
@@ -309,7 +381,7 @@ $spawn							= "stalkers\stalker"			; option for Level Editor
 $npc							= on							; option for Level Editor
 visual							= actors\stalker_hero\stalker_hero_1.ogf; option for Level Editor
 corpse_visual					= dynamics\equipments\item_rukzak.ogf	;actors\hero\stalker_novice.ogf; option for Level Editor
-custom_data						= stalker_custom_data.ltx		; option for Level Editor
+;custom_data						= stalker_custom_data.ltx		; option for Level Editor
 character_profile				= default						; option for Level Editor
 use_single_item_rule			= off
 
@@ -331,7 +403,7 @@ script_binding					= bind_stalker.init
 ;---GROUP SECTIONS----------------------------------------------------
 GroupControlSection				= spawn_group
 SpaceRestrictionSection 		= space_restrictor,zone_mine_field
-attachable_items				= device_torch,attachable_item,hand_radio,bread, vodka, energy_drink, kolbasa, guitar_a, harmonica_a, wpn_binoc, detector_simple
+attachable_items				= device_torch,attachable_item,hand_radio,bread, vodka, vodka_cossacks, water, energy_drink, kolbasa, guitar_a, harmonica_a, wpn_binoc, detector_simple
 
 ;---SECTIONS----------------------------------------------------------
 damage							= stalker_damage
@@ -443,14 +515,14 @@ bone_model						= bip01
 crouch_type						= 0 ; 0 - crouch a little, 1 - crouch full; -1 - random crouch
 
 ;---FIRE DISPERSIONS--------------------------------------------------
-disp_walk_stand					= 8 ;6
-disp_walk_crouch				= 4 ;3
-disp_run_stand					= 14 ;12;8
-disp_run_crouch					= 6  ;4
-disp_stand_stand				= 4
-disp_stand_crouch				= 2
-disp_stand_stand_zoom			= 1.5 ;1
-disp_stand_crouch_zoom			= 1.25;1
+disp_walk_stand					= 3	; orig 8 -- Gunslinger value
+disp_walk_crouch				= 2	; orig 4 -- Gunslinger value
+disp_run_stand					= 5	; orig 14 -- Gunslinger value
+disp_run_crouch					= 4	; orig 6 -- Gunslinger value
+disp_stand_stand				= 3	; orig 4 -- Gunslinger value
+disp_stand_crouch				= 2	; same as Gunslinger
+disp_stand_stand_zoom			= 1	; orig 1.5 -- Gunslinger value
+disp_stand_crouch_zoom			= 1	; orig 1.25 -- Gunslinger value
 
 ;---FIRE QUEUE PARAMETERS
 weapon_min_queue_size_far		= 1
@@ -469,8 +541,8 @@ weapon_min_queue_interval_close	= 300
 weapon_max_queue_interval_close	= 500
 
 ;---CRITICAL WOUND------------------------------------------------------------------
-critical_wound_threshold		= 0.3
-critical_wound_decrease_quant	= 0.
+critical_wound_threshold		= 0.4	; orig 0.3 (GS)
+critical_wound_decrease_quant	= 0.2	; orig 0. (GS)
 body_parts_section_id			= critical_wound_body_parts_section
 critical_wound_weights			= 100,50,10
 
@@ -486,8 +558,8 @@ ph_box1_center 		 			= 0.0,  0.6,  0.0
 ph_box1_size 		 			= 0.40, 0.6,  0.40
 
 ;---------------------------------------------------------------------
-ph_crash_speed_min			= 10
-ph_crash_speed_max			= 30
+ph_crash_speed_min			= 1000
+ph_crash_speed_max			= 3000
 ph_collision_damage_factor	= 0.1
 ;---------------------------------------------------------------------
 ph_mass 				 		= 80
@@ -537,6 +609,7 @@ kill_grenade            = ragdoll_grenade_front_0/ragdoll_grenade_back_0/ragdoll
 
 
 [stalker_trader]:stalker
+condition_sect					= stalker_condition_nobleeding	; GS: traders must not bleed out
 $spawn = "stalkers\stalker_trader"			; option for Level Editor
 use_single_item_rule = off
 can_select_items	 = off
@@ -605,6 +678,7 @@ fire_wound_immunity  		= 0.0
 wound_2_immunity  			= 0.0
 
 [stalker_die_hard]:stalker
+condition_sect					= stalker_condition_nobleeding	; GS: story NPCs must not bleed out
 $spawn							= "stalkers\stalker_die_hard"
 immunities_sect					= stalker_immunities_die_hard
 

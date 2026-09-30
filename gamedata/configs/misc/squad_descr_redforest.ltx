@@ -1,16 +1,15 @@
-; «десь содержатс€ дескрипшены сквадов, которые потом можно создавать использу€ спец функции.
-
-;---------------------------LEVEL RED FOREST-----------------
+; Artifact Hunters
 
 [red_stalker_artefact_hunters_1]
 faction = stalker
 npc = red_stalker_artefact_hunter, red_stalker_artefact_hunter, sim_default_stalker_3, sim_default_stalker_3, sim_default_stalker_3
-;target_smart = {+red_artefact_hunters_task_2_complete +red_forest_open} esc_smart_terrain_5_7, {+red_artefact_hunters_go2} red_smart_terrain_6_3, red_smart_terrain_6_6
 target_smart = {+red_forest_allyes_have_map +red_artefact_hunters_task_2_complete +red_forest_open} red_smart_terrain_3_1, {+red_artefact_hunters_task_2_complete +red_forest_open} esc_smart_terrain_5_7, {+red_artefact_hunters_go2} red_smart_terrain_6_3, red_smart_terrain_6_6
 attack_power = {+red_artefact_hunters_go2} 50
-relationship = friend
+;relationship = friend				; There is no reason for this squad to be friendly by default.
 
-;**************** pursuit ambush ******************************
+
+; Ambush Stalkers
+
 [red_pursuit_bounty_hunters_squad_1]
 faction = stalker
 npc = red_bounty_hunter_6
@@ -27,14 +26,19 @@ sympathy = 0
 relationship = enemy
 attack_power = 500
 
+
+; Ambush Stalkers - Witch Circle
+
 [red_pursuit_bounty_hunters_squad_3]
 faction = stalker
 npc = red_pursuit_bounty_hunter, red_pursuit_bounty_hunter, red_pursuit_bounty_hunter, red_pursuit_bounty_hunter
 target_smart = {+red_bounty_hunters_free} nil, red_smart_terrain_4_5
 sympathy = 0
-relationship = neutral
+;relationship = neutral ; This only zeroes personal_goodwill.
 
-;*********** bridge mercs **************************
+
+; Bridge Mercs
+
 [red_allyes_recon_squad_1]
 faction = killer
 npc = red_bridge_stalker_leshiy, red_bridge_ally_stalker_1, red_bridge_ally_stalker_2, red_bridge_ally_stalker_3, red_bridge_ally_stalker_4
@@ -43,7 +47,9 @@ invulnerability = {+red_bridge_allyes_try_pull_down} false, true
 sympathy = 0
 relationship = friend
 
-;************ bridge bandits **********************
+
+; Bridge Renegades
+
 [red_bridge_bandit_groop_1]
 faction = renegade
 npc = red_bridge_renegade, red_bridge_renegade
@@ -72,8 +78,11 @@ target_smart = red_bridge_bandit_smart
 sympathy = 0
 relationship = enemy
 
-;************ compass keepers ******************
+
+; Compass Renegades
+
 [red_bandit_compass_groop_1]
+;auto_id = true
 faction = renegade
 npc = red_bridge_renegade, red_bridge_renegade, red_bridge_renegade, red_bridge_renegade, red_bridge_renegade
 target_smart = red_smart_terrain_3_2
@@ -81,27 +90,30 @@ sympathy = 0
 relationship = enemy
 
 [red_bandit_compass_groop_2]
+;auto_id = true
 faction = renegade
 npc = red_bridge_renegade, red_bridge_renegade, red_bridge_renegade, red_bridge_renegade, red_bridge_renegade
 target_smart = red_smart_terrain_3_2
 sympathy = 0
 relationship = enemy
 
-[red_bandit_compass_groop_3]
-faction = renegade
-npc = red_bridge_renegade, red_bridge_renegade, red_bridge_renegade, red_bridge_renegade, red_bridge_renegade
-target_smart = red_smart_terrain_3_1
-sympathy = 0
-relationship = enemy
+;[red_bandit_compass_groop_3]
+;faction = renegade
+;npc = red_bridge_renegade, red_bridge_renegade, red_bridge_renegade, red_bridge_renegade, red_bridge_renegade
+;target_smart = red_smart_terrain_3_1
+;sympathy = 0
+;relationship = enemy
 
-[red_bandit_compass_groop_4]
-faction = renegade
-npc = red_bridge_renegade, red_bridge_renegade, red_bridge_renegade, red_bridge_renegade, red_bridge_renegade
-target_smart = red_smart_terrain_3_1
-sympathy = 0
-relationship = enemy
+;[red_bandit_compass_groop_4]
+;faction = renegade
+;npc = red_bridge_renegade, red_bridge_renegade, red_bridge_renegade, red_bridge_renegade, red_bridge_renegade
+;target_smart = red_smart_terrain_3_1
+;sympathy = 0
+;relationship = enemy
 
-;**************** sim squads ******************************
+
+; Duty Gate Squads
+
 [red_stalker_gate_keepers_1]
 faction = dolg
 npc = sim_default_duty_4, sim_default_duty_2, sim_default_duty_3, sim_default_duty_3
@@ -113,27 +125,30 @@ npc = sim_default_duty_3, sim_default_duty_3, sim_default_duty_3, sim_default_du
 target_smart = {+red_forest_open} red_smart_terrain_3_2, red_smart_terrain_4_2
 
 [red_stalker_gate_keepers_3]
+;auto_id = true
 faction = dolg
 npc = sim_default_duty_3, sim_default_duty_3, sim_default_duty_3, sim_default_duty_3, sim_default_duty_3
 target_smart = {+red_forest_open} red_smart_terrain_4_2, red_smart_terrain_3_1
 
 [red_stalker_gate_keepers_4]
+;auto_id = true
 faction = dolg
 npc = sim_default_duty_3, sim_default_duty_3, sim_default_duty_3, sim_default_duty_2, sim_default_duty_1
 target_smart = {+red_forest_open} red_smart_terrain_3_2, red_smart_terrain_3_1
 
-;***************** sim monsters squad *************************
+
+; Mutants
+
 [red_snork_attack_1]
 faction = monster
-;npc = snork_strong, snork_normal, snork_normal, snork_normal, snork_normal
 npc = gigant_strong
 target_smart = red_smart_terrain_6_3
 attack_power = 500
 
-[red_snork_dangeon_keepers_1]
-faction = monster
-npc = snork_strong, snork_strong, snork_strong
-target_smart = red_smart_terrain_monsters
+;[red_snork_dangeon_keepers_1]
+;faction = monster
+;npc = snork_strong, snork_strong, snork_strong
+;target_smart = red_smart_terrain_monsters
 
 [red_snork_dangeon_keepers_2]
 faction = monster
@@ -151,7 +166,6 @@ attack_power = 200
 faction = monster
 npc = psy_dog, pseudodog_normal, pseudodog_normal
 target_smart = red_smart_terrain_monsters_3
-;attack_power = 200
 
 [red_forest_monsters_2]
 faction = monster
@@ -165,18 +179,18 @@ npc = pseudodog_strong, pseudodog_normal, pseudodog_weak, pseudodog_weak
 target_smart = red_smart_terrain_monsters_3
 attack_power = 200
 
-[red_forest_monsters_4]
-faction = monster
-npc = snork_normal, snork_normal, snork_normal, snork_normal, snork_normal
-target_smart = red_smart_terrain_4_3:red_smart_terrain_3_3:red_smart_terrain_3_2:loop
-attack_power = 200
+;[red_forest_monsters_4]
+;faction = monster
+;npc = snork_normal, snork_normal, snork_normal, snork_normal, snork_normal
+;target_smart = red_smart_terrain_4_3:red_smart_terrain_3_3:red_smart_terrain_3_2:loop
+;attack_power = 200
 
-[red_forest_monsters_5]
-faction = monster
-npc = snork_strong, snork_normal, snork_normal, snork_normal, snork_normal, snork_normal
-target_smart = red_smart_terrain_3_2
+;[red_forest_monsters_5]
+;faction = monster
+;npc = snork_strong, snork_normal, snork_normal, snork_normal, snork_normal, snork_normal
+;target_smart = red_smart_terrain_3_2
 
-[red_forest_monsters_6]
-faction = monster
-npc = dog_normal, dog_normal, dog_normal, dog_normal, dog_normal, dog_normal, dog_strong, dog_strong
-target_smart = nil
+;[red_forest_monsters_6]
+;faction = monster
+;npc = dog_normal, dog_normal, dog_normal, dog_normal, dog_normal, dog_normal, dog_strong, dog_strong
+;target_smart = nil

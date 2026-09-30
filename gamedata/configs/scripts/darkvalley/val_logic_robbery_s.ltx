@@ -1,5 +1,8 @@
 [logic]
-active = sr_robbery
+active = sr_idle@temp
+
+[sr_idle@temp]
+on_info = {+esc_bring_habar_complete !black_screen} sr_robbery
 
 [sr_robbery]
 smart_name = val_smart_terrain_5_8
@@ -11,4 +14,4 @@ stop_snd = val_freedom_blockpost_robbery_stop
 stand_still_snd = val_freedom_blockpost_robbery_stand_still
 dialog = val_freedom_blockpost_robbery_dialog
 money = 0
-on_info = {+val_talked_to_blockpost_leader_complete} nil
+on_info = {+val_talked_to_blockpost_leader_complete} nil, {+val_come_to_freedom_base_complete} nil

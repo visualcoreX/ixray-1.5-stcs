@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<game_dialogs>
+	<!-- one-shot EM1 small talk, see scripts\em1_talk.script -->
+	<dialog id="em1_ask_esc_tech">
+		<precondition>em1_talk.can_esc_tech</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_esc_tech_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_esc_tech_1</text>
+				<action>em1_talk.done_esc_tech</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_agr_mech">
+		<precondition>em1_talk.can_agr_mech</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_agr_mech_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_agr_mech_1</text>
+				<action>em1_talk.done_agr_mech</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_agr_duty_mech">
+		<precondition>em1_talk.can_agr_duty_mech</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_agr_duty_mech_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_agr_duty_mech_1</text>
+				<action>em1_talk.done_agr_duty_mech</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_val_fixer">
+		<precondition>em1_talk.can_val_fixer</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_val_fixer_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_val_fixer_1</text>
+				<action>em1_talk.done_val_fixer</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_gar_fixer">
+		<precondition>em1_talk.can_gar_fixer</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_gar_fixer_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_gar_fixer_1</text>
+				<action>em1_talk.done_gar_fixer</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_red_forester">
+		<precondition>em1_talk.can_red_forester</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_red_forester_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_red_forester_1</text>
+				<action>em1_talk.done_red_forester</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_esc_sid">
+		<precondition>em1_talk.can_esc_sid</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_esc_sid_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_esc_sid_1</text>
+				<action>em1_talk.done_esc_sid</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_esc_shilov">
+		<precondition>em1_talk.can_esc_shilov</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_esc_shilov_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_esc_shilov_1</text>
+				<action>em1_talk.done_esc_shilov</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_agr_drozd">
+		<precondition>em1_talk.can_agr_drozd</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_agr_drozd_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_agr_drozd_1</text>
+				<action>em1_talk.done_agr_drozd</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_agr_mityai">
+		<precondition>em1_talk.can_agr_mityai</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_agr_mityai_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_agr_mityai_1</text>
+				<action>em1_talk.done_agr_mityai</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_val_ashot">
+		<precondition>em1_talk.can_val_ashot</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_val_ashot_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_val_ashot_1</text>
+				<action>em1_talk.done_val_ashot</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_gar_zub">
+		<precondition>em1_talk.can_gar_zub</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_gar_zub_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_gar_zub_1</text>
+				<action>em1_talk.done_gar_zub</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_agr_hermit">
+		<precondition>em1_talk.can_agr_hermit</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_agr_hermit_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_agr_hermit_1</text>
+				<action>em1_talk.done_agr_hermit</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_mar_suslov">
+		<precondition>em1_talk.can_mar_suslov</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_mar_suslov_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_mar_suslov_1</text>
+				<action>em1_talk.done_mar_suslov</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_esc_agent">
+		<precondition>em1_talk.can_esc_agent</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_esc_agent_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_esc_agent_1</text>
+				<action>em1_talk.done_esc_agent</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="em1_ask_yan_sakharov">
+		<precondition>em1_talk.can_yan_sakharov</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>em1_ask_yan_sakharov_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>em1_ask_yan_sakharov_1</text>
+				<action>em1_talk.done_yan_sakharov</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+</game_dialogs>

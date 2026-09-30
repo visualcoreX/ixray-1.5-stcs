@@ -1,0 +1,890 @@
+<w>
+    <file name="ui\ui_gunsl_wpn_upgrades">
+	<!--GUNSLINGER's upgrades-->
+	<texture id="ui_gunsl_up_glock17_mag33" x="0" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_glock17_sil_barrel" x="92" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_glock17_compensator_barrel" x="0" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_glock17_usm_3x" x="92" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_glock17_usm_auto" x="0" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_glock17_usm_accuracy" x="92" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_glock17_sights" x="0" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_glock17_mass" x="92" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_glock17_mag19" x="0" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_glock17_reliability" x="92" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_glock17_laser" x="92" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_glock17_torch" x="0" y="235" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_57_sil_barrel" x="200" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_57_body" x="292" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_57_internals" x="200" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_57_laser" x="292" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_57_sights" x="200" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_57_torch" x="292" y="94" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_p90_torch" x="400" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_p90_reliability" x="492" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_p90_usm" x="400" y="47" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_toz34_stock" x="692" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_toz34_plate" x="692" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_toz34_usm" x="600" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_toz34_calibration" x="600" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_toz34_barrel" x="692" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_toz34_sights" x="600" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_toz34_reliability" x="600" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_toz34_weaver" x="692" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_toz34_barrel_narezka" x="800" y="47" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_bm16_accurate_stock" x="693" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_bm16_short_stock" x="600" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_bm16_sights" x="693" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_bm16_short_barrel" x="801" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_bm16_calibration" x="693" y="189" width="90" height="44" />
+	<texture id="ui_gunsl_up_bm16_barrel_dovodka" x="893" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_bm16_light_tsevie" x="693" y="236" width="90" height="44" />
+	<texture id="ui_gunsl_up_bm16_sharnir" x="601" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_bm16_kurki" x="601" y="236" width="90" height="44" />
+	<texture id="ui_gunsl_up_bm16_korobka" x="601" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_bm16_barrel_narezka" x="893" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_bm16_barrel_break_speed" x="800" y="94" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_vintorez_rail1" x="1092" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_vintorez_laser" x="1000" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_vintorez_torch" x="1092" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_vintorez_rail2" x="1000" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_vintorez_handle" x="1000" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_vintorez_mag20" x="1000" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_vintorez_lightdetails" x="1092" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_vintorez_usm_accuracy" x="1092" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_vintorez_usm_rpm" x="1000" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_vintorez_barrel_accuracy" x="1000" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_vintorez_recoil" x="1000" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_vintorez_sights" x="1092" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_vintorez_barrel" x="1092" y="94" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_val_rail1" x="400" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_val_laser" x="493" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_val_torch" x="492" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_val_rail2" x="492" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_val_handle" x="400" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_val_light_mag" x="400" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_val_reliability_barrel" x="400" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_val_accuracy_usm" x="492" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_val_rpm_usm" x="492" y="328" width="90" height="44" />
+	<texture id="ui_gunsl_up_val_body_reliability" x="400" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_val_tilnik" x="492" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_val_sights" x="400" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_val_barrel_speed" x="492" y="46" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_aks74u_sights" x="400" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74u_nakladka_priklad" x="492" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74u_tsevie" x="400" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74u_lastochka" x="492" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74u_laser" x="492" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74u_torch" x="400" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74u_handle" x="400" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74u_mag45_black" x="492" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74u_mag45_brown" x="400" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74u_mag60" x="491" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74u_lightdetails" x="492" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74u_barrel" x="400" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74u_usm_accuracy" x="400" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74u_usm_rpm" x="492" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74u_reliability" x="400" y="658" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_aks74ub_sights" x="400" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74ub_nakladka_priklad" x="492" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74ub_tsevie" x="400" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74ub_lastochka" x="492" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74ub_laser" x="492" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74ub_torch" x="400" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74ub_handle" x="400" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74ub_mag45_black" x="492" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74ub_mag45_brown" x="400" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74ub_mag60" x="491" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74ub_lightdetails" x="492" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74ub_barrel" x="400" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74ub_usm_accuracy" x="400" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74ub_usm_rpm" x="492" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_aks74ub_reliability" x="400" y="658" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_ak74_mag45_brown" x="400" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_mag45_black" x="492" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_mag60" x="491" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_nakladka_priklad" x="492" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_bayonet" x="492" y="940" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_sights" x="400" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_foregrip_rail" x="400" y="893" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_laser" x="492" y="893" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_torch" x="400" y="940" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_handle" x="492" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_light_tsevie" x="492" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_barrel" x="492" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_usm_accuracy" x="492" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_usm_rpm" x="492" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_lightdetails" x="400" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_reliability" x="1200" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_weight_priklad" x="400" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_ak74_usm_rpm_down" x="3092" y="377" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_wpn_pm_sights" x="200" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pm_usm_accuracy" x="200" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pm_usm_rpm" x="292" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pm_barrel_sil" x="292" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pm_barrel_hp" x="200" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pm_plastic_mag" x="200" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pm_plastic_details" x="200" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pm_handle_recoil" x="292" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pm_reliability" x="292" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pm_recoil" x="292" y="564" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_wpn_pmm_sights" x="200" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pmm_usm_accuracy" x="292" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pmm_usm_rpm" x="292" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pmm_barrel_sil" x="200" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pmm_barrel_hp" x="292" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pmm_alter_mag" x="200" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pmm_plastic_details" x="200" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pmm_handle_recoil" x="292" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pmm_reliability" x="292" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_pmm_recoil" x="200" y="799" width="90" height="44" />
+
+
+	<texture id="ui_gunsl_up_wpn_deagle_barrel_compensator" x="292" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_barrel_hp" x="0" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_mag_uderzhatel" x="92" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_barrel_accuracy" x="200" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_light_mag" x="200" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_mag_balance" x="0" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_usm_accuracy" x="292" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_rail" x="200" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_flashlaser" x="292" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_sights" x="292" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_patronnik" x="292" y="894" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_pokritie" x="292" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_usm_rpm" x="200" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_usm_recoil" x="292" y="940" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_zapiratel" x="200" y="940" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_usm_reliability" x="200" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_gazootvod" x="200" y="893" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_polymer_details" x="292" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_deagle_handle" x="200" y="329" width="90" height="44" />
+
+
+	<texture id="ui_gunsl_up_wpn_gauss_computer" x="1092" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_guard" x="1000" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_safari" x="1092" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_ideal" x="1000" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_provoda" x="1000" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_katushki" x="1093" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_compensator" x="1000" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_fast_conders" x="1092" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_ionistori" x="1000" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_lowesr" x="1092" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_zoom" x="1092" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_nv" x="1093" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_kardan_ammo" x="1092" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_priklad_weight" x="1000" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_priklad_ergonomics" x="1092" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_tsevie_ergonomics" x="1000" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_pokritie" x="1000" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_zoom_speed" x="1000" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_magnetic_shield" x="1000" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_gauss_detector" x="1092" y="658" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_wpn_svd_bayonet" x="1400" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_usm_reliability" x="1000" y="893" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_usm_accuracy" x="1401" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_usm_rpm" x="1092" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_kompensator" x="1093" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_zatvor_balanser" x="1492" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_zatvor_reliability" x="1401" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_plastic_mag" x="1092" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_podavatel" x="1001" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_gascam" x="1000" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_light_priklad" x="1092" y="893" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_tilnik" x="1492" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_light_tsevie" x="1400" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_pokritie" x="1000" y="940" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_sights" x="1492" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_sheka" x="1092" y="940" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_barrel_reliability" x="1492" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_barrel_accuracy" x="1400" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svd_barrel_bullet_speed" x="1492" y="188" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_wpn_svu_sights" x="1492" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_mag" x="1400" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_priklad_weight" x="1492" y="751" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_handle_anatomic" x="1399" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_barrel_recoil" x="1400" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_barrel_bullet_speed" x="1491" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_pokritie" x="1493" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_gascam" x="1400" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_usm_rpm" x="1493" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_barrel_accuracy" x="1400" y="283" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_mag_lock" x="1493" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_light_tsevie" x="1400" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_zatvor_reliability" x="1400" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_zatvor_accuracy" x="1400" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_zatvor_balancer_recoil" x="1493" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_usm_reliability" x="1400" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_anatomic_pokritie_tsevie" x="1493" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_prujina" x="1493" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_priclad_rezina" x="1400" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_sheka" x="1491" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_titan_details" x="1399" y="563" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_wpn_svu_nimble_sights" x="1492" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_mag" x="1400" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_priklad_weight" x="1492" y="751" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_handle_anatomic" x="1399" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_barrel_recoil" x="1400" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_barrel_bullet_speed" x="1491" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_pokritie" x="1493" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_gascam" x="1400" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_usm_rpm" x="1493" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_barrel_accuracy" x="1400" y="283" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_mag20" x="1492" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_light_tsevie" x="1400" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_zatvor_reliability" x="1400" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_zatvor_accuracy" x="1400" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_zatvor_balancer_recoil" x="1493" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_usm_reliability" x="1400" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_anatomic_pokritie_tsevie" x="1493" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_prujina" x="1493" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_priclad_rezina" x="1400" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_sheka" x="1491" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_svu_nimble_titan_details" x="1399" y="563" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_wpn_usp_sights" x="92" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_anatomic_handle" x="0" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_ramka" x="92" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_flashlaser" x="92" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_light_mag" x="0" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_pokritie" x="0" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_usm_rpm" x="0" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_usm_recoil" x="92" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_barrel_accuracy" x="92" y="377" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_barrel_bullet_speed" x="92" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_barrel_recoil" x="0" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_zatvor_ejector" x="0" y="612" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_zatvor_zapiratel" x="1" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_zatvor_rpm" x="0" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_polymer_buffer" x="92" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_patronnik" x="92" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_light_details" x="92" y="704" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_wpn_usp_nimble_sights" x="92" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_anatomic_handle" x="0" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_ramka" x="92" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_light_details" x="92" y="704" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_light_mag" x="0" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_pokritie" x="0" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_usm_rpm" x="0" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_usm_recoil" x="92" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_barrel_accuracy" x="92" y="377" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_barrel_bullet_speed" x="92" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_barrel_recoil" x="0" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_zatvor_ejector" x="0" y="612" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_zatvor_zapiratel" x="1" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_zatvor_rpm" x="0" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_polymer_buffer" x="92" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_usp_nimble_patronnik" x="92" y="658" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_wpn_beretta_barrel_accuracy" x="0" y="753" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_barrel_silencer" x="92" y="753" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_barrel_bullet_speed" x="0" y="800" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_pokritie" x="92" y="800" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_zapiratel" x="1600" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_shell_ejector" x="92" y="847" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_sights" x="1600" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_light_mag" x="1600" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_anatomic_handle" x="0" y="894" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_forced_details" x="93" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_titan_details" x="1692" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_light_details" x="1692" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_spusk_rpm" x="1693" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_spusk_recoil" x="1692" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_calibration" x="1600" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_beretta_kompensator" x="0" y="847" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_wpn_l85_mag40" x="1292" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_mag60" x="1200" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_tac_handle" x="1292" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_flashlaser" x="1292" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_sights" x="1292" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_grip" x="1200" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_bayonet" x="1292" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_usm_accuracy" x="1292" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_usm_rpm" x="1200" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_mag_fixator" x="1201" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_barrel_kompensator" x="1292" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_barrel_accuracy" x="1200" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_barrel_bullet_speed" x="1201" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_priklad" x="1200" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_zatvor_balancer" x="1292" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_body_reliability" x="1200" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_body_weight" x="1292" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_l85_firemode" x="1199" y="423" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_mp5_sights" x="1200" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_mag40" x="1200" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_rail" x="1292" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_handle" x="1292" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_laser" x="1292" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_torch" x="1200" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_plastic_stock" x="1292" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_max_fixator" x="1292" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_usm_rpm" x="1200" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_usm_accuracy" x="1200" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_barrel_speed" x="1200" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_barrel_compensator" x="1200" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_zatvor_balancer" x="1292" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_body_coating" x="1292" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_extractor" x="1292" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5_body_weight" x="1200" y="470" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_mp5sd_sights" x="1200" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_mag40" x="1200" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_rail" x="1292" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_handle" x="1292" y="940" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_laser" x="1292" y="893" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_torch" x="1200" y="893" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_plastic_stock" x="1292" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_max_fixator" x="1292" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_usm_rpm" x="1200" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_usm_accuracy" x="1200" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_barrel_accuracy" x="1200" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_barrel_compensator" x="1292" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_zatvor_balancer" x="1200" y="940" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_body_coating" x="1292" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_extractor" x="1292" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_mp5sd_body_weight" x="1200" y="470" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_ump45_sights" x="2091" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_sil" x="2000" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_rail" x="2091" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_handle" x="1999" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_laser" x="2092" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_torch" x="2000" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_stock" x="1999" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_max_fixator" x="2092" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_usm_rpm" x="2091" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_usm_accuracy" x="2000" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_barrel_speed" x="2092" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_barrel_compensator" x="2000" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_zatvor_balancer" x="2091" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_body_coating" x="1999" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_extractor" x="1999" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_ump45_body_weight" x="2092" y="47" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_abakan_barrel_otkat" x="2000" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_barrel_bullet_speed" x="2093" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_barrel_accuracy" x="1999" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_barrel_compensator" x="2092" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_body_reliability" x="2000" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_grip" x="2092" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_knife" x="2000" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_lightdetails" x="2092" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_podacha" x="2000" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_mag45_black" x="2092" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_mag45_brown" x="2000" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_mag60" x="2092" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_tilnik" x="2000" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_stock_weight" x="2092" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_usilenie_korobki" x="2000" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_sights" x="2092" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_usm_rpm" x="2001" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_usm_accuracy" x="2092" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_abakan_zatvor_balancer" x="2000" y="846" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_saiga12_barrel_narezka" x="599" y="375" width="90" height="44" />
+	<texture id="ui_gunsl_up_saiga12_barrel_dtk" x="692" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_saiga12_sights" x="692" y="565" width="90" height="44" />
+	<texture id="ui_gunsl_up_saiga12_handle" x="600" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_saiga12_titan_details" x="692" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_saiga12_lightdetails" x="599" y="469" width="90" height="44" />
+	<texture id="ui_gunsl_up_saiga12_light_stock" x="692" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_saiga12_stock_nakladka" x="600" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_saiga12_mag10" x="599" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_saiga12_mag_fix" x="691" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_saiga12_patronnik" x="599" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_saiga12_usm_rpm" x="692" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_saiga12_light_foregrip" x="599" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_saiga12_usm_recoil" x="692" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_saiga12_accurate_details" x="691" y="704" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_wpn_walther_sights" x="1692" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_usilinie_ramki" x="1600" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_flashlaser" x="1692" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_light_mag" x="1601" y="330" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_shell_ejector" x="1599" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_zatvor_zapiratel" x="1599" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_zatvor_recoil" x="1692" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_patronnik" x="1600" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_barrel_sil" x="1599" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_barrel_bullet_speed" x="1692" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_barrel_accuracy" x="1599" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_usm_rpm" x="1693" y="468" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_body" x="1692" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_usm_recoil" x="1692" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_handle" x="1599" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_wpn_walther_titan_details" x="1692" y="517" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_bizon_mag_shnek" x="2292" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_mag_lock" x="2200" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_pokritie_reliability" x="2200" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_rail" x="2200" y="189" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_light_tsevie" x="2200" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_laser" x="2200" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_flash" x="2292" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_sights" x="2200" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_handle" x="1999" y="939" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_nakladka" x="2292" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_barrel_bullet_speed" x="2092" y="940" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_barrel_dispersion" x="2200" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_barrel_9x19" x="2293" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_usm_rpm" x="2200" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_usm_recoil" x="2292" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_shell_ejector" x="2292" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_zatvor_balancer" x="2292" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_zatvor_prujina" x="2292" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_bizon_light_details" x="2200" y="376" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_stechkin_barrel_accuracy" x="1600" y="565" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_barrel_speed" x="1692" y="565" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_titan_details" x="1692" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_zaschelka" x="1600" y="894" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_prujina" x="1692" y="800" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_light_mag" x="1600" y="753" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_usm_rpm" x="1692" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_perevodchik" x="1599" y="800" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_handle" x="1692" y="659" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_sights" x="1600" y="847" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_usm_recoil" x="1692" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_shell_ejector" x="1693" y="754" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_zapiratel" x="1599" y="704" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_zatvor_balancer" x="1692" y="894" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_pokritie" x="1692" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_zatvor_dispersion" x="1600" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_stechkin_light_details" x="1599" y="658" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_apb_barrel_accuracy" x="1800" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_barrel_speed" x="1692" y="565" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_titan_details" x="1692" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_zaschelka" x="1892" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_prujina" x="1800" y="893" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_light_mag" x="1600" y="753" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_usm_rpm" x="1692" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_perevodchik" x="1599" y="800" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_handle" x="1892" y="893" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_sights" x="1600" y="847" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_usm_recoil" x="1692" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_shell_ejector" x="1693" y="754" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_zapiratel" x="1599" y="704" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_zatvor_balancer" x="1800" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_pokritie" x="1892" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_zatvor_dispersion" x="1892" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_apb_light_details" x="1599" y="658" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_tt33_barrel_accuracy" x="1800" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_tt33_barrel_speed" x="1892" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_tt33_sights" x="1892" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_tt33_body_reliability" x="1800" y="48" width="90" height="44" />
+	<texture id="ui_gunsl_up_tt33_podacha" x="1892" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_tt33_ejector" x="1800" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_tt33_plastic_handle" x="1892" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_tt33_kurok" x="1800" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_tt33_usm_rpm" x="1800" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_tt33_light_mag" x="1892" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_tt33_patronnik" x="1800" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_tt33_zatvor" x="1892" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_tt33_light_details" x="1800" y="282" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_sr1m_barrel_sil" x="1892" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_barrel_speed" x="1800" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_barrel_accuracy" x="1892" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_mag_reliability" x="1800" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_ejector" x="1892" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_flashlaser" x="1800" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_handle_inertion" x="1892" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_handle_weight" x="1800" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_body" x="1800" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_rail" x="1892" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_usm_recoil_kurok_myagkii_spusk" x="1892" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_mag" x="1800" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_light_details" x="1892" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_patronnik_obturation" x="1800" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_sights" x="1892" y="565" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_usm_rpm" x="1800" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_zatvor_balancer" x="1892" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_light_ramka" x="1800" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_sr1m_recoil_compensation_system" x="1892" y="705" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_fort_barrel_sil" x="2400" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort_barrel_speed" x="2492" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort_body" x="2400" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort_ejector" x="2492" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort_handle" x="2400" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort_usm_recoil" x="2492" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort_light_mag" x="2399" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort_patronnik_accuracy" x="2492" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort_zatvor_balancer" x="2400" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort_light_details" x="2492" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort_sights" x="2400" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort_usm_rpm" x="2492" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort_podacha" x="2400" y="282" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_fort17_barrel_sil" x="2400" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_barrel_speed" x="2492" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_body" x="2400" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_ejector" x="2492" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_handle" x="2492" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_usm_recoil" x="2492" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_plus_mag" x="2400" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_patronnik_accuracy" x="2492" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_zatvor_balancer" x="2492" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_light_details" x="2400" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_sights" x="2492" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_usm_rpm" x="2400" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_recoil_compensator" x="2492" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_barrel_accuracy" x="2492" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_flashlaser" x="2400" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_hard_ramka" x="2400" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_fort17_titan_details" x="2400" y="611" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_colt1911_patronnik_accuracy" x="2400" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_barrel_sil" x="2492" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_shell_ejector" x="2492" y="893" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_titan_details" x="2692" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_light_details" x="2400" y="893" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_usm_accuracy" x="2492" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_light_mag_handle" x="2492" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_big_mag" x="2492" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_zatvor_reliability" x="2600" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_zatvor_rpm" x="2400" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_recoil_compensation_system" x="2692" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_usm_rpm" x="2492" y="940" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_usm_recoil" x="2400" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_barrel_speed" x="2600" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_barrel_accuracy" x="2400" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_bullet_hit_power" x="2600" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_zatvor_recoil" x="2692" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_colt1911_sights" x="2400" y="940" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_grach_light_ramka" x="2600" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_rail" x="2600" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_flashlaser" x="2692" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_hard_ramka" x="2692" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_body_reliability" x="2692" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_barrel_sil" x="2600" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_barrel_accuracy" x="2692" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_barrel_speed" x="2600" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_usm_rpm" x="2599" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_usm_recoil" x="2600" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_int_bulletspeed" x="2599" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_int_recoil" x="2692" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_zatvor_recoil" x="2692" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_zatvor_rpm" x="2600" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_zatvor_zapiratel" x="2692" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_patronnik_accuracy" x="2692" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_handle" x="2600" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_sights" x="2692" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_light_mag" x="2600" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_light_details" x="2692" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_titan_details" x="2600" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_grach_barrel_recoil" x="2692" y="564" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_sig552_buffer" x="2292" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_barrel_accuracy" x="2200" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_barrel_speed" x="2292" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_body_reliability" x="2200" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_usm_recoil" x="2292" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_flashlaser" x="2200" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_handle" x="2292" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_korobka" x="2200" y="565" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_mag_custom_prujina" x="2292" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_mag_lock" x="2200" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_shell_ejector" x="2200" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_sights" x="2292" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_tactic_handle" x="2200" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_usm_rpm_up" x="2293" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_light_grip" x="2200" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_zatvor_balancer" x="2292" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_patronnik" x="2292" y="611" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_light_stock" x="2200" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_stock" x="2292" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_zatvor_accuracy" x="2200" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig552_rpm_speed_down" x="2292" y="846" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_sig220_barrel_sil" x="2600" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_barrel_accuracy" x="2692" y="658" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_barrel_speed" x="2600" y="705" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_body_reliability" x="2600" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_polymer_buffer" x="2692" y="752" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_handle" x="2600" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_zatvor_zapiratel" x="2692" y="799" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_usm_recoil" x="2600" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_light_mag" x="2692" y="846" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_patonnik" x="2600" y="893" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_polymer_ramka" x="2692" y="893" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_titan_details" x="2600" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_shell_ejector" x="2692" y="940" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_sights" x="2800" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_usm_rpm" x="2892" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220_light_details" x="2800" y="47" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_sig220r_barrel_sil" x="2892" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_barrel_accuracy" x="2800" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_barrel_speed" x="2892" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_body_reliability" x="2800" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_polymer_buffer" x="2800" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_handle" x="2892" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_zatvor_zapiratel" x="2800" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_usm_recoil" x="2892" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_flashlaser" x="2800" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_patonnik" x="2892" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_polymer_ramka" x="2800" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_titan_details" x="2892" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_shell_ejector" x="2800" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_sights" x="2892" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_usm_rpm" x="2800" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_light_details" x="2800" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig220r_mag11" x="2892" y="142" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_sig550_handle" x="2200" y="894" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_bayonet" x="2292" y="894" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_zatvor_accuracy" x="2200" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_light_stock" x="2292" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_mag" x="3000" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_barrel_recoil" x="3092" y="1" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_barrel_accuracy" x="3000" y="48" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_barrel_speed" x="3092" y="48" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_body_reliability" x="3001" y="95" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_usm_recoil" x="3092" y="95" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_flashlaser" x="3000" y="143" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_mag_lock" x="3093" y="142" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_korobka" x="3000" y="189" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_shell_ejector" x="3092" y="189" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_sights" x="3000" y="236" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_stock_nakladka" x="3092" y="236" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_tac_foregrip" x="3000" y="283" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_usm_rpm_up" x="3092" y="330" width="90" height="44" />
+	<texture id="ui_gunsl_up_sig550_zatvor_balancer" x="3000" y="377" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_gsh18_barrel_speed" x="2892" y="471" width="90" height="44" />
+	<texture id="ui_gunsl_up_gsh18_barrel_recoil" x="2800" y="518" width="90" height="44" />
+	<texture id="ui_gunsl_up_gsh18_barrel_accuracy" x="2892" y="518" width="90" height="44" />
+	<texture id="ui_gunsl_up_gsh18_body_reliability" x="2800" y="565" width="90" height="44" />
+	<texture id="ui_gunsl_up_gsh18_usm_recoil" x="2892" y="753" width="90" height="44" />
+	<texture id="ui_gunsl_up_gsh18_handle" x="2800" y="612" width="90" height="44" />
+	<texture id="ui_gunsl_up_gsh18_patronnik_obturation" x="2892" y="612" width="90" height="44" />
+	<texture id="ui_gunsl_up_gsh18_patronnik_dispersion" x="2800" y="659" width="90" height="44" />
+	<texture id="ui_gunsl_up_gsh18_ramka" x="2892" y="659" width="90" height="44" />
+	<texture id="ui_gunsl_up_gsh18_shell_ejector" x="2800" y="706" width="90" height="44" />
+	<texture id="ui_gunsl_up_gsh18_sights" x="2892" y="706" width="90" height="44" />
+	<texture id="ui_gunsl_up_gsh18_usm_rpm" x="2800" y="753" width="90" height="44" />
+	<texture id="ui_gunsl_up_gsh18_polymer_buffer" x="2892" y="565" width="90" height="44" />
+	<texture id="ui_gunsl_up_gsh18_usm_reliability" x="2800" y="800" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_hpsa_barrel_sil" x="2892" y="800" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_barrel_dispersion" x="2800" y="847" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_barrel_speed" x="2892" y="847" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_body" x="2800" y="894" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_polymer_buffer" x="2892" y="894" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_zapiratel" x="2800" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_usm_recoil" x="2892" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_mag_prujina" x="3200" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_patronnik" x="3292" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_plastic_handle" x="3200" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_shell_ejector" x="3292" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_sights" x="3200" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_usm_rpm" x="3292" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_light_details" x="3200" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_zatvor_balancer" x="3292" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_hpsa_titan_details" x="3200" y="188" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_pb_barrel_compensation" x="3292" y="188" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_sil_reliability" x="3200" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_barrel_speed" x="3200" y="235" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_barrel_accuracy" x="3291" y="234" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_body_reliability" x="3292" y="282" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_shell_ejector" x="3292" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_patronnik_zapiratel" x="3292" y="376" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_patronnik_accuracy" x="3200" y="564" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_ramka" x="3292" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_usm_rpm" x="3292" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_handle" x="3199" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_usm_recoil" x="3292" y="329" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_usm_accuracy" x="3200" y="423" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_plastic_mag" x="3200" y="377" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_sights" x="3200" y="517" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_light_details" x="3200" y="470" width="90" height="44" />
+	<texture id="ui_gunsl_up_pb_hard_details" x="3292" y="564" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_groza_gascam" x="3000" y="424" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_barrel_accuracy" x="3092" y="424" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_barrel_speed" x="3000" y="471" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_body" x="3092" y="471" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_flash" x="3000" y="518" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_tactical_rail" x="3092" y="518" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_handle" x="3000" y="565" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_usilenie_korobki" x="3092" y="565" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_laser" x="3000" y="612" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_mag_fixator" x="3092" y="612" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_mag_size" x="3000" y="659" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_light_details" x="3092" y="659" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_stock_inertion" x="2999" y="706" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_light_stock" x="3092" y="706" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_shell_ejector" x="3000" y="753" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_sights" x="3092" y="753" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_tac_handle" x="3000" y="800" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_usm_rpm" x="3092" y="800" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_usm_accuracy" x="3000" y="847" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_barrel_recoil" x="3092" y="894" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_zatvor_balancer" x="3000" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_patronnik_accuracy" x="3092" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_usm_rpm_down" x="3401" y="0" width="90" height="44" />
+	
+	<texture id="ui_gunsl_up_groza_nimble_gascam" x="3000" y="424" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_barrel_accuracy" x="3092" y="424" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_barrel_speed" x="3000" y="471" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_body" x="3092" y="471" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_flash" x="3000" y="518" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_tactical_rail" x="3092" y="518" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_handle" x="3000" y="565" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_usilenie_korobki" x="3092" y="565" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_laser" x="3000" y="612" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_mag_fixator" x="3092" y="612" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_usm_rpm_down" x="3401" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_light_details" x="3092" y="659" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_stock_inertion" x="2999" y="706" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_light_stock" x="3092" y="706" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_shell_ejector" x="3000" y="753" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_sights" x="3092" y="753" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_tac_handle" x="3000" y="800" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_usm_rpm" x="3092" y="800" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_usm_accuracy" x="3000" y="847" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_barrel_recoil" x="3092" y="894" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_zatvor_balancer" x="3000" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_patronnik_accuracy" x="3092" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_mag45_black" x="492" y="472" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_mag45_brown" x="400" y="519" width="90" height="44" />
+	<texture id="ui_gunsl_up_groza_nimble_mag60" x="492" y="518" width="90" height="44" />
+
+	<texture id="ui_gunsl_up_rgm40_body" x="3599" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_rgm40_handle" x="3691" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_rgm40_polymer_details" x="3599" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_rgm40_recoil_stock" x="3691" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_rgm40_trigger" x="3599" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_rgm40_narezka_gren_speed" x="3691" y="95" width="90" height="44" />
+	<texture id="ui_gunsl_up_rgm40_titan_details" x="3599" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_rgm40_light_stock" x="3691" y="141" width="90" height="44" />
+	<texture id="ui_gunsl_up_rgm40_light_details" x="3599" y="188" width="90" height="44" />
+	
+	<texture id="ui_gunsl_up_wincheaster1300_barrel_short" x="892" y="95" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_barrel_voronenie" x="800" y="142" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_barrel_speed" x="893" y="142" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_body_reliability" x="800" y="189" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_usm_reliability_details" x="892" y="189" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_tactical_handle" x="799" y="236" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_usm_accuracy" x="891" y="518" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_flashlaser" x="800" y="283" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_mag" x="892" y="283" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_rail" x="800" y="330" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_pompa_kompensator" x="892" y="330" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_usm_recoil" x="800" y="377" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_shell_ejector" x="892" y="377" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_sights" x="800" y="424" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_stock" x="892" y="424" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_soft_trigger" x="800" y="471" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_usm_light_details" x="892" y="471" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_patronnik_accuracy" x="800" y="518" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_barrel_dispersion" x="892" y="565" width="90" height="44" />
+	
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_barrel_short" x="892" y="95" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_barrel_voronenie" x="800" y="142" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_barrel_speed" x="893" y="142" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_body_reliability" x="800" y="189" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_usm_reliability_details" x="892" y="189" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_tactical_handle" x="799" y="236" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_usm_accuracy" x="891" y="518" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_flashlaser" x="800" y="283" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_mag" x="892" y="283" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_rail" x="800" y="330" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_pompa_kompensator" x="892" y="330" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_usm_recoil" x="800" y="377" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_shell_ejector" x="892" y="377" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_sights" x="800" y="424" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_light_stock" x="800" y="612" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_soft_trigger" x="800" y="471" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_usm_light_details" x="892" y="471" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_patronnik_accuracy" x="800" y="518" width="90" height="44" />
+	<texture id="ui_gunsl_up_wincheaster1300_trapper_barrel_dispersion" x="892" y="565" width="90" height="44" />
+	
+	<texture id="ui_gunsl_up_protecta_rail" x="892" y="800" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_barrel_voronenie" x="799" y="659" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_barrel_silencer" x="891" y="659" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_ejector" x="800" y="706" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_barrel_narezka" x="3800" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_light_details" x="800" y="753" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_laser" x="799" y="800" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_plastic_mag" x="799" y="847" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_sights" x="892" y="847" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_body_reliability" x="3800" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_stock" x="892" y="894" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_usm_recoil" x="891" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_usm_rpm" x="3894" y="0" width="90" height="44" />
+	
+	<texture id="ui_gunsl_up_protecta_nimble_rail" x="892" y="800" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_nimble_barrel_voronenie" x="800" y="659" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_nimble_usm_rpm" x="3894" y="0" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_nimble_ejector" x="800" y="706" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_nimble_barrel_narezka" x="3800" y="47" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_nimble_light_details" x="800" y="753" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_nimble_laser" x="800" y="800" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_nimble_plastic_mag" x="800" y="847" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_nimble_sights" x="892" y="847" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_nimble_body_reliability" x="3800" y="94" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_nimble_stock" x="892" y="894" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_nimble_usm_recoil" x="892" y="941" width="90" height="44" />
+	<texture id="ui_gunsl_up_protecta_nimble_handle" x="3800" y="0" width="90" height="44" />
+	
+
+
+
+	<!--GUNSLINGER's upgrades' properties-->
+	<texture id="ui_gunsl_up_prop_laser" x="0" y="1000" width="19" height="19" />
+	<texture id="ui_gunsl_up_prop_torch" x="19" y="1000" width="19" height="19" />
+	<texture id="ui_gunsl_up_prop_lightsights" x="38" y="1000" width="19" height="19" />
+	<texture id="ui_gunsl_up_prop_custom" x="57" y="1000" width="19" height="19" />
+	<texture id="ui_gunsl_up_prop_headlamp" x="76" y="1000" width="19" height="19" />
+
+	</file>
+</w>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

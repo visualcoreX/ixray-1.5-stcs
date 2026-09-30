@@ -16,9 +16,9 @@ formation = back
 commander = true
 move_type = rush
 def_state_moving = rush
-on_signal = snd1 | %=play_sound(lim_cs_enter_squad_attention)%
-on_signal2 = snd2 | %=play_sound(lim_cs_enter_squad_see_target)%
-on_signal3 = snd3 | %=play_sound(lim_cs_enter_squad_check)%
+on_signal = snd1 | %=play_sound(lim_cs_enter_squad_attention:csky:st_ui_pda_legend_squad)%
+on_signal2 = snd2 | %=play_sound(lim_cs_enter_squad_see_target:csky:st_ui_pda_legend_squad)%
+on_signal3 = snd3 | %=play_sound(lim_cs_enter_squad_check:csky:st_ui_pda_legend_squad)%
 on_signal4 = action | camper@danger_work1 %+lim_csky_enter_danger%
 on_info = {+lim_csky_enter_danger} camper@danger_work1
  
@@ -33,7 +33,7 @@ radius = 0
 def_state_moving = raid
 on_info = {+lim_bandit_away} remark@fire_work1
 on_info2 = {+lim_bandit_have_medkit} camper@danger2_work1
-on_signal = action | remark@danger_work1 %=play_sound(lim_cs_enter_squad_fire1)%
+on_signal = action | remark@danger_work1 %=play_sound(lim_cs_enter_squad_fire1:csky:st_ui_pda_legend_squad)%
 
 [remark@danger_work1]
 ;invulnerable = true
@@ -44,7 +44,7 @@ target = 609
 on_signal = sound_end | %+lim_cs_enter_squad_fire1%
 on_info = {+lim_bandit_away} remark@fire_work1
 on_info2 = {+lim_bandit_have_medkit} camper@danger2_work1
-on_info3 = {+lim_bandit_wounded_dont_shoot} remark@threat1_work1 %=play_sound(lim_cs_enter_squad_threat1)%
+on_info3 = {+lim_bandit_wounded_dont_shoot} remark@threat1_work1 %=play_sound(lim_cs_enter_squad_threat1:csky:st_ui_pda_legend_squad)%
 
 [remark@threat1_work1]
 ;invulnerable = true
@@ -55,7 +55,7 @@ target = 609
 on_signal = sound_end | %+lim_cs_enter_squad_threat1%
 on_info = {+lim_bandit_away} remark@fire_work1
 on_info2 = {+lim_bandit_have_medkit} camper@danger2_work1
-on_info3 = {+lim_bandit_wounded_medkit1} remark@threat2_work1 %=play_sound(lim_cs_enter_squad_threat2)%
+on_info3 = {+lim_bandit_wounded_medkit1} remark@threat2_work1 %=play_sound(lim_cs_enter_squad_threat2:csky:st_ui_pda_legend_squad)%
 ;on_game_timer = 300 | remark@fire_work1 %+lim_bandit_away%
 
 [remark@threat2_work1]
@@ -67,7 +67,7 @@ target = 609
 on_signal = sound_end | %+lim_cs_enter_squad_threat2%
 on_info = {+lim_bandit_away} remark@fire_work1
 on_info2 = {+lim_bandit_have_medkit} camper@danger2_work1
-on_game_timer = 300 | remark@threat3_work1 %=play_sound(lim_cs_enter_squad_fire2)%
+on_game_timer = 300 | remark@threat3_work1 %=play_sound(lim_cs_enter_squad_fire2:csky:st_ui_pda_legend_squad)%
 
 [remark@threat3_work1]
 ;invulnerable = true
@@ -87,7 +87,7 @@ path_look = danger_look
 radius = 0
 def_state_moving = raid
 on_info = {+lim_bandit_away} remark@fire_work1
-on_info2 = {+lim_bandit_say_abaut_ambush} camper@wait_work1 %=play_sound(lim_cs_enter_squad_bandit_free)%
+on_info2 = {+lim_bandit_say_abaut_ambush} camper@wait_work1 %=play_sound(lim_cs_enter_squad_bandit_free:csky:st_ui_pda_legend_squad)%
 
 [remark@fire_work1]
 ;invulnerable = true

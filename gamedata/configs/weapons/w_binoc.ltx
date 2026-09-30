@@ -8,7 +8,6 @@ scheduled					= off							; option for ALife Simulator
 cform						= skeleton
 class						= WP_BINOC
 hud							= wpn_binoc_hud
-use_condition				= false
 
 ef_main_weapon_type			= 5
 ef_weapon_type				= 0
@@ -31,7 +30,7 @@ normal						= 0, 1, 0
 direction					= 0, 0, 1
 orientation					= 0 , -90, 70
 
-attach_angle_offset			= 3.080506,-1.493053,-1.202040   ;устанавливается в радианах Angle*PI/180
+attach_angle_offset			= 3.080506,-1.493053,-1.202040   ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ Angle*PI/180
 attach_position_offset		= 0.080000,0.021273,0.100000
 attach_bone_name			= bip01_r_hand
 auto_attach					= false
@@ -89,6 +88,17 @@ grenade_launcher_status		= 0
 
 zoom_enabled				= true
 scope_texture				= wpn_crosshair_bino
+; The eyepiece circle: what the night vision tint, the rim shading, the glass distortion and the
+; aberration keep to. A RADIUS IN SCREEN HEIGHTS, and the horizontal one is that divided by the
+; aspect -- which is what 0.62 got wrong here: it reached past the top and bottom of the screen
+; long before it reached the sides, so the effects stopped short of the aperture left and right.
+; 0.72 reaches 0.40 of the width on 16:9 -- short of the screen edge on purpose, the corners of the
+; picture are the binocular's own black art anyway.
+scope_nv_mask_radius		= 0.72
+; How hard the glass pulls the picture OUT towards the rim (the middle of the field stays flat).
+; Engine default 0.12; a binocular's short, deeply curved oculars show far more of it than a rifle
+; scope does, and there is a lot more glass here to show it on.
+scope_2d_distortion			= 0.2	; 0.28 was too much
 scope_zoom_factor			= 7.5
 
 
@@ -126,11 +136,11 @@ light_var_color		 		= 0.05
 light_var_range		 		= 0.5
 light_time 		 			= 0.2
 
-snd_draw					= weapons\generic_draw
-snd_holster					= weapons\generic_holster
-snd_gyro					= weapons\binoculars_gyro
-snd_zoomin					= weapons\binoculars_zoomin
-snd_zoomout					= weapons\binoculars_zoomout
+snd_draw					= items\binocular_draw
+snd_holster					= weapons\m1911\hide
+snd_gyro					= $silent
+snd_zoomin					= $silent
+snd_zoomout					= $silent
 snd_shoot					= weapons\n_pb_shot
 snd_empty					= weapons\pistol_empty
 snd_reload					= weapons\pm_reload, 0.8
@@ -140,44 +150,76 @@ snd_close					= weapons\generic_close
 
 
 vision_present				= true
-vis_frame_speed				= 4				; скорость, с которой наводится рамка на цель
-vis_frame_color				= 0.7,0.7,0.7,1.0	; цвет рамки RGBA (A) Не учитывается
+vis_frame_speed				= 4				; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ
+vis_frame_color				= 0.7,0.7,0.7,1.0	; пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ RGBA (A) пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 found_snd					= detectors\DA-2_beep1
 
 [wpn_binoc_hud]:hud_base
 zoom_hide_crosshair			= true
-
 hands_position				= -0.008000,-0.244998,0.371497
 hands_orientation			= 5.450003,2.649999,-1.200001
-hands_position_16x9				= -0.008500,-0.250998,0.319998
-hands_orientation_16x9			= 5.850004,5.450003,-0.950000
-
-item_position					= 0.000746,-0.000321,0.003479
-item_orientation				= 1.239378,-0.134046,-2.052052
-
+hands_position_16x9				= 0.0,-0.13,0.07
+hands_orientation_16x9			= 0.0,0.0,0.0
+item_position					= 0.0,0.0,0.005
+item_orientation				= 0.0,0.0,0.0
 item_visual             	= dynamics\devices\dev_binoculars\dev_binoculars_hud
+fire_mode_bone             = pred
 attach_place_idx				= 0
-
-anm_show						= binoculars_draw
-anm_hide						= binoculars_holster
-anm_idle						= binoculars_idle
-anm_idle_aim				= binoculars_idle
-anm_idle_moving			= binoculars_idle_moving
-anm_idle_sprint			= binoculars_idle_sprint
-anm_bore						= binoculars_idle_bore
-
-aim_hud_offset_pos			= 0.0,0.022,0.0
+aim_hud_offset_pos			= 0.0,0.0,0.0
 aim_hud_offset_rot			= 0.0,0.0,0.0
-
-aim_hud_offset_pos_16x9		= 0.0,0.022,0.0
+aim_hud_offset_pos_16x9		= 0.0,0.0,0.0
 aim_hud_offset_rot_16x9		= 0.0,0.0,0.0
-
 gl_hud_offset_pos				= 0,0,0
 gl_hud_offset_rot				= 0,0,0
-
 lean_hud_offset_pos			= 0,0,0
 lean_hud_offset_rot			= 0,0,0
 
+; ==================== SEMI-AUTO / BASE ANIMATION SET (from Gunslinger) ====================
 
+; ---- show / draw ----
+anm_show = binocular_draw
 
+; ---- hide / holster ----
+anm_hide = binocular_hide
 
+; ---- bore ----
+anm_bore = binocular_hide
+
+; ---- sprint (enter / loop / exit) ----
+anm_idle_sprint_start = binocular_sprint_start
+anm_idle_sprint = binocular_sprint
+anm_idle_sprint_end = binocular_sprint_end
+
+; ---- aim walk (directional) ----
+anm_idle_aim_moving = binocular_aim
+
+; ---- aim idle (in / out / hold) ----
+anm_idle_aim_start = binocular_aim_start
+anm_idle_aim = binocular_aim
+anm_idle_aim_end = binocular_aim_end
+
+; ---- walk (fwd / slow / crouch) ----
+anm_idle_moving = binocular_walk
+anm_idle_moving_slow = binocular_slow
+anm_idle_moving_crouch = binocular_slow_down
+anm_idle_moving_crouch_slow = binocular_slow_super
+
+; ---- idle ----
+anm_idle = binocular_idle
+anm_idle_slow = binocular_idle
+anm_idle_crouch = binocular_idle
+anm_idle_crouch_slow = binocular_idle
+
+; ---- headlamp on / off ----
+anm_headlamp_on = binocular_headflash
+anm_headlamp_off = binocular_headflash
+anm_headlamp_on_aim = binocular_aim_headflash
+anm_headlamp_off_aim = binocular_aim_headflash
+
+; ---- night vision on / off ----
+anm_nv_on = binocular_headflash
+anm_nv_off = binocular_headflash
+anm_nv_on_aim = binocular_aim_headflash
+anm_nv_off_aim = binocular_aim_headflash
+
+; ==================== AUTO-FIRE MODE ANIMATION SET (mask_firemode_a = _auto) ====================

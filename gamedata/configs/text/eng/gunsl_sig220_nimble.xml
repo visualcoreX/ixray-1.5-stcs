@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_sig220_nimble">
+		<text>SIG-Sauer P220R</text>
+	</string>
+	<string id="gunsl_wpn_sig220_nimble_descr">
+		<text>Tactical modification of a widely renown pistol. Equipped with a Picatinny rail, beneath the slide and barrel, allowing for fitting of accessories such as lights or laser sights. Fairly uncommon in the Zone.</text>
+	</string>
+</string_table>

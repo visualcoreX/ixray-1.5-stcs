@@ -1,0 +1,90 @@
+; Gunslinger bottled water -- a MULTI-USE item: four sips, each one a separate inventory section.
+; base_object/uses_count/using_N is GS's own scheme (usable_items/water/base.ltx); gwr_eatable reads
+; it and spawns the next stage once the sip has actually landed, so an interrupted animation cannot
+; consume a portion. The last stage throws the empty bottle away instead of leaving a new one.
+; Icons live in ui_icon_equipment at grid row 39 (cells 30..33), lifted from GS's atlas.
+
+[water]:identity_immunities
+GroupControlSection = spawn_group
+discovery_dependency =
+$spawn              = "food and drugs\water"
+$prefetch           = 8
+; II_BOTTL like the vodka: CBottleItem also applies eat_alcohol, and water sobers you a little
+class               = II_BOTTL
+cform               = skeleton
+visual              = gwr\food\water\water.ogf
+description         = gunsl_eatable_water_descr
+inv_name            = gunsl_eatable_water
+inv_name_short      = gunsl_eatable_water
+inv_weight          = 0.55
+cost                = 40
+
+inv_grid_width      = 1
+inv_grid_height     = 1
+inv_grid_x          = 30
+inv_grid_y          = 39
+
+; --- multi-use chain (GS) -------------------------------------------------------------------
+base_object         = water     ; the full bottle every stage below points back at
+uses_count          = 4         ; sips in a full bottle
+using_2             = water2    ; what is left after the first sip
+using_3             = water3
+using_4             = water4
+; --------------------------------------------------------------------------------------------
+
+attach_angle_offset     = 0.000000, 0.000000, 0.000000
+attach_position_offset  = 0.087266, -0.078540, 0.052360
+attach_bone_name        = bip01_r_hand
+auto_attach             = false
+
+bone_name               = bip01_r_hand
+position_offset         = 0.0,0.0,0.0
+angle_offset            = 1.570790,1.570790,3.92699
+
+break_particles     = destroy_fx\destroy_bottle
+break_sound         = material\bottle\collide\bottle_break_1
+
+; eatable item -- every effect lives on [water_eatable], applied after effect_delay by the animation
+eat_health          = 0
+eat_satiety         = 0
+eat_power           = 0
+eat_radiation       = 0
+eat_alcohol         = 0
+wounds_heal_perc    = 0
+eat_portions_num    = 1
+
+slot                = -1
+animation_slot      = 4
+
+hud                 = water_hud_model
+; how full the bottle is drawn in the inventory cell -- the same bar the weapons use for wear.
+; The stages are separate sections, so there is no condition to read; this key is what the cell
+; shows instead (CUICellItem::UpdateConditionProgressBar), exactly as GS does it.
+visual_condition    = 1.0
+
+[water2]:water
+description         = gunsl_eatable_water_descr2
+hud                 = water_hud_model2
+cost                = 25
+inv_weight          = 0.45
+inv_grid_x          = 31
+inv_grid_y          = 39
+visual_condition    = 0.75
+
+[water3]:water
+description         = gunsl_eatable_water_descr3
+hud                 = water_hud_model3
+cost                = 15
+inv_weight          = 0.3
+inv_grid_x          = 32
+inv_grid_y          = 39
+visual_condition    = 0.5
+
+[water4]:water
+description         = gunsl_eatable_water_descr4
+hud                 = water_hud_model4
+cost                = 5
+inv_weight          = 0.15
+inv_grid_x          = 33
+inv_grid_y          = 39
+visual_condition    = 0.25

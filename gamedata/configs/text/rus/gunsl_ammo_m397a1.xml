@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_ammo_m397a1">
+		<text>Граната M397A1</text>
+	</string>
+<string id="gunsl_ammo_m397a1_short">
+		<text>M397A1</text>
+	</string>
+<string id="gunsl_ammo_m397a1_descr">
+		<text>Улучшенный тип выстрелов для гранатометов калибра 40mm, состоящих на вооружении НАТО. Разработан для поражения целей, находящихся в укрытии. </text>
+	</string>
+</string_table>

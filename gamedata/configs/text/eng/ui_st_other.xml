@@ -1,61 +1,46 @@
 <?xml version="1.0" encoding="windows-1251" ?>
 <string_table>
-	<string id="Btn_Cancel">
-		<text>Cancel</text>
-	</string>
-	<string id="Btn_No">
-		<text>No</text>
-	</string>
 	<string id="Btn_OK">
 		<text>OK</text>
 	</string>
-	<string id="Btn_Yes">
-		<text>Yes</text>
-	</string>
 	<string id="bad">
-		<text>bad</text>
+		<text>Bad</text>
 	</string>
 	<string id="enemy">
-		<text>enemy</text>
+		<text>Enemy</text>
 	</string>
 	<string id="excellent">
-		<text>excellent</text>
+		<text>Excellent</text>
 	</string>
 	<string id="experienced">
 		<text>Experienced</text>
 	</string>
 	<string id="friendly">
-		<text>friend</text>
+		<text>Friend</text>
 	</string>
 	<string id="global_map">
 		<text>Map of the Zone</text>
 	</string>
 	<string id="good">
-		<text>good</text>
+		<text>Good</text>
 	</string>
 	<string id="id_mp_money">
 		<text>Money</text>
 	</string>
 	<string id="indifferent">
-		<text>indifferent</text>
+		<text>Indifferent</text>
 	</string>
 	<string id="master">
-		<text>master</text>
+		<text>Master</text>
 	</string>
 	<string id="mm_mp_pda_hunt">
 		<text>PDA bonus</text>
 	</string>
-	<string id="mp_only_one_voting">
-		<text>Only one active vote allowed</text>
-	</string>
 	<string id="neutral">
-		<text>neutral</text>
+		<text>Neutral</text>
 	</string>
 	<string id="novice">
 		<text>Rookie</text>
-	</string>
-	<string id="st_audio">
-		<text>Sound</text>
 	</string>
 	<string id="st_bolt">
 		<text>Bolt</text>
@@ -69,23 +54,14 @@
 	<string id="st_client_synchronising">
 		<text>CLIENT: Synchronizing</text>
 	</string>
-	<string id="st_controll">
-		<text>Controls</text>
-	</string>
 	<string id="st_creating_new_game">
 		<text>Creating new game</text>
 	</string>
 	<string id="st_drink">
-		<text>drink</text>
-	</string>
-	<string id="st_game">
-		<text>Game</text>
+		<text>Drink This</text>
 	</string>
 	<string id="st_item_used">
 		<text>Used</text>
-	</string>
-	<string id="st_items">
-		<text>Items</text>
 	</string>
 	<string id="st_level">
 		<text>Level</text>
@@ -106,10 +82,10 @@
 		<text>Loading geometry</text>
 	</string>
 	<string id="st_loading_saved_game">
-		<text>Loading saved game</text>
+		<text>Loading</text>
 	</string>
 	<string id="st_loading_sectors_portals">
-		<text>Loading sectors & portals</text>
+		<text>Loading sectors &amp; portals</text>
 	</string>
 	<string id="st_loading_shaders">
 		<text>Loading shaders</text>
@@ -147,11 +123,8 @@
 	<string id="st_validating_cdkey">
 		<text>Validating CD Key</text>
 	</string>
-	<string id="st_video">
-		<text>Video</text>
-	</string>
 	<string id="terrible">
-		<text>terrible</text>
+		<text>Terrible</text>
 	</string>
 	<string id="ui_st_btn_cancel">
 		<text>Cancel</text>
@@ -166,7 +139,7 @@
 		<text>Yes</text>
 	</string>
 	<string id="ui_st_cant_run_r2">
-		<text>You can't run Render 2 on your PC</text>
+		<text>You can’t run Renderer 2 on your PC</text>
 	</string>
 	<string id="ui_st_community">
 		<text>Faction</text>
@@ -214,7 +187,7 @@
 		<text>Loading error</text>
 	</string>
 	<string id="ui_st_file_exist_owerwrite_q">
-		<text>A file with this name already exists. Do you want to overwrite it?</text>
+		<text>A file with this name already exists. Overwrite?</text>
 	</string>
 	<string id="ui_st_file_name_is_empty">
 		<text>The file name is empty</text>
@@ -237,9 +210,6 @@
 	<string id="ui_st_months">
 		<text>months</text>
 	</string>
-	<string id="ui_st_opponent_items">
-		<text>Backpack</text>
-	</string>
 	<string id="ui_st_params">
 		<text>Parameters</text>
 	</string>
@@ -253,13 +223,13 @@
 		<text>Price</text>
 	</string>
 	<string id="ui_st_rank">
-		<text>rank</text>
+		<text>Rank</text>
 	</string>
 	<string id="ui_st_relation">
-		<text>attitude</text>
+		<text>Attitude</text>
 	</string>
 	<string id="ui_st_reputation">
-		<text>reputation</text>
+		<text>Reputation</text>
 	</string>
 	<string id="ui_st_secs">
 		<text>sec.</text>
@@ -289,16 +259,16 @@
 		<text>Your items</text>
 	</string>
 	<string id="very_bad">
-		<text>very bad</text>
+		<text>Very Bad</text>
 	</string>
 	<string id="very_good">
-		<text>very good</text>
+		<text>Very Good</text>
 	</string>
 	<string id="veteran">
-		<text>veteran</text>
+		<text>Veteran</text>
 	</string>
 	<string id="st_no_buck">
-		<text>doesn't use shot</text>
+		<text>doesn’t use shot</text>
 	</string>
 	<string id="st_rubles">
 		<text>roubles.</text>
@@ -314,8 +284,5 @@
 	</string>
 	<string id="lim_bandit_ambush_spot">
 		<text>Bandit ambush</text>
-	</string>
-	<string id="ui_st_kicked_by_battleye">
-		<text>was kicked by BattlEye:</text>
 	</string>
 </string_table>

@@ -6,26 +6,28 @@ $npc			 				= on				; option for Level Editor
 $prefetch 		 			= 8
 scheduled               = off              	; option for ALife Simulator
 cform                   = skeleton
-class                   = WP_SVD
+class                   = WP_VAL
 min_radius              = 0
 max_radius              = 50
-description				= st_wpn_gauss_descr
+description				= gunsl_wpn_gauss_descr	; orig st_wpn_gauss_descr (GS wpn_gauss)
 
 ef_main_weapon_type		= 3
-ef_weapon_type			= 8
+ef_weapon_type          = 8	; restored: 11 broke the AI queue length (select_queue_params keys on ef_weapon_type)
 
 default_to_ruck         = false
 sprint_allowed       	= true
-control_inertion_factor = 1.0
+control_inertion_factor = 1.4f	; orig 1.0 (GS wpn_gauss)
+
+autoaim_confirm_time 	= 10
 
 ;---DOF-------------------------------------------------------------------------
 ;zoom_dof				= 0.5, 1.0, 180
-reload_dof				= 0.0, 0.5, 5, 1.7
+reload_dof              = 0.0, 0.5, 5, 1.7	; orig 0.0, 0.5, 5, 3.15 (GS wpn_gauss)
 ;-------------------------------------------------------------------------------
 
 ;-------------------------------------------------------------------------------
-holder_range_modifier	= 2.85           ; во сколько раз увеличивается eye_range
-holder_fov_modifier		= 0.3              ; во сколько раз увеличивается eye_fov
+holder_range_modifier	= 2.85           ; пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ eye_range
+holder_fov_modifier     = 1.0	; orig 0.3 (GS wpn_gauss)
 ;-------------------------------------------------------------------------------
 
 cost					= 25000
@@ -35,16 +37,23 @@ ammo_limit				= 60
 ammo_current			= 10
 ammo_elapsed			= 0
 
-ammo_mag_size			= 10
+ammo_mag_size           = 11	; orig 10 (GS wpn_gauss)
+; GS ammo_mag_size_for_type_<N>: the capacity while THAT type (index in ammo_class) is loaded. The
+; kardan upgrade adds ammo_gauss_cardan as type 1: one pack (6) + the chambered round, like the 11 above.
+ammo_mag_size_for_type_1 = 7
 ammo_class				= ammo_gauss
+max_queue_size          = 1	; GS base.ltx:33 -- one round per trigger pull even in the `a` (MUI) mode
+fire_modes              = 1	; GS base.ltx:79 -- the `computer` upgrade turns this into `1, -1`,
+			; and the fire-mode key then plays gauss_mui_on / _off (the MUI toggle)
 hand_dependence         = 1
 single_handed           = 0
 
 slot                    = 2                ; // secondary
 animation_slot          = 2                ; type of the animation that will be used
+actor_anim_group          = svd	; xrMPE actor (third-person) animation set from stalker_animation_new.omf
 
-inv_name				= st_wpn_gauss
-inv_name_short			= st_wpn_gauss
+inv_name				= gunsl_wpn_gauss	; orig st_wpn_gauss (GS wpn_gauss)
+inv_name_short			= gunsl_wpn_gauss	; orig st_wpn_gauss (GS wpn_gauss)
 inv_weight				= 5.5
 
 inv_grid_width			= 5
@@ -58,33 +67,33 @@ kill_msg_width			= 82
 kill_msg_height			= 23
 
 ;-------------------------------------------------------------------------------
-;базовая дисперсия
-fire_dispersion_base	= 0.01 ;угол (в градусах) базовой дисперсии оружия (оружия зажатого в тисках)
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+fire_dispersion_base    = 0.020	; orig 0.01 (GS wpn_gauss)
 control_inertion_factor	= 1.4f
 
-;отдача
-cam_relax_speed         = 3	;скорость возврата в исходное положение
-cam_relax_speed_ai      = 360	;скорость возврата в исходное положение
-cam_dispersion          = 0.01	;увеличения угла (в градусах) с каждым выстрелом
-cam_dispersion_inc		= 0.01	;увеличениe cam_dispersion с каждым выстрелом
-cam_dispersion_frac		= 1.0	;ствол будет подыматься на cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
-cam_max_angle			= 0.01	;максимальный угол отдачи
+;пїЅпїЅпїЅпїЅпїЅпїЅ
+cam_relax_speed         = 5	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+cam_relax_speed_ai      = 360	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+cam_dispersion          = 0.7	; orig 0.01 (GS wpn_gauss)
+cam_dispersion_inc		= 0.01	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅe cam_dispersion пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+cam_dispersion_frac		= 1.0	;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
+cam_max_angle			= 0.01	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 cam_max_angle_horz		= 0.01	;(degree) maximum shot horizontal degree
 cam_step_angle_horz		= 0.01	;(degree) size of step camera moved in horizontal position while shooting
 
-zoom_cam_relax_speed        = 3   ; scope & ironsight
+zoom_cam_relax_speed        = 5   ; scope & ironsight
 zoom_cam_relax_speed_ai     = 360
-zoom_cam_dispersion         = 0.01
+zoom_cam_dispersion     = 0.2	; orig 0.01 (GS wpn_gauss)
 zoom_cam_dispersion_inc     = 0.01
 zoom_cam_dispersion_frac    = 1.0
 zoom_cam_max_angle          = 0.01
 zoom_cam_max_angle_horz     = 0.01
 zoom_cam_step_angle_horz    = 0.01
 
-fire_dispersion_condition_factor = 5	;увеличение дисперсии в процентах при максимальном износе
-misfire_probability 	= 0.0001 ;вероятность осечки при максимальном износе
+fire_dispersion_condition_factor = 5	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+misfire_probability 	= 0.0001 ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 misfire_condition_k		= 0.05
-condition_shot_dec 		= 0.00001 ;увеличение износа при каждом выстреле
+condition_shot_dec      = 0.01	; orig 0.00001 (GS wpn_gauss)
 ;-------------------------------------------------------------------------------
 
 
@@ -96,20 +105,23 @@ fire_point2				= 0.00,0.12,0.69
 
 flame_particles         = weapons\generic_weapon_gauss
 smoke_particles	 		= weapons\generic_weapon07
-rpm_empty_click 		= 120
+rpm_empty_click         = 150	; orig 120 (GS wpn_gauss)
 
 shell_point		 		= 0.0, 0.129, 0.192
 shell_dir		 		= 0.0, 0.0, 0.4
-shell_particles	 		= weapons\generic_shells
+;shell_particles	 		= weapons\generic_shells
 
-PDM_disp_base 			= 2.0
+PDM_disp_base           = 1.2	; orig 2.0 (GS wpn_gauss)
 PDM_disp_vel_factor 	= 2.0
 PDM_disp_accel_factor 	= 2.0
 PDM_disp_crouch	 		= 1.0
 PDM_disp_crouch_no_acc 	= 1.0
 
 ; ttc
-hit_power           		= 2.0, 2.0, 2.0, 2.0
+; GS reaches 2.0 total via its ammo (k_hit = 2.0) with hit_power 1.0. We put the factor on the
+; WEAPON instead: ammo_gauss is shared with [wpn_gauss_aes], the quest AES gauss, and that one
+; must keep its own 0.14 -- it overrides hit_power, so a change here cannot reach it.
+hit_power               = 2.0, 2.0, 2.0, 2.0	; orig 1.0 (GS wpn_gauss total damage)
 hit_impulse		 			= 100
 hit_type 					= fire_wound
 
@@ -119,18 +131,24 @@ hit_probability_gd_veteran	= 1
 hit_probability_gd_master	= 1
 
 fire_distance           = 1000
-bullet_speed		 	= 15000	;начальная скорость пули
-rpm                     = 25;30
-rpm_empty_click         = 200
+bullet_speed            = 1500	; orig 15000 (GS wpn_gauss)
+rpm                     = 150	; orig 25 (GS wpn_gauss)
+rpm_empty_click         = 150	; orig 200 (GS wpn_gauss)
+; GS recharge_time: seconds the capacitor needs between shots, on top of the rpm delta.
+; The fast_conders (-1.0) and ionistori (-0.3) upgrade nodes shorten it.
+recharge_time           = 3		; GS wpn_gauss
+; No shot queue here: with a 3 s gap a trigger pull made during the recharge would fire seconds
+; later and read as a phantom shot. Every other weapon queues (engine default = true).
+shot_queue              = false
 ; end ttc
 
-use_aim_bullet			= false		;Поддерживается ли первая суппер пуля
+use_aim_bullet			= false		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 time_to_aim				= 1.0
 
 hud                     = wpn_gauss_hud
 
 ;--STRAP PARAMETERS-----------------------------------------------------------------
-;под мишкой
+;пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 strap_position         	= -0.26,-0.11,0.15			; position (offset) and orientation of the weapon when it is strapped
 strap_orientation      	= -15,-9,110				; (3rd person view in degrees)
 strap_bone0					= bip01_spine2
@@ -156,76 +174,739 @@ grenade_launcher_status	= 0
 
 zoom_enabled				= true
 zoom_rotate_time			= 0.25
-scope_zoom_factor			= 5		;ПСО-1 4X
+scope_zoom_factor			= 5		;пїЅпїЅпїЅ-1 4X
 
-scope_texture				= wpn_crosshair_l85
+scope_texture				= crosshair_2d_gauss
+; ---- 3D PiP lens for the built-in optic (GS base.ltx). IsLensedScope reads these from the ACTIVE
+; scope section, else the WEAPON section -- the hud section is never consulted, which is why the
+; scope fell back to the flat 2D picture. Values are GS's own.
+need_lens_frame         = true
+min_lens_factor         = 15
+max_lens_factor         = 15
+lens_factor_levels_count = 1
+zoom_mouse_sense_koef   = 0.13
+scope_abberation        = 0.006
+lens_speed              = 0.0
+lens_gyro_sound_period  = 0.38
+; ours, not GS: with the `zoom` node (variable power) the 2D scope narrows the world fov with the
+; wheel, in proportion to the step, instead of a fixed world share (the ELCAN's behaviour)
+scope_2d_fov_follows_lens = true
+snd_scope_zoom_gyro     = weapons\gauss\gauss_gyro
+max_night_brightness    = 0.0
+min_night_brightness    = 0.0
 scope_name 					= wpn_addon_scope
 scope_x 						= 60
 scope_y 						= -2
 
-;звуки
-snd_draw			  			= weapons\svd_draw
-snd_holster					= weapons\generic_holster
-snd_shoot					= weapons\gauss_shoot
-snd_empty					= weapons\gen_empty, 0.5
-snd_reload					= weapons\gauss_reload
-snd_close					= weapons\generic_close
-snd_bore					= weapons\draw_silent
-snd_bore1					= weapons\gauss_bore_2
+;пїЅпїЅпїЅпїЅпїЅ
+snd_draw			  			= weapons\gauss\gauss_draw
+snd_holster					= weapons\vss\vss_hide
+; snd_shoot -- GS routes ALL gauss shot audio through the per-anim snd_anm_shoot* keys
+; (the fast-rpm upgrade swaps them via [wpn_gauss_hud_fastrpm]); GS base has snd_shoot = $silent.
+; Leaving a value here played it on top of the per-anim sound.  ; orig weapons\gauss\gauss_shoot_fast
+snd_empty					= weapons\glock17\glock17_dry
+snd_reload					= weapons\gauss\gauss_reload
+snd_reload_empty        	= weapons\gauss\gauss_reload_empty
+snd_reload_jammed			= weapons\gauss\gauss_revival
+snd_close					= $silent
+
+;firing sounds (1st person)
+snd_shoot_1p          = weapons\gauss\gauss_shoot_1p_01, 0.9
+snd_shoot_1p1         = weapons\gauss\gauss_shoot_1p_02, 0.9
+snd_shoot_1p2         = weapons\gauss\gauss_shoot_1p_03, 0.9
+snd_shoot_1p3         = weapons\gauss\gauss_shoot_1p_04, 0.9
+
+volume_snd_shoot_1p          = 125
+
+;firing sounds (3rd person)
+snd_shoot          = weapons\gauss\gauss_shoot_3p_01, 0.9
+snd_shoot1         = weapons\gauss\gauss_shoot_3p_02, 0.9
+snd_shoot2         = weapons\gauss\gauss_shoot_3p_03, 0.9
+snd_shoot3         = weapons\gauss\gauss_shoot_3p_04, 0.9
+
+snd_shoot_dist             = weapons\gauss\gauss_shoot_dist_01, 0.9
+snd_shoot_dist1            = weapons\gauss\gauss_shoot_dist_02, 0.9
+snd_shoot_dist2            = weapons\gauss\gauss_shoot_dist_03, 0.9
+snd_shoot_dist3            = weapons\gauss\gauss_shoot_dist_04, 0.9
+
+snd_shoot_blend_dist_start = 25
+snd_shoot_blend_dist_end   = 75
+
+;indoor sounds
+snd_shoot_indoor_1p          = weapons\shared\gen_tail_indoor_large_1p_01, 0.9, 0.25
+snd_shoot_indoor_1p1         = weapons\shared\gen_tail_indoor_large_1p_02, 0.9, 0.25
+snd_shoot_indoor_1p2         = weapons\shared\gen_tail_indoor_large_1p_03, 0.9, 0.25
+snd_shoot_indoor_1p3         = weapons\shared\gen_tail_indoor_large_1p_04, 0.9, 0.25
+snd_shoot_indoor             = weapons\shared\gen_tail_indoor_large_3p_01, 0.9, 0.2
+snd_shoot_indoor1            = weapons\shared\gen_tail_indoor_large_3p_02, 0.9, 0.2
+snd_shoot_indoor2            = weapons\shared\gen_tail_indoor_large_3p_03, 0.9, 0.2
+snd_shoot_indoor3            = weapons\shared\gen_tail_indoor_large_3p_04, 0.9, 0.2
+volume_snd_shoot_indoor      = 85
+volume_snd_shoot_indoor_1p   = 150
+snd_indoor_fadeout_start     = 0.2
+snd_indoor_fadeout_end       = 1.0
+snd_indoor_fadeout_db        = 6
+
+; ---- added by the Gunslinger port (wpn_gauss) ----
+ammo_in_chamber         = true
+misfire_start_condition = 0.5
+misfire_end_condition   = 0.1
+misfire_start_prob      = 0.0005
+misfire_end_prob        = 0.6
+; GS misfire_after_problems_level (base.ltx). Surge electronics interference at or above this
+; level jams the weapon on the trigger pull; the magnetic_shield node adds +10. GS gives every
+; weapon 10 by default -- our engine only honours weapons that spell the key out, so the gauss
+; is the only one that jams in an emission.
+misfire_after_problems_level = 10
+condition_queue_shot_dec= 0.01
+snd_jammed_click        = weapons\glock17\glock17_dry
+snd_breechblock         = $silent
+crosshair_inertion      = 5
+repair_group            = gauss
+def_hide_bones          = mag_handmade, mui_rail,mui_ver1,mui_ver2,mui_ver3, mui_upgrade1,mui_upgrade2,mui_upgrade3,mui_upgrade4,mui_upgrade5,mui_upgrade6,mui_upgrade7,mui_upgrade8, mui_mode_autoaim, mui_loading
+allowed_upgrades        = up_wpn_gauss_
+upgrades                = vartree_wpn_gauss_comp, vartree_wpn_gauss_provod, vartree_wpn_gauss_zoom, vartree_wpn_gauss_magazine, vartree_wpn_gauss_priklad, vartree_wpn_gauss_tsevie
+installed_upgrades      = 
+upgrade_scheme          = upgrade_scheme_wpn_gauss
+
+; world (3rd person) model animations -- GS wpn_gauss
+use_world_anims=true
+wanm_idle = idle
+wanm_idle_a = idle_mui
+wanm_idle_empty = idle
+wanm_idle_empty_a = idle_mui
+wanm_idle_jammed = idle_jammed
+wanm_idle_jammed_a = idle_mui_jammed
+wanm_shoot = idle
+wanm_shoot_a = idle_mui
+wanm_shoot_jammed = idle_jammed
+wanm_shoot_jammed_a = idle_mui_jammed
+wanm_shoot_last = idle
+wanm_shoot_last_a = idle_mui
+wanm_shoot_last_jammed = idle_jammed
+wanm_shoot_last_jammed_a = idle_mui_jammed
+wanm_reload = idle
+wanm_reload_a = idle_mui
+wanm_reload_empty = idle
+wanm_reload_empty_a = idle_mui
+wanm_reload_jammed = idle
+wanm_reload_jammed_a = idle_mui
 
 [wpn_gauss_hud]:hud_base
 zoom_hide_crosshair		= true
 attach_place_idx			= 0
 item_visual             = dynamics\weapons\wpn_gauss\wpn_gauss_hud.ogf
-
-
-hands_position				= -0.063000,-0.144499,0.096000
-hands_orientation			= -1.150000,0.150000,2.649999
-
-
-
-hands_position_16x9				= -0.032000,-0.161999,0.073500
-hands_orientation_16x9			= -1.050000,0.300000,2.949999
-
-item_position				= 0.000746,-0.000321,0.003479
-item_orientation			= 1.239378,-0.134046,-2.052052
-
+fire_mode_bone             = pred
+hands_position          = 0.0,-0.02,-0.02	; orig -0.063000,-0.144499,0.096000 (GS wpn_gauss)
+hands_orientation       = 0.0,0.0,0.0	; orig -1.150000,0.150000,2.649999 (GS wpn_gauss)
+hands_position_16x9     = 0.0,-0.02,-0.02	; orig 0.0,-0.02,0.05 (GS wpn_gauss)
+hands_orientation_16x9			= 0.0,0.0,0.0
+item_position				= 0.0,0.0,0.0
+item_orientation			= 0.0,0.0,0.0
 shell_point					= 0,0,0
 shell_dir               = 0.0, 1.0, 0.0
 shell_bone					= wpn_body
-
-fire_point				= 0,		0.058, 0.788
+fire_point              = 0, -0.008, 0.667	; orig 0,		0.058, 0.788 (GS wpn_gauss)
 fire_bone               = wpn_body
-
-aim_hud_offset_pos		= -0.102000,0.019500,-0.148000
-aim_hud_offset_rot		= -0.002000,0.000600,-0.010000
-
-aim_hud_offset_pos_16x9     		= -0.111500,0.032500,-0.130500
-aim_hud_offset_rot_16x9     				= 0.012500,0.002500,-0.010000
-
+aim_hud_offset_pos		= 0.0,0.02,0.035
+aim_hud_offset_rot		= 0.0,0.0,0.0
+aim_hud_offset_pos_16x9     		= 0.0,0.02,0.035
+aim_hud_offset_rot_16x9     				= 0.0,0.0,0.0
 gl_hud_offset_pos			= 0,0,0
 gl_hud_offset_rot			= 0,0,0
-
 lean_hud_offset_pos		= 0,0,0
 lean_hud_offset_rot		= 0,0,0
 
-anm_show						= gauss_draw
-anm_hide             	= gauss_holster
-anm_shots					= gauss_shoot
-anm_reload					= gauss_reload
-anm_bore						= gauss_idle_bore
-anm_idle             	= gauss_idle
-anm_idle_aim				= gauss_idle_aim
-anm_idle_moving 			= gauss_idle_moving
-anm_idle_sprint			= gauss_idle_sprint
+; ==================== SEMI-AUTO / BASE ANIMATION SET (from Gunslinger) ====================
 
-;-----------------------------------------------------------------------------
-; Уникальные
-;-----------------------------------------------------------------------------
+; ---- show / draw ----
+anm_show = gauss_draw
+anm_show_empty = gauss_draw
+anm_show_jammed = gauss_draw, gauss_draw_jammed
+
+; ---- hide / holster ----
+anm_hide = gauss_hide
+anm_hide_empty = gauss_hide
+anm_hide_jammed = gauss_hide, idle_jammed
+
+; ---- bore ----
+anm_bore = gauss_draw
+anm_bore_empty = gauss_draw
+anm_bore_jammed = gauss_draw, idle_jammed
+
+; ---- sprint (enter / loop / exit) ----
+anm_idle_sprint_start = gauss_sprint_start
+anm_idle_sprint_start_empty = gauss_sprint_start
+anm_idle_sprint_start_jammed = gauss_sprint_start, idle_jammed
+anm_idle_sprint = gauss_sprint
+anm_idle_sprint_empty = gauss_sprint
+anm_idle_sprint_jammed = gauss_sprint, idle_jammed
+anm_idle_sprint_end = gauss_sprint_end
+anm_idle_sprint_end_empty = gauss_sprint_end
+anm_idle_sprint_end_jammed = gauss_sprint_end, idle_jammed
+
+; ---- aim walk (directional) ----
+anm_idle_aim_moving_forward = gauss_aim_walk_scope
+anm_idle_aim_moving_forward_empty = gauss_aim_walk_scope
+anm_idle_aim_moving_forward_jammed = gauss_aim_walk_scope, idle_jammed
+anm_idle_aim_moving_back = gauss_aim_walk_scope
+anm_idle_aim_moving_back_empty = gauss_aim_walk_scope
+anm_idle_aim_moving_back_jammed = gauss_aim_walk_scope, idle_jammed
+anm_idle_aim_moving_left = gauss_aim_walk_scope
+anm_idle_aim_moving_left_empty = gauss_aim_walk_scope
+anm_idle_aim_moving_left_jammed = gauss_aim_walk_scope, idle_jammed
+anm_idle_aim_moving_right = gauss_aim_walk_scope
+anm_idle_aim_moving_right_empty = gauss_aim_walk_scope
+anm_idle_aim_moving_right_jammed = gauss_aim_walk_scope, idle_jammed
+anm_idle_aim_moving_forward_left = gauss_aim_walk_scope
+anm_idle_aim_moving_forward_left_empty = gauss_aim_walk_scope
+anm_idle_aim_moving_forward_left_jammed = gauss_aim_walk_scope, idle_jammed
+anm_idle_aim_moving_forward_right = gauss_aim_walk_scope
+anm_idle_aim_moving_forward_right_empty = gauss_aim_walk_scope
+anm_idle_aim_moving_forward_right_jammed = gauss_aim_walk_scope, idle_jammed
+anm_idle_aim_moving_back_left = gauss_aim_walk_scope
+anm_idle_aim_moving_back_left_empty = gauss_aim_walk_scope
+anm_idle_aim_moving_back_left_jammed = gauss_aim_walk_scope, idle_jammed
+anm_idle_aim_moving_back_right = gauss_aim_walk_scope
+anm_idle_aim_moving_back_right_empty = gauss_aim_walk_scope
+anm_idle_aim_moving_back_right_jammed = gauss_aim_walk_scope, idle_jammed
+anm_idle_aim_scope_moving = gauss_aim_walk_scope
+anm_idle_aim_scope_moving_empty = gauss_aim_walk_scope
+anm_idle_aim_scope_moving_jammed = gauss_aim_walk_scope, idle_jammed
+
+; ---- aim idle (in / out / hold) ----
+anm_idle_aim_start = gauss_aim_start
+anm_idle_aim_start_empty = gauss_aim_start
+anm_idle_aim_start_jammed = gauss_aim_start
+anm_idle_aim = gauss_aim
+anm_idle_aim_empty = gauss_aim
+anm_idle_aim_jammed = gauss_aim
+anm_idle_aim_scope = gauss_aim
+anm_idle_aim_scope_empty = gauss_aim
+anm_idle_aim_scope_jammed = gauss_aim
+anm_idle_aim_end = gauss_aim_end
+anm_idle_aim_end_empty = gauss_aim_end
+anm_idle_aim_end_jammed = gauss_aim_end
+
+; ---- walk (fwd / slow / crouch) ----
+anm_idle_moving = gauss_walk
+anm_idle_moving_jammed = gauss_walk, gauss_walk_jammed
+anm_idle_moving_empty = gauss_walk
+anm_idle_moving_slow = gauss_walk_slow
+anm_idle_moving_slow_jammed = gauss_walk_slow, gauss_walk_jammed
+anm_idle_moving_slow_empty = gauss_walk_slow
+anm_idle_moving_crouch = gauss_walk_slow_down
+anm_idle_moving_crouch_jammed = gauss_walk_slow_down, gauss_walk_jammed
+anm_idle_moving_crouch_empty = gauss_walk_slow_down
+anm_idle_moving_crouch_slow = gauss_walk_slow_super
+anm_idle_moving_crouch_slow_jammed = gauss_walk_slow_super, gauss_walk_jammed
+anm_idle_moving_crouch_slow_empty = gauss_walk_slow_super
+
+; ---- idle ----
+anm_idle = gauss_idle
+anm_idle_empty = gauss_idle
+anm_idle_jammed = gauss_idle, idle_jammed
+anm_idle_slow = gauss_idle
+anm_idle_crouch = gauss_idle
+anm_idle_crouch_slow = gauss_idle
+anm_idle_slow_empty = gauss_idle
+anm_idle_crouch_empty = gauss_idle
+anm_idle_crouch_slow_empty = gauss_idle
+anm_idle_slow_jammed = gauss_idle, idle_jammed
+anm_idle_crouch_jammed = gauss_idle, idle_jammed
+anm_idle_crouch_slow_jammed = gauss_idle, idle_jammed
+
+; ---- shots ----
+anm_shoot_suicide = gauss_suicide_shoot
+anm_shoot_suicide_sil = gauss_suicide_shoot
+anm_shoot_last_suicide = gauss_suicide_shoot
+anm_shoot_last_suicide_sil = gauss_suicide_shoot
+anm_shoot = gauss_shoot
+anm_shoot_sil = gauss_shoot
+anm_shoot_jammed = gauss_dry_empty, idle_jammed
+anm_shoot_jammed_sil = gauss_dry_empty, idle_jammed
+anm_shoot_last = gauss_shoot
+anm_shoot_last_sil = gauss_shoot
+anm_shoot_aim = gauss_aim_shoot_scope, gauss_shoot
+anm_shoot_aim_sil = gauss_aim_shoot_scope, gauss_shoot
+anm_shoot_aim_jammed = gauss_aim_dry, idle_jammed
+anm_shoot_aim_jammed_sil = gauss_aim_dry, idle_jammed
+anm_shoot_aim_last = gauss_aim_shoot_scope, gauss_shoot
+anm_shoot_aim_last_sil = gauss_aim_shoot_scope, gauss_shoot
+anm_shoot_aim_scope = gauss_aim_shoot_scope, gauss_shoot
+anm_shoot_aim_scope_sil = gauss_aim_shoot_scope, gauss_shoot
+anm_shoot_aim_scope_last = gauss_aim_shoot_scope, gauss_shoot
+anm_shoot_aim_scope_last_sil = gauss_aim_shoot_scope, gauss_shoot
+anm_shoot_aim_scope_jammed = gauss_aim_dry, idle_jammed
+anm_shoot_aim_scope_jammed_sil = gauss_aim_dry, idle_jammed
+
+; ---- dry fire ----
+anm_fakeshoot_empty = gauss_dry_empty
+anm_fakeshoot_aim_empty = gauss_aim_dry
+anm_fakeshoot_jammed = gauss_dry, idle_jammed
+anm_fakeshoot_aim_jammed = gauss_aim_dry, idle_jammed
+anm_fakeshoot = gauss_dry	; (kept: not in GS set)
+anm_fakeshoot_aim = gauss_aim_dry	; (kept: not in GS set)
+
+; ---- reload ----
+anm_reload = gauss_reload
+anm_reload_empty = gauss_reload, gauss_reload_empty
+anm_reload_jammed = gauss_revival
+anm_reload_jammed_last = gauss_revival
+anm_reload_ammochange = gauss_reload
+anm_reload_empty_ammochange = gauss_reload, gauss_reload_empty
+
+; ---- firemode change ----
+anm_changefiremode_from_1_to_a = gauss_mui_on
+anm_changefiremode_from_1_to_a_jammed = gauss_mui_on, gauss_mui_on_jammed
+anm_changefiremode_from_1_to_a_empty = gauss_mui_on, gauss_mui_on_empty
+anm_changefiremode_from_a_to_1 = gauss_mui_off
+anm_changefiremode_from_a_to_1_jammed = gauss_mui_off, gauss_mui_off_jammed
+anm_changefiremode_from_a_to_1_empty = gauss_mui_off, gauss_mui_off_empty
+
+; ---- unload magazine ----
+anm_unload_mag = gauss_draw
+anm_unload_mag_jammed = gauss_draw
+anm_unload_mag_empty = gauss_draw
+
+; ---- laser on / off ----
+anm_laser_on = vss_lam
+anm_laser_on_empty = vss_lam
+anm_laser_on_jammed = vss_lam, idle_jammed
+anm_laser_off = vss_lam
+anm_laser_off_empty = vss_lam
+anm_laser_off_jammed = vss_lam, idle_jammed
+
+; ---- flashlight on / off ----
+anm_torch_on = vss_flash
+anm_torch_on_empty = vss_flash
+anm_torch_on_jammed = vss_flash, idle_jammed
+anm_torch_off = vss_flash
+anm_torch_off_empty = vss_flash
+anm_torch_off_jammed = vss_flash, idle_jammed
+
+; ---- headlamp on / off ----
+anm_headlamp_on = gauss_headflash
+anm_headlamp_on_empty = gauss_headflash
+anm_headlamp_on_jammed = gauss_headflash, idle_jammed
+anm_headlamp_off = gauss_headflash
+anm_headlamp_off_empty = gauss_headflash
+anm_headlamp_off_jammed = gauss_headflash, idle_jammed
+
+; ---- night vision on / off ----
+anm_nv_on = gauss_headflash
+anm_nv_on_empty = gauss_headflash
+anm_nv_on_jammed = gauss_headflash, idle_jammed
+anm_nv_off = gauss_headflash
+anm_nv_off_empty = gauss_headflash
+anm_nv_off_jammed = gauss_headflash, idle_jammed
+
+; ---- misc ----
+anm_suicide = gauss_suicide
+anm_stop_suicide = gauss_suicide_end
+
+; ==================== AUTO-FIRE MODE ANIMATION SET (mask_firemode_a = _auto) ====================
+
+; ---- show / draw ----
+anm_show_auto = gauss_draw, gauss_mui_draw
+anm_show_auto_empty = gauss_draw, gauss_mui_draw_empty
+anm_show_auto_jammed = gauss_draw, gauss_mui_draw_jammed
+
+; ---- hide / holster ----
+anm_hide_auto = gauss_hide, idle_mui
+anm_hide_auto_empty = gauss_hide, idle_mui_empty
+anm_hide_auto_jammed = gauss_hide, idle_mui_jammed
+
+; ---- bore ----
+anm_bore_auto = gauss_draw, idle_mui
+anm_bore_auto_empty = gauss_draw, idle_mui_empty
+anm_bore_auto_jammed = gauss_draw, idle_mui_jammed
+
+; ---- sprint (enter / loop / exit) ----
+anm_idle_sprint_start_auto = gauss_sprint_start, idle_mui
+anm_idle_sprint_start_auto_empty = gauss_sprint_start, idle_mui_empty
+anm_idle_sprint_start_auto_jammed = gauss_sprint_start, idle_mui_jammed
+anm_idle_sprint_auto = gauss_sprint, idle_mui
+anm_idle_sprint_auto_empty = gauss_sprint, idle_mui_empty
+anm_idle_sprint_auto_jammed = gauss_sprint, idle_mui_jammed
+anm_idle_sprint_end_auto = gauss_sprint_end, idle_mui
+anm_idle_sprint_end_auto_empty = gauss_sprint_end, idle_mui_empty
+anm_idle_sprint_end_auto_jammed = gauss_sprint_end, idle_mui_jammed
+
+; ---- aim walk (directional) ----
+anm_idle_aim_moving_forward_auto = gauss_aim_walk_scope, idle_mui
+anm_idle_aim_moving_forward_auto_empty = gauss_aim_walk_scope, idle_mui_empty
+anm_idle_aim_moving_forward_auto_jammed = gauss_aim_walk_scope, idle_mui_jammed
+anm_idle_aim_moving_back_auto = gauss_aim_walk_scope, idle_mui
+anm_idle_aim_moving_back_auto_empty = gauss_aim_walk_scope, idle_mui_empty
+anm_idle_aim_moving_back_auto_jammed = gauss_aim_walk_scope, idle_mui_jammed
+anm_idle_aim_moving_left_auto = gauss_aim_walk_scope, idle_mui
+anm_idle_aim_moving_left_auto_empty = gauss_aim_walk_scope, idle_mui_empty
+anm_idle_aim_moving_left_auto_jammed = gauss_aim_walk_scope, idle_mui_jammed
+anm_idle_aim_moving_right_auto = gauss_aim_walk_scope, idle_mui
+anm_idle_aim_moving_right_auto_empty = gauss_aim_walk_scope, idle_mui_empty
+anm_idle_aim_moving_right_auto_jammed = gauss_aim_walk_scope, idle_mui_jammed
+anm_idle_aim_moving_forward_left_auto = gauss_aim_walk_scope, idle_mui
+anm_idle_aim_moving_forward_left_auto_empty = gauss_aim_walk_scope, idle_mui_empty
+anm_idle_aim_moving_forward_left_auto_jammed = gauss_aim_walk_scope, idle_mui_jammed
+anm_idle_aim_moving_forward_right_auto = gauss_aim_walk_scope, idle_mui
+anm_idle_aim_moving_forward_right_auto_empty = gauss_aim_walk_scope, idle_mui_empty
+anm_idle_aim_moving_forward_right_auto_jammed = gauss_aim_walk_scope, idle_mui_jammed
+anm_idle_aim_moving_back_left_auto = gauss_aim_walk_scope, idle_mui
+anm_idle_aim_moving_back_left_auto_empty = gauss_aim_walk_scope, idle_mui_empty
+anm_idle_aim_moving_back_left_auto_jammed = gauss_aim_walk_scope, idle_mui_jammed
+anm_idle_aim_moving_back_right_auto = gauss_aim_walk_scope, idle_mui
+anm_idle_aim_moving_back_right_auto_empty = gauss_aim_walk_scope, idle_mui_empty
+anm_idle_aim_moving_back_right_auto_jammed = gauss_aim_walk_scope, idle_mui_jammed
+anm_idle_aim_scope_moving_auto = gauss_aim_walk_scope, idle_mui
+anm_idle_aim_scope_moving_auto_empty = gauss_aim_walk_scope, idle_mui_empty
+anm_idle_aim_scope_moving_auto_jammed = gauss_aim_walk_scope, idle_mui_jammed
+
+; ---- aim idle (in / out / hold) ----
+anm_idle_aim_start_auto = gauss_aim_start, idle_mui
+anm_idle_aim_start_auto_empty = gauss_aim_start, idle_mui_empty
+anm_idle_aim_start_auto_jammed = gauss_aim_start, idle_mui_jammed
+anm_idle_aim_auto = gauss_aim, idle_mui
+anm_idle_aim_auto_empty = gauss_aim, idle_mui_empty
+anm_idle_aim_auto_jammed = gauss_aim, idle_mui_jammed
+anm_idle_aim_scope_auto = gauss_aim, idle_mui
+anm_idle_aim_scope_auto_empty = gauss_aim, idle_mui_empty
+anm_idle_aim_scope_auto_jammed = gauss_aim, idle_mui_jammed
+anm_idle_aim_end_auto = gauss_aim_end, idle_mui
+anm_idle_aim_end_auto_empty = gauss_aim_end, idle_mui_empty
+anm_idle_aim_end_auto_jammed = gauss_aim_end, idle_mui_jammed
+
+; ---- walk (fwd / slow / crouch) ----
+anm_idle_moving_auto = gauss_walk, gauss_mui_walk
+anm_idle_moving_auto_jammed = gauss_walk, gauss_mui_walk_jammed
+anm_idle_moving_auto_empty = gauss_walk, gauss_mui_walk_empty
+anm_idle_moving_slow_auto = gauss_walk_slow, gauss_mui_walk
+anm_idle_moving_slow_auto_jammed = gauss_walk_slow, gauss_mui_walk_jammed
+anm_idle_moving_slow_auto_empty = gauss_walk_slow, gauss_mui_walk_empty
+anm_idle_moving_crouch_auto = gauss_walk_slow_down, gauss_mui_walk
+anm_idle_moving_crouch_auto_jammed = gauss_walk_slow_down, gauss_mui_walk_jammed
+anm_idle_moving_crouch_auto_empty = gauss_walk_slow_down, gauss_mui_walk_empty
+anm_idle_moving_crouch_slow_auto = gauss_walk_slow_super, gauss_mui_walk
+anm_idle_moving_crouch_slow_auto_jammed = gauss_walk_slow_super, gauss_mui_walk_jammed
+anm_idle_moving_crouch_slow_auto_empty = gauss_walk_slow_super, gauss_mui_walk_empty
+
+; ---- idle ----
+anm_idle_auto = gauss_idle, idle_mui
+anm_idle_auto_empty = gauss_idle, idle_mui_empty
+anm_idle_auto_jammed = gauss_idle, idle_mui_jammed
+anm_idle_slow_auto = gauss_idle, idle_mui
+anm_idle_crouch_auto = gauss_idle, idle_mui
+anm_idle_crouch_slow_auto = gauss_idle, idle_mui
+anm_idle_slow_auto_empty = gauss_idle, idle_mui_empty
+anm_idle_crouch_auto_empty = gauss_idle, idle_mui_empty
+anm_idle_crouch_slow_auto_empty = gauss_idle, idle_mui_empty
+anm_idle_slow_auto_jammed = gauss_idle, idle_mui_jammed
+anm_idle_crouch_auto_jammed = gauss_idle, idle_mui_jammed
+anm_idle_crouch_slow_auto_jammed = gauss_idle, idle_mui_jammed
+
+; ---- shots ----
+anm_shoot_auto_suicide = gauss_suicide_shoot
+anm_shoot_auto_suicide_sil = gauss_suicide_shoot
+anm_shoot_auto_last_suicide = gauss_suicide_shoot
+anm_shoot_auto_last_suicide_sil = gauss_suicide_shoot
+anm_shoot_auto = gauss_shoot, gauss_mui_shoot
+anm_shoot_auto_sil = gauss_shoot, gauss_mui_shoot
+anm_shoot_auto_jammed = gauss_dry_empty, idle_mui_jammed
+anm_shoot_auto_jammed_sil = gauss_dry_empty, idle_mui_jammed
+anm_shoot_auto_last = gauss_shoot, gauss_mui_shoot_last
+anm_shoot_auto_last_sil = gauss_shoot, gauss_mui_shoot_last
+anm_shoot_aim_auto = gauss_aim_shoot_scope, gauss_mui_shoot
+anm_shoot_aim_auto_sil = gauss_aim_shoot_scope, gauss_mui_shoot
+anm_shoot_aim_auto_jammed = gauss_aim_dry, idle_mui_jammed
+anm_shoot_aim_auto_jammed_sil = gauss_aim_dry, idle_mui_jammed
+anm_shoot_aim_auto_last = gauss_aim_shoot_scope, gauss_mui_shoot_last
+anm_shoot_aim_auto_last_sil = gauss_aim_shoot_scope, gauss_mui_shoot_last
+anm_shoot_aim_scope_auto = gauss_aim_shoot_scope, gauss_mui_shoot
+anm_shoot_aim_scope_auto_sil = gauss_aim_shoot_scope, gauss_mui_shoot
+anm_shoot_aim_scope_auto_last = gauss_aim_shoot_scope, gauss_mui_shoot_last
+anm_shoot_aim_scope_auto_last_sil = gauss_aim_shoot_scope, gauss_mui_shoot_last
+anm_shoot_aim_scope_auto_jammed = gauss_aim_dry, idle_mui_jammed
+anm_shoot_aim_scope_auto_jammed_sil = gauss_aim_dry, idle_mui_jammed
+
+; ---- dry fire ----
+anm_fakeshoot_auto_empty = gauss_dry_empty, idle_mui_empty
+anm_fakeshoot_aim_auto_empty = gauss_aim_dry, idle_mui_empty
+anm_fakeshoot_auto_jammed = gauss_dry, idle_mui_jammed
+anm_fakeshoot_aim_auto_jammed = gauss_aim_dry, idle_mui_jammed
+
+; ---- reload ----
+anm_reload_auto = gauss_reload, gauss_mui_reload
+anm_reload_auto_empty = gauss_reload, gauss_mui_reload_empty
+anm_reload_auto_jammed = gauss_revival, gauss_mui_revival
+anm_reload_auto_jammed_last = gauss_revival, gauss_mui_revival
+anm_reload_auto_ammochange = gauss_reload, gauss_mui_reload
+anm_reload_auto_empty_ammochange = gauss_reload, gauss_mui_reload_empty
+
+; ---- unload magazine ----
+anm_unload_mag_auto = gauss_draw, idle_mui_empty
+anm_unload_mag_auto_jammed = gauss_draw, idle_mui_empty
+anm_unload_mag_auto_empty = gauss_draw, idle_mui_empty
+
+; ---- laser on / off ----
+anm_laser_on_auto = vss_lam, idle_mui
+anm_laser_on_auto_empty = vss_lam, idle_mui_empty
+anm_laser_on_auto_jammed = vss_lam, idle_mui_jammed
+anm_laser_off_auto = vss_lam, idle_mui
+anm_laser_off_auto_empty = vss_lam, idle_mui_empty
+anm_laser_off_auto_jammed = vss_lam, idle_mui_jammed
+
+; ---- flashlight on / off ----
+anm_torch_on_auto = vss_flash, idle_mui
+anm_torch_on_auto_empty = vss_flash, idle_mui_empty
+anm_torch_on_auto_jammed = vss_flash, idle_mui_jammed
+anm_torch_off_auto = vss_flash, idle_mui
+anm_torch_off_auto_empty = vss_flash, idle_mui_empty
+anm_torch_off_auto_jammed = vss_flash, idle_mui_jammed
+
+; ---- headlamp on / off ----
+anm_headlamp_on_auto = gauss_headflash, idle_mui
+anm_headlamp_on_auto_empty = gauss_headflash, idle_mui_empty
+anm_headlamp_on_auto_jammed = gauss_headflash, idle_mui_jammed
+anm_headlamp_off_auto = gauss_headflash, idle_mui
+anm_headlamp_off_auto_empty = gauss_headflash, idle_mui_empty
+anm_headlamp_off_auto_jammed = gauss_headflash, idle_mui_jammed
+
+; ---- night vision on / off ----
+anm_nv_on_auto = gauss_headflash, idle_mui
+anm_nv_on_auto_empty = gauss_headflash, idle_mui_empty
+anm_nv_on_auto_jammed = gauss_headflash, idle_mui_jammed
+anm_nv_off_auto = gauss_headflash, idle_mui
+anm_nv_off_auto_empty = gauss_headflash, idle_mui_empty
+anm_nv_off_auto_jammed = gauss_headflash, idle_mui_jammed
+
+; ---- misc ----
+anm_suicide_auto = gauss_suicide, idle_mui
+anm_stop_suicide_auto = gauss_suicide_end, idle_mui
+
+
+
+; ---- GS hud behaviour keys the value step does not carry (sniper/gauss/huds.ltx) ----
+need_lens_frame                          = true		//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+hud_fov_zoom_factor                      = 0.4	; GS relative key, our engine does not read it -- see scope_hud_fov_aim below
+; GS states the hud fov as a FACTOR of ITS OWN base (gunslinger_params.ltx: hud_fov = 40 DEGREES),
+; and 50 of GS's 51 weapons use hud_fov_factor = 1.25 -> 50 deg. Our engine states it as a fraction
+; of the main fov (psHUD_FOV * Device.fFOV), and the console default hud_fov 0.66 at fov 75 is 49.5
+; deg -- already the GS value, which is why every other weapon here simply omits the key.
+; The old translation assumed a 0.45 base and produced 0.5625 = 42 deg = the gun held too close.
+; So: NO override. Omitting hud_fov falls back to psHUD_FOV_def and tracks the console setting.
+; hud_fov                                = 0.5625   ; orig, removed 2026-08-07 (too close, see above)
+scope_hud_fov_aim                        = 0.211	; orig 0.18; = 0.66 * (GS hud_fov_zoom_factor 0.4 / 1.25), see the hud_fov note above
+inertion_pitch_offset_r                  = 0
+inertion_pitch_offset_n                  = 0
+inertion_pitch_offset_d                  = 0
+inertion_origin_offset                   = -0.05	; GS raw 0.05 (axis mirrored)
+grenade_bone                             = grenade
+disable_bore                             = true
+no_jam_fire                              = true
+mix_shoot_after_idle                     = true
+additional_ammo_bone_when_jammed         = false
+mask_firemode_1                          = 
+mask_firemode_a                          = _auto
+use_advanced_ammo_bones                  = true
+ammo_params_section                      = wpn_gauss_ammo_bones
+ammo_params_section_0                    = wpn_gauss_mag
+ammo_params_section_1                    = wpn_gauss_mag_handmade
+lock_time_start_anm_reload_auto          = 2.3
+lock_time_end_anm_reload_auto            = 2.3
+lock_time_start_anm_reload_auto_empty    = 2.3
+lock_time_end_anm_reload_auto_empty      = 2.3
+lock_time_start_anm_reload               = 2.3
+lock_time_end_anm_reload                 = 2.3
+lock_time_start_anm_reload_empty         = 2.3
+lock_time_end_anm_reload_empty           = 2.3
+lock_time_start_anm_reload_auto_ammochange = 2.3
+lock_time_end_anm_reload_auto_ammochange = 2.3
+lock_time_start_anm_reload_auto_empty_ammochange = 2.3
+lock_time_end_anm_reload_auto_empty_ammochange = 2.3
+lock_time_start_anm_reload_ammochange    = 2.3
+lock_time_end_anm_reload_ammochange      = 2.3
+lock_time_start_anm_reload_empty_ammochange = 2.3
+lock_time_end_anm_reload_empty_ammochange = 2.3
+prohibit_suicide                         = false
+suicide_by_animation                     = true
+custom_suicide_shot                      = true
+lock_time_anm_suicide                    = 7.37
+lock_time_anm_stop_suicide               = 1.37
+suicide_delay                            = 0.25
+hud_move_suicide_offset_pos              = 0, 0, 0
+hud_move_suicide_offset_rot              = 0,0,0
+hud_move_suicide_offset_pos_16x9         = 0, 0, 0
+hud_move_suicide_offset_rot_16x9         = 0,0,0
+lock_time_anm_suicide_auto               = 7.37
+lock_time_anm_stop_suicide_auto          = 1.37
+autoshoot_anm_idle_aim_start             = true
+lock_time_anm_idle_aim_start             = 0.2
+autoshoot_anm_idle_aim_start_empty       = true
+lock_time_anm_idle_aim_start_empty       = 0.2
+autoshoot_anm_idle_aim_start_jammed      = true
+lock_time_anm_idle_aim_start_jammed      = 0.2
+autoshoot_anm_idle_aim_end               = true
+lock_time_anm_idle_aim_end               = 0.25
+autoshoot_anm_idle_aim_end_empty         = true
+lock_time_anm_idle_aim_end_empty         = 0.25
+autoshoot_anm_idle_aim_end_jammed        = true
+lock_time_anm_idle_aim_end_jammed        = 0.25
+enable_directions_anm_idle_aim           = true
+lock_time_anm_idle_sprint_start          = 0.15
+lock_time_anm_idle_sprint_start_empty    = 0.15
+lock_time_anm_idle_sprint_start_jammed   = 0.15
+lock_time_anm_idle_sprint_end            = 0.35
+lock_time_anm_idle_sprint_end_empty      = 0.35
+lock_time_anm_idle_sprint_end_jammed     = 0.35
+snd_anm_shoot                            = weapons\gauss\gauss_shoot_recharge
+snd_anm_shoot_last                       = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_aim                        = weapons\gauss\gauss_shoot_recharge
+snd_anm_shoot_aim_last                   = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_suicide                    = weapons\gauss\gauss_shoot_recharge
+snd_anm_shoot_last_suicide               = weapons\gauss\gauss_shoot_recharge_empty
+snd_exclusive_anm_shoot                  = false
+snd_exclusive_anm_shoot_last             = false
+snd_exclusive_anm_shoot_aim              = false
+snd_exclusive_anm_shoot_aim_last         = false
+lock_time_anm_fakeshoot_empty            = 0.20
+lock_time_anm_fakeshoot_aim_empty        = 0.20
+lock_time_anm_fakeshoot_jammed           = 1.1
+lock_time_anm_fakeshoot_aim_jammed       = 0.20
+use_firemode_change_anim                 = true
+lock_time_anm_changefiremode_from_1_to_a = 1.17
+lock_time_anm_changefiremode_from_1_to_a_jammed = 1.17
+lock_time_anm_changefiremode_from_1_to_a_empty = 1.17
+snd_anm_changefiremode_from_1_to_a       = weapons\gauss\gauss_mui_on
+snd_anm_changefiremode_from_1_to_a_jammed = weapons\gauss\gauss_mui_on
+snd_anm_changefiremode_from_1_to_a_empty = weapons\gauss\gauss_mui_on
+lock_time_anm_changefiremode_from_a_to_1 = 1.17
+lock_time_anm_changefiremode_from_a_to_1_jammed = 1.17
+lock_time_anm_changefiremode_from_a_to_1_empty = 1.17
+snd_anm_changefiremode_from_a_to_1       = weapons\gauss\gauss_mui_off
+snd_anm_changefiremode_from_a_to_1_jammed = weapons\gauss\gauss_mui_off
+snd_anm_changefiremode_from_a_to_1_empty = weapons\gauss\gauss_mui_off
+use_unloadmag_anim                       = true
+lock_time_anm_unload_mag                 = 0.8
+lock_time_anm_unload_mag_jammed          = 0.8
+lock_time_anm_unload_mag_empty           = 0.8
+lock_time_start_anm_laser_on             = 0.45
+lock_time_end_anm_laser_on               = 0.65
+lock_time_start_anm_laser_on_empty       = 0.45
+lock_time_end_anm_laser_on_empty         = 0.65
+lock_time_start_anm_laser_on_jammed      = 0.45
+lock_time_end_anm_laser_on_jammed        = 0.65
+lock_time_start_anm_laser_off            = 0.45
+lock_time_end_anm_laser_off              = 0.65
+lock_time_start_anm_laser_off_empty      = 0.45
+lock_time_end_anm_laser_off_empty        = 0.65
+lock_time_start_anm_laser_off_jammed     = 0.45
+lock_time_end_anm_laser_off_jammed       = 0.65
+lock_time_start_anm_torch_on             = 0.45
+lock_time_end_anm_torch_on               = 0.65
+lock_time_start_anm_torch_on_empty       = 0.45
+lock_time_end_anm_torch_on_empty         = 0.65
+lock_time_start_anm_torch_on_jammed      = 0.45
+lock_time_end_anm_torch_on_jammed        = 0.65
+lock_time_start_anm_torch_off            = 0.45
+lock_time_end_anm_torch_off              = 0.65
+lock_time_start_anm_torch_off_empty      = 0.45
+lock_time_end_anm_torch_off_empty        = 0.65
+lock_time_start_anm_torch_off_jammed     = 0.45
+lock_time_end_anm_torch_off_jammed       = 0.65
+lock_time_start_anm_headlamp_on          = 0.58
+lock_time_end_anm_headlamp_on            = 0.5
+lock_time_start_anm_headlamp_on_empty    = 0.58
+lock_time_end_anm_headlamp_on_empty      = 0.5
+lock_time_start_anm_headlamp_on_jammed   = 0.58
+lock_time_end_anm_headlamp_on_jammed     = 0.5
+lock_time_start_anm_headlamp_off         = 0.58
+lock_time_end_anm_headlamp_off           = 0.5
+lock_time_start_anm_headlamp_off_empty   = 0.58
+lock_time_end_anm_headlamp_off_empty     = 0.5
+lock_time_start_anm_headlamp_off_jammed  = 0.58
+lock_time_end_anm_headlamp_off_jammed    = 0.5
+autoshoot_anm_idle_aim_start_auto        = true
+lock_time_anm_idle_aim_start_auto        = 0.2
+autoshoot_anm_idle_aim_start_auto_empty  = true
+lock_time_anm_idle_aim_start_auto_empty  = 0.2
+autoshoot_anm_idle_aim_start_auto_jammed = true
+lock_time_anm_idle_aim_start_auto_jammed = 0.2
+autoshoot_anm_idle_aim_end_auto          = true
+lock_time_anm_idle_aim_end_auto          = 0.25
+autoshoot_anm_idle_aim_end_auto_empty    = true
+lock_time_anm_idle_aim_end_auto_empty    = 0.25
+autoshoot_anm_idle_aim_end_auto_jammed   = true
+lock_time_anm_idle_aim_end_auto_jammed   = 0.25
+lock_time_anm_idle_sprint_start_auto     = 0.15
+lock_time_anm_idle_sprint_start_auto_empty = 0.15
+lock_time_anm_idle_sprint_start_auto_jammed = 0.15
+lock_time_anm_idle_sprint_end_auto       = 0.35
+lock_time_anm_idle_sprint_end_auto_empty = 0.35
+lock_time_anm_idle_sprint_end_auto_jammed = 0.35
+snd_anm_shoot_auto                       = weapons\gauss\gauss_shoot_recharge
+snd_anm_shoot_auto_last                  = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_aim_auto                   = weapons\gauss\gauss_shoot_recharge
+snd_anm_shoot_aim_auto_last              = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_auto_suicide               = weapons\gauss\gauss_shoot_recharge
+snd_anm_shoot_auto_last_suicide          = weapons\gauss\gauss_shoot_recharge_empty
+snd_exclusive_anm_shoot_auto             = false
+snd_exclusive_anm_shoot_auto_last        = false
+snd_exclusive_anm_shoot_aim_auto         = false
+snd_exclusive_anm_shoot_aim_auto_last    = false
+lock_time_anm_fakeshoot_auto_empty       = 0.20
+lock_time_anm_fakeshoot_aim_auto_empty   = 0.20
+lock_time_anm_fakeshoot_auto_jammed      = 1.1
+lock_time_anm_fakeshoot_aim_auto_jammed  = 0.20
+lock_time_anm_unload_mag_auto            = 0.8
+lock_time_anm_unload_mag_auto_jammed     = 0.8
+lock_time_anm_unload_mag_auto_empty      = 0.8
+lock_time_start_anm_laser_on_auto        = 0.45
+lock_time_end_anm_laser_on_auto          = 0.65
+lock_time_start_anm_laser_on_auto_empty  = 0.45
+lock_time_end_anm_laser_on_auto_empty    = 0.65
+lock_time_start_anm_laser_on_auto_jammed = 0.45
+lock_time_end_anm_laser_on_auto_jammed   = 0.65
+lock_time_start_anm_laser_off_auto       = 0.45
+lock_time_end_anm_laser_off_auto         = 0.65
+lock_time_start_anm_laser_off_auto_empty = 0.45
+lock_time_end_anm_laser_off_auto_empty   = 0.65
+lock_time_start_anm_laser_off_auto_jammed = 0.45
+lock_time_end_anm_laser_off_auto_jammed  = 0.65
+lock_time_start_anm_torch_on_auto        = 0.45
+lock_time_end_anm_torch_on_auto          = 0.65
+lock_time_start_anm_torch_on_auto_empty  = 0.45
+lock_time_end_anm_torch_on_auto_empty    = 0.65
+lock_time_start_anm_torch_on_auto_jammed = 0.45
+lock_time_end_anm_torch_on_auto_jammed   = 0.65
+lock_time_start_anm_torch_off_auto       = 0.45
+lock_time_end_anm_torch_off_auto         = 0.65
+lock_time_start_anm_torch_off_auto_empty = 0.45
+lock_time_end_anm_torch_off_auto_empty   = 0.65
+lock_time_start_anm_torch_off_auto_jammed = 0.45
+lock_time_end_anm_torch_off_auto_jammed  = 0.65
+lock_time_start_anm_headlamp_on_auto     = 0.58
+lock_time_end_anm_headlamp_on_auto       = 0.5
+lock_time_start_anm_headlamp_on_auto_empty = 0.58
+lock_time_end_anm_headlamp_on_auto_empty = 0.5
+lock_time_start_anm_headlamp_on_auto_jammed = 0.58
+lock_time_end_anm_headlamp_on_auto_jammed = 0.5
+lock_time_start_anm_headlamp_off_auto    = 0.58
+lock_time_end_anm_headlamp_off_auto      = 0.5
+lock_time_start_anm_headlamp_off_auto_empty = 0.58
+lock_time_end_anm_headlamp_off_auto_empty = 0.5
+lock_time_start_anm_headlamp_off_auto_jammed = 0.58
+lock_time_end_anm_headlamp_off_auto_jammed = 0.5
 
 [wpn_gauss_aes]:wpn_gauss ;Gauss "AES"
+; the vanilla EM1 experimental rifle, not a second 'Gauss rifle' (strings st_wpn_gauss* are vanilla CS);
+; orig: inherited gunsl_wpn_gauss / gunsl_wpn_gauss_descr from wpn_gauss
+inv_name                = st_wpn_gauss
+inv_name_short          = st_wpn_gauss
+description             = st_wpn_gauss_descr
 $spawn                  = "weapons\gauss_aes"
 hud 							= wpn_gauss_hud
+
+; snd_shoot -- see [wpn_gauss]: shot audio comes from snd_anm_shoot*  ; orig weapons\gauss\gauss_shoot
 
 ; ttc
 hit_power           		= 0.14, 0.14, 0.14, 0.14
@@ -238,7 +919,7 @@ hit_probability_gd_veteran	= 1
 hit_probability_gd_master	= 1
 
 fire_distance           = 1000
-bullet_speed		 		= 100000	;начальная скорость пули
+bullet_speed		 		= 100000	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 rpm                     = 20
 
 ammo_limit				= 100
@@ -247,3 +928,104 @@ ammo_elapsed			= 100
 
 ammo_mag_size			= 100
 ammo_class				= ammo_gauss
+
+; ---- the `fast rpm` upgrade repoints the HUD section here (GS sniper/gauss/upgrades.ltx:197);
+; it only swaps the per-anim shot sounds, everything else is inherited ----
+[wpn_gauss_hud_fastrpm]:wpn_gauss_hud
+
+snd_anm_shoot            = weapons\gauss\gauss_shoot_recharge_fast
+snd_anm_shoot_last       = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_aim        = weapons\gauss\gauss_shoot_recharge_fast
+snd_anm_shoot_aim_last   = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_suicide    = weapons\gauss\gauss_shoot_recharge_fast
+snd_anm_shoot_last_suicide = weapons\gauss\gauss_shoot_recharge_empty 
+
+snd_exclusive_anm_shoot = false;
+snd_exclusive_anm_shoot_last = false;
+snd_exclusive_anm_shoot_aim  = false;
+snd_exclusive_anm_shoot_aim_last = false;
+
+
+snd_anm_shoot_auto            = weapons\gauss\gauss_shoot_recharge_fast
+snd_anm_shoot_auto_last       = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_aim_auto        = weapons\gauss\gauss_shoot_recharge_fast
+snd_anm_shoot_aim_auto_last   = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_auto_suicide = weapons\gauss\gauss_shoot_recharge_fast
+snd_anm_shoot_auto_last_suicide = weapons\gauss\gauss_shoot_recharge_empty 
+
+snd_exclusive_anm_shoot_auto = false;
+snd_exclusive_anm_shoot_auto_last = false;
+snd_exclusive_anm_shoot_aim_auto  = false;
+snd_exclusive_anm_shoot_aim_auto_last = false;
+
+; ---- MUI ammo readout (GS sniper/gauss/ammo.ltx): configuration_<rounds loaded> picks the
+; digit bone mui_amount_<N>, so the computer's counter follows the magazine live ----
+[wpn_gauss_mag]
+
+;пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+all_bones = mui_amount_0,mui_amount_1,mui_amount_2,mui_amount_3,mui_amount_4,mui_amount_5,mui_amount_6,mui_amount_7,mui_amount_8,mui_amount_9,mui_amount_10,mui_amount_11,mui_amount_12,mag,bullet,mag_handmade
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ all_bones, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+configuration_0 =  mui_amount_0,mag
+configuration_1 =  mui_amount_1,mag
+configuration_2 =  mui_amount_2,mag
+configuration_3 =  mui_amount_3,mag
+configuration_4 =  mui_amount_4,mag
+configuration_5 =  mui_amount_5,mag
+configuration_6 =  mui_amount_6,mag
+configuration_7 =  mui_amount_7,mag
+configuration_8 =  mui_amount_8,mag
+configuration_9 =  mui_amount_9,mag
+configuration_10 = mui_amount_10,mag
+configuration_11 = mui_amount_11,mag
+configuration_12 = mui_amount_12,mag
+; counts past 12 (the EM1 holds 100): magazine without a digit -- the MUI has no bone for them
+configuration_over = mag
+
+[wpn_gauss_mag_handmade]
+
+;пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+all_bones = mui_amount_0,mui_amount_1,mui_amount_2,mui_amount_3,mui_amount_4,mui_amount_5,mui_amount_6,mui_amount_7,mui_amount_8,mui_amount_9,mui_amount_10,mui_amount_11,mui_amount_12,mag,bullet,mag_handmade
+
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ all_bones, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+configuration_0 =  mui_amount_0,bullet,mag_handmade
+configuration_1 =  mui_amount_1,bullet,mag_handmade
+configuration_2 =  mui_amount_2,bullet,mag_handmade
+configuration_3 =  mui_amount_3,bullet,mag_handmade
+configuration_4 =  mui_amount_4,bullet,mag_handmade
+configuration_5 =  mui_amount_5,bullet,mag_handmade
+configuration_6 =  mui_amount_6,bullet,mag_handmade
+configuration_7 =  mui_amount_7,bullet,mag_handmade
+configuration_8 =  mui_amount_8,bullet,mag_handmade
+configuration_9 =  mui_amount_9,bullet,mag_handmade
+configuration_10 = mui_amount_10,bullet,mag_handmade
+configuration_11 = mui_amount_11,bullet,mag_handmade
+configuration_12 = mui_amount_12,bullet,mag_handmade
+; counts past 12 (the EM1 holds 100): magazine without a digit -- the MUI has no bone for them
+configuration_over = bullet,mag_handmade
+
+; ---------------------------------------------------------------------------------------------
+; GS scope_nightvision effector (GS weapons\addons\scopes\effectors\nightvision_gauss.ltx). The
+; `nv` upgrade node points scope_nightvision at this section; the engine runs its ppe while the
+; player aims through the optic, at a strength set by the reticle-brightness step.
+; ---------------------------------------------------------------------------------------------
+[scope_nightvision_gauss]
+snd_night_vision_on			= $silent
+snd_night_vision_off		= $silent
+snd_night_vision_idle		= $silent
+snd_night_vision_broken		= $silent
+
+pp_eff_name = nightvision_gauss.ppe
+pp_eff_cyclic = 1
+pp_eff_overlap = false
+
+; ---------------------------------------------------------------------------------------------
+; scope_alive_detector params (GS weapons\addons\scopes\effectors\alive_detector_base.ltx). The
+; `detector` upgrade node points scope_alive_detector here; the engine then runs the VANILLA
+; binoculars vision (CBinocularsVision) while aiming -- same keys w_binoc.ltx uses.
+; ---------------------------------------------------------------------------------------------
+[scope_detector]
+vis_frame_speed				= 14				; how fast the frame crawls onto the target
+vis_frame_color				= 0.7,0.7,0.7,1.0	; frame RGBA
+found_snd					= detectors\DA-2_beep1
+catch_snd					= detectors\DA-2_beep1

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_wpn_l85_up_mag40_name">
+     <text>Магазин повышенной емкости (40 патронов)</text>
+</string>
+<string id="gunsl_wpn_l85_up_mag40_descr">
+     <text>Использование магазина PMAG 40 AR сокращает число перезарядок в бою.</text>
+</string>
+<string id="gunsl_wpn_l85_up_mag60_name">
+     <text>Магазин высокой емкости (60 патронов)</text>
+</string>
+<string id="gunsl_wpn_l85_up_mag60_descr">
+     <text>Использование магазина SureFire MAG5-60 значительно облегчает ведение боя с превосходящим числом противников.</text>
+</string>
+<string id="gunsl_wpn_l85_up_tac_handle_name">
+     <text>Тактическая рукоять</text>
+</string>
+<string id="gunsl_wpn_l85_up_tac_handle_descr">
+     <text>Замена цевья и установка тактической рукояти повышает удобство ведения огня из оружия. Кроме того, наличие на новом цевье планок Piccatiny позволяет установить на оружие дополнительные тактические модули.</text>
+</string>
+<string id="gunsl_wpn_l85_up_flashlaser_name">
+     <text>Тактический модуль</text>
+</string>
+<string id="gunsl_wpn_l85_up_flashlaser_descr">
+     <text>Тактический блок Insight AN/PEQ-16a сочетает в себе функции лазерного целеуказателя и тактического фонаря. Незаменимая вещь для ведения боя в ночных условиях.</text>
+</string>
+<string id="gunsl_wpn_l85_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_wpn_l85_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_wpn_l85_up_grip_name">
+     <text>Анатомическая рукоять</text>
+</string>
+<string id="gunsl_wpn_l85_up_grip_descr">
+     <text>Обеспечивает правой руке более удобный хват.</text>
+</string>
+<string id="gunsl_wpn_l85_up_bayonet_name">
+     <text>Штык-нож</text>
+</string>
+<string id="gunsl_wpn_l85_up_bayonet_descr">
+     <text>Установка на оружие штык-ножа L3A1 позволяет использовать автомат в качестве оружия ближнего боя. Из-за конструктивных особенностей оружия использование штык-ножа одновременно с подствольным гранатометом или глушителем невозможно.</text>
+</string>
+<string id="gunsl_wpn_l85_up_usm_accuracy_name">
+     <text>Калибровка УСМ</text>
+</string>
+<string id="gunsl_wpn_l85_up_usm_accuracy_descr">
+     <text>Индивидуальная подгонка и балансировка стандартных деталей ударно-спускового механизма позволяет добиться более высокой точности стрельбы при одновременном уменьшении отдачи.</text>
+</string>
+<string id="gunsl_wpn_l85_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_wpn_l85_up_usm_rpm_descr">
+     <text>Доработка узлов ударно-спускового механизма позволяет повысить скорострельность оружия, к сожалению, ценой некоторого снижения надежности.</text>
+</string>
+<string id="gunsl_wpn_l85_up_mag_fixator_name">
+     <text>Доработка узла подачи патронов</text>
+</string>
+<string id="gunsl_wpn_l85_up_mag_fixator_descr">
+     <text>Доработка узла боепитания позволяет снизить количество задержек, связанных с неподачей и перекосом патрона.</text>
+</string>
+<string id="gunsl_wpn_l85_up_barrel_kompensator_name">
+     <text>Улучшенный ДТК</text>
+</string>
+<string id="gunsl_wpn_l85_up_barrel_kompensator_descr">
+     <text>Установка улучшенного дульного компенсатора позволяет значительно снизить отдачу.</text>
+</string>
+<string id="gunsl_wpn_l85_up_barrel_accuracy_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_wpn_l85_up_barrel_accuracy_descr">
+     <text>Позволяет снизить разброс пуль, что благоприятно сказывается на точности ведения огня.</text>
+</string>
+<string id="gunsl_wpn_l85_up_barrel_bullet_speed_name">
+     <text>Изменение шага нарезки ствола</text>
+</string>
+<string id="gunsl_wpn_l85_up_barrel_bullet_speed_descr">
+     <text>Увеличивает начальную скорость пули, благодаря чему пуля меньше отклоняется от ожидаемой траектории и быстрее достигает цели. Полезно для стрельбы на большие дистанции.</text>
+</string>
+<string id="gunsl_wpn_l85_up_priklad_name">
+     <text>Улучшенный тыльник</text>
+</string>
+<string id="gunsl_wpn_l85_up_priklad_descr">
+     <text>Установка анатомического прорезиненного тыльника снижает ощущаемую стрелком отдачу от выстрелов из оружия.</text>
+</string>
+<string id="gunsl_wpn_l85_up_zatvor_balancer_name">
+     <text>Балансировка затвора</text>
+</string>
+<string id="gunsl_wpn_l85_up_zatvor_balancer_descr">
+     <text>Балансировка деталей затворной группы уменьшает увод ствола с линии прицеливания при выстреле, а также снижает вероятность возникновения задержек при стрельбе.</text>
+</string>
+<string id="gunsl_wpn_l85_up_body_reliability_name">
+     <text>Детали повышенной прочности</text>
+</string>
+<string id="gunsl_wpn_l85_up_body_reliability_descr">
+     <text>Замена стандартных деталей на аналоги из высокопрочных сплавов позволяет повысить износостойкость оружия.</text>
+</string>
+<string id="gunsl_wpn_l85_up_body_weight_name">
+     <text>Легкосплавные детали</text>
+</string>
+<string id="gunsl_wpn_l85_up_body_weight_descr">
+     <text>Замена стандартных деталей на аналоги из легких сплавов значительно снижает массу оружия.</text>
+</string>
+<string id="gunsl_wpn_l85_up_firemode_name">
+     <text>Доработка переключателя режимов огня</text>
+</string>
+<string id="gunsl_wpn_l85_up_firemode_descr">
+     <text>Уменьшает вероятность возникновения задержек из-за неиспраностей в узле переключения режимов стрельбы.</text>
+</string>
+</string_table>

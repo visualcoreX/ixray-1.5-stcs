@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_addon_scope_eotech">
+		<text>Прицел коллиматорный EOTech XPS3-0</text>
+	</string>
+	<string id="gunsl_addon_scope_eotech_descr">
+		<text>Голографический прицел от американской компании EOTech. Модель XPS3-0 достаточно компактна, из-за чего пользуется популярностью среди сталкеров. Устанавливается на крепление типа «планка пикатини».</text>
+	</string>
+	<string id="gunsl_addon_scope_aimpoint">
+		<text>Прицел коллиматорный Aimpoint CompM4s</text>
+	</string>
+	<string id="gunsl_addon_scope_aimpoint_descr">
+		<text>Закрытый коллиматорный прицел от шведской компании Aimpoint AB. Предназначен для ведения точной стрельбы на малых и средних дистанциях. Прицельная метка имеет форму точки. Устанавливается на крепление типа «планка пикатини».</text>
+	</string>
+	<string id="gunsl_addon_scope_elcan">
+		<text>Прицел штурмовой Elcan Specter DR 1x/4x</text>
+	</string>
+	<string id="gunsl_addon_scope_elcan_descr">
+		<text>Оптический прицел от канадской компании ELCAN Optical Technologies c переменной кратностью (1 и 4 диоптрии). Устанавливается на крепление типа «планка пикатини». Прицельная сетка снабжена подсветкой регулируемой яркости. Также обладает резервными прицельными приспособлениями на случай выхода из строя оптической части.</text>
+	</string>
+	<string id="gunsl_addon_scope_pn23">
+		<text>Прицел штурмовой ночной ПН-23</text>
+	</string>
+	<string id="gunsl_addon_scope_pn23_descr">
+		<text>Малогабаритный ночной прицел от российской компании НПЗ (Новосибирский приборостроительный завод) c фиксированной кратностью (3 диоптрии). Устанавливается на крепление типа «планка пикатини».</text>
+	</string>
+</string_table>

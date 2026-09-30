@@ -1,0 +1,41 @@
+; Gunslinger quick knife kick (быстрая атака ножом). Full-view phantom (class WP_BINOC, slot 10):
+; on the quick-kick key it holsters the weapon, draws the knife and plays a quick stab (knife_kick_quick),
+; lands a melee hit at hit_time on the crosshair target within kick_distance, then redraws the weapon.
+; Spawned from the engine via gwr_eatable.on_quick_kick; binder = gwr_eatable.init_kick (gwr_kick_binder).
+
+[quick_kick_animator]:gwr_base_usable
+; THIRD PERSON. The strike runs on this phantom, not on the knife, so the actor had neither
+; the knife in hand nor a strike on the body. Give it both: the knife's world model, and
+; the pack's slot-5 (knife) strike as a one-shot torso gesture.
+visual			= dynamics\weapons\wpn_knife\wpn_knife.ogf
+actor_hand_bone	= bip01_r_hand
+actor_torso_anim	= norm_torso_5_attack_0
+$spawn          = "weapons\quick_kick_animator"
+description     = st_vodka_descr
+inv_name        = st_vodka
+inv_name_short  = st_vodka
+hud             = quick_kick_hud
+; gwr_base_usable leaves cam_max_angle at 0, which trips CWeapon::Load's VERIFY(!fis_zero) -> override non-zero
+cam_max_angle        = 1
+cam_max_angle_horz   = 1
+timing          = 2000                      ; SAFETY cap only -- the phantom actually releases when the stab anim ends (engine motion length)
+snd_using       = weapons\knife\knife_kick_1
+script_binding  = gwr_eatable.init_kick
+; --- melee (GS quick_kick.ltx values) ---
+mark_anm_show     = 0.2                      ; hit lands at 20% of the stab anim (earlier than GS 0.3 -- our contact reads later); sound at stab start
+kick_hit_power    = 0.8
+kick_hit_impulse  = 10
+kick_distance     = 2.0                      ; GS kick_distance
+kick_wallmark_size = 0.10                    ; match the normal knife strike (w_knife wm_size); GS uses 0.05
+
+[quick_kick_hud]:gwr_base_usable_hud
+hands_position          = 0.0,-0.13,0.03
+hands_position_16x9     = 0.0,-0.13,0.03
+item_visual             = dynamics\weapons\wpn_knife\wpn_knife_hud.ogf
+anm_show                = knife_kick_quick
+anm_hide                = knife_hide
+anm_idle                = knife_idle
+anm_idle_aim            = knife_idle
+anm_idle_moving         = knife_idle
+anm_idle_sprint         = knife_idle
+anm_bore                = knife_idle

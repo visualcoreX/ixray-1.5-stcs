@@ -4,19 +4,31 @@
 		<text>активировать артефакт</text>
 	</string>
 	<string id="st_attach_gl_to_rifle">
-		<text>прикрепить гранатомЄт к винтовке</text>
+		<text>прикрепить гранатомЄт к оружию 2</text>
+	</string>
+	<string id="st_attach_gl_to_wpn">
+		<text>ѕрикрепить гранатомЄт к</text>
+	</string>
+	<string id="st_attach_silencer_to_wpn">
+		<text>ѕрикрепить глушитель к</text>
+	</string>
+	<string id="st_attach_scope_to_wpn">
+		<text>ѕрикрепить прицел к</text>
+	</string>
+	<string id="st_attach_gl_to_pistol">
+		<text>прикрепить гранатомЄт к оружию 1</text>
 	</string>
 	<string id="st_attach_scope_to_pistol">
-		<text>прикрепить прицел к пистолету</text>
+		<text>прикрепить прицел к оружию 1</text>
 	</string>
 	<string id="st_attach_scope_to_rifle">
-		<text>прикрепить прицел к винтовке</text>
+		<text>прикрепить прицел к оружию 2</text>
 	</string>
 	<string id="st_attach_silencer_to_pistol">
-		<text>прикрепить глушитель к пистолету</text>
+		<text>прикрепить глушитель к оружию 1</text>
 	</string>
 	<string id="st_attach_silencer_to_rifle">
-		<text>прикрепить глушитель к винтовке</text>
+		<text>прикрепить глушитель к оружию 2</text>
 	</string>
 	<string id="st_base_cost">
 		<text>÷ена</text>

@@ -1,0 +1,66 @@
+; Hud-model phantoms, one per dose, and their animation sections. The first two play `drug`; the
+; last plays `drug_last`, which is the motion that ends with the empty blister thrown away.
+;
+; The item motions come from gwr\equipment\drug_coagulant\drug_anims.omf: that is the bank
+; drug_antidot_hud.ogf itself references (chunk 0x18), shared by the whole drug family. It holds
+; `drug`, `drug_last` and `idle` -- and NO `zaglushka`, so every idle alias below is written as a
+; PAIR: the first name is looked up in the hands bank (which has zaglushka), the second on the item.
+;
+; timing is the HANDS motion minus a hair -- the phantom has to be released before the motion ends,
+; or the item drops back to its idle and restarts from frame zero. Measured in gwr\food\hands
+; \hands.omf at 30 fps: drug 119 frames = 3967 ms, drug_last 131 = 4367 ms.
+
+[drug_antidot_hud_model]:gwr_base_usable
+; world model for THIRD PERSON -- the real item, as it looks in the actor's hand.
+; Placement is the gwr_base_usable default (bip01_r_hand); if it ever reads wrong in third person,
+; measure it in the editor the way antirad/hud_objects.ltx documents.
+visual             = dynamics\equipments\medical\drug_antidot.ogf
+actor_torso_anim   = norm_torso_item_antirad	; pills, same gesture as the antirad
+$spawn             = "weapons\drug_antidot_hud_model"
+hud                = drug_antidot_hud
+timing             = 3930
+snd_using          = items\drug\drug
+snd_delay          = 250
+snd_delay_detector = 250   ; shorter delay when only a detector is in hands (it holsters faster)
+gwr_eatable_object = drug_antidot_eatable
+effect_delay       = 3620  ; the moment the dose actually goes down
+
+description        = gunsl_eatable_antidot_descr
+inv_name           = gunsl_eatable_antidot
+inv_name_short     = gunsl_eatable_antidot
+inv_weight         = 0.0	; phantom, see gwr_base_usable
+; no icon of its own -- phantom, inherits the blank cell from the base section
+
+[drug_antidot_hud_model2]:drug_antidot_hud_model
+$spawn             = "weapons\drug_antidot_hud_model2"
+hud                = drug_antidot_hud2
+description        = gunsl_eatable_antidot_descr2
+
+; last dose: its own sound and motion, and the empty blister is thrown away instead of a further
+; stage coming back to the bag
+[drug_antidot_hud_model3]:drug_antidot_hud_model
+$spawn             = "weapons\drug_antidot_hud_model3"
+hud                = drug_antidot_hud3
+description        = gunsl_eatable_antidot_descr3
+snd_using          = items\drug\drug_last
+timing             = 4333
+effect_delay       = 4000
+trash_object       = drug_antidot_trash
+timing_trash       = 3333
+
+[drug_antidot_hud]:gwr_base_usable_hud
+hands_position      = 0.0,-0.02,0.0
+hands_position_16x9 = 0.0,-0.02,0.0
+item_visual     = gwr\equipment\drug_antidot\drug_antidot_hud
+anm_show        = drug
+anm_hide        = zaglushka, idle
+anm_idle        = zaglushka, idle
+anm_idle_aim    = zaglushka, idle
+anm_idle_moving = zaglushka, idle
+anm_idle_sprint = zaglushka, idle
+anm_bore        = zaglushka, idle
+
+[drug_antidot_hud2]:drug_antidot_hud
+
+[drug_antidot_hud3]:drug_antidot_hud
+anm_show        = drug_last

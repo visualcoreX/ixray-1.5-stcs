@@ -1,0 +1,73 @@
+; =====================================================================================================
+; Laser designator volumetric beams (renderer R3 only; R1/R2 keep just the mesh beam).
+; A weapon uses one through its laser_params_section:
+;     laser_beam_section        = laser_beam_red
+;     laser_beam_attach_offset  = 0, 0, 0     ; optional nudge of the start (hud model). The start and the axis are read
+;                                             ; off the mesh beam itself (laser_ray_bones geometry): its near end.
+; Every key below is optional; the values written here are the engine defaults.
+; =====================================================================================================
+
+[laser_beam_red]
+laser_beam_enabled          = true
+laser_beam_hide_mesh        = true         ; true = hide the model's own beam bones (laser_ray_bones) on the HUD
+laser_beam_axis_angle       = 10, 25        ; deg the gun is swung off the view: from the first the beam starts turning from the dot
+                                            ; onto the weapon's own axis, from the second it follows the axis (reload, sprint)
+laser_beam_dot_follow       = true         ; true = the dot goes along with the beam onto the axis too (off: the dot keeps its own logic)
+
+; ---- look ----
+laser_beam_color            = 1.0, 0.08, 0.05
+laser_beam_intensity        = 1
+laser_beam_radius           = 0.0075        ; m; a far beam never gets thinner than ~1.5 px, it dims instead
+laser_beam_core             = 0.0075          ; smooth glow between the motes
+laser_beam_view_boost       = 2             ; cap of the brightening when looking down the beam
+
+; ---- length and fades ----
+laser_beam_max_length       = 45            ; m
+laser_beam_fade_start       = 0.05          ; m: ramps in off the emitter
+laser_beam_fade_end_hit     = 0.05          ; m: ends this softly on the surface it hits
+laser_beam_fade_end_far     = 30            ; m: dissolves over this when it hits nothing within max_length
+laser_beam_fade_cam_start   = 2             ; m from the eye: full brightness up to here...
+laser_beam_fade_cam_end     = 45            ; ...gone from here
+laser_beam_falloff          = 15             ; m, 0 = off: exp(-t/falloff) loss along the beam
+
+; ---- dust motes ----
+laser_beam_texture          = fx\fx_laser_dust2 ; R, G, B = three independent tileable noises
+laser_beam_dust             = 0.03          ; brightness of the motes
+laser_beam_dust_scale       = 4             ; noise tiles per metre (bigger = smaller, denser motes)
+laser_beam_dust_scale2      = 0.5           ; second layer, multiple of dust_scale
+laser_beam_dust_threshold   = 0.45          ; lower = more motes (0.55 = ~6% of the air with fx_laser_dust2 and the 3D noise; was 0.46 with the old noise)
+laser_beam_dust_contrast    = 12            ; higher = sharper mote edges
+laser_beam_dust_depth       = 2             ; texels: depth of one slice of the 3D noise, ~ the texture's grain (fx_laser_dust: 8, fx_laser_dust2: 2)
+laser_beam_dust_drift       = 0.02, 0.01, 0.015     ; m/s, world: first layer...
+laser_beam_dust_drift2      = -0.01, -0.005, -0.015  ; ...and the second one
+laser_beam_dust_wind        = 0.02          ; share of the weather's wind added to both
+
+; ---- the dot (procedural, drawn with the beam) ----
+laser_beam_dot              = true          ; the procedural dot; false = the old particle dot (laserdot_particle_*) only
+laser_beam_dot_particle     = false         ; draw the old particle dot as well (default: only when laser_beam_dot is off)
+laser_beam_dot_intensity    = 3             ; core brightness in the beam colour: past 1 the middle bleaches to white
+laser_beam_dot_core         = 0.01          ; m: core radius
+laser_beam_dot_halo         = 0.02          ; m: halo radius
+laser_beam_dot_halo_gain    = 1.0           ; halo brightness, relative to the core
+laser_beam_dot_halo_min_gain = 0.25         ; 0..1: the far halo dims (see min_px) but never below this share of its brightness -- a far dot stays visible
+laser_beam_dot_white        = 1             ; how far past full brightness the core has to go to turn fully white (bigger = softer, pinker)
+laser_beam_dot_min_px       = 4             ; px: the halo never shrinks below this -- a far dot dims (and loses its white) instead
+laser_beam_dot_light        = true          ; a small shadowless point light at the dot, tinting the surface around it
+laser_beam_dot_light_range  = 0.4           ; m
+laser_beam_dot_light_bright = 0.2           ; in the beam colour
+laser_beam_dot_light_offset = 0.03          ; m it hangs off the surface, towards the emitter
+
+; ---- environment ----
+laser_beam_fog_base         = 0.0           ; brightness factor = fog_base + fog_gain * fog_density + the fog_dist term below
+laser_beam_fog_gain         = 1.0
+laser_beam_fog_dist_gain    = 10           ; + fog_dist_gain * (1 - fog_distance/fog_dist_max)^fog_dist_power: a closer fog wall = brighter
+laser_beam_fog_dist_max     = 1000          ; m: fog_distance from which the fog wall adds nothing
+laser_beam_fog_dist_power   = 2             ; curve: 1 = linear; 2 -> 250 m gives 0.56, 100 m 0.81, 50 m 0.90
+laser_beam_smoke_gain       = 20             ; brightening where blend-shaded smoke/dust particles cross the beam (0 = off)
+laser_beam_smoke_range      = 1.5           ; m of depth such a particle may be off the beam and still count
+laser_beam_rain_gain        = 100             ; brightening where the weather's rain drops cross the beam (0 = off)
+laser_beam_rain_range       = 0.5           ; m of depth a drop may be off the beam and still count
+
+[laser_beam_green]:laser_beam_red
+laser_beam_color            = 0.1, 1.0, 0.15
+laser_beam_intensity        = 0.9           ; the eye is far more sensitive to green

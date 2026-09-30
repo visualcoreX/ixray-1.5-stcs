@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_wpn_svu_nimble_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_mag_name">
+     <text>Легковесный магазин</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_mag_descr">
+     <text>Замена стандартного магазина на легкосплавный аналог позволяет снизить общую массу оружия.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_priklad_weight_name">
+     <text>Облегченный приклад</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_priklad_weight_descr">
+     <text>Замена стандартного приклада на облегченный полый аналог позволяет снизить общую массу оружия.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_handle_anatomic_name">
+     <text>Прорезиненная рукоять</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_handle_anatomic_descr">
+     <text>Обеспечивает более удобный хват.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_barrel_recoil_name">
+     <text>Дульный компенсатор отдачи</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_barrel_recoil_descr">
+     <text>Замена стандартного пламегасителя на аналог с улучшенным ДТК обеспечивает значительное снижение отдачи.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_barrel_bullet_speed_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_barrel_bullet_speed_descr">
+     <text>Увеличивает начальную скорость вылета пули, благодаря чему повышаются её убойная дальность и останавливающая способность.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_pokritie_name">
+     <text>Спецпокрытие</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_pokritie_descr">
+     <text>Нанесение защитного напыления позволяет замедлить износ механизмов оружия.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_gascam_name">
+     <text>Модификация газоотвода</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_gascam_descr">
+     <text>Измененный газоотвод позволяет добиться увеличения начальной скорости пули при одновременном снижении отдачи.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_usm_rpm_descr">
+     <text>Позволяет значительно повысить скорострельность оружия, к сожалению, с одновременным повышением износа деталей УСМ.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_barrel_accuracy_name">
+     <text>Ствол с учащенным шагом нарезов</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_barrel_accuracy_descr">
+     <text>Позволяет вести более точную стрельбу.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_mag20_name">
+     <text>Магазин повышенной емкости</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_mag20_descr">
+     <text>Позволяет сократить число перезарядок в бою, увеличивая шанс выжить.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_light_tsevie_name">
+     <text>Облегченное цевье</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_light_tsevie_descr">
+     <text>Позволяет снизить массу оружия.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_zatvor_reliability_name">
+     <text>Затворная рама повышенной прочности</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_zatvor_reliability_descr">
+     <text>Замена стандартной затворной рамы на аналогичную из высокопрочного сплава позволяет выполнить значительно большее число циклов выстрела и перезарядки оружия без необходимости обслуживания детали.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_zatvor_accuracy_name">
+     <text>Юстировка затворной рамы</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_zatvor_accuracy_descr">
+     <text>Позволяет повысить точность ведения огня.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_zatvor_balancer_recoil_name">
+     <text>Сбалансированная затворная рама</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_zatvor_balancer_recoil_descr">
+     <text>Балансировка затворной рамы позволяет уменьшить увод оружия с линии прицеливания во время выстрела.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_usm_reliability_name">
+     <text>Износостойкий УСМ</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_usm_reliability_descr">
+     <text>Замена деталей стандартного УСМ на аналоги повышенной прочности позволяет продлить срок службы оружия и обеспечить его безотказную работу в суровых условиях Зоны.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_anatomic_pokritie_tsevie_name">
+     <text>Прорезиненное покрытие цевья</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_anatomic_pokritie_tsevie_descr">
+     <text>Делает хват оружия более удобным.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_prujina_name">
+     <text>Усиленная пружина</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_prujina_descr">
+     <text>Позволяет увеличить темп ведения огня.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_priclad_rezina_name">
+     <text>Улучшенный тыльник</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_priclad_rezina_descr">
+     <text>Анатомический резиновый тыльник приклада позволяет смягчить ощущаемую от выстрела из оружия отдачу.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_sheka_name">
+     <text>Накладка типа "щека"</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_sheka_descr">
+     <text>Значительно снижает ощущаемую отдачу при прицельном ведении огня.</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_titan_details_name">
+     <text>Усиленная ствольная коробка</text>
+</string>
+<string id="gunsl_wpn_svu_nimble_up_titan_details_descr">
+     <text>Повышает надежность оружия.</text>
+</string>
+</string_table>

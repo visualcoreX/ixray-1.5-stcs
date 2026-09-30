@@ -1,4 +1,5 @@
 #include "defines.ltx"
+#include "gunslinger_params.ltx"
 #include "prefetch\prefetch.ltx"
 ;#include "weathers\environment.ltx"
 #include "creatures\monsters.ltx"
@@ -16,6 +17,7 @@
 #include "misc\outfit.ltx"
 #include "misc\artefacts.ltx"
 #include "misc\devices.ltx"
+#include "misc\discord_rpc.ltx"
 #include "misc\radiation_counter.ltx"
 #include "misc\quest_items.ltx"
 #include "misc\upgrade_items.ltx"
@@ -65,6 +67,9 @@
 
 #include "smart_cover.ltx"
 
+; gwr animated item-use (Gunslinger-based)
+#include "usable_items\itemlist.ltx"
+
 [zone_pick_dof]
 near 	= -70.0
 far 	= 70.0
@@ -86,20 +91,20 @@ ang_speed3  = 2.0
 
 
 [info_portions]
-;список xml файлов, содержаих info_portions
-files = info_portions, info_katacomb, info_generator, info_red_forest, info_limansk, info_marsh, info_darkvalley, info_military, info_garbage, info_escape, info_agroprom, info_agroprom_underground, info_yantar, info_stancia_2, info_upgrades
+;пїЅпїЅпїЅпїЅпїЅпїЅ xml пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ info_portions
+files = info_portions, info_katacomb, info_red_forest, info_limansk, info_marsh, info_darkvalley, info_military, info_garbage, info_escape, info_agroprom, info_agroprom_underground, info_yantar, info_stancia_2, info_upgrades
 
 [encyclopedia]
-files = encyclopedia_infos, storyline_info_to_diary, encyclopedia_weapons, encyclopedia_mutants, encyclopedia_zone, encyclopedia_social, encyclopedia_equipment, encyclopedia_tutorial
+files = ;encyclopedia_infos, storyline_info_to_diary, encyclopedia_weapons, encyclopedia_mutants, encyclopedia_zone, encyclopedia_social, encyclopedia_equipment, encyclopedia_tutorial
 
 [dialogs]
-files = dialogs, dialogs_marsh, dialogs_escape, dialogs_garbadge, dialogs_darkvalley, dialogs_agroprom, dialogs_yantar, dialogs_redforest, dialogs_military, dialogs_limansk
+files = dialogs, dialogs_marsh, dialogs_escape, dialogs_garbadge, dialogs_darkvalley, dialogs_agroprom, dialogs_yantar, dialogs_redforest, dialogs_military, dialogs_limansk, dialogs_em1
 
 [profiles]
-;список xml файлов, содержаих профили сталкеров и торговцев
+;пїЅпїЅпїЅпїЅпїЅпїЅ xml пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 files =  npc_profile
-;список xml файлов, содержаих описаниљ конкретнvх сталкеров и торговцев
-specific_characters_files = character_desc_general, character_desc_generator, character_desc_katacomb, character_desc_escape, character_desc_marsh, character_desc_red_forest, character_desc_limansk, character_desc_garbage, character_desc_darkvalley, character_desc_agroprom, character_desc_yantar, character_desc_military, character_desc_stancia_2
+;пїЅпїЅпїЅпїЅпїЅпїЅ xml пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅvпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+specific_characters_files = character_desc_general, character_desc_katacomb, character_desc_escape, character_desc_marsh, character_desc_red_forest, character_desc_limansk, character_desc_garbage, character_desc_darkvalley, character_desc_agroprom, character_desc_yantar, character_desc_military, character_desc_stancia_2
 
 
 [game_tasks]
@@ -137,11 +142,11 @@ slot_active_7  		= false
 slot_persistent_8  	= true   ;pda
 slot_active_8  		= false
 
-slot_persistent_9  	= true   ;detector
+slot_persistent_9  	= false  ;detector
 slot_active_9  		= false
 
 slot_persistent_10  	= true  ;torch
-slot_active_10  	= fasle
+slot_active_10  	= false
 
 slot_persistent_11  	= false ;artefact
 slot_active_11  	= true
@@ -180,37 +185,53 @@ max_count     = 5
 
 [bloody_marks]
 wallmarks     = wm\wm_blood_1,wm\wm_blood_2,wm\wm_blood_3
-dist        = 2.0 ;2.4  ;(м) max расстољние отлета крови
-max_size      = 0.4 ;0.3  ;(м)радиус пљтна при хите силой nominal hit по большому объекту (по маленькому *0.5)
-min_size      = 0.06      ;(м)минимальнvй радиус пљтна
-nominal_hit     = 0.5     ;величина номинального хита, при котором разлетаетсљ максимум крови (max_size)
+dist        = 2.0 ;2.4  ;(пїЅ) max пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+max_size      = 0.4 ;0.3  ;(пїЅ)пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ nominal hit пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ *0.5)
+min_size      = 0.06      ;(пїЅ)пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅvпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+nominal_hit     = 0.5     ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ (max_size)
 
-;капли крови
+;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 
 blood_drops     = wm\wm_blood_drop_1,wm\wm_blood_drop_2,wm\wm_blood_drop_3,wm\wm_blood_drop_4
-start_blood_size  = 0.4     ;размер ранv чтоб начала капать кровь
-stop_blood_size   = 0.025     ;размер ранv чтоб кровь остановилась (должно бvть меньше start_blood_size)
+start_blood_size  = 0.4     ;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅv пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+stop_blood_size   = 0.025     ;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅv пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅvпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ start_blood_size)
 
 blood_drop_time     = 0.1     ;OBSOLETE
 blood_drop_time_min = 0.3     ;
 blood_drop_time_max = 2.0     ;
-blood_drop_size   = 0.1     ;размер капли (м) крови, котораљ упала
+blood_drop_size   = 0.1     ;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ (пїЅ) пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 
 
 [entity_fire_particles]
-fire_particles = damage_fx\burn_creatures
-start_burn_size = 0.0003    ;размер ожега после которого начать играть партиклv огнљ
-stop_burn_size  = 0.0001    ;размер ожега после которого остановить партиклv
-min_burn_time = 10000   ;минимальное времљ отvгрvша партиклов (даже если рана уже зажила)
+; This is the fire on an entity's BODY. It was never a problem before we let the actor carry burn
+; wounds: the camera sits inside his head, so body flames that light up at the slightest wound sit
+; right on the lens and wash out the screen. Gunslinger raises the same thresholds for the same
+; reason (its system.ltx: 0.02 / 0.003 / 1000) -- the body only catches once you're properly ablaze,
+; and until then the only fire you see is the one on your hands.
+; Gunslinger's own body fire, ported into our particles.xr (group burn_flamethrower_infinite +
+; its body_burn_flamethrower effect). Unlike burn_creatures -- a big body-engulfing effect built to
+; be seen in 3rd person on creatures, which sat on the 1st-person camera and washed the screen --
+; this one is contained and reads right from inside the head: you see yourself alight before you
+; ever press USE, without it blinding you. Thresholds are GS's too.
+; GS's group, but with body_burn_flamethrower's particles shrunk in particles.xr (size 0.4 -> ~0.1,
+; spawn sphere 0.15 -> 0.08). GS-exact was a pillar from 1st person NOT because of a jet -- the
+; velocity is tiny -- but because the flame particles are 0.4m each, spawned in a 0.15m sphere right
+; on the torso bone, so the head-mounted camera sits inside a cloud of huge flames. Small particles
+; read as fire around you instead of a wall. body_burn_flamethrower is ours alone (only this group
+; uses it), so shrinking it leaves the hand fire (burn_actor = body_glow + body_burn_01) untouched.
+fire_particles = damage_fx\burn_flamethrower_infinite
+start_burn_size = 0.02      ;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅv пїЅпїЅпїЅ (was 0.0003)
+stop_burn_size  = 0.003     ;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅv (was 0.0001)
+min_burn_time = 1000   ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅvпїЅпїЅvпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ) (was 10000)
+min_burn_time_dead = 3000   ; GS: how long a dead body keeps burning
 
 [hud_cursor]
-;все размерv в процентах от длинv экрана
-cross_length    = 0.015         ;длина "палочки" прицела
-min_radius      = 0.0         ;минимальнvй радиус прицела (при нулевой дисперсии)
-max_radius      = 1.0         ;максимальнvй радиус
-radius_lerp_speed = 0.08          ;скорость интерполљции положений прицела
-cross_color     = 0.7,0.7,0.7,0.5   ;цвет прицела
-disp_scale      = 0.08          ;масштаб прицела (относительно радиан)
+cross_length    = 0.015         ;РґР»РёРЅР° "РїР°Р»РѕС‡РєРё" РїСЂРёС†РµР»Р°
+min_radius      = 0.0         ;РјРёРЅРёРјР°Р»СЊРЅvР№ СЂР°РґРёСѓСЃ РїСЂРёС†РµР»Р° (РїСЂРё РЅСѓР»РµРІРѕР№ РґРёСЃРїРµСЂСЃРёРё)
+max_radius      = 1.0         ;РјР°РєСЃРёРјР°Р»СЊРЅvР№ СЂР°РґРёСѓСЃ
+radius_lerp_speed = 0.08          ;СЃРєРѕСЂРѕСЃС‚СЊ РёРЅС‚РµСЂРїРѕР»С™С†РёРё РїРѕР»РѕР¶РµРЅРёР№ РїСЂРёС†РµР»Р°
+cross_color     = 0.7,0.7,0.7,0.5   ;С†РІРµС‚ РїСЂРёС†РµР»Р°
+disp_scale      = 0.08          ;РјР°СЃС€С‚Р°Р± РїСЂРёС†РµР»Р° (РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅРѕ СЂР°РґРёР°РЅ)
 
 [hud_hitmark]
 hit_mark_texture 	= ui\ui_hud_hit_mark; ui\ui_empty
@@ -369,12 +390,12 @@ $spawn               = "ai\graph point"
 ; Trade
 ;-----------------------------------------------------------------
 [trade]
-;коэффициентv изменениљ ценv при торговле в зависимости от отношениљ к персонажу
-;линейно апроксимируітсљ между значениљ
-buy_price_factor_hostile  = 1   ;коэффициент покупки при goodwill = -100
-buy_price_factor_friendly = 1   ;коэффициент покупки при goodwill = 100
-sell_price_factor_hostile = 1   ;коэффициент покупки при goodwill = -100
-sell_price_factor_friendly  = 1   ;коэффициент покупки при goodwill = 100
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅv пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅv пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+buy_price_factor_hostile  = 1   ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ goodwill = -100
+buy_price_factor_friendly = 1   ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ goodwill = 100
+sell_price_factor_hostile = 1   ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ goodwill = -100
+sell_price_factor_friendly  = 1   ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ goodwill = 100
 
 
 
@@ -411,7 +432,7 @@ script_binding  = xr_zones.bind
 object_damage_factor    = 1.2f
 
 ;*****************************************
-; ++=+іLT+і- Lі+=
+; ++=+пїЅLT+пїЅ- LпїЅ+=
 ;*****************************************
 [stalker_names_stalker]
 name_cnt    = 102
@@ -452,7 +473,7 @@ Human             = off                     ; option for ALife Simulator
 cform                       = skeleton                    ; collision class
 class                       = SCRPTOBJ                    ; AI class
 
-;параметрv показvваниљ входљих сообений PDA в главном мені
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅv пїЅпїЅпїЅпїЅпїЅvпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ PDA пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 [maingame_ui]
 pda_msgs_max_show_time = 20000
 info_msgs_max_show_time = 10000
@@ -460,7 +481,19 @@ snd_new_contact         = detectors\contact_1
 snd_new_contact1        = detectors\contact_8
 
 [hud_sound]
-hud_sound_vol_k		= 0.85f
+hud_sound_vol_k		= 0.9f
+
+[indoor_sound]
+ray_up			= 25
+ray_side		= 25
+side_rays		= 8
+side_hits		= 0.6
+roof_rays        = 3
+roof_angle       = 35
+roof_hits        = 1.0
+cache_time		= 0.5
+cache_dist		= 1.0
+ignore_materials = materials\tree_trunk ; passable materials (bushes, nets) already ignored by default
 
 [attachable_item]
 GroupControlSection   = spawn_group
@@ -513,7 +546,7 @@ inv_grid_width      = 2
 inv_grid_height     = 1
 inv_grid_x        = 16
 inv_grid_y        = 12
-attach_angle_offset   = -1.5708,0.1919,3.1416    ;устанавливаетсљ в радианах Angle*PI/180
+attach_angle_offset   = -1.5708,0.1919,3.1416    ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ Angle*PI/180
 attach_position_offset  = 0.075, 0.066, 0.023
 attach_bone_name    = bip01_l_hand
 auto_attach       = false
@@ -624,14 +657,14 @@ shape_edge_color    = 32, 32, 32, 255
 bonce_damage_factor_for_objects = 1.
 
 [pkm_visual_memory]
-min_view_distance       = 1 ;0.4        ; коэффициент, которvй множитсљ на eye_range, в зависимости от угла
-max_view_distance       = 1 ;0.8        ; коэффициент, которvй множитсљ на eye_range, в зависимости от угла
-visibility_threshold    = 50 ;150.0       ; значение, при достижении суммой которого объект считаетсљ видимvм
+min_view_distance       = 1 ;0.4        ; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅvпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ eye_range, пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ
+max_view_distance       = 1 ;0.8        ; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅvпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ eye_range, пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ
+visibility_threshold    = 50 ;150.0       ; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅvпїЅ
 always_visible_distance   = 1 ;0.1
 time_quant          = 0.00001
-decrease_value        = 0.1       ; значение, на которое уменьшаетсљ вес, если объект попал в фрустум, но отсЈксљ по каким-то причинам
+decrease_value        = 0.1       ; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 velocity_factor         = 0.5
-luminocity_factor     = 0.5       ; фактор освеениљ (только длљ LктЈра)
+luminocity_factor     = 0.5       ; пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ LпїЅпїЅпїЅпїЅ)
 transparency_threshold    = 0.4       ;
 view_fov_deg        = 90
 view_aspect         = 1
@@ -652,10 +685,13 @@ swing_fast_speed  = 0.5;1
 
 [ph_capture_visuals]
 
-;Tписок объектов которvе можно таскать.
+;TпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅvпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
 
 ;NPC
 actors\stalker_bandit\stalker_bandit_1
+actors\stalker_bandit\stalker_bandit_1_face_1
+actors\stalker_bandit\stalker_bandit_balaclava
+actors\stalker_bandit\stalker_bandit_gasmask
 actors\stalker_bandit\stalker_bandit_2
 actors\stalker_bandit\stalker_bandit_3
 actors\stalker_bandit\stalker_bandit_3_face_1
@@ -663,6 +699,8 @@ actors\stalker_bandit\stalker_bandit_3_face_2
 actors\stalker_bandit\stalker_bandit_3_mask
 actors\stalker_bandit\stalker_bandit_4
 actors\stalker_dolg\stalker_dolg_1
+actors\stalker_dolg\stalker_dolg_balaclava_1
+actors\stalker_dolg\stalker_dolg_balaclava_2
 actors\stalker_dolg\stalker_dolg_2
 actors\stalker_dolg\stalker_dolg_2_face_1
 actors\stalker_dolg\stalker_dolg_2_face_2
@@ -670,18 +708,26 @@ actors\stalker_dolg\stalker_dolg_2_mask
 actors\stalker_dolg\stalker_dolg_3
 actors\stalker_dolg\stalker_dolg_4
 actors\stalker_freedom\stalker_freedom_1
+actors\stalker_freedom\stalker_freedom_balaclava
 actors\stalker_freedom\stalker_freedom_2
+actors\stalker_freedom\stalker_freedom_2_yar
 actors\stalker_freedom\stalker_freedom_2_face_1
 actors\stalker_freedom\stalker_freedom_2_face_2
 actors\stalker_freedom\stalker_freedom_2_mask
 actors\stalker_freedom\stalker_freedom_3
+actors\stalker_freedom\stalker_freedom_nauchniy
 actors\stalker_freedom\stalker_freedom_4
 actors\stalker_hero\stalker_hero_1
 actors\stalker_hero\stalker_hero_stc_strelok
+actors\stalker_hero\stalker_hero_brown_cloak
 actors\stalker_lesnik\stalker_lesnik_1
 actors\stalker_merc\stalker_merc_2
+actors\stalker_merc\stalker_merc_balaclava
+actors\stalker_merc\stalker_merc_3
 actors\stalker_merc\stalker_merc_4
 actors\stalker_monolith\stalker_monolith_1
+actors\stalker_monolith\stalker_monolith_1_face_1
+actors\stalker_monolith\stalker_monolith_1_gasmask
 actors\stalker_monolith\stalker_monolith_2
 actors\stalker_monolith\stalker_monolith_3
 actors\stalker_monolith\stalker_monolith_4
@@ -690,15 +736,25 @@ actors\stalker_nebo\stalker_nebo_2
 actors\stalker_nebo\stalker_nebo_2_face_1
 actors\stalker_nebo\stalker_nebo_2_face_2
 actors\stalker_nebo\stalker_nebo_2_face_3
+actors\stalker_nebo\stalker_nebo_2_face_4
 actors\stalker_nebo\stalker_nebo_2_mask
 actors\stalker_nebo\stalker_nebo_3
 actors\stalker_neutral\stalker_neutral_1
+actors\stalker_neutral\stalker_neutral_1_face_1
+actors\stalker_neutral\stalker_neutral_1_balaclava
+actors\stalker_neutral\stalker_neutral_1_gasmask
 actors\stalker_neutral\stalker_neutral_2
 actors\stalker_neutral\stalker_neutral_2_face_1
 actors\stalker_neutral\stalker_neutral_2_face_2
+actors\stalker_neutral\stalker_neutral_2_face_3
 actors\stalker_neutral\stalker_neutral_2_mask
+actors\stalker_neutral\stalker_neutral_nauchniy
+actors\stalker_neutral\stalker_neutral_gasmask
 actors\stalker_neutral\stalker_neutral_3
 actors\stalker_neutral\stalker_neutral_4
+actors\stalker_neutral\stalker_neutral_wolf
+actors\stalker_neutral\stalker_neutral_strider
+actors\stalker_neutral\stalker_neutral_nauchniy_face_2
 actors\stalker_soldier\stalker_soldier_1
 actors\stalker_soldier\stalker_soldier_2
 actors\stalker_soldier\stalker_soldier_2_face_1
@@ -706,10 +762,15 @@ actors\stalker_soldier\stalker_soldier_3
 actors\stalker_soldier\stalker_soldier_4
 actors\stalker_trader\stalker_trader_1
 actors\stalker_ucheniy\stalker_ucheniy_1
+actors\stalker_ucheniy\ecolog_green
+actors\stalker_ucheniy\ecolog_red
 actors\stalker_zombied\stalker_zombied_1
 actors\stalker_zombied\stalker_zombied_2
 actors\stalker_zombied\stalker_zombied_3
 actors\stalker_zombied\stalker_zombied_4
+actors\stalker_zombied\stalker_zombied_bandit
+actors\stalker_zombied\stalker_zombied_duty
+actors\stalker_zombied\stalker_zombied_merc
 
 ;Monsters
 ;monsters\controller\controller_1

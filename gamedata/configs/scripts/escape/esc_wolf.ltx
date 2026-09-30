@@ -1,38 +1,36 @@
 [logic@wolf]
-active = walker@no_meet
-suitable = {=check_npc_name(esc_wolf)} true
-on_death = death
-level_spot = quest_npc
-
-[walker@no_meet]
-path_walk = esc_wolf_way
-path_look = esc_wolf_look
-on_info = {+mar_story_go_to_escape_done} walker@wait
-meet = no_meet
+active			= walker@wait
+suitable		= {=check_npc_name(esc_wolf)} true
+on_death		= death
+level_spot		= quest_npc
 
 [walker@wait]
-path_walk = esc_wolf_way
-path_look = esc_wolf_look
-on_actor_dist_le_nvis = 8 | {-esc_wolf_call_sound} remark@hello %=play_sound(esc_wolf_call) +esc_wolf_call_sound%
-meet = meet
+path_walk		= esc_wolf_way
+path_look		= esc_wolf_look
+on_info			= {+esc_wolf_call_sound} walker@ready
+on_actor_dist_le_nvis	= 20 | {-esc_wolf_call_sound} remark@hello %=play_sound(esc_wolf_call:stalker:esc_wolf_name) +esc_wolf_call_sound%
+meet			= meet
 
 [remark@hello]
-anim = hello_wpn
-target = actor
-on_actor_dist_le = 3 | walker@ready
-on_actor_dist_ge_nvis = 8 | walker@wait
+anim			= hello_wpn
+target			= actor
+on_actor_dist_le_nvis	= 10 | walker@ready
+on_actor_dist_ge_nvis	= 20 | walker@ready
+meet			= meet
 
 [walker@ready]
-path_walk = esc_wolf_way
-path_look = esc_wolf_look
-
-[death]
-on_info = %+esc_wolf_dead%
+path_walk		= esc_wolf_way
+path_look		= esc_wolf_look
+meet			= meet
 
 [meet]
-meet_state = 15| wait@esc_wolf_call | 5| ward@nil
-victim = 15| actor
-victim_wpn = 15| actor
-use        = true
-use_wpn        = false
-abuse = true
+meet_state		= 10 | ward@nil
+meet_state_wpn		= 7 | backoff@meet_weapon_wait | 3 | threat@meet_weapon_wait
+victim			= 15 | actor
+victim_wpn		= 15 | actor
+use			= true
+use_wpn			= false
+abuse			= true
+
+[death]
+on_info			= %+esc_wolf_dead%

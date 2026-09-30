@@ -17,6 +17,10 @@ script_binding                        = bind_stalker.actor_init
 quick_use_default                       = medkit, bandage, energy_drink, antirad
 visual                            = actors\stalker_hero\stalker_hero_1.ogf
 destroyed_vis_name                = dynamics\Dead_Body\skelet_crash
+; omf files bolted onto the PLAYER's visual only (engine: CActor::OnChangeVisual ->
+; IKinematicsAnimated::LL_AddMotions). A motion ref inside the OGF would hit the NPCs too --
+; the suit visuals are shared. Comma-separated, no .omf extension needed.
+extra_motions                     = actors\stalker_animation_new
 
 player_hud_section      = actor_hud
 
@@ -27,21 +31,30 @@ jump_speed              = 6.
 crouch_coef             = 0.30 ;0.45
 climb_coef              = 0.7
 run_coef                = 2.0 ;2.1
-sprint_koef             = 2.5 ;1.9 ;2.6
+sprint_koef             = 1.9 ;2.6
 run_back_coef           = 1.8
-walk_back_coef          = 0.5
+walk_back_coef          = 0.8
 air_control_param       = 0.1
-walk_accel              = 19;20;18.1 ;17
+walk_accel              = 18.1 ;17
 
-;радиус в котром над предметами выводятся их названия
+; task: GS-like velocity-proportional footstep cadence. The leg animation (which drives footstep timing)
+; is played at actual_speed/legs_anim_ref_speed, capped at 1.0 (never sped up). Raise ref_speed to slow
+; footsteps on slow gaits (walk/crouch/aim-walk) more; speed_min floors the slowdown. Tune, no rebuild.
+legs_anim_ref_speed     = 3.0
+legs_anim_speed_min     = 0.5
+
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 pickup_info_radius                = 5        ;3
-feel_grenade_radius               = 10.0    ;расстояние (в метрах) на котором актер чувствует гранату (любую)
-feel_grenade_time                 = 0.5     ;время гранаты (сек) после которого актер чувствует гранату
+feel_grenade_radius               = 10.0    ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ) пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅ)
+feel_grenade_time                 = 0.5     ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
 ef_creature_type                = 17                                                ; option for evaluation functions
 
 ; attach params
-attachable_items                = device_torch,attachable_item,hand_radio
+; detectors added so the world model can hang off the actor's left hand in third person --
+; CAttachmentOwner::can_attach only accepts sections listed here. The attach_bone_name /
+; attach_position_offset / attach_angle_offset they need were already in [detector_simple].
+attachable_items                = device_torch,attachable_item,hand_radio,detector_simple,detector_advanced,detector_elite,detector_torch,detector_elite_broken
 
 ph_box0_center                                                 = 0.0,  0.9,  0.0
 ph_box0_size                                                 = 0.35, 0.9,  0.35
@@ -74,7 +87,7 @@ hit_sounds                                        = actor_hit_snds
 immunities_sect                                = actor_immunities_gd_novice
 condition_sect                                = actor_condition
 
-heavy_breath_snd        = actor\breath_1                ;звук тяжелого дыхания при усталости
+heavy_breath_snd        = actor\breath_1                ;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 heavy_blood_snd         = affects\heartbeat; heart\8
 heavy_danger_snd        = affects\heartbeat
 
@@ -82,20 +95,20 @@ material                                                = creatures\actor
 camera_height_factor                        = 0.92 ;0.85
 
 
-;дисперсия стрельбы с учетом ходьбы и бега
-disp_base                    = 2.0         ;угол (в градусах) разлета пуль, когда актер стоит на месте
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ
+disp_base                    = 2.0         ;пїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 disp_aim                     = 0.04
-disp_vel_factor              = 2.0          ;на сколько увеличится дисперсия при скрости в 10 м/с (не обязательно при беге)
-disp_accel_factor            = 0.0          ;еще на сколько увеличится, если актер бежит (+ скорость)
-disp_crouch_factor           = -0.5         ;уменьшение если актер сидит
-disp_crouch_no_acc_factor    = -0.8         ;уменьшение если актер сидит + no acceleration
+disp_vel_factor              = 2.0          ;пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ 10 пїЅ/пїЅ (пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ)
+disp_accel_factor            = 0.0          ;пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ (+ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
+disp_crouch_factor           = -0.5         ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+disp_crouch_no_acc_factor    = -0.8         ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ + no acceleration
 disp_jump_factor             = 2.0
 
 missile_throw_offset = 0.3, 0.5, 0.5
 
-body_remove_time = 60000        ;время уничтожения трупа (с учетом TimeFactor)
+body_remove_time = 60000        ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ TimeFactor)
 
-sleep_time_factor                        = 1000        ;400                ;во сколько раз время идет быстрее, когда актер спит
+sleep_time_factor                        = 1000        ;400                ;пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 max_sleep_hours                                = 12
 ;species of monster
 species                                = actor
@@ -110,19 +123,19 @@ memory_update_time                        = 100
 
 ; visibility parameters
 DynamicObjectsCount                        = 32
-min_view_distance                   = 1.0                                ; коэффициент, который множится на eye_range, в зависимости от угла
-max_view_distance                         = 1.0                                ; коэффициент, который множится на eye_range, в зависимости от угла
-visibility_threshold                 = 1.0                                ; значение, при достижении суммой которого объект считается видимым
+min_view_distance                   = 1.0                                ; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ eye_range, пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ
+max_view_distance                         = 1.0                                ; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ eye_range, пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ
+visibility_threshold                 = 1.0                                ; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 always_visible_distance         = 1.0
 time_quant                                        = 0.005
-decrease_value                                = 0.1                                ; значение, на которое уменьшается вес, если объект попал в фрустум, но отсёкся по каким-то причинам
+decrease_value                                = 0.1                                ; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 velocity_factor                             = 0.5
-luminocity_factor                        = 0.5;0                         ; фактор освещения (только для Актёра)
+luminocity_factor                        = 0.5;0                         ; пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ)
 transparency_threshold                 = 0.4                                ; 0.25
-still_visible_time                        = 5000                                ; время, которое объект всё ещё считается видимым, даже если он уже не во фрустуме
+still_visible_time                        = 5000                                ; пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
 [actor_immunities_gd_novice]
-burn_immunity           = 0.3 ;0.45                                ;коэффициенты иммунитета
+burn_immunity           = 0.3 ;0.45                                ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 strike_immunity         = 0.3 ;0.45
 shock_immunity          = 0.3 ;0.45
 wound_immunity          = 0.3 ;0.45
@@ -134,7 +147,7 @@ fire_wound_immunity 	= 0.1
 
 
 [actor_immunities_gd_stalker]
-burn_immunity           = 0.6 ;0.65                                ;коэффициенты иммунитета
+burn_immunity           = 0.6 ;0.65                                ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 strike_immunity         = 0.6 ;0.65
 shock_immunity          = 0.6 ;0.65
 wound_immunity          = 0.6 ;0.65
@@ -145,7 +158,7 @@ explosion_immunity      = 0.6 ;0.3
 fire_wound_immunity 	= 0.2 ;0.65
 
 [actor_immunities_gd_veteran]
-burn_immunity           = 0.8                                ;коэффициенты иммунитета
+burn_immunity           = 0.8                                ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 strike_immunity         = 0.8
 shock_immunity          = 0.8
 wound_immunity          = 0.8
@@ -156,7 +169,7 @@ explosion_immunity      = 0.8
 fire_wound_immunity     = 0.4
 
 [actor_immunities_gd_master]
-burn_immunity           = 1.0                                ;коэффициенты иммунитета
+burn_immunity           = 1.0                                ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 strike_immunity         = 1.0
 shock_immunity          = 1.0
 wound_immunity          = 1.0
@@ -167,24 +180,24 @@ explosion_immunity 		= 1.0
 fire_wound_immunity 	= 0.6
 
 [actor_condition]
-satiety_v				= 0.0000162 	;скорость уменьшения сытости со временем
-radiation_v				= 0.0001	;скорость уменьшения радиации
-satiety_power_v			= 0.005		;увеличение силы при уменьшении сытости
-satiety_health_v		= 0.0001    ;увеличение здоровья при уменьшении сытости
-satiety_critical		= 0.3       ;критическое значения сытости (в процентах от 0..1) когда здоровье начианает уменьшаться
-radiation_health_v		= 0.004     ;уменьшение здоровья при воздействии радиации
-morale_v				= 0.0001	;скорость восстановления морали
-psy_health_v			= 0.001		;скорость восстановления psy-здоровья
+satiety_v				= 0.000015 	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+radiation_v				= 0.0001	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+satiety_power_v			= 0.000055	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+satiety_health_v		= 0.0001    ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+satiety_critical		= 0.3	; orig 0.0 -- GS value, satiety_koef goes negative below it and cancels the base restore       ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ 0..1) пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+radiation_health_v		= 0.004     ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+morale_v				= 0.0001	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+psy_health_v			= 0.001		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ psy-пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 alcohol_v				= -0.0003
-health_hit_part			= 1.0		;процент хита, уходящий на отнимание здоровья
-power_hit_part			= 0.1		;процент хита, уходящий на отнимание силы
-max_power_leak_speed	= 0.0		;накопление усталости (макс граница, до которой восстанавливается сила) в секунду игрового времени
+health_hit_part			= 1.0		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+power_hit_part			= 0.1		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+max_power_leak_speed	= 0.0		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ) пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 max_walk_weight			= 60
 
-bleeding_v 				= 0.002	 ;0.0005	;потеря крови при номинальной ране в секунду
+bleeding_v 				= 0.00098	; orig 0.002 -- GS 0.002 x wound_factor 0.7 x bleeding_factor 0.7 (keys we cannot read)	 ;0.0005	;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
-wound_incarnation_v		= 0.0001 ;0.003     ;скорость заживления раны
-min_wound_size 			= 0.0256	;минимальный размер раны, после которого она считается зажившей
+wound_incarnation_v		= 0.0003	; orig 0.0001 -- GS value, wounds close 3x faster ;0.003     ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+min_wound_size 			= 0.0064	; orig 0.0256 -- GS value	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
 ;--when actor in sleep
 satiety_v_sleep          = 0.00001
@@ -200,101 +213,110 @@ alcohol_v_sleep               = -0.0005
 bleeding_v_sleep              = 0.0
 wound_incarnation_v_sleep     = 0.0
 max_power_leak_speed_sleep    = -0.00001;
-; health_restore_v              = 0.0003
+health_restore_v              = 0.0001	; orig 0.0003 -- GS value, base auto-heal 3x slower
 
 ;;;;;;;;
 ;actor_condition only
 
-jump_power 				= 0.01 ;умешьшение силы с прыжком без учета веса ноши
-jump_weight_power       = 0.05                ;0.045                                        ;умешьшение силы с прыжком с учетом веса ноши, для максимального допустимого веса
-overweight_jump_k                        =        5;10                ;10                                        ;коэффициент влияние перегрузки прыжок с весом (умножается на jump_weight_power)
+jump_power 				= 0.01 ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+jump_weight_power       = 0.05                ;0.045                                        ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+overweight_jump_k                        =        5;10                ;10                                        ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ jump_weight_power)
 
-stand_power             = -0.001.1
-walk_power              = 0.00002  ;0.000012                                ;умешьшение силы за секнду во время ходьбы без учета веса ноши
-walk_weight_power       = 0.0002   ;0.0001;                        ;умешьшение силы за секнду во время ходьбы с учетом веса ноши, для максимального допустимого веса
-overweight_walk_k                =        5;9        ;10                                ;коэффициент влияние перегрузки ноши (умножается на walk_weight_power)
-accel_k                                        =        3;5                                        ;коэффициент на бег (умножается walk_power, walk_weight_power)
-sprint_k                = 100 ;75        ;коэффициент на "sprint" бег (умножается walk_power, walk_weight_power)
+stand_power                                =  -0.005
+walk_power                                =        0.00001                                ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+walk_weight_power                =        0.00005;                        ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+overweight_walk_k                =        5;9        ;10                                ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ walk_weight_power)
+accel_k                                        =        3;5                                        ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ walk_power, walk_weight_power)
+sprint_k                                =        75;150;185;180;200;        ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ "sprint" пїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ walk_power, walk_weight_power)
 
-; хромота
-limping_health_begin =        0.1                ;порог здоровья меньше которого актер начинает хромать
-limping_health_end   =        0.2                ;порог здоровья больше которого актер перестает хромать
-limping_power_begin  =        0.1                ;порог силы меньше которого актер начинает хромать
-limping_power_end         =        0.2                ;порог силы больше которого актер перестает хромать
+; пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+limping_health_begin =        0.1                ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+limping_health_end   =        0.2                ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+limping_power_begin  =        0.1                ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+limping_power_end         =        0.2                ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 use_limping_state         = on
 
-cant_walk_power_begin =        0.01        ;порог силы меньше которого актер не может двигаться
-cant_walk_power_end   =        0.10        ;порог силы больше которого актер сможет двигаться
+cant_walk_power_begin =        0.01        ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+cant_walk_power_end   =        0.10        ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
-cant_sprint_power_begin =        0.20        ;порог силы меньше которого актер не может бежать в спринте
-cant_sprint_power_end   =        0.30        ;порог силы больше которого актер сможет бежать в спринте
+cant_sprint_power_begin =        0.20        ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+cant_sprint_power_end   =        0.30        ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
 can_sleep_callback                        = dream.can_sleep_callback
 sleep_video_name_callback        = dream.sleep_video_name_callback
 
-radio_zone_max_power	= 0.166			;пределы зон для датчиков и для инвентаря (% защит броников)
+radio_zone_max_power	= 0.166			;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (% пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 fire_zone_max_power		= 0.166
 acid_zone_max_power		= 0.166
 psi_zone_max_power		= 0.166
 electra_zone_max_power	= 0.166
 
+; ACTOR COMPENSATION for the Gunslinger cartridge port (2026-08-09).
+; GS cartridges carry a much lower k_hit than the stock CS ones (5.45 fmj 0.33 vs 1.0); on the
+; NPC side that is paid back by the raised bone factors in m_stalker.ltx, but the actor has no
+; such raise, so without this he would end up ~1.6x tankier on average. 1.57 is the weighted
+; mean of old/new bullet power over the calibres NPCs actually carry, at our armour tiers --
+; it puts the actor's average time-to-die back exactly where it was. ONE KNOB: scale every
+; non-zero hit_scale below together if you want the player tougher (lower) or softer (higher).
+; Per-calibre this is not flat -- GS's own balance now shows through: 5.45/5.56 hurt ~0.6-0.8x
+; of what they did, buckshot ~1.6x, 7.62x54 ~2.4x.
 [actor_damage]
 ;bone_name                 = <hit_scale>,<fwd_damage_anim_index>,<wound_scale>
-;<hit_scale> - коэфф. изменения хита (уменьшения здоровья)
-;<wound_scale> - коэфф. изменения величины открытой раны
-;-1 - нет анимаций, четный номер - спереди, нечетный номер - сзади, УКАЗЫВАЕТСЯ ТОЛЬКО ПЕРЕДНИЙ!!! ЗАДНИЙ НА АВТОМАТЕ
-default                                  = 1.0, -1, 1.0
+;<hit_scale> - пїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
+;<wound_scale> - пїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+;-1 - пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ!!! пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+default                                  = 1.57, -1, 1.0	; x1.57 actor compensation restored (was 1)
 
-bip01_pelvis                             = 1.0, 10, 3.0
-bip01_spine                              = 1.0, 10, 3.0
-bip01_spine1                             = 1.0, 0, 3.0
-bip01_spine2                             = 1.0, 0, 3.0
-bip01_neck                               = 1.0, 0, 3.0
-bip01_head                               = 1.0, 0, 3.0
-eyelid_1                                 = 1.0, 0, 3.0
-eye_left                                 = 1.0, 0, 3.0
-eye_right                                = 1.0, 0, 3.0
-jaw_1                                    = 1.0, 0, 3.0
+bip01_pelvis                             = 1.57, 10, 3.0	; x1.57 actor compensation restored (was 1)
+bip01_spine                              = 1.57, 10, 3.0	; x1.57 actor compensation restored (was 1)
+bip01_spine1                             = 1.57, 0, 3.0	; x1.57 actor compensation restored (was 1)
+bip01_spine2                             = 1.57, 0, 3.0	; x1.57 actor compensation restored (was 1)
+bip01_neck                               = 2.041, 0, 4.0	; x1.57 actor compensation restored (was 1.3)
+bip01_head                               = 2.355, 0, 2.5	; x1.57 actor compensation restored (was 1.5)
+eyelid_1                                 = 2.355, 0, 2.5	; x1.57 actor compensation restored (was 1.5)
+eye_left                                 = 2.355, 0, 2.0	; x1.57 actor compensation restored (was 1.5)
+eye_right                                = 2.355, 0, 2.0	; x1.57 actor compensation restored (was 1.5)
+jaw_1                                    = 2.355, 0, 2.0	; x1.57 actor compensation restored (was 1.5)
 
-bip01_l_clavicle                         = 1.0, 4, 3.0
-bip01_l_upperarm                         = 1.0, 4, 3.0
-bip01_l_forearm                          = 1.0, 4, 3.0
-bip01_l_hand                             = 1.0, 4, 3.0
-bip01_l_finger0                          = 0.0, 4, 0.0
-bip01_l_finger01                         = 0.0, 4, 0.0
-bip01_l_finger02                         = 0.0, 4, 0.0
-bip01_l_finger1                          = 0.0, 4, 0.0
-bip01_l_finger11                         = 0.0, 4, 0.0
-bip01_l_finger12                         = 0.0, 4, 0.0
-bip01_l_finger2                          = 0.0, 4, 0.0
-bip01_l_finger21                         = 0.0, 4, 0.0
-bip01_l_finger22                         = 0.0, 4, 0.0
+bip01_l_clavicle                         = 1.57, 4, 2.7	; x1.57 actor compensation restored (was 1)
+bip01_l_upperarm                         = 1.57, 4, 2.7	; x1.57 actor compensation restored (was 1)
+bip01_l_forearm                          = 1.177, 4, 2.0	; x1.57 actor compensation restored (was 0.75)
+bip01_l_hand                             = 0.942, 4, 1.0	; x1.57 actor compensation restored (was 0.6)
+bip01_l_finger0                          = 0.314, 4, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_l_finger01                         = 0.314, 4, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_l_finger02                         = 0.314, 4, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_l_finger1                          = 0.314, 4, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_l_finger11                         = 0.314, 4, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_l_finger12                         = 0.314, 4, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_l_finger2                          = 0.314, 4, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_l_finger21                         = 0.314, 4, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_l_finger22                         = 0.314, 4, 1.0	; x1.57 actor compensation restored (was 0.2)
 
-bip01_r_clavicle                         = 1.0, 2, 3.0
-bip01_r_upperarm                         = 1.0, 2, 3.0
-bip01_r_forearm                          = 1.0, 2, 3.0
-bip01_r_hand                             = 1.0, 2, 3.0
-bip01_r_finger0                          = 0.0, 2, 0.0
-bip01_r_finger01                         = 0.0, 2, 0.0
-bip01_r_finger02                         = 0.0, 2, 0.0
-bip01_r_finger1                          = 0.0, 2, 0.0
-bip01_r_finger11                         = 0.0, 2, 0.0
-bip01_r_finger12                         = 0.0, 2, 0.0
-bip01_r_finger2                          = 0.0, 2, 0.0
-bip01_r_finger21                         = 0.0, 2, 0.0
-bip01_r_finger22                         = 0.0, 2, 0.0
+bip01_r_clavicle                         = 1.57, 2, 2.7	; x1.57 actor compensation restored (was 1)
+bip01_r_upperarm                         = 1.57, 2, 2.7	; x1.57 actor compensation restored (was 1)
+bip01_r_forearm                          = 1.177, 2, 2.0	; x1.57 actor compensation restored (was 0.75)
+bip01_r_hand                             = 0.942, 2, 2.0	; x1.57 actor compensation restored (was 0.6)
+bip01_r_finger0                          = 0.314, 2, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_r_finger01                         = 0.314, 2, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_r_finger02                         = 0.314, 2, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_r_finger1                          = 0.314, 2, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_r_finger11                         = 0.314, 2, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_r_finger12                         = 0.314, 2, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_r_finger2                          = 0.314, 2, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_r_finger21                         = 0.314, 2, 1.0	; x1.57 actor compensation restored (was 0.2)
+bip01_r_finger22                         = 0.314, 2, 1.0	; x1.57 actor compensation restored (was 0.2)
 
-bip01_l_thigh                            = 1.0, 8, 3.0
-bip01_l_calf                             = 1.0, 8, 3.0
-bip01_l_foot                             = 1.0, 8, 3.0
-bip01_l_toe0                             = 1.0, 8, 3.0
-bip01_r_thigh                            = 1.0, 6, 3.0
-bip01_r_calf                             = 1.0, 6, 3.0
-bip01_r_foot                             = 1.0, 6, 3.0
-bip01_r_toe0                             = 1.0, 6, 3.0
+bip01_l_thigh                            = 1.57, 8, 2.0	; x1.57 actor compensation restored (was 1)
+bip01_l_calf                             = 1.57, 8, 2.0	; x1.57 actor compensation restored (was 1)
+bip01_l_foot                             = 0.942, 8, 2.0	; x1.57 actor compensation restored (was 0.6)
+bip01_l_toe0                             = 1.57, 8, 2.0	; x1.57 actor compensation restored (was 1)
+bip01_r_thigh                            = 1.57, 6, 2.0	; x1.57 actor compensation restored (was 1)
+bip01_r_calf                             = 1.57, 6, 2.0	; x1.57 actor compensation restored (was 1)
+bip01_r_foot                             = 0.942, 6, 2.0	; x1.57 actor compensation restored (was 0.6)
+bip01_r_toe0                             = 1.57, 6, 2.0	; x1.57 actor compensation restored (was 1)
 
 [actor_animation]
-;углы  дворота ног актера во время стрейфов (в градусах)
+;пїЅпїЅпїЅпїЅ  пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 fwd_l_strafe_yaw    = 45
 back_l_strafe_yaw   = 45
 fwd_r_strafe_yaw    = 45
@@ -318,7 +340,7 @@ wound_2              =actor\hurt1,actor\hurt2,actor\hurt3,actor\hurt4
 physic_strike        =actor\pain1,actor\pain2,actor\pain3; ,actor\hurt4
 
 [actor_hud]
-visual         			= dynamics\weapons\wpn_hand\wpn_hand_01
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_bare
 
 position                = -0.044000,-0.156000,0.100000
 orientation             = -0.500000,1.000000,-2.000000
@@ -343,9 +365,68 @@ visual         			= dynamics\weapons\wpn_hand\wpn_hand_06
 visual         			= dynamics\weapons\wpn_hand\wpn_hand_07
 [actor_hud_exo]:actor_hud
 visual         			= dynamics\weapons\wpn_hand\wpn_hand_exo
+[actor_hud_sci]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_sci
+[actor_hud_bandit]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_bandit
+
+;CS_Gunslinger
+
+[wpn_hand_seva_dolg]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_seva_dolg ;wpn_hand_21
+
+[wpn_hand_bandit_coat_black]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_bandit_coat_black ;wpn_hand_04
+
+[wpn_hand_bandit_coat_brown]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_bandit_coat_brown ;wpn_hand_08
+
+[wpn_hand_killer_outfit]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_killer_outfit ;wpn_hand_14
+
+[wpn_hand_freedom_warrior]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_freedom_warrior ;wpn_hand_01
+
+[wpn_hand_monolith]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_monolith ;wpn_hand_11
+
+[wpn_hand_ecolog_green]:actor_hud
+visual                     = dynamics\weapons\wpn_hand\wpn_hand_ecolog_green ;wpn_hand_20
+
+[wpn_hand_ecolog_red]:actor_hud
+visual                     = dynamics\weapons\wpn_hand\wpn_hand_ecolog_red ;wpn_hand_19
+
+[wpn_hand_freedom_light]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_freedom_light
+[wpn_hand_bandit_jacket]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_bandit_jacket
+[wpn_hand_cs]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_cs
+[wpn_hand_cs_vet]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_cs_vet
+[wpn_hand_duty_heavy]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_duty_heavy
+[wpn_hand_duty_light]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_duty_light
+[wpn_hand_exo]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_exo
+[wpn_hand_exo_freedom]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_exo_freedom
+[wpn_hand_freedom_heavy]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_freedom_heavy
+[wpn_hand_military_outfit]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_military_outfit
+[wpn_hand_novice]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_novice
+[wpn_hand_seva]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_seva
+[wpn_hand_specops_outfit]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_specops_outfit
+[wpn_hand_stalker_outfit]:actor_hud
+visual         			= dynamics\weapons\wpn_hand\wpn_hand_stalker_outfit
 
 [tttmp]
-;описание распознаваемых детектором зон
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
 zone_class_1		= zone_mosquito_bald
 zone_sound_1_		= detectors\DA-2_beep1
 
@@ -386,3 +467,109 @@ zone_freq_5		= 0.1,20
 zone_class_6		= zone_mine_electric
 zone_sound_6_		= detectors\DA-2_beep1
 zone_freq_6		= 0.1, 40 ; min,max
+
+; Third-person upper-body yaw correction, DEGREES, per torso animation set.
+; The xrMPE pack (meshes\actors\stalker_animation_new.omf) bakes a bladed stance into its torso
+; motions: composed through the bone chain the chest bone bip01_spine2 sits 20..42 deg further
+; round than the stock sets (stock reference = 7.6 deg), and nothing in the engine takes that
+; out, so the actor stands turned off centre. Values below are measured from the omf itself:
+; chest heading of <set>_aim_1 minus that stock reference, NEGATED -- bone_yaw turns the actor
+; the other way (checked in game, the un-negated table made the twist worse).
+; Key = the weapon actor_anim_group, or its numeric animation_slot when it names no group.
+; A missing key means no correction. Console var actor_torso_yaw is a global trim on top.
+; Empty hands (key 0) is deliberately NOT corrected: vanilla itself holds an off-axis relaxed
+; pose there (34.2 deg) and the pack is already closer to centre (29.4).
+[actor_torso_yaw]
+; slot 1 (pistols) walking/running is measured at 41.4/38.6 -- the SAME chest angle as the rifle
+; sets that read straight with no correction; only its idle differs, 35.5 against their 45.0.
+; -27.8 (from the same wrong stock-pistol baseline as slot 2) parked the pistols ~30 deg round
+; from every rifle, which is what "pistols look to the right" was.
+1               = 0.0
+                                    ; slightly RIGHT: the pack poses pistols at 35.5 on purpose
+; slot 2 (AK-family rifles with no named group -- i.e. no launcher attached) is measured at
+; 45.0 deg, EXACTLY the same pose as the named 2_gloff/2_glon sets, which carry no correction
+; and read straight in game. -37.3 came from comparing against the stock PISTOL set (7.6);
+; the stock slot 2 itself sits at 40.9, so the pack is only 4 deg further round and the old
+; value swung the actor far to the right whenever the AK-74 had no GL on it.
+2               = 0.0                   ; orig -37.3
+; slots 3 (bm16, toz34) and 9 (spas12, winchester) are the SAME compact family as slot 8:
+; 27.8 / 24.0 / 28.5 against the rifle sets' 45.0 / 44.5 / 39.7, i.e. 17.2 further LEFT.
+; Sprint needs none -- escape_0 is 11.9 here against 15.0 there, no relative lean.
+3               = -17.2
+3_sprint        = 0.0
+4               = 0.0               ; orig 8.0
+5               = 0.0
+6               = 0.0
+7               = 0.0               ; orig -21.2
+; slot 8 (AKS-74u, saiga12 -- the ones with no actor_anim_group) is baked at 27.8 deg while every
+; rifle set sits at 45.0, i.e. 17.2 further LEFT, which is what it looks like in game. The sprint
+; needs none: escape_0 is ~15 deg in EVERY set, so there is no relative lean there -- hence the
+; explicit _sprint = 0 override (a <key>_<action> line wins over the plain key).
+8               = -17.2
+8_sprint        = 0.0
+9               = -17.2
+9_sprint        = 0.0
+10              = -17.2
+10_sprint       = 25.5
+11              = 0.0               ; orig -22.9
+13              = 0.0               ; orig -22.9
+; Per-action override: <key>_reload wins over <key> while a reload is playing. The pack's 8_mini
+; set (MP5 / AKS-74u / the whole slot-8 family) bakes its reload_0 at 27.8 deg against its own
+; idle at 45.0 -- 17 deg, which on screen is the torso swinging left as the reload starts. Every
+; other set has reload == idle and needs no line here.
+machinegun      = -12.8
+8_mini_reload   = -17.2
+                                    ; so the correction adds to the baked angle, not subtracts
+
+; ---- detector sets -------------------------------------------------------------------------------
+; effective = baked - value, and LOWER effective reads as LEFT on screen. Target for every line below
+; is the idle of the set this one stands in for, so the whole "detector out" state sits where the
+; weapon alone would. Transitions must use the SAME target as their idle, or the body swings for the
+; length of the gesture and back -- that was the "draw/holster turns left" report.
+;   set                baked idle / transition -> target
+;   pistol+detector      3.6 / 3.5   -> 27.6 (a trimmed pistol 35.5: the full match rotated the gun
+;                                             arm with the chest, so this is deliberately short)
+;   6+detector          29.0 / 3.5   -> 49.9 (slot 6 = the bolt, and any long gun that gets here)
+;   knife+detector      28.9 / 3.5   -> 50.3 (slot 5)
+;   0+detector          28.9 / 19.0  -> 28.9 (empty hands keep the pack's own pose, so only the
+;                                             transitions are pulled onto it)
+pistol+detector               = 0.0	; user's call: the gun arm rides this correction, so none at all
+6+detector                    = -20.9
+6+detector_drawdevice         = -46.4
+6+detector_holsterdevice      = -46.4
+6+detector_drawall            = -37.4
+6+detector_holsterall         = -46.4
+knife+detector                = -21.4
+knife+detector_drawdevice     = -46.8
+knife+detector_holsterdevice  = -46.8
+knife+detector_drawall        = -37.8
+knife+detector_holsterall     = -46.8
+0+detector_drawdevice         = -7.7	; vs idle_1 22.7 (was -9.9, measured against the wrong idle)
+0+detector_holsterdevice      = -8.9	; vs idle_1 22.7 (was -11.0)
+
+; The "<x>+detector" sets ARE baked far squarer than the weapon sets they stand in for
+; (pistol+detector chest = 3.6 deg against the pistol set's 35.5). That is deliberate: with a
+; detector in the off hand the pack squares the chest up and aims the gun arm relative to THAT.
+; Correcting the chest onto the rifle blade rotated the arm with it -- the whole upper body then
+; read as swung right, worse than the lean it was meant to cure. Left at 0 = the pack's own pose.
+; If the lean ever needs trimming, it wants a SMALL value dialled in game, not the chest delta.
+; orig (all removed): pistol+detector -31.9 / _walk -38.7 / _run -27.2, knife+detector -21.5 /
+; _walk -18.2 / _run -20.3, 6+detector -16.0 / _walk -32.4 / _run -11.2, 0+detector -16.1
+
+; Neck yaw correction, DEGREES, same keys as [actor_torso_yaw] (<set> and <set>_<action>), applied
+; to bip01_neck. Stock CS puts no callback on that bone at all -- one is installed for this.
+; Why a second table: the pack's detector gestures are not a rigid turn of the upper body. Against
+; the set's own idle, drawdevice_0 measures 0.0 deg at bip01_spine, 7.7 at spine2 and 29.8 at the
+; NECK. A spine1 value can only rotate everything together, so no amount of it reproduces "chest
+; where it was, neck round" -- four passes at the torso number changed nothing on screen.
+; The HEAD gets no table of its own on purpose: it hangs off the neck and follows it.
+; value = (baked_neck - the torso key already applied) - idle_neck
+[actor_neck_yaw]
+0+detector_drawdevice         = -22.1
+0+detector_holsterdevice      = -22.3
+pistol+detector_drawdevice    = -1.4
+pistol+detector_holsterdevice = -1.4
+knife+detector_drawdevice     = 23.8
+knife+detector_holsterdevice  = 23.8
+6+detector_drawdevice         = 23.1
+6+detector_holsterdevice      = 23.1

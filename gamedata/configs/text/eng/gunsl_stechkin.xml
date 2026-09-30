@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_stechkin">
+		<text>APS</text>
+	</string>
+	<string id="gunsl_wpn_stechkin_descr">
+		<text>Selective-fire machine pistol, developed in the second part of 1940s by Soviet arms designer I. Stechkin. Was formally adopted by the USSR military in 1951 along with PM, however the latter was vastly outmatched by APS in firepower, due to its superior accuracy and selective fire capability. Initially designed for officers and combat vehicle crews, directly involved in armed hostilities. Unfortunately, real-life operating experience shown low practicality of the firearm due to its large overall dimensions, massive holster, and fairly poor ergonomics. The pistol soon was phased out of production, and most guns were sent to the warehouses, and out of there made their way into the Zone.</text>
+	</string>
+</string_table>

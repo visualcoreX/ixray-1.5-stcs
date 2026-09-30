@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_sr1m_up_barrel_sil_name">
+     <text>Ствол с резьбой под глушитель</text>
+</string>
+<string id="gunsl_sr1m_up_barrel_sil_descr">
+     <text>Позволяет устанавливать на оружие глушитель соответствующего калибра.</text>
+</string>
+<string id="gunsl_sr1m_up_barrel_speed_name">
+     <text>Перенарезка ствола</text>
+</string>
+<string id="gunsl_sr1m_up_barrel_speed_descr">
+     <text>Изменение шага нарезов в канале ствола оружия позволяет увеличить начальную скорость пули и снизить разброс попаданий при стрельбе.</text>
+</string>
+<string id="gunsl_sr1m_up_barrel_accuracy_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_sr1m_up_barrel_accuracy_descr">
+     <text>Позволяет снизить разброс пуль при стрельбе из оружия, что повышает кучность и точность ведения огня.</text>
+</string>
+<string id="gunsl_sr1m_up_mag_reliability_name">
+     <text>Доработка узла подачи патронов</text>
+</string>
+<string id="gunsl_sr1m_up_mag_reliability_descr">
+     <text>Индивидуальная подгонка деталей узла питания позволяет уменьшить вероятность задержек при стрельбе, связанных с неподачей и перекосом патрона.</text>
+</string>
+<string id="gunsl_sr1m_up_ejector_name">
+     <text>Доработка экстрактора</text>
+</string>
+<string id="gunsl_sr1m_up_ejector_descr">
+     <text>Позволяет уменьшить число задержек, связанных с прихватом гильз, выбрасываемых из пистолета после выстрела. Благоприятным образом сказывается на надежности оружия.</text>
+</string>
+<string id="gunsl_sr1m_up_flashlaser_name">
+     <text>Комбинированный тактический модуль</text>
+</string>
+<string id="gunsl_sr1m_up_flashlaser_descr">
+     <text>Сочетает в себе функции узконаправленного тактического фонаря и лазерного целеуказателя. Особенно полезен в ночных условиях.</text>
+</string>
+<string id="gunsl_sr1m_up_handle_inertion_name">
+     <text>Анатомическая рукоять</text>
+</string>
+<string id="gunsl_sr1m_up_handle_inertion_descr">
+     <text>Создана с учетом индивидуальных особенностей и предпочтений стрелка, делая хват оружия гораздо удобнее, а стрельбу - комфортнее.</text>
+</string>
+<string id="gunsl_sr1m_up_handle_weight_name">
+     <text>Облегченная рукоять</text>
+</string>
+<string id="gunsl_sr1m_up_handle_weight_descr">
+     <text>Позволяет немного снизить массу оружия. Мелочь, а приятно. А истинное удобство, как известно, складывается из мелочей.</text>
+</string>
+<string id="gunsl_sr1m_up_body_name">
+     <text>Защитное покрытие</text>
+</string>
+<string id="gunsl_sr1m_up_body_descr">
+     <text>Нанесение специального напыления на детали оружия позволяет значительно замедлить его износ.</text>
+</string>
+<string id="gunsl_sr1m_up_rail_name">
+     <text>Рельсовое крепление</text>
+</string>
+<string id="gunsl_sr1m_up_rail_descr">
+     <text>Установка на оружие дополнительной планки расширяет возможности его тактического применения, открывая возможности установки дополнительных модулей.</text>
+</string>
+<string id="gunsl_sr1m_up_usm_recoil_kurok_myagkii_spusk_name">
+     <text>Мягкий спуск УСМ</text>
+</string>
+<string id="gunsl_sr1m_up_usm_recoil_kurok_myagkii_spusk_descr">
+     <text>Позволяет снизить отдачу, способствуя более точной стрельбе.</text>
+</string>
+<string id="gunsl_sr1m_up_mag_name">
+     <text>Легковесный магазин</text>
+</string>
+<string id="gunsl_sr1m_up_mag_descr">
+     <text>Замена штатного магазина оружия на облегченный позволяет немного снизить полную массу.</text>
+</string>
+<string id="gunsl_sr1m_up_light_details_name">
+     <text>Легкосплавные детали</text>
+</string>
+<string id="gunsl_sr1m_up_light_details_descr">
+     <text>Замена деталей в основных узлах оружия на их легкосплавные аналоги позволяет снизить массу оружия без существенного вреда для его остальных тактико-технических характеристик.</text>
+</string>
+<string id="gunsl_sr1m_up_patronnik_obturation_name">
+     <text>Доработка патронника</text>
+</string>
+<string id="gunsl_sr1m_up_patronnik_obturation_descr">
+     <text>Устранение люфтов позволяет улучшить обтюрацию, благодаря чему достигается большая начальная скорость полета пули.</text>
+</string>
+<string id="gunsl_sr1m_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_sr1m_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_sr1m_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_sr1m_up_usm_rpm_descr">
+     <text>Перенастройка УСМ с доработкой некоторых его деталей позволяет стрелку вести огонь в более высоком темпе. К сожалению, оружие от этого начинает изнашиваться немного быстрее.</text>
+</string>
+<string id="gunsl_sr1m_up_zatvor_balancer_name">
+     <text>Балансировка затвора</text>
+</string>
+<string id="gunsl_sr1m_up_zatvor_balancer_descr">
+     <text>Балансировка деталей затворной группы уменьшает увод ствола с линии прицеливания при выстреле и снижает ощущаемую отдачу.</text>
+</string>
+<string id="gunsl_sr1m_up_light_ramka_name">
+     <text>Облегченная рамка</text>
+</string>
+<string id="gunsl_sr1m_up_light_ramka_descr">
+     <text>Замена стандартной рамки оружия на облегченный аналог позволяет выиграть в массе оружия, при этом не проигрывая в надежности и остальных характеристиках.</text>
+</string>
+<string id="gunsl_sr1m_up_recoil_compensation_system_name">
+     <text>Система компенсации отдачи</text>
+</string>
+<string id="gunsl_sr1m_up_recoil_compensation_system_descr">
+     <text>Кардинальная переработка УСМ оружия позволяет значительно снизить ощущаемую при стрельбе отдачу.</text>
+</string>
+</string_table>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_up_prop_computer">
+		<text>Бортовой компьютер</text>
+	</string>
+	<string id="gunsl_up_prop_autoshot">
+		<text>Электронный предохранитель</text>
+	</string>
+	<string id="gunsl_up_prop_autoaim">
+		<text>Автоспуск</text>
+	</string>
+	<string id="gunsl_up_prop_zoomspeed">
+		<text>Скоростной зум</text>
+	</string>
+	<string id="gunsl_up_magneticshield">
+		<text>Экранирование</text>
+	</string>
+	<string id="st_prop_autolockscope">
+		<text>Система автозахвата целей</text>
+	</string>
+	<string id="st_prop_scope">
+		<text>Регулируемый прицел</text>
+	</string>
+	<string id="st_prop_contrast">
+		<text>Высококонтрастный прицел</text>
+	</string>
+</string_table>

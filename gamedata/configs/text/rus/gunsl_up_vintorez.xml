@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_vintorez_up_rail1_name">
+     <text>Крепление Weaver, тип 1</text>
+</string>
+<string id="gunsl_vintorez_up_rail1_descr">
+     <text>Предназначено для установки тактического фонаря и лазерного целеуказателя. В силу особенностей конфигурации не подходит для установки прицелов и тактических рукояток.</text>
+</string>
+<string id="gunsl_vintorez_up_laser_name">
+     <text>Лазерный целеуказатель</text>
+</string>
+<string id="gunsl_vintorez_up_laser_descr">
+     <text>Визуально обозначает место предполагаемого попадания в цель, значительно облегчая и ускоряя прицеливание, а также оказывая на жертву деморализующий эффект. Не препятствует установке тактического фонаря и может использоваться в паре с ним.</text>
+</string>
+<string id="gunsl_vintorez_up_torch_name">
+     <text>Тактический фонарь</text>
+</string>
+<string id="gunsl_vintorez_up_torch_descr">
+     <text>Узконаправленный фонарь дальнего радиуса действия незаменим в ночных вылазках, а также при исследовании неосвещенной местности. Не препятствует установке лазерного целеуказателя и может использоваться в паре с ним.</text>
+</string>
+<string id="gunsl_vintorez_up_rail2_name">
+     <text>Крепление Weaver, тип 2</text>
+</string>
+<string id="gunsl_vintorez_up_rail2_descr">
+     <text>Позволяет установливать тактическую рукоять, а также дополнительные типы прицелов. Не подходит для установки лазерных целеуказателей и тактических фонарей.</text>
+</string>
+<string id="gunsl_vintorez_up_handle_name">
+     <text>Тактическая рукоять</text>
+</string>
+<string id="gunsl_vintorez_up_handle_descr">
+     <text>Установка подствольной рукояти позволяет сделать оружие более удобным в обращении, благодаря чему компенсировать отдачу становится легче.</text>
+</string>
+<string id="gunsl_vintorez_up_mag20_name">
+     <text>Замена магазина</text>
+</string>
+<string id="gunsl_vintorez_up_mag20_descr">
+     <text>Установка магазина повышенной емкости (20 патронов) позволяет значительно сократить число перезарядок в бою и тем самым увеличить шансы поразить противника.</text>
+</string>
+<string id="gunsl_vintorez_up_lightdetails_name">
+     <text>Облегченные детали</text>
+</string>
+<string id="gunsl_vintorez_up_lightdetails_descr">
+     <text>Замена деталей оружия на их более легкие аналоги позволяет снизить массу оружия.</text>
+</string>
+<string id="gunsl_vintorez_up_usm_accuracy_name">
+     <text>Калибровка УСМ</text>
+</string>
+<string id="gunsl_vintorez_up_usm_accuracy_descr">
+     <text>Индивидуальная подгонка и балансировка стандартных деталей ударно-спускового механизма позволяет добиться более высокой точности стрельбы при одновременном снижении отдачи.</text>
+</string>
+<string id="gunsl_vintorez_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_vintorez_up_usm_rpm_descr">
+     <text>Благодаря замене узлов УСМ повышается скорострельность оружия ценой незначительного уменьшения износостойкости.</text>
+</string>
+<string id="gunsl_vintorez_up_barrel_accuracy_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_vintorez_up_barrel_accuracy_descr">
+     <text>Позволяет снизить разброс пуль при стрельбе из оружия, что повышает кучность и точность ведения огня.</text>
+</string>
+<string id="gunsl_vintorez_up_recoil_name">
+     <text>Накладка на приклад</text>
+</string>
+<string id="gunsl_vintorez_up_recoil_descr">
+     <text>Позволяет уменьшить ощущаемую отдачу от выстрела из оружия.</text>
+</string>
+<string id="gunsl_vintorez_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_vintorez_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_vintorez_up_barrel_name">
+     <text>Перенарезка ствола</text>
+</string>
+<string id="gunsl_vintorez_up_barrel_descr">
+     <text>Изменение шага нарезов в канале ствола оружия позволяет увеличить начальную скорость пули и снизить разброс попаданий при стрельбе.</text>
+</string>
+</string_table>

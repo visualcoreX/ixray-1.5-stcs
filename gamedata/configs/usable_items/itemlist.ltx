@@ -1,0 +1,50 @@
+; gwr animated item-use -- master include list (Gunslinger-style layout).
+
+#include "base_usable.ltx"
+; Gunslinger trash pieces the use animations throw away (spawned by gwr_eatable)
+#include "trash_objects.ltx"
+
+#include "vodka\hud_objects.ltx"
+#include "vodka\eatable_objects.ltx"
+
+#include "medkit\hud_objects.ltx"
+#include "medkit\eatable_objects.ltx"
+#include "medkit_army\hud_objects.ltx"
+#include "medkit_army\eatable_objects.ltx"
+#include "medkit_sci\hud_objects.ltx"
+#include "medkit_sci\eatable_objects.ltx"
+#include "bandage\hud_objects.ltx"
+#include "bandage\eatable_objects.ltx"
+#include "antirad\hud_objects.ltx"
+#include "antirad\eatable_objects.ltx"
+#include "energetic\hud_objects.ltx"
+#include "energetic\eatable_objects.ltx"
+; food with hud animations: hands motions <item>_eat live in wpn_hand_animation.omf,
+; the item motion <item>_hud inside each gwr\food model
+#include "bread\hud_objects.ltx"
+#include "bread\eatable_objects.ltx"
+#include "kolbasa\hud_objects.ltx"
+#include "kolbasa\eatable_objects.ltx"
+#include "conserva\hud_objects.ltx"
+#include "conserva\eatable_objects.ltx"
+; Gunslinger bottled water -- a NEW item, and the only multi-use one (four sips, base.ltx)
+#include "water\base.ltx"
+#include "water\hud_objects.ltx"
+#include "water\eatable_objects.ltx"
+; Gunslinger psi blockade -- a NEW item, so its inventory section lives here too (base.ltx)
+#include "drug_psy_blockade\base.ltx"
+#include "drug_psy_blockade\hud_objects.ltx"
+#include "drug_psy_blockade\eatable_objects.ltx"
+; Gunslinger antidote -- a NEW item as well; clears medicine intoxication outright
+#include "drug_antidot\base.ltx"
+#include "drug_antidot\hud_objects.ltx"
+#include "drug_antidot\eatable_objects.ltx"
+
+#include "action_animators\hud_objects.ltx"
+; Gunslinger quick knife kick (full-view phantom, spawned on the quick-kick key)
+#include "quick_kick\hud_objects.ltx"
+; Gunslinger-style 3D PDA (phantom held while the PDA window is open)
+#include "pda\hud_objects.ltx"
+; hands beating out a fire, spawned on USE while the actor has a burn wound
+#include "burn\hud_objects.ltx"
+

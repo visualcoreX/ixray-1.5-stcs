@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+	<string id="gunsl_wpn_pm_up_sights_name">
+		<text>Tritium sights</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_sights_descr">
+		<text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_usm_accuracy_name">
+		 <text>Trigger calibration</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_usm_accuracy_descr">
+		 <text>Individual adjustment and balancing of the standard parts of the trigger mechanism improve accuracy, while simultaneously lowering recoil.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_usm_rpm_name">
+		 <text>Trigger tuning</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_usm_rpm_descr">
+		 <text>Reconfiguration of the trigger assembly with improvement of various parts gives a crisp break with a shorter, smoother trigger take-up, leading to faster follow-up shots.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_barrel_sil_name">
+		 <text>Threaded barrel</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_barrel_sil_descr">
+		 <text>Extended barrel, threaded for mounting a 9x18mm suppressor.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_barrel_hp_name">
+		 <text>Barrel replacement</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_barrel_hp_descr">
+		 <text>Barrel made of modern special reinforced alloy. Can sustain higher chamber pressures, which produce higher muzzle velocity.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_plastic_mag_name">
+		 <text>Polymer magazine</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_plastic_mag_descr">
+		 <text>This product of modern technology allows you to carry more useful things with you.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_plastic_details_name">
+		 <text>Polymer parts</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_plastic_details_descr">
+		 <text>Significantly reduces weight by replacing standard metal parts with ones made of heat-resistant polymer.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_handle_recoil_name">
+		 <text>Rubberized grip</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_handle_recoil_descr">
+		 <text>Imported panels improve handling and positively affect accuracy.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_reliability_name">
+		 <text>Protective coating</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_reliability_descr">
+		 <text>Application of a protective coating to the internal parts significantly reduces wear.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_recoil_name">
+		 <text>Recoil reduction system</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_recoil_descr">
+		 <text>Decreases felt recoil, making the shooting more comfortable and accurate.</text>
+	</string>
+	
+	<string id="gunsl_wpn_pmm_up_sights_name">
+		 <text>Tritium sights</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_sights_descr">
+		 <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_usm_accuracy_name">
+		 <text>Trigger calibtarion</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_usm_accuracy_descr">
+		 <text>Individual adjustment and balancing of the standard parts of the trigger mechanism improve accuracy, while simultaneously lowering recoil.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_usm_rpm_name">
+		 <text>Trigger tuning</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_usm_rpm_descr">
+		 <text>Reconfiguration of the trigger assembly with improvement of various parts gives a crisp break with a shorter, smoother trigger take-up, leading to faster follow-up shots.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_barrel_sil_name">
+		 <text>Threaded barrel</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_barrel_sil_descr">
+		 <text>Extended barrel, threaded for mounting a 9x18mm suppressor.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_barrel_hp_name">
+		 <text>Barrel replacement</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_barrel_hp_descr">
+		 <text>Barrel made of modern special reinforced alloy. Can sustain higher chamber pressures, which produce higher muzzle velocity.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_alter_mag_name">
+		 <text>Polymer magazine</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_alter_mag_descr">
+		 <text>This product of modern technology allows you to carry more useful things with you.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_plastic_details_name">
+		 <text>Polymer parts</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_plastic_details_descr">
+		 <text>Significantly reduces weight by replacing standard metal parts with ones made of heat-resistant polymer.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_handle_recoil_name">
+		 <text>Rubberized grip</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_handle_recoil_descr">
+		 <text>Imported panels improve handling and positively affect accuracy.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_reliability_name">
+		 <text>Protective coating</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_reliability_descr">
+		 <text>Application of a protective coating to the internal parts significantly reduces wear.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_recoil_name">
+		 <text>Recoil reduction system</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_recoil_descr">
+		 <text>Decreases felt recoil, making the shooting more comfortable and accurate.</text>
+	</string>
+	
+</string_table>

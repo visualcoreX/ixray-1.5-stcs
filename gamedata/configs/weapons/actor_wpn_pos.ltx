@@ -1,0 +1,250 @@
+; ACTOR-ONLY world-model hand offsets.
+; The weapon sections' own position/orientation stay VANILLA and keep serving the NPCs --
+; only the player animates on the xrMPE pack (his visual is the one extra_motions is bolted
+; onto), so only his seat needs re-measuring. CWeapon::Load reads `<weapon>_actor` and
+; CWeapon::UpdatePosition uses it when the owner is the actor.
+; Measure with the in-game tuner: cam_3, then SHIFT+Numpad 1 (position) / 2 (orientation),
+; axes Z/X/C -- it logs a ready-made block for this file.
+
+; ---- pistols (one measured pose, they all share the grip) ----
+[wpn_beretta_actor]
+position                = -0.048500, -0.077900, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_beretta_minigame_actor]
+position                = -0.048500, -0.077900, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_colt1911_actor]
+position                = -0.048500, -0.082000, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_colt1911_up2_actor]
+position                = -0.048500, -0.082000, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_desert_eagle_actor]
+position                = -0.048500, -0.082100, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_desert_eagle_up_actor]
+position                = -0.048500, -0.082100, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_desert_eagle_nimble_actor]
+position                = -0.048500, -0.082100, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_fiveseven_actor]
+position                = -0.048500, -0.081600, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_fort_actor]
+position                = -0.048500, -0.095600, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_fort_up_actor]
+position                = -0.048500, -0.095600, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_fort_snag_actor]
+position                = -0.048500, -0.095600, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_glock17_actor]
+position                = -0.048500, -0.095600, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_grach_actor]
+position                = -0.048500, -0.081400, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_gsh18_actor]
+position                = -0.048500, -0.095600, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_hpsa_actor]
+position                = -0.048500, -0.079000, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_pb_actor]
+position                = -0.048500, -0.085400, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_pm_actor]
+position                = -0.048500, -0.085400, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_pm_minigame_actor]
+position                = -0.048500, -0.085400, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_pm_up_actor]
+position                = -0.048500, -0.085400, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_pm_9x19_actor]
+position                = -0.048500, -0.085400, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_sig220_actor]
+position                = -0.048500, -0.079000, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_sig220_nimble_actor]
+position                = -0.048500, -0.079000, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_sr1m_actor]
+position                = -0.048500, -0.095600, 0.008400
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_stechkin_actor]
+position                = -0.048500, -0.080400, 0.007800
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_apb_actor]
+position                = -0.048500, -0.080400, 0.007800
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_tt33_actor]
+position                = -0.048500, -0.086100, 0.009600
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_usp_actor]
+position                = -0.048500, -0.082300, -0.012100
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_usp_nimble_actor]
+position                = -0.048500, -0.082300, -0.012100
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_walther_actor]
+position                = -0.048500, -0.095600, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+[wpn_walther_up2_actor]
+position                = -0.048500, -0.095600, 0.000000
+orientation             = -20.049980, -7.500010, 8.650014
+
+; ---- individually measured ----
+[wpn_ak74u_actor]
+position                = -0.086701, -0.187300, -0.027300
+orientation             = 9.400015, -8.550010, 18.350008
+
+[wpn_bm16_actor]
+position                = -0.060800, -0.111301, 0.048700
+orientation             = -8.850003, 12.800007, 15.500029
+
+[wpn_toz34_actor]
+position                = -0.053000, -0.111000, 0.050000
+orientation             = -7.000000, 15.000000, 16.000000
+
+[wpn_wincheaster1300_actor]
+position                = -0.046000, -0.089100, -0.005100
+orientation             = -4.049997, -11.100027, 20.399975
+
+[wpn_spas12_actor]
+position                = -0.051100, -0.078700, -0.013200
+orientation             = -1.949999, -13.850038, 22.449944
+
+[wpn_mp5_actor]
+position                = -0.040400, -0.129600, -0.004000
+orientation             = 1.700000, 0.650032, 6.000006
+
+[wpn_sig550_actor]
+position                = -0.026000, -0.097000, 0.000000
+orientation             = -7.750011, -7.200009, 4.449999
+
+[wpn_l85_actor]
+position                = -0.026000, -0.135000, 0.000000
+orientation             = -8.400014, 0.000000, 0.000000
+
+[wpn_val_actor]
+position                = -0.026000, -0.097000, 0.000000
+orientation             = 1.250000, 0.000000, 8.450014
+
+[wpn_vintorez_actor]
+position                = -0.026000, -0.097000, 0.000000
+orientation             = 1.250000, 0.000000, 8.450014
+
+[wpn_svu_actor]
+position                = -0.026000, -0.084000, 0.000000
+orientation             = -7.950012, -5.950005, 0.000000
+
+[wpn_svd_actor]
+position                = -0.026000, -0.077000, 0.000000
+orientation             = -5.650003, 0.000000, 7.650011
+
+[wpn_gauss_actor]
+position                = -0.026000, -0.070000, 0.000000
+orientation             = -6.150005, 0.000000, 6.150005
+
+[wpn_lr300_actor]
+position                = -0.038400, -0.131000, 0.000000
+orientation             = -7.700011, -6.800008, 6.650007
+
+[wpn_bizon_actor]
+position                = -0.026000, -0.215000, 0.000000
+orientation             = 3.049998, -3.199998, 4.249998
+
+[wpn_mp5_nimble_actor]
+position                = -0.026000, -0.125000, -0.030000
+orientation             = 0.000000, 4.200018, 0.000000
+
+[wpn_g36_actor]
+position                = -0.007300, 0.002502, 0.135502
+orientation             = -10.350021, -6.249993, 0.000000
+; ------------------------------------------------------------------------------------------
+; Variants that had no seat of their own. `<section>_actor` is looked up by EXACT name, so an
+; upgrade/minigame/nimble clone inherited nothing and fell back to the plain m_Offset. These
+; INHERIT the parent's entry rather than copying its numbers, so tuning the parent moves them
+; all. Generated from the weapon inheritance graph, not by hand.
+; NOTE the ones marked below are a DIFFERENT MODEL from their parent (sawn-offs, the .223
+; pistol, the trapper/scoped variants) -- they inherit here only as a starting point and may
+; well want their own numbers.
+
+[wpn_223_pistol_actor]:wpn_usp_actor	; different model from the parent -- check
+[wpn_ak74u_m1_actor]:wpn_ak74u_actor
+[wpn_ak74u_minigame_actor]:wpn_ak74u_actor
+[wpn_ak74u_snag_actor]:wpn_ak74u_actor
+[wpn_bm16_obrez1_actor]:wpn_bm16_actor	; different model from the parent -- check
+[wpn_bm16_obrez2_actor]:wpn_bm16_actor	; different model from the parent -- check
+[wpn_bm16_obrez_full_actor]:wpn_bm16_actor	; different model from the parent -- check
+[wpn_gauss_aes_actor]:wpn_gauss_actor
+[wpn_lr300_minigame_actor]:wpn_lr300_actor
+[wpn_lr300_up2_actor]:wpn_lr300_actor
+[wpn_mp5_minigame_actor]:wpn_mp5_actor
+[wpn_protecta_nimble_actor]:wpn_spas12_actor
+[wpn_sig550_minigame_actor]:wpn_sig550_actor
+[wpn_sig550_up2_actor]:wpn_sig550_actor
+[wpn_sig_no_draw_sound_actor]:wpn_sig550_actor
+[wpn_sig_with_scope_actor]:wpn_sig550_actor
+[wpn_svu_nimble_actor]:wpn_svu_actor
+[wpn_toz34_obrez1_actor]:wpn_toz34_actor	; different model from the parent -- check
+[wpn_toz34_obrez2_actor]:wpn_toz34_actor	; different model from the parent -- check
+[wpn_toz34_obrez_full_actor]:wpn_toz34_actor	; different model from the parent -- check
+[wpn_toz34_scoped_actor]:wpn_toz34_actor	; different model from the parent -- check
+[wpn_ump45_actor]:wpn_mp5_actor
+[wpn_val_minigame_actor]:wpn_val_actor
+[wpn_vintorez_nimble_actor]:wpn_vintorez_actor
+[wpn_vintorez_up_actor]:wpn_vintorez_actor
+[wpn_wincheaster1300_trapper_actor]:wpn_wincheaster1300_actor	; different model from the parent -- check
+[wpn_saiga12_actor]:wpn_ak74u_actor
+orientation             = 7.400015, -8.550010, 18.350008
+
+[mar_quest_wpn_ak74u_1_actor]:wpn_ak74u_actor
+
+[mar_quest_wpn_pm_1_actor]:wpn_pm_actor
+
+[agr_quest_wpn_spas12_actor]:wpn_spas12_actor
+
+[gar_quest_wpn_desert_eagle_actor]:wpn_desert_eagle_actor
+
+[gar_quest_wpn_pm_actor]:wpn_pm_actor
+
+[gar_quest_wpn_wincheaster1300_actor]:wpn_wincheaster1300_actor
+
+[wpn_sig550_luckygun_actor]:wpn_sig550_actor
+
+[wpn_fn2000_actor]:wpn_sig550_actor

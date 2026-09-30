@@ -1,302 +1,353 @@
-[up_sect_a_fort]
-cost		      		= 150
-value					= +25
-rpm						= 50
+;==================================================================================================
+; Fort-12 upgrade tree -- ported from Gunslinger (fort12/upgrades.ltx). CoP-style scheme.
+; Adaptations vs GS: barrel_sil silencer keys stripped (dup-sound crash, as PM); weight nodes -> prop_weight_kg.
+;==================================================================================================
+;------------------------------------------fort_barrel_sil------------------------------------------
+[up_sect_fort_barrel_sil]
+; GS-way silencer via upgrade (retrofit): status/name/x/y REQUIRED (WeaponUpgrade.cpp:292);
+; snd_silncer_shot OMITTED -- re-declaring re-runs LoadSound -> crash; base loads the sound.
+silencer_status = 2
+silencer_name = wpn_addon_silencer
+silencer_x = 62
+silencer_y = -17
+; GS defines silencer_status/name/pos + snd_silncer_shot here -- stripped (re-declaring the shot sound crashes:
+; HUD_SOUND_COLLECTION NULL==FindSoundItem, same fix as PM). Visual + stats only.
+cost = 2000
+fire_dispersion_base = -0.03
+PDM_disp_base = -0.1
+inv_weight = +0.01
+hide_bones = barrel
+show_bones = barrel_silencer
+upgrade_addon_icon = upgrade_addon_icon_barrel_silencer_1
+upgrade_addon_icon_offset_x = 49
+upgrade_addon_icon_offset_y = 0
 
-[up_sect_b_fort]
-cost		      		= 150
-value					= -20
-
-cam_dispersion          = -0.1		;0.5
-cam_dispersion_inc		= -0.1		;0.5
-cam_step_angle_horz		= -0.2		;1.0
-
-[up_sect_c_fort]
-cost		      		= 150
-value					= -20
-inv_weight				= -0.1
-fire_dispersion_base	= -0.1 ;0.5
-
-[up_sect_d_fort]
-cost		      		= 150
-value					= +20
-bullet_speed		 	= 50
-hit_power           	= 0.55, 0.55, 0.55, 0.55
-
-[up_sect_e_fort]
-cost		      		= 150
-value					= +20
-fire_dispersion_base	= -0.1 ;0.5
-
-[up_sect_f_fort]
-cost		      		= 150
-value					= +20
-fire_dispersion_base	= -0.1 ;0.5
-
-cam_dispersion          = -0.1		;0.5
-cam_dispersion_inc		= -0.1		;0.5
-cam_step_angle_horz		= -0.2		;1.0
-
-[up_sect_g_fort]
-cost		      		= 150
-value					= "9x19"
-ammo_class		 		= ammo_9x19_fmj, ammo_9x19_pbp
-
-[up_sect_h_fort]
-cost		      		= 150
-value					= +4
-ammo_mag_size		 	= 4
-
-[up_sect_ac_fort]
-cost		      		= 225
-value					= -50
-;value2					= st_upgr_silencer_disable
-
-cam_dispersion          = -0.25		;0.5
-cam_dispersion_inc		= -0.25		;0.5
-cam_step_angle_horz		= -0.5		;1.0
-
-;silencer_status			= 0
-
-[up_sect_bd_fort]
-cost		      		= 225
-value					= +30
-;value2					= st_upgr_silencer_disable
-bullet_speed		 	= 100
-hit_power           	= 0.6, 0.6, 0.6, 0.6
-;silencer_status			= 0
-
-[up_a_fort]
-scheme_index            = 0, 0
-known                   = 1
-;;invented                = 1                							; 0
-effects                 = up_gr_ac_fort
-section                 = up_sect_a_fort
-property                = prop_rpm
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = on_weapon_upgrade_something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_fort_barrel_sil]
+scheme_index = 0, 0
+known = 1
+effects = vartree_fort_zatvor
+section = up_sect_fort_barrel_sil
+property = prop_silencer
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_zatvor_rpm
-description             = st_upg_zatvor_rpm_descr
-icon                    = ui_wp_upgrade_01
+prereq_params  =
+name =gunsl_fort_up_barrel_sil_name
+description =gunsl_fort_up_barrel_sil_descr
+icon = ui_gunsl_up_fort_barrel_sil
+;------------------------------------------fort_barrel_speed------------------------------------------
+[up_sect_fort_barrel_speed]
+cost = 2000
+value = +20
+bullet_speed = +50
+PDM_disp_base = -0.1
 
-;;...
-[up_b_fort]
-scheme_index            = 0, 1
-known                   = 1
-effects                 = up_gr_bd_fort
-section                 = up_sect_b_fort
-property                = prop_recoil
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_fort_barrel_speed]
+scheme_index = 0, 1
+known = 1
+effects = vartree_fort_zatvor
+section = up_sect_fort_barrel_speed
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_zatvor_recoil
-description             = st_upg_zatvor_recoil_descr
-icon                    = ui_wp_upgrade_02
+prereq_params  =
+name =gunsl_fort_up_barrel_speed_name
+description =gunsl_fort_up_barrel_speed_descr
+icon = ui_gunsl_up_fort_barrel_speed
+;------------------------------------------fort_body------------------------------------------
+[up_sect_fort_body]
+cost = 5000
+value = +30
+misfire_end_prob = -0.02
+misfire_start_condition = -0.1
+misfire_end_condition = -0.05
+condition_shot_dec = -0.0012
+condition_queue_shot_dec = -0.0012
 
-[up_c_fort]
-scheme_index            = 0, 2
-known                   = 1
-effects                 = up_gr_ac_fort
-section                 = up_sect_c_fort
-property                = prop_weight      
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_fort_body]
+scheme_index = 0, 2
+known = 1
+effects =
+section = up_sect_fort_body
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_weight
-description             = st_upg_barrel_weight_descr
-icon                    = ui_wp_upgrade_03
+prereq_params  =
+name =gunsl_fort_up_body_name
+description =gunsl_fort_up_body_descr
+icon = ui_gunsl_up_fort_body
+;------------------------------------------fort_ejector------------------------------------------
+[up_sect_fort_ejector]
+cost = 4000
+value = +25
+misfire_start_prob = -0.001
+misfire_end_prob = -0.03
+condition_shot_dec = -0.0003
+condition_queue_shot_dec = -0.0003
 
-[up_d_fort]
-scheme_index            = 0, 3
-known                   = 1
-effects                 = up_gr_bd_fort
-section                 = up_sect_d_fort
-property                = prop_bullet_speed
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_fort_ejector]
+scheme_index = 0, 3
+known = 1
+effects =
+section = up_sect_fort_ejector
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_hard_barrel_curved
-description             = st_upg_hard_barrel_curved_descr
-icon                    = ui_wp_upgrade_04
+prereq_params  =
+name =gunsl_fort_up_ejector_name
+description =gunsl_fort_up_ejector_descr
+icon = ui_gunsl_up_fort_ejector
+;------------------------------------------fort_handle------------------------------------------
+[up_sect_fort_handle]
+cost = 2000
+value = +20
+control_inertion_factor = -0.1
+cam_relax_speed         = +1.0
+cam_dispersion          = -0.03
+zoom_cam_relax_speed = +2
+zoom_cam_dispersion = -0.05
+zoom_cam_dispersion_inc = -0.03
+PDM_disp_base = -0.1
+PDM_disp_vel_factor = -0.1
 
-[up_e_fort]
-scheme_index            = 0, 4
-known                   = 1
-effects                 = 
-section                 = up_sect_e_fort
-property                = prop_dispersion
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_fort_handle]
+scheme_index = 0, 4
+known = 1
+effects =
+section = up_sect_fort_handle
+property = prop_inertion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_trigger_accur
-description             = st_upg_trigger_accur_descr
-icon                    = ui_wp_upgrade_05
+prereq_params  =
+name =gunsl_fort_up_handle_name
+description =gunsl_fort_up_handle_descr
+icon = ui_gunsl_up_fort_handle
+;------------------------------------------fort_usm_recoil------------------------------------------
+[up_sect_fort_usm_recoil]
+cost = 4000
+value = -20
+PDM_disp_base = -0.05
+cam_dispersion = -0.18
+cam_dispersion_inc = -0.25
+zoom_cam_dispersion = -0.08
+zoom_cam_dispersion_inc = -0.30
 
-[up_f_fort]
-scheme_index            = 0, 5
-known                   = 1
-effects                 = 
-section                 = up_sect_f_fort
-property                = prop_dispersion
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_fort_usm_recoil]
+scheme_index = 0, 5
+known = 1
+effects = vartree_fort_body
+section = up_sect_fort_usm_recoil
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_handle_accur2
-description             = st_upg_handle_accur2_descr
-icon                    = ui_wp_upgrade_09
+prereq_params  =
+name =gunsl_fort_up_usm_recoil_name
+description =gunsl_fort_up_usm_recoil_descr
+icon = ui_gunsl_up_fort_usm_recoil
+;------------------------------------------fort_light_mag------------------------------------------
+[up_sect_fort_light_mag]
+cost = 1000
+value = -0.05
+inv_weight = -0.05
 
-[up_g_fort]
-scheme_index            = 0, 6
-known                   = 1
-effects                 = 
-section                 = up_sect_g_fort
-property                = prop_calibre
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_fort_light_mag]
+scheme_index = 0, 6
+known = 1
+effects =
+section = up_sect_fort_light_mag
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_calibre_9_19
-description             = st_upg_calibre_9_19_descr
-icon                    = ui_wp_upgrade_10
+prereq_params  =
+name =gunsl_fort_up_light_mag_name
+description =gunsl_fort_up_light_mag_descr
+icon = ui_gunsl_up_fort_light_mag
+;------------------------------------------fort_patronnik_accuracy------------------------------------------
+[up_sect_fort_patronnik_accuracy]
+cost = 4000
+value = +30
+fire_dispersion_base = -0.08
+PDM_disp_base = -0.5
+PDM_disp_crouch = -0.1
+PDM_disp_crouch_no_acc = -0.1
 
-[up_h_fort]
-scheme_index            = 0, 7
-known                   = 1
-effects                 = 
-section                 = up_sect_h_fort
-property                = prop_ammo_size
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_fort_patronnik_accuracy]
+scheme_index = 0, 7
+known = 1
+effects =
+section = up_sect_fort_patronnik_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_charger_big
-description             = st_upg_charger_big_descr
-icon                    = ui_wp_upgrade_06
+prereq_params  =
+name =gunsl_fort_up_patronnik_accuracy_name
+description =gunsl_fort_up_patronnik_accuracy_descr
+icon = ui_gunsl_up_fort_patronnik_accuracy
+;------------------------------------------fort_zatvor_balancer------------------------------------------
+[up_sect_fort_zatvor_balancer]
+cost = 4000
+value = -30
+PDM_disp_base = -0.15
+cam_dispersion = -0.3
+cam_dispersion_inc = -0.1
+zoom_cam_dispersion = -0.1
+zoom_cam_dispersion_inc = -0.2
 
-
-[up_ac_fort]
-scheme_index            = 1, 0
-known                   = 1
-effects                 = 
-section                 = up_sect_ac_fort
-property                = prop_recoil
-
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_fort_zatvor_balancer]
+scheme_index = 0, 8
+known = 1
+effects =
+section = up_sect_fort_zatvor_balancer
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_recoil
-description             = st_upg_barrel_recoil_descr
-icon                    = ui_wp_upgrade_07
+prereq_params  =
+name =gunsl_fort_up_zatvor_balancer_name
+description =gunsl_fort_up_zatvor_balancer_descr
+icon = ui_gunsl_up_fort_zatvor_balancer
+;------------------------------------------fort_light_details------------------------------------------
+[up_sect_fort_light_details]
+cost = 1000
+value = -0.1
+inv_weight = -0.1
 
-[up_bd_fort]
-scheme_index            = 1, 1
-known                   = 1
-effects                 = 
-section                 = up_sect_bd_fort
-property                = prop_bullet_speed
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_fort_light_details]
+scheme_index = 0, 9
+known = 1
+effects = vartree_fort_barrel
+section = up_sect_fort_light_details
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_curved
-description             = st_upg_barrel_curved_descr
-icon                    = ui_wp_upgrade_08
+prereq_params  =
+name =gunsl_fort_up_light_details_name
+description =gunsl_fort_up_light_details_descr
+icon = ui_gunsl_up_fort_light_details
+;------------------------------------------fort_sights------------------------------------------
+[up_sect_fort_sights]
+cost = 1000
+crosshair_inertion = -1
+control_inertion_factor = -0.1
+show_bones = sight
 
+[up_fort_sights]
+scheme_index = 0, 10
+known = 1
+effects =
+section = up_sect_fort_sights
+property = prop_lightingsights
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  =
+name =gunsl_fort_up_sights_name
+description =gunsl_fort_up_sights_descr
+icon = ui_gunsl_up_fort_sights
+;------------------------------------------fort_usm_rpm------------------------------------------
+[up_sect_fort_usm_rpm]
+cost = 4000
+value = +40
+rpm = +120
+condition_shot_dec = +0.0005
+condition_queue_shot_dec = +0.0005
 
-[up_gr_ab_fort]
-elements                = up_a_fort, up_b_fort
+[up_fort_usm_rpm]
+scheme_index = 0, 11
+known = 1
+effects = vartree_fort_body
+section = up_sect_fort_usm_rpm
+property = prop_rpm
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  =
+name =gunsl_fort_up_usm_rpm_name
+description =gunsl_fort_up_usm_rpm_descr
+icon = ui_gunsl_up_fort_usm_rpm
+;------------------------------------------fort_podacha------------------------------------------
+[up_sect_fort_podacha]
+cost = 1000
+value = +10
+misfire_end_prob = -0.02
+misfire_start_condition = -0.05
 
-[up_gr_cd_fort]
-elements                = up_c_fort, up_d_fort
-
-[up_gr_e_fort]
-elements                = up_e_fort
-
-[up_gr_f_fort]
-elements                = up_f_fort
-
-[up_gr_g_fort]
-elements                = up_g_fort
-
-[up_gr_h_fort]
-elements                = up_h_fort
-
-[up_gr_ac_fort]
-elements                = up_ac_fort
-
-[up_gr_bd_fort]
-elements                = up_bd_fort
+[up_fort_podacha]
+scheme_index = 0, 12
+known = 1
+effects = vartree_fort_usm
+section = up_sect_fort_podacha
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  =
+name =gunsl_fort_up_podacha_name
+description =gunsl_fort_up_podacha_descr
+icon = ui_gunsl_up_fort_podacha
+;------------------------------------------ vartrees ------------------------------------------
+[vartree_fort_details]
+elements = up_fort_light_details
+[vartree_fort_barrel]
+elements = up_fort_barrel_sil, up_fort_barrel_speed
+[vartree_fort_zatvor]
+elements = up_fort_ejector, up_fort_patronnik_accuracy, up_fort_zatvor_balancer
+[vartree_fort_podacha]
+elements = up_fort_podacha
+[vartree_fort_usm]
+elements = up_fort_usm_recoil, up_fort_usm_rpm
+[vartree_fort_body]
+elements = up_fort_body
+[vartree_fort_sights]
+elements = up_fort_sights
+[vartree_fort_handle]
+elements = up_fort_handle
+[vartree_fort_mag]
+elements = up_fort_light_mag

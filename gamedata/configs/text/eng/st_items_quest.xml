@@ -37,13 +37,13 @@
 		<text>Secret 6</text>
 	</string>
 	<string id="device_pda_old">
-		<text>Freshy's old PDA</text>
+		<text>Freshy’s old PDA</text>
 	</string>
 	<string id="esc_treasure_novice_stalker_descr">
-		<text>These are the things I saved for a rainy day. If it ever comes, I'll definitely come here for my supplies.</text>
+		<text>These are the things I saved for a rainy day. If it ever comes, I’ll definitely come here for my supplies.</text>
 	</string>
 	<string id="esc_treasure_novice_stalker_name">
-		<text>Rookie's stash</text>
+		<text>Rookie’s stash</text>
 	</string>
 	<string id="esc_treasure_weapon_box_descr">
 		<text>Weapons and ammo will be useful when fighting the military and bandits.</text>
@@ -70,28 +70,28 @@
 		<text>No data.</text>
 	</string>
 	<string id="st_device_pda_fang">
-		<text>Fang's PDA</text>
+		<text>Fang’s PDA</text>
 	</string>
 	<string id="st_device_pda_fang_descr">
-		<text>Fang's PDA</text>
+		<text>Fang’s PDA.</text>
 	</string>
 	<string id="st_device_pda_lost_squard_descr">
-		<text>Secret information about military activity at the warehouses</text>
+		<text>Secret information about military activity at the warehouses.</text>
 	</string>
 	<string id="st_device_pda_lost_squard_fang">
-		<text>Stalker group commander's PDA </text>
+		<text>Stalker group commander’s PDA</text>
 	</string>
 	<string id="st_device_pda_military">
-		<text>General's PDA</text>
+		<text>General’s PDA</text>
 	</string>
 	<string id="st_device_pda_military_descr">
 		<text>The PDA contains secret information about the immediate plans of the military at the Cordon.</text>
 	</string>
 	<string id="st_esc_device_pda_driver">
-		<text>Driver's friend's PDA</text>
+		<text>Driver’s friend’s PDA</text>
 	</string>
 	<string id="st_esc_device_pda_driver_descr">
-		<text>Driver's friend's PDA.</text>
+		<text>Driver’s friend’s PDA.</text>
 	</string>
 	<string id="st_esc_mechanic_flash_card">
 		<text>Information about weapons upgrades</text>
@@ -106,10 +106,10 @@
 		<text>Secret data.</text>
 	</string>
 	<string id="st_mil_device_pda_lost_squard">
-		<text>Commander's PDA</text>
+		<text>Commander’s PDA</text>
 	</string>
 	<string id="st_mil_device_pda_lost_squard_descr">
-		<text>PDA belonging to the commander of the stalker group. Contains valuable information about bandits' plans to seize army warehouse territories.</text>
+		<text>PDA belonging to the commander of the stalker group. Contains valuable information about bandits’ plans to seize army warehouse territories.</text>
 	</string>
 	<string id="st_red_forest_pda_map">
 		<text>PDA with a map of the Red Forest</text>
@@ -121,16 +121,16 @@
 		<text>This PDA contains technical documentation which may help scientists figure out what caused such a powerful psy-field to appear at Yantar.</text>
 	</string>
 	<string id="device_pda_digger_name">
-		<text>Lost party's PDA.</text>
+		<text>Lost party’s PDA</text>
 	</string>
 	<string id="device_pda_garbage_traitor">
-		<text>Smuggler's PDA</text>
+		<text>Smuggler’s PDA</text>
 	</string>
 	<string id="device_pda_garbage_traitor_descr">
-		<text>Smuggler's PDA, found among Stringov's possessions.</text>
+		<text>Smuggler’s PDA, found among Stringov’s possessions.</text>
 	</string>
 	<string id="device_pda_old_descr">
-		<text>Old PDA, found under the false bottom of the toolbox at Freshy's camp.</text>
+		<text>Old PDA, found under the false bottom of the toolbox at Freshy’s camp.</text>
 	</string>
 	<string id="flesh_up_a_novice_outfit_name">
 		<text>Flash drive with data on superlight kevlar body armor</text>
@@ -163,7 +163,7 @@
 		<text>Flash drive with data on pump mechanisms for shotguns</text>
 	</string>
 	<string id="flesh_up_aceg_scientific_outfit_name">
-		<text>Flash drive with data on reinforced army body armor</text>
+		<text>Flash drive with data on reinforced body armor</text>
 	</string>
 	<string id="flesh_up_bd_desert_eagle_name">
 		<text>Flash drive with data on pistol barrel modification</text>
@@ -190,16 +190,16 @@
 		<text>PDA with drawings only a genius can understand.</text>
 	</string>
 	<string id="st_device_pda_bloodsucker_name">
-		<text>Uncle Yar's buddy's PDA.</text>
+		<text>Uncle Yar’s buddy’s PDA</text>
 	</string>
 	<string id="st_device_pda_comendant_desc">
-		<text>Commandant Lingov's personal PDA. Contains information about collaboration with mercenaries, among other things.</text>
+		<text>Commandant Lingov’s personal PDA. Contains information about collaboration with mercenaries, among other things.</text>
 	</string>
 	<string id="st_device_pda_comendant_name">
-		<text>Lingov's PDA</text>
+		<text>Lingov’s PDA</text>
 	</string>
 	<string id="st_device_pda_freedom">
-		<text>Freedom stalker's PDA</text>
+		<text>Freedom stalker’s PDA</text>
 	</string>
 	<string id="st_device_pda_freedom_desc">
 		<text>The PDA of a Freedom fighter, containing a recording of the conversation between the attackers.</text>
@@ -217,16 +217,16 @@
 		<text>PDA</text>
 	</string>
 	<string id="st_agr_quest_duty_abakan">
-		<text>Duty member's assault rifle</text>
+		<text>Duty member’s assault rifle</text>
 	</string>
 	<string id="st_agr_quest_duty_abakan_descr">
-		<text>The rifle's inventory number is carefully marked on it with white paint. This degree of thoroughness suggests that it belongs to a Duty soldier.</text>
+		<text>The rifle’s inventory number is carefully marked on it with white paint. This degree of thoroughness suggests that it belongs to a Duty soldier.</text>
 	</string>
 	<string id="st_agr_quest_duty_case">
-		<text>Duty member's case</text>
+		<text>Duty member’s case</text>
 	</string>
 	<string id="st_agr_quest_duty_case_descr">
-		<text>The case is locked using a combination lock. The sound it makes suggests that it contains several items. An entry on the top side of the case made with a marker indicates the owner's Duty call sign.</text>
+		<text>The case is locked using a combination lock. The sound it makes suggests that it contains several items. An entry on the top side of the case made with a marker indicates the owner’s Duty call sign.</text>
 	</string>
 	<string id="st_agr_quest_duty_secret_pda">
 		<text>PDA with secret information</text>
@@ -238,10 +238,10 @@
 		<text>Ripper shotgun</text>
 	</string>
 	<string id="st_agr_quest_wpn_spas12_descr">
-		<text>It looks like this weapon was the subject of a brutal attack. A factory message on the butt indicates that the shotgun comes from a limited edition batch, notable for its better coating and the terrifying name: "Ripper".</text>
+		<text>It looks like this weapon was the subject of a brutal attack. A factory message on the butt indicates that the shotgun comes from a limited edition batch, notable for its better coating and the terrifying name: “Ripper”.</text>
 	</string>
 	<string id="st_esc_quest_akm47">
-		<text>Trophy AKM-47/2</text>
+		<text>Trophy AKM</text>
 	</string>
 	<string id="st_esc_quest_akm47_descr">
 		<text>An old, worn-down assault rifle with claw marks on the stock. A legendary weapon.</text>
@@ -250,25 +250,25 @@
 		<text>Lucky detector</text>
 	</string>
 	<string id="st_esc_quest_luky_detector_descr">
-		<text>An old detector with chewing gum and banana stickers on it. It looks fairly regular, and it's difficult to believe that anyone would consider it anything special.</text>
+		<text>An old detector with chewing gum and banana stickers on it. It looks fairly regular, and it’s difficult to believe that anyone would consider it anything special.</text>
 	</string>
 	<string id="st_esc_quest_magic_vodka">
-		<text>"Magic" vodka</text>
+		<text>“Magic” vodka</text>
 	</string>
 	<string id="st_esc_quest_magic_vodka_descr">
-		<text>A murky liquid with a strong smell of alcohol. It's probably 80-90%, so it's best avoided.</text>
+		<text>A murky liquid with a strong smell of alcohol. It’s probably 80-90%, so it’s best avoided.</text>
 	</string>
 	<string id="st_esc_quest_spec_medkit">
 		<text>NPR-21p special medkit</text>
 	</string>
 	<string id="st_esc_quest_spec_medkit_descr">
-		<text>The medkit is marked with the words "NPR-21p antiradiation kit (test model)". The directions contain a huge list of rather unpleasant side-effects.</text>
+		<text>The medkit is marked with the words “NPR-21p antiradiation kit (test model)”. The directions contain a huge list of rather unpleasant side-effects.</text>
 	</string>
 	<string id="st_gar_quest_novice_outfit">
-		<text>A durable leather jacket</text>
+		<text>Durable leather jacket</text>
 	</string>
 	<string id="st_gar_quest_novice_outfit_descr">
-		<text>It looks like the previous owner of this jacket was torn to shreds by an anomaly, but, oddly, the jacket hasn't got a scratch on it.</text>
+		<text>It looks like the previous owner of this jacket was torn to shreds by an anomaly, but, oddly, the jacket hasn’t got a scratch on it.</text>
 	</string>
 	<string id="st_gar_quest_vodka_2">
 		<text>Cossacks 2 vodka</text>
@@ -286,19 +286,19 @@
 		<text>Inscribed pistol</text>
 	</string>
 	<string id="st_gar_quest_wpn_pm_descr">
-		<text>There is an inscription on the handle of this pistol. What can be made out of it reads "For s...vice be..nd the ca.. of ...ty"</text>
+		<text>There is an inscription on the handle of this pistol. What can be made out of it reads “For s..vice be..nd the ca.. of ..ty”.</text>
 	</string>
 	<string id="st_gar_quest_wpn_wincheaster1300">
-		<text>A bandit Chaser 13</text>
+		<text>Bandit Winchester 1300</text>
 	</string>
 	<string id="st_gar_quest_wpn_wincheaster1300_descr">
 		<text>A few doodles on the shotgun barrel appear to depict stalkers killed with the weapon.</text>
 	</string>
 	<string id="st_red_forest_pda_map_2">
-		<text>A PDA with a map of the Red Forest</text>
+		<text>PDA with a map of the Red Forest</text>
 	</string>
 	<string id="st_red_forest_pda_map_2_descr">
-		<text>This PDA contains a map of the Red Forest with marks on it. The marks indicate areas with high levels of radiation. The last record was made at 23:15 and reads "We should have stayed the night at the bridge, we won't make it out of this forest at night".</text>
+		<text>This PDA contains a map of the Red Forest with marks on it. The marks indicate areas with high levels of radiation. The last record was made at 23:15 and reads “We should have stayed the night at the bridge, we won’t make it out of this forest at night”.</text>
 	</string>
 	<string id="st_red_quest_prototipe_device">
 		<text>Experimental device</text>
@@ -316,10 +316,10 @@
 		<text>USB drive with movies on it</text>
 	</string>
 	<string id="st_val_quest_flash_movies_descr">
-		<text>The USB drive contains the latest movies, but they can't be watched on a PDA due to their resolution.</text>
+		<text>The USB drive contains the latest movies, but they can’t be watched on a PDA due to their resolution.</text>
 	</string>
 	<string id="st_val_quest_guitar_serg">
-		<text>Serega's guitar</text>
+		<text>Serega’s guitar</text>
 	</string>
 	<string id="st_val_quest_guitar_serg_descr">
 		<text>A note made on the handle of this guitar with a ball-point pen indicates that it was a gift to someone called Serega from his girlfriend.</text>
@@ -337,9 +337,9 @@
 		<text>A training grenade. There is a chain and a keyring in the shape of a white rabbit attached to the pin.</text>
 	</string>
 	<string id="st_yan_quest_scarlet_flower">
-		<text>The Scarlet Flower</text>
+		<text>“Scarlet Flower”</text>
 	</string>
 	<string id="st_yan_quest_scarlet_flower_descr">
-		<text>A mysterious artifact of unknown origin. Produces virtually no emissions: it's only confirmed effect is to woo women.</text>
+		<text>A mysterious artifact of unknown origin. Produces virtually no emissions: its only confirmed effect is to woo women.</text>
 	</string>
 </string_table>

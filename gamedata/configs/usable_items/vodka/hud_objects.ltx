@@ -1,0 +1,133 @@
+; vodka -- hud-model item (spawned by gwr_eatable) + its hud animation section.
+; item_visual/anm use the Gunslinger model gwr\food\vodka. If the .omf still fails
+; to load on IX-Ray, re-save gwr\food\vodka\vodka_hud_anims.omf via the OMF editor.
+;
+; FOUR STAGES, like the water: the first three sips play `vodka` and put a partly drunk bottle back
+; in the bag, the last one plays `vodka_last` and throws the empty away. The stage a phantom stands
+; for is the one named in its `hud`; the item chain itself lives in misc\items.ltx ([vodka]).
+
+[vodka_hud_model]:gwr_base_usable
+; LEFT hand by request. NOTE the position/orientation below are xrMPE's and were
+; authored for the RIGHT hand -- they are a starting point here, not a match.
+actor_hand_bone	= bip01_l_hand
+position		= 0.079, 0.023, 0.032
+orientation		= 57, -201.5, 8.0
+; world model for THIRD PERSON. gwr_base_usable gives every phantom
+; gwr_base_usable gives them all an empty stand-in visual, so there was nothing to draw in hand.
+visual			= gwr\food\vodka\vodka_hud.ogf
+actor_torso_anim	= norm_torso_item_drink_staker	; third-person gesture from the xrMPE actor pack
+$spawn          = "weapons\vodka_hud_model"
+description     = gunsl_eatable_vodka_descr
+inv_name        = st_vodka
+inv_name_short  = st_vodka
+; no icon of its own -- phantom, inherits the blank cell from the base section
+hud             = vodka_hud
+timing          = 6770
+snd_using       = items\vodka\vodka_drink
+snd_delay       = 250
+snd_delay_detector = 250   ; shorter delay when only a detector is in hands (it holsters faster)
+gwr_eatable_object = vodka_eatable
+effect_delay       = 4800
+
+[vodka_hud_model2]:vodka_hud_model
+$spawn          = "weapons\vodka_hud_model2"
+description     = gunsl_eatable_vodka_descr2
+hud             = vodka_hud2
+; no icon of its own -- phantom, inherits the blank cell from the base section
+
+[vodka_hud_model3]:vodka_hud_model
+$spawn          = "weapons\vodka_hud_model3"
+description     = gunsl_eatable_vodka_descr3
+hud             = vodka_hud3
+; no icon of its own -- phantom, inherits the blank cell from the base section
+
+; last sip: different sound, and the empty bottle is thrown away instead of coming back to the bag.
+; GS trash: the empty thrown away at timing_trash (see usable_items/trash_objects.ltx).
+; GS's own value shifted by the gap between our `timing` and GS's, so it lands at the same
+; point relative to the END of the animation.
+[vodka_hud_model4]:vodka_hud_model
+$spawn          = "weapons\vodka_hud_model4"
+description     = gunsl_eatable_vodka_descr4
+hud             = vodka_hud4
+; no icon of its own -- phantom, inherits the blank cell from the base section
+snd_using       = items\vodka\vodka_drink_last
+timing          = 6500
+trash_object    = vodka_trash
+timing_trash    = 6100
+
+[vodka_hud]:gwr_base_usable_hud
+hands_position          = 0.0,-0.02,0.14
+hands_position_16x9     = 0.0,-0.02,0.14
+item_visual             = gwr\food\vodka\vodka_hud
+anm_show                = vodka
+anm_hide                = zaglushka
+anm_idle                = zaglushka
+anm_idle_aim            = zaglushka
+anm_idle_moving         = zaglushka
+anm_idle_sprint         = zaglushka
+anm_bore                = zaglushka
+
+[vodka_hud2]:vodka_hud
+
+[vodka_hud3]:vodka_hud
+
+[vodka_hud4]:vodka_hud
+anm_show                = vodka_last
+
+
+; ------------------------------------------------------------------------------------------------
+; SECOND BOTTLE ART. A pure re-skin: every phantom inherits the matching plain-vodka stage, so the
+; timings, sounds, hand offsets and the trash on the last sip stay identical by construction -- only
+; the model changes -- vodka_cossacks_hud.ogf shares the skeleton (wpn_body + crishka) and names
+; the same vodka_hud_anims.omf, so `vodka` / `vodka_last` play unchanged.
+; ------------------------------------------------------------------------------------------------
+
+[vodka_cossacks_hud_model]:vodka_hud_model
+$spawn          = "weapons\vodka_cossacks_hud_model"
+visual          = gwr\food\vodka\vodka_cossacks.ogf
+hud             = vodka_cossacks_hud
+description     = st_vodka_cossacks_descr
+inv_name        = st_vodka_cossacks
+inv_name_short  = st_vodka_cossacks
+; no icon of its own -- phantom, inherits the blank cell from the base section
+
+[vodka_cossacks_hud_model2]:vodka_hud_model2
+$spawn          = "weapons\vodka_cossacks_hud_model2"
+visual          = gwr\food\vodka\vodka_cossacks.ogf
+hud             = vodka_cossacks_hud2
+description     = st_vodka_cossacks_descr2
+inv_name        = st_vodka_cossacks
+inv_name_short  = st_vodka_cossacks
+; no icon of its own -- phantom, inherits the blank cell from the base section
+
+[vodka_cossacks_hud_model3]:vodka_hud_model3
+$spawn          = "weapons\vodka_cossacks_hud_model3"
+visual          = gwr\food\vodka\vodka_cossacks.ogf
+hud             = vodka_cossacks_hud3
+description     = st_vodka_cossacks_descr3
+inv_name        = st_vodka_cossacks
+inv_name_short  = st_vodka_cossacks
+; no icon of its own -- phantom, inherits the blank cell from the base section
+
+; inherits the last-sip stage: vodka_drink_last and timing 6500; only the empty it throws differs.
+[vodka_cossacks_hud_model4]:vodka_hud_model4
+$spawn          = "weapons\vodka_cossacks_hud_model4"
+trash_object    = vodka_cossacks_trash
+visual          = gwr\food\vodka\vodka_cossacks.ogf
+hud             = vodka_cossacks_hud4
+description     = st_vodka_cossacks_descr4
+inv_name        = st_vodka_cossacks
+inv_name_short  = st_vodka_cossacks
+; no icon of its own -- phantom, inherits the blank cell from the base section
+
+[vodka_cossacks_hud]:vodka_hud
+item_visual             = gwr\food\vodka\vodka_cossacks_hud
+
+[vodka_cossacks_hud2]:vodka_hud2
+item_visual             = gwr\food\vodka\vodka_cossacks_hud
+
+[vodka_cossacks_hud3]:vodka_hud3
+item_visual             = gwr\food\vodka\vodka_cossacks_hud
+
+[vodka_cossacks_hud4]:vodka_hud4
+item_visual             = gwr\food\vodka\vodka_cossacks_hud

@@ -37,7 +37,7 @@
 		<text>Military</text>
 	</string>
 	<string id="bandit">
-		<text>Bandit</text>
+		<text>Bandits</text>
 	</string>
 	<string id="csky">
 		<text>Clear Sky</text>
@@ -49,7 +49,7 @@
 		<text>Duty</text>
 	</string>
 	<string id="ecolog">
-		<text>Scientist</text>
+		<text>Scientists</text>
 	</string>
 	<string id="escape">
 		<text>Cordon</text>
@@ -61,10 +61,10 @@
 		<text>Garbage</text>
 	</string>
 	<string id="katacomb">
-		<text>Abandoned hospital</text>
+		<text>Abandoned Hospital</text>
 	</string>
 	<string id="killer">
-		<text>Mercenary</text>
+		<text>Mercenaries</text>
 	</string>
 	<string id="limansk">
 		<text>Limansk</text>
@@ -73,25 +73,25 @@
 		<text>Swamps</text>
 	</string>
 	<string id="military">
-		<text>Army warehouses</text>
+		<text>Army Warehouses</text>
 	</string>
 	<string id="monolith">
 		<text>Monolith</text>
 	</string>
 	<string id="monster">
-		<text>Mutant</text>
+		<text>Mutants</text>
 	</string>
 	<string id="pda_btn_close">
 		<text>Turn off PDA</text>
 	</string>
 	<string id="pda_btn_fractionwar">
-		<text>Factions War</text>
+		<text>Faction War</text>
 	</string>
 	<string id="pda_btn_fractionwar_hint">
-		<text>Information on the current war between factions</text>
+		<text>Show information on the war between factions</text>
 	</string>
 	<string id="pda_btn_logs">
-		<text>Message log</text>
+		<text>Message Log</text>
 	</string>
 	<string id="pda_btn_logs_hint">
 		<text>Show message history</text>
@@ -109,7 +109,7 @@
 		<text>Statistics</text>
 	</string>
 	<string id="pda_btn_ranking_hint">
-		<text>Show information on factions:</text>
+		<text>Show information on factions</text>
 	</string>
 	<string id="pda_filter_news">
 		<text>Show news</text>
@@ -124,7 +124,7 @@
 		<text>Enemies</text>
 	</string>
 	<string id="st_faction_war_csky_capture_enemy_base">
-		<text>Capture enemy base</text>
+		<text>Capture the enemy base</text>
 	</string>
 	<string id="st_faction_war_csky_need_more_power">
 		<text>Strengthen our presence at the Swamps</text>
@@ -133,7 +133,7 @@
 		<text>Enemy defeated</text>
 	</string>
 	<string id="st_faction_war_csky_secure_level">
-		<text>Secure all approaches to the Swamps</text>
+		<text>Secure the southern approach to the Swamps</text>
 	</string>
 	<string id="st_fraction_state">
 		<text>Faction strength</text>
@@ -160,7 +160,7 @@
 		<text>Cordon</text>
 	</string>
 	<string id="stalker">
-		<text>Loner</text>
+		<text>Loners</text>
 	</string>
 	<string id="stancia_2">
 		<text>Chernobyl NPP</text>
@@ -187,10 +187,10 @@
 		<text>Faction information</text>
 	</string>
 	<string id="ui_st_enemy_mem_count">
-		<text>Enemy faction squads</text>
+		<text>Enemy faction’s squads</text>
 	</string>
 	<string id="ui_st_enemy_resource">
-		<text>Enemy faction resources</text>
+		<text>Enemy faction’s resources</text>
 	</string>
 	<string id="ui_st_name_bandit">
 		<text>Bandits</text>
@@ -217,16 +217,16 @@
 		<text>Faction information</text>
 	</string>
 	<string id="ui_st_our_mem_count">
-		<text>Your faction's squads</text>
+		<text>Your faction’s squads</text>
 	</string>
 	<string id="ui_st_our_resource">
-		<text>Your faction's resources</text>
+		<text>Your faction’s resources</text>
 	</string>
 	<string id="ui_st_state_confrontation">
 		<text>Faction strength</text>
 	</string>
 	<string id="ui_st_target_static">
-		<text>Your faction's current goal</text>
+		<text>Your faction’s current goal</text>
 	</string>
 	<string id="yantar">
 		<text>Yantar</text>
@@ -334,13 +334,13 @@
 		<text>Tasks</text>
 	</string>
 	<string id="st_lchanger_to_aes">
-		<text>To Chernobyl NPP</text>
+		<text>To the Chernobyl NPP</text>
 	</string>
 	<string id="st_lchanger_to_agroprom">
-		<text>To Agroprom Research Institute</text>
+		<text>To the Agroprom Research Institute</text>
 	</string>
 	<string id="st_lchanger_to_agroprom_und">
-		<text>To the Agroprom underground</text>
+		<text>To the Agroprom Underground</text>
 	</string>
 	<string id="st_lchanger_to_darkvalley">
 		<text>To the Dark Valley</text>
@@ -352,7 +352,7 @@
 		<text>To the Garbage</text>
 	</string>
 	<string id="st_lchanger_to_hospital">
-		<text>To the deserted hospital</text>
+		<text>To the Deserted Hospital</text>
 	</string>
 	<string id="st_lchanger_to_limansk">
 		<text>To Limansk</text>
@@ -361,7 +361,7 @@
 		<text>To the Swamps</text>
 	</string>
 	<string id="st_lchanger_to_military">
-		<text>To the military warehouses</text>
+		<text>To the Military Warehouses</text>
 	</string>
 	<string id="st_lchanger_to_red_forest">
 		<text>To the Red Forest</text>
@@ -370,34 +370,34 @@
 		<text>To Yantar</text>
 	</string>
 	<string id="st_ui_pda_legend_additional_task">
-		<text>Secondary tasks</text>
+		<text>Secondary task</text>
 	</string>
 	<string id="st_ui_pda_legend_base">
-		<text>Faction bases</text>
+		<text>Faction base</text>
 	</string>
 	<string id="st_ui_pda_legend_enemies">
-		<text>Enemies</text>
+		<text>Enemy</text>
 	</string>
 	<string id="st_ui_pda_legend_friends">
-		<text>Friends</text>
+		<text>Friend</text>
 	</string>
 	<string id="st_ui_pda_legend_lchanger">
-		<text>Roads between locations</text>
+		<text>Road between locations</text>
 	</string>
 	<string id="st_ui_pda_legend_main_task">
-		<text>Main building</text>
+		<text>Primary task</text>
 	</string>
 	<string id="st_ui_pda_legend_mechanic">
 		<text>Mechanic</text>
 	</string>
 	<string id="st_ui_pda_legend_neutrals">
-		<text>Neutrals</text>
+		<text>Neutral</text>
 	</string>
 	<string id="st_ui_pda_legend_scout">
 		<text>Guide</text>
 	</string>
 	<string id="st_ui_pda_legend_secrets">
-		<text>Stashes</text>
+		<text>Stash</text>
 	</string>
 	<string id="st_ui_pda_legend_squad">
 		<text>Squad commander</text>
@@ -469,7 +469,7 @@
 		<text>Achieve superiority</text>
 	</string>
 	<string id="st_faction_war_stalker_secure_level">
-		<text>Secure the paths from the Garbage</text>
+		<text>Secure the paths to the Garbage</text>
 	</string>
 	<string id="st_faction_war_stalker_capture_placdarm">
 		<text>Secure a foothold at the Garbage</text>
@@ -487,7 +487,7 @@
 		<text>Achieve superiority</text>
 	</string>
 	<string id="st_faction_war_bandit_secure_level">
-		<text>Get control over the paths from the Cordon</text>
+		<text>Get control over the paths to the Cordon</text>
 	</string>
 	<string id="st_faction_war_bandit_capture_placdarm">
 		<text>Secure a foothold at the Cordon</text>
@@ -502,25 +502,25 @@
 		<text>Stalker base destroyed</text>
 	</string>
 	<string id="st_faction_war_freedom_secure_level">
-		<text>Secure the paths from the Garbage</text>
+		<text>Secure the paths to the Garbage</text>
 	</string>
 	<string id="st_faction_war_freedom_capture_garbage">
 		<text>Secure a foothold at the Garbage</text>
 	</string>
 	<string id="st_faction_war_freedom_secure_garbage">
-		<text>Reach the road to Agroprom Research Institute</text>
+		<text>Reach the road to the Agroprom Research Institute</text>
 	</string>
 	<string id="st_faction_war_freedom_capture_agroprom">
-		<text>Secure a foothold by Agroprom Research Institute</text>
+		<text>Secure a foothold by the Agroprom Research Institute</text>
 	</string>
 	<string id="st_faction_war_freedom_eliminate_base">
-		<text>Destroy Duty's base</text>
+		<text>Destroy Duty’s base</text>
 	</string>
 	<string id="st_faction_war_freedom_relax">
-		<text>Duty's base destroyed</text>
+		<text>Duty’s base destroyed</text>
 	</string>
 	<string id="st_faction_war_duty_secure_level">
-		<text>Secure the paths from the Garbage</text>
+		<text>Secure the paths to the Garbage</text>
 	</string>
 	<string id="st_faction_war_duty_capture_garbage">
 		<text>Secure a foothold at the Garbage</text>
@@ -532,16 +532,16 @@
 		<text>Secure a foothold in the Dark Valley</text>
 	</string>
 	<string id="st_faction_war_duty_eliminate_base">
-		<text>Destroy Freedom's base</text>
+		<text>Destroy Freedom’s base</text>
 	</string>
 	<string id="st_faction_war_duty_relax">
-		<text>Freedom's base destroyed</text>
+		<text>Freedom’s base destroyed</text>
 	</string>
 	<string id="st_stage_icon_csky_power_no">
-		<text>We have not achieved superiority </text>
+		<text>We have not achieved superiority</text>
 	</string>
 	<string id="st_stage_icon_csky_power_yes">
-		<text>We have achieved superiority </text>
+		<text>We have achieved superiority</text>
 	</string>
 	<string id="st_stage_icon_csky_capture_base_no">
 		<text>The renegade base is currently intact</text>
@@ -556,16 +556,16 @@
 		<text>We control the road to the Cordon</text>
 	</string>
 	<string id="st_stage_icon_stalker_power_no">
-		<text>We have not achieved superiority </text>
+		<text>We have not achieved superiority</text>
 	</string>
 	<string id="st_stage_icon_stalker_power_yes">
-		<text>We have achieved superiority </text>
+		<text>We have achieved superiority</text>
 	</string>
 	<string id="st_stage_icon_stalker_secure_escape_no">
-		<text>We do not have control over the paths from the Garbage</text>
+		<text>We do not have control over the paths to the Garbage</text>
 	</string>
 	<string id="st_stage_icon_stalker_secure_escape_yes">
-		<text>We control the paths from the Garbage</text>
+		<text>We control the paths to the Garbage</text>
 	</string>
 	<string id="st_stage_icon_stalker_capture_garbage_no">
 		<text>We do not have a foothold at the Garbage</text>
@@ -580,10 +580,10 @@
 		<text>The bandit base has been destroyed</text>
 	</string>
 	<string id="st_stage_icon_bandit_power_no">
-		<text>We have not achieved superiority </text>
+		<text>We have not achieved superiority</text>
 	</string>
 	<string id="st_stage_icon_bandit_power_yes">
-		<text>We have achieved superiority </text>
+		<text>We have achieved superiority</text>
 	</string>
 	<string id="st_stage_icon_bandit_secure_garbage_no">
 		<text>We do not have control over the roads to the Cordon</text>
@@ -604,10 +604,10 @@
 		<text>The stalker base has been destroyed</text>
 	</string>
 	<string id="st_stage_icon_freedom_secure_darkvalley_no">
-		<text>We do not have control over the paths from the Garbage</text>
+		<text>We do not have control over the paths to the Garbage</text>
 	</string>
 	<string id="st_stage_icon_freedom_secure_darkvalley_yes">
-		<text>We control the paths from the Garbage</text>
+		<text>We control the paths to the Garbage</text>
 	</string>
 	<string id="st_stage_icon_freedom_capture_garbage_no">
 		<text>We do not have a foothold at the Garbage</text>
@@ -616,7 +616,7 @@
 		<text>We have a foothold at the Garbage</text>
 	</string>
 	<string id="st_stage_icon_freedom_secure_garbage_no">
-		<text>We do not have control over the road to Agroprom </text>
+		<text>We do not have control over the road to Agroprom</text>
 	</string>
 	<string id="st_stage_icon_freedom_secure_garbage_yes">
 		<text>We control the road to Agroprom</text>
@@ -628,16 +628,16 @@
 		<text>We have a foothold at Agroprom</text>
 	</string>
 	<string id="st_stage_icon_freedom_eliminate_duty_no">
-		<text>Duty's base is currently intact</text>
+		<text>Duty’s base is currently intact</text>
 	</string>
 	<string id="st_stage_icon_freedom_eliminate_duty_yes">
-		<text>Duty's base has been destroyed</text>
+		<text>Duty’s base has been destroyed</text>
 	</string>
 	<string id="st_stage_icon_duty_secure_agroprom_no">
-		<text>We do not have control over the paths from the Garbage</text>
+		<text>We do not have control over the paths to the Garbage</text>
 	</string>
 	<string id="st_stage_icon_duty_secure_agroprom_yes">
-		<text>We control the paths from the Garbage</text>
+		<text>We control the paths to the Garbage</text>
 	</string>
 	<string id="st_stage_icon_duty_capture_garbage_no">
 		<text>We do not have a foothold at the Garbage</text>
@@ -658,10 +658,10 @@
 		<text>We have a foothold at the Dark Valley</text>
 	</string>
 	<string id="st_stage_icon_duty_eliminate_freedom_no">
-		<text>Freedom's base is intact</text>
+		<text>Freedom’s base is intact</text>
 	</string>
 	<string id="st_stage_icon_duty_eliminate_freedom_yes">
-		<text>Freedom's base has been destroyed</text>
+		<text>Freedom’s base has been destroyed</text>
 	</string>
 	<string id="st_location_renegade">
 		<text>Swamps</text>
@@ -679,6 +679,6 @@
 		<text>none</text>
 	</string>
 	<string id="hospital">
-		<text>Deserted hospital</text>
+		<text>Deserted Hospital</text>
 	</string>
 </string_table>

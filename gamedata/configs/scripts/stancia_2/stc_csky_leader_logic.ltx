@@ -7,7 +7,7 @@ meet = no_meet
 target = actor
 combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
-on_info = {!black_screen} remark@start %=disable_ui =run_postprocess(stc_fade_out) =play_sound(stc_first_scene_talk)%
+on_info = {!black_screen} remark@start %=disable_ui =run_postprocess(stc_fade_out) =play_sound(stc_first_scene_talk:csky:mar_csky_commander_name)%
 
 [remark@start]
 anim = guard
@@ -31,7 +31,7 @@ anim = wait_rac_stc
 combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
 meet = no_meet
-on_timer = 3000 | remark@scout_2 %=stc_create_some_csky_stalkers(stc_csky_safe_spawn_point_1:stc_csky_stalker:5) =run_postprocess(agr_u_fade) =play_sound(stc_first_scene_petrenko_talk) +stc_scout_talk%
+on_timer = 3000 | remark@scout_2 %=stc_create_some_csky_stalkers(stc_csky_safe_spawn_point_1:stc_csky_stalker:5) =run_postprocess(agr_u_fade) =play_sound(stc_first_scene_petrenko_talk:csky:st_ui_pda_legend_squad) +stc_scout_talk%
 
 [remark@scout_2]
 target = actor
@@ -47,7 +47,7 @@ target = actor
 combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
 meet = no_meet
-on_timer = 4000 | remark@last %=play_sound(stc_first_scene_scout_talk)%
+on_timer = 4000 | remark@last %=play_sound(stc_first_scene_scout_talk:csky:st_ui_pda_legend_squad)%
 
 [remark@last]
 anim = wait
@@ -55,7 +55,7 @@ target = actor
 combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
 meet = no_meet
-on_signal = sound_end | remark@objective_1 %=play_sound(stc_first_scene_objective_talk)%
+on_signal = sound_end | remark@objective_1 %=play_sound(stc_first_scene_objective_talk:csky:mar_csky_commander_name)%
 
 [remark@objective_1]
 anim = wait

@@ -1,0 +1,8 @@
+<w>
+	<!-- Call of Pripyat upgrade lamps (ui_actor_upgrades_1 x=820..835), used by the weapon upgrade cells -->
+	<file name="ui\ui_upgrade_lamps">
+		<texture id="ui_inGame2_upgrade_on_icon_lamp_green_upgraded" x="0" y="0" width="5" height="38" />
+		<texture id="ui_inGame2_upgrade_on_icon_lamp_red_disabled" x="5" y="0" width="5" height="38" />
+		<texture id="ui_inGame2_upgrade_on_icon_lamp_yellow_highlighted" x="10" y="0" width="5" height="38" />
+	</file>
+</w>

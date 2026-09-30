@@ -1,0 +1,233 @@
+; RGN grenade -- ported from Gunslinger (configs/weapons/grenades/rgn), 2026-08-03.
+; Values are GS's as-is; only `class` and the hud parent are mapped to ours.
+[grenade_rgn]:identity_immunities,weapon_probability,default_weapon_params
+grenade_remove_time		= 60000
+detonation_threshold_hit= 200
+GroupControlSection		= spawn_group
+discovery_dependency	=
+$spawn 					= "weapons\grenades\rgn"
+$prefetch				= 128
+class						= G_RGD5	; orig G_RGD5_S -- our engine has no _S grenade clsid (clsid_game.h)
+cform						= skeleton
+visual					= dynamics\weapons\wpn_grenades\wpn_rgn.ogf
+inv_name				= gunsl_wpn_grenade_rgn
+inv_name_short			= gunsl_wpn_grenade_rgn
+inv_weight				= 0.29	;.1
+description				= gunsl_wpn_grenade_rgn_descr
+ef_weapon_type			= 4
+default_to_ruck			= false
+sprint_allowed			= true
+control_inertion_factor	= 1
+;---DOF-------------------------------------------------------------------------
+zoom_dof				= 0.5, 1.0, 180
+reload_dof				= 0.0, 0.5, 5, 1.7
+;-------------------------------------------------------------------------------
+
+inv_grid_width			= 1
+inv_grid_height			= 1
+inv_grid_x				= 6
+inv_grid_y				= 1
+
+upgr_icon_x			= 918
+upgr_icon_y			= 857
+upgr_icon_width		= 68
+upgr_icon_height   	= 128
+
+kill_msg_x				= 240
+kill_msg_y				= 123
+kill_msg_width			= 14
+kill_msg_height			= 23
+
+animation_slot			= 7
+single_handed			= 1
+
+slot					= 3
+hud						= grenade_rgn_hud
+force_min				= 10	; ~30% от максимума
+force_const				= 25;20
+force_max				= 30
+force_grow_speed		= 20;2 ;30
+
+destroy_time			= 2500;3500
+
+cost					= 650
+
+explosion_on_kick = true
+min_explosion_speed = 3 ; если контакт произойдёт на скорости, меньшей указанной - взрыва не произойдёт
+deactivate_on_minimal_speed_contact = false ; деактивировать грену при контакте на меньшей скорости или просто игнорировать контакт
+supports_quick_throw = true
+checkout_bones = cheka
+safe_time = 0 ; если грена ударится раньше, чем указано тут - она снимется с боевого взвода и уже никогда не рванет
+delay_time = 500 ; все контакты в течение этого времени после броска будут игнорироваться
+
+explosion_on_hit = true
+explosion_hit_types = 8, 7	; orig GS `6, 8` = fire_wound + explosion; OUR enum spells those 8 and 7
+explosive_while_not_activated = true
+help_explosive_info = true
+
+detonation_threshold_hit = 0.4
+;-------------------------------------------------------------------------------
+blast					= 4.2
+blast_r					= 5
+blast_impulse			= 100
+;delete
+blast_impulse_factor	= 1
+
+frags					= 10
+frags_r					= 10
+frag_hit				= 0.5
+frag_hit_impulse		= 100
+
+hit_type_blast			= explosion
+hit_type_frag			= fire_wound
+
+up_throw_factor			= 1.2
+;-------------------------------------------------------------------------------
+
+
+explode_particles		= ghost_particles\explosions\explosion_ins_frag_00	; ghost_particles\explosions\explosion_ground_00
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
+
+light_color		         = 2.0,1.5,0.9
+light_range		         = 14.0
+light_time 		         = 0.85
+
+;трассы от осколков
+fragment_speed				= 200
+explode_duration			= 3		;подолжительность взрыва (с)
+
+;sounds
+;snd_explode				 = weapons\grenade\grenade_explosion5
+snd_explode					 = weapons\grenade\grenade_explode_outdoor_close_03
+snd_explode_indoor			 = weapons\grenade\grenade_explode_indoor_close_03
+snd_explode_dist			 = weapons\grenade\grenade_explode_outdoor_dist_03
+snd_explode_blend_dist_start = 25
+snd_explode_blend_dist_end   = 100
+snd_indoor_fadeout_start     = 0.01
+snd_indoor_fadeout_end       = 0.3
+snd_indoor_fadeout_db        = 12
+volume_snd_explode			 = 150
+volume_snd_explode_indoor    = 150
+volume_snd_explode_dist      = 100
+;snd_checkout            = weapons\grenade\grenade_throw_start
+snd_draw                = weapons\m1911\draw
+snd_holster             = weapons\m1911\hide
+snd_throw_begin         = weapons\grenade\grenade_throw_start
+snd_throw               = weapons\grenade\grenade_throw
+snd_throw_quick         = weapons\grenade\grenade_throw_quick
+snd_sprint_start        = weapons\detector_prepare
+snd_sprint_end          = weapons\pistol_sprint_end
+snd_headlamp_on         = weapons\headflash_on
+snd_headlamp_off        = weapons\headflash_off
+snd_nv_on               = weapons\nv_act
+snd_nv_off              = weapons\nv_deact
+
+;---------------------- Suicide -------------------------
+; мощность броска из взведенного состояния (то есть когда игрок вытащил чеку, поднял руку с греной и пошел к контре; отыграется обычный бросок)
+suicide_ready_force = 2  
+
+; мощность броска в случае доведения контролером дела до конца
+suicide_success_force = 1
+;задержка между броском после успеха самоубийства и взрывом (ставить по минимуму)
+suicide_success_destroy_time = 200
+
+
+; мощность броска грены, когда актор ушел от контры и отбрасывает грену в сторону
+suicide_fail_force = 20
+; время от начала отбрасывания до взрыва
+suicide_fail_destroy_time = 700
+
+snd_suicide_begin = weapons\grenade\suicide_f1_start
+snd_suicide_throw = weapons\grenade\grenade_throw
+snd_suicide_stop = weapons\grenade\grenade_throw
+
+attach_position_offset	= -0.03,-0.089,0.025
+attach_angle_offset		= 90,0,0
+attach_bone_name		=
+
+// should be deleted after update
+bone_name				= bip01_r_hand
+position_offset			 = 0.0,0.0,0.0
+angle_offset			 = 1.570790,1.570790,3.92699
+
+
+throw_point				= 0.4, 0.3, 0.1
+throw_dir				 = 0,0,1
+third_person_throw_point_offset =  -0.198,1.8,-0.833 ;-0.05,0.848,0.706
+
+wm_size                  = 0.1
+
+wallmark_section		 = explosion_marks
+; ---- keys our CGrenade/CMissile read unguarded and GS never writes (from our f1) ----
+snd_checkout            = weapons\grenade\grenade_throw_start
+
+
+[grenade_rgn_hud]:hud_base	; orig :default_hud_nodraw (GS-only section)
+fire_point			= 0,0,0
+fire_bone           = wpn_body
+
+prohibit_suicide = false; РїСЂРё РІС‹СЃС‚Р°РІР»РµРЅРёРё true Р·Р°СЃС‚Р°РІР»СЏРµС‚ СѓР±РёСЂР°С‚СЊ РіСЂР°РЅР°С‚Сѓ Рё РґРѕСЃС‚Р°С‚РІР°С‚СЊ РЅРѕР¶
+allow_suicide = true ; РїСЂРё РІС‹СЃС‚Р°РІР»РµРЅРёРё true Р°РєС‚РёРІРёСЂСѓРµС‚ СЃРїРµС†РёР°Р»СЊРЅС‹Рµ Р°РЅРёРјР°С†РёРё СЃСѓРёС†РёРґР°, РёРЅР°С‡Рµ - РґРµР»Р°РµС‚ РїСЂРѕСЃС‚Рѕ Р±СЂРѕСЃРѕРє РєСѓРґР°-РЅРёР±СѓРґСЊ
+
+attach_place_idx	= 0
+item_visual		= dynamics\weapons\wpn_grenades\wpn_rgn_hud
+
+hud_fov_factor = 1.25
+
+hands_position				= 0.0,-0.13,0.03
+hands_orientation			= 0.0,0.0,0.0
+hands_position_16x9			= 0.0,-0.13,0.03
+hands_orientation_16x9			= 0.0,0.0,0.0
+
+
+item_position				= 0.0,0.0,0.0
+item_orientation			= 0.0,0.0,0.0
+
+anm_hide		        = rgn_hide
+anm_show			= rgn_draw
+
+anm_idle			= rgn_idle
+anm_idle_slow                   = rgn_idle
+anm_idle_crouch                 = rgn_idle
+anm_idle_crouch_slow            = rgn_idle
+
+disable_bore = false
+anm_bore			= rgn_bore
+
+anm_idle_moving	 		= rgn_walk, rgn_slow_super
+anm_idle_moving_slow 		= rgn_slow, rgn_slow_super
+anm_idle_moving_crouch 	        = rgn_slow_down, rgn_slow_super
+anm_idle_moving_crouch_slow 	= rgn_slow_super
+
+lock_time_anm_idle_sprint_end        = 0.4
+anm_idle_sprint_start           = rgn_sprint_start
+anm_idle_sprint	 		= rgn_sprint
+anm_idle_sprint_end             = rgn_sprint_end
+
+anm_throw_begin			= rgn_throw_start
+anm_throw_idle			= rgn_throw_idle
+anm_throw			= f1_throw_end
+
+anm_throw_quick                 = rgn_throw_quick
+
+anm_suicide_begin = rgn_suicide
+anm_suicide_throw = f1_throw_end
+anm_suicide_stop =  f1_throw_end
+
+anm_headlamp_on = rgn_headflash
+anm_headlamp_off = rgn_headflash
+
+mark_anm_headlamp_on = 0.5
+mark_anm_headlamp_off = 0.5
+
+anm_nv_on = rgn_headflash
+anm_nv_off = rgn_headflash
+
+throw_point			= 0.0,0.4,0.3
+throw_dir			= 0,0,1
+third_person_throw_point_offset = -0.05,0.848,0.706

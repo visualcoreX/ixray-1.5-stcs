@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_addon_scope_eotech">
+		<text>EOTech XPS3-0 Holographic sight</text>
+	</string>
+	<string id="gunsl_addon_scope_eotech_descr">
+		<text>Holographic sight made by an American company EOTech. Designed for close to mid-range engagements. XPS3-0 is quite compact, therefore is popular among stalkers. Attached to rifles with a Picatinny rail.</text>
+	</string>
+	<string id="gunsl_addon_scope_aimpoint">
+		<text>Aimpoint CompM4s Red dot sight</text>
+	</string>
+	<string id="gunsl_addon_scope_aimpoint_descr">
+		<text>"Tubed" red dot sight made by a Swedish company Aimpoint AB. Used for medium and long range precision fire. Aiming reticle is a dot. Attached to rifles with a Picatinny rail.</text>
+	</string>
+	<string id="gunsl_addon_scope_elcan">
+		<text>Elcan Specter DR 1x/4x Assault optical sight</text>
+	</string>
+	<string id="gunsl_addon_scope_elcan_descr">
+		<text>Optical scope made by a Canadian company ELCAN Optical Technologies with variable 1x/4x magnification. The reticle can be lit up with adjustable brightness. Has backup iron sights in case of failure of the optical part. Attached to rifles with a Picatinny rail.</text>
+	</string>
+	<string id="gunsl_addon_scope_pn23">
+		<text>PN-23 Assault night sight</text>
+	</string>
+	<string id="gunsl_addon_scope_pn23_descr">
+		<text>Portable night scope made by a Russian company NPZ (Novosibirsk instrument-making plant) with fixed 3x magnification. Attached to rifles with a Picatinny rail.</text>
+	</string>
+</string_table>

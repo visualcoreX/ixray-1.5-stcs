@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_ammo_50ae">
+		<text>.50 AE rounds</text>
+	</string>
+	<string id="gunsl_ammo_50ae_short">
+		<text>.50 AE</text>
+	</string>
+	<string id="gunsl_ammo_50ae_descr">
+		<text>.50 Action Express round is the most powerful pistol cartridge. Weapons that use this cartridge are not particularly popular among stalkers, therefore such ammo is quite rare in the Zone. Mainly used for big-game hunting.</text>
+	</string>
+</string_table>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_protecta_nimble">
+		<text>«Breaker»</text>
+	</string>
+	<string id="gunsl_wpn_protecta_nimble_descr">
+		<text>Unlike most Protecta shotguns that made it into the Zone, this one left the factory with a longer barrel, so even without further modifications it offers better accuracy and a tighter pellet spread.</text>
+	</string>
+</string_table>

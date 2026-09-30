@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_p90">
+		<text>FN P90</text>
+	</string>
+	<string id="gunsl_wpn_p90_descr">
+		<text>Belgian-made submachine gun, developed in the mid 1990s by FN Herstal. Initially designed for tank and combat vehicle crew members. Progressive and ergonomic design. Specifically for P90 5,7x28mm SS190 round was developed, which has high penetration and low ricochet probability.</text>
+	</string>
+</string_table>

@@ -6,7 +6,10 @@
     <sound>characters_voice\scenario\marsh\mar_csky_tactic_pda_tutorial_00</sound>
     <pda_section>pda_tasks</pda_section>
     <cursor_pos x="530" y="78"/>
-    <grab_input>0</grab_input>
+    <!--was 0, the only item in the file that didn't grab: the player could still click and swing the
+        camera while the PDA was being drawn. 1 = same block every other step already uses; ESC still
+        skips the tutorial (CUISequencer::IR_OnKeyboardPress checks kQUIT regardless of grab).-->
+    <grab_input>1</grab_input>
     <pause_state>off</pause_state>
     <main_wnd>
       <auto_static start_time="1" length_sec="5" x="510" y="70" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
@@ -142,11 +145,11 @@
     <length_sec>6</length_sec>
     <sound>characters_voice\scenario\marsh\mar_csky_tactic_pda_tutorial_09</sound>
     <pda_section>pda_fraction_war</pda_section>
-    <cursor_pos x="621" y="79"/>
+    <cursor_pos x="706" y="79"/>
     <grab_input>1</grab_input>
     <pause_state>off</pause_state>
     <main_wnd>
-      <auto_static start_time="1" length_sec="6" x="598" y="70" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
+      <auto_static start_time="1" length_sec="6" x="683" y="70" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
         <texture>ui_highlight</texture>
       </auto_static>
     </main_wnd>
@@ -309,11 +312,11 @@
     <length_sec>9</length_sec>
     <sound>characters_voice\scenario\marsh\mar_csky_tactic_pda_tutorial_19</sound>
     <pda_section>pda_ranking</pda_section>
-    <cursor_pos x="697" y="79"/>
+    <cursor_pos x="772" y="79"/>
     <grab_input>1</grab_input>
     <pause_state>off</pause_state>
     <main_wnd>
-      <auto_static start_time="1" length_sec="9" x="704" y="70" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
+      <auto_static start_time="1" length_sec="9" x="750" y="70" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
         <texture>ui_highlight</texture>
       </auto_static>
     </main_wnd>
@@ -345,7 +348,9 @@
     <length_sec>2</length_sec>
     <sound>characters_voice\scenario\marsh\mar_csky_tactic_pda_tutorial_21</sound>
     <pda_section>pda_ranking</pda_section>
-    <cursor_pos x="833" y="11"/>
+    <!--was x="833" y="11" - the close button, which sits above what the 3D PDA screen shows, so the
+        cursor drove off the edge of the model. Empty = leave the cursor where the player left it.-->
+    <cursor_pos/>
     <grab_input>1</grab_input>
     <pause_state>off</pause_state>
     <main_wnd/>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_fiveseven">
+		<text>FN Five-seveN USG</text>
+	</string>
+	<string id="gunsl_wpn_fiveseven_descr">
+		<text>Разработан в конце 90х в качестве компаньона к пистолету-пулемету FN P90. Малый вес, большая емкость магазина, мощный патрон и высокая надежность делают Five-seveN одним из лучших пистолетов, из-за чего он пользуется достаточно большой популярностью среди наемников.</text>
+	</string>
+</string_table>

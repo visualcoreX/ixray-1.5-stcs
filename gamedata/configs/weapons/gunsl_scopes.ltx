@@ -1,0 +1,3021 @@
+; ============================================================================
+;  Gunslinger multi-scope port (stage 1: ak74).
+;  - Scope ADDON ITEMS (class WP_SCOPE): the pickable/attachable inventory objects.
+;  - Per-weapon SCOPE SECTIONS [scope_*_ak74m]: bones + GS aim offsets + zoom/lens
+;    params. The weapon lists them via `scopes_sect`; the engine matches the attached
+;    item (scope_name) to its section and drives bones/offsets/zoom/lens from it.
+;  NOTE: all scopes use the 3D PiP lens for now (need_lens_frame). The collimators
+;  (cobra/rakurs) will get proper no-PiP red-dot rendering in the next step.
+;  Inventory icons temporarily reuse the vanilla scope icon (real icons need the GS
+;  icon atlas integrated).
+; ============================================================================
+
+; ---------------------------------------------------------------- addon ITEMS
+[wpn_addon_scope_x2.7]:identity_immunities
+zoom_hide_ui		= true	; GS parity (its std_*.ltx set this); blanks the indicators while aimed
+GroupControlSection	= spawn_group
+discovery_dependency =
+$spawn			= "weapons\addons\scope_x2.7"
+class			= WP_SCOPE
+cform           = skeleton
+visual          = dynamics\weapons\addons\scopes\pso1as.ogf
+$prefetch 		= 8
+description		= st_scope_pso1m2x1_descr
+cost			= 1500
+holder_range_modifier	= 1.2
+holder_fov_modifier		= 1.0
+inv_name		= st_scope_pso1m2x1
+inv_name_short	= st_scope_pso1m2x1
+inv_weight		= .41
+inv_grid_width		= 2
+inv_grid_height		= 1
+inv_grid_x			= 18
+inv_grid_y			= 2
+
+[wpn_addon_scope_cobra]:wpn_addon_scope_x2.7
+$spawn			= "weapons\addons\scope_cobra"
+visual          = dynamics\weapons\addons\scopes\cobra.ogf
+inv_name		= st_scope_cobra
+inv_name_short	= st_scope_cobra
+description		= st_scope_cobra_descr
+cost			= 1600
+inv_weight		= .41
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 22
+inv_grid_y         = 20
+
+[wpn_addon_scope_pka]:wpn_addon_scope_x2.7
+$spawn			= "weapons\addons\scope_pka"
+visual          = dynamics\weapons\addons\scopes\pka.ogf
+inv_name		= st_scope_pka
+inv_name_short	= st_scope_pka
+description		= st_scope_pka_descr
+cost			= 1700
+inv_weight		= .5
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 22
+inv_grid_y         = 19
+
+[wpn_addon_scope_kashtan]:wpn_addon_scope_x2.7
+zoom_hide_ui		= true	; GS parity (its std_*.ltx set this); blanks the indicators while aimed
+$spawn			= "weapons\addons\scope_kashtan"
+visual          = dynamics\weapons\addons\scopes\kashtan.ogf
+inv_name		= st_scope_kashtan
+inv_name_short	= st_scope_kashtan
+description		= st_scope_kashtan_descr
+cost			= 1800
+inv_weight		= .5
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 22
+inv_grid_y         = 21
+
+[wpn_addon_scope_rakurs]:wpn_addon_scope_x2.7
+$spawn			= "weapons\addons\scope_rakurs"
+visual          = dynamics\weapons\addons\scopes\rakurs.ogf
+inv_name		= st_scope_rakurs
+inv_name_short	= st_scope_rakurs
+description		= st_scope_rakurs_descr
+cost			= 1400
+inv_weight		= .3
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 22
+inv_grid_y         = 22
+
+[wpn_addon_scope_night]:wpn_addon_scope_x2.7
+zoom_hide_ui		= true	; GS parity (its std_*.ltx set this); blanks the indicators while aimed
+$spawn			= "weapons\addons\scope_night"
+visual          = dynamics\weapons\addons\scopes\1pn93x1.ogf
+inv_name		= st_scope_night
+inv_name_short	= st_scope_night
+description		= st_scope_night_descr
+cost			= 4000
+inv_weight		= .6
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 20
+inv_grid_y         = 22
+
+[wpn_addon_scope_detector]:wpn_addon_scope_x2.7
+zoom_hide_ui		= true	; GS parity (its std_*.ltx set this); blanks the indicators while aimed
+$spawn			= "weapons\addons\scope_detector"
+visual          = dynamics\weapons\addons\scopes\1pn93x4.ogf
+inv_name		= st_scope_detector
+inv_name_short	= st_scope_detector
+description		= st_scope_detector_descr
+cost			= 5000
+inv_weight		= .6
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 20
+inv_grid_y         = 21
+
+; ------------------------------------------------- per-weapon SCOPE SECTIONS (ak74)
+; shared defaults: PiP lens, weapon stays visible, _scope anims, reticle illum on the
+; PSO metka bone. Individual sections override bones + aim offsets + magnification.
+[scope_ak74m_base]
+; radius of the optic's GLASS as a share of screen height -- what the eyepiece effects (2D
+; magnification, aberration, the scope shadow) are drawn inside. Inherited by every scope
+; section below, override per scope where the picture is a different size.
+scope_nv_mask_radius	= 0.4
+scope_name				= wpn_addon_scope
+scope_texture		= crosshair_2d_pso1sn	; GS parity: the stock reticle has no illumination levels
+scope_zoom_factor		= 55
+need_lens_frame			= true
+use_scope_anims			= true
+scope_abberation		= 0.005
+zoom_mouse_sense_koef	= 0.5
+scope_hud_fov_aim		= 0.18	; HUD fov while scoped -- smaller = sight closer to the eye (GS-matched for the PSO)
+scope_lens_factor		= 4.0
+
+[scope_pso1_ak74m]:scope_ak74m_base
+; inventory-icon offset of this optic (GS keeps it per scope, aks74/scopes.ltx)
+scope_x = 39
+scope_y = 5
+scope_name				= wpn_addon_scope
+scope_texture		= crosshair_2d_pso1sn	; GS parity: the stock reticle has no illumination levels
+bones					= scope_pso_sniper
+scope_lens_factor		= 15		; GS min/max_lens_factor for the PSO-1 (was 4.0 = too weak)
+zoom_mouse_sense_koef	= 0.13		; GS: lower sense at higher zoom
+scope_illum_bones		= metka_pso_assault
+steps_brightness		= 1
+max_night_brightness	= 3.0
+min_night_brightness	= 0.0
+aim_hud_offset_pos		= 0.014650,-0.009400,0.17
+aim_hud_offset_rot		= 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9	= 0.014650,-0.009400,0.17
+aim_hud_offset_rot_16x9	= 0.000000,0.000000,0.000000
+
+[scope_pso1m2x1_ak74m]:scope_ak74m_base
+; inventory-icon offset of this optic (GS keeps it per scope, aks74/scopes.ltx)
+scope_x = 39
+scope_y = 5
+scope_name				= wpn_addon_scope_x2.7
+scope_texture		= crosshair_2d_pso1as	; GS parity: the stock reticle has no illumination levels
+bones					= scope_pso_assault
+scope_lens_factor		= 10		; GS min/max_lens_factor for the PSO-1M2 (was 2.7 = too weak)
+zoom_mouse_sense_koef	= 0.2		; GS: lower sense at higher zoom
+scope_illum_bones		= metka_pso_assault
+steps_brightness		= 1
+max_night_brightness	= 3.0
+min_night_brightness	= 0.0
+aim_hud_offset_pos		= 0.012800,-0.009800,0.12
+aim_hud_offset_rot		= 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9	= 0.012800,-0.009800,0.12
+aim_hud_offset_rot_16x9	= 0.000000,0.000000,0.000000
+
+[scope_cobra_ak74m]:scope_ak74m_base
+; inventory-icon offset of this optic (GS keeps it per scope, aks74/scopes.ltx)
+scope_x = 62
+scope_y = 7
+scope_name				= wpn_addon_scope_cobra
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+bones					= scope_cobra
+; GS flags this optic `collimator = true`: reticle is on the MODEL, 1x, so no PiP lens and no
+; world zoom -- the engine's third scope mode. Overrides need_lens_frame from scope_ak74m_base.
+collimator				= true
+scope_zoom_factor		= 98	; 1x collimator -- no world zoom (98 ~= none on our scale; base gives 55)
+need_lens_frame			= false
+scope_hud_fov_aim		= 0.38	; collimator sits farther (GS hud_fov_zoom_factor 0.85)
+zoom_mouse_sense_koef	= 0.85
+scope_abberation		= 0.001
+aim_hud_offset_pos		= 0.004100,-0.013300,0.0
+aim_hud_offset_rot		= 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9	= 0.004100,-0.013300,0.0
+aim_hud_offset_rot_16x9	= 0.000000,0.000000,0.000000
+
+[scope_rakurs_ak74m]:scope_ak74m_base
+; inventory-icon offset of this optic (GS keeps it per scope, aks74/scopes.ltx)
+scope_x = 133
+scope_y = -6
+scope_name				= wpn_addon_scope_rakurs
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+bones					= scope_rakurs
+; GS flags this optic `collimator = true`: reticle is on the MODEL, 1x, so no PiP lens and no
+; world zoom -- the engine's third scope mode. Overrides need_lens_frame from scope_ak74m_base.
+collimator				= true
+scope_zoom_factor		= 98	; 1x collimator -- no world zoom (98 ~= none on our scale; base gives 55)
+need_lens_frame			= false
+scope_hud_fov_aim		= 0.36	; collimator sits farther (GS 0.8)
+zoom_mouse_sense_koef	= 0.85
+scope_abberation		= 0.001
+aim_hud_offset_pos		= 0.000200,-0.007550,0.0
+aim_hud_offset_rot		= 0.000000,0.000000,0.0
+aim_hud_offset_pos_16x9	= 0.000200,-0.007550,0.0
+aim_hud_offset_rot_16x9	= 0.000000,0.000000,0.0
+
+[scope_pka_ak74m]:scope_ak74m_base
+; inventory-icon offset of this optic (GS keeps it per scope, aks74/scopes.ltx)
+scope_x = 74
+scope_y = 6
+scope_name				= wpn_addon_scope_pka
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+bones					= scope_pka
+; GS flags this optic `collimator = true`: reticle is on the MODEL, 1x, so no PiP lens and no
+; world zoom -- the engine's third scope mode. Overrides need_lens_frame from scope_ak74m_base.
+collimator				= true
+scope_zoom_factor		= 98	; 1x collimator -- no world zoom (98 ~= none on our scale; base gives 55)
+need_lens_frame			= false
+scope_hud_fov_aim		= 0.22	; GS 0.5
+zoom_mouse_sense_koef	= 0.5
+aim_hud_offset_pos		= 0.012500,-0.008300,0.05
+aim_hud_offset_rot		= 0.000000,0.000000,0.0
+aim_hud_offset_pos_16x9	= 0.012500,-0.008300,0.05
+aim_hud_offset_rot_16x9	= 0.000000,0.000000,0.0
+
+[scope_kashtan_ak74m]:scope_ak74m_base
+; inventory-icon offset of this optic (GS keeps it per scope, aks74/scopes.ltx)
+scope_x = 54
+scope_y = 2
+scope_name				= wpn_addon_scope_kashtan
+scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+bones					= scope_kashtan
+scope_lens_factor		= 2.0
+scope_hud_fov_aim		= 0.20	; GS 0.45
+zoom_mouse_sense_koef	= 0.5
+aim_hud_offset_pos		= 0.002500,-0.005800,0.05
+aim_hud_offset_rot		= 0.000000,0.000000,0.0
+aim_hud_offset_pos_16x9	= 0.002500,-0.005800,0.05
+aim_hud_offset_rot_16x9	= 0.000000,0.000000,0.0
+
+[scope_nvas_ak74m]:scope_ak74m_base
+; GS screen night vision (std_1pn93x1.ltx): the tint/noise pass the optic itself applies.
+; _2d = only while the vanilla 2D scope image is up. With the 3D lens ON the lens shader draws
+; the night picture inside the optic itself, so the fullscreen tint must stay off.
+scope_nightvision_2d		= scope_nightvision
+scope_nightvision_min_factor = 0.5	; PPE strength at brightness step 0 (GS value)
+; inventory-icon offset of this optic (GS keeps it per scope, aks74/scopes.ltx)
+scope_x = 31
+scope_y = 6
+scope_name				= wpn_addon_scope_night
+scope_texture		= crosshair_2d_1pn93x1	; GS parity: the stock reticle has no illumination levels
+bones					= scope_nv_assault
+scope_lens_factor		= 10.0		; GS 1pn93x1 min/max_lens_factor
+zoom_mouse_sense_koef	= 0.2
+scope_abberation		= 0
+; GS night-vision brightness: 7 steps, min 0.5 (not 0 -> not black), max 7.0
+max_night_brightness	= 7.0
+min_night_brightness	= 0.5
+steps_brightness		= 7
+jitter_brightness		= 0.3
+default_brightness_step	= 6
+; same aim offset as the 1PN93-4 (scope_nvsn) -- user request
+aim_hud_offset_pos		= 0.023400,-0.021200,0.12
+aim_hud_offset_rot		= 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9	= 0.023400,-0.021200,0.12
+aim_hud_offset_rot_16x9	= 0.000000,0.000000,0.000000
+
+[scope_nvsn_ak74m]:scope_ak74m_base
+; GS screen night vision (std_1pn93x1.ltx): the tint/noise pass the optic itself applies.
+; _2d = only while the vanilla 2D scope image is up. With the 3D lens ON the lens shader draws
+; the night picture inside the optic itself, so the fullscreen tint must stay off.
+scope_nightvision_2d		= scope_nightvision
+scope_nightvision_min_factor = 0.5	; PPE strength at brightness step 0 (GS value)
+; inventory-icon offset of this optic (GS keeps it per scope, aks74/scopes.ltx)
+scope_x = 31
+scope_y = 6
+scope_name				= wpn_addon_scope_detector
+scope_texture		= crosshair_2d_1pn93x4	; GS parity: the stock reticle has no illumination levels
+bones					= scope_nv_sniper
+scope_lens_factor		= 15.0		; GS 1pn93x4 min/max_lens_factor
+zoom_mouse_sense_koef	= 0.13
+scope_abberation		= 0
+max_night_brightness	= 7.0
+min_night_brightness	= 0.5
+steps_brightness		= 7
+jitter_brightness		= 0.3
+default_brightness_step	= 4
+; y raised a touch from GS -0.037 (our closer aim FOV pushed the reticle low)
+aim_hud_offset_pos		= 0.017100,-0.029300,0.12
+aim_hud_offset_rot		= 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9	= 0.017100,-0.029300,0.12
+aim_hud_offset_rot_16x9	= 0.000000,0.000000,0.000000
+
+; ---- stock CS generic scope addon (moved here from weapons.ltx 2026-07-24) ----
+[wpn_addon_scope]:identity_immunities
+GroupControlSection	= spawn_group
+discovery_dependency =
+$spawn			= "weapons\addons\scope" ; option for Level Editor
+class			= WP_SCOPE
+cform           = skeleton
+visual          = dynamics\weapons\addons\scopes\pso1sn.ogf	; GS PSO-1 world model
+$prefetch 		= 32
+description		= gunsl_addon_scope_pso1m2_descr		; GS name (was st_addon_scope_descr)
+cost			= 1000
+
+holder_range_modifier	= 1.2
+holder_fov_modifier		= 0.3
+
+inv_name		= gunsl_addon_scope_pso1m2			; GS name (was st_addon_scope)
+inv_name_short	= gunsl_addon_scope_pso1m2
+inv_weight		= .2
+
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 20
+inv_grid_y         = 19
+scope_texture		= wpn_crosshair
+zoom_hide_ui		= true	; GS parity (its std_*.ltx set this); blanks the indicators while aimed
+scope_zoom_factor	= 30		;pso-1 2X
+
+; ---- stock CS generic SUSAT scope addon (moved here from weapons.ltx 2026-07-24) ----
+[wpn_addon_scope_susat]:identity_immunities
+GroupControlSection	= spawn_group
+discovery_dependency =
+$spawn			= "weapons\addons\scope_susat" ; option for Level Editor
+class			= WP_SCOPE
+cform           = skeleton
+visual          = dynamics\weapons\addons\scopes\susat.ogf	; GS SUSAT world model
+description		= gunsl_addon_scope_susat_descr		; GS name (was st_addon_scope_susat_descr)
+slot = -1
+;$prefetch 		= 64
+
+cost			= 1500
+
+holder_range_modifier	= 1.3
+holder_fov_modifier		= 0.3
+
+inv_name		= gunsl_addon_scope_susat			; GS name (was st_addon_scope_susat)
+inv_name_short	= gunsl_addon_scope_susat
+inv_weight		= .2
+
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 19
+inv_grid_y			= 1
+scope_texture		= wpn_crosshair_l85
+zoom_hide_ui		= true	; GS parity (its std_*.ltx set this); blanks the indicators while aimed
+scope_zoom_factor	= 30		;SUSAT 2X
+
+; ===== TOZ-34 per-weapon scope sections (from GS shotguns/toz34/scopes.ltx) =====
+; IMPORTANT: our engine reads scope_texture + scope_zoom_factor from the ACTIVE SCOPE SECTION
+; (WeaponMagazined.cpp:2220-2223, unconditional) -- GS keeps them on the scope ITEM, so GS sections
+; copied verbatim are incomplete for us. Everything else read from a scope section is line_exist-guarded.
+; GS key renames: GS hud_fov_zoom_factor -> our scope_hud_fov_aim; GS min/max_lens_factor +
+; lens_factor_levels_count -> our scope_lens_factor. GS `overriding_hide_bones` / `collimator` we do not read.
+
+; PU 3.5x -- the base weapon's mount. GS enables use_scope_anims ONLY here.
+[scope_pu_toz34]
+scope_name              = wpn_addon_scope_pu
+scope_texture           = crosshair_2d_pu
+scope_zoom_factor       = 28	; the value stock CS used for the PU on this weapon
+scope_hud_fov_aim       = 0.34	; GS hud_fov_zoom_factor 0.6 x our base hud fov (psHUD_FOV_def 0.45 * GS hud_fov_factor 1.25 = 0.5625); orig 0.27 was too close
+use_scope_anims         = true
+need_lens_frame         = true
+scope_lens_factor       = 6.0	; GS min/max_lens_factor 6
+scope_abberation        = 0.008
+zoom_mouse_sense_koef   = 0.5
+scope_x                 = 62
+scope_y                 = 1
+bones                   = scope3, scope4_sight
+aim_hud_offset_pos      = -0.009800,-0.0183000,-0.15
+aim_hud_offset_rot      = 0.007000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = -0.009800,-0.0183000,-0.15
+aim_hud_offset_rot_16x9 = 0.001000,0.000000,0.000000
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 10
+
+; Rakurs COLLIMATOR -- mountable after up_toz34_weaver. GS-faithful: NO use_scope_anims, NO lens frame,
+; and scope_texture = zero_alpha (its reticle is on the model, so no 2D crosshair overlay is drawn).
+; scope_zoom_factor stays on OUR scale (GS's own 1.06 is theirs); 55 matches our scope_rakurs_ak74m.
+[scope_rakurs_toz34]
+scope_name              = wpn_addon_scope_rakurs
+scope_texture           = zero_alpha
+scope_zoom_factor		= 98	; 1x collimator -- no world zoom (98 ~= none on our scale; base gives 55)
+scope_hud_fov_aim       = 0.48	; GS hud_fov_zoom_factor 0.85 x our base hud fov (psHUD_FOV_def 0.45 * GS hud_fov_factor 1.25 = 0.5625); orig 0.38 was too close
+; MUST be true in OUR engine even though GS omits it. Our engine has only TWO scope modes:
+; need_lens_frame=false -> UseScopeTexture()=true -> ZoomTexture()!=NULL -> need_renderable()=false,
+; i.e. the vanilla 2D-scope path that HIDES THE WEAPON and draws a fullscreen scope picture (with
+; zero_alpha that means the gun simply vanishes). Only the lensed path keeps the weapon rendered.
+; GS gets a third mode from its own `collimator = true`, which our engine does not implement.
+; TRUE collimator mode (engine `collimator`): weapon + HUD stay visible, no PiP lens, no world
+; zoom. GS-faithful -- this is GS's own `collimator = true` key, now implemented in our engine.
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.003	; GS value
+scope_x                 = 101
+scope_y                 = -2
+bones                   = scope2
+aim_hud_offset_pos      = -0.009100,-0.014700,0.0
+aim_hud_offset_rot      = -0.001000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = -0.009100,-0.013600,0.0
+aim_hud_offset_rot_16x9 = 0.001000,0.000000,0.000000
+inertion_aim_origin_offset = 0.02
+inertion_aim_speed      = 8
+
+[wpn_addon_scope_pu]:wpn_addon_scope_x2.7
+$spawn			= "weapons\addons\scope_pu"
+visual          = dynamics\weapons\addons\scopes\pu.ogf
+inv_name		= gunsl_addon_scope_pu
+inv_name_short	= gunsl_addon_scope_pu
+description		= gunsl_addon_scope_pu_descr
+cost			= 600
+inv_weight		= .5
+
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 23
+inv_grid_y         = 20
+
+holder_range_modifier	= 1.2
+holder_fov_modifier		= 1.0
+
+scope_texture		= crosshair_2d_pu
+scope_zoom_factor	= 1.02
+zoom_hide_ui		= true
+
+need_lens_frame			= true
+min_lens_factor			= 6
+max_lens_factor			= 6
+lens_factor_levels_count = 5
+zoom_mouse_sense_koef	= 0.5
+scope_abberation		= 0.008
+
+; ===== Wincheaster 1300 optics (ported from GS addons\scopes\weaver\std_{eotech,aimpoint,elcan,night}.ltx)
+; Items inherit OUR local scope parent (GS's `base_addon` does not exist here). inv_grid_* are OUR atlas
+; positions supplied by the user (GS's own coords are empty/different in our atlas). All 4 model textures
+; (wpn\wpn_scope_*, wpn\lenses) were already present; only the .ogf meshes had to be copied.
+[wpn_addon_scope_susat_x1.6]:wpn_addon_scope_x2.7	; EOTech holo sight (collimator)
+$spawn			= "weapons\addons\scope_eotech"
+visual          = dynamics\weapons\addons\scopes\eotech.ogf
+inv_name		= gunsl_addon_scope_eotech
+inv_name_short	= gunsl_addon_scope_eotech
+description		= gunsl_addon_scope_eotech_descr
+cost			= 1800
+inv_weight		= .255
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 22
+inv_grid_y         = 23
+holder_range_modifier	= 1.2
+holder_fov_modifier		= 1.0
+scope_texture		= zero_alpha
+scope_zoom_factor	= 98
+collimator			= true
+scope_abberation	= 0.001
+
+[wpn_addon_scope_susat_dusk]:wpn_addon_scope_x2.7	; Aimpoint red dot (collimator)
+$spawn			= "weapons\addons\scope_aimpoint"
+visual          = dynamics\weapons\addons\scopes\aimpoint.ogf
+inv_name		= gunsl_addon_scope_aimpoint
+inv_name_short	= gunsl_addon_scope_aimpoint
+description		= gunsl_addon_scope_aimpoint_descr
+cost			= 2000
+inv_weight		= .376
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 22
+inv_grid_y         = 24
+holder_range_modifier	= 1.2
+holder_fov_modifier		= 1.0
+scope_texture		= zero_alpha
+scope_zoom_factor	= 98
+collimator			= true
+scope_abberation	= 0.005
+
+[wpn_addon_scope_susat_custom]:wpn_addon_scope_x2.7	; ELCAN 4x (2D reticle + PiP lens)
+$spawn			= "weapons\addons\scope_elcan"
+visual          = dynamics\weapons\addons\scopes\elcan.ogf
+inv_name		= gunsl_addon_scope_elcan
+inv_name_short	= gunsl_addon_scope_elcan
+description		= gunsl_addon_scope_elcan_descr
+cost			= 4000	; orig 800 -- was cheaper than the PSO-1 and both red dots, for a magnified optic
+inv_weight		= .66
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 20
+inv_grid_y         = 20
+holder_range_modifier	= 1.2
+holder_fov_modifier		= 1.0
+scope_texture		= crosshair_2d_elcan
+scope_zoom_factor	= 28
+zoom_hide_ui		= true
+need_lens_frame		= true
+scope_lens_factor	= 4.0	; our engine takes ONE factor; GS had min 1.8 / max 10 / levels 1 (its alter-zoom)
+zoom_mouse_sense_koef = 0.5
+scope_abberation	= 0.005
+
+[wpn_addon_scope_susat_night]:wpn_addon_scope_x2.7	; PN-23 night scope (2D reticle + PiP lens)
+$spawn			= "weapons\addons\scope_pn23"
+visual          = dynamics\weapons\addons\scopes\pn23.ogf
+inv_name		= gunsl_addon_scope_pn23
+inv_name_short	= gunsl_addon_scope_pn23
+description		= gunsl_addon_scope_pn23_descr
+cost			= 10000
+inv_weight		= 0.83
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 20
+inv_grid_y         = 23
+holder_range_modifier	= 1.2
+holder_fov_modifier		= 1.0
+scope_texture		= crosshair_2d_pn23
+scope_zoom_factor	= 28
+zoom_hide_ui		= true
+need_lens_frame		= true
+scope_lens_factor	= 15	; GS min = max = 15
+zoom_mouse_sense_koef = 0.13
+scope_abberation	= 0
+
+; ===== Wincheaster 1300 per-weapon scope sections (GS shotguns/wincheaster1300/scopes.ltx) =====
+; Mandatory for us: scope_texture + scope_zoom_factor (read unconditionally from the ACTIVE scope section).
+; Key renames: GS hud_fov_zoom_factor -> our scope_hud_fov_aim = 0.5625 * GS value (see the port guide).
+; GS's alter_zoom_allowed / hud_fov_alter_zoom_factor / alter_aim_hud_offset_* (elcan 2-stage zoom) and
+; `collimator` on the ITEM are GS keys; our engine reads `collimator` on the SCOPE SECTION, so it is set here.
+[scope_eotech_winchester1300]
+scope_name              = wpn_addon_scope_susat_x1.6
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.001
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.56	; GS hud_fov_zoom_factor 1.0
+scope_x                 = 36
+scope_y                 = -1
+bones                   = scope1
+aim_hud_offset_pos      = 0.000000,-0.052700,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000000,-0.052700,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_aimpoint_winchester1300]
+scope_name              = wpn_addon_scope_susat_dusk
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.34	; GS hud_fov_zoom_factor 0.6
+scope_x                 = 40
+scope_y                 = -5
+bones                   = scope2
+aim_hud_offset_pos      = 0.000000,-0.056100,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000000,-0.056100,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_elcan_winchester1300]
+scope_name              = wpn_addon_scope_susat_custom
+scope_texture           = crosshair_2d_elcan
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 4.0
+; GS reticle/NV brightness steps (scope_brightness_plus/minus while aiming); values from
+; GS std_elcan.ltx -- our engine reads them from THIS section.
+max_night_brightness    = 3.0
+min_night_brightness    = 0.0
+steps_brightness        = 3
+default_brightness_step = 0
+; ---- GS variable magnification: wheel steps the lens power (ELCAN 1.8x <-> 10x) ----
+min_lens_factor         = 1.8
+max_lens_factor         = 10
+lens_factor_levels_count = 1	; steps ABOVE the base -> a two-position optic, like GS
+default_lens_factor_step = 0
+; ---- GS alter zoom: second aim pose on wpn_alter_zoom (GS binds the middle mouse button) ----
+alter_zoom_allowed      = true
+alter_zoom_time         = 0.25	; eased (cubic ease-in-out) blend between the two aim poses
+scope_hud_fov_alter_aim = 0.34	; GS hud_fov_alter_zoom_factor 0.6 x 0.5625
+alter_aim_hud_offset_pos = -0.000100,-0.094900,0.000000
+alter_aim_hud_offset_rot = 0.002200,0.000000,0.000000
+alter_aim_hud_offset_pos_16x9 = -0.000100,-0.095700,0.000000
+alter_aim_hud_offset_rot_16x9 = -0.001000,0.000000,0.000000
+zoom_mouse_sense_koef   = 0.5
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.34	; GS hud_fov_zoom_factor 0.6
+scope_x                 = 6
+scope_y                 = -3
+bones                   = scope3
+aim_hud_offset_pos      = 0.000000,-0.058240,-0.01
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000000,-0.058240,-0.01
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+prohibit_aim_for_grenade_mode = true
+
+[scope_pn23_winchester1300]
+; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
+scope_nightvision_2d       = scope_nightvision
+scope_nightvision_min_factor = 0.5
+scope_name              = wpn_addon_scope_susat_night
+scope_texture           = crosshair_2d_pn23
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 15
+; GS reticle/NV brightness steps (scope_brightness_plus/minus while aiming); values from
+; GS std_night.ltx -- our engine reads them from THIS section.
+max_night_brightness    = 7.0
+min_night_brightness    = 0.5
+steps_brightness        = 7
+default_brightness_step = 0
+jitter_brightness       = 0.3
+zoom_mouse_sense_koef   = 0.13
+scope_abberation        = 0
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.39	; GS hud_fov_zoom_factor 0.7
+scope_x                 = 15
+scope_y                 = -5
+bones                   = scope4
+aim_hud_offset_pos      = 0.000000,-0.077840,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000000,-0.077840,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+
+; ===== Wincheaster 1300 "Trapper" scope sections (GS scopes_uniq.ltx) =====
+; Same 4 optics as the base weapon, only the on-icon offsets differ (longer wood-stock body).
+[scope_eotech_winchester1300_trapper]
+scope_name              = wpn_addon_scope_susat_x1.6
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.001
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.56	; GS hud_fov_zoom_factor 1.0 x 0.5625
+scope_x                 = 89
+scope_y                 = 0
+bones                   = scope1
+aim_hud_offset_pos      = 0.000000,-0.052700,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000000,-0.052700,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_aimpoint_winchester1300_trapper]
+scope_name              = wpn_addon_scope_susat_dusk
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.34	; GS hud_fov_zoom_factor 0.6 x 0.5625
+scope_x                 = 91
+scope_y                 = -4
+bones                   = scope2
+aim_hud_offset_pos      = 0.000000,-0.056100,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000000,-0.056100,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_elcan_winchester1300_trapper]
+scope_name              = wpn_addon_scope_susat_custom
+scope_texture           = crosshair_2d_elcan
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 4.0
+; GS reticle/NV brightness steps (scope_brightness_plus/minus while aiming); values from
+; GS std_elcan.ltx -- our engine reads them from THIS section.
+max_night_brightness    = 3.0
+min_night_brightness    = 0.0
+steps_brightness        = 3
+default_brightness_step = 0
+; ---- GS variable magnification: wheel steps the lens power (ELCAN 1.8x <-> 10x) ----
+min_lens_factor         = 1.8
+max_lens_factor         = 10
+lens_factor_levels_count = 1	; steps ABOVE the base -> a two-position optic, like GS
+default_lens_factor_step = 0
+; ---- GS alter zoom: second aim pose on wpn_alter_zoom (GS binds the middle mouse button) ----
+alter_zoom_allowed      = true
+alter_zoom_time         = 0.25	; eased (cubic ease-in-out) blend between the two aim poses
+scope_hud_fov_alter_aim = 0.34	; GS hud_fov_alter_zoom_factor 0.6 x 0.5625
+alter_aim_hud_offset_pos = 0.000000,-0.094900,0.000000
+alter_aim_hud_offset_rot = 0.002200,0.000000,0.000000
+alter_aim_hud_offset_pos_16x9 = 0.000000,-0.095700,0.000000
+alter_aim_hud_offset_rot_16x9 = -0.001000,0.000000,0.000000
+zoom_mouse_sense_koef   = 0.5
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.34	; GS hud_fov_zoom_factor 0.6 x 0.5625
+scope_x                 = 57
+scope_y                 = -2
+bones                   = scope3
+aim_hud_offset_pos      = 0.000000,-0.058240,-0.01
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000000,-0.058240,-0.01
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+prohibit_aim_for_grenade_mode = true
+
+[scope_pn23_winchester1300_trapper]
+; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
+scope_nightvision_2d       = scope_nightvision
+scope_nightvision_min_factor = 0.5
+scope_name              = wpn_addon_scope_susat_night
+scope_texture           = crosshair_2d_pn23
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 15
+; GS reticle/NV brightness steps (scope_brightness_plus/minus while aiming); values from
+; GS std_night.ltx -- our engine reads them from THIS section.
+max_night_brightness    = 7.0
+min_night_brightness    = 0.5
+steps_brightness        = 7
+default_brightness_step = 0
+jitter_brightness       = 0.3
+zoom_mouse_sense_koef   = 0.13
+scope_abberation        = 0
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.39	; GS hud_fov_zoom_factor 0.7 x 0.5625
+scope_x                 = 65
+scope_y                 = -4
+bones                   = scope4
+aim_hud_offset_pos      = 0.000000,-0.077840,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000000,-0.077840,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+
+; ===== protecta/striker (our spas12) per-weapon scope sections (GS protecta/scopes.ltx) =====
+; Same 4 optics as the winchester -- the ITEMS already exist; only these per-weapon sections differ
+; (bones scope1..4 + each optic's own on-icon offset and aim offsets).
+[scope_eotech_protecta]
+scope_name              = wpn_addon_scope_susat_x1.6
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.001
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.56	; GS hud_fov_zoom_factor 1.0 x 0.5625
+scope_x                 = 36
+scope_y                 = -2
+bones                   = scope1
+aim_hud_offset_pos      = 0.000150,-0.057100,-0.02
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.000190,-0.05710,-0.02
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_aimpoint_protecta]
+scope_name              = wpn_addon_scope_susat_dusk
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.34	; GS hud_fov_zoom_factor 0.6 x 0.5625
+scope_x                 = 36
+scope_y                 = -6
+bones                   = scope2
+aim_hud_offset_pos      = -0.000050,-0.061500,-0.02
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.000190,-0.061500,-0.02
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_elcan_protecta]
+scope_name              = wpn_addon_scope_susat_custom
+scope_texture           = crosshair_2d_elcan
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 4.0
+zoom_mouse_sense_koef   = 0.5
+scope_abberation        = 0.005
+max_night_brightness    = 3.0
+min_night_brightness    = 0.0
+steps_brightness        = 3
+default_brightness_step = 0
+min_lens_factor         = 1.8
+max_lens_factor         = 10
+lens_factor_levels_count = 1
+default_lens_factor_step = 0
+alter_zoom_allowed      = true
+alter_zoom_time         = 0.25
+scope_hud_fov_alter_aim = 0.34
+; the alter POSE itself -- without these the toggle changed nothing visible
+alter_aim_hud_offset_pos = 0.000200,-0.097800,0.000000
+alter_aim_hud_offset_rot = 0.008300,-0.000310,0.000000
+alter_aim_hud_offset_pos_16x9 = 0.000200,-0.097800,0.000000
+alter_aim_hud_offset_rot_16x9 = 0.008100,-0.000300,0.000000
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.34	; GS hud_fov_zoom_factor 0.6 x 0.5625
+scope_x                 = 4
+scope_y                 = -4
+bones                   = scope3
+aim_hud_offset_pos      = 0.000800,-0.071900,-0.06
+aim_hud_offset_rot      = -0.030000,-0.002000,0.000000
+aim_hud_offset_pos_16x9 = 0.000800,-0.071900,-0.06
+aim_hud_offset_rot_16x9 = -0.030000,-0.002000,0.000000
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+prohibit_aim_for_grenade_mode = true
+
+[scope_pn23_protecta]
+; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
+scope_nightvision_2d       = scope_nightvision
+scope_nightvision_min_factor = 0.5
+scope_name              = wpn_addon_scope_susat_night
+scope_texture           = crosshair_2d_pn23
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 15
+zoom_mouse_sense_koef   = 0.13
+scope_abberation        = 0
+max_night_brightness    = 7.0
+min_night_brightness    = 0.5
+steps_brightness        = 7
+default_brightness_step = 0
+jitter_brightness       = 0.3
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.39	; GS hud_fov_zoom_factor 0.7 x 0.5625
+scope_x                 = -8
+scope_y                 = -7
+bones                   = scope4
+aim_hud_offset_pos      = -0.000200,-0.087700,-0.013
+aim_hud_offset_rot      = -0.030000,-0.002000,0.000000
+aim_hud_offset_pos_16x9 = 0.000200,-0.087700,-0.013
+aim_hud_offset_rot_16x9 = -0.030000,0.000000,0.000000
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+
+
+;==============================================================================
+; MP5 optics (GS smg\mp5\scopes.ltx) -- unlocked by the up_mp5_rail upgrade (scope_status = 2).
+; Same four addon items as the winchester/protecta; only the mount offsets, the bone and the
+; aim FOV are per weapon. scope_hud_fov_aim = 0.5625 * GS hud_fov_zoom_factor.
+;==============================================================================
+[scope_eotech_mp5]
+scope_name              = wpn_addon_scope_susat_x1.6
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.001
+scope_illum_bones       = metka1	; reticle illumination, same mechanism as the PSO mounts
+; the brightness block MUST live here: LoadScopeIllumParams reads the per-weapon SCOPE section (then the
+; weapon section) -- never the addon item -- so with it only in [wpn_addon_scope_pgo7v] steps stayed 0
+; and the step could never leave 0. Same placement as the PSO mounts.
+steps_brightness        = 0
+max_night_brightness    = 3.0
+min_night_brightness    = 3.0
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.48	; GS hud_fov_zoom_factor 0.85 x 0.5625
+scope_x                 = 74
+scope_y                 = -4
+bones                   = scope1
+aim_hud_offset_pos      = 0.0,-0.0239,-0.02
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0,-0.0239,-0.02
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_aimpoint_mp5]
+scope_name              = wpn_addon_scope_susat_dusk
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.28	; GS hud_fov_zoom_factor 0.5 x 0.5625
+scope_x                 = 76
+scope_y                 = -9
+bones                   = scope2
+aim_hud_offset_pos      = 0.0,-0.0285,-0.05
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0,-0.0285,-0.05
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_elcan_mp5]
+scope_name              = wpn_addon_scope_susat_custom
+scope_texture           = crosshair_2d_elcan
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 4.0
+zoom_mouse_sense_koef   = 0.5
+scope_abberation        = 0.005
+max_night_brightness    = 3.0
+min_night_brightness    = 0.0
+steps_brightness        = 3
+default_brightness_step = 0
+min_lens_factor         = 1.8
+max_lens_factor         = 10
+lens_factor_levels_count = 1
+default_lens_factor_step = 0
+alter_zoom_allowed      = true
+alter_zoom_time         = 0.25
+scope_hud_fov_alter_aim = 0.34	; GS hud_fov_alter_zoom_factor 0.6 x 0.5625
+alter_aim_hud_offset_pos = 0.000000,-0.064800,0.020000
+alter_aim_hud_offset_rot = 0.000000,0.000000,0.000000
+alter_aim_hud_offset_pos_16x9 = 0.000000,-0.064400,0.000000
+alter_aim_hud_offset_rot_16x9 = 0.001000,0.000000,0.000000
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.48	; GS hud_fov_zoom_factor 0.85 x 0.5625
+scope_x                 = 46
+scope_y                 = -6
+bones                   = scope3
+aim_hud_offset_pos      = 0.0,-0.03,-0.155
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0,-0.03,-0.155
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+prohibit_aim_for_grenade_mode = true
+
+[scope_pn23_mp5]
+; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
+scope_nightvision_2d       = scope_nightvision
+scope_nightvision_min_factor = 0.5
+scope_name              = wpn_addon_scope_susat_night
+scope_texture           = crosshair_2d_pn23
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 15
+zoom_mouse_sense_koef   = 0.13
+scope_abberation        = 0
+max_night_brightness    = 7.0
+min_night_brightness    = 0.5
+steps_brightness        = 7
+default_brightness_step = 0
+jitter_brightness       = 0.3
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.28	; GS hud_fov_zoom_factor 0.5 x 0.5625
+scope_x                 = 43
+scope_y                 = -9
+bones                   = scope4
+aim_hud_offset_pos      = 0.0,-0.052,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0,-0.052,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+
+;==============================================================================
+; MP5SD optics -- GS's mp5sd\scopes.ltx is identical to the mp5's except the section names.
+;==============================================================================
+[scope_eotech_mp5sd]
+scope_name              = wpn_addon_scope_susat_x1.6
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.001
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.48	; GS hud_fov_zoom_factor 0.85 x 0.5625
+scope_x                 = 74
+scope_y                 = -4
+bones                   = scope1
+aim_hud_offset_pos      = 0.0,-0.0239,-0.02
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0,-0.0239,-0.02
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_aimpoint_mp5sd]
+scope_name              = wpn_addon_scope_susat_dusk
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.28	; GS hud_fov_zoom_factor 0.5 x 0.5625
+scope_x                 = 76
+scope_y                 = -9
+bones                   = scope2
+aim_hud_offset_pos      = 0.0,-0.0285,-0.05
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0,-0.0285,-0.05
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_elcan_mp5sd]
+scope_name              = wpn_addon_scope_susat_custom
+scope_texture           = crosshair_2d_elcan
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 4.0
+zoom_mouse_sense_koef   = 0.5
+scope_abberation        = 0.005
+max_night_brightness    = 3.0
+min_night_brightness    = 0.0
+steps_brightness        = 3
+default_brightness_step = 0
+min_lens_factor         = 1.8
+max_lens_factor         = 10
+lens_factor_levels_count = 1
+default_lens_factor_step = 0
+alter_zoom_allowed      = true
+alter_zoom_time         = 0.25
+scope_hud_fov_alter_aim = 0.34	; GS hud_fov_alter_zoom_factor 0.6 x 0.5625
+alter_aim_hud_offset_pos = 0.000000,-0.064800,0.020000
+alter_aim_hud_offset_rot = 0.000000,0.000000,0.000000
+alter_aim_hud_offset_pos_16x9 = 0.000000,-0.064400,0.000000
+alter_aim_hud_offset_rot_16x9 = 0.001000,0.000000,0.000000
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.48	; GS hud_fov_zoom_factor 0.85 x 0.5625
+scope_x                 = 46
+scope_y                 = -6
+bones                   = scope3
+aim_hud_offset_pos      = 0.0,-0.03,-0.155
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0,-0.03,-0.155
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+prohibit_aim_for_grenade_mode = true
+
+[scope_pn23_mp5sd]
+; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
+scope_nightvision_2d       = scope_nightvision
+scope_nightvision_min_factor = 0.5
+scope_name              = wpn_addon_scope_susat_night
+scope_texture           = crosshair_2d_pn23
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 15
+zoom_mouse_sense_koef   = 0.13
+scope_abberation        = 0
+max_night_brightness    = 7.0
+min_night_brightness    = 0.5
+steps_brightness        = 7
+default_brightness_step = 0
+jitter_brightness       = 0.3
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.28	; GS hud_fov_zoom_factor 0.5 x 0.5625
+scope_x                 = 43
+scope_y                 = -9
+bones                   = scope4
+aim_hud_offset_pos      = 0.0,-0.052,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0,-0.052,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+
+
+;==============================================================================
+; UMP45 optics (GS smg\mp5\scopes_uniq.ltx, sections named scope_*_ump). Same four addon
+; items and the same aim FOV as the mp5's, only the mount offsets and aim poses differ.
+;==============================================================================
+[scope_eotech_ump]
+scope_name              = wpn_addon_scope_susat_x1.6
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.001
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.48	; GS hud_fov_zoom_factor 0.85 x 0.5625
+scope_x                 = 84
+scope_y                 = -5
+bones                   = scope1
+aim_hud_offset_pos      = -0.00019,-0.0257,-0.02
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = -0.00019,-0.0257,-0.02
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_aimpoint_ump]
+scope_name              = wpn_addon_scope_susat_dusk
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.28	; GS hud_fov_zoom_factor 0.5 x 0.5625
+scope_x                 = 86
+scope_y                 = -10
+bones                   = scope2
+aim_hud_offset_pos      = 0.00011,-0.0289,-0.045
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.00011,-0.0289,-0.045
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_elcan_ump]
+scope_name              = wpn_addon_scope_susat_custom
+scope_texture           = crosshair_2d_elcan
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 4.0
+zoom_mouse_sense_koef   = 0.5
+scope_abberation        = 0.005
+max_night_brightness    = 3.0
+min_night_brightness    = 0.0
+steps_brightness        = 3
+default_brightness_step = 0
+min_lens_factor         = 1.8
+max_lens_factor         = 10
+lens_factor_levels_count = 1
+default_lens_factor_step = 0
+alter_zoom_allowed      = true
+alter_zoom_time         = 0.25
+scope_hud_fov_alter_aim = 0.34	; GS hud_fov_alter_zoom_factor 0.6 x 0.5625
+alter_aim_hud_offset_pos = 0.000000,-0.066700,0.000000
+alter_aim_hud_offset_rot = -0.000800,0.000100,0.000000
+alter_aim_hud_offset_pos_16x9 = 0.000000,-0.067700,0.000000
+alter_aim_hud_offset_rot_16x9 = -0.002100,0.000300,0.000000
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.48	; GS hud_fov_zoom_factor 0.85 x 0.5625
+scope_x                 = 59
+scope_y                 = -7
+bones                   = scope3
+aim_hud_offset_pos      = 0.0,-0.031,-0.15
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0,-0.031,-0.15
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+prohibit_aim_for_grenade_mode = true
+
+[scope_pn23_ump]
+; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
+scope_nightvision_2d       = scope_nightvision
+scope_nightvision_min_factor = 0.5
+scope_name              = wpn_addon_scope_susat_night
+scope_texture           = crosshair_2d_pn23
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 15
+zoom_mouse_sense_koef   = 0.13
+scope_abberation        = 0
+max_night_brightness    = 7.0
+min_night_brightness    = 0.5
+steps_brightness        = 7
+default_brightness_step = 0
+jitter_brightness       = 0.3
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.28	; GS hud_fov_zoom_factor 0.5 x 0.5625
+scope_x                 = 50
+scope_y                 = -9
+bones                   = scope4
+aim_hud_offset_pos      = 0.0,-0.0527,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0,-0.0527,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+
+;==============================================================================
+; AKS-74U optics (GS assault\aks74u\scopes.ltx). Same addon items and the same bone names as
+; the ak74m set, so each section just inherits its ak74m twin and re-mounts it: only scope_x/y
+; (inventory-icon offset) and the aim pose differ per weapon. The scope rail comes from the
+; up_aks74u_lastochka node; the rakurs sits on the handguard rail (up_aks74u_tsevie).
+;==============================================================================
+[scope_pso1_aks74u]:scope_pso1_ak74m
+scope_texture		= crosshair_2d_pso1sn	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 28
+scope_y                 = 4
+aim_hud_offset_pos      = 0.016800,0.001600,0.18
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.016800,0.001600,0.18
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+[scope_pso1m2x1_aks74u]:scope_pso1m2x1_ak74m
+scope_texture		= crosshair_2d_pso1as	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 28
+scope_y                 = 4
+aim_hud_offset_pos      = 0.015700,-0.007400,0.14
+aim_hud_offset_rot      = 0.000000,0.000000,0.0
+aim_hud_offset_pos_16x9 = 0.015700,-0.007400,0.14
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
+
+[scope_rakurs_aks74u]:scope_rakurs_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 124
+scope_y                 = -4
+aim_hud_offset_pos      = 0.001500,-0.004500,0.0	; GS rakurs + our ak74m tuning delta
+aim_hud_offset_rot      = 0.000000,0.000000,0.0
+aim_hud_offset_pos_16x9 = 0.001500,-0.004500,0.0	; GS rakurs + our ak74m tuning delta
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
+
+[scope_nvsn_aks74u]:scope_nvsn_ak74m
+scope_texture		= crosshair_2d_1pn93x4	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 29
+scope_y                 = 5
+aim_hud_offset_pos      = 0.017900,-0.029600,0.12	
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.017900,-0.029600,0.12
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+; GS gives the AKS-74U mount an ALTER aim pose for this optic (eye off the scope onto the iron sights)
+alter_zoom_allowed      = true
+alter_zoom_time         = 0.25
+; GS hud_fov_alter_zoom_factor 0.45 vs its 0.4 base -> same ratio applied to our tuned 0.18
+scope_hud_fov_alter_aim = 0.20
+alter_aim_hud_offset_pos = 0.000850,0.020500,-0.05000	; same optic correction as the main pose
+alter_aim_hud_offset_rot = 0.000000,0.000000,0.000000
+alter_aim_hud_offset_pos_16x9 = 0.000850,0.020500,-0.05000	; same optic correction as the main pose
+alter_aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+[scope_nvas_aks74u]:scope_nvas_ak74m
+scope_texture		= crosshair_2d_1pn93x1	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 29
+scope_y                 = 5
+aim_hud_offset_pos      = 0.025250,-0.020000,0.13
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.025250,-0.020000,0.13
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+[scope_cobra_aks74u]:scope_cobra_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 61
+scope_y                 = 9
+aim_hud_offset_pos      = 0.004600,-0.013300,0.0	; GS cobra + our ak74m tuning delta
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.004600,-0.013300,0.0	; GS cobra + our ak74m tuning delta
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+[scope_pka_aks74u]:scope_pka_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 67
+scope_y                 = 6
+aim_hud_offset_pos      = 0.015150,-0.007200,0.05
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.015150,-0.007200,0.05
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+[scope_kashtan_aks74u]:scope_kashtan_ak74m
+scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 58
+scope_y                 = 1
+aim_hud_offset_pos      = 0.005100,-0.005000,0.05
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.005100,-0.005000,0.05
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+
+; ------------------------------------------------- per-weapon SCOPE SECTIONS (ak101)
+; The AK-101 mounts the same optics on the same bones as the ak74 (identical
+; skeleton), so each ak101 section is a pure alias of the tuned ak74m one. Split
+; out under GS's own names so the ak101's optics can be re-tuned independently.
+[scope_pso1_ak101]:scope_pso1_ak74m
+scope_texture		= crosshair_2d_pso1sn	; GS parity: the stock reticle has no illumination levels
+[scope_pso1m2x1_ak101]:scope_pso1m2x1_ak74m
+scope_texture		= crosshair_2d_pso1as	; GS parity: the stock reticle has no illumination levels
+[scope_cobra_ak101]:scope_cobra_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+[scope_rakurs_ak101]:scope_rakurs_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+[scope_pka_ak101]:scope_pka_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+[scope_kashtan_ak101]:scope_kashtan_ak74m
+scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+[scope_nvas_ak101]:scope_nvas_ak74m
+scope_texture		= crosshair_2d_1pn93x1	; GS parity: the stock reticle has no illumination levels
+[scope_nvsn_ak101]:scope_nvsn_ak74m
+scope_texture		= crosshair_2d_1pn93x4	; GS parity: the stock reticle has no illumination levels
+
+; ------------------------------------------------- per-weapon SCOPE SECTIONS (an94)
+; Same physical optics on the same bone names as the ak74, so each section inherits the
+; tuned ak74m one and overrides only what GS's an94\scopes.ltx sets differently: the
+; inventory-icon offset, the aim offsets (measured on the AN-94 model) and the aim FOV
+; (our absolute scope_hud_fov_aim = 0.5625 * GS hud_fov_zoom_factor -- see the port guide).
+
+[scope_pso1_an94]:scope_pso1_ak74m
+scope_texture		= crosshair_2d_pso1sn	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 28
+scope_y                 = 5
+bones                   = scope_pso_sniper
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4
+aim_hud_offset_pos      = 0.019050,-0.022600,0.12
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.019050,-0.022600,0.12
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+[scope_pso1m2x1_an94]:scope_pso1m2x1_ak74m
+scope_texture		= crosshair_2d_pso1as	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 28
+scope_y                 = 5
+bones                   = scope_pso_assault
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4
+aim_hud_offset_pos      = 0.020100,-0.020400,0.08
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.020100,-0.020400,0.08
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+[scope_cobra_an94]:scope_cobra_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 57
+scope_y                 = 7
+bones                   = scope_cobra
+scope_hud_fov_aim       = 0.478	; GS hud_fov_zoom_factor 0.85
+aim_hud_offset_pos      = 0.010200,-0.029900,-0.04
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.010200,-0.029900,-0.04
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+[scope_pka_an94]:scope_pka_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 63
+scope_y                 = 5
+bones                   = scope_pka
+scope_hud_fov_aim       = 0.281	; GS hud_fov_zoom_factor 0.5
+aim_hud_offset_pos      = 0.020200,-0.020600,0.0
+aim_hud_offset_rot      = 0.000000,0.000000,0.0
+aim_hud_offset_pos_16x9 = 0.020200,-0.020600,0.0
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
+
+[scope_kashtan_an94]:scope_kashtan_ak74m
+scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 55
+scope_y                 = 3
+bones                   = scope_kashtan
+scope_hud_fov_aim       = 0.253	; GS hud_fov_zoom_factor 0.45
+aim_hud_offset_pos      = 0.008400,-0.022300,0.02
+aim_hud_offset_rot      = 0.000000,0.000000,0.0
+aim_hud_offset_pos_16x9 = 0.008400,-0.022300,0.02
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
+
+[scope_nvas_an94]:scope_nvas_ak74m
+scope_texture		= crosshair_2d_1pn93x1	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 29
+scope_y                 = 6
+bones                   = scope_nv_assault
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4
+aim_hud_offset_pos      = 0.029650,-0.037600,0.08
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.029650,-0.037600,0.08
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+[scope_nvsn_an94]:scope_nvsn_ak74m
+scope_texture		= crosshair_2d_1pn93x4	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 29
+scope_y                 = 6
+bones                   = scope_nv_sniper
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4
+aim_hud_offset_pos      = 0.022675,-0.050800,0.08
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.022675,-0.050800,0.08
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+alter_zoom_allowed      = true
+hud_fov_alter_zoom_factor= 0.5
+alter_aim_hud_offset_pos= -0.000500,0.033400,0.0
+alter_aim_hud_offset_rot= 0.000000,0.000000,0.0000
+alter_aim_hud_offset_pos_16x9= -0.000500,0.033400,0.0
+alter_aim_hud_offset_rot_16x9= 0.000000,0.000000,0.0000
+
+;==============================================================================
+; L85A2 optics -- GS assault\l85\scopes.ltx (5 mounts on the rail).
+; scope_hud_fov_aim = 0.5625 * GS hud_fov_zoom_factor; optics params mirror the mp5 sections.
+;==============================================================================
+[scope_eotech_l85a2]
+scope_name              = wpn_addon_scope_susat_x1.6
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.001
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.534	; GS hud_fov_zoom_factor 0.95 x 0.5625
+scope_x                 = 67
+scope_y                 = -5
+bones                   = scope1
+overriding_hide_bones   = sight_handle, sight_iron2
+overriding_show_bones   = rail
+aim_hud_offset_pos      = 0.000200,0.021900,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000200,0.021900,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+gl_hud_offset_pos       = 0.0,0.012,-0.05
+gl_hud_offset_rot       = 0.0,0.0,0.0
+gl_hud_offset_pos_16x9  = 0.0,0.012,-0.1
+gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_aimpoint_l85a2]
+scope_name              = wpn_addon_scope_susat_dusk
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.309	; GS hud_fov_zoom_factor 0.55 x 0.5625
+scope_x                 = 65
+scope_y                 = -8
+bones                   = scope2
+overriding_hide_bones   = sight_handle, sight_iron2
+overriding_show_bones   = rail
+aim_hud_offset_pos      = 0.0005,0.01841,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0005,0.01841,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+gl_hud_offset_pos       = 0.0,0.012,0.0
+gl_hud_offset_rot       = 0.0,0.0,0.0
+gl_hud_offset_pos_16x9  = 0.0,0.012,-0.05
+gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+; the SUSAT itself -- the L85's own 4x sight, first weapon to use this optic here.
+; Reticle = the stock CS L85 scope texture (that sight IS a SUSAT).
+[scope_susat_l85a2]
+scope_name              = wpn_addon_scope_susat
+scope_texture		= crosshair_2d_susat	; GS parity: the stock reticle has no illumination levels
+scope_zoom_factor       = 30
+need_lens_frame         = true
+scope_lens_factor       = 4.0
+zoom_mouse_sense_koef   = 0.5
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.309	; GS hud_fov_zoom_factor 0.55 x 0.5625
+alter_zoom_allowed      = true
+alter_zoom_time         = 0.25
+scope_hud_fov_alter_aim = 0.338	; GS hud_fov_alter_zoom_factor 0.6 x 0.5625
+alter_aim_hud_offset_pos = 0.000200,-0.021000,0.051000
+alter_aim_hud_offset_rot = 0.002000,0.000000,0.000000
+alter_aim_hud_offset_pos_16x9 = 0.000200,-0.021100,0.000000
+alter_aim_hud_offset_rot_16x9 = 0.002000,0.000000,0.000000
+scope_x                 = 66
+scope_y                 = -7
+bones                   = scope4
+overriding_hide_bones   = sight_handle, sight_iron2
+aim_hud_offset_pos      = 0.000050,0.011600,-0.1
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000050,0.011600,-0.1
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+gl_hud_offset_pos       = 0.0,0.012,0.0
+gl_hud_offset_rot       = 0.0,0.0,0.0
+gl_hud_offset_pos_16x9  = 0.0,0.012,-0.05
+gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_elcan_l85a2]
+scope_name              = wpn_addon_scope_susat_custom
+scope_texture           = crosshair_2d_elcan
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 4.0
+zoom_mouse_sense_koef   = 0.5
+scope_abberation        = 0.005
+max_night_brightness    = 3.0
+min_night_brightness    = 0.0
+steps_brightness        = 3
+default_brightness_step = 0
+min_lens_factor         = 1.8
+max_lens_factor         = 10
+lens_factor_levels_count = 1
+default_lens_factor_step = 0
+alter_zoom_allowed      = true
+alter_zoom_time         = 0.25
+scope_hud_fov_alter_aim = 0.338	; GS hud_fov_alter_zoom_factor 0.6 x 0.5625
+alter_aim_hud_offset_pos = 0.000300,-0.026000,0.050000
+alter_aim_hud_offset_rot = 0.000000,0.000000,0.000000
+alter_aim_hud_offset_pos_16x9 = 0.000200,-0.024840,0.000000
+alter_aim_hud_offset_rot_16x9 = 0.002000,0.000000,0.000000
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.478	; GS hud_fov_zoom_factor 0.85 x 0.5625
+scope_x                 = 37
+scope_y                 = -6
+bones                   = scope3
+overriding_hide_bones   = sight_handle, sight_iron2
+overriding_show_bones   = rail
+aim_hud_offset_pos      = 0.000100,0.016400,-0.15
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000100,0.016400,-0.15
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+gl_hud_offset_pos       = 0.0,0.012,0.0
+gl_hud_offset_rot       = 0.0,0.0,0.0
+gl_hud_offset_pos_16x9  = 0.0,0.012,-0.05
+gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+prohibit_aim_for_grenade_mode = true
+
+[scope_pn23_l85a2]
+; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
+scope_nightvision_2d       = scope_nightvision
+scope_nightvision_min_factor = 0.5
+scope_name              = wpn_addon_scope_susat_night
+scope_texture           = crosshair_2d_pn23
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 15
+zoom_mouse_sense_koef   = 0.13
+scope_abberation        = 0
+max_night_brightness    = 7.0
+min_night_brightness    = 0.5
+steps_brightness        = 7
+default_brightness_step = 0
+jitter_brightness       = 0.3
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.281	; GS hud_fov_zoom_factor 0.5 x 0.5625
+scope_x                 = 28
+scope_y                 = -8
+bones                   = scope5
+overriding_hide_bones   = sight_handle, sight_iron2
+overriding_show_bones   = rail
+aim_hud_offset_pos      = 0.00045,-0.0065,0.02
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.00045,-0.0065,0.02
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+gl_hud_offset_pos       = 0.0,0.012,0.12
+gl_hud_offset_rot       = 0.0,0.0,0.0
+gl_hud_offset_pos_16x9  = 0.0,0.012,0.07
+gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+
+;==============================================================================
+; SIG SG 552 optics -- GS assault\sig552\scopes.ltx
+;==============================================================================
+[scope_eotech_sig552]
+scope_name              = wpn_addon_scope_susat_x1.6
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.001
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.506	; GS hud_fov_zoom_factor 0.9 x 0.5625
+scope_x                 = 79
+scope_y                 = -1
+bones                   = scope1
+overriding_hide_bones   = ironsight, ironsight_sight
+overriding_show_bones   = ironsight_rail
+aim_hud_offset_pos      = 0.0001,-0.0221,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0001,-0.0221,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_aimpoint_sig552]
+scope_name              = wpn_addon_scope_susat_dusk
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.281	; GS hud_fov_zoom_factor 0.5 x 0.5625
+scope_x                 = 72
+scope_y                 = -6
+bones                   = scope2
+overriding_hide_bones   = ironsight, ironsight_sight
+overriding_show_bones   = ironsight_rail
+aim_hud_offset_pos      = 0.0002,-0.0253,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0002,-0.0253,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_elcan_sig552]
+scope_name              = wpn_addon_scope_susat_custom
+scope_texture           = crosshair_2d_elcan
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 4.0
+zoom_mouse_sense_koef   = 0.5
+scope_abberation        = 0.005
+max_night_brightness    = 3.0
+min_night_brightness    = 0.0
+steps_brightness        = 3
+default_brightness_step = 0
+min_lens_factor         = 1.8
+max_lens_factor         = 10
+lens_factor_levels_count = 1
+default_lens_factor_step = 0
+alter_zoom_allowed      = true
+alter_zoom_time         = 0.25
+scope_hud_fov_alter_aim = 0.478	; GS hud_fov_alter_zoom_factor 0.85 x 0.5625
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.478	; GS hud_fov_zoom_factor 0.85 x 0.5625
+scope_x                 = 48
+scope_y                 = -4
+bones                   = scope3
+overriding_hide_bones   = ironsight, ironsight_sight
+overriding_show_bones   = ironsight_rail
+aim_hud_offset_pos      = 0.0,-0.029,-0.12
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0,-0.029,-0.12
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+prohibit_aim_for_grenade_mode = true
+
+[scope_pn23_sig552]
+; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
+scope_nightvision_2d       = scope_nightvision
+scope_nightvision_min_factor = 0.5
+scope_name              = wpn_addon_scope_susat_night
+scope_texture           = crosshair_2d_pn23
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 15
+zoom_mouse_sense_koef   = 0.13
+scope_abberation        = 0
+max_night_brightness    = 7.0
+min_night_brightness    = 0.5
+steps_brightness        = 7
+default_brightness_step = 0
+jitter_brightness       = 0.3
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.281	; GS hud_fov_zoom_factor 0.5 x 0.5625
+scope_x                 = 42
+scope_y                 = -8
+bones                   = scope4
+overriding_hide_bones   = ironsight, ironsight_sight
+overriding_show_bones   = ironsight_rail
+aim_hud_offset_pos      = 0.0,-0.05,0.05
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0,-0.05,0.05
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+
+;==============================================================================
+; SIG SG 550 optics -- GS assault\sig550\scopes.ltx
+;==============================================================================
+[scope_eotech_sig550]
+scope_name              = wpn_addon_scope_susat_x1.6
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.001
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.506	; GS hud_fov_zoom_factor 0.9 x 0.5625
+scope_x                 = 72
+scope_y                 = -4
+bones                   = scope1
+overriding_hide_bones   = ironsight, ironsight_sight
+overriding_show_bones   = ironsight_rail
+aim_hud_offset_pos      = 0.0001,-0.0221,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0001,-0.0221,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_aimpoint_sig550]
+scope_name              = wpn_addon_scope_susat_dusk
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.281	; GS hud_fov_zoom_factor 0.5 x 0.5625
+scope_x                 = 74
+scope_y                 = -7
+bones                   = scope2
+overriding_hide_bones   = ironsight, ironsight_sight
+overriding_show_bones   = ironsight_rail
+aim_hud_offset_pos      = 0.0002,-0.0253,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0002,-0.0253,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_elcan_sig550]
+scope_name              = wpn_addon_scope_susat_custom
+scope_texture           = crosshair_2d_elcan
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 4.0
+zoom_mouse_sense_koef   = 0.5
+scope_abberation        = 0.005
+max_night_brightness    = 3.0
+min_night_brightness    = 0.0
+steps_brightness        = 3
+default_brightness_step = 0
+min_lens_factor         = 1.8
+max_lens_factor         = 10
+lens_factor_levels_count = 1
+default_lens_factor_step = 0
+alter_zoom_allowed      = true
+alter_zoom_time         = 0.25
+scope_hud_fov_alter_aim = 0.478	; GS hud_fov_alter_zoom_factor 0.85 x 0.5625
+alter_aim_hud_offset_pos = 0.000200,-0.064701,0.050000
+alter_aim_hud_offset_rot = 0.0,0.0,0.0
+alter_aim_hud_offset_pos_16x9 = 0.000200,-0.064701,-0.103000
+alter_aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.478	; GS hud_fov_zoom_factor 0.85 x 0.5625
+scope_x                 = 38
+scope_y                 = -6
+bones                   = scope3
+overriding_hide_bones   = ironsight, ironsight_sight
+overriding_show_bones   = ironsight_rail
+aim_hud_offset_pos      = 0.000200,-0.027400,-0.12
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000200,-0.027400,-0.12
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+prohibit_aim_for_grenade_mode = true
+
+[scope_pn23_sig550]
+; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
+scope_nightvision_2d       = scope_nightvision
+scope_nightvision_min_factor = 0.5
+scope_name              = wpn_addon_scope_susat_night
+scope_texture           = crosshair_2d_pn23
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 15
+zoom_mouse_sense_koef   = 0.13
+scope_abberation        = 0
+max_night_brightness    = 7.0
+min_night_brightness    = 0.5
+steps_brightness        = 7
+default_brightness_step = 0
+jitter_brightness       = 0.3
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.281	; GS hud_fov_zoom_factor 0.5 x 0.5625
+scope_x                 = 33
+scope_y                 = -9
+bones                   = scope4
+overriding_hide_bones   = ironsight, ironsight_sight
+overriding_show_bones   = ironsight_rail
+aim_hud_offset_pos      = 0.0,-0.05,0.05
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0,-0.05,0.05
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+
+;==============================================================================
+; PO 4x34 scope item (GS addons/scopes/special/std_po4x34.ltx) -- the Groza's own optic.
+; Inherits OUR wpn_addon_scope_x2.7, not GS's base_addon. scope_zoom_factor is OURS in
+; degrees, never GS's 1.02 multiplier.
+;==============================================================================
+[wpn_addon_scope_po4x34]:wpn_addon_scope_x2.7	; PO 4x34 (2D reticle + PiP lens)
+$spawn			= "weapons\addons\scope_po4x34"
+visual          = dynamics\weapons\addons\scopes\po4x34.ogf
+inv_name		= gunsl_addon_scope_po4x34
+inv_name_short	= gunsl_addon_scope_po4x34
+description		= gunsl_addon_scope_po4x34_descr
+cost			= 3000
+inv_weight		= 0.36
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 23
+inv_grid_y         = 19
+holder_range_modifier	= 1.2
+holder_fov_modifier		= 1.0
+scope_texture		= crosshair_2d_pu
+scope_zoom_factor	= 28	; GS 1.02 is a multiplier there; ours is absolute degrees
+zoom_hide_ui		= true
+need_lens_frame		= true
+scope_lens_factor	= 6	; GS min = max = 6
+zoom_mouse_sense_koef = 0.5
+scope_abberation	= 0.011
+
+;==============================================================================
+; OC-14 Groza optics -- GS assault/oc14/scopes.ltx.
+; scope_hud_fov_aim = GS hud_fov_zoom_factor x 0.5625.
+;==============================================================================
+[scope_po4x34_groza]
+scope_name              = wpn_addon_scope_po4x34
+scope_texture           = crosshair_2d_pu
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 6
+lens_factor_levels_count = 5
+default_lens_factor_step = 0
+min_lens_factor         = 6
+max_lens_factor         = 6
+zoom_mouse_sense_koef   = 0.5
+scope_abberation        = 0.011
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.422	; GS hud_fov_zoom_factor 0.75 x 0.5625
+scope_x                 = 80
+scope_y                 = -17
+bones                   = scope5
+overriding_hide_bones   = launcher_scope
+overriding_show_bones   = launcher_scope_static
+aim_hud_offset_pos      = 0.000276,-0.032090,-0.12
+aim_hud_offset_rot      = 0.007000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.000276,-0.032090,-0.12
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 10
+prohibit_aim_for_grenade_mode = true
+additional_icon_element = icon_element_oc14_handle_upper_for_scope
+additional_icon_element_offset_x = 50
+additional_icon_element_offset_y = 0
+
+[scope_eotech_groza]
+scope_name              = wpn_addon_scope_susat_x1.6
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.001
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.450	; GS hud_fov_zoom_factor 0.8 x 0.5625
+scope_x                 = 89
+scope_y                 = -6
+bones                   = scope1
+overriding_hide_bones   = planka, launcher_scope
+overriding_show_bones   = launcher_scope_static
+aim_hud_offset_pos      = 0.000266,0.004670,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000266,0.004670,0.0
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+gl_hud_offset_pos       = 0.0,-0.001,-0.1
+gl_hud_offset_rot       = 0.0,0.0,0.0
+gl_hud_offset_pos_16x9  = 0.0,-0.001,-0.05
+gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+prohibit_aim_for_grenade_mode = true
+
+[scope_aimpoint_groza]
+scope_name              = wpn_addon_scope_susat_dusk
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.422	; GS hud_fov_zoom_factor 0.75 x 0.5625
+scope_x                 = 90
+scope_y                 = -11
+bones                   = scope2
+overriding_hide_bones   = planka, launcher_scope
+overriding_show_bones   = launcher_scope_static
+aim_hud_offset_pos      = 0.000356,0.001420,-0.11
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000356,0.001420,-0.11
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+gl_hud_offset_pos       = 0.0,-0.001,-0.1
+gl_hud_offset_rot       = 0.0,0.0,0.0
+gl_hud_offset_pos_16x9  = 0.0,-0.001,-0.05
+gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+prohibit_aim_for_grenade_mode = true
+
+[scope_elcan_groza]
+scope_name              = wpn_addon_scope_susat_custom
+scope_texture           = crosshair_2d_elcan
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 4.0
+zoom_mouse_sense_koef   = 0.5
+scope_abberation        = 0.005
+max_night_brightness    = 3.0
+min_night_brightness    = 0.0
+steps_brightness        = 3
+default_brightness_step = 0
+min_lens_factor         = 1.8
+max_lens_factor         = 10
+lens_factor_levels_count = 1
+default_lens_factor_step = 0
+alter_zoom_allowed      = true
+alter_zoom_time         = 0.25
+scope_hud_fov_alter_aim = 0.338	; GS hud_fov_alter_zoom_factor 0.6 x 0.5625
+alter_aim_hud_offset_pos = 0.000220,-0.038200,0.000000
+alter_aim_hud_offset_rot = 0.000500,-0.000100,0.000000
+alter_aim_hud_offset_pos_16x9 = 0.000220,-0.037200,0.000000
+alter_aim_hud_offset_rot_16x9 = 0.002100,0.000000,0.000000
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.422	; GS hud_fov_zoom_factor 0.75 x 0.5625
+scope_x                 = 62
+scope_y                 = -9
+bones                   = scope3
+overriding_hide_bones   = planka, launcher_scope
+overriding_show_bones   = launcher_scope_static
+aim_hud_offset_pos      = -0.000044,-0.000580,-0.11
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = -0.000044,-0.000580,-0.11
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+gl_hud_offset_pos       = 0.0,-0.001,-0.1
+gl_hud_offset_rot       = 0.0,0.0,0.0
+gl_hud_offset_pos_16x9  = 0.0,-0.001,-0.05
+gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+prohibit_aim_for_grenade_mode = true
+
+[scope_pn23_groza]
+; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
+scope_nightvision_2d       = scope_nightvision
+scope_nightvision_min_factor = 0.5
+scope_name              = wpn_addon_scope_susat_night
+scope_texture           = crosshair_2d_pn23
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 15
+zoom_mouse_sense_koef   = 0.13
+scope_abberation        = 0
+max_night_brightness    = 7.0
+min_night_brightness    = 0.5
+steps_brightness        = 7
+default_brightness_step = 0
+jitter_brightness       = 0.3
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4 x 0.5625
+scope_x                 = 47
+scope_y                 = -8
+bones                   = scope4
+overriding_hide_bones   = planka, launcher_scope
+overriding_show_bones   = launcher_scope_static
+aim_hud_offset_pos      = -0.000094,-0.023240,0.1
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = -0.000094,-0.023240,0.1
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+gl_hud_offset_pos       = 0.0,-0.001,-0.1
+gl_hud_offset_rot       = 0.0,0.0,0.0
+gl_hud_offset_pos_16x9  = 0.0,-0.001,-0.05
+gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+prohibit_aim_for_grenade_mode = true
+
+;==============================================================================
+; AS VAL optics -- GS assault/val/scopes.ltx.
+; Same eight sights as the ak74m: inherit that twin for the optic params and
+; override only the per-weapon geometry. scope_hud_fov_aim = GS hud_fov_zoom_factor x 0.5625.
+;==============================================================================
+
+[scope_pso1_val]:scope_pso1_ak74m
+scope_texture		= crosshair_2d_pso1sn	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 49
+scope_y                 = 1
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4
+aim_hud_offset_pos      = 0.009350,-0.034100,0.11
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.009350,-0.034100,0.11
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.02
+inertion_aim_speed      = 8
+
+[scope_pso1m2x1_val]:scope_pso1m2x1_ak74m
+scope_texture		= crosshair_2d_pso1as	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 49
+scope_y                 = 1
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4
+aim_hud_offset_pos      = 0.009350,-0.033200,0.10
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.009350,-0.033200,0.10
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.02
+inertion_aim_speed      = 8
+
+[scope_rakurs_val]:scope_rakurs_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 154
+scope_y                 = -3
+scope_hud_fov_aim       = 0.450	; GS hud_fov_zoom_factor 0.8
+aim_hud_offset_pos      = 0.000000,-0.002500,-0.03
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000000,-0.002500,-0.03
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.005
+inertion_aim_speed      = 8
+
+[scope_nvsn_val]:scope_nvsn_ak74m
+scope_texture		= crosshair_2d_1pn93x4	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 34
+scope_y                 = 0
+scope_hud_fov_aim       = 0.231	; GS hud_fov_zoom_factor 0.41
+aim_hud_offset_pos      = 0.013000,-0.062000,0.145
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.013000,-0.062000,0.145
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 10
+
+[scope_nvas_val]:scope_nvas_ak74m
+scope_texture		= crosshair_2d_1pn93x1	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 34
+scope_y                 = 0
+scope_hud_fov_aim       = 0.231	; GS hud_fov_zoom_factor 0.41
+aim_hud_offset_pos      = 0.018850,-0.048900,0.135
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.018850,-0.048900,0.135
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 10
+
+[scope_cobra_val]:scope_cobra_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 62
+scope_y                 = 3
+scope_hud_fov_aim       = 0.478	; GS hud_fov_zoom_factor 0.85
+aim_hud_offset_pos      = -0.000300,-0.042900,0.03
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = -0.000300,-0.040000,0.03
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 8
+
+[scope_pka_val]:scope_pka_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 87
+scope_y                 = 1
+scope_hud_fov_aim       = 0.281	; GS hud_fov_zoom_factor 0.5
+aim_hud_offset_pos      = 0.009300,-0.037000,-0.02
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.009300,-0.037000,-0.02
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 8
+
+[scope_kashtan_val]:scope_kashtan_ak74m
+scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 62
+scope_y                 = -4
+scope_hud_fov_aim       = 0.253	; GS hud_fov_zoom_factor 0.45
+aim_hud_offset_pos      = -0.001300,-0.032100,0.09
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = -0.001300,-0.032100,0.09
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 10
+
+;==============================================================================
+; SVU optics -- GS sniper/svu/scopes.ltx. Same optic items as the ak74m (inherit the twin),
+; but this weapon mounts them on its own bones and folds the iron sights away while scoped.
+;==============================================================================
+
+[scope_pso1_svu]:scope_pso1_ak74m
+scope_texture		= crosshair_2d_pso1sn	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 50
+scope_y                 = 4
+bones                   = scope1
+overriding_hide_bones   = ironsight_on, sight_on
+overriding_show_bones   = ironsight_off
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4
+aim_hud_offset_pos      = 0.000150,-0.001700,-0.009
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000150,-0.001700,-0.009
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.02
+inertion_aim_speed      = 8
+additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
+additional_icon_element_offset_x = 50
+additional_icon_element_offset_y = 0
+
+[scope_pso1m2_svu]:scope_pso1m2x1_ak74m
+scope_texture		= crosshair_2d_pso1as	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 50
+scope_y                 = 4
+bones                   = scope6
+overriding_hide_bones   = ironsight_on, sight_on
+overriding_show_bones   = ironsight_off
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4
+aim_hud_offset_pos      = 0.000150,-0.002800,-0.055
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000150,-0.002800,-0.055
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.02
+inertion_aim_speed      = 8
+additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
+additional_icon_element_offset_x = 50
+additional_icon_element_offset_y = 0
+
+[scope_nvsn_svu]:scope_nvsn_ak74m
+scope_texture		= crosshair_2d_1pn93x4	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 50
+scope_y                 = 5
+bones                   = scope2
+overriding_hide_bones   = ironsight_on, sight_on
+overriding_show_bones   = ironsight_off
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4
+aim_hud_offset_pos      = 0.003450,-0.031000,-0.09
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.003450,-0.031000,-0.09
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 10
+additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
+additional_icon_element_offset_x = 50
+additional_icon_element_offset_y = 0
+
+[scope_nvas_svu]:scope_nvas_ak74m
+scope_texture		= crosshair_2d_1pn93x1	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 50
+scope_y                 = 5
+bones                   = scope7
+overriding_hide_bones   = ironsight_on, sight_on
+overriding_show_bones   = ironsight_off
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4
+aim_hud_offset_pos      = 0.010400,-0.023300,-0.05
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.010400,-0.023300,-0.05
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 10
+additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
+additional_icon_element_offset_x = 50
+additional_icon_element_offset_y = 0
+
+[scope_cobra_svu]:scope_cobra_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 79
+scope_y                 = 10
+bones                   = scope5
+overriding_hide_bones   = ironsight_on, sight_on
+overriding_show_bones   = ironsight_off
+scope_hud_fov_aim       = 0.478	; GS hud_fov_zoom_factor 0.85
+aim_hud_offset_pos      = -0.0088,0.001,-0.16
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = -0.0088,0.001,-0.16
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 8
+additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
+additional_icon_element_offset_x = 50
+additional_icon_element_offset_y = 0
+
+[scope_pka_svu]:scope_pka_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 81
+scope_y                 = 8
+bones                   = scope4
+overriding_hide_bones   = ironsight_on, sight_on
+overriding_show_bones   = ironsight_off
+scope_hud_fov_aim       = 0.281	; GS hud_fov_zoom_factor 0.5
+aim_hud_offset_pos      = 0.001,-0.0015,-0.13
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.001,-0.0015,-0.13
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 8
+additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
+additional_icon_element_offset_x = 50
+additional_icon_element_offset_y = 0
+
+[scope_kashtan_svu]:scope_kashtan_ak74m
+scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 74
+scope_y                 = 0
+bones                   = scope3
+overriding_hide_bones   = ironsight_on, sight_on
+overriding_show_bones   = ironsight_off
+scope_hud_fov_aim       = 0.253	; GS hud_fov_zoom_factor 0.45
+aim_hud_offset_pos      = -0.011550,-0.000700,-0.1
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = -0.011550,-0.000700,-0.1
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 10
+additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
+additional_icon_element_offset_x = 50
+additional_icon_element_offset_y = 0
+
+;==============================================================================
+; SVD optics -- GS sniper/svd/scopes.ltx. Same optic items as the ak74m (inherit the twin),
+; own mount bones. scope_hud_fov_aim = GS hud_fov_zoom_factor x 0.5625.
+;==============================================================================
+
+[scope_pso1_svd]:scope_pso1_ak74m
+scope_texture		= crosshair_2d_pso1sn	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 38
+scope_y                 = 9
+bones                   = scope1
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4
+aim_hud_offset_pos      = -0.000050,-0.000300,0.06
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = -0.000050,-0.000300,0.06
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.02
+inertion_aim_speed      = 8
+
+[scope_pso1m2_svd]:scope_pso1m2x1_ak74m
+scope_texture		= crosshair_2d_pso1as	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 38
+scope_y                 = 9
+bones                   = scope6
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4
+aim_hud_offset_pos      = -0.000350,-0.000800,0.06
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = -0.000350,-0.000800,0.06
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.02
+inertion_aim_speed      = 8
+
+[scope_nvsn_svd]:scope_nvsn_ak74m
+scope_texture		= crosshair_2d_1pn93x4	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 33
+scope_y                 = 10
+bones                   = scope2
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4
+aim_hud_offset_pos      = 0.004800,-0.028200,0.04
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.004800,-0.028200,0.04
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 10
+
+[scope_nvas_svd]:scope_nvas_ak74m
+scope_texture		= crosshair_2d_1pn93x1	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 33
+scope_y                 = 10
+bones                   = scope7
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4
+aim_hud_offset_pos      = 0.010300,-0.022100,0.04
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.010300,-0.022100,0.04
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 10
+
+[scope_cobra_svd]:scope_cobra_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 72
+scope_y                 = 13
+bones                   = scope5
+scope_hud_fov_aim       = 0.478	; GS hud_fov_zoom_factor 0.85
+aim_hud_offset_pos      = -0.009300,0.001300,-0.08
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = -0.009300,0.001300,-0.08
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 8
+
+[scope_pka_svd]:scope_pka_ak74m
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 76
+scope_y                 = 10
+bones                   = scope4
+scope_hud_fov_aim       = 0.281	; GS hud_fov_zoom_factor 0.5
+aim_hud_offset_pos      = 0.000400,0.000100,-0.05
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000400,0.000100,-0.05
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 8
+
+[scope_kashtan_svd]:scope_kashtan_ak74m
+scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_x                 = 57
+scope_y                 = 6
+bones                   = scope3
+scope_hud_fov_aim       = 0.253	; GS hud_fov_zoom_factor 0.45
+aim_hud_offset_pos      = -0.012000,0.000800,-0.008
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = -0.012000,0.000800,-0.008
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed      = 10
+
+;==============================================================================
+; PGO-7V -- the RPG-7's own 2.7x optic (GS heavy/rpg-7/scopes.ltx + addons/scopes/lastochka/std_pgo7v.ltx)
+;==============================================================================
+[wpn_addon_scope_pgo7v]:wpn_addon_scope_x2.7	; PGO-7V 2.7x (2D reticle + PiP lens)
+$spawn			= "weapons\addons\scope_pgo7v"
+visual          = dynamics\weapons\addons\scopes\pgo7v.ogf
+inv_name		= gunsl_addon_scope_pgo7v
+inv_name_short	= gunsl_addon_scope_pgo7v
+description		= gunsl_addon_scope_pgo7v_descr
+cost			= 3000
+inv_weight		= .62
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 22
+inv_grid_y         = 25
+holder_range_modifier	= 1.2
+holder_fov_modifier		= 1.0
+scope_texture		= crosshair_2d_pgo7v
+scope_zoom_factor	= 40	; GS 1.02 is a multiplier there; ours is absolute degrees (2.7x optic)
+zoom_hide_ui		= true
+need_lens_frame		= true
+scope_lens_factor	= 15	; GS min = max = 15
+zoom_mouse_sense_koef = 0.13
+scope_abberation	= 0.005
+; brightness steps (GS std_pgo7v.ltx): the reticle has an illuminated variant
+max_night_brightness	= 3.0
+min_night_brightness	= 0.0
+steps_brightness		= 1
+default_brightness_step	= 0
+jitter_brightness		= 0.0
+
+; ---- mount: PGO-7V on the RPG-7 (GS heavy/rpg-7/scopes.ltx) ----
+[scope_pgo7v_rpg7]
+scope_name              = wpn_addon_scope_pgo7v
+scope_texture           = crosshair_2d_pgo7v
+scope_zoom_factor       = 40
+need_lens_frame         = true
+scope_lens_factor       = 15
+min_lens_factor         = 15
+max_lens_factor         = 15
+lens_factor_levels_count = 5
+zoom_mouse_sense_koef   = 0.13
+; How long after the aim rotation the 2D picture waits (and the weapon goes away with it).
+; Engine default 0.04 -- this optic comes up slower than a rifle scope, so it holds on longer.
+scope_2d_show_delay     = 0.095
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.225	; GS hud_fov_zoom_factor 0.4 x 0.5625 (same conversion as the groza's 0.422)
+scope_x                 = 135	; offset in the inventory icon
+scope_y                 = 11
+; reticle illumination -- the bone (as on the PSO mounts) AND the brightness block, which MUST live
+; in THIS section: LoadScopeIllumParams reads the per-weapon scope section (then the weapon), never
+; the addon item -- with the keys only on [wpn_addon_scope_pgo7v] steps stayed 0 and the step could
+; never leave 0, so nothing ever switched.
+scope_illum_bones       = metka1
+steps_brightness        = 1
+max_night_brightness    = 3.0
+min_night_brightness    = 0.0
+default_brightness_step = 0
+; same shape as the working svu mounts: `bones` = the optic's own geometry, and the mount swap goes
+; through overriding_hide/show (scope on -> `mount` away, `mount_off` in; scope off -> the def_* pass
+; on the weapon puts `mount` back and hides `mount_off`)
+bones                   = scope1
+overriding_hide_bones   = mount
+overriding_show_bones   = mount_off
+aim_hud_offset_pos      = 0.0,0.008,0.00
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.0,0.008,0.00
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+inertion_aim_origin_offset = 0.009	; scope sections keep GS's POSITIVE sign (only hud sections are mirrored)
+inertion_aim_speed_factor  = 0.8
+
+; ==============================================================================
+; LR300 optics -- ported from the xrMPE lr300 (scope bones scope1..scope4 on the
+; xrMPE model); optic parameters reuse our already tuned mp5 set, only the mount
+; offsets / aim poses are the lr300's own.
+; ==============================================================================
+[scope_eotech_lr300]
+; no scope_illum_bones here: metka1 is a child of scope1 and is already revealed with the
+; optic -- gating it on brightness (default step 0) left the reticle invisible
+scope_name              = wpn_addon_scope_susat_x1.6
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.001
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.48
+scope_x                 = 80
+scope_y                 = -5
+bones                   = scope1
+overriding_hide_bones   = sight_iron, sight_handle
+aim_hud_offset_pos      = 0.000850,-0.007100,0.004
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000850,-0.007100,0.004
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+gl_hud_offset_pos       = 0.001000,0.022289,-0.03
+gl_hud_offset_rot       = 0.043,0.0,0.0
+gl_hud_offset_pos_16x9  = 0.001000,0.022289,-0.03
+gl_hud_offset_rot_16x9  = 0.043,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_aimpoint_lr300]
+scope_name              = wpn_addon_scope_susat_dusk
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.28
+scope_x                 = 83
+scope_y                 = -9
+bones                   = scope2
+overriding_hide_bones   = sight_iron, sight_handle
+aim_hud_offset_pos      = 0.0002,-0.0253,0.0
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.0012,-0.0103,0.0
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+gl_hud_offset_pos       = 0.001000,0.022289,-0.03
+gl_hud_offset_rot       = 0.043,0.0,0.0
+gl_hud_offset_pos_16x9  = 0.001000,0.022289,-0.03
+gl_hud_offset_rot_16x9  = 0.043,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_elcan_lr300]
+scope_name              = wpn_addon_scope_susat_custom
+scope_texture           = crosshair_2d_elcan
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 4.0
+zoom_mouse_sense_koef   = 0.5
+scope_abberation        = 0.005
+max_night_brightness    = 3.0
+min_night_brightness    = 0.0
+steps_brightness        = 3
+default_brightness_step = 0
+min_lens_factor         = 1.8
+max_lens_factor         = 10
+lens_factor_levels_count = 1
+default_lens_factor_step = 0
+alter_zoom_allowed      = true
+alter_zoom_time         = 0.25
+scope_hud_fov_alter_aim = 0.34
+alter_aim_hud_offset_pos = 0.000200,-0.049400,-0.103000
+alter_aim_hud_offset_rot = 0.000000,0.000000,0.000000
+alter_aim_hud_offset_pos_16x9 = 0.000200,-0.049400,-0.103000
+alter_aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.48
+scope_x                 = 54
+scope_y                 = -6
+bones                   = scope3
+overriding_hide_bones   = sight_iron, sight_handle
+aim_hud_offset_pos      = 0.000200,-0.012800,-0.12
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000200,-0.012800,-0.12
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+gl_hud_offset_pos       = 0.001000,0.022289,-0.03
+gl_hud_offset_rot       = 0.043,0.0,0.0
+gl_hud_offset_pos_16x9  = 0.001000,0.022289,-0.03
+gl_hud_offset_rot_16x9  = 0.043,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+prohibit_aim_for_grenade_mode = true
+
+[scope_pn23_lr300]
+; GS screen night vision (picatinny\std_night.ltx) -- see the note on [scope_nvas_ak74m]
+scope_nightvision_2d       = scope_nightvision
+scope_nightvision_min_factor = 0.5
+scope_name              = wpn_addon_scope_susat_night
+scope_texture           = crosshair_2d_pn23
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 15
+zoom_mouse_sense_koef   = 0.13
+scope_abberation        = 0
+max_night_brightness    = 7.0
+min_night_brightness    = 0.5
+steps_brightness        = 7
+default_brightness_step = 0
+jitter_brightness       = 0.3
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.28
+scope_x                 = 45
+scope_y                 = -11
+bones                   = scope4
+overriding_hide_bones   = sight_iron, sight_handle
+aim_hud_offset_pos      = 0.001150,-0.034500,0.05
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.001150,-0.034500,0.05
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+gl_hud_offset_pos       = 0.001000,0.022289,-0.03
+gl_hud_offset_rot       = 0.043,0.0,0.0
+gl_hud_offset_pos_16x9  = 0.001000,0.022289,-0.03
+gl_hud_offset_rot_16x9  = 0.043,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+; the PN23 sits too high to aim through with the launcher raised (same as the groza's optics)
+prohibit_aim_for_grenade_mode = true
+
+; ============================================================================
+; PP-19 Bizon optics -- ported from GS smg/bizon/scopes.ltx. Same seven optics the
+; ak74m carries, but the mount sits differently, so bones / aim offsets / icon
+; offsets are the bizon's own; they inherit scope_ak74m_base only for the shared
+; defaults (crosshair texture, lens factor, use_scope_anims).
+; ============================================================================
+[scope_pso1_bizon]:scope_ak74m_base
+scope_lens_factor		= 15		; was missing: it inherited 4.0 from the base while its
+								; zoom_mouse_sense_koef was copied from scope_pso1_ak74m (15x)
+scope_name 					= wpn_addon_scope
+scope_texture		= crosshair_2d_pso1sn	; GS parity: the stock reticle has no illumination levels
+scope_x              	= 39                 ; offset in inventory icon
+scope_y                 = 1
+bones = scope6
+scope_hud_fov_aim		= 0.18	; = scope_pso1_ak74m (GS gives both weapons the same hud_fov_zoom_factor); orig 0.225 from the 0.5625x conversion
+use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
+
+aim_hud_offset_pos = -0.008750,-0.005000,0.15
+aim_hud_offset_rot = 0.000000,0.000000,0.0
+
+aim_hud_offset_pos_16x9 = -0.008750,-0.005000,0.15
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
+
+inertion_pitch_offset_r_factor = 0.3
+inertion_pitch_offset_n_factor = 0.2
+inertion_pitch_offset_d_factor = 0.5
+inertion_origin_offset_factor  = 0.3
+
+inertion_aim_origin_offset_factor = 4
+inertion_aim_speed_factor = 0.8
+
+zoom_mouse_sense_koef	= 0.13	; as scope_pso1_ak74m
+steps_brightness		= 1
+max_night_brightness	= 3.0	; as scope_pso1_ak74m
+min_night_brightness	= 0.0
+; NOTE: GS maps this optic to bone scope6, and the bizon hud model has no
+; metka6 child, so there is no reticle-glow bone to toggle here.
+
+[scope_pso1m2x1_bizon]:scope_ak74m_base
+scope_lens_factor		= 10		; was missing: it inherited 4.0 from the base while its
+								; zoom_mouse_sense_koef was copied from scope_pso1m2x1_ak74m (10x)
+scope_name 					= wpn_addon_scope_x2.7
+scope_texture		= crosshair_2d_pso1as	; GS parity: the stock reticle has no illumination levels
+scope_x              	= 39                 ; offset in inventory icon
+scope_y                 = 1
+bones = scope4
+scope_hud_fov_aim		= 0.18	; = scope_pso1m2x1_ak74m (GS gives both weapons the same hud_fov_zoom_factor); orig 0.225 from the 0.5625x conversion
+use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
+
+aim_hud_offset_pos = -0.008750,-0.009500,0.11
+aim_hud_offset_rot = 0.000000,0.000000,0.0
+
+aim_hud_offset_pos_16x9 = -0.008750,-0.009500,0.11
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
+
+inertion_pitch_offset_r_factor = 0.3
+inertion_pitch_offset_n_factor = 0.2
+inertion_pitch_offset_d_factor = 0.5
+inertion_origin_offset_factor  = 0.3
+
+inertion_aim_origin_offset_factor = 4
+inertion_aim_speed_factor = 0.8
+
+zoom_mouse_sense_koef	= 0.2	; as scope_pso1m2x1_ak74m
+steps_brightness		= 1
+max_night_brightness	= 3.0	; as scope_pso1m2x1_ak74m
+min_night_brightness	= 0.0
+scope_illum_bones		= metka4	; reticle glow (child of scope4)
+
+[scope_nvsn_bizon]:scope_ak74m_base
+scope_lens_factor		= 15		; was missing: it inherited 4.0 from the base while its
+								; zoom_mouse_sense_koef was copied from scope_nvsn_ak74m (15x)
+; GS screen night vision (std_1pn93x1.ltx): the tint/noise pass the optic itself applies.
+; _2d = only while the vanilla 2D scope image is up. With the 3D lens ON the lens shader draws
+; the night picture inside the optic itself, so the fullscreen tint must stay off.
+scope_nightvision_2d		= scope_nightvision
+scope_nightvision_min_factor = 0.5	; PPE strength at brightness step 0 (GS value)
+scope_name 					= wpn_addon_scope_detector
+scope_texture		= crosshair_2d_1pn93x4	; GS parity: the stock reticle has no illumination levels
+scope_x              	= 35                 ; offset in inventory icon
+scope_y                 = 2
+scope_hud_fov_aim		= 0.18	; = scope_nvsn_ak74m (GS gives both weapons the same hud_fov_zoom_factor); orig 0.225 from the 0.5625x conversion
+use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
+
+bones = scope7
+
+
+aim_hud_offset_pos = -0.005450,-0.036200,0.09
+aim_hud_offset_rot = 0.000000,0.000000,0.0
+
+aim_hud_offset_pos_16x9 = -0.005450,-0.036200,0.09
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
+
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed = 10 
+
+alter_zoom_allowed = true
+hud_fov_alter_zoom_factor = 0.5
+alter_aim_hud_offset_pos = -0.020000,0.0205000,0.020000
+alter_aim_hud_offset_rot = -0.01700000,0.000000,0.000000
+alter_aim_hud_offset_pos_16x9 = -0.020000,0.0205000,0.020000
+alter_aim_hud_offset_rot_16x9 = -0.01700000,0.000000,0.000000
+
+zoom_mouse_sense_koef	= 0.13
+scope_abberation		= 0
+steps_brightness		= 7
+max_night_brightness	= 7.0	; as scope_nvsn_ak74m
+min_night_brightness	= 0.5
+jitter_brightness		= 0.3
+default_brightness_step	= 4
+
+[scope_nvas_bizon]:scope_ak74m_base
+scope_lens_factor		= 10		; was missing: it inherited 4.0 from the base while its
+								; zoom_mouse_sense_koef was copied from scope_nvas_ak74m (10x)
+; GS screen night vision (std_1pn93x1.ltx): the tint/noise pass the optic itself applies.
+; _2d = only while the vanilla 2D scope image is up. With the 3D lens ON the lens shader draws
+; the night picture inside the optic itself, so the fullscreen tint must stay off.
+scope_nightvision_2d		= scope_nightvision
+scope_nightvision_min_factor = 0.5	; PPE strength at brightness step 0 (GS value)
+scope_name 					= wpn_addon_scope_night
+scope_texture		= crosshair_2d_1pn93x1	; GS parity: the stock reticle has no illumination levels
+scope_x              	= 35                 ; offset in inventory icon
+scope_y                 = 2
+scope_hud_fov_aim		= 0.18	; = scope_nvas_ak74m (GS gives both weapons the same hud_fov_zoom_factor); orig 0.225 from the 0.5625x conversion
+use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
+
+bones = scope5
+
+
+aim_hud_offset_pos = 0.001900,-0.019800,0.09
+aim_hud_offset_rot = 0.000000,0.000000,0.0
+
+aim_hud_offset_pos_16x9 = 0.001900,-0.019800,0.09
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
+
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed = 10 
+
+
+zoom_mouse_sense_koef	= 0.2
+scope_abberation		= 0
+steps_brightness		= 7
+max_night_brightness	= 7.0	; as scope_nvas_ak74m
+min_night_brightness	= 0.5
+jitter_brightness		= 0.3
+default_brightness_step	= 6
+scope_illum_bones		= metka05	; reticle glow (child of scope5)
+
+[scope_cobra_bizon]:scope_ak74m_base
+scope_name 					= wpn_addon_scope_cobra
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x              	= 68                 ; offset in inventory icon
+scope_y                 = 4
+bones = scope1
+scope_hud_fov_aim		= 0.38	; = scope_cobra_ak74m (GS gives both weapons the same hud_fov_zoom_factor); orig 0.478 from the 0.5625x conversion
+use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
+
+aim_hud_offset_pos = -0.0193,-0.016,-0.02
+aim_hud_offset_rot = 0.000000,0.000000,0.0
+
+aim_hud_offset_pos_16x9 = -0.0193,-0.016,-0.02
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
+
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed = 8
+
+
+collimator				= true
+scope_zoom_factor		= 98	; 1x collimator -- no world zoom
+need_lens_frame			= false
+zoom_mouse_sense_koef	= 0.85
+scope_abberation		= 0.001
+
+[scope_pka_bizon]:scope_ak74m_base
+scope_name 					= wpn_addon_scope_pka
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x              	= 76                 ; offset in inventory icon
+scope_y                 = 2
+bones = scope2
+scope_hud_fov_aim		= 0.22	; = scope_pka_ak74m (GS gives both weapons the same hud_fov_zoom_factor); orig 0.281 from the 0.5625x conversion
+use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
+
+aim_hud_offset_pos = -0.0093,-0.008,0.03
+aim_hud_offset_rot = 0.000000,0.000000,0.0
+
+aim_hud_offset_pos_16x9 = -0.0093,-0.008,0.03
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
+
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed = 8
+
+
+collimator				= true
+scope_zoom_factor		= 98	; 1x collimator -- no world zoom
+need_lens_frame			= false
+zoom_mouse_sense_koef	= 0.5
+
+[scope_kashtan_bizon]:scope_ak74m_base
+scope_name 					= wpn_addon_scope_kashtan
+scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_x              	= 66                ; offset in inventory icon
+scope_y                 = 0
+scope_hud_fov_aim		= 0.20	; = scope_kashtan_ak74m (GS gives both weapons the same hud_fov_zoom_factor); orig 0.253 from the 0.5625x conversion
+use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
+
+bones = scope3
+
+
+aim_hud_offset_pos = -0.019750,-0.003600,0.04
+aim_hud_offset_rot = 0.000000,0.000000,0.0
+
+aim_hud_offset_pos_16x9 = -0.019750,-0.003600,0.04
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
+
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed = 10 
+zoom_mouse_sense_koef	= 0.5
+
+; ==========================================================================
+; saiga12 optics -- from GS shotguns/saiga12/scopes.ltx. bones / aim offsets / icon offsets are this
+; weapon's own; scope_ak74m_base supplies the shared defaults. hud_fov_zoom_factor is converted to
+; our absolute scope_hud_fov_aim (x0.5625). Scope sections are NOT sign-mirrored.
+; ==========================================================================
+
+[scope_pso1_saiga12]:scope_ak74m_base
+scope_name 					= wpn_addon_scope
+scope_texture		= crosshair_2d_pso1sn	; GS parity: the stock reticle has no illumination levels
+scope_x              	= 37                 ; offset in inventory icon
+scope_y                 = 4
+bones = scope_pso_sniper
+; scope_hud_fov_aim removed -- inherits 0.18 from scope_ak74m_base, like the ak74m twin ; orig 0.225
+use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
+
+aim_hud_offset_pos = 0.016750,0.001300,0.18
+aim_hud_offset_rot = 0.000000,0.000000,0.000000
+
+aim_hud_offset_pos_16x9 = 0.016750,0.001300,0.18
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+inertion_pitch_offset_r_factor = 0.3
+inertion_pitch_offset_n_factor = 0.2
+inertion_pitch_offset_d_factor = 0.5
+inertion_origin_offset_factor  = 0.3
+
+inertion_aim_origin_offset_factor = 4
+inertion_aim_speed_factor = 0.8
+
+
+; engine-only optic keys, copied from scope_pso1_ak74m (GS does not ship them)
+zoom_mouse_sense_koef     = 0.13
+steps_brightness          = 1
+scope_lens_factor         = 15
+; illumination block (GS ships none of it; values from the scope_pso1_ak74m twin)
+max_night_brightness      = 3.0
+min_night_brightness      = 0.0
+scope_illum_bones         = metka_pso_sniper
+
+[scope_pso1m2x1_saiga12]:scope_ak74m_base
+scope_name 					= wpn_addon_scope_x2.7
+scope_texture		= crosshair_2d_pso1as	; GS parity: the stock reticle has no illumination levels
+scope_x              	= 37                 ; offset in inventory icon
+scope_y                 = 4
+bones = scope_pso_assault
+; scope_hud_fov_aim removed -- inherits 0.18 from scope_ak74m_base, like the ak74m twin ; orig 0.225
+use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
+
+aim_hud_offset_pos = 0.015700,-0.007700,0.14
+aim_hud_offset_rot = 0.000000,0.000000,0.000000
+
+aim_hud_offset_pos_16x9 = 0.015700,-0.007700,0.14
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+inertion_pitch_offset_r_factor = 0.3
+inertion_pitch_offset_n_factor = 0.2
+inertion_pitch_offset_d_factor = 0.5
+inertion_origin_offset_factor  = 0.3
+
+inertion_aim_origin_offset_factor = 4
+inertion_aim_speed_factor = 0.8
+
+; engine-only optic keys, copied from scope_pso1m2x1_ak74m (GS does not ship them)
+zoom_mouse_sense_koef     = 0.2
+steps_brightness          = 1
+scope_lens_factor         = 10
+; illumination block (GS ships none of it; values from the scope_pso1m2x1_ak74m twin)
+max_night_brightness      = 3.0
+min_night_brightness      = 0.0
+scope_illum_bones         = metka_pso_assault
+
+[scope_nvsn_saiga12]:scope_ak74m_base
+; GS screen night vision (std_1pn93x1.ltx): the tint/noise pass the optic itself applies.
+; _2d = only while the vanilla 2D scope image is up. With the 3D lens ON the lens shader draws
+; the night picture inside the optic itself, so the fullscreen tint must stay off.
+scope_nightvision_2d		= scope_nightvision
+scope_nightvision_min_factor = 0.5	; PPE strength at brightness step 0 (GS value)
+scope_name 					= wpn_addon_scope_detector
+scope_texture		= crosshair_2d_1pn93x4	; GS parity: the stock reticle has no illumination levels
+scope_x              	= 33                 ; offset in inventory icon
+scope_y                 = 3
+; scope_hud_fov_aim removed -- inherits 0.18 from scope_ak74m_base, like the ak74m twin ; orig 0.225
+use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
+
+bones = scope_nv_sniper
+
+
+aim_hud_offset_pos = 0.017900,-0.030000,0.12
+aim_hud_offset_rot = 0.000000,0.000000,0.000000
+
+aim_hud_offset_pos_16x9 = 0.017900,-0.030000,0.12
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed = 10 
+
+alter_zoom_allowed = true
+hud_fov_alter_zoom_factor = 0.5
+alter_aim_hud_offset_pos = -0.001300,0.041300,0.00000
+alter_aim_hud_offset_rot = -0.0030000,0.000000,0.000000
+alter_aim_hud_offset_pos_16x9 = -0.001300,0.041300,-0.003000
+alter_aim_hud_offset_rot_16x9 = -0.0030000,0.000000,0.000000
+
+; engine-only optic keys, copied from scope_nvsn_ak74m (GS does not ship them)
+zoom_mouse_sense_koef     = 0.13
+steps_brightness          = 7
+scope_abberation          = 0
+scope_lens_factor         = 15.0
+; illumination block (GS ships none of it; values from the scope_nvsn_ak74m twin)
+max_night_brightness      = 7.0
+min_night_brightness      = 0.5
+jitter_brightness         = 0.3
+default_brightness_step   = 4
+
+[scope_nvas_saiga12]:scope_ak74m_base
+; GS screen night vision (std_1pn93x1.ltx): the tint/noise pass the optic itself applies.
+; _2d = only while the vanilla 2D scope image is up. With the 3D lens ON the lens shader draws
+; the night picture inside the optic itself, so the fullscreen tint must stay off.
+scope_nightvision_2d		= scope_nightvision
+scope_nightvision_min_factor = 0.5	; PPE strength at brightness step 0 (GS value)
+scope_name 					= wpn_addon_scope_night
+scope_texture		= crosshair_2d_1pn93x1	; GS parity: the stock reticle has no illumination levels
+scope_x              	= 33                 ; offset in inventory icon
+scope_y                 = 3
+; scope_hud_fov_aim removed -- inherits 0.18 from scope_ak74m_base, like the ak74m twin ; orig 0.225
+use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
+
+bones = scope_nv_assault
+
+
+aim_hud_offset_pos = 0.025200,-0.020500,0.12
+aim_hud_offset_rot = 0.000000,0.000000,0.000000
+
+aim_hud_offset_pos_16x9 = 0.025200,-0.020500,0.12
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed = 10 
+
+
+; engine-only optic keys, copied from scope_nvas_ak74m (GS does not ship them)
+zoom_mouse_sense_koef     = 0.2
+steps_brightness          = 7
+scope_abberation          = 0
+scope_lens_factor         = 10.0
+; illumination block (GS ships none of it; values from the scope_nvas_ak74m twin)
+max_night_brightness      = 7.0
+min_night_brightness      = 0.5
+jitter_brightness         = 0.3
+default_brightness_step   = 6
+
+[scope_cobra_saiga12]:scope_ak74m_base
+scope_name 					= wpn_addon_scope_cobra
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x              	= 64                 ; offset in inventory icon
+scope_y                 = 7
+bones = scope_cobra
+scope_hud_fov_aim		= 0.38	; orig 0.478 (matched to the ak74m twin)
+use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
+
+aim_hud_offset_pos = 0.004500,-0.0115000,0.0
+aim_hud_offset_rot = 0.000000,0.000000,0.000000
+
+aim_hud_offset_pos_16x9 = 0.004500,-0.0115000,0.0
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed = 8
+
+
+; engine-only optic keys, copied from scope_cobra_ak74m (GS does not ship them)
+collimator                = true
+need_lens_frame           = false
+zoom_mouse_sense_koef     = 0.85
+scope_abberation          = 0.001
+scope_zoom_factor         = 98
+
+[scope_pka_saiga12]:scope_ak74m_base
+scope_name 					= wpn_addon_scope_pka
+scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
+scope_x              	= 77                 ; offset in inventory icon
+scope_y                 = 4
+bones = scope_pka
+scope_hud_fov_aim		= 0.22	; orig 0.281 (matched to the ak74m twin)
+use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
+
+aim_hud_offset_pos = 0.01500,-0.0075000,0.05
+aim_hud_offset_rot = 0.000000,0.000000,0.000000
+
+aim_hud_offset_pos_16x9 = 0.01500,-0.0075000,0.05
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed = 8
+
+
+; engine-only optic keys, copied from scope_pka_ak74m (GS does not ship them)
+collimator                = true
+need_lens_frame           = false
+zoom_mouse_sense_koef     = 0.5
+scope_zoom_factor         = 98
+
+[scope_kashtan_saiga12]:scope_ak74m_base
+scope_name 					= wpn_addon_scope_kashtan
+scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_x              	= 62                ; offset in inventory icon
+scope_y                 = 0
+scope_hud_fov_aim		= 0.20	; orig 0.253 (matched to the ak74m twin)
+use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
+
+bones = scope_kashtan
+
+
+aim_hud_offset_pos = 0.005100,-0.005700,0.05
+aim_hud_offset_rot = 0.000000,0.000000,0.000000
+
+aim_hud_offset_pos_16x9 = 0.005100,-0.005700,0.05
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+
+inertion_aim_origin_offset = 0.01
+inertion_aim_speed = 10 
+; engine-only optic keys, copied from scope_kashtan_ak74m (GS does not ship them)
+zoom_mouse_sense_koef     = 0.5
+scope_lens_factor         = 2.0
+
+; ==============================================================================
+; PKM "Nimble" optics -- the same three collimator/ELCAN sections the mp5 and the
+; lr300 use; only the mount bones and the aim poses are the pkm's own.
+; AIM POSES ARE THE MP5 VALUES AS A STARTING POINT AND STILL NEED AN IN-GAME PASS.
+; ==============================================================================
+[scope_eotech_pkm]
+; no scope_illum_bones: metka1 is a child of scope1 and comes up with the optic -- gating it on
+; brightness (default step 0) is what left the reticle invisible on the lr300
+scope_name              = wpn_addon_scope_susat_x1.6
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.001
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.48
+scope_x                 = 107		; offset in inventory icon
+scope_y                 = -10
+bones                   = scope1
+aim_hud_offset_pos      = 0.000600,-0.039200,-0.050000
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000600,-0.039200,-0.050000
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_aimpoint_pkm]
+scope_name              = wpn_addon_scope_susat_dusk
+scope_texture           = zero_alpha
+scope_zoom_factor       = 98
+collimator              = true
+need_lens_frame         = false
+scope_abberation        = 0.005
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.28
+scope_x                 = 105		; offset in inventory icon
+scope_y                 = -13
+bones                   = scope2
+aim_hud_offset_pos      = 0.000500,-0.043900,-0.050000
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000500,-0.043900,-0.050000
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 8
+
+[scope_elcan_pkm]
+scope_name              = wpn_addon_scope_susat_custom
+scope_texture           = crosshair_2d_elcan
+scope_zoom_factor       = 28
+need_lens_frame         = true
+scope_lens_factor       = 4.0
+zoom_mouse_sense_koef   = 0.5
+scope_abberation        = 0.005
+max_night_brightness    = 3.0
+min_night_brightness    = 0.0
+steps_brightness        = 3
+default_brightness_step = 0
+min_lens_factor         = 1.8
+max_lens_factor         = 10
+lens_factor_levels_count = 1
+default_lens_factor_step = 0
+alter_zoom_allowed      = true
+alter_zoom_time         = 0.25
+scope_hud_fov_alter_aim = 0.34
+alter_aim_hud_offset_pos = 0.000100,-0.091101,-0.318394
+alter_aim_hud_offset_rot = 0.0,0.0,0.0
+alter_aim_hud_offset_pos_16x9 = 0.000100,-0.091101,-0.318394
+alter_aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+use_scope_anims         = true
+scope_hud_fov_aim       = 0.48
+scope_x                 = 80		; offset in inventory icon
+scope_y                 = -10
+bones                   = scope3
+aim_hud_offset_pos      = 0.000100,-0.048500,-0.374087
+aim_hud_offset_rot      = 0.0,0.0,0.0
+aim_hud_offset_pos_16x9 = 0.000100,-0.048500,-0.374087
+aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
+inertion_aim_origin_offset = 0.015
+inertion_aim_speed      = 10
+
+; ---------------------------------------------------------------------------------------------
+; GS scope_nightvision effector (GS weapons\addons\scopes\effectors\nightvision_base.ltx).
+; The NV scopes above point scope_nightvision here; the engine runs this ppe while the player
+; aims through the optic, at a strength driven by the reticle-brightness step.
+; ---------------------------------------------------------------------------------------------
+[scope_nightvision]
+snd_night_vision_on			= weapons\nv_start
+snd_night_vision_off		= weapons\nv_off
+snd_night_vision_idle		= weapons\nv_loop
+snd_night_vision_broken		= weapons\nv_off
+
+pp_eff_name = nightvision_scope.ppe
+pp_eff_cyclic = 1
+pp_eff_overlap = false

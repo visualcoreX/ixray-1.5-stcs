@@ -1,0 +1,52 @@
+[medkit_hud_model]:gwr_base_usable
+; from the editor:  T 10.439, 2.726, -1.603 cm   R -12.141, 146.205, -7.51   S 1
+; cm -> m /100; Z translate flips sign; orientation is setHPB, i.e. Y, X, Z (not X, Y, Z)
+actor_hand_bone	= bip01_r_hand
+position		= 0.10439, 0.02726, 0.01603
+orientation		= 70, -250, -5.7
+; world model for THIRD PERSON. gwr_base_usable gives every phantom
+; gwr_base_usable gives them all an empty stand-in visual, so there was nothing to draw in hand.
+visual			= gwr\equipment\medkit\medkit_trash.ogf
+actor_torso_anim	= norm_torso_item_medkit	; third-person gesture from the xrMPE actor pack
+; GS trash: the empty thrown away at timing_trash (see usable_items/trash_objects.ltx).
+; GS's own value shifted by the gap between our `timing` and GS's, so it lands at the same
+; point relative to the END of the animation.
+trash_object       = medkit_trash
+timing_trash       = 3030
+$spawn          = "weapons\medkit_hud_model"
+hud             = medkit_hud
+hud_exo         = medkit_exo_hud_model
+timing          = 3600
+snd_using       = items\medkit\medkit
+snd_delay       = 250
+snd_delay_detector = 250   ; shorter delay when only a detector is in hands (it holsters faster)
+gwr_eatable_object = medkit_eatable
+effect_delay       = 2800
+
+[medkit_hud]:gwr_base_usable_hud
+hands_position      = 0.0,-0.025,0.11
+hands_position_16x9 = 0.0,-0.025,0.06
+item_visual     = gwr\equipment\medkit\medkit_hud
+anm_show        = apteka
+anm_hide        = zaglushka
+anm_idle        = zaglushka
+anm_idle_aim    = zaglushka
+anm_idle_moving = zaglushka
+anm_idle_sprint = zaglushka
+anm_bore        = zaglushka
+
+; --- exoskeleton variant (picked in gwr_eatable.OnItemUsed when an exo outfit is worn) ---
+; timing/snd_delay/effect_delay inherited from medkit_hud_model -- TUNE to the exo animation length
+[medkit_exo_hud_model]:medkit_hud_model
+; GS: the exo injects through the suit in one motion -- nothing is discarded
+no_trash           = true
+hud             = medkit_exo_hud
+snd_using       = items\medkit\medkit_exo
+effect_delay        = 2300
+timing          	= 3000
+
+[medkit_exo_hud]:medkit_hud
+item_visual         = gwr\equipment\medkit_exo\medkit_exo_hud
+anm_show            = medkit_exo
+hands_position      = 0.0,-0.015,0.04
+hands_position_16x9 = 0.0,-0.015,-0.01

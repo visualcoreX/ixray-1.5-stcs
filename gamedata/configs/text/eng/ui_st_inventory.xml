@@ -1,73 +1,67 @@
 <?xml version="1.0" encoding="windows-1251" ?>
 <string_table>
-	<string id="st_activate_artefact">
-		<text>activate artifact</text>
-	</string>
 	<string id="st_attach_gl_to_rifle">
-		<text>attach grenade launcher to rifle</text>
+		<text>Attach to Weapon 2</text>
+	</string>
+	<string id="st_attach_gl_to_wpn">
+		<text>Attach grenade launcher to</text>
+	</string>
+	<string id="st_attach_silencer_to_wpn">
+		<text>Attach silencer to</text>
+	</string>
+	<string id="st_attach_scope_to_wpn">
+		<text>Attach scope to</text>
+	</string>
+	<string id="st_attach_gl_to_pistol">
+		<text>Attach to Weapon 1</text>
 	</string>
 	<string id="st_attach_scope_to_pistol">
-		<text>attach scope to pistol</text>
+		<text>Attach to Weapon 1</text>
 	</string>
 	<string id="st_attach_scope_to_rifle">
-		<text>attach scope to rifle</text>
+		<text>Attach to Weapon 2</text>
 	</string>
 	<string id="st_attach_silencer_to_pistol">
-		<text>attach silencer to pistol</text>
+		<text>Attach to Weapon 1</text>
 	</string>
 	<string id="st_attach_silencer_to_rifle">
-		<text>attach silencer to rifle</text>
-	</string>
-	<string id="st_base_cost">
-		<text>price</text>
-	</string>
-	<string id="st_community">
-		<text>Group:</text>
+		<text>Attach to Weapon 2</text>
 	</string>
 	<string id="st_condition">
 		<text>Condition</text>
 	</string>
 	<string id="st_detach_gl">
-		<text>detach grenade launcher</text>
+		<text>Detach Grenade Launcher</text>
 	</string>
 	<string id="st_detach_scope">
-		<text>detach scope</text>
+		<text>Detach Scope</text>
 	</string>
 	<string id="st_detach_silencer">
-		<text>detach silencer</text>
+		<text>Detach Silencer</text>
 	</string>
 	<string id="st_dress_outfit">
-		<text>wear suit</text>
+		<text>Wear Suit</text>
 	</string>
 	<string id="st_drop">
-		<text>drop</text>
+		<text>Drop This</text>
 	</string>
 	<string id="st_drop_all">
-		<text>drop all</text>
+		<text>Drop All</text>
 	</string>
 	<string id="st_eat">
-		<text>eat</text>
+		<text>Eat This</text>
 	</string>
 	<string id="st_kg">
 		<text>kg</text>
 	</string>
 	<string id="st_move_on_belt">
-		<text>attach to belt</text>
+		<text>Attach to Belt</text>
 	</string>
 	<string id="st_move_to_bag">
-		<text>move to backpack</text>
+		<text>Move to Backpack</text>
 	</string>
 	<string id="st_move_to_slot">
-		<text>move to slot</text>
-	</string>
-	<string id="st_no_trade_tip_1">
-		<text>The trader isn’t interested in items like this.</text>
-	</string>
-	<string id="st_no_trade_tip_2">
-		<text>The item is too damaged to be traded.</text>
-	</string>
-	<string id="st_sell_item">
-		<text>sell item</text>
+		<text>Move to Slot</text>
 	</string>
 	<string id="st_ui_acid_sensor">
 		<text>Acid protection</text>
@@ -94,13 +88,13 @@
 		<text>Stamina</text>
 	</string>
 	<string id="st_undress_outfit">
-		<text>remove suit</text>
+		<text>Remove Suit</text>
 	</string>
 	<string id="st_unload_magazine">
-		<text>unload</text>
+		<text>Unload</text>
 	</string>
 	<string id="st_use">
-		<text>use</text>
+		<text>Use This</text>
 	</string>
 	<string id="st_weight">
 		<text>weight</text>
@@ -117,9 +111,6 @@
 	<string id="ui_inv_bag">
 		<text>Backpack</text>
 	</string>
-	<string id="ui_inv_belt">
-		<text>Belt</text>
-	</string>
 	<string id="ui_inv_bleeding">
 		<text>Bleeding</text>
 	</string>
@@ -127,10 +118,7 @@
 		<text>Cancel</text>
 	</string>
 	<string id="ui_inv_cant_buy_item">
-		<text>Can't buy item</text>
-	</string>
-	<string id="ui_inv_clear">
-		<text>Clear</text>
+		<text>Can’t buy item</text>
 	</string>
 	<string id="ui_inv_count_restr">
 		<text>Amount restrictions</text>
@@ -144,20 +132,11 @@
 	<string id="ui_inv_description">
 		<text>Description</text>
 	</string>
-	<string id="ui_inv_drop">
-		<text>Take out</text>
-	</string>
-	<string id="ui_inv_equipment">
-		<text>Equipment</text>
-	</string>
 	<string id="ui_inv_exit">
 		<text>Exit</text>
 	</string>
 	<string id="ui_inv_granadelauncher_rifle">
 		<text>Buy grenade launcher attachment for rifle (D)</text>
-	</string>
-	<string id="ui_inv_granades">
-		<text>Grenades</text>
 	</string>
 	<string id="ui_inv_granades_rifle">
 		<text>Buy grenades for the launcher (E)</text>
@@ -173,12 +152,6 @@
 	</string>
 	<string id="ui_inv_heavy_weapons">
 		<text>Heavy</text>
-	</string>
-	<string id="ui_inv_items_list">
-		<text>List of items</text>
-	</string>
-	<string id="ui_inv_last_buy">
-		<text>Buy last loadout</text>
 	</string>
 	<string id="ui_inv_last_buy(F4)">
 		<text>Previous (F4)</text>
@@ -207,9 +180,6 @@
 	<string id="ui_inv_outfit_fire_wound_protection">
 		<text>Bulletproof</text>
 	</string>
-	<string id="ui_inv_outfit_params">
-		<text>Parameters</text>
-	</string>
 	<string id="ui_inv_outfit_radiation_protection">
 		<text>Radiation</text>
 	</string>
@@ -225,14 +195,8 @@
 	<string id="ui_inv_outfit_wound_protection">
 		<text>Rupture</text>
 	</string>
-	<string id="ui_inv_outfits">
-		<text>Suits</text>
-	</string>
 	<string id="ui_inv_personal">
 		<text>Suit</text>
-	</string>
-	<string id="ui_inv_pistols">
-		<text>Pistols</text>
 	</string>
 	<string id="ui_inv_power">
 		<text>Endurance</text>
@@ -246,9 +210,6 @@
 	<string id="ui_inv_preset3(F3)">
 		<text>Loadout 3 (F3)</text>
 	</string>
-	<string id="ui_inv_primary_weapons">
-		<text>Primary</text>
-	</string>
 	<string id="ui_inv_radiation">
 		<text>Radiation</text>
 	</string>
@@ -261,9 +222,6 @@
 	<string id="ui_inv_reset_items(C)">
 		<text>Reset (C)</text>
 	</string>
-	<string id="ui_inv_rest">
-		<text>Rest</text>
-	</string>
 	<string id="ui_inv_rifles">
 		<text>Assault</text>
 	</string>
@@ -275,9 +233,6 @@
 	</string>
 	<string id="ui_inv_sell_items(X)">
 		<text>Sell all items in backpack (X)</text>
-	</string>
-	<string id="ui_inv_shop">
-		<text>Shop</text>
 	</string>
 	<string id="ui_inv_shotguns">
 		<text>Shotguns</text>
@@ -293,12 +248,6 @@
 	</string>
 	<string id="ui_inv_time">
 		<text>Time</text>
-	</string>
-	<string id="ui_inv_total_money">
-		<text>Total money</text>
-	</string>
-	<string id="ui_inv_weight">
-		<text>Weight</text>
 	</string>
 	<string id="ui_inv_you_already_have">
 		<text>You already have</text>
@@ -322,12 +271,75 @@
 		<text>Total weight:</text>
 	</string>
 	<string id="not_enough_money_partner">
-		<text>The character doesn't have enough money.</text>
+		<text>The character doesn’t have enough money.</text>
 	</string>
 	<string id="not_enough_money_actor">
-		<text>You don't have enough money.</text>
+		<text>You don’t have enough money.</text>
 	</string>
 	<string id="ui_inv_outfit_additional_weight">
 		<text>Max weight</text>
+	</string>
+	<string id="st_activate_artefact">
+		<text>activate artifact</text>
+	</string>
+	<string id="st_base_cost">
+		<text>Price</text>
+	</string>
+	<string id="st_community">
+		<text>Faction:</text>
+	</string>
+	<string id="st_no_trade_tip_1">
+		<text>The trader is not interested in items like this.</text>
+	</string>
+	<string id="st_no_trade_tip_2">
+		<text>The item is in too poor a condition to be sold.</text>
+	</string>
+	<string id="st_sell_item">
+		<text>sell item</text>
+	</string>
+	<string id="ui_inv_belt">
+		<text>Belt</text>
+	</string>
+	<string id="ui_inv_clear">
+		<text>Clear</text>
+	</string>
+	<string id="ui_inv_drop">
+		<text>Drop</text>
+	</string>
+	<string id="ui_inv_equipment">
+		<text>Equipment</text>
+	</string>
+	<string id="ui_inv_granades">
+		<text>Grenades</text>
+	</string>
+	<string id="ui_inv_items_list">
+		<text>Item list</text>
+	</string>
+	<string id="ui_inv_last_buy">
+		<text>Buy the last purchased set</text>
+	</string>
+	<string id="ui_inv_outfit_params">
+		<text>Parameters</text>
+	</string>
+	<string id="ui_inv_outfits">
+		<text>Outfits</text>
+	</string>
+	<string id="ui_inv_pistols">
+		<text>Pistols</text>
+	</string>
+	<string id="ui_inv_primary_weapons">
+		<text>Primary</text>
+	</string>
+	<string id="ui_inv_rest">
+		<text>Rest</text>
+	</string>
+	<string id="ui_inv_shop">
+		<text>Shop</text>
+	</string>
+	<string id="ui_inv_total_money">
+		<text>Total money</text>
+	</string>
+	<string id="ui_inv_weight">
+		<text>Weight</text>
 	</string>
 </string_table>

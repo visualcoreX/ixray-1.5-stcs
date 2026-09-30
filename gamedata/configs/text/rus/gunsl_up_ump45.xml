@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_ump45_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_ump45_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_ump45_up_sil_name">
+     <text>Крепление глушителя</text>
+</string>
+<string id="gunsl_ump45_up_sil_descr">
+     <text>Специальная резьба позволяет устанавливать на оружие глушитель.</text>
+</string>
+<string id="gunsl_ump45_up_rail_name">
+     <text>Рельсовое крепление</text>
+</string>
+<string id="gunsl_ump45_up_rail_descr">
+     <text>Позволяет устанавливать на оружие различные виды прицелов.</text>
+</string>
+<string id="gunsl_ump45_up_handle_name">
+     <text>Тактическая рукоять</text>
+</string>
+<string id="gunsl_ump45_up_handle_descr">
+     <text>Установка подствольной рукояти позволяет сделать оружие более удобным в обращении, благодаря чему компенсировать отдачу становится легче. В комплект входит замена цевья на тактическое, позволяющими за счет наличия креплений Weaver устанавливать на оружие дополнительное оборудование.</text>
+</string>
+<string id="gunsl_ump45_up_laser_name">
+     <text>Лазерный целеуказатель</text>
+</string>
+<string id="gunsl_ump45_up_laser_descr">
+     <text>Визуально обозначает место предполагаемого попадания в цель, значительно облегчая и ускоряя прицеливание, а также оказывая на жертву деморализующий эффект. Не препятствует установке тактического фонаря и может использоваться в паре с ним.</text>
+</string>
+<string id="gunsl_ump45_up_torch_name">
+     <text>Тактический фонарь</text>
+</string>
+<string id="gunsl_ump45_up_torch_descr">
+     <text>Узконаправленный фонарь дальнего радиуса действия незаменим в ночных вылазках, а также при исследовании неосвещенной местности. Не препятствует установке лазерного целеуказателя и может использоваться в паре с ним.</text>
+</string>
+<string id="gunsl_ump45_up_stock_name">
+     <text>Улучшенный тыльник</text>
+</string>
+<string id="gunsl_ump45_up_stock_descr">
+     <text>Позволяет снизить отдачу, ощущаемую стрелком от выстрела из оружия.</text>
+</string>
+<string id="gunsl_ump45_up_max_fixator_name">
+     <text>Доработка узла подачи патронов</text>
+</string>
+<string id="gunsl_ump45_up_max_fixator_descr">
+     <text>Индивидуальная подгонка деталей узла питания позволяет уменьшить вероятность задержек при стрельбе, связанных с неподачей и перекосом патрона.</text>
+</string>
+<string id="gunsl_ump45_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_ump45_up_usm_rpm_descr">
+     <text>Доработка узлов ударно-спускового механизма позволяет повысить скорострельность оружия, к сожалению, ценой некоторого снижения надежности.</text>
+</string>
+<string id="gunsl_ump45_up_usm_accuracy_name">
+     <text>Калибровка УСМ</text>
+</string>
+<string id="gunsl_ump45_up_usm_accuracy_descr">
+     <text>Индивидуальная подгонка и балансировка стандартных деталей ударно-спускового механизма позволяет добиться более высокой точности стрельбы при одновременном уменьшении отдачи.</text>
+</string>
+<string id="gunsl_ump45_up_barrel_speed_name">
+     <text>Перенарезка ствола</text>
+</string>
+<string id="gunsl_ump45_up_barrel_speed_descr">
+     <text>Увеличивает начальную скорость пули, благодаря чему пуля меньше отклоняется от ожидаемой траектории и быстрее достигает цели. Полезно для ведения огня на большие дистанции.</text>
+</string>
+<string id="gunsl_ump45_up_barrel_compensator_name">
+     <text>Компенсатор отдачи</text>
+</string>
+<string id="gunsl_ump45_up_barrel_compensator_descr">
+     <text>Дульный компенсатор позволяет снизить ощущаемую от оружия отдачу за счет перенаправления потока пороховых газов.</text>
+</string>
+<string id="gunsl_ump45_up_zatvor_balancer_name">
+     <text>Балансировка затвора</text>
+</string>
+<string id="gunsl_ump45_up_zatvor_balancer_descr">
+     <text>Балансировка деталей затворной группы уменьшает увод ствола с линии прицеливания и разброс пуль при выстреле.</text>
+</string>
+<string id="gunsl_ump45_up_body_coating_name">
+     <text>Детали повышенной прочности</text>
+</string>
+<string id="gunsl_ump45_up_body_coating_descr">
+     <text>Замена стандартных деталей на аналоги из высокопрочных сплавов и покрытие механизмов оружия специальным защитным составом позволяет повысить его износостойкость.</text>
+</string>
+<string id="gunsl_ump45_up_extractor_name">
+     <text>Улучшенный экстрактор</text>
+</string>
+<string id="gunsl_ump45_up_extractor_descr">
+     <text>Доработка узла выброса стреляных гильз позволяет снизить число возникающих при стрельбе задержек, связанных с прихватом стреляной гильзы.</text>
+</string>
+<string id="gunsl_ump45_up_body_weight_name">
+     <text>Легкосплавные детали</text>
+</string>
+<string id="gunsl_ump45_up_body_weight_descr">
+     <text>Замена стандартных деталей на аналоги из легких сплавов значительно снижает массу оружия.</text>
+</string>
+</string_table>

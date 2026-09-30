@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_wincheaster1300_up_barrel_short_name">
+     <text>Sawed-off barrel</text>
+</string>
+<string id="gunsl_wincheaster1300_up_barrel_short_descr">
+     <text>Makes the weapon more compact and lighter - unfortunately at the cost of accuracy and a wider pellet spread, and the weapon can no longer take a suppressor.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_barrel_voronenie_name">
+     <text>Barrel bluing</text>
+</string>
+<string id="gunsl_wincheaster1300_up_barrel_voronenie_descr">
+     <text>A special heat-resistant coating makes the barrel more resistant to adverse environmental conditions, improving reliability.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_barrel_speed_name">
+     <text>Bore refinement</text>
+</string>
+<string id="gunsl_wincheaster1300_up_barrel_speed_descr">
+     <text>Increases muzzle velocity, thus increasing the flatness of the trajectory. Useful for long range fire.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_body_reliability_name">
+     <text>Protective coating</text>
+</string>
+<string id="gunsl_wincheaster1300_up_body_reliability_descr">
+     <text>Application of a protective coating to the internal parts significantly reduces wear.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_usm_reliability_details_name">
+     <text>Wear-resistant trigger</text>
+</string>
+<string id="gunsl_wincheaster1300_up_usm_reliability_details_descr">
+     <text>Improves reliability of the firearm by replacing standard parts of the trigger group with their reinforced counterparts.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_tactical_handle_name">
+     <text>Tactical foregrip</text>
+</string>
+<string id="gunsl_wincheaster1300_up_tactical_handle_descr">
+     <text>An underbarrel foregrip makes the weapon more comfortable to handle, which makes firing and controlling recoil significantly easier.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_usm_accuracy_name">
+     <text>Trigger calibration</text>
+</string>
+<string id="gunsl_wincheaster1300_up_usm_accuracy_descr">
+     <text>Individual adjustment of the trigger mechanism parts improves accuracy, while simultaneously lowering recoil.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_flashlaser_name">
+     <text>Tactical device</text>
+</string>
+<string id="gunsl_wincheaster1300_up_flashlaser_descr">
+     <text>Combines the functions of a narrow beam tactical flashlight and a laser sight. Particularly useful in night conditions.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_mag_name">
+     <text>Magazine extension</text>
+</string>
+<string id="gunsl_wincheaster1300_up_mag_descr">
+     <text>A magazine extension tube allows to load more rounds, making reloads less frequent.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_rail_name">
+     <text>Rail mount</text>
+</string>
+<string id="gunsl_wincheaster1300_up_rail_descr">
+     <text>Allows to install various types of sights.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_pompa_kompensator_name">
+     <text>Muzzle brake</text>
+</string>
+<string id="gunsl_wincheaster1300_up_pompa_kompensator_descr">
+     <text>A polymer buffer built into the weapon slightly reduces felt recoil.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_usm_recoil_name">
+     <text>Trigger balancing</text>
+</string>
+<string id="gunsl_wincheaster1300_up_usm_recoil_descr">
+     <text>Balancing the standard trigger mechanism parts reduces muzzle climb when firing.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_shell_ejector_name">
+     <text>Improved ejector</text>
+</string>
+<string id="gunsl_wincheaster1300_up_shell_ejector_descr">
+     <text>Reduces the probability of malfunctions related to ejecting an empty case from the firearm.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_sights_name">
+     <text>Tritium sights</text>
+</string>
+<string id="gunsl_wincheaster1300_up_sights_descr">
+     <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_stock_name">
+     <text>Tactical stock</text>
+</string>
+<string id="gunsl_wincheaster1300_up_stock_descr">
+     <text>Significantly improves accuracy and shooting comfort.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_soft_trigger_name">
+     <text>Match trigger</text>
+</string>
+<string id="gunsl_wincheaster1300_up_soft_trigger_descr">
+     <text>Reduces recoil, thus improving accuracy.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_usm_light_details_name">
+     <text>Lightweight parts</text>
+</string>
+<string id="gunsl_wincheaster1300_up_usm_light_details_descr">
+     <text>Reduces weight by replacing weapon parts with their light-alloy counterparts without any significant loss in other performance characteristics.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_patronnik_accuracy_name">
+     <text>Chamber adjustment</text>
+</string>
+<string id="gunsl_wincheaster1300_up_patronnik_accuracy_descr">
+     <text>Improves obturation and accuracy by removing play in the chamber.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_silencer_name">
+     <text>Suppressor mount</text>
+</string>
+<string id="gunsl_wincheaster1300_up_silencer_descr">
+     <text>Special threading used for attaching a suppressor.</text>
+</string>
+<string id="gunsl_wincheaster1300_up_barrel_dispersion_name">
+     <text>Barrel adjustment</text>
+</string>
+<string id="gunsl_wincheaster1300_up_barrel_dispersion_descr">
+     <text>Reduces bullet dispersion, which improves accuracy.</text>
+</string>
+</string_table>

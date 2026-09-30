@@ -1,0 +1,34 @@
+[energy_drink_eatable]:identity_immunities
+GroupControlSection = spawn_group
+$spawn              = "weapons\energy_drink_eatable"
+$prefetch           = 8
+class               = II_MEDKI
+cform               = skeleton
+visual              = gwr\main\fake_object
+description         = st_energy_drink_descr
+inv_name            = st_energy_drink
+inv_name_short      = st_energy_drink
+inv_weight          = 0.0
+cost                = 0
+inv_grid_width      = 1
+inv_grid_height     = 1
+inv_grid_x          = 20
+inv_grid_y          = 0
+
+eat_health          = 0
+eat_satiety         = 0
+; Gunslinger energetic (usable_items\energetic\eatable_objects.ltx): a drink, so it TOPS UP the
+; water level rather than draining it. GS's own value.
+thirst_factor       = 0.4
+eat_power           = 0.5
+eat_radiation       = 0
+wounds_heal_perc    = 0
+eat_portions_num    = 1
+eat_max_power       = 0.2
+
+; GS medicine intoxication, read by gunsl_peredoz.script (GS energetic -- almost free when clean, a multiplier on top of anything already in the blood).
+; sqprop is proportional to what is already in the blood, mul multiplies it, the flat
+; lsd_factor is the dose itself; _master replaces it from veteran up.
+lsd_factor          = 0.15
+lsd_factor_sqprop   = 1.0
+lsd_factor_mul      = 1.25

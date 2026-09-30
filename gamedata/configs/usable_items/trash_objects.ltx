@@ -1,0 +1,98 @@
+; Gunslinger trash objects -- the wrapper / bottle / blister the use animation throws away.
+; Values are GS's, verbatim from its per-item base.ltx files. GS keeps each one next to its item;
+; ours live together because our item folders only hold overrides, not full item definitions.
+;
+; throw_dir       left | right | forward | back, taken from the CAMERA at the moment of the throw
+; throw_offset_*  spawn point relative to the camera: x along cam_dir, y along cam_top, z along cam_right
+; throw_impulse_z strength of the push; throw_impulse_y the vertical component of its direction
+; Defaults when a key is absent (gwr_eatable.script): offsets -0.1 / 0.2 / 0, impulse 50, impulse_y 0.05.
+
+[medkit_trash]:gwr_base_trash
+visual              = gwr\equipment\medkit\medkit_trash.ogf
+throw_dir           = right
+throw_offset_y      = -0.6
+throw_offset_x      = -0.2
+throw_offset_z      = 0.6
+throw_impulse_y     = -90
+throw_impulse_z     = 180
+
+[medkit_army_trash]:medkit_trash
+
+[medkit_scientic_trash]:medkit_trash
+
+[bandage_trash]:gwr_base_trash
+visual              = dynamics\devices\dev_bandage\dev_bandage_trash.ogf
+throw_dir           = right
+throw_offset_y      = -0.6
+throw_offset_x      = -0.2
+throw_offset_z      = -0.6
+throw_impulse_y     = -90
+throw_impulse_z     = 180
+
+[antirad_trash]:gwr_base_trash
+visual              = dynamics\devices\dev_antirad\dev_antirad_trash.ogf
+throw_dir           = right
+throw_offset_y      = -0.6
+throw_offset_x      = -0.2
+throw_offset_z      = -0.6
+throw_impulse_y     = -90
+throw_impulse_z     = 180
+
+; The bottle leaves the LEFT hand and GS gives it no offsets -- the defaults put it right at the lips.
+[vodka_trash]:gwr_base_trash
+visual              = dynamics\devices\dev_vodka\dev_vodka_trash.ogf
+throw_dir           = left
+throw_impulse_z     = 65
+
+; Same throw, the second bottle's own empty.
+[vodka_cossacks_trash]:vodka_trash
+visual              = dynamics\devices\dev_vodka\dev_vodka_cossacks_trash.ogf
+
+; The empty water bottle. Dropped only by the LAST sip (water_hud_model4) -- the earlier stages put
+; a partly-drunk bottle back in the bag instead. GS's own values.
+[water_trash]:gwr_base_trash
+visual              = gwr\food\water\water_trash.ogf
+throw_dir           = left
+throw_impulse_z     = 60
+
+; The empty can. Unlike every other piece of trash this one is NOT thrown: it is dropped at the
+; actor's feet (offset straight down from the camera, a nudge forward so it does not spawn inside
+; him) with only enough impulse to make it settle.
+[conserva_trash]:gwr_base_trash
+visual              = gwr\food\conserva\conserva_trash.ogf
+throw_dir           = left		; orig forward
+throw_offset_x      = 0.35
+throw_offset_y      = -0.2	; orig -1.35 -- leaves the hand now, not the knees
+throw_offset_z      = -0.55	; along cam_right, negative = LEFT. Far enough to spawn OFF SCREEN: at
+							; throw_offset_x = 0.35 m from the camera the half-width of the view is
+							; only ~0.23 m, so -0.2 was still inside the frame and the can popped in
+							; visibly. Push this further out (or pull offset_x in) if it ever shows.
+throw_impulse_y     = 0.35	; orig -0.5 -- this REPLACES dir.y, so positive = slightly up (~19 deg)
+throw_impulse_z     = 25	; orig 5 -- a real throw, but softer than the bottles (60/65/75): the
+							; can is light and 55 sent it flying. The tumble comes with the throw: a hit
+							; lands its impulse at the hit POINT, not through the mass centre, so anything
+							; thrown hard enough spins by itself. Too low and it stops turning (5 did).
+
+[energetic_trash]:gwr_base_trash
+visual              = dynamics\devices\dev_drink_stalker\dev_drink_stalker_old.ogf
+throw_dir           = right
+throw_impulse_z     = 75
+
+[drug_psy_blockade_trash]:gwr_base_trash
+visual              = dynamics\equipments\medical\drug_psy_blockade_trash.ogf
+throw_dir           = right
+throw_offset_y      = -0.6
+throw_offset_x      = 0.2
+throw_offset_z      = 0.6
+throw_impulse_y     = -90
+throw_impulse_z     = 180
+
+; the empty blister, thrown at the end of the antidote animation. GS's own numbers.
+[drug_antidot_trash]:gwr_base_trash
+visual              = dynamics\equipments\medical\drug_antidot_trash.ogf
+throw_dir           = right
+throw_offset_y      = -0.6
+throw_offset_x      = 0.2
+throw_offset_z      = 0.6
+throw_impulse_y     = -90
+throw_impulse_z     = 180

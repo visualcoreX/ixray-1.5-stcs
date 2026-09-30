@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_wpn_deagle_up_barrel_compensator_name">
+     <text>Дульный компенсатор</text>
+</string>
+<string id="gunsl_wpn_deagle_up_barrel_compensator_descr">
+     <text>Установка на ствол специальной насадки, частично компенсирующей отдачу оружия при стрельбе.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_barrel_hp_name">
+     <text>Ствол повышенного давления</text>
+</string>
+<string id="gunsl_wpn_deagle_up_barrel_hp_descr">
+     <text>Изготовленный по уникальной технологии ствол имеет особую нарезку и формирует внутри себя при выстреле повышенное давление. Благодаря этому достигается дестабилизация пули в полете, что заставляет ее входить в тело цели под произвольным углом. При попадании из такого оружия жертва получает воистину чудовищные повреждения, как правило, не совместимые с жизнью. К сожалению, из-за дестабилизации падает точность стрельбы, а более высокое давление приводит к более сильной отдаче.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_mag_uderzhatel_name">
+     <text>Переделка удержателя</text>
+</string>
+<string id="gunsl_wpn_deagle_up_mag_uderzhatel_descr">
+     <text>Из-за высоких ударных нагрузок и вибрации при выстрелах штатные удерживающие устройства вскоре начинают неплотно фиксировать магазин, что приводит к осечкам. Модернизация удержателя призвана решить эту проблему.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_barrel_accuracy_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_wpn_deagle_up_barrel_accuracy_descr">
+     <text>Позволяет достичь более стабильного полета пули, что способствует увеличению точности стрельбы.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_light_mag_name">
+     <text>Легкосплавный магазин</text>
+</string>
+<string id="gunsl_wpn_deagle_up_light_mag_descr">
+     <text>Позволяет получить небольшой выигрыш по массе оружия. Мелочь, а приятно, особенно с учетом того, что сам по себе пистолет достаточно тяжелый.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_mag_balance_name">
+     <text>Балансировка массы</text>
+</string>
+<string id="gunsl_wpn_deagle_up_mag_balance_descr">
+     <text>Установка противовесов в корпус оружия согласно индивидуальным предпочтениям стрелка позволяет скомпенсировать отдачу и добиться лучших результатов при стрельбе.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_usm_accuracy_name">
+     <text>Калибровка УСМ</text>
+</string>
+<string id="gunsl_wpn_deagle_up_usm_accuracy_descr">
+     <text>Индивидуальная подгонка и балансировка стандартных деталей ударно-спускового механизма позволяет добиться более высокой точности стрельбы при одновременном снижении отдачи.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_rail_name">
+     <text>Рельсовое крепление</text>
+</string>
+<string id="gunsl_wpn_deagle_up_rail_descr">
+     <text>Установка на оружие дополнительной планки расширяет возможности его тактического применения, открывая возможности установки дополнительных модулей.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_flashlaser_name">
+     <text>Комбинированный тактический модуль</text>
+</string>
+<string id="gunsl_wpn_deagle_up_flashlaser_descr">
+     <text>Сочетает в себе функции узконаправленного тактического фонаря и лазерного целеуказателя. Особенно полезен в ночных условиях.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_wpn_deagle_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_patronnik_name">
+     <text>Юстировка патронника</text>
+</string>
+<string id="gunsl_wpn_deagle_up_patronnik_descr">
+     <text>Позволяет добиться более высокой точности стрельбы.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_pokritie_name">
+     <text>Защитное покрытие</text>
+</string>
+<string id="gunsl_wpn_deagle_up_pokritie_descr">
+     <text>Нанесение специального напыления на внутренние детали позволяет замедлить износ оружия.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_wpn_deagle_up_usm_rpm_descr">
+     <text>Перенастройка УСМ с доработкой некоторых его деталей делает ход спускового крючка более коротким, а сам спуск более мягким. Это позволяет вести огонь в более высоком темпе.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_usm_recoil_name">
+     <text>Система компенсации отдачи</text>
+</string>
+<string id="gunsl_wpn_deagle_up_usm_recoil_descr">
+     <text>Позволяет значительно снизить отдачу, способствуя более точной стрельбе.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_zapiratel_name">
+     <text>Подгонка запирающего механизма</text>
+</string>
+<string id="gunsl_wpn_deagle_up_zapiratel_descr">
+     <text>За счет более плотного запирания канала ствола улучшается обтюрация канала ствола и повышается начальная скорость пули.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_reliability_name">
+     <text>Защитное покрытие</text>
+</string>
+<string id="gunsl_wpn_deagle_up_reliability_descr">
+     <text>Нанесение специального напыления на внутренние детали позволяет замедлить износ оружия.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_gazootvod_name">
+     <text>Модификация газоотводной системы</text>
+</string>
+<string id="gunsl_wpn_deagle_up_gazootvod_descr">
+     <text>Позволяет снизить ощущаемую стрелком отдачу.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_polymer_details_name">
+     <text>Полимерные детали</text>
+</string>
+<string id="gunsl_wpn_deagle_up_polymer_details_descr">
+     <text>Внедрение в конструкцию вместо штатных металлических деталей их облегченных полимерных аналогов позволяет значительно снизить массу оружия.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_handle_name">
+     <text>Прорезиненная рукоять</text>
+</string>
+<string id="gunsl_wpn_deagle_up_handle_descr">
+     <text>Подбор и установка на оружие более подходящих для конкретного стрелка накладок на рукоять позволяет добиться лучших результатов при стрельбе.</text>
+</string>
+<string id="gunsl_wpn_deagle_up_usm_reliability_name">
+     <text>Титановый УСМ</text>
+</string>
+<string id="gunsl_wpn_deagle_up_usm_reliability_descr">
+     <text>Замена стандартных деталей УСМ на их сверхпрочные титановые аналоги значительно повышает износостойкость оружия.</text>
+</string>
+
+	<string id="gunsl_up_prop_rail">
+		<text>Рельсовое крепление</text>
+	</string>	
+</string_table>

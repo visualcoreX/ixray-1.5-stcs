@@ -1,517 +1,561 @@
-[up_sect_a_ak74]
-cost		      		= 1600
-value					= +15
-rpm                     = 100
+; ============================================================================
+;  ak74 upgrade tree ported from Gunslinger (mechanical upgrades, stage 1).
+;  Excluded for now (conflict with existing systems): laser, torch, foregrip_rail
+;  (scope rail), bayonet. Those stay on the current mechanisms until reconciled.
+;  Icons reference GS's ui_gunsl_up_ak74_* (copy the texture, else blank cell).
+; ============================================================================
 
-[up_sect_b_ak74]
-cost		      		= 1600
-value					= +10
-fire_dispersion_base	= -0.08 	;0.8
+;------------------------------------------ mag45 (bakelite) ------------------------------------------
+[up_sect_ak74_mag45_brown]
+; GS layered inventory icon: this upgrade's own sprite layer on the cell icon
+upgrade_addon_icon = upgrade_addon_icon_mag_545_45_bakelite_1
+upgrade_addon_icons_hide = icon_element_mag_545_bakelite_stock
+upgrade_addon_icon_offset_x = 100
+upgrade_addon_icon_offset_y = 0
+cost = 500
+value = +15
+show_bones = mag45
+hide_bones = mag30
+ammo_mag_size	= +15
+inv_weight = +0.1
 
-[up_sect_c_ak74]
-cost		      		= 1600
-value					= -30
-
-cam_dispersion              = -0.21		;0.7
-cam_dispersion_inc         	= -0.21		;0.7
-cam_step_angle_horz        	= -0.21		;0.7
-
-zoom_cam_dispersion          = -0.2		;0.6
-zoom_cam_dispersion_inc      = -0.2		;0.6
-zoom_cam_step_angle_horz     = -0.2 	;0.6
-
-[up_sect_d_ak74]
-cost		      		= 1600
-value					= -50
-value2					= st_upgr_rpm_lowered
-rpm                     = -200
-
-cam_dispersion              = -0.35		;0.7
-cam_dispersion_inc         	= -0.35		;0.7
-cam_step_angle_horz        	= -0.35		;0.7
-
-zoom_cam_dispersion          = -0.3		;0.6
-zoom_cam_dispersion_inc      = -0.3		;0.6
-zoom_cam_step_angle_horz     = -0.3		;0.6
-
-[up_sect_e_ak74]
-cost		      		= 1600
-grenade_launcher_status = 2
-grenade_launcher_name   = wpn_addon_grenade_launcher
-grenade_launcher_x      = 126
-grenade_launcher_y      = 24
-
-[up_sect_f_ak74]
-cost		      		= 1600
-value					= +50
-bullet_speed			= 200
-hit_power				= 0.45, 0.45, 0.45, 0.45
-
-[up_sect_g_ak74]
-cost	      	     	= 1600
-value					= +15
-control_inertion_factor	= -0.2
-inv_weight				= -0.3
-PDM_disp_vel_factor     = -0.3 ;1.7
-PDM_disp_accel_factor   = -0.3 ;1.7
-
-[up_sect_h_ak74]
-cost		      		= 1600
-value					= -10
-;***** 20% ******
-cam_dispersion              = -0.07		;0.7
-cam_dispersion_inc         	= -0.07		;0.7
-cam_step_angle_horz        	= -0.07		;0.7
-
-zoom_cam_dispersion          = -0.06	;0.6
-zoom_cam_dispersion_inc      = -0.06	;0.6
-zoom_cam_step_angle_horz     = -0.06	;0.6
-
-[up_sect_i_ak74]
-cost		      		= 1600
-value					= +15
-ammo_mag_size           = 15
-
-[up_sect_j_ak74]
-cost		      		= 1600
-value					= "x1.6"
-scope_status            = 2
-scope_name              = wpn_addon_scope
-scope_x                 = 47
-scope_y                 = 0
-
-[up_sect_k_ak74]
-cost		      		= 1600
-value					= "5.56x45"
-ammo_class				= ammo_5.56x45_ss190, ammo_5.56x45_ap
-
-[up_sect_ac_ak74]
-cost		      		= 2400
-value					= +25
-rpm						= 150
-
-[up_sect_bd_ak74]
-cost		      		= 2400
-value					= +50
-bullet_speed			= 200
-hit_power				= 0.5, 0.5, 0.5, 0.5
-
-[up_sect_eg_ak74]
-cost		      		= 2400
-value					= -20
-;***** 20% ******
-cam_dispersion              = -0.14		;0.7
-cam_dispersion_inc         	= -0.14		;0.7
-cam_step_angle_horz        	= -0.14		;0.7
-
-zoom_cam_dispersion          = -0.12	;0.6
-zoom_cam_dispersion_inc      = -0.12	;0.6
-zoom_cam_step_angle_horz     = -0.12	;0.6
-
-[up_sect_fh_ak74]
-cost		      		= 2400
-value					= +20
-fire_dispersion_base	= -0.16 ;0.8
-
-[up_sect_aceg_ak74]
-cost		      		= 4000
-value					= +30
-rpm						= 200
-
-[up_sect_bdfh_ak74]
-cost		      		= 4000
-value					= +30
-fire_dispersion_base	= -0.24 ;0.8
-
-[up_a_ak74]
-scheme_index            = 0, 0
-known                   = 1
-effects                 = up_gr_ac_ak74
-section                 = up_sect_a_ak74
-property                = prop_rpm
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = on_weapon_upgrade_something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_mag45_brown]
+scheme_index = 0, 0
+known = 1
+effects = vartree_ak74_mag60
+section = up_sect_ak74_mag45_brown
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_a_ak74
-name                    = st_upg_zatvor_rpm
-description             = st_upg_zatvor_rpm_descr
-icon                    = ui_wp_upgrade_30
+prereq_params  =
+name = gunsl_ak74_up_mag45_brown_name
+description = gunsl_ak74_up_mag45_brown_descr
+icon = ui_gunsl_up_ak74_mag45_brown
 
-;;...
-[up_b_ak74]
-scheme_index            = 0, 1
-known                   = 1
-effects                 = up_gr_bd_ak74
-section                 = up_sect_b_ak74
-property                = prop_dispersion
+;------------------------------------------ mag45 (black) ------------------------------------------
+[up_sect_ak74_mag45_black]
+; GS layered inventory icon: this upgrade's own sprite layer on the cell icon
+upgrade_addon_icon = upgrade_addon_icon_mag_545_45_black_1
+upgrade_addon_icons_hide = icon_element_mag_545_bakelite_stock
+upgrade_addon_icon_offset_x = 100
+upgrade_addon_icon_offset_y = 0
+cost = 500
+value = +15
+show_bones = mag45_black
+hide_bones = mag30
+ammo_mag_size	= +15
+inv_weight = +0.1
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_mag45_black]
+scheme_index = 0, 1
+known = 1
+effects = vartree_ak74_mag60
+section = up_sect_ak74_mag45_black
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_b_ak74
-name                    = st_upg_zatvor_recoil
-description             = st_upg_zatvor_recoil_descr
-icon                    = ui_wp_upgrade_31
+prereq_params  =
+name = gunsl_ak74_up_mag45_black_name
+description = gunsl_ak74_up_mag45_black_descr
+icon = ui_gunsl_up_ak74_mag45_black
 
-[up_c_ak74]
-scheme_index            = 0, 2
-known                   = 1
-effects                 = up_gr_ac_ak74
-section                 = up_sect_c_ak74
-property                = prop_recoil
+;------------------------------------------ mag60 ------------------------------------------
+[up_sect_ak74_mag60]
+; GS layered inventory icon: this upgrade's own sprite layer on the cell icon
+upgrade_addon_icon = upgrade_addon_icon_mag_545_60_black_1
+upgrade_addon_icons_hide = upgrade_addon_icon_mag_545_45_bakelite_1,upgrade_addon_icon_mag_545_45_black_1
+upgrade_addon_icon_offset_x = 100
+upgrade_addon_icon_offset_y = 0
+cost = 1500
+value = +15
+show_bones = mag60
+hide_bones_override =  mag45_black, mag45
+ammo_mag_size	= +15
+inv_weight = +0.1
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_mag60]
+scheme_index = 0, 2
+known = 1
+effects =
+section = up_sect_ak74_mag60
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_c_ak74
-name                    = st_upg_porsh_recoil
-description             = st_upg_porsh_recoil_descr
-icon                    = ui_wp_upgrade_41
+prereq_params  =
+name = gunsl_ak74_up_mag60_name
+description = gunsl_ak74_up_mag60_descr
+icon = ui_gunsl_up_ak74_mag60
 
-[up_d_ak74]
-scheme_index            = 0, 3
-known                   = 1
-effects                 = up_gr_bd_ak74
-section                 = up_sect_d_ak74
-property                = prop_recoil
+;------------------------------------------ nakladka_priklad ------------------------------------------
+[up_sect_ak74_nakladka_priklad]
+; GS layered inventory icon: this upgrade's own sprite layer on the cell icon
+upgrade_addon_icon = upgrade_addon_icon_stock_amort_1
+upgrade_addon_icon_offset_x = 2
+upgrade_addon_icon_offset_y = 0
+cost = 1000
+value = -25
+cam_dispersion          = -0.3
+cam_dispersion_inc      = -0.05
+inv_weight              = +0.1
+zoom_cam_dispersion = -0.1
+zoom_cam_dispersion_inc = -0.1
+show_bones = tilnik
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_nakladka_priklad]
+scheme_index = 0, 3
+known = 1
+effects =
+section = up_sect_ak74_nakladka_priklad
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_d_ak74
-name                    = st_upg_porsh_rpm
-description             = st_upg_porsh_rpm_descr
-icon                    = ui_wp_upgrade_42
+prereq_params  =
+name = gunsl_ak74_up_nakladka_priklad_name
+description = gunsl_ak74_up_nakladka_priklad_descr
+icon = ui_gunsl_up_ak74_nakladka_priklad
 
-[up_e_ak74]
-scheme_index            = 0, 4
-known                   = 1
-effects                 = up_gr_eg_ak74
-section                 = up_sect_e_ak74
-property                = prop_underbarrel_slot
+;------------------------------------------ sights ------------------------------------------
+[up_sect_ak74_sights]
+cost = 500
+crosshair_inertion = -1
+control_inertion_factor = -0.05
+show_bones = sight, sight2
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_sights]
+scheme_index = 0, 4
+known = 1
+effects =
+section = up_sect_ak74_sights
+property = prop_lightingsights
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_e_ak74
-name                    = st_upg_bind_grenade
-description             = st_upg_bind_grenade_descr
-icon                    = ui_wp_upgrade_35
+prereq_params  =
+name = gunsl_ak74_up_sights_name
+description = gunsl_ak74_up_sights_descr
+icon = ui_gunsl_up_ak74_sights
 
-[up_f_ak74]
-scheme_index            = 0, 5
-known                   = 1
-effects                 = up_gr_fh_ak74
-section                 = up_sect_f_ak74
-property                = prop_bullet_speed
+;------------------------------------------ handle ------------------------------------------
+[up_sect_ak74_handle]
+; GS layered inventory icon: this upgrade's own sprite layer on the cell icon
+upgrade_addon_icon = upgrade_addon_icon_assault_handler_3
+upgrade_addon_icon_offset_x = 43
+upgrade_addon_icon_offset_y = 0
+cost = 900
+value = +10
+control_inertion_factor = -0.1
+cam_dispersion = -0.1
+zoom_cam_dispersion_inc = -0.1
+zoom_cam_dispersion = -0.05
+show_bones = handler2
+hide_bones = handler
+inv_weight = -0.05
+PDM_disp_vel_factor = -0.15
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_handle]
+scheme_index = 0, 6
+known = 1
+effects =
+section = up_sect_ak74_handle
+property = prop_inertion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_f_ak74
-name                    = st_upg_barrel_curved
-description             = st_upg_barrel_curved_descr
-icon                    = ui_wp_upgrade_25
+prereq_params  =
+name = gunsl_ak74_up_handle_name
+description = gunsl_ak74_up_handle_descr
+icon = ui_gunsl_up_ak74_handle
 
-[up_g_ak74]
-scheme_index            = 0, 6
-known                   = 1
-effects                 = up_gr_eg_ak74
-section                 = up_sect_g_ak74
-property                = prop_inertion
+;------------------------------------------ light_tsevie ------------------------------------------
+[up_sect_ak74_light_tsevie]
+cost = 800
+value = +8
+control_inertion_factor = -0.1
+cam_dispersion          = -0.05
+cam_dispersion_inc      = -0.02
+zoom_cam_dispersion     = -0.02
+zoom_cam_dispersion_inc = -0.05
+PDM_disp_base = -0.1
+PDM_disp_vel_factor = -0.1
+PDM_disp_crouch_no_acc = -0.1
 
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_light_tsevie]
+scheme_index = 0, 7
+known = 1
+effects = vartree_ak74_tsevie_up
+section = up_sect_ak74_light_tsevie
+property = prop_inertion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_g_ak74
-name                    = st_upg_butt_recoil2
-description             = st_upg_butt_recoil2_descr
-icon                    = ui_wp_upgrade_17
+prereq_params  =
+name = gunsl_ak74_up_light_tsevie_name
+description = gunsl_ak74_up_light_tsevie_descr
+icon = ui_gunsl_up_ak74_light_tsevie
 
-[up_h_ak74]
-scheme_index            = 0, 7
-known                   = 1
-effects                 = up_gr_fh_ak74
-section                 = up_sect_h_ak74
-property                = prop_recoil
+;------------------------------------------ barrel ------------------------------------------
+[up_sect_ak74_barrel]
+cost = 2000
+value = +20
+bullet_speed = +150
+fire_dispersion_base = -0.01
+PDM_disp_base 				= -0.05
+PDM_disp_vel_factor 		= -0.05
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here_h
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_barrel]
+scheme_index = 0, 8
+known = 1
+effects = vartree_ak74_usm
+section = up_sect_ak74_barrel
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_h_ak74
-name                    = st_upg_butt_recoil4
-description             = st_upg_butt_recoil4_descr
-icon                    = ui_wp_upgrade_16
+prereq_params  =
+name = gunsl_ak74_up_barrel_name
+description = gunsl_ak74_up_barrel_descr
+icon = ui_gunsl_up_ak74_barrel
 
-[up_i_ak74]
-scheme_index            = 0, 8
-known                   = 1
-effects                 = 
-section                 = up_sect_i_ak74
-property                = prop_ammo_size
+;------------------------------------------ usm_accuracy ------------------------------------------
+[up_sect_ak74_usm_accuracy]
+cost = 3000
+value = +20
+fire_dispersion_base = -0.05
+PDM_disp_base = -0.2
+PDM_disp_vel_factor 		= -0.1
+PDM_disp_accel_factor 		= -0.2
+PDM_disp_crouch	 			= -0.1
+PDM_disp_crouch_no_acc 		= -0.1
+bullet_speed = +10
+crosshair_inertion = -1
+cam_dispersion = -0.1
+zoom_cam_dispersion = -0.05
+cam_dispersion_inc      = -0.1
+zoom_cam_dispersion_inc     = -0.03
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_usm_accuracy]
+scheme_index = 0, 9
+known = 1
+effects = vartree_ak74_body
+section = up_sect_ak74_usm_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_i_ak74
-name                    = st_upg_charger_big
-description             = st_upg_charger_big_descr
-icon                    = ui_wp_upgrade_19
+prereq_params  =
+name = gunsl_ak74_up_usm_accuracy_name
+description = gunsl_ak74_up_usm_accuracy_descr
+icon = ui_gunsl_up_ak74_usm_accuracy
 
-[up_j_ak74]
-scheme_index            = 1, 4
-effects                 = 
-section                 = up_sect_j_ak74
-property                = prop_scope_1.6x    
+;------------------------------------------ usm_rpm ------------------------------------------
+[up_sect_ak74_usm_rpm]
+cost = 2500
+value = +20
+rpm = +130
+condition_queue_shot_dec     = +0.0002
+misfire_start_prob	     	= +0.001
+misfire_end_prob	     	= +0.005
 
-known                   = 1
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_usm_rpm]
+scheme_index = 0, 10
+known = 1
+effects = vartree_ak74_body
+section = up_sect_ak74_usm_rpm
+property = prop_rpm
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_j_ak74
-name                    = st_upg_bind_optic
-description             = st_upg_bind_optic_descr
-icon                    = ui_wp_upgrade_29
+prereq_params  =
+name = gunsl_ak74_up_usm_rpm_name
+description = gunsl_ak74_up_usm_rpm_descr
+icon = ui_gunsl_up_ak74_usm_rpm
 
-[up_k_ak74]
-scheme_index            = 2, 2
-known                   = 1
-effects                 = 
-section                 = up_sect_k_ak74
-property                = prop_calibre
+;------------------------------------------ usm_rpm_down ------------------------------------------
+[up_sect_ak74_usm_rpm_down]
+cost = 2500
+value = -20
+rpm = -130
+condition_queue_shot_dec     = -0.0001
+misfire_start_prob	     	= -0.001
+misfire_end_prob	     	= -0.005
+cam_dispersion = -0.05
+zoom_cam_dispersion = -0.02
+PDM_disp_base = -0.05
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_usm_rpm_down]
+scheme_index = 0, 14
+known = 1
+effects = vartree_ak74_body
+section = up_sect_ak74_usm_rpm_down
+property = prop_rpm
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_k_ak74
-name                    = st_upg_calibre_5_56
-description             = st_upg_calibre_5_56_descr
-icon                    = ui_wp_upgrade_21
+prereq_params  =
+name = gunsl_ak74_up_usm_rpm_down_name
+description = gunsl_ak74_up_usm_rpm_down_descr
+icon = ui_gunsl_up_ak74_usm_rpm_down
 
+;------------------------------------------ lightdetails ------------------------------------------
+[up_sect_ak74_lightdetails]
+cost = 4000
+value = -1
+inv_weight              = -1
+control_inertion_factor = -0.2
 
-[up_ac_ak74]
-scheme_index            = 1, 0
-known                   = 1
-effects                 = up_gr_aceg_ak74
-section                 = up_sect_ac_ak74
-property                = prop_rpm
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_lightdetails]
+scheme_index = 0, 11
+known = 1
+effects =
+section = up_sect_ak74_lightdetails
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_ac_ak74
-name                    = st_upg_auto_rpm
-description             = st_upg_auto_rpm_descr
-icon                    = ui_wp_upgrade_38
+prereq_params  =
+name = gunsl_ak74_up_lightdetails_name
+description = gunsl_ak74_up_lightdetails_descr
+icon = ui_gunsl_up_ak74_lightdetails
 
-[up_bd_ak74]
-scheme_index            = 1, 1
-known                   = 1
-effects                 = up_gr_bdfh_ak74
-section                 = up_sect_bd_ak74
-property                = prop_bullet_speed
+;------------------------------------------ reliability ------------------------------------------
+[up_sect_ak74_reliability]
+cost = 4000
+value = +50
+condition_queue_shot_dec     = -0.00025
+misfire_start_prob	     	= -0.001
+misfire_end_prob	     	= -0.005
+condition_shot_dec = -0.0001
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_reliability]
+scheme_index = 0, 12
+known = 1
+effects =
+section = up_sect_ak74_reliability
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_bd_ak74
-name                    = st_upg_hard_barrel_curved
-description             = st_upg_hard_barrel_curved_descr
-icon                    = ui_wp_upgrade_23
+prereq_params  =
+name = gunsl_ak74_up_reliability_name
+description = gunsl_ak74_up_reliability_descr
+icon = ui_gunsl_up_ak74_reliability
 
-[up_eg_ak74]
-scheme_index            = 1, 2
-known                   = 1
-effects                 = up_gr_aceg_ak74
-section                 = up_sect_eg_ak74
-property                = prop_recoil
+;------------------------------------------ weight_priklad ------------------------------------------
+[up_sect_ak74_weight_priklad]
+cost = 900
+value = -0.3
+inv_weight              = -0.3
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_weight_priklad]
+scheme_index = 0, 13
+known = 1
+effects = vartree_ak74_priklad_nakladka
+section = up_sect_ak74_weight_priklad
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_eg_ak74
-name                    = st_upg_barrel_recoil
-description             = st_upg_barrel_recoil_descr
-icon                    = ui_wp_upgrade_24
+prereq_params  =
+name = gunsl_ak74_up_weight_priklad_name
+description = gunsl_ak74_up_weight_priklad_descr
+icon = ui_gunsl_up_ak74_weight_priklad
 
+;------------------------------------------ foregrip_rail (scope mount / "крепление для прицела") ------------------------------------------
+; GS node. Base weapon already lists every scope EXCEPT rakurs and is scope_status=2 (attachable). This upgrade
+; ADDS scope_rakurs_ak74m to the mountable set (engine appends scopes_sect from the upgrade section) and swaps
+; the visual: hides the standard `foregrip`, shows the `foregrip_rail` mount. The rakurs optic bone (scope_rakurs)
+; is shown by the multi-scope system only while the rakurs is actually attached -- NOT force-shown here.
+; No scope_status/scope_name here on purpose: base is already 2, and setting scope_status without scope_name crashes.
+[up_sect_ak74_foregrip_rail]
+; GS layered inventory icon: this upgrade's own sprite layer on the cell icon
+upgrade_addon_icon = upgrade_addon_icon_fore_ak_1
+upgrade_addon_icon_offset_x = 138
+upgrade_addon_icon_offset_y = 0
+cost = 1500
+hide_bones = foregrip
+show_bones = foregrip_rail
+scopes_sect = scope_rakurs_ak74m
+inv_weight = +0.05
 
-[up_fh_ak74]
-scheme_index            = 1, 3
-known                   = 1
-effects                 = up_gr_bdfh_ak74
-section                 = up_sect_fh_ak74
-property                = prop_dispersion
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_foregrip_rail]
+scheme_index = 0, 5
+known = 1
+effects = vartree_ak74_laser, vartree_ak74_torch
+section = up_sect_ak74_foregrip_rail
+property = prop_scope_attach
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_trigger_accur
-description             = st_upg_trigger_accur_descr
-icon                    = ui_wp_upgrade_34
+prereq_params  =
+name = gunsl_ak74_up_foregrip_rail_name
+description = gunsl_ak74_up_foregrip_rail_descr
+icon = ui_gunsl_up_ak74_foregrip_rail
 
-[up_aceg_ak74]
-scheme_index            = 2, 0
-known                   = 1
-effects                 =
-section                 = up_sect_aceg_ak74
-property                = prop_rpm
+;------------------------------------------ laser (ЛЦУ) ------------------------------------------
+; Child of foregrip_rail. Flips laser_installed=true -> the engine drives the dot from the ak74's `line`
+; bone (laser_params_section = ak74_laser on the weapon). show_bones reveals the laser device + ray bones.
+[up_sect_ak74_laser]
+cost = 3500
+laser_installed = true
+show_bones = laser, line, line2
+crosshair_inertion = -0.1
+inv_weight = +0.2
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_laser]
+scheme_index = 0, 15
+known = 1
+effects =
+section = up_sect_ak74_laser
+property = prop_laser
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_aceg_ak74
-name                    = st_upg_gas_rpm
-description             = st_upg_gas_rpm_descr
-icon                    = ui_wp_upgrade_40
+prereq_params  =
+name = gunsl_ak74_up_laser_name
+description = gunsl_ak74_up_laser_descr
+icon = ui_gunsl_up_ak74_laser
 
-[up_bdfh_ak74]
-scheme_index            = 2, 1
-known                   = 1
-effects                 =
-section                 = up_sect_bdfh_ak74
-property                = prop_dispersion
+;------------------------------------------ torch (фонарь) ------------------------------------------
+; Child of foregrip_rail. Flips torch_installed=true -> engine mounts the spot/omni/glow at the ak74's
+; flashlight bone (flashlight_params_section = ak74_flashlight). show_bones reveals the `flash` device.
+[up_sect_ak74_torch]
+; GS layered inventory icon: this upgrade's own sprite layer on the cell icon
+upgrade_addon_icon = upgrade_addon_icon_flash_ak_2
+upgrade_addon_icon_offset_x = 137
+upgrade_addon_icon_offset_y = 0
+cost = 3000
+torch_installed = true
+show_bones = flash
+inv_weight = +0.3
 
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_ak74_torch]
+scheme_index = 0, 16
+known = 1
+effects =
+section = up_sect_ak74_torch
+property = prop_torch
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_bdfh_ak74
-name                    = st_upg_gravi_accur
-description             = st_upg_gravi_accur_descr
-icon                    = ui_wp_upgrade_37
+prereq_params  =
+name = gunsl_ak74_up_torch_name
+description = gunsl_ak74_up_torch_descr
+icon = ui_gunsl_up_ak74_torch
 
+;------------------------------------------ bayonet (штык-нож) ------------------------------------------
+; Root upgrade. Stage 1 = VISUAL ONLY: shows the `knife` bone (no GS :base_bayonet melee/hud swap -- those
+; sections don't exist in CS yet, and setting hud=wpn_ak74_hud_bayonet without the section would crash).
+[up_sect_ak74_bayonet]
+; GS layered inventory icon: this upgrade's own sprite layer on the cell icon
+upgrade_addon_icon = upgrade_addon_icon_knife_nsak_1
+upgrade_addon_icon_offset_x = 200
+upgrade_addon_icon_offset_y = 0
+upgrade_addon_icon_banned_addons_mask = 6   ; hidden while a GL (2) or silencer (4) is on
+inv_grid_width = +1   ; GS: grow the cell by 1 grid cell so the bayonet blade (offset 200 = 4 cells) isn't clipped
+cost = 2000
+show_bones = knife
+bayonet_installed = true   ; engine: quick-kick now stabs with the ak74's own anm_kick (ak74_bayonet) instead of the knife phantom
+inv_weight = +0.2
 
-[up_gr_ab_ak74]
-elements                = up_a_ak74, up_b_ak74
+[up_ak74_bayonet]
+scheme_index = 0, 17
+known = 1
+effects =
+section = up_sect_ak74_bayonet
+property = prop_bayonet
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  =
+name = gunsl_ak74_up_bayonet_name
+description = gunsl_ak74_up_bayonet_descr
+icon = ui_gunsl_up_ak74_bayonet
 
-[up_gr_cd_ak74]
-elements                = up_c_ak74, up_d_ak74
-
-[up_gr_ef_ak74]
-elements                = up_e_ak74, up_f_ak74
-
-[up_gr_gh_ak74]
-elements                = up_g_ak74, up_h_ak74
-
-[up_gr_i_ak74]
-elements                = up_i_ak74
-
-[up_gr_j_ak74]
-elements                = up_j_ak74
-
-[up_gr_k_ak74]
-elements                = up_k_ak74
-
-[up_gr_ac_ak74]
-elements                = up_ac_ak74
-
-[up_gr_bd_ak74]
-elements                = up_bd_ak74
-
-[up_gr_eg_ak74]
-elements                = up_eg_ak74
-
-[up_gr_fh_ak74]
-elements                = up_fh_ak74
-
-[up_gr_aceg_ak74]
-elements                = up_aceg_ak74
-
-[up_gr_bdfh_ak74]
-elements                = up_bdfh_ak74
+;------------------------------------------ vartrees (branch groups) ------------------------------------------
+; foregrip_rail hangs off light_tsevie (GS: light_tsevie effects -> vartree_ak74_tsevie_up -> foregrip_rail).
+[vartree_ak74_tsevie_up]
+elements = up_ak74_foregrip_rail
+[vartree_ak74_barrel]
+elements = up_ak74_barrel
+[vartree_ak74_usm]
+elements = up_ak74_usm_accuracy, up_ak74_usm_rpm, up_ak74_usm_rpm_down
+[vartree_ak74_body]
+elements = up_ak74_lightdetails, up_ak74_reliability
+[vartree_ak74_tsevie_down]
+elements = up_ak74_light_tsevie
+[vartree_ak74_mag45]
+elements = up_ak74_mag45_brown, up_ak74_mag45_black
+[vartree_ak74_mag60]
+elements = up_ak74_mag60
+[vartree_ak74_priklad]
+elements = up_ak74_weight_priklad
+[vartree_ak74_priklad_nakladka]
+elements = up_ak74_nakladka_priklad
+[vartree_ak74_sights]
+elements = up_ak74_sights
+[vartree_ak74_handle]
+elements = up_ak74_handle
+[vartree_ak74_laser]
+elements = up_ak74_laser
+[vartree_ak74_torch]
+elements = up_ak74_torch
+[vartree_ak74_bayonet]
+elements = up_ak74_bayonet

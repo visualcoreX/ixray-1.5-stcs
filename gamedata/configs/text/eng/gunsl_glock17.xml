@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_glock17">
+		<text>GLOCK 17</text>
+	</string>
+	<string id="gunsl_wpn_glock17_descr">
+		<text>Developed in the 1980s by GLOCK for the Austrian army. Despite lacking any prior experience in small arms development, the gun was not only successful, it also served as a great example of proper implementation of polymers in modern firearms. Most of the frame is made of heat-resistant plastic, thus making the gun light but highly durable. Good ergonomics, reliability, and lack of traditional safety mechanisms (the user is able to fire immediately without separately manipulating a safety) all played their part in it becoming one of the most widespread civilian firearms for self-defense worldwide. A number of guns seem to have made their way into the Zone as part of standard mercenary equipment.</text>
+	</string>
+</string_table>

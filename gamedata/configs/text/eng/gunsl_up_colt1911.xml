@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_colt1911_up_patronnik_accuracy_name">
+     <text>Chamber adjustment</text>
+</string>
+<string id="gunsl_colt1911_up_patronnik_accuracy_descr">
+     <text>Improves obturation and accuracy by removing play in the chamber.</text>
+</string>
+<string id="gunsl_colt1911_up_barrel_sil_name">
+     <text>Threaded barrel</text>
+</string>
+<string id="gunsl_colt1911_up_barrel_sil_descr">
+     <text>Extended barrel, threaded for mounting a .45ACP suppressor.</text>
+</string>
+<string id="gunsl_colt1911_up_shell_ejector_name">
+     <text>Improved ejector</text>
+</string>
+<string id="gunsl_colt1911_up_shell_ejector_descr">
+     <text>Improved ejector reduces the probability of malfunctions related to ejecting an empty case from the firearm.</text>
+</string>
+<string id="gunsl_colt1911_up_titan_details_name">
+     <text>More durable parts</text>
+</string>
+<string id="gunsl_colt1911_up_titan_details_descr">
+     <text>Parts made of refractory metals that are extraordinarily resistant to heat and wear improve durability.</text>
+</string>
+<string id="gunsl_colt1911_up_light_details_name">
+     <text>Lightweight parts</text>
+</string>
+<string id="gunsl_colt1911_up_light_details_descr">
+     <text>Reduces weight by replacing weapon parts with their modern light-alloy counterparts.</text>
+</string>
+<string id="gunsl_colt1911_up_usm_accuracy_name">
+     <text>Trigger calibration</text>
+</string>
+<string id="gunsl_colt1911_up_usm_accuracy_descr">
+     <text>Individual adjustment and balancing of the standard parts of the trigger mechanism improves accuracy while simultaneously lowering recoil.</text>
+</string>
+<string id="gunsl_colt1911_up_light_mag_handle_name">
+     <text>Lightweight grip</text>
+</string>
+<string id="gunsl_colt1911_up_light_mag_handle_descr">
+     <text>maintenance pistol grip slightly reduces weight.</text>
+</string>
+<string id="gunsl_colt1911_up_big_mag_name">
+     <text>Extended magazine</text>
+</string>
+<string id="gunsl_colt1911_up_big_mag_descr">
+     <text>Modern magazine, thanks to denser stacking has slightly higher capacity.</text>
+</string>
+<string id="gunsl_colt1911_up_zatvor_reliability_name">
+     <text>Protective coating</text>
+</string>
+<string id="gunsl_colt1911_up_zatvor_reliability_descr">
+     <text>Application of a protective coating to the internal parts significantly reduces wear.</text>
+</string>
+<string id="gunsl_colt1911_up_zatvor_rpm_name">
+     <text>Tuned return mechanism</text>
+</string>
+<string id="gunsl_colt1911_up_zatvor_rpm_descr">
+     <text>Increases rate of fire at the expense of durability.</text>
+</string>
+<string id="gunsl_colt1911_up_recoil_compensation_system_name">
+     <text>Recoil reduction system</text>
+</string>
+<string id="gunsl_colt1911_up_recoil_compensation_system_descr">
+     <text>Complex Swiss-made mechanism, that moves in opposition to the slide, thus reducing felt recoil.</text>
+</string>
+<string id="gunsl_colt1911_up_usm_rpm_name">
+     <text>Trigger tuning</text>
+</string>
+<string id="gunsl_colt1911_up_usm_rpm_descr">
+     <text>Modification of the trigger mechanism increases rate of fire, at the cost of durability.</text>
+</string>
+<string id="gunsl_colt1911_up_usm_recoil_name">
+     <text>Match trigger</text>
+</string>
+<string id="gunsl_colt1911_up_usm_recoil_descr">
+     <text>Decreases recoil, thus improving accuracy.</text>
+</string>
+<string id="gunsl_colt1911_up_barrel_speed_name">
+     <text>Faster twist rate</text>
+</string>
+<string id="gunsl_colt1911_up_barrel_speed_descr">
+     <text>Barrel with a faster twist rate increases muzzle velocity and accuracy.</text>
+</string>
+<string id="gunsl_colt1911_up_barrel_accuracy_name">
+     <text>Barrel adjustment</text>
+</string>
+<string id="gunsl_colt1911_up_barrel_accuracy_descr">
+     <text>Reduces bullet dispersion, which improves accuracy.</text>
+</string>
+<string id="gunsl_colt1911_up_bullet_hit_power_name">
+     <text>Bullet destabilizer</text>
+</string>
+<string id="gunsl_colt1911_up_bullet_hit_power_descr">
+     <text>Intricate system that makes the bullet penetrate the body at a random angle, making a literal mess instead of a distinct wound track. Slightly decreases accuracy, but the damage to the target's body makes up for it.</text>
+</string>
+<string id="gunsl_colt1911_up_zatvor_recoil_name">
+     <text>Balanced slide</text>
+</string>
+<string id="gunsl_colt1911_up_zatvor_recoil_descr">
+     <text>Balanced slide decreases muzzle climb and felt recoil.</text>
+</string>
+<string id="gunsl_colt1911_up_sights_name">
+     <text>Tritium sights</text>
+</string>
+<string id="gunsl_colt1911_up_sights_descr">
+     <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+</string>
+</string_table>

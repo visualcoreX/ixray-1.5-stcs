@@ -1,0 +1,92 @@
+; ============================================================================
+;  AK-101 -- ported from Gunslinger (configs\weapons\assault\ak101).
+;
+;  Same receiver family as our ak74: wpn_ak101_hud.ogf motion-refs
+;  dynamics\weapons\wpn_ak74\wpn_ak74_hud_animation and wpn_ak101.ogf refs
+;  wpn_ak74_animation -- both omfs we already ship. So the section INHERITS
+;  [wpn_ak74] (all the ported anim aliases, PiP scope setup, laser/torch,
+;  bayonet kick, world anims come with it) and only overrides what GS's
+;  ak101\base.ltx actually changes.
+; ============================================================================
+
+[wpn_ak101]:wpn_ak74
+bullet_material				= objects\bullet_automatic	; wallmark/impact/ricochet pair on hit
+$spawn                  = "weapons\wpn_ak101"   ; own level-editor entry (GS reuses the ak74's)
+description             = gunsl_wpn_ak101_descr
+inv_name                = gunsl_wpn_ak101_name
+inv_name_short          = gunsl_wpn_ak101_name
+cost                    = 6000
+visual                  = dynamics\weapons\wpn_ak101\wpn_ak101.ogf
+hud                     = wpn_ak101_hud
+
+; ---- ballistics / dispersion / wear (GS ak101 base.ltx) ----
+ammo_class              = ammo_5.56x45_ss190, ammo_5.56x45_ap
+bullet_speed            = 570
+rpm                     = 630
+fire_dispersion_base    = 0.18
+cam_dispersion          = 0.7
+cam_dispersion_inc      = 0.4
+zoom_cam_dispersion     = 0.4
+zoom_cam_dispersion_inc = 0.35
+zoom_cam_dispersion_frac = 0.8
+PDM_disp_base           = 1.1
+PDM_disp_vel_factor     = 2.0
+PDM_disp_accel_factor   = 2.0
+condition_shot_dec      = 0.0003
+condition_queue_shot_dec = 0.0006
+fire_point2             = 0,0.161,0.583
+
+; ---- addons ----
+; GS ships the ak101 with silencer_status = 0 and no barrel_sil node in its tree,
+; i.e. the tgpa can NOT be mounted on it. Scope + underbarrel GL stay attachable
+; (both inherited = 2). scopes_sect is the ak101's own list (no rakurs -- that one
+; is added by the foregrip_rail upgrade, same as the ak74).
+silencer_status         = 0
+scopes_sect             = scope_pso1m2x1_ak101, scope_nvas_ak101, scope_cobra_ak101, scope_pka_ak101, scope_kashtan_ak101, scope_pso1_ak101, scope_nvsn_ak101
+
+; ---- upgrades (own GS tree: 17 nodes, = the ak74's minus usm_rpm_down) ----
+upgrades                = vartree_ak101_barrel, vartree_ak101_tsevie_down, vartree_ak101_mag45, vartree_ak101_priklad, vartree_ak101_sights, vartree_ak101_handle, vartree_ak101_bayonet
+installed_upgrades      =
+upgrade_scheme          = upgrade_scheme_ak101
+allowed_upgrades        = up_ak101_
+
+; ---- layered inventory icon (GS ak101\icons.ltx, coords verbatim) ----
+; inv_grid stays on the shared EMPTY slot 20,0 inherited from the ak74 -- the real
+; artwork is drawn by these three element layers.
+element_icon_0 = icon_element_ak101_body
+element_icon_offset_x_0 = 0
+element_icon_offset_y_0 = 0
+element_icon_1 = icon_element_ak101_mag
+element_icon_offset_x_1 = 100
+element_icon_offset_y_1 = 0
+element_icon_2 = icon_element_ak101_body2
+element_icon_offset_x_2 = 150
+element_icon_offset_y_2 = 0
+
+; laser_params_section / flashlight_params_section stay INHERITED (ak74_laser /
+; ak74_flashlight): identical skeleton and `line`/`flash`/`light` bones, and GS's
+; ak101 laser+torch world offsets are byte-identical to the ak74's.
+
+; =========================================================================
+; hud
+; =========================================================================
+[wpn_ak101_hud]:wpn_ak74_hud
+; GS: blend one shot of a burst into the next instead of cutting (WeaponAnims NeedShootMix).
+; Enabled on the same weapons GS enables it on -- its automatics.
+mix_shoot_after_shoot_in_queue = true
+item_visual                = dynamics\weapons\wpn_ak101\wpn_ak101_hud.ogf
+gl_ammo_params_section_0   = wpn_ak101_ammo_bones_vog25
+gl_ammo_params_section_1   = wpn_ak101_ammo_bones_vog25p
+; NOTE (deliberate divergence): GS's ak101 hud sets hud_fov_factor 0.9 (the ak74's
+; is 1.25) and compensates that narrower render FOV with hands_position z +0.175
+; and aim z -0.05. Our engine has no per-weapon base hud FOV key (psHUD_FOV_def is
+; global), so copying only the geometry half would shove the weapon far from the
+; eye. The ak74's tuned hands_position / aim_hud_offset are inherited instead.
+
+[wpn_ak101_ammo_bones_vog25]
+all_bones = grenade_red, grenade_blue
+configuration_1 = grenade_red
+
+[wpn_ak101_ammo_bones_vog25p]
+all_bones = grenade_red, grenade_blue
+configuration_1 = grenade_blue

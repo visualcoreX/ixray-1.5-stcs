@@ -3,6 +3,7 @@ active = smartcover@table_idle
 level_spot = quest_npc
 
 [smartcover@table_idle]
+invulnerable = true
 path_walk = mar_smart_terrain_csky_base_scientist_walk
 cover_name = mar_smart_cover_csky_scientist_lead_stand_look_at_table
 loophole_name = lead_stand_look_at_table
@@ -10,10 +11,9 @@ cover_state = idle_target
 on_timer = 15000 | smartcover@table_fire_no_lookout
 combat_ignore_cond = true
 meet = meet
-;target_path = mar_smart_terrain_csky_base_scientist_look
-;def_state_moving = walk
 
 [smartcover@table_fire_no_lookout]
+invulnerable = true
 path_walk = mar_smart_terrain_csky_base_scientist_walk
 cover_name = mar_smart_cover_csky_scientist_lead_stand_look_at_table
 loophole_name = lead_stand_look_at_table
@@ -21,7 +21,6 @@ cover_state = fire_no_lookout_target
 on_timer = 15000 | smartcover@table_idle
 combat_ignore_cond = true
 meet = meet
-;target_path = mar_smart_terrain_csky_base_scientist_look
 
 ;-----------------------------------------------------------------------------
 
@@ -32,8 +31,7 @@ victim = 0 | actor
 victim_wpn = 0 | actor
 use = true
 use_wpn = true
-;precond = visibility
 trade_enable = false
-sound_start 	= mar_csky_doctor_meet
-sound_stop 		= mar_csky_doctor_meet_bye
+sound_start = mar_csky_doctor_meet
+sound_stop = mar_csky_doctor_meet_bye
 quest_npc = true

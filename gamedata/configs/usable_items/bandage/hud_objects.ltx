@@ -1,0 +1,29 @@
+[bandage_hud_model]:gwr_base_usable
+; no world model on purpose (user's call): the bandage keeps gwr_base_usable's
+; fake_object, so nothing is drawn in the hand. The torso gesture below still plays.
+actor_torso_anim	= norm_torso_item_bandage	; third-person gesture from the xrMPE actor pack
+; GS trash: the empty thrown away at timing_trash (see usable_items/trash_objects.ltx).
+; GS's own value shifted by the gap between our `timing` and GS's, so it lands at the same
+; point relative to the END of the animation.
+trash_object       = bandage_trash
+timing_trash       = 1570
+$spawn          = "weapons\bandage_hud_model"
+hud             = bandage_hud
+timing          = 4500
+snd_using       = items\bandage\bandage
+snd_delay       = 250
+snd_delay_detector = 250   ; shorter delay when only a detector is in hands (it holsters faster)
+gwr_eatable_object = bandage_eatable
+effect_delay       = 3500
+
+[bandage_hud]:gwr_base_usable_hud
+hands_position      = 0.0,-0.02,0.14
+hands_position_16x9 = 0.0,-0.02,0.14
+item_visual     = gwr\equipment\bandage\bandage_hud
+anm_show        = bandage
+anm_hide        = zaglushka
+anm_idle        = zaglushka
+anm_idle_aim    = zaglushka
+anm_idle_moving = zaglushka
+anm_idle_sprint = zaglushka
+anm_bore        = zaglushka

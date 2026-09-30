@@ -1,219 +1,430 @@
-[up_sect_a_val]
-cost		      		= 3000
-value					= +25
-fire_dispersion_base    = -0.12 ;0.5
+; ============================================================================
+;  val upgrade tree -- ported from Gunslinger (wpn_val).
+;  CS adjustments applied by gsw.py: :base_bayonet rewired, prop_weight ->
+;  prop_weight_kg, snd_silncer_shot stripped from any barrel_sil node.
+; ============================================================================
 
-[up_sect_b_val]
-cost		      		= 3000
-value					= -25
+;------------------------------------------val_rail1------------------------------------------
+[up_sect_val_rail1]
+cost = 1200
+show_bones = rail_lam
+inv_weight              = +0.05
 
-cam_dispersion          = -0.11		;0.45
-cam_dispersion_inc      = -0.11		;0.45
-cam_step_angle_horz     = -0.11		;0.45
+upgrade_addon_icon = upgrade_addon_icon_valvss_rail
+upgrade_addon_icon_offset_x = 176
+upgrade_addon_icon_offset_y = 0
 
-zoom_cam_dispersion      = -0.1		;0.4
-zoom_cam_dispersion_inc  = -0.1		;0.4
-zoom_cam_step_angle_horz = -0.1		;0.4	 
-
-[up_sect_c_val]
-cost		      		= 3000
-value					= -25
-
-cam_dispersion          = -0.11		;0.45
-cam_dispersion_inc      = -0.11		;0.45
-cam_step_angle_horz     = -0.11		;0.45
-
-zoom_cam_dispersion      = -0.1		;0.4
-zoom_cam_dispersion_inc  = -0.1		;0.4
-zoom_cam_step_angle_horz = -0.1		;0.4
-
-[up_sect_d_val]
-cost		      		= 3000
-value					= +25
-fire_dispersion_base    = -0.12 ;0.5
-
-[up_sect_e_val]
-cost		      		= 3000
-value					= +10
-ammo_mag_size           = 10
-
-[up_sect_ab_val]
-cost		      		= 4500
-value					= +50
-bullet_speed			= 125
-
-[up_sect_cd_val]
-cost		      		= 4500
-value					= -15
-control_inertion_factor	= -0.2
-inv_weight				= -0.3
-PDM_disp_vel_factor     = -0.3 ;1.5
-PDM_disp_accel_factor   = -0.3 ;1.5
-
-[up_a_val]
-scheme_index            = 0, 0
-known                   = 1
-effects                 = up_gr_ab_val
-section                 = up_sect_a_val
-property                = prop_dispersion
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = on_weapon_upgrade_something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_val_rail1]
+scheme_index = 0, 0
+known = 1
+effects = vartree_val_laser, vartree_val_torch
+section = up_sect_val_rail1
+property = prop_rail
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_zatvor_recoil
-description             = st_upg_zatvor_recoil_descr
-icon                    = ui_wp_upgrade_41
+prereq_params  = 
+name =gunsl_val_up_rail1_name
+description =gunsl_val_up_rail1_descr
+icon = ui_gunsl_up_val_rail1
+;------------------------------------------val_laser------------------------------------------
+[up_sect_val_laser]
+cost = 3500
+laser_installed = true
+show_bones = laser, line	; `line` is in def_hide_bones -- without it no beam/dot
+inv_weight              = +0.2
+crosshair_inertion = -0.1
+laserdot_world_attach_offset_x = -0.042
+laserdot_world_attach_offset_y = 0.127
+laserdot_world_attach_offset_z = 0.460
 
-[up_b_val]
-scheme_index            = 0, 1
-known                   = 1
-effects                 = up_gr_ab_val
-section                 = up_sect_b_val
-property                = prop_recoil
+laserdot_attach_offset_x = -0.2
+laserdot_attach_offset_y = 0.017
+laserdot_attach_offset_z = -0.9
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
 
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_val_laser]
+scheme_index = 0, 1
+known = 1
+effects = 
+section = up_sect_val_laser
+property = prop_laser
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_porsh_recoil
-description             = st_upg_porsh_recoil_descr
-icon                    = ui_wp_upgrade_42
+prereq_params  = 
+name =gunsl_val_up_laser_name
+description =gunsl_val_up_laser_descr
+icon = ui_gunsl_up_val_laser
+;------------------------------------------val_torch------------------------------------------
+[up_sect_val_torch]
+cost = 3000
+torch_installed = true
+show_bones = flash, light	; `flash` is the device, `light` the lit lens the key toggles
+inv_weight              = +0.3
 
-[up_c_val]
-scheme_index            = 0, 2
-known                   = 1
-effects                 = up_gr_cd_val
-section                 = up_sect_c_val
-property                = prop_recoil
+torch_world_attach_offset_x = 0.000
+torch_world_attach_offset_y = 0.072
+torch_world_attach_offset_z = 0.493
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
+torch_omni_world_attach_offset_x = 0.000
+torch_omni_world_attach_offset_y = 0.072
+torch_omni_world_attach_offset_z = 0.493
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
+torch_attach_offset_x = 0.0
+torch_attach_offset_y = 0.0
+torch_attach_offset_z = -0.3
 
-prereq_functor          = inventory_upgrades.prereq_functor_a
+torch_omni_attach_offset_x = 0.0 
+torch_omni_attach_offset_y = 0.0
+torch_omni_attach_offset_z = -0.35
+torch_omni_range = 0.4
+torch_r2_omni_range = 0.4 
+
+upgrade_addon_icon = upgrade_addon_icon_flash_ak_3
+upgrade_addon_icon_offset_x = 188
+upgrade_addon_icon_offset_y = 0
+
+[up_val_torch]
+scheme_index = 0, 2
+known = 1
+effects = 
+section = up_sect_val_torch
+property = prop_torch
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_butt_recoil4
-description             = st_upg_butt_recoil4_descr
-icon                    = ui_wp_upgrade_13
+prereq_params  = 
+name =gunsl_val_up_torch_name
+description =gunsl_val_up_torch_descr
+icon = ui_gunsl_up_val_torch
+;------------------------------------------val_rail2------------------------------------------
+[up_sect_val_rail2]
+cost = 1200
+show_bones = rail_handler, scope_rakurs
+inv_weight              = +0.05
+scopes_sect = scope_rakurs_val
+scope_status				= 2
+scope_name = wpn_addon_scope_rakurs	; + scope_x/scope_y are read from the NODE
+scope_x = 154	; = scope_rakurs_val, the only optic in scopes_sect above
+scope_y = -3
 
-[up_d_val]
-scheme_index            = 0, 3
-known                   = 1
-effects                 = up_gr_cd_val
-section                 = up_sect_d_val
-property                = prop_dispersion
+upgrade_addon_icon = upgrade_addon_icon_valvss_rail
+upgrade_addon_icon_offset_x = 150
+upgrade_addon_icon_offset_y = 0
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_val_rail2]
+scheme_index = 0, 3
+known = 1
+effects = vartree_val_handle
+section = up_sect_val_rail2
+property = prop_scope_attach
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_trigger_accur
-description             = st_upg_trigger_accur_descr
-icon                    = ui_wp_upgrade_14
+prereq_params  = 
+name =gunsl_val_up_rail2_name
+description =gunsl_val_up_rail2_descr
+icon = ui_gunsl_up_val_rail2
+;------------------------------------------val_handle------------------------------------------
+[up_sect_val_handle]
+cost = 2000
+show_bones = tactical_handler
+hud=wpn_val_handler_hud
+inv_weight              = +0.2
 
-[up_e_val]
-scheme_index            = 0, 4
-known                   = 1
-effects                 = 
-section                 = up_sect_e_val
-property                = prop_ammo_size
+control_inertion_factor = -0.3
+crosshair_inertion		= -3.0
+cam_relax_speed         = +1
+cam_dispersion          = -0.05 
+cam_dispersion_inc      = -0.1
+cam_max_angle           = -20.0      
+cam_max_angle_horz      = -20.0
+cam_dispersion_frac =  +0.15
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
+zoom_cam_relax_speed        = +1
+zoom_cam_dispersion         = -0.03
+zoom_cam_dispersion_inc     = -0.02
+zoom_cam_max_angle          = -20
+zoom_cam_max_angle_horz     = -20
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
+PDM_disp_base 				= -0.2
+PDM_disp_vel_factor 		= -0.5
+PDM_disp_accel_factor 		= -0.3
 
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+PDM_disp_crouch	 			= -0.3
+PDM_disp_crouch_no_acc 		= -0.4
+
+upgrade_addon_icon = upgrade_addon_icon_valvss_handle
+upgrade_addon_icon_offset_x = 150
+upgrade_addon_icon_offset_y = 0
+
+[up_val_handle]
+scheme_index = 0, 4
+known = 1
+effects = 
+section = up_sect_val_handle
+property = prop_tacticalhandle
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_charger_big
-description             = st_upg_charger_big_descr
-icon                    = ui_wp_upgrade_45
+prereq_params  = 
+name =gunsl_val_up_handle_name
+description =gunsl_val_up_handle_descr
+icon = ui_gunsl_up_val_handle
+;------------------------------------------val_light_mag------------------------------------------
+[up_sect_val_light_mag]
+cost = 1500
+value = -0.15
+inv_weight              = -0.15
 
-[up_ab_val]
-scheme_index            = 1, 0
-known                   = 1
-effects                 = 
-section                 = up_sect_ab_val
-property                = prop_bullet_speed
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_val_light_mag]
+scheme_index = 0, 5
+known = 1
+effects = 
+section = up_sect_val_light_mag
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_accel_curved
-description             = st_upg_accel_curved_descr
-icon                    = ui_wp_upgrade_18
+prereq_params  = 
+name =gunsl_val_up_light_mag_name
+description =gunsl_val_up_light_mag_descr
+icon = ui_gunsl_up_val_light_mag
+;------------------------------------------val_reliability_barrel------------------------------------------
+[up_sect_val_reliability_barrel]
+cost = 5000
+value = +30
+misfire_start_condition= -0.15
+misfire_end_condition=-0.2
+misfire_start_prob= -0.003
+misfire_end_prob = -0.015
+condition_queue_shot_dec	= -0.0005
+condition_shot_dec = -0.0003
 
-[up_cd_val]
-scheme_index            = 1, 1
-known                   = 1
-effects                 = 
-section                 = up_sect_cd_val
-property                = prop_weight
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_val_reliability_barrel]
+scheme_index = 0, 6
+known = 1
+effects = 
+section = up_sect_val_reliability_barrel
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_poly_weight
-description             = st_upg_poly_weight_descr
-icon                    = ui_wp_upgrade_47
+prereq_params  = 
+name =gunsl_val_up_reliability_barrel_name
+description =gunsl_val_up_reliability_barrel_descr
+icon = ui_gunsl_up_val_reliability_barrel
+;------------------------------------------val_accuracy_usm------------------------------------------
+[up_sect_val_accuracy_usm]
+cost = 4000
+value = +20
+fire_dispersion_base = -0.03
+PDM_disp_base = -0.1
+bullet_speed = +10
+crosshair_inertion = -1
+cam_dispersion = -0.05
+zoom_cam_dispersion = -0.03
+cam_dispersion_inc      = -0.1
+zoom_cam_dispersion_inc     = -0.03
+
+[up_val_accuracy_usm]
+scheme_index = 0, 7
+known = 1
+effects = vartree_val_barrel
+section = up_sect_val_accuracy_usm
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_val_up_accuracy_usm_name
+description =gunsl_val_up_accuracy_usm_descr
+icon = ui_gunsl_up_val_accuracy_usm
+;------------------------------------------val_rpm_usm------------------------------------------
+[up_sect_val_rpm_usm]
+cost = 3800
+value = +20
+rpm = +110
+condition_shot_dec     = +0.0003
+misfire_start_prob	     	= +0.001
+misfire_end_prob	     	= +0.005
+condition_queue_shot_dec = +0.0002
+
+[up_val_rpm_usm]
+scheme_index = 0, 8
+known = 1
+effects = vartree_val_barrel
+section = up_sect_val_rpm_usm
+property = prop_rpm
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_val_up_rpm_usm_name
+description =gunsl_val_up_rpm_usm_descr
+icon = ui_gunsl_up_val_rpm_usm
+;------------------------------------------val_body_reliability------------------------------------------
+[up_sect_val_body_reliability]
+cost = 2000
+value = +10
+condition_shot_dec     = -0.0004
+misfire_start_prob	     = -0.002
+misfire_end_prob	     = -0.006
+condition_queue_shot_dec = -0.0003
+
+[up_val_body_reliability]
+scheme_index = 0, 9
+known = 1
+effects = vartree_val_usm
+section = up_sect_val_body_reliability
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_val_up_body_reliability_name
+description =gunsl_val_up_body_reliability_descr
+icon = ui_gunsl_up_val_body_reliability
+;------------------------------------------val_tilnik------------------------------------------
+[up_sect_val_tilnik]
+cost = 1000
+value = -20
+cam_relax_speed         = +1.0
+cam_dispersion          = -0.13
+cam_dispersion_inc      = -0.05
+inv_weight              = +0.2
+
+
+zoom_cam_relax_speed = +2
+zoom_cam_dispersion = -0.07
+zoom_cam_dispersion_inc = -0.02
+zoom_cam_max_angle          = -26
+zoom_cam_max_angle_horz     = -26
+
+PDM_disp_base = -0.1
+show_bones = sheka
+
+upgrade_addon_icon = upgrade_addon_icon_stock_amort_2
+upgrade_addon_icon_offset_x = 0
+upgrade_addon_icon_offset_y = 0
+inv_addons_correction_x = +2
 
 
 
-[up_gr_a_val]
-elements                = up_a_val
+[up_val_tilnik]
+scheme_index = 0, 10
+known = 1
+effects = 
+section = up_sect_val_tilnik
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_val_up_tilnik_name
+description =gunsl_val_up_tilnik_descr
+icon = ui_gunsl_up_val_tilnik
+;------------------------------------------val_sights------------------------------------------
+[up_sect_val_sights]
+cost = 500
+crosshair_inertion = -0.3
+control_inertion_factor = -0.1
+show_bones = sight
 
-[up_gr_b_val]
-elements                = up_b_val
+[up_val_sights]
+scheme_index = 0, 11
+known = 1
+effects = 
+section = up_sect_val_sights
+property = prop_lightingsights
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_val_up_sights_name
+description =gunsl_val_up_sights_descr
+icon = ui_gunsl_up_val_sights
+;------------------------------------------val_barrel_speed------------------------------------------
+[up_sect_val_barrel_speed]
+cost = 5000
+value = +30
+bullet_speed = +90
+fire_dispersion_base = -0.02
 
-[up_gr_c_val]
-elements                = up_c_val
-
-[up_gr_d_val]
-elements                = up_d_val
-
-[up_gr_e_val]
-elements                = up_e_val
-
-[up_gr_ab_val]
-elements                = up_ab_val
-
-[up_gr_cd_val]
-elements                = up_cd_val
+[up_val_barrel_speed]
+scheme_index = 0, 12
+known = 1
+effects = 
+section = up_sect_val_barrel_speed
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_val_up_barrel_speed_name
+description =gunsl_val_up_barrel_speed_descr
+icon = ui_gunsl_up_val_barrel_speed
+;------------------------------------------------------------------------------------
+[vartree_val_stock]
+elements = up_val_tilnik
+[vartree_val_sights]
+elements = up_val_sights
+[vartree_val_mag]
+elements = up_val_light_mag
+[vartree_val_rail1]
+elements = up_val_rail1
+[vartree_val_rail2]
+elements = up_val_rail2
+[vartree_val_handle]
+elements = up_val_handle
+[vartree_val_laser]
+elements = up_val_laser
+[vartree_val_torch]
+elements = up_val_torch
+[vartree_val_usm]
+elements = up_val_accuracy_usm, up_val_rpm_usm
+[vartree_val_barrel]
+elements = up_val_reliability_barrel, up_val_barrel_speed
+[vartree_val_body_reliability]
+elements = up_val_body_reliability

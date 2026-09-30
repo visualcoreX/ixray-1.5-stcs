@@ -1,275 +1,429 @@
-[up_sect_a_sig220]
-cost		      		= 750
-value					= +25
-rpm						= 50
+;==================================================================================================
+; SIG220 (P220) upgrade tree -- ported from Gunslinger (pistols/sig220/upgrades.ltx). CoP-style scheme.
+; Adaptations vs GS: barrel_sil silencer keys stripped (dup-sound crash HUD_SOUND_COLLECTION NULL, as PM);
+;   base [wpn_sig220] keeps silencer_status=2 (attachable addon); weight nodes -> prop_weight_kg.
+;==================================================================================================
 
-[up_sect_b_sig220]
-cost		      		= 750
-value					= -20
+;------------------------------------------sig220_barrel_sil------------------------------------------
+[up_sect_sig220_barrel_sil]
+cost = 5000
+; GS-way silencer via upgrade: status/name/x/y are REQUIRED once silencer_status=2 (WeaponUpgrade.cpp:292
+; reads them from THIS section). snd_silncer_shot deliberately OMITTED -- re-declaring it re-runs LoadSound
+; on the already-loaded HUD sound -> crash; the base's snd_silncer_shot already loaded the sound.
+silencer_status = 2
+silencer_name = wpn_colt_p220_silencer
+silencer_x = 63
+silencer_y = -17
+inv_weight = +0.03
+fire_dispersion_base = -0.01
+show_bones = barrel_silencer
+hide_bones = barrel
 
-cam_dispersion          = -0.1		;0.5
-cam_dispersion_inc		= -0.1		;0.5
-cam_step_angle_horz		= -0.2		;1.0
+upgrade_addon_icon = upgrade_addon_icon_barrel_silencer_1
+upgrade_addon_icon_offset_x = 51
+upgrade_addon_icon_offset_y = 0
 
-[up_sect_c_sig220]
-cost		      		= 750
-value					= -20
-inv_weight				= -0.1
-fire_dispersion_base	= -0.1 ;0.5
-
-[up_sect_d_sig220]
-cost		      		= 750
-value					= +20
-bullet_speed		 	= 50
-hit_power           	= 0.55, 0.55, 0.55, 0.55
-
-[up_sect_e_sig220]
-cost		      		= 750
-value					= +20
-fire_dispersion_base	= -0.1 ;0.5
-
-[up_sect_f_sig220]
-cost		      		= 750
-value					= +20
-fire_dispersion_base	= -0.1 ;0.5
-
-cam_dispersion          = -0.1		;0.5
-cam_dispersion_inc		= -0.1		;0.5
-cam_step_angle_horz		= -0.2		;1.0
-
-[up_sect_g_sig220]
-cost		      		= 750
-value					= +4
-ammo_mag_size		 	= 4
-
-[up_sect_ac_sig220]
-cost		      		= 1125
-value					= -50
-;value2					= st_upgr_silencer_disable
-
-cam_dispersion          = -0.25		;0.5
-cam_dispersion_inc		= -0.25		;0.5
-cam_step_angle_horz		= -0.5		;1.0
-
-;silencer_status			= 0
-
-[up_sect_bd_sig220]
-cost		      		= 1125
-value					= +30
-;value2					= st_upgr_silencer_disable
-bullet_speed		 	= 100
-hit_power           	= 0.6, 0.6, 0.6, 0.6
-;silencer_status			= 0
-
-[up_a_sig220]
-scheme_index            = 0, 0
-known                   = 1
-;;invented                = 1                							; 0
-effects                 = up_gr_ac_sig220
-section                 = up_sect_a_sig220
-property                = prop_rpm
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = on_weapon_upgrade_something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_sig220_barrel_sil]
+scheme_index = 0, 0
+known = 1
+effects = 
+section = up_sect_sig220_barrel_sil
+property = prop_silencer
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_zatvor_rpm
-description             = st_upg_zatvor_rpm_descr
-icon                    = ui_wp_upgrade_01
+prereq_params  = 
+name =gunsl_sig220_up_barrel_sil_name
+description =gunsl_sig220_up_barrel_sil_descr
+icon = ui_gunsl_up_sig220_barrel_sil
+;------------------------------------------sig220_barrel_accuracy------------------------------------------
+[up_sect_sig220_barrel_accuracy]
+cost = 5000
+value = +30
+PDM_disp_base = -0.35
+fire_dispersion_base = -0.075
+PDM_disp_crouch = -0.1
+PDM_disp_crouch_no_acc = -0.1
 
-;;...
-[up_b_sig220]
-scheme_index            = 0, 1
-known                   = 1
-effects                 = up_gr_bd_sig220
-section                 = up_sect_b_sig220
-property                = prop_recoil
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_sig220_barrel_accuracy]
+scheme_index = 0, 1
+known = 1
+effects = 
+section = up_sect_sig220_barrel_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_zatvor_recoil
-description             = st_upg_zatvor_recoil_descr
-icon                    = ui_wp_upgrade_02
+prereq_params  = 
+name =gunsl_sig220_up_barrel_accuracy_name
+description =gunsl_sig220_up_barrel_accuracy_descr
+icon = ui_gunsl_up_sig220_barrel_accuracy
+;------------------------------------------sig220_barrel_speed------------------------------------------
+[up_sect_sig220_barrel_speed]
+cost = 5000
+value = +30
+bullet_speed = +100 
+fire_dispersion_base = -0.02
 
-[up_c_sig220]
-scheme_index            = 0, 2
-known                   = 1
-effects                 = up_gr_ac_sig220
-section                 = up_sect_c_sig220
-property                = prop_weight      
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_sig220_barrel_speed]
+scheme_index = 0, 2
+known = 1
+effects = 
+section = up_sect_sig220_barrel_speed
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_weight
-description             = st_upg_barrel_weight_descr
-icon                    = ui_wp_upgrade_03
+prereq_params  = 
+name =gunsl_sig220_up_barrel_speed_name
+description =gunsl_sig220_up_barrel_speed_descr
+icon = ui_gunsl_up_sig220_barrel_speed
+;------------------------------------------sig220_body_reliability------------------------------------------
+[up_sect_sig220_body_reliability]
+cost = 3000
+value = +10
+condition_shot_dec      	= -0.0003
+misfire_end_prob	     	= -0.007
+misfire_start_condition		= -0.05
 
-[up_d_sig220]
-scheme_index            = 0, 3
-known                   = 1
-effects                 = up_gr_bd_sig220
-section                 = up_sect_d_sig220
-property                = prop_bullet_speed
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_sig220_body_reliability]
+scheme_index = 0, 3
+known = 1
+effects = vartree_sig220_usm
+section = up_sect_sig220_body_reliability
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_hard_barrel_curved
-description             = st_upg_hard_barrel_curved_descr
-icon                    = ui_wp_upgrade_04
+prereq_params  = 
+name =gunsl_sig220_up_body_reliability_name
+description =gunsl_sig220_up_body_reliability_descr
+icon = ui_gunsl_up_sig220_body_reliability
+;------------------------------------------sig220_polymer_buffer------------------------------------------
+[up_sect_sig220_polymer_buffer]
+cost = 4000
+value = -30
+cam_dispersion = -0.4
+cam_dispersion_inc = -0.3
+zoom_cam_dispersion = -0.15
+zoom_cam_dispersion_inc = -0.25
+PDM_disp_base = -0.1
 
-[up_e_sig220]
-scheme_index            = 0, 4
-known                   = 1
-effects                 = 
-section                 = up_sect_e_sig220
-property                = prop_dispersion
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_sig220_polymer_buffer]
+scheme_index = 0, 4
+known = 1
+effects = 
+section = up_sect_sig220_polymer_buffer
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_trigger_accur
-description             = st_upg_trigger_accur_descr
-icon                    = ui_wp_upgrade_05
+prereq_params  = 
+name =gunsl_sig220_up_polymer_buffer_name
+description =gunsl_sig220_up_polymer_buffer_descr
+icon = ui_gunsl_up_sig220_polymer_buffer
+;------------------------------------------sig220_handle------------------------------------------
+[up_sect_sig220_handle]
+cost = 1500
+value = +15
+control_inertion_factor = -0.2
 
-[up_f_sig220]
-scheme_index            = 0, 5
-known                   = 1
-effects                 = 
-section                 = up_sect_f_sig220
-property                = prop_dispersion
+cam_relax_speed         = +1.0
+cam_dispersion          = -0.03
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
+zoom_cam_relax_speed = +2
+zoom_cam_dispersion = -0.05
+zoom_cam_dispersion_inc = -0.03
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
+PDM_disp_base = -0.05
+PDM_disp_vel_factor = -0.1
 
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_sig220_handle]
+scheme_index = 0, 5
+known = 1
+effects = 
+section = up_sect_sig220_handle
+property = prop_inertion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_handle_accur2
-description             = st_upg_handle_accur2_descr
-icon                    = ui_wp_upgrade_09
+prereq_params  = 
+name =gunsl_sig220_up_handle_name
+description =gunsl_sig220_up_handle_descr
+icon = ui_gunsl_up_sig220_handle
+;------------------------------------------sig220_zatvor_zapiratel------------------------------------------
+[up_sect_sig220_zatvor_zapiratel]
+cost = 2500
+value = +15
+bullet_speed = +55
+fire_distance = +100
 
-[up_g_sig220]
-scheme_index            = 0, 6
-known                   = 1
-effects                 = 
-section                 = up_sect_g_sig220
-property                = prop_ammo_size
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_sig220_zatvor_zapiratel]
+scheme_index = 0, 6
+known = 1
+effects = vartree_sig220_patronnik
+section = up_sect_sig220_zatvor_zapiratel
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_charger_big
-description             = st_upg_charger_big_descr
-icon                    = ui_wp_upgrade_06
+prereq_params  = 
+name =gunsl_sig220_up_zatvor_zapiratel_name
+description =gunsl_sig220_up_zatvor_zapiratel_descr
+icon = ui_gunsl_up_sig220_zatvor_zapiratel
+;------------------------------------------sig220_usm_recoil------------------------------------------
+[up_sect_sig220_usm_recoil]
+cost = 4000
+value = -20
+cam_dispersion = -0.24
+cam_dispersion_inc = -0.24
+zoom_cam_dispersion = -0.1
+zoom_cam_dispersion_inc = -0.15
+PDM_disp_base = -0.06
 
-
-[up_ac_sig220]
-scheme_index            = 1, 0
-known                   = 1
-effects                 = 
-section                 = up_sect_ac_sig220
-property                = prop_recoil
-
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_sig220_usm_recoil]
+scheme_index = 0, 7
+known = 1
+effects = vartree_sig220_barrel
+section = up_sect_sig220_usm_recoil
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_recoil
-description             = st_upg_barrel_recoil_descr
-icon                    = ui_wp_upgrade_07
+prereq_params  = 
+name =gunsl_sig220_up_usm_recoil_name
+description =gunsl_sig220_up_usm_recoil_descr
+icon = ui_gunsl_up_sig220_usm_recoil
+;------------------------------------------sig220_light_mag------------------------------------------
+[up_sect_sig220_light_mag]
+cost = 1000
+value = -0.05
+inv_weight = -0.05
 
-[up_bd_sig220]
-scheme_index            = 1, 1
-known                   = 1
-effects                 = 
-section                 = up_sect_bd_sig220
-property                = prop_bullet_speed
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_sig220_light_mag]
+scheme_index = 0, 8
+known = 1
+effects = 
+section = up_sect_sig220_light_mag
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_curved
-description             = st_upg_barrel_curved_descr
-icon                    = ui_wp_upgrade_08
+prereq_params  = 
+name =gunsl_sig220_up_light_mag_name
+description =gunsl_sig220_up_light_mag_descr
+icon = ui_gunsl_up_sig220_light_mag
+;------------------------------------------sig220_patonnik------------------------------------------
+[up_sect_sig220_patonnik]
+cost = 4000
+value = +25
+PDM_disp_base = -0.2
+fire_dispersion_base = -0.06
 
+[up_sig220_patonnik]
+scheme_index = 0, 9
+known = 1
+effects = 
+section = up_sect_sig220_patonnik
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_sig220_up_patonnik_name
+description =gunsl_sig220_up_patonnik_descr
+icon = ui_gunsl_up_sig220_patonnik
+;------------------------------------------sig220_polymer_ramka------------------------------------------
+[up_sect_sig220_polymer_ramka]
+cost = 2000
+value = -0.1
+inv_weight = -0.1
 
-[up_gr_ab_sig220]
-elements                = up_a_sig220, up_b_sig220
+[up_sig220_polymer_ramka]
+scheme_index = 0, 10
+known = 1
+effects = vartree_sig220_details
+section = up_sect_sig220_polymer_ramka
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_sig220_up_polymer_ramka_name
+description =gunsl_sig220_up_polymer_ramka_descr
+icon = ui_gunsl_up_sig220_polymer_ramka
+;------------------------------------------sig220_titan_details------------------------------------------
+[up_sect_sig220_titan_details]
+cost = 3000
+value = +20
+condition_shot_dec      	= -0.0006
+misfire_end_prob	     	= -0.005
+misfire_start_condition		= -0.03
 
-[up_gr_cd_sig220]
-elements                = up_c_sig220, up_d_sig220
+[up_sig220_titan_details]
+scheme_index = 0, 11
+known = 1
+effects = vartree_sig220_buffer
+section = up_sect_sig220_titan_details
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_sig220_up_titan_details_name
+description =gunsl_sig220_up_titan_details_descr
+icon = ui_gunsl_up_sig220_titan_details
+;------------------------------------------sig220_shell_ejector------------------------------------------
+[up_sect_sig220_shell_ejector]
+cost = 1500
+value = +10
+misfire_start_condition		= -0.03
+misfire_start_prob	     	= -0.002
+misfire_end_prob	     	= -0.02
+condition_shot_dec = -0.0002
 
-[up_gr_e_sig220]
-elements                = up_e_sig220
+[up_sig220_shell_ejector]
+scheme_index = 0, 12
+known = 1
+effects = vartree_sig220_zapiratel
+section = up_sect_sig220_shell_ejector
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_sig220_up_shell_ejector_name
+description =gunsl_sig220_up_shell_ejector_descr
+icon = ui_gunsl_up_sig220_shell_ejector
+;------------------------------------------sig220_sights------------------------------------------
+[up_sect_sig220_sights]
+cost = 1000
+crosshair_inertion = -1
+control_inertion_factor = -0.1
+show_bones = sight
 
-[up_gr_f_sig220]
-elements                = up_f_sig220
+[up_sig220_sights]
+scheme_index = 0, 13
+known = 1
+effects = 
+section = up_sect_sig220_sights
+property = prop_lightingsights
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_sig220_up_sights_name
+description =gunsl_sig220_up_sights_descr
+icon = ui_gunsl_up_sig220_sights
+;------------------------------------------sig220_usm_rpm------------------------------------------
+[up_sect_sig220_usm_rpm]
+cost = 4000
+value = +20
+condition_shot_dec  = +0.001
+rpm = +40
 
-[up_gr_g_sig220]
-elements                = up_g_sig220
+[up_sig220_usm_rpm]
+scheme_index = 0, 14
+known = 1
+effects = vartree_sig220_barrel
+section = up_sect_sig220_usm_rpm
+property = prop_rpm
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_sig220_up_usm_rpm_name
+description =gunsl_sig220_up_usm_rpm_descr
+icon = ui_gunsl_up_sig220_usm_rpm
+;------------------------------------------sig220_light_details------------------------------------------
+[up_sect_sig220_light_details]
+cost = 3000
+value = -0.15
+inv_weight = -0.15
 
-
-[up_gr_ac_sig220]
-elements                = up_ac_sig220
-
-[up_gr_bd_sig220]
-elements                = up_bd_sig220
+[up_sig220_light_details]
+scheme_index = 0, 15
+known = 1
+effects = vartree_sig220_buffer
+section = up_sect_sig220_light_details
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_sig220_up_light_details_name
+description =gunsl_sig220_up_light_details_descr
+icon = ui_gunsl_up_sig220_light_details
+;------------------------------------------------------------------------------------
+[vartree_sig220_body]
+elements = up_sig220_body_reliability
+[vartree_sig220_usm]
+elements = up_sig220_usm_recoil, up_sig220_usm_rpm
+[vartree_sig220_barrel]
+elements = up_sig220_barrel_sil, up_sig220_barrel_accuracy, up_sig220_barrel_speed
+[vartree_sig220_ramka]
+elements = up_sig220_polymer_ramka
+[vartree_sig220_details]
+elements = up_sig220_titan_details, up_sig220_light_details
+[vartree_sig220_buffer]
+elements = up_sig220_polymer_buffer
+[vartree_sig220_shell_ejector]
+elements = up_sig220_shell_ejector
+[vartree_sig220_zapiratel]
+elements = up_sig220_zatvor_zapiratel
+[vartree_sig220_patronnik]
+elements = up_sig220_patonnik
+[vartree_sig220_sights]
+elements = up_sig220_sights
+[vartree_sig220_mag]
+elements = up_sig220_light_mag
+[vartree_sig220_handle]
+elements = up_sig220_handle

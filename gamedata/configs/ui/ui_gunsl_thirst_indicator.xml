@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+
+<!-- 4:3. Same two-static build as the neighbours in maingame.xml (hud_states x=758 y=647): a round
+     plate (resist_back_*, ui_hud2_res_back, 28x28 at x=236) with the glyph on top (indik_*, 22x22
+     at x=239), 30 apart. This layout has no food glyph in the column at all -- the last pair is psi
+     at y=-115/-112 -- so thirst takes the slot above: -145/-142, i.e. absolute (994, 502) for the
+     plate and (997, 505) for the glyph. -->
+<gunsl_thirst_indicator>
+	<back_static x="994" y="502" width="28" height="28" stretch="1">
+		<texture>ui_hud2_res_back</texture>
+	</back_static>
+	<main_static x="997" y="505" width="22" height="22" stretch="1">
+		<texture>ui_gunsl_thirst_indicator</texture>
+	</main_static>
+	<!-- Medicine intoxication (gunsl_peredoz.script) takes the next slot up, on the same 30 px
+	     pitch the engine indicators use, and is shown only while the trip is running. -->
+	<back_static_intox x="994" y="472" width="28" height="28" stretch="1">
+		<texture>ui_hud2_res_back</texture>
+	</back_static_intox>
+	<main_static_intox x="997" y="475" width="22" height="22" stretch="1">
+		<texture>ui_gunsl_peredoz_indicator</texture>
+	</main_static_intox>
+
+</gunsl_thirst_indicator>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_wpn_usp_nimble_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_anatomic_handle_name">
+     <text>Анатомическая рукоять</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_anatomic_handle_descr">
+     <text>Подбор и установка на оружие более подходящих для конкретного стрелка накладок на рукоять позволяет добиться лучших результатов при стрельбе.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_ramka_name">
+     <text>Усиленная рамка</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_ramka_descr">
+     <text>Рамка из более прочного пластика благоприятным образом сказывается на износостойкости оружия.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_light_details_name">
+     <text>Облегченные детали</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_light_details_descr">
+     <text>Замена стандартных деталей оружия на легковесные аналоги позволяет снизить массу оружия.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_light_mag_name">
+     <text>Легковесный магазин</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_light_mag_descr">
+     <text>Позволяет немного уменьшить массу оружия.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_pokritie_name">
+     <text>Защитное покрытие</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_pokritie_descr">
+     <text>Нанесение специального напыления на внутренние детали позволяет замедлить износ оружия.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_usm_rpm_descr">
+     <text>Перенастройка УСМ с доработкой некоторых его деталей позволяет вести огонь в более высоком темпе. К сожалению, оружие от этого начинает изнашиваться немного быстрее.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_usm_recoil_name">
+     <text>Мягкий спуск УСМ</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_usm_recoil_descr">
+     <text>Позволяет снизить отдачу, способствуя более точной стрельбе.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_barrel_accuracy_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_barrel_accuracy_descr">
+     <text>Позволяет сделать стрельбу из оружия более точной.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_barrel_bullet_speed_name">
+     <text>Ствол с измененным шагом нарезки</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_barrel_bullet_speed_descr">
+     <text>Позволяет повысить начальную скорость пули.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_barrel_recoil_name">
+     <text>Система компенсации отдачи</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_barrel_recoil_descr">
+     <text>Интегрированная в конструкцию оружия система компенсации значительно снижает ощущаемую отдачу и способствует более комфортной стрельбе.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_zatvor_ejector_name">
+     <text>Улучшенная отсечка</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_zatvor_ejector_descr">
+     <text>Улучшение системы выброса гильз снижает вероятность возникновения при стрельбе задержек, связанных с прихватом гильзы после выстрела.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_zatvor_zapiratel_name">
+     <text>Подгонка запирающего механизма</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_zatvor_zapiratel_descr">
+     <text>За счет более плотного запирания канала ствола улучшается обтюрация канала ствола и повышается начальная скорость пули.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_zatvor_rpm_name">
+     <text>Короткий ход затвора</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_zatvor_rpm_descr">
+     <text>Позволяет повысить скорострельность оружия за счет уменьшения времени, необходимого для подачи нового патрона.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_polymer_buffer_name">
+     <text>Полимерный буфер</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_polymer_buffer_descr">
+     <text>Оснащение пистолета полимерным буфером в дополнение к штатной возвратной пружине смягчает отдачу.</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_patronnik_name">
+     <text>Юстировка патронника</text>
+</string>
+<string id="gunsl_wpn_usp_nimble_up_patronnik_descr">
+     <text>Позволяет добиться более высокой точности стрельбы.</text>
+</string>
+</string_table>

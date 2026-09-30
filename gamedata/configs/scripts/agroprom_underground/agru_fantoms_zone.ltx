@@ -1,3 +1,9 @@
+; Override of the stock file. The only change is hit_only_psi_blocked below -- everything else is
+; vanilla, keep it that way so the quest chain and the phantoms behave as they always did.
+;
+; This is the restrictor around the controller arena: it arms itself when the door closes
+; (+agru_door_1_closed) and shuts down when the controller dies (+agru_controller_death).
+
 [logic]
 active = sr_idle
 
@@ -9,6 +15,10 @@ eff_intensity = 200
 hit_intensity = 20
 phantom_prob = 100
 mute_sound_threshold = 0
+; gwr: this zone's hit lands ONLY while vodka or the psi blockade is working, the same rule the
+; controller's tube follows (CControllerPsyHit::damage_allowed). Unprotected the field is pure
+; atmosphere -- postprocess, sound, phantoms -- and the fight is decided by the controller alone.
+hit_only_psi_blocked = true
 on_info = {+agru_controller_death} sr_idle@end
 
 [sr_idle@end]
