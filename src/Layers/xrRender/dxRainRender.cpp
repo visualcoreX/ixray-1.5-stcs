@@ -174,6 +174,12 @@ void dxRainRender::Render(CEffect_Rain &owner)
 		RCache.set_Shader			(SH_Rain);
 		RCache.set_Geometry			(hGeom_Rain);
 		RCache.Render				(D3DPT_TRIANGLELIST,vOffset,0,vCount,0,vCount/2);
+#if RENDER==R_R3
+		// laser beams light up the drops that cross them: same vertices, drawn into their density buffer
+		// now, while they are still in the vertex stream (drawing the rain again would move it twice)
+		RImplementation.Target->phase_laser_density_rain(hGeom_Rain, vOffset, vCount);
+		RCache.set_CullMode(CULL_NONE);
+#endif
 		//HW.pDevice->SetRenderState	(D3DRS_CULLMODE,D3DCULL_CCW);
 		RCache.set_CullMode(CULL_CCW);
 	}

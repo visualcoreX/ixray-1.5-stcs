@@ -1,0 +1,126 @@
+#include "common.h"
+
+// Laser-designator beam: a thin glowing tube with dust drifting in it.
+// Geometry and constants: r3_rendertarget_phase_laser.cpp. Where every number comes from (config,
+// weather, wind): xrGame WeaponLaserBeam.cpp.
+//
+// The strip we are drawn on is only a canvas that covers the tube on screen. For every pixel the view
+// ray is met with the beam's axis analytically, so the tube is round from any side and does not care
+// how the strip is tessellated or turned.
+
+uniform float4	lb_start;		// xyz = emitter (world),			w = length, m
+uniform float4	lb_dir;			// xyz = unit direction,			w = radius, m
+uniform float4	lb_color;		// rgb = colour * intensity * fog,	w = cap of the along-the-axis boost
+uniform float4	lb_fade;		// x, y = eye distance: full up to x, gone at y;	z = fade-in, w = fade-out length, m
+uniform float4	lb_dust;		// x = noise tiles per metre, y = mote threshold, z = mote contrast, w = mote brightness
+uniform float4	lb_dust_off1;	// xyz = layer-1 drift offset, m;	w = brightness of the smooth core glow
+uniform float4	lb_dust_off2;	// xyz = layer-2 drift offset, m;	w = layer-2 scale (multiple of lb_dust.x)
+uniform float4	lb_smoke;		// x = smoke gain, y = smoke depth range, m, z = falloff length, m (0 = off), w = pixel size at 1 m
+uniform float4	lb_screen;		// xy = 1 / screen size
+uniform float4	lb_rain;		// x = rain-drop gain, y = rain depth range, m
+
+Texture2D		s_laser_dens;	// $user$laser_dens: r, g = smoke coverage, coverage * view depth; b, a = the same for rain drops
+
+struct v2p
+{
+	float3 wpos	: TEXCOORD0;
+	float4 hpos	: SV_Position;
+};
+
+uniform float4	lb_misc;		// x = depth of one noise slice, in texels (about a noise feature's size)
+
+// Real 3D noise out of one 2D tile (p in tiles): the tile is a stack of slices along the third axis,
+// every slice shifted by a fixed odd offset, and the value blends between the two slices around p.z.
+// No direction is special. (Three planar projections were used before: each of them is a sheet
+// extruded along one world axis, so a beam running along that axis showed it as stripes down its
+// length -- the finer the texture next to the tube's radius, the worse.)
+// R, G and B are three independent noises; their product is bright only where all three are -- a small
+// blob fixed in space. That is a mote.
+float motes3(float3 p)
+{
+	uint	w, h;
+	s_base.GetDimensions(w, h);
+	float	z		= p.z * float(w) / max(lb_misc.x, 0.25);
+	float	iz		= floor(z);
+	float	f		= z - iz;
+	f		= f * f * (3.0 - 2.0 * f);
+	const float2 step = float2(0.3719, 0.1737);
+	float2	uv0		= p.xy + frac(iz * step);
+	float2	uv1		= p.xy + frac((iz + 1.0) * step);
+	// Mip from the whole 3D footprint of the pixel, and never from uv0/uv1 themselves: their jump at a
+	// slice boundary would read as a huge derivative and draw a blurred line along every boundary.
+	float	g		= max(length(ddx(p)), length(ddy(p)));
+	float3	n		= lerp(	s_base.SampleGrad(smp_linear, uv0, float2(g, 0.0), float2(0.0, g)).rgb,
+							s_base.SampleGrad(smp_linear, uv1, float2(g, 0.0), float2(0.0, g)).rgb, f);
+	return	n.r * n.g * n.b;
+}
+
+float4 main(v2p I) : SV_Target
+{
+	float3	S	= lb_start.xyz;
+	float	L	= lb_start.w;
+	float3	D	= lb_dir.xyz;
+	float	R	= lb_dir.w;
+
+	// closest approach of the view ray (eye + s*V) and the axis (S + t*D)
+	float3	V	= normalize(I.wpos - eye_position);
+	float3	w0	= eye_position - S;
+	float	b	= dot(V, D);
+	float	d	= dot(V, w0);
+	float	e	= dot(D, w0);
+	float	den	= max(1.0 - b * b, 1e-6);				// sin^2 of the angle between the ray and the beam
+	float	t	= clamp((e - b * d) / den, 0.0, L);
+	float3	A	= S + D * t;							// on the axis
+	float	s	= max(dot(A - eye_position, V), 0.0);
+	float3	Q	= eye_position + V * s;					// on the view ray, inside the tube
+	float	r	= length(Q - A);
+	float	bz	= mul(m_V, float4(Q, 1.0)).z;			// the beam's view depth here
+	float2	tc	= I.hpos.xy * lb_screen.xy;
+
+	// Occlusion by hand, against the G-buffer's view depth. The hardware test cannot do it: the HUD sits
+	// in the depth buffer squeezed into [0, 0.02] with its own projection, and hid the beam wherever it
+	// crossed the weapon. The G-buffer keeps every surface's true view depth -- the weapon's too -- and the
+	// beam's is true as well (the hud->world fix keeps depth along the view), so a silencer in front of
+	// the beam covers it and one behind it does not. Ends the beam softly on the wall it hits, too.
+#ifdef GBUFFER_OPTIMIZATION
+	gbuffer_data gbd = gbuffer_load_data(tc, I.hpos.xy);
+#else
+	gbuffer_data gbd = gbuffer_load_data(tc);
+#endif
+	float	gz	= gbd.P.z;
+	if (gz < 0.01)	gz = 100000.0;						// sky: nothing was written there
+	float	vis	= saturate((gz - bz) / (0.01 + 0.004 * bz));
+	if (vis <= 0.0)	return float4(0.0, 0.0, 0.0, 0.0);
+
+	// Never thinner than ~1.5 px: past that the beam gets dimmer instead of thinner, so a distant one
+	// neither shimmers nor breaks up into dashes.
+	float	Re		= max(R, s * lb_smoke.w * 0.75);
+	float	prof	= exp(-2.0 * r * r / (Re * Re)) * (R / Re);
+
+	// Looking down the beam the eye goes through more of the lit air.
+	float	boost	= min(rsqrt(den), lb_color.w);
+
+	float	fade	= saturate(t / max(lb_fade.z, 1e-3)) * saturate((L - t) / max(lb_fade.w, 1e-3));
+	fade	*= 1.0 - smoothstep(lb_fade.x, lb_fade.y, s);
+	if (lb_smoke.z > 0.0)
+		fade	*= exp(-t / lb_smoke.z);
+
+	// Dust: two layers drifting past each other, both fixed in the world -- sweeping the beam through
+	// the air runs it over motes that stay where they are. Far away the noise's mips average out below
+	// the threshold, so the motes give way to the plain glow by themselves.
+	float	n		= motes3((Q + lb_dust_off1.xyz) * lb_dust.x)
+					+ motes3((Q + lb_dust_off2.xyz) * (lb_dust.x * lb_dust_off2.w)) * 0.7;
+	float	dust	= saturate((n - lb_dust.y) * lb_dust.z);
+
+	// Smoke/dust particles and rain drops: only what sits at about the beam's own depth counts, so a
+	// puff or a drop behind the beam or in front of it (or behind a wall) does not light it up.
+	float4	dens	= s_laser_dens.Sample(smp_rtlinear, tc);
+	float	sz		= dens.g / max(dens.r, 1e-3);
+	float	rz		= dens.a / max(dens.b, 1e-3);
+	float	smoke	= 1.0
+					+ lb_smoke.x * saturate(dens.r) * saturate(1.0 - abs(bz - sz) / lb_smoke.y)
+					+ lb_rain.x  * saturate(dens.b) * saturate(1.0 - abs(bz - rz) / lb_rain.y);
+
+	float	k		= prof * boost * fade * vis * smoke * (lb_dust_off1.w + lb_dust.w * dust);
+	return	float4(lb_color.rgb * k, 0.0);
+}

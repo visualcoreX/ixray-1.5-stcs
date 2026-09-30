@@ -17,6 +17,9 @@ class CExplosiveRocket :
 private:
 	typedef CCustomRocket inherited;
 	friend CRocketLauncher;
+	// explode_dir_world_up: the explosion particle points up in world space instead of along the
+	// contact normal of the surface hit
+	bool					m_explode_dir_world_up;
 public:
 	CExplosiveRocket(void);
 	virtual ~CExplosiveRocket(void);

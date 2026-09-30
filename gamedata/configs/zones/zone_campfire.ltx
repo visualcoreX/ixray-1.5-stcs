@@ -28,14 +28,14 @@ min_artefact_count  = 0
 max_artefact_count  = 0
 
 idle_particles        = explosions\campfire_bed_fireplace;campfire_boar_grill
-blowout_particles     = explosions\campfire_disabled
+blowout_particles     = ghost_particles\explosions\campfire_default_03_blowout ;explosions\campfire_disabled
 
 hit_small_particles   = ghost_particles\explosions\campfire_default_burn_hit_small_00
 hit_big_particles     = ghost_particles\explosions\campfire_default_burn_hit_00
 idle_small_particles  = ghost_particles\explosions\campfire_default_burn_idle_small_00
 idle_big_particles    = ghost_particles\explosions\campfire_default_burn_idle_00
 
-idle_particles_dont_stop  = true;
+idle_particles_dont_stop  = false;
 
 idle_sound          = ambient\fire2   ;постоянный звук
 blowout_sound       = ambient\fire2   ;во время выброса(удара) в центре аномалии
@@ -113,14 +113,14 @@ min_artefact_count  = 0
 max_artefact_count  = 0
 
 idle_particles    = explosions\campfire_big
-blowout_particles = explosions\campfire_disabled
+blowout_particles = ghost_particles\explosions\campfire_default_03_blowout ;explosions\campfire_disabled
 
 hit_small_particles   = ghost_particles\explosions\campfire_default_burn_hit_small_00
 hit_big_particles     = ghost_particles\explosions\campfire_default_burn_hit_00
 idle_small_particles  = ghost_particles\explosions\campfire_default_burn_idle_small_00
 idle_big_particles    = ghost_particles\explosions\campfire_default_burn_idle_00
 
-idle_particles_dont_stop  = true;
+idle_particles_dont_stop  = false;
 
 idle_sound      = ambient\fire2           ;постоянный звук
 blowout_sound   = ambient\fire2   ;во время выброса(удара) в центре аномалии
@@ -199,7 +199,7 @@ hit_big_particles     = ghost_particles\explosions\campfire_default_burn_hit_00
 idle_small_particles  = ghost_particles\explosions\campfire_default_burn_idle_small_00
 idle_big_particles    = ghost_particles\explosions\campfire_default_burn_idle_00
 
-idle_particles_dont_stop  = true;
+idle_particles_dont_stop  = false;
 
 idle_sound      = ambient\zhar            ;iinoiyiiue caoe
 blowout_sound   = ambient\zhar    ;ai a?aiy aua?ina(oaa?a) a oaio?a aiiiaeee
@@ -354,14 +354,14 @@ min_artefact_count  = 0
 max_artefact_count  = 0
 
 idle_particles        = explosions\campfire_bed_fireplace;campfire
-blowout_particles     = explosions\campfire_disabled
+blowout_particles     = ghost_particles\explosions\campfire_default_03_blowout ;explosions\campfire_disabled
 
 hit_small_particles   = ghost_particles\explosions\campfire_default_burn_hit_small_00
 hit_big_particles     = ghost_particles\explosions\campfire_default_burn_hit_00
 idle_small_particles  = ghost_particles\explosions\campfire_default_burn_idle_small_00
 idle_big_particles    = ghost_particles\explosions\campfire_default_burn_idle_00
 
-idle_particles_dont_stop  = true;
+idle_particles_dont_stop  = false;
 
 idle_sound          = ambient\fire2   ;постоянный звук
 blowout_sound       = ambient\fire2   ;во время выброса(удара) в центре аномалии
@@ -433,15 +433,15 @@ period        = 1
 min_artefact_count  = 0
 max_artefact_count  = 0
 
-idle_particles        = ghost_particles\explosions\campfire_default_00
-blowout_particles     = ghost_particles\explosions\campfire_default_00_blowout
+idle_particles        = ghost_particles\explosions\campfire_default_03
+blowout_particles     = ghost_particles\explosions\campfire_default_03_blowout
 
 hit_small_particles   = ghost_particles\explosions\campfire_default_burn_hit_small_00
 hit_big_particles     = ghost_particles\explosions\campfire_default_burn_hit_00
 idle_small_particles  = ghost_particles\explosions\campfire_default_burn_idle_small_00
 idle_big_particles    = ghost_particles\explosions\campfire_default_burn_idle_00
 
-idle_particles_dont_stop  = true
+idle_particles_dont_stop  = false
 
 idle_sound          = ambient\fire2
 blowout_sound       = ambient\fire2
@@ -511,15 +511,15 @@ period        = 1
 min_artefact_count  = 0
 max_artefact_count  = 0
 
-idle_particles        = ghost_particles\explosions\campfire_default_00
-blowout_particles     = ghost_particles\explosions\campfire_default_00_blowout
+idle_particles        = ghost_particles\explosions\campfire_default_03
+blowout_particles     = ghost_particles\explosions\campfire_default_03_blowout
 
 hit_small_particles   = ghost_particles\explosions\campfire_default_burn_hit_small_00
 hit_big_particles     = ghost_particles\explosions\campfire_default_burn_hit_00
 idle_small_particles  = ghost_particles\explosions\campfire_default_burn_idle_small_00
 idle_big_particles    = ghost_particles\explosions\campfire_default_burn_idle_00
 
-idle_particles_dont_stop  = true
+idle_particles_dont_stop  = false
 
 idle_sound          = ambient\fire2
 blowout_sound       = ambient\fire2
@@ -574,8 +574,8 @@ $spawn            		= "campfire\campfire_dynamics"
 class           			= Z_CFIRE
 script_binding        	= bind_campfire.bind
 
-disabled_particles		= explosions\campfire_disabled
-enabling_particles		= explosions\campfire_enabled
+disabled_particles		= ghost_particles\explosions\campfire_default_03_blowout
+enabling_particles		= ghost_particles\explosions\campfire_default_03_blowout
 disabled_sound				= ambient\silence
 
 shape_transp_color		= 255, 0, 0, 60
@@ -589,8 +589,8 @@ class           			= Z_CFIRE
 script_binding        	= bind_campfire.bind
 
 idle_particles        = explosions\campfire_bed_fireplace;campfire_hot_no_fire
-disabled_particles		= explosions\campfire_disabled
-enabling_particles		= explosions\campfire_enabled
+disabled_particles		= ghost_particles\explosions\campfire_default_03_blowout
+enabling_particles		= ghost_particles\explosions\campfire_default_03_blowout
 disabled_sound				= ambient\silence
 
 shape_transp_color		= 255, 0, 0, 60
@@ -605,8 +605,8 @@ script_binding        	= bind_campfire.bind
 
 idle_particles		= static\fire_tube
 blowout_particles	=
-disabled_particles		= explosions\campfire_disabled
-enabling_particles		= explosions\campfire_enabled
+disabled_particles		= ghost_particles\explosions\campfire_default_03_blowout
+enabling_particles		= ghost_particles\explosions\campfire_default_03_blowout
 disabled_sound				= ambient\silence
 
 idle_sound          = ambient\zhar

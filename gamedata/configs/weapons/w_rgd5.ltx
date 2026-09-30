@@ -77,10 +77,15 @@ up_throw_factor			= 1.2
 ;-------------------------------------------------------------------------------
 
 
-explode_particles		 = ghost_particles\explosions\explosion_ins_frag_00	; orig ghost_particles\explosions\explosion_ground_00
+explode_particles		= ghost_particles\explosions\explosion_ins_frag_00	; ghost_particles\explosions\explosion_ground_00
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
 
-
-light_color		         = 1.9,1.4,0.5
+light_color		         = 2.0,1.5,0.9
 light_range		         = 14.0
 light_time 		         = 0.85
 
@@ -88,8 +93,20 @@ light_time 		         = 0.85
 fragment_speed				= 200
 explode_duration			= 3		;���������������� ������ (�)
 
-;�����
-snd_explode = weapons\grenade\grenade_explosion3        ; t_f1_explosion ; f1_explode
+;sounds
+;snd_explode					 = weapons\grenade\grenade_explosion3
+snd_explode					 = weapons\grenade\grenade_explode_outdoor_close_03
+snd_explode_indoor			 = weapons\grenade\grenade_explode_indoor_close_03
+snd_explode_dist			 = weapons\grenade\grenade_explode_outdoor_dist_03
+snd_explode_blend_dist_start = 25
+snd_explode_blend_dist_end   = 100
+snd_indoor_fadeout_start     = 0.01
+snd_indoor_fadeout_end       = 0.3
+snd_indoor_fadeout_db        = 12
+volume_snd_explode			 = 150
+volume_snd_explode_indoor    = 150
+volume_snd_explode_dist      = 100
+
 snd_checkout = weapons\grenade\grenade_throw_start
 
 attach_position_offset	= -0.03,-0.089,0.025

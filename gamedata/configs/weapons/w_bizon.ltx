@@ -158,8 +158,8 @@ orientation         = 0,0,0                  ; (3rd person view)
 fire_point          =  0.0, 0.262, 0.447		; position (3rd person view) for particles of fire
 fire_point2         =  0.0, 0.262, 0.547		; position (3rd person view) for particles of fire (when shooting with secondary fire)
 
-flame_particles         = weapons\generic_weapon05      ; particles for shooting effects
-smoke_particles         = weapons\generic_shoot_00
+flame_particles		   	= ghost_particles\weapons\flame_9mm_pm
+smoke_particles		   	= ghost_particles\weapons\smoke_9mm_pm
 grenade_flame_particles = weapons\generic_weapon01
 
 shell_point		= 0.00, 0.262, 0.189		; position (3rd person view) for shell to throw out
@@ -248,7 +248,7 @@ snd_scope_brightness_minus = weapons\nv_intensity
 
 
 ;silencer_flame_particles  = weapons\generic_weapon01
-silencer_smoke_particles   = weapons\generic_shoot_00
+silencer_smoke_particles 	= ghost_particles\weapons\suppressor_smoke_pistol_common
 
 snd_silncer_shot        = weapons\bizon\bizon_shoot_sil, -1.1
 
@@ -817,6 +817,7 @@ configuration_69 = ammo_barrel, ammo, ammo2
 [bizon_laser]
 laser_installed = true
 laser_ray_bones = line
+laser_beam_section             = laser_beam_red	; volumetric beam + procedural dot on R3 (configs\weapons\laser_beams.ltx)
 
 
 particles_count = 4

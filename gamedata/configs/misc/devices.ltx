@@ -1556,6 +1556,46 @@ torch_r2_omni_range		= 0.25
 torch_spot_angle		= 80
 torch_spot_texture		= internal\internal_hand_light_torch_tactical_r2
 
+; dust in the light cone (R3 only), from the hud fire_bone (fire_point); no key -> no dust
+torch_dust_section	= detector_torch_dust
+
+; Dust hanging in the torch's light cone, drawn procedurally by R3 (shaders\r3\torch_dust.ps).
+; Every key is optional; the values here are the engine defaults.
+[detector_torch_dust]
+;torch_dust_color			= 0.6, 0.55, 0.55	; default: the torch's torch_r2_color
+torch_dust_intensity		= 2.0		; brightness of a fully lit mote
+torch_dust_angle			= 30		; full cone angle, deg; default: torch_spot_angle
+torch_dust_edge				= 0.25		; how soft the cone's edge is (0..1)
+torch_dust_range			= 1.5		; m: motes this far from the lens get no light
+torch_dust_max_length		= 1.5		; m: the cone never runs further (it also stops at what the light hits)
+torch_dust_fade_cam_start	= 1			; m from the eye: motes at full brightness up to here...
+torch_dust_fade_cam_end		= 2			; ...gone from here (also how far the shader looks)
+torch_dust_fade_start		= 0.3		; m: ramps in off the lens
+
+torch_dust_cell				= 0.08		; m: grid cell, at most one mote per cell (smaller = more motes, costlier)
+torch_dust_density			= 0.3		; share of cells holding a mote
+torch_dust_radius			= 0.0012	; m
+torch_dust_radius_var		= 0.5		; +- share of the radius from mote to mote
+torch_dust_twinkle			= 0.6		; brightness pulse depth (0 = steady)
+torch_dust_twinkle_speed	= 3			; rad/s
+
+; the laser beam's noise: where it is low the air is clear, so the motes gather in drifting clumps
+torch_dust_texture			= fx\fx_laser_dust
+torch_dust_noise_scale		= 0.3		; noise tiles per metre
+torch_dust_noise_threshold	= 0.35
+torch_dust_noise_contrast	= 4
+torch_dust_noise_amount		= 0.8		; 0 = even dust everywhere
+torch_dust_noise_depth		= 2			; texels, depth of one slice of the 3D noise
+
+torch_dust_drift			= 0.01, -0.006, 0.008	; m/s, world: the motes...
+torch_dust_noise_drift		= -0.03, 0.005, 0.02	; ...and the clumps
+torch_dust_wind				= 0.01		; share of the weather's wind added to both
+
+; indoors only: the dust fades out as the actor's light probe sees more open sky (hemi);
+; full below the first value, gone above the second. No key = dust everywhere.
+torch_dust_hemi				= 0.01, 0.05
+torch_dust_hemi_debug		= false		; log the current hemi twice a second (for tuning the two values)
+
 [detector_torch_hud]:detector_base_hud
 ; CSimpleDetector reads both of these with r_float -- absent = fatal. Values are GS's.
 ; This item detects nothing, so they only have to exist; 0.1 / 0.0 keeps the panel lights dark.

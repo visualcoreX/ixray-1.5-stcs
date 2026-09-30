@@ -1,0 +1,216 @@
+#include "common.h"
+
+// Dust hanging in a handheld torch's light cone.
+// Geometry and constants: r3_rendertarget_phase_laser.cpp (phase_torch_dust). Where the numbers come
+// from: xrGame CustomDetector.cpp (LoadTorchDust / PublishTorchDust).
+//
+// We are drawn on a quad over the whole view. Every view ray is met with the cone analytically; the part
+// of the ray inside it (and in front of the scene) is then walked cell by cell through a grid fixed in the
+// world. Each cell holds at most one mote at a hashed spot, so the motes are sharp, do not swim when the
+// camera moves, and are all found without marching in small steps: a mote is tested once, in its cell.
+// The laser beam's noise texture (sampled as the same 3D noise) decides where the air is dusty at all.
+
+uniform float4	td_apex;		// xyz = lens (world),		w = cone length, m
+uniform float4	td_dir;			// xyz = unit axis,			w = cos of the half angle
+uniform float4	td_color;		// rgb = colour * intensity,	w = light range, m
+uniform float4	td_fade;		// x, y = eye distance: full up to x, gone at y;	z = fade-in off the lens, m;	w = edge softness
+uniform float4	td_mote;		// x = cell, m,	y = share of cells with a mote,	z = radius, m,	w = +- radius share
+uniform float4	td_twinkle;		// x = depth,	y = speed, rad/s,	z = time, s,	w = pixel size at 1 m
+uniform float4	td_mote_off;	// xyz = grid drift offset, m
+uniform float4	td_noise;		// x = tiles per metre,	y = threshold,	z = contrast,	w = amount (0 = even dust)
+uniform float4	td_noise_off;	// xyz = noise drift offset, m;	w = depth of one noise slice, texels
+uniform float4	td_screen;		// xy = 1 / screen size
+
+struct v2p
+{
+	float3 wpos	: TEXCOORD0;
+	float4 hpos	: SV_Position;
+};
+
+#define TD_REPEAT		64		// the cell hash repeats every this many cells (CustomDetector.cpp: TORCH_DUST_REPEAT)
+#define TD_MAX_CELLS	192		// cells walked per pixel at most
+#define TD_MARGIN		0.2		// a mote keeps this share of the cell off its walls (so it is found in its own cell)
+
+uint td_mix(uint h)
+{
+	h ^= h >> 16;	h *= 0x7feb352du;
+	h ^= h >> 15;	h *= 0x846ca68bu;
+	h ^= h >> 16;
+	return h;
+}
+
+float td_u01(uint h)	{ return float(h >> 8) * (1.0 / 16777216.0); }
+
+// The same 3D noise as the laser beam's motes3 (a stack of shifted slices of one 2D tile), but its three
+// channels averaged: a soft field of clumps rather than small blobs.
+float td_noise3(float3 p)
+{
+	uint	w, h;
+	s_base.GetDimensions(w, h);
+	float	z		= p.z * float(w) / td_noise_off.w;
+	float	iz		= floor(z);
+	float	f		= z - iz;
+	f		= f * f * (3.0 - 2.0 * f);
+	const float2 step = float2(0.3719, 0.1737);
+	float3	n		= lerp(	s_base.SampleLevel(smp_linear, p.xy + frac(iz * step), 0).rgb,
+							s_base.SampleLevel(smp_linear, p.xy + frac((iz + 1.0) * step), 0).rgb, f);
+	return	dot(n, 1.0 / 3.0);
+}
+
+// The stretch of the ray O + t*V inside the cone's forward nappe and between its two end planes.
+bool td_cone(float3 O, float3 V, out float t0, out float t1)
+{
+	float3	S	= td_apex.xyz;
+	float3	D	= td_dir.xyz;
+	float	L	= td_apex.w;
+	float	ca2	= td_dir.w * td_dir.w;
+
+	float3	co	= O - S;
+	float	b	= dot(V, D);
+	float	e	= dot(co, D);
+	t0 = 0.0;	t1 = 100000.0;
+
+	// 0 <= axial distance <= L
+	if (abs(b) > 1e-5)
+	{
+		float ta = -e / b, tb = (L - e) / b;
+		t0 = max(t0, min(ta, tb));
+		t1 = min(t1, max(ta, tb));
+	}
+	else if (e < 0.0 || e > L)	return false;
+
+	// inside the double cone: (axial)^2 >= cos^2 * |P - S|^2, i.e. A t^2 + 2 B t + C >= 0
+	float	A	= b * b - ca2;
+	float	B	= b * e - ca2 * dot(V, co);
+	float	C	= e * e - ca2 * dot(co, co);
+	float	disc = B * B - A * C;
+	if (abs(A) < 1e-6)
+	{
+		if (abs(B) < 1e-8)	{ if (C < 0.0) return false; }
+		else
+		{
+			float r = -C / (2.0 * B);
+			if (B > 0.0)	t0 = max(t0, r);
+			else			t1 = min(t1, r);
+		}
+	}
+	else if (disc < 0.0)
+	{
+		if (A < 0.0)	return false;	// never inside
+										// (A > 0: always inside the double cone; the axial limits keep the front)
+	}
+	else
+	{
+		float	sq	= sqrt(disc);
+		float	r1	= (-B - sq) / A, r2 = (-B + sq) / A;
+		float	rl	= min(r1, r2), rh = max(r1, r2);
+		if (A < 0.0)	{ t0 = max(t0, rl); t1 = min(t1, rh); }	// between the roots
+		else if (b > 0.0)	t0 = max(t0, rh);					// outside them: the piece on the front nappe
+		else				t1 = min(t1, rl);
+	}
+	return t1 > t0;
+}
+
+// One cell's mote as seen along the ray. O = eye in grid space; cosv = the ray's cos to the view axis;
+// gz = the scene's view depth under this pixel.
+float3 td_cell_mote(float3 cell, float3 O, float3 V, float cosv, float gz)
+{
+	int3	ci	= int3(cell);
+	uint3	cw	= uint3(ci & (TD_REPEAT - 1));
+	uint	h	= td_mix(cw.x + td_mix(cw.y + td_mix(cw.z + 0x9e3779b9u)));
+	if (td_u01(h) > td_mote.y)	return 0.0;
+
+	float3	r;
+	h = td_mix(h);	r.x = td_u01(h);
+	h = td_mix(h);	r.y = td_u01(h);
+	h = td_mix(h);	r.z = td_u01(h);
+	float	cs	= td_mote.x;
+	float3	c	= (cell + TD_MARGIN + (1.0 - 2.0 * TD_MARGIN) * r) * cs;	// grid space
+
+	float3	d	= c - O;
+	float	s	= dot(d, V);
+	if (s < 0.05)	return 0.0;
+	float	perp2 = max(dot(d, d) - s * s, 0.0);
+
+	// the light it gets: inside the cone, softened at the edge, dimming with the distance from the lens
+	float3	W	= c - td_mote_off.xyz;										// world
+	float3	q	= W - td_apex.xyz;
+	float	ax	= dot(q, td_dir.xyz);
+	if (ax <= 0.0 || ax > td_apex.w)	return 0.0;
+	float	ql	= length(q);
+	float	ca	= td_dir.w;
+	float	lit	= smoothstep(ca, ca + (1.0 - ca) * td_fade.w, ax / ql);
+	float	att	= saturate(1.0 - ql / td_color.w);
+	lit		*= att * att * saturate(ax / td_fade.z);
+	lit		*= 1.0 - smoothstep(td_fade.x, td_fade.y, s);
+	// hidden behind the scene
+	float	mz	= s * cosv;
+	lit		*= saturate((gz - mz) / (0.01 + 0.004 * mz));
+	if (lit <= 0.0)	return 0.0;
+
+	// where the noise says the air is clear, the motes are thinned out
+	if (td_noise.w > 0.0)
+	{
+		float n	= td_noise3((W + td_noise_off.xyz) * td_noise.x);
+		lit		*= lerp(1.0, saturate((n - td_noise.y) * td_noise.z), td_noise.w);
+	}
+
+	float	rs, rb, rp, rf;
+	h = td_mix(h);	rs = td_u01(h);
+	h = td_mix(h);	rb = td_u01(h);
+	h = td_mix(h);	rp = td_u01(h);
+	h = td_mix(h);	rf = td_u01(h);
+	float	R	= td_mote.z * (1.0 + td_mote.w * (2.0 * rs - 1.0));
+	// never smaller than ~1.5 px: past that a mote dims instead of shrinking, so far ones do not flicker
+	float	Re	= max(R, s * td_twinkle.w * 0.75);
+	float	g	= exp(-2.0 * perp2 / (Re * Re)) * (R / Re) * (R / Re);
+	float	tw	= 1.0 - td_twinkle.x * (0.5 + 0.5 * sin(td_twinkle.z * td_twinkle.y * (0.6 + 0.8 * rf) + rp * 6.2832));
+	return	td_color.rgb * (g * lit * lerp(0.35, 1.0, rb) * tw);
+}
+
+float4 main(v2p I) : SV_Target
+{
+	float3	V	= normalize(I.wpos - eye_position);
+	float	t0, t1;
+	if (!td_cone(eye_position, V, t0, t1))	return float4(0.0, 0.0, 0.0, 0.0);
+
+	// the scene under this pixel, as a distance along the ray (G-buffer view depth, as the laser beam)
+	float2	tc	= I.hpos.xy * td_screen.xy;
+#ifdef GBUFFER_OPTIMIZATION
+	gbuffer_data gbd = gbuffer_load_data(tc, I.hpos.xy);
+#else
+	gbuffer_data gbd = gbuffer_load_data(tc);
+#endif
+	float	gz	= gbd.P.z;
+	if (gz < 0.01)	gz = 100000.0;						// sky: nothing was written there
+	float	cosv	= max(mul(m_V, float4(V, 0.0)).z, 1e-3);
+	t0		= max(t0, 0.05);
+	t1		= min(min(t1, gz / cosv + 0.05), td_fade.y);
+	if (t1 <= t0)	return float4(0.0, 0.0, 0.0, 0.0);
+
+	// Walk the cells the ray crosses between t0 and t1 (3D DDA), in grid space: world + drift, with whole
+	// hash repeats around the eye taken off so the numbers stay small.
+	float	cs		= td_mote.x;
+	float3	O		= eye_position + td_mote_off.xyz;
+	float3	p0		= O + V * t0;
+	float3	cell	= floor(p0 / cs);
+	float3	stp		= sign(V);
+	float3	inv		= 1.0 / max(abs(V), 1e-6);
+	float3	tDelta	= cs * inv;
+	float3	tMax	= t0 + float3(
+						(stp.x >= 0.0 ? (cell.x + 1.0) * cs - p0.x : p0.x - cell.x * cs) * inv.x,
+						(stp.y >= 0.0 ? (cell.y + 1.0) * cs - p0.y : p0.y - cell.y * cs) * inv.y,
+						(stp.z >= 0.0 ? (cell.z + 1.0) * cs - p0.z : p0.z - cell.z * cs) * inv.z);
+
+	float3	acc		= 0.0;
+	[loop]
+	for (int i = 0; i < TD_MAX_CELLS; ++i)
+	{
+		acc += td_cell_mote(cell, O, V, cosv, gz);
+		if (min(tMax.x, min(tMax.y, tMax.z)) > t1)	break;
+		if (tMax.x <= tMax.y && tMax.x <= tMax.z)	{ cell.x += stp.x;	tMax.x += tDelta.x; }
+		else if (tMax.y <= tMax.z)					{ cell.y += stp.y;	tMax.y += tDelta.y; }
+		else										{ cell.z += stp.z;	tMax.z += tDelta.z; }
+	}
+	return	float4(acc, 0.0);
+}

@@ -540,6 +540,12 @@ void CKinematics::EnumBoneVertices	(SEnumVerticesCallback &C, u16 bone_id)
 {
 	for ( u32 i=0; i<children.size(); i++ )
 		LL_GetChild( i )->EnumBoneVertices( C, bone_id );
+	// ...and the meshes parked in children_invisible because every bone they hang off is hidden: their
+	// vertices are still there, and whoever asks for a bone's geometry wants it drawn or not (the laser
+	// designator reads its beam mesh off bones that are hidden while the laser is off).
+	for ( u32 i=0; i<children_invisible.size(); i++ )
+		if ( CSkeletonX* X = dynamic_cast<CSkeletonX*>( children_invisible[i] ) )
+			X->EnumBoneVertices( C, bone_id );
 }
 #include "cl_intersect.h"
 

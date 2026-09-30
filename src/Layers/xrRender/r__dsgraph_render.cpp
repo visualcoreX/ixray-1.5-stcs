@@ -532,10 +532,21 @@ void R_dsgraph_structure::r_dsgraph_render_hud_ui()
 // strict-sorted render
 void	R_dsgraph_structure::r_dsgraph_render_sorted	()
 {
+	r_dsgraph_render_sorted_world	();
+	r_dsgraph_render_sorted_hud		();
+}
+
+// The two halves, for a caller that has to draw something between the world's transparent
+// geometry and the HUD's (R3 forward: the laser beams).
+void	R_dsgraph_structure::r_dsgraph_render_sorted_world	()
+{
 	// Sorted (back to front)
 	mapSorted.traverseRL	(sorted_L1);
 	mapSorted.clear			();
+}
 
+void	R_dsgraph_structure::r_dsgraph_render_sorted_hud	()
+{
 	ENGINE_API extern float psHUD_FOV;
 
 	// Change projection

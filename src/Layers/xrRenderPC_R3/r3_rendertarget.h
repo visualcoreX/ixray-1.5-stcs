@@ -86,6 +86,15 @@ public:
 	// GS's second lens capture $user$scopeui ("scope render with UI"). Electronic optics sample it instead
 	// of $user$scope (the gauss's models_zoom_gauss.s binds s_vp2 to it) -- absent, that lens reads black.
 	ref_rt						rt_scope_ui;
+	// Laser beams: how much blend-shaded smoke/dust (R, G) and rain (B, A) covers each pixel and how far
+	// away it is (coverage, coverage-weighted view depth). Half-res, 1-sample, sampled by laser_beam.ps.
+	ref_rt						rt_laser_dens;
+	ref_geom					g_laser_beam;
+	xr_map<shared_str, ref_shader>	s_laser_beam;	// one per noise texture
+	ref_shader					s_laser_dens_rain;
+	ref_shader					s_laser_dot;		// the procedural dot at the end of a beam
+	xr_map<shared_str, ref_shader>	s_torch_dust;	// dust in handheld torches' cones, one per noise texture
+	bool						m_laser_dens_valid;	// the density buffer holds this frame's smoke
 	ref_rt						rt_Generic_1;		// 32bit		(r,g,b,a)				// post-process, intermidiate results, etc.
 	//	Igor: for volumetric lights
 	ref_rt						rt_Generic_2;		// 32bit		(r,g,b,a)				// post-process, intermidiate results, etc.
@@ -266,6 +275,15 @@ public:
 	void						phase_occq				();
 	void						phase_ssao				();
 	void						phase_hud_shadow		(light* L = nullptr);	// nullptr == the sun
+	// Laser-designator beams (the game hands them over through IGame_Persistent::GetLaserBeams).
+	// Both run inside CRender::render_forward: the density pass before the sorted geometry (it reads
+	// the sorted list, which drawing it clears), the beams after the world's transparent geometry.
+	void						phase_laser_density		();
+	void						phase_laser_beams		();
+	// Dust in handheld torches' light cones (IGame_Persistent::GetTorchDust), right after the beams.
+	void						phase_torch_dust		();
+	// dxRainRender, right after drawing the rain streaks: the same vertices once more into the density buffer
+	void						phase_laser_density_rain(ref_geom& geom, u32 vOffset, u32 vCount);
 	void						phase_downsamp			();
 	void						phase_wallmarks			();
 	void						phase_smap_direct		(light* L,	u32 sub_phase);

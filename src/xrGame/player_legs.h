@@ -46,6 +46,7 @@ private:
 	void			shift_bone_branch		(u16 branch_root, const Fvector& delta);
 	void			transform_bone_branch	(u16 branch_root, const Fmatrix& xform);
 	void			lean_torso_off_camera	(CActor* actor, bool snap);
+	void			retwist_torso			(CActor* actor);
 	void			clamp_torso_yaw			(CActor* actor);
 	bool			chest_heading			(float& h) const;
 	void			warn_once				(LPCSTR fmt, ...);

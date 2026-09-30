@@ -95,6 +95,10 @@ CWeapon::CWeapon()
 	m_bLaserPendingState	= false;
 	m_dwGLSwitchStartTm		= 0;
 	m_dwGLSwitchEndTm		= 0;
+	m_fLaserDisablingLevel	= 8.f;
+	m_bLaserDotOffInGL		= false;
+	m_dwLaserSwitchTimeToGL	= 500;
+	m_dwLaserSwitchTimeFromGL	= 700;
 	m_iLaserParticleIdx		= -1;
 	m_vLaserOffset.set		(0.f,0.f,0.f);
 	m_vLaserWorldOffset.set	(0.f,0.f,0.f);
@@ -734,10 +738,21 @@ void CWeapon::LoadLaserParams()
 	m_fLaserCosHudTreshold	= _cos(deg2rad(10.f));
 	m_fLaserHudRecalcKoef	= 1.0f;
 	m_bLaserCorrection		= TRUE;
+	m_LaserBeam.Load		(NULL);
+	m_vLaserBeamOffset.set	(0.f,0.f,0.f);
 	LPCSTR wsect = cNameSect().c_str();
+	m_fLaserDisablingLevel		= READ_IF_EXISTS(pSettings, r_float, "gwr_blowout", "laser_disabling_level", 8.f);
+	m_bLaserDotOffInGL			= !!READ_IF_EXISTS(pSettings, r_bool, wsect, "disable_laserdot_when_gl_enabled", FALSE);
+	m_dwLaserSwitchTimeToGL		= READ_IF_EXISTS(pSettings, r_u32, wsect, "laser_switch_time_to_gl", 500);
+	m_dwLaserSwitchTimeFromGL	= READ_IF_EXISTS(pSettings, r_u32, wsect, "laser_switch_time_from_gl", 700);
 	if (!pSettings->line_exist(wsect, "laser_params_section"))	return;
 	LPCSTR lp = pSettings->r_string(wsect, "laser_params_section");
 	if (!lp || !lp[0] || !pSettings->section_exist(lp))			return;
+	// volumetric beam: its look lives in a shared section (red/green...), only the emitter spot is per weapon.
+	// The dot's own origin (laserdot_attach_offset_*) is pulled far back along the bone for the trace, so
+	// the beam does not use it -- it starts at the bone itself unless laser_beam_attach_offset moves it.
+	m_LaserBeam.Load		(READ_IF_EXISTS(pSettings, r_string, lp, "laser_beam_section", NULL));
+	m_vLaserBeamOffset		= READ_IF_EXISTS(pSettings, r_fvector3, lp, "laser_beam_attach_offset", Fvector().set(0.f,0.f,0.f));
 
 	if (pSettings->line_exist(lp, "laserdot_attach_bone"))	m_sLaserBone = pSettings->r_string(lp, "laserdot_attach_bone");
 	// GS laser_ray_bones: the visible beam bones (e.g. "line, line2"). Shown with the dot, hidden when the
@@ -797,6 +812,7 @@ void CWeapon::LoadLaserParams()
 void CWeapon::StopLaserDot()
 {
 	if (m_pLaserDot)	CParticlesObject::Destroy(m_pLaserDot);
+	m_LaserBeam.LightOff();		// the procedural dot's surface light goes with the dot
 }
 
 // GS collimator glitch (WeaponUpdate.pas ~952): the electronic reticle of a collimator sight fails during an
@@ -949,28 +965,25 @@ void CWeapon::UpdateLaserDot()
 		// hidden in lockstep by CWeaponMagazined::gwr_UpdateBones, which runs every frame and is the bone
 		// authority -- doing it here loses, because that re-applies the upgrade's show_bones each frame.
 		extern float g_electronics_problems;
-		const float laser_lvl = READ_IF_EXISTS(pSettings, r_float, "gwr_blowout", "laser_disabling_level", 8.f);
-		if (laser_lvl > 0.f && g_electronics_problems >= laser_lvl)	{ StopLaserDot(); return; }
+		if (m_fLaserDisablingLevel > 0.f && g_electronics_problems >= m_fLaserDisablingLevel)	{ StopLaserDot(); return; }
 	}
 	// GS disable_laserdot_when_gl_enabled (WeaponUpdate.pas): with the GL raised, stop the projected dot (the
 	// far dot is what made the beam read as reaching the target -> without it the laser looks like a short stub,
 	// "линия короче"). GS times the dot to the raise/lower anim, not instantly: it stays through the FIRST
 	// laser_switch_time_to_gl ms of the switch-to-GL anim, then hides; on the way back it reappears only in the
 	// LAST laser_switch_time_from_gl ms. m_dwGLSwitch* is the switch window (PlayAnimModeSwitch).
-	if (READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "disable_laserdot_when_gl_enabled", FALSE))
+	if (m_bLaserDotOffInGL)
 	{
 		const bool switching = (m_dwGLSwitchEndTm && Device.dwTimeGlobal < m_dwGLSwitchEndTm);
 		if (switching)
 		{
 			if (IsGrenadeMode())	// raising the GL: keep the dot for to_gl ms, then drop it
 			{
-				u32 thr = READ_IF_EXISTS(pSettings, r_u32, cNameSect(), "laser_switch_time_to_gl", 500);
-				if (Device.dwTimeGlobal - m_dwGLSwitchStartTm > thr)	{ StopLaserDot(); return; }
+				if (Device.dwTimeGlobal - m_dwGLSwitchStartTm > m_dwLaserSwitchTimeToGL)	{ StopLaserDot(); return; }
 			}
 			else					// lowering the GL: dot stays off until the last from_gl ms of the anim
 			{
-				u32 thr = READ_IF_EXISTS(pSettings, r_u32, cNameSect(), "laser_switch_time_from_gl", 700);
-				if (m_dwGLSwitchEndTm - Device.dwTimeGlobal > thr)		{ StopLaserDot(); return; }
+				if (m_dwGLSwitchEndTm - Device.dwTimeGlobal > m_dwLaserSwitchTimeFromGL)	{ StopLaserDot(); return; }
 			}
 		}
 		else if (IsGrenadeMode())	{ StopLaserDot(); return; }	// fully in GL: dot off
@@ -997,6 +1010,21 @@ void CWeapon::UpdateLaserDot()
 		if (!_valid(wpos) || !_valid(wdir))										{ StopLaserDot(); return; }
 		float wdist = TraceLaserAsView(wpos, wdir, 200.0f, smart_cast<CObject*>(this)) * 0.99f;
 		Fvector wdot;	wdot.mad(wpos, wdir, wdist);
+		if (m_LaserBeam.enabled)
+		{
+			// the beam leaves where the world model's own mesh beam does (falls back to the dot's origin)
+			Fvector bfrom = wpos;
+			Fvector baxis = wdir;
+			IKinematics* WK = smart_cast<IKinematics*>(Visual());
+			if (WK && m_LaserBeam.world.Update(WK, m_sLaserRayBones.size() ? m_sLaserRayBones.c_str() : m_sLaserBone.c_str(), m_sLaserBone.c_str()))
+			{
+				Fmatrix rf;	rf.mul_43(X, WK->LL_GetTransform(m_LaserBeam.world.ref_bone));
+				rf.transform_tiny(bfrom, m_LaserBeam.world.pos);
+				rf.transform_dir(baxis, m_LaserBeam.world.dir);
+				baxis.normalize_safe();
+			}
+			m_LaserBeam.Publish(bfrom, baxis, wdot, wdist < 197.f, wdist < 197.f, wdot);	// wdist is already *0.99
+		}
 		PlaceLaserDot(wdot, 0);
 		return;
 	}
@@ -1005,9 +1033,32 @@ void CWeapon::UpdateLaserDot()
 	u16 bid = K->LL_BoneID(m_sLaserBone);
 	if (bid == BI_NONE)															{ StopLaserDot(); return; }
 
+	// The volumetric beam's emitter and axis, read off the model's own mesh beam (SLaserEmitter). It also
+	// keeps the dot working when that bone is hidden (laser_beam_hide_mesh): the skeleton stops
+	// recalculating a hidden bone, so its pose is rebuilt from the device bone it hangs off instead.
+	const bool em_ok = m_LaserBeam.enabled
+		&& m_LaserBeam.hud.Update(K, m_sLaserRayBones.size() ? m_sLaserRayBones.c_str() : m_sLaserBone.c_str(), m_sLaserBone.c_str());
+	Fmatrix ref_full;
+	if (em_ok)	ref_full.mul_43(hi->m_item_transform, K->LL_GetTransform(m_LaserBeam.hud.ref_bone));
+
 	// laser bone -> world (same construction as the fire point): item_transform * bone_local
-	Fmatrix full;	full.mul_43(hi->m_item_transform, K->LL_GetTransform(bid));
+	Fmatrix full;
+	if (em_ok && !K->LL_GetBoneVisible(bid))	full.mul_43(ref_full, m_LaserBeam.hud.attach_rel);
+	else										full.mul_43(hi->m_item_transform, K->LL_GetTransform(bid));
 	Fvector pos;	full.transform_tiny(pos, m_vLaserOffset);
+	Fvector beam_from, beam_dir;	// the volumetric beam's start and axis (hud space)
+	if (em_ok)
+	{
+		Fvector lp;	lp.add(m_LaserBeam.hud.pos, m_vLaserBeamOffset);
+		ref_full.transform_tiny	(beam_from, lp);
+		ref_full.transform_dir	(beam_dir, m_LaserBeam.hud.dir);
+	}
+	else
+	{
+		full.transform_tiny		(beam_from, m_vLaserBeamOffset);
+		beam_dir.set			(full.k);
+	}
+	beam_dir.normalize_safe();
 	Fvector dir;	dir.set(full.k);	dir.normalize_safe();
 	if (!_valid(pos) || !_valid(dir))											{ StopLaserDot(); return; }
 
@@ -1053,6 +1104,7 @@ void CWeapon::UpdateLaserDot()
 	CObject* ignore = smart_cast<CObject*>(H_Parent());
 	// GS: dist = TraceAsView(...)*0.99 -- alpha-transparent statics don't stop the ray
 	float dist = TraceLaserAsView(pos, dir, 200.0f, ignore) * 0.99f;
+	const bool beam_hit = dist < 197.f;	// else the ray ran out of range (dist is already *0.99: 198 = nothing hit)
 
 
 	// GS's two modes (laserdot_correction on/off). OFF = the dot is drawn at (near) its REAL distance,
@@ -1111,25 +1163,57 @@ void CWeapon::UpdateLaserDot()
 	// onto it near a wall (user: "не сдвигается в точку откуда идёт лазер"). Reproject the hit into HUD-apparent
 	// screen space (depth preserved) so it tracks the emitter like the flashlight cone. Aim (zoom) already blends
 	// to the crosshair; correction=on draws near the camera and is handled by its own camera-pull below.
-	Fvector dot_raw = dot;	// pre-reprojection (debug)
 	if (!corr && aim_k < 1.f)
 		LaserCorrectPointWorldToHud(dot, m_fLaserHudPointKoef * (1.f - aim_k));	// faded over the ADS blend, not switched
 
-	// TEMP DEBUG (laserdot convergence): throttled dump of the geometry so we can see why the dot doesn't track
-	// the emitter. Remove once tuned. Prints only for the non-zoom real-depth path.
-	if (!corr && !IsZoomed())
+	// Volumetric beam: from the emitter to the dot as it stands now -- after the aim blend, the parallax
+	// zero and the hud reprojection, but before the camera-pull below, which only moves the dot along
+	// the line of sight (same pixel). Published even if the dot is hidden behind something right after:
+	// the beam itself is still there.
+	// The whole line goes through the hud->world fix, start AND direction, so the beam covers the pixels
+	// of the HUD model's own axis. While the gun looks ahead it runs to the dot; when an animation swings
+	// the gun away (reload, sprint) it turns onto that axis, and the dot follows it there.
+	if (m_LaserBeam.enabled)
 	{
-		static u32 s_next = 0;
-		if (Device.dwTimeGlobal >= s_next)
+		LaserBeam_HudPointToWorld	(beam_from);
+		LaserBeam_HudDirToWorld		(beam_dir);
+		Fvector	beam_to		= dot;
+		bool	beam_to_hit	= beam_hit;
+		// How far the gun is swung off the view. Measured on the apparent axis, not on the weapon's bones:
+		// the swing of a reload or a sprint is the HANDS' animation, which reaches the weapon through
+		// m_item_transform -- the weapon model's own bones barely move (wpn_ak74: 79 of 94 clips hold
+		// wpn_body still), so a bind-pose measure read ~0 exactly when it mattered.
+		float c = beam_dir.dotproduct(Device.vCameraDirection);	clamp(c, -1.f, 1.f);
+		const float swing	= acosf(c);
+		const float w		= m_LaserBeam.AxisWeight(swing) * (1.f - aim_k);
+		if (w > 0.f)
 		{
-			s_next = Device.dwTimeGlobal + 400;
-			const Fmatrix& M = Device.mFullTransform;
-			auto ndcx = [&](const Fvector& v){ float x=v.x*M._11+v.y*M._21+v.z*M._31+M._41; float w=v.x*M._14+v.y*M._24+v.z*M._34+M._44; return (_abs(w)>EPS_L)?x/w:0.f; };
-			auto ndcy = [&](const Fvector& v){ float y=v.x*M._12+v.y*M._22+v.z*M._32+M._42; float w=v.x*M._14+v.y*M._24+v.z*M._34+M._44; return (_abs(w)>EPS_L)?y/w:0.f; };
-			Msg("~LZR fov=%.1f hud=%.3f koef=%.2f dist=%.2f off(%.3f %.3f %.3f) | NDC bone(%.2f %.2f) posOff(%.2f %.2f) rawDot(%.2f %.2f) finDot(%.2f %.2f)",
-				Device.fFOV, psHUD_FOV, m_fLaserHudPointKoef, dist, m_vLaserOffset.x, m_vLaserOffset.y, m_vLaserOffset.z,
-				ndcx(full.c), ndcy(full.c), ndcx(pos), ndcy(pos), ndcx(dot_raw), ndcy(dot_raw), ndcx(dot), ndcy(dot));
+			Fvector td;	td.sub(dot, beam_from);	td.normalize_safe();
+			Fvector bd;	bd.lerp(td, beam_dir, w);	bd.normalize_safe();
+			float bl	= TraceLaserAsView(beam_from, bd, 200.0f, ignore);
+			beam_to_hit	= bl < 199.f;
+			beam_to.mad	(beam_from, bd, bl * 0.99f);
+			if (m_LaserBeam.dot_follow)	dot.lerp(dot, beam_to, w);
 		}
+		// The procedural dot lies on the surface seen through the dot's pixel: a trace from the eye through
+		// the dot (as it stands here -- the camera-pull below keeps that pixel). It finds the surface the
+		// real-depth dot sits 15% in front of, and nothing at all for a dot on the sky: no dot there.
+		Fvector	dot_surf;	dot_surf.set(dot);
+		bool	dot_ok		= false;
+		if (m_LaserBeam.dot)
+		{
+			const Fvector& cp = Device.vCameraPosition;
+			Fvector vd;	vd.sub(dot, cp);
+			const float vl = vd.magnitude();
+			if (vl > EPS_L)
+			{
+				vd.mul(1.f / vl);
+				const float range	= vl * 1.25f + 0.5f;
+				const float h		= TraceLaserAsView(cp, vd, range, ignore);
+				if (h < range - EPS_L)	{ dot_surf.mad(cp, vd, h); dot_ok = true; }
+			}
+		}
+		m_LaserBeam.Publish			(beam_from, beam_dir, beam_to, beam_to_hit, dot_ok, dot_surf);
 	}
 
 	if (corr)
@@ -1196,28 +1280,18 @@ void CWeapon::UpdateLaserDot()
 			if (dist >= m_LaserSwitchDist[j])	idx = int(j) + 1;
 		if (idx >= int(m_LaserParticles.size()))	idx = int(m_LaserParticles.size()) - 1;
 	}
-	// TEMP DEBUG (dot size): which particle + how far the dot sits from the camera (apparent size ~ 1/d2cam)
-	if (!corr && !IsZoomed())
-	{
-		static u32 s_nsz = 0;
-		if (Device.dwTimeGlobal >= s_nsz)
-		{
-			s_nsz = Device.dwTimeGlobal + 400;
-			Fvector dd;	dd.sub(dot, Device.vCameraPosition);
-			Msg("~LZRSZ idx=%d particle=%s dist=%.2f d2cam=%.3f", idx,
-				(idx>=0 && idx<int(m_LaserParticles.size())) ? m_LaserParticles[idx].c_str() : "?", dist, dd.magnitude());
-		}
-	}
 	PlaceLaserDot(dot, idx);
 }
 
 // Create (or re-create on a particle switch) the dot and park it at `dot`, billboarded to the camera.
 void CWeapon::PlaceLaserDot(const Fvector& dot, int idx)
 {
+	// the particle dot is the fallback of the procedural one (laser_beam_dot_particle)
+	if (!m_LaserBeam.DrawParticleDot())	{ if (m_pLaserDot) CParticlesObject::Destroy(m_pLaserDot); return; }
 	if (idx < 0 || idx >= int(m_LaserParticles.size()))	return;
 	if (!m_pLaserDot || m_iLaserParticleIdx != idx)
 	{
-		StopLaserDot();
+		if (m_pLaserDot)	CParticlesObject::Destroy(m_pLaserDot);	// not StopLaserDot: that also puts out the dot's light
 		m_pLaserDot			= CParticlesObject::Create(m_LaserParticles[idx].c_str(), FALSE, false);
 		m_iLaserParticleIdx	= idx;
 	}

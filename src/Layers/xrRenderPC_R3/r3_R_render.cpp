@@ -562,8 +562,12 @@ void CRender::render_forward				()
 		mapLOD.clear							();
 		r_dsgraph_render_graph					(1)	;					// normal level, secondary priority
 		PortalTraverser.fade_render				()	;					// faded-portals
-		r_dsgraph_render_sorted					()	;					// strict-sorted geoms
-		g_pGamePersistent->Environment().RenderLast()	;					// rain/thunder-bolts
+		Target->phase_laser_density				()	;					// smoke for the laser beams (reads mapSorted)
+		r_dsgraph_render_sorted_world			()	;					// strict-sorted geoms
+		g_pGamePersistent->Environment().RenderLast()	;					// rain/thunder-bolts (the rain adds its drops to the laser density)
+		Target->phase_laser_beams				()	;					// over the world's smoke/glass/rain, under the HUD's
+		Target->phase_torch_dust				()	;					// same place, same reasons
+		r_dsgraph_render_sorted_hud				()	;
 	}
 
 	RImplementation.o.distortion				= FALSE;				// disable distorion

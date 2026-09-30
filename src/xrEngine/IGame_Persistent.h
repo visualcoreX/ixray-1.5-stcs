@@ -7,6 +7,8 @@
 #include "Environment.h"
 #include "IGame_ObjectPool.h"
 #endif
+#include "LaserBeamRender.h"
+#include "TorchDustRender.h"
 
 class IRenderVisual;
 class IMainMenu;
@@ -201,6 +203,13 @@ public:
 	// him by hand. The renderer therefore asks the game once per NORMAL phase to add the legs visual.
 	// Render calls game, same bridge shape as OnRenderForward / OnRenderPdaUI.
 	virtual void					RenderFirstPersonLegs	() {};
+
+	// Laser-designator beams to draw this frame (render calls game, same bridge shape as above).
+	// The array is the game's and stays valid until the next frame; 0 = nothing to draw.
+	virtual u32						GetLaserBeams			(const SLaserBeamRender*& beams) { beams = nullptr; return 0; }
+
+	// Dust in handheld torches' light cones, same bridge and lifetime as GetLaserBeams.
+	virtual u32						GetTorchDust			(const STorchDustRender*& cones) { cones = nullptr; return 0; }
 };
 
 class IMainMenu

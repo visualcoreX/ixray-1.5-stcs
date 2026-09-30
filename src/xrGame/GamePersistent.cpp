@@ -987,6 +987,18 @@ void CGamePersistent::RenderFirstPersonLegs()
 		Actor()->RenderLegs();
 }
 
+#include "WeaponLaserBeam.h"
+u32 CGamePersistent::GetLaserBeams(const SLaserBeamRender*& beams)
+{
+	return LaserBeams_Get(beams);
+}
+
+u32 TorchDust_Get(const STorchDustRender*& cones);	// CustomDetector.cpp
+u32 CGamePersistent::GetTorchDust(const STorchDustRender*& cones)
+{
+	return TorchDust_Get(cones);
+}
+
 void CGamePersistent::OnRenderForward()
 {
 	// draw world tracers with the scene depth still bound (MSAA path) so the HUD occludes them

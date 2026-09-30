@@ -11,6 +11,7 @@
 #include "../xrEngine/Render.h"		// ref_light / ref_glow for the weapon flashlight
 #include "firedeps.h"
 #include "game_cl_single.h"
+#include "WeaponLaserBeam.h"
 #include "first_bullet_controller.h"
 
 #include "CameraRecoil.h"
@@ -377,6 +378,11 @@ protected:
 			// fade out/in relative to the raise/lower anim like GS (laser_switch_time_to_gl/from_gl), not instantly.
 			u32				m_dwGLSwitchStartTm;
 			u32				m_dwGLSwitchEndTm;
+			// read once at Load (LoadLaserParams) -- UpdateLaserDot / gwr_UpdateBones run every render frame
+			float			m_fLaserDisablingLevel;		// [gwr_blowout] laser_disabling_level: electronics-problems level that hides the dot + beam (0 = never)
+			bool			m_bLaserDotOffInGL;			// disable_laserdot_when_gl_enabled (weapon section)
+			u32				m_dwLaserSwitchTimeToGL;	// laser_switch_time_to_gl, ms
+			u32				m_dwLaserSwitchTimeFromGL;	// laser_switch_time_from_gl, ms
 			shared_str		m_sLaserBone;				// laserdot_attach_bone
 			shared_str		m_sLaserRayBones;			// laser_ray_bones (the visible beam bones, e.g. "line, line2")
 			xr_vector<shared_str>	m_LaserParticles;	// laserdot_particle_0..N (distance-switched dot)
@@ -396,6 +402,13 @@ protected:
 													// real-depth dot converges onto the `line` bone on screen (0 = off, 1 = full cos ratio). Live-tunable.
 			float			m_fLaserSurfacePull;		// laserdot_surface_pull: real-depth dot distance factor off the surface (GS 0.85; 1.0 = on the object)
 			CParticlesObject* m_pLaserDot;
+			// volumetric beam (laser_beam_section in laser_params_section) -- drawn by the renderer, next to the
+			// model's own mesh beam; see WeaponLaserBeam.h
+			SLaserBeamParams m_LaserBeam;
+			Fvector			m_vLaserBeamOffset;			// laser_beam_attach_offset: where on the laserdot_attach_bone the beam leaves (hud)
+public:
+			bool			LaserBeamHidesMesh	() const { return m_LaserBeam.beam && m_LaserBeam.hide_mesh; }
+protected:
 
 	// ---- weapon-mounted flashlight (Gunslinger LightUtils port) ----------------------------------
 	// flash_params_section on the weapon -> spot + omni + optional glow attached to the `flash` bone;

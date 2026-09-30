@@ -140,13 +140,51 @@ scope_texture				= wpn_crosshair_rpg	; iron-sight overlay; the scope brings its 
 zoom_enabled				= true
 scope_zoom_factor			= 98	; orig 30 -- iron-sight FOV (our standing rule); the mounted PGO-7V overrides it
 
-;�����
+; sounds
 snd_draw				= weapons\rpg7\rpg7_draw
 snd_holster				= weapons\rpg7\rpg7_hide
 snd_shoot				= weapons\rpg7\rpg7_shoot
 snd_empty				= weapons\generic_empty
 snd_reload				= weapons\rpg7\rpg7_reload
-snd_explode				= weapons\grenade\grenade_explosion2
+
+;firing sounds (1st person)
+snd_shoot_1p				= weapons\rpg7\rpg7_shoot_1p_01
+snd_shoot_1p1				= weapons\rpg7\rpg7_shoot_1p_02
+snd_shoot_1p2				= weapons\rpg7\rpg7_shoot_1p_03
+snd_shoot_1p3				= weapons\rpg7\rpg7_shoot_1p_04
+volume_snd_shoot_1p			= 150
+
+;firing sounds (3rd person)
+snd_shoot					= weapons\rpg7\rpg7_shoot_3p_01
+snd_shoot1					= weapons\rpg7\rpg7_shoot_3p_02
+snd_shoot2					= weapons\rpg7\rpg7_shoot_3p_03
+snd_shoot3					= weapons\rpg7\rpg7_shoot_3p_04
+snd_shoot_dist				= weapons\rpg7\rpg7_shoot_dist_01
+snd_shoot_dist1				= weapons\rpg7\rpg7_shoot_dist_02
+snd_shoot_dist2				= weapons\rpg7\rpg7_shoot_dist_03
+snd_shoot_dist3				= weapons\rpg7\rpg7_shoot_dist_04
+snd_shoot_blend_dist_start	= 20
+snd_shoot_blend_dist_end	= 60
+volume_snd_shoot			= 150
+volume_snd_shoot_dist		= 200
+
+;indoor sounds
+snd_shoot_indoor_1p          = weapons\shared\gen_tail_indoor_large_1p_01, 0.9, 0.15
+snd_shoot_indoor_1p1         = weapons\shared\gen_tail_indoor_large_1p_02, 0.9, 0.15
+snd_shoot_indoor_1p2         = weapons\shared\gen_tail_indoor_large_1p_03, 0.9, 0.15
+snd_shoot_indoor_1p3         = weapons\shared\gen_tail_indoor_large_1p_04, 0.9, 0.15
+snd_shoot_indoor             = weapons\shared\gen_tail_indoor_large_3p_01, 0.9, 0.15
+snd_shoot_indoor1            = weapons\shared\gen_tail_indoor_large_3p_02, 0.9, 0.15
+snd_shoot_indoor2            = weapons\shared\gen_tail_indoor_large_3p_03, 0.9, 0.15
+snd_shoot_indoor3            = weapons\shared\gen_tail_indoor_large_3p_04, 0.9, 0.15
+volume_snd_shoot_indoor           = 80
+volume_snd_shoot_indoor_1p        = 100
+snd_indoor_fadeout_start          = 0.15
+snd_indoor_fadeout_end            = 0.75
+snd_indoor_fadeout_db             = 6
+
+;explode sounds (doesn't work from here)
+snd_explode					 = weapons\rpg7\rpg7_explode_close_03 ;weapons\grenade\grenade_explosion2
 
 rocket_class				= wpn_rpg7_missile
 wallmark_section			= explosion_marks
@@ -431,15 +469,20 @@ up_throw_factor				= 0.25
 wm_size                  		= 0.1
 wallmark_section			= explosion_marks
 
-light_color		         	= 1.9,1.4,0.5
+light_color		         	= 2.0,1.5,0.9
 light_range		         	= 0.01	; orig 24.0 (GS fake_missiles.ltx)
 light_time 		         	= 0.01	; orig 1.28 (GS fake_missiles.ltx)
 ph_mass			 			= 0	; orig 5 (GS fake_missiles.ltx)
 jump_height 				= 0
 
 ;explode_particles			= explosions\explosion_04
-explode_particles		 = ghost_particles\explosions\explosion_ground_00
-
+explode_particles		 = ghost_particles\explosions_new\expl_fcc_1
+gore_particles			= ghost_particles\explosions\explosion_ins_gore_00
+heavy_gore_particles	= ghost_particles\explosions\explosion_ins_gore_01
+gore_radius				= 3
+heavy_gore_radius		= 1
+heavy_gore_mass			= 125
+help_explosive_info		= false
 
 ;������ �� ��������
 fragment_speed	     		= 100
@@ -447,9 +490,20 @@ fragment_speed	     		= 100
 explode_duration		 	= 5		;���������������� ������ (�)
 
 
-;�����
-snd_explode 				= weapons\grenade\grenade_explosion2
-snd_fly_sound				= weapons\rocket_fly
+;sounds
+;snd_explode 				= weapons\grenade\grenade_explosion2
+snd_fly_sound				 = weapons\rpg7\rpg7_grenade_engine
+snd_explode					 = weapons\rpg7\rpg7_explode_close_03
+snd_explode_indoor			 = weapons\rpg7\rpg7_explode_indoor_tail_01
+snd_explode_dist			 = weapons\grenade\grenade_explode_outdoor_dist_01
+snd_explode_blend_dist_start = 25
+snd_explode_blend_dist_end   = 100
+snd_indoor_fadeout_start     = 0.1
+snd_indoor_fadeout_end       = 0.5
+snd_indoor_fadeout_db        = 12
+volume_snd_explode			 = 150
+volume_snd_explode_indoor    = 150
+volume_snd_explode_dist      = 100
 
 ;�������� ������� ��������, �� �� ������������ (���� ������)
 inv_name					= "Og-7b"

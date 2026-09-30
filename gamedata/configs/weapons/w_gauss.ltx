@@ -210,6 +210,42 @@ snd_reload_empty        	= weapons\gauss\gauss_reload_empty
 snd_reload_jammed			= weapons\gauss\gauss_revival
 snd_close					= $silent
 
+;firing sounds (1st person)
+snd_shoot_1p          = weapons\gauss\gauss_shoot_1p_01, 0.9
+snd_shoot_1p1         = weapons\gauss\gauss_shoot_1p_02, 0.9
+snd_shoot_1p2         = weapons\gauss\gauss_shoot_1p_03, 0.9
+snd_shoot_1p3         = weapons\gauss\gauss_shoot_1p_04, 0.9
+
+volume_snd_shoot_1p          = 125
+
+;firing sounds (3rd person)
+snd_shoot          = weapons\gauss\gauss_shoot_3p_01, 0.9
+snd_shoot1         = weapons\gauss\gauss_shoot_3p_02, 0.9
+snd_shoot2         = weapons\gauss\gauss_shoot_3p_03, 0.9
+snd_shoot3         = weapons\gauss\gauss_shoot_3p_04, 0.9
+
+snd_shoot_dist             = weapons\gauss\gauss_shoot_dist_01, 0.9
+snd_shoot_dist1            = weapons\gauss\gauss_shoot_dist_02, 0.9
+snd_shoot_dist2            = weapons\gauss\gauss_shoot_dist_03, 0.9
+snd_shoot_dist3            = weapons\gauss\gauss_shoot_dist_04, 0.9
+
+snd_shoot_blend_dist_start = 25
+snd_shoot_blend_dist_end   = 75
+
+;indoor sounds
+snd_shoot_indoor_1p          = weapons\shared\gen_tail_indoor_large_1p_01, 0.9, 0.25
+snd_shoot_indoor_1p1         = weapons\shared\gen_tail_indoor_large_1p_02, 0.9, 0.25
+snd_shoot_indoor_1p2         = weapons\shared\gen_tail_indoor_large_1p_03, 0.9, 0.25
+snd_shoot_indoor_1p3         = weapons\shared\gen_tail_indoor_large_1p_04, 0.9, 0.25
+snd_shoot_indoor             = weapons\shared\gen_tail_indoor_large_3p_01, 0.9, 0.2
+snd_shoot_indoor1            = weapons\shared\gen_tail_indoor_large_3p_02, 0.9, 0.2
+snd_shoot_indoor2            = weapons\shared\gen_tail_indoor_large_3p_03, 0.9, 0.2
+snd_shoot_indoor3            = weapons\shared\gen_tail_indoor_large_3p_04, 0.9, 0.2
+volume_snd_shoot_indoor      = 85
+volume_snd_shoot_indoor_1p   = 150
+snd_indoor_fadeout_start     = 0.2
+snd_indoor_fadeout_end       = 1.0
+snd_indoor_fadeout_db        = 6
 
 ; ---- added by the Gunslinger port (wpn_gauss) ----
 ammo_in_chamber         = true
@@ -722,12 +758,12 @@ lock_time_anm_idle_sprint_start_jammed   = 0.15
 lock_time_anm_idle_sprint_end            = 0.35
 lock_time_anm_idle_sprint_end_empty      = 0.35
 lock_time_anm_idle_sprint_end_jammed     = 0.35
-snd_anm_shoot                            = weapons\gauss\gauss_shoot
-snd_anm_shoot_last                       = weapons\gauss\gauss_shoot_last
-snd_anm_shoot_aim                        = weapons\gauss\gauss_shoot
-snd_anm_shoot_aim_last                   = weapons\gauss\gauss_shoot_last
-snd_anm_shoot_suicide                    = weapons\gauss\gauss_shoot
-snd_anm_shoot_last_suicide               = weapons\gauss\gauss_shoot_last
+snd_anm_shoot                            = weapons\gauss\gauss_shoot_recharge
+snd_anm_shoot_last                       = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_aim                        = weapons\gauss\gauss_shoot_recharge
+snd_anm_shoot_aim_last                   = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_suicide                    = weapons\gauss\gauss_shoot_recharge
+snd_anm_shoot_last_suicide               = weapons\gauss\gauss_shoot_recharge_empty
 snd_exclusive_anm_shoot                  = false
 snd_exclusive_anm_shoot_last             = false
 snd_exclusive_anm_shoot_aim              = false
@@ -807,12 +843,12 @@ lock_time_anm_idle_sprint_start_auto_jammed = 0.15
 lock_time_anm_idle_sprint_end_auto       = 0.35
 lock_time_anm_idle_sprint_end_auto_empty = 0.35
 lock_time_anm_idle_sprint_end_auto_jammed = 0.35
-snd_anm_shoot_auto                       = weapons\gauss\gauss_shoot
-snd_anm_shoot_auto_last                  = weapons\gauss\gauss_shoot_last
-snd_anm_shoot_aim_auto                   = weapons\gauss\gauss_shoot
-snd_anm_shoot_aim_auto_last              = weapons\gauss\gauss_shoot_last
-snd_anm_shoot_auto_suicide               = weapons\gauss\gauss_shoot
-snd_anm_shoot_auto_last_suicide          = weapons\gauss\gauss_shoot_last
+snd_anm_shoot_auto                       = weapons\gauss\gauss_shoot_recharge
+snd_anm_shoot_auto_last                  = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_aim_auto                   = weapons\gauss\gauss_shoot_recharge
+snd_anm_shoot_aim_auto_last              = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_auto_suicide               = weapons\gauss\gauss_shoot_recharge
+snd_anm_shoot_auto_last_suicide          = weapons\gauss\gauss_shoot_recharge_empty
 snd_exclusive_anm_shoot_auto             = false
 snd_exclusive_anm_shoot_auto_last        = false
 snd_exclusive_anm_shoot_aim_auto         = false
@@ -897,12 +933,12 @@ ammo_class				= ammo_gauss
 ; it only swaps the per-anim shot sounds, everything else is inherited ----
 [wpn_gauss_hud_fastrpm]:wpn_gauss_hud
 
-snd_anm_shoot            = weapons\gauss\gauss_shoot_fast
-snd_anm_shoot_last       = weapons\gauss\gauss_shoot_last
-snd_anm_shoot_aim        = weapons\gauss\gauss_shoot_fast
-snd_anm_shoot_aim_last   = weapons\gauss\gauss_shoot_last
-snd_anm_shoot_suicide    = weapons\gauss\gauss_shoot_fast
-snd_anm_shoot_last_suicide = weapons\gauss\gauss_shoot_last 
+snd_anm_shoot            = weapons\gauss\gauss_shoot_recharge_fast
+snd_anm_shoot_last       = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_aim        = weapons\gauss\gauss_shoot_recharge_fast
+snd_anm_shoot_aim_last   = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_suicide    = weapons\gauss\gauss_shoot_recharge_fast
+snd_anm_shoot_last_suicide = weapons\gauss\gauss_shoot_recharge_empty
 
 snd_exclusive_anm_shoot = false;
 snd_exclusive_anm_shoot_last = false;
@@ -910,12 +946,12 @@ snd_exclusive_anm_shoot_aim  = false;
 snd_exclusive_anm_shoot_aim_last = false;
 
 
-snd_anm_shoot_auto            = weapons\gauss\gauss_shoot_fast
-snd_anm_shoot_auto_last       = weapons\gauss\gauss_shoot_last
-snd_anm_shoot_aim_auto        = weapons\gauss\gauss_shoot_fast
-snd_anm_shoot_aim_auto_last   = weapons\gauss\gauss_shoot_last
-snd_anm_shoot_auto_suicide = weapons\gauss\gauss_shoot_fast
-snd_anm_shoot_auto_last_suicide = weapons\gauss\gauss_shoot_last 
+snd_anm_shoot_auto            = weapons\gauss\gauss_shoot_recharge_fast
+snd_anm_shoot_auto_last       = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_aim_auto        = weapons\gauss\gauss_shoot_recharge_fast
+snd_anm_shoot_aim_auto_last   = weapons\gauss\gauss_shoot_recharge_empty
+snd_anm_shoot_auto_suicide = weapons\gauss\gauss_shoot_recharge_fast
+snd_anm_shoot_auto_last_suicide = weapons\gauss\gauss_shoot_recharge_empty
 
 snd_exclusive_anm_shoot_auto = false;
 snd_exclusive_anm_shoot_auto_last = false;

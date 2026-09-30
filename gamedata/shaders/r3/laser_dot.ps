@@ -1,0 +1,63 @@
+#include "common.h"
+
+// Laser-designator dot, drawn procedurally where the beam lands (r3_rendertarget_phase_laser.cpp; the
+// numbers come from xrGame WeaponLaserBeam.cpp). A camera-facing square around the dot; per pixel:
+//  - a small bright core and a wide soft halo, both gaussian;
+//  - the core bleaches to white where it is brighter than the screen can show, like an over-exposed
+//    spot on a camera: white middle, coloured rim;
+//  - neither ever gets smaller than a few pixels: past that they dim instead, keeping the light they
+//    carry. So far away the core no longer over-exposes and the dot turns into its plain colour.
+
+uniform float4	ld_pos;			// xyz = the dot (world, on the surface),	w = core radius, m
+uniform float4	ld_color;		// rgb = colour * dot intensity,				w = halo radius, m
+uniform float4	ld_params;		// x = halo gain, y = white softness, z = min size in pixels, w = pixel size at 1 m
+uniform float4	lb_screen;		// xy = 1 / screen size
+uniform float4	ld_misc;		// x = floor of the far halo's brightness (share of it), y = fade in front of the emitter
+
+struct v2p
+{
+	float3 wpos	: TEXCOORD0;
+	float4 hpos	: SV_Position;
+};
+
+float4 main(v2p I) : SV_Target
+{
+	float3	P	= ld_pos.xyz;
+	float	bz	= mul(m_V, float4(P, 1.0)).z;			// the dot's view depth
+	float	px	= ld_params.w * max(bz, 0.01);			// one pixel, in metres, at the dot
+	float	d	= length(I.wpos - P);
+
+	float	rc	= ld_pos.w;
+	float	rh	= ld_color.w;
+	float	rce	= max(rc, px * 0.75);
+	float	rhe	= max(rh, px * ld_params.z * 0.5);
+	float	core	= exp(-2.0 * d * d / (rce * rce)) * (rc * rc) / (rce * rce);
+
+	// the fog swallows a far dot like everything else...
+	float	fog		= saturate(calc_fogging(float4(P, 1.0)));
+
+	// ...but the halo -- a far halo held at min_px dims to keep its light, and then the fog dims it -- never
+	// drops below ld_misc.x of its brightness, so a far dot stays a visible speck on any background
+	float	hdim	= max((rh * rh) / (rhe * rhe) * fog, ld_misc.x);
+	float	halo	= exp(-2.0 * d * d / (rhe * rhe)) * hdim * ld_params.x;
+
+	// over-exposure: whatever the core has past full brightness in its strongest channel goes white
+	float	peak	= max(ld_color.r, max(ld_color.g, ld_color.b)) * core;
+	float	white	= saturate((peak - 1.0) / max(ld_params.y, 0.01));
+	float3	rgb		= ld_color.rgb * (core * fog + halo) + white * fog;
+
+	// Depth, by hand against the G-buffer (see laser_beam.ps for why not the hardware test). The dot
+	// sits ON a surface, so it may be a little behind the stored depth and still count.
+	float2	tc	= I.hpos.xy * lb_screen.xy;
+#ifdef GBUFFER_OPTIMIZATION
+	gbuffer_data gbd = gbuffer_load_data(tc, I.hpos.xy);
+#else
+	gbuffer_data gbd = gbuffer_load_data(tc);
+#endif
+	float	gz	= gbd.P.z;
+	if (gz < 0.01)	gz = 100000.0;						// sky
+	float	tol	= 0.03 + 0.01 * bz;
+	float	vis	= saturate((gz - bz + tol) / tol);
+
+	return	float4(rgb * vis * ld_misc.y, 0.0);
+}
