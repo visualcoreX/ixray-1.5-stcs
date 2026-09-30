@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_bizon">
+		<text>PP-19 «Bizon»</text>
+	</string>
+	<string id="gunsl_wpn_bizon_descr">
+		<text>Submachine gun, developed in the early 1990s at the request of Ministry of Internal Affairs of Russia. The internal mechanism, as it happens with many guns made by Izhevsk Machine-Building Plant, at its core is similar to a standard AK-74 mechanism, thus most parts are interchangeable. In the process of downscaling the rifle to a pistol caliber the method of operation was changed to straight blow-back. Equipped with a compact helical-feed magazine and a dovetail mount.</text>
+	</string>
+</string_table>

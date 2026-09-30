@@ -1,0 +1,42 @@
+; Gunslinger psi blockade (drug_psy_blockade) -- the real inventory item.
+; GS's version is a 3-use CoP booster (boost_telepat_protection). CS has no boosters and we have no
+; multi-use item mechanic, so this is a single-use pill pack: the effect is a timer the engine
+; starts (psi_blockade_time on drug_psy_blockade_eatable), see CActor::StartPsiBlockade.
+; Like every animated item, its own eat_* are zeroed -- the effect lives on the _eatable phantom,
+; so handing the item back after a cancelled animation can never double it.
+
+[drug_psy_blockade]:identity_immunities
+GroupControlSection = spawn_group
+discovery_dependency =
+$spawn              = "food and drugs\drug_psy_blockade"
+$prefetch           = 8
+; II_ANTIR, not II_MEDKI: the medkit hotkey (kUSE_MEDKIT) grabs the first II_MEDKI in the
+; inventory, and a pill pack must not answer it. CAntirad is a plain CEatableItemObject with no
+; behaviour of its own, and no hotkey is bound to it.
+class               = II_ANTIR
+cform               = skeleton
+visual              = dynamics\equipments\medical\drug_psy_blockade.ogf
+description         = gunsl_eatable_psy_blockade_descr
+inv_name            = gunsl_eatable_psy_blockade
+inv_name_short      = gunsl_eatable_psy_blockade
+inv_weight          = 0.03
+cost                = 1650
+
+inv_grid_width      = 1
+inv_grid_height     = 1
+inv_grid_x          = 7
+inv_grid_y          = 11
+
+; eatable item -- effects live on drug_psy_blockade_eatable
+eat_health          = 0
+eat_satiety         = 0
+eat_power           = 0
+eat_radiation       = 0
+wounds_heal_perc    = 0
+eat_portions_num    = 1
+
+; food item
+animation_slot      = 4
+
+;hud item
+hud                 = drug_psy_blockade_hud_model

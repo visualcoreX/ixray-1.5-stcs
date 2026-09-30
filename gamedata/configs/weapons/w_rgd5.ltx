@@ -36,7 +36,7 @@ single_handed			= 1
 
 slot					= 3
 hud						= grenade_rgd5_hud
-force_min				= 10	; ~30% от максимума
+force_min				= 10	; ~30% пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 force_const				= 25;20
 force_max				= 30
 force_grow_speed		= 15;2 ;30
@@ -45,6 +45,19 @@ destroy_time			= 2500;3500
 
 cost					= 350
 
+; GS: a grenade cooks off when it is damaged, including while it is just lying in the world.
+; 8 = fire_wound (a bullet), 7 = explosion (another blast sets it off) -- OUR numbering;
+; GS writes `6, 8` for the same two, its EHitType enum is the SoC one and is ordered differently.
+; explosive_while_not_activated is what allows it
+; before the grenade has been thrown.
+explosion_on_hit = true
+explosion_hit_types = 8, 7	; orig GS `6, 8` = fire_wound + explosion; OUR enum spells those 8 and 7
+explosive_while_not_activated = true
+
+detonation_threshold_hit = 0.4	; orig 200 (set at the top of the section; the later line wins)
+
+; GS quick throw: the quick_grenade key pulls and lobs in one motion (anm_throw_quick).
+supports_quick_throw = true
 ;-------------------------------------------------------------------------------
 blast					= 1.50
 blast_r					= 5
@@ -64,23 +77,23 @@ up_throw_factor			= 1.2
 ;-------------------------------------------------------------------------------
 
 
-explode_particles		 = explosions\explosion_01
+explode_particles		 = ghost_particles\explosions\explosion_ins_frag_00	; orig ghost_particles\explosions\explosion_ground_00
 
 
 light_color		         = 1.9,1.4,0.5
 light_range		         = 14.0
 light_time 		         = 0.85
 
-;трассы от осколков
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 fragment_speed				= 200
-explode_duration			= 3		;подолжительность взрыва (с)
+explode_duration			= 3		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 
-;звуки
-snd_explode = weapons\t_rgd5_explosion        ; t_f1_explosion ; f1_explode
-snd_checkout = weapons\generic_checkout, 1.0, 0.4
+;пїЅпїЅпїЅпїЅпїЅ
+snd_explode = weapons\grenade\grenade_explosion3        ; t_f1_explosion ; f1_explode
+snd_checkout = weapons\grenade\grenade_throw_start
 
-attach_position_offset	= -0.053,-0.089,0.0
-attach_angle_offset		= 0,0,0
+attach_position_offset	= -0.03,-0.089,0.025
+attach_angle_offset		= 90,0,0
 attach_bone_name		=
 
 // should be deleted after update
@@ -89,50 +102,92 @@ position_offset			 = 0.0,0.0,0.0
 angle_offset			 = 1.570790,1.570790,3.92699
 
 
-throw_point				 = 0,0.3,0.2
+throw_point				 = 0.4, 0.3, 0.1
 throw_dir				 = 0,0,1
 wm_size                  = 0.1
 
 wallmark_section		 =explosion_marks
 
+
+; ---- GS controller-suicide (grenade dropped on oneself), values verbatim from GS ----
+suicide_ready_force         = 2
+suicide_success_force       = 1
+suicide_success_destroy_time= 200
+suicide_fail_force          = 20
+suicide_fail_destroy_time   = 700
+snd_suicide_begin           = weapons\grenade\suicide_f1_start
+snd_suicide_throw           = weapons\grenade\grenade_throw
+snd_suicide_stop            = weapons\grenade\grenade_throw
+
+snd_throw_quick             = weapons\grenade\grenade_throw_quick	; GS, played with anm_throw_quick
 [grenade_rgd5_hud]:hud_base
+allow_suicide = true	; GS: play the suicide grenade animations under a controller
 fire_point		= 0,0,0
 fire_bone               = wpn_body
-
-
 attach_place_idx	= 0
 item_visual		= dynamics\weapons\wpn_grenades\wpn_rgd5_hud.ogf
-
 hands_position          	= -0.044000,-0.156000,0.100000
 hands_orientation       	= -0.500000,1.000000,-2.000000
-hands_position_16x9     	= -0.044000,-0.156000,0.100000
-hands_orientation_16x9  	= -0.500000,1.000000,-2.000000
-
-
-item_position				= -0.001215,0.005992,0.000966
-item_orientation			= -359.925262,-2.224621,-7.030276
-
-
+hands_position_16x9     	= 0.0,-0.13,0.03
+hands_orientation_16x9  	= 0.0,0.0,0.0
+item_position				= 0.0,0.0,0.0
+item_orientation			= 0.0,0.0,0.0
 aim_hud_offset_pos			= 0,0,0
 aim_hud_offset_rot			= 0,0,0
 gl_hud_offset_pos			= 0,0,0
 gl_hud_offset_rot			= 0,0,0
-
 lean_hud_offset_pos			= 0,0,0
 lean_hud_offset_rot			= 0,0,0
-
-anm_hide				= f1_holster
-anm_show				= f1_draw
-anm_idle				= f1_idle
-anm_bore				= f1_idle_bore
-anm_idle_moving	 			= f1_idle_moving
-anm_idle_sprint	 			= f1_idle_sprint
-
-
-anm_throw_begin				= f1_throw_begin
-anm_throw_idle				= f1_throw_idle
-anm_throw				= f1_throw
-
-
 throw_point			= 0.0,0.4,0.3
 throw_dir			= 0,0,1
+
+; ==================== SEMI-AUTO / BASE ANIMATION SET (from Gunslinger) ====================
+
+; ---- show / draw ----
+anm_show = rgd5_draw
+
+; ---- hide / holster ----
+anm_hide = rgd5_hide
+
+; ---- bore ----
+anm_bore = rgd5_bore
+
+; ---- sprint (enter / loop / exit) ----
+anm_idle_sprint_start = rgd5_sprint_start
+anm_idle_sprint = rgd5_sprint
+anm_idle_sprint_end = rgd5_sprint_end
+
+; ---- walk (fwd / slow / crouch) ----
+anm_idle_moving = rgd5_walk
+anm_idle_moving_slow = rgd5_slow
+anm_idle_moving_crouch = rgd5_slow_down
+anm_idle_moving_crouch_slow = rgd5_slow_super
+
+; ---- idle ----
+anm_idle = rgd5_idle
+anm_idle_slow = rgd5_idle
+anm_idle_crouch = rgd5_idle
+anm_idle_crouch_slow = rgd5_idle
+
+; ---- headlamp on / off ----
+anm_headlamp_on = rgd5_headflash
+anm_headlamp_off = rgd5_headflash
+
+; ---- night vision on / off ----
+anm_nv_on = rgd5_headflash
+anm_nv_off = rgd5_headflash
+
+; ---- throw / grenade ----
+anm_throw_begin = rgd5_throw_start
+anm_throw_idle = rgd5_throw_idle
+anm_throw = f1_throw_end
+anm_throw_quick = rgd5_throw_quick
+
+; ---- misc ----
+anm_suicide_begin = rgd5_suicide
+anm_suicide_throw = f1_throw_end
+anm_suicide_stop = f1_throw_end
+
+; ==================== AUTO-FIRE MODE ANIMATION SET (mask_firemode_a = _auto) ====================
+; --- lock_time values copied verbatim from GS huds.ltx (audit 2026-08-07) ---
+lock_time_anm_idle_sprint_end = 0.4

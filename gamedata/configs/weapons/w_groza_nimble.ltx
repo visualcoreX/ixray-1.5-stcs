@@ -1,0 +1,93 @@
+; ============================================================================
+; OC-14-4A Groza -- GS's unique variant (assault/oc14/uniq.ltx), 5.45x39 conversion.
+; Inherits everything else from [wpn_groza]: same visual, same hud, same anim set.
+; ============================================================================
+[wpn_groza_nimble]:wpn_groza
+bullet_material				= objects\bullet_automatic	; wallmark/impact/ricochet pair on hit
+
+$spawn               = "weapons\unique\wpn_groza_nimble"   ; name and section in level editor
+inv_name	     = gunsl_wpn_groza_nimble
+description	     = gunsl_wpn_groza_nimble_descr
+
+cost                    = 15000
+
+def_hide_bones = scope1, scope2, scope3, scope4, scope5, mag_20, mag45, mag45_black, mag60, flash, light, sight, grip, laser, foregrip_rail, launcher_scope_static, shell, bullet, bullet_2, ammo_chamber, wpn_silencer_9x39, handler2
+def_show_bones = planka, dtc, handler, usm, spusk, launcher_scope, mag30, foregrip, shell5x45, bullet5x45, bullet5x45_2, ammo_chamber_5x45
+
+upgrades = vartree_groza_nimble_mag_fix, vartree_groza_nimble_stock, vartree_groza_nimble_rail, vartree_groza_nimble_sights, vartree_groza_nimble_tac_handle, vartree_groza_nimble_mag45
+installed_upgrades =
+upgrade_scheme = upgrade_scheme_groza_nimble
+allowed_upgrades = up_groza_nimble_
+
+rpm 			= 700
+
+ammo_mag_size 	= 31
+ammo_class 		= ammo_5.45x39_fmj, ammo_5.45x39_ap
+
+hit_power				= 1.15, 1.15, 1.15, 1.15
+
+fire_distance           = 200    ; maximum fire distance that bullet can fly
+bullet_speed            = 500    ; starting bullet speed
+
+;-дисперсия-----------------------------------------------------------------------------
+;базовая дисперсия
+fire_dispersion_base    = 0.2 ;0.15        ;угол (в градусах) базовой дисперсии оружия (оружия зажатого в тисках)
+control_inertion_factor = 1.2f
+crosshair_inertion		= 6
+
+;отдача
+cam_return				= 1
+cam_relax_speed         = 5        ;скорость возврата в исходное положение
+cam_relax_speed_ai      = 360     ;скорость возврата в исходное положение
+cam_dispersion          = 0.3        ;увеличения угла (в градусах) с каждым выстрелом
+cam_dispersion_inc      = 0.18       ;увеличениe cam_dispersion с каждым выстрелом
+cam_dispersion_frac     = 1.0       ;ствол будет подыматься на cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
+cam_max_angle           = 50.0        ;максимальный угол отдачи
+cam_max_angle_horz      = 50.0        ;(degree) maximum shot horizontal degree
+cam_step_angle_horz     = 1        ;(degree) size of step camera moved in horizontal position while shooting
+
+PDM_disp_base           = 1.1
+
+zoom_cam_relax_speed         = 5	    ; scope & ironsight
+zoom_cam_relax_speed_ai      = 360
+zoom_cam_dispersion          = 0.2
+zoom_cam_dispersion_inc      = 0.18
+zoom_cam_dispersion_frac     = 1.0
+zoom_cam_max_angle           = 50.0
+zoom_cam_max_angle_horz      = 50.0
+zoom_cam_step_angle_horz     = 1
+fire_dispersion_condition_factor = 10        ;увеличение дисперсии в процентах при максимальном износе
+
+inv_grid_width          = 4
+inv_grid_height         = 2
+inv_grid_x              = 20
+inv_grid_y              = 0
+
+element_icon_0 = icon_element_oc14_body
+element_icon_offset_x_0 = 0
+element_icon_offset_y_0 = 0
+element_icon_1 = icon_element_oc14_handle_upper
+element_icon_offset_x_1 = 50
+element_icon_offset_y_1 = 0
+element_icon_banned_addons_mask_1 = 1
+element_icon_2 = icon_element_mag_545_bakelite_stock
+element_icon_offset_x_2 = 52
+element_icon_offset_y_2 = 0
+
+uniq_icon = upgrade_addon_icon_uniq_item
+uniq_icon_offset_x = 150
+uniq_icon_offset_y = 50
+
+; upgr_icon_x	        = 1510	; SKIP: unused by our upgrade UI
+; upgr_icon_y		= 677	; SKIP: unused by our upgrade UI
+; upgr_icon_width		= 231	; SKIP: unused by our upgrade UI
+; upgr_icon_height   	= 140	; SKIP: unused by our upgrade UI
+
+silencer_name           = wpn_tgpa
+silencer_x              = 118
+silencer_y              = 15
+
+snd_shoot				= weapons\groza\groza_shoot_uniq, -0.9
+snd_silncer_shot        = weapons\groza\groza_shoot_uniq_silencer, -1.1
+
+hud_when_silencer_is_attached = false

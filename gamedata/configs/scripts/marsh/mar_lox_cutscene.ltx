@@ -1,0 +1,17 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on info = {=actor_in_zone(mar_sr_lox) -mar_scene_1_stop) sr_cutscene@cam
+
+[sr_cutscene@cam]
+point = mar_walk_actor_1
+look = mar_look_actor_1
+cam_effector = scenario_cam\marsh\lox_cam
+on_signal = cameff_end | sr_idle@nil %+mar_scene_1_stop%
+combat_ignore_cond = true
+global_cameffect = true
+outdoor = true
+enable_ui_on_end = true
+
+[sr_idle@nil]

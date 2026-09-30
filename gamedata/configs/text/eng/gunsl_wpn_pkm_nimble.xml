@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_pkm_nimble">
+		<text>Modernized PKM</text>
+	</string>
+	<string id="gunsl_wpn_pkm_nimble_descr">
+		<text>A light machine gun thoroughly reworked in a workshop: almost none of its furniture is standard issue any more, which makes the recoil noticeably tamer and the weapon far easier to handle. A rail on the receiver takes an optic. Uses 7.62 PP ammo.</text>
+	</string>
+</string_table>

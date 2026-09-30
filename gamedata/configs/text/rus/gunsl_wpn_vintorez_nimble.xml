@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_vintorez_nimble">
+		<text>«Прибой»</text>
+	</string>
+	<string id="gunsl_wpn_vintorez_nimble_descr">
+		<text>Создан для армейских подразделений специального назначения на базе бесшумной снайперской винтовки ВСС «Винторез». В сравнении с «родителем» отличается уменьшенным темпом стрельбы и повышенной убойной силой.</text>
+	</string>
+</string_table>

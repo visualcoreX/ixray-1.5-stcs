@@ -1,0 +1,16 @@
+; Logic handed to NPCs caught in the open by a surge -- see scripts\surge_cover.script.
+;
+; The destination is deliberately NOT written here. `dynamic_cover` tells xr_surge_hide to ask
+; surge_cover.cover_for(npc) for the nearest shelter, recomputed from that NPC's own position, so
+; one static section serves every NPC and every cover.
+;
+; It has to be a real file on disk. When a save is made while this logic is active, xr_logic stores
+; the ini FILENAME in the save; on load it re-opens it through get_customdata_or_ini_file, which
+; for anything that is not "<customdata>" or "*<smart>" just calls ini_file(name). A synthesised
+; in-memory ini would be looked for on disk there and take the game down with it.
+
+[logic@surge_cover]
+active = surge_hide@surge_cover
+
+[surge_hide@surge_cover]
+dynamic_cover = true

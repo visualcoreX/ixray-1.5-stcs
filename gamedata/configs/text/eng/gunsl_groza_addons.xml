@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_addon_scope_po4x34">
+		<text>PO 4x34 Optical sight</text>
+	</string>
+	<string id="gunsl_addon_scope_po4x34_descr">
+		<text>Soviet-made optical sight with fixed 4x magnification, designed for use at medium ranges. Has a remarkably simple construction and is easy to operate, however the scope lacks adjustment controls, therefore is not particularly favoured by snipers. Part of standard OTs-14 "Groza" kit and used almost exclusively with it.</text>
+	</string>
+	<string id="gunsl_addon_gl_groza">
+		<text>GP-5</text>
+	</string>
+	<string id="gunsl_addon_gl_groza_descr">
+		<text>Grenade launcher designed specifically for OTs-14 "Groza", based on GP-25 Kostyor grenade launcher with a number of changes and tweaks to its construction. Most notable is the unified trigger for the launcher and the gun. Due to the modified attachment mechanism the device is incompatible with any other firearm.</text>
+	</string>
+</string_table>

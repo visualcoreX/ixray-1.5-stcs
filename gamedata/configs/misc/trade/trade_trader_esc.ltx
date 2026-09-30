@@ -1,566 +1,593 @@
+#include "trade_template.ltx"
+
 [trader]
 buy_condition = {+esc_bring_habar_complete} trade_good_price_buy, trade_generic_buy
 sell_condition = {+esc_bring_habar_complete} trade_good_price_sell, trade_generic_sell
 buy_supplies = {+gar_story_got_info_from_digger} trade_new_supplies, {+esc_bring_habar_complete} supplies_good_price, supplies_start
 
-buy_item_condition_factor = 0.01
+[trade_generic_buy]:trade_nothing
+af_baloon                       = 0.7, 0.7
+af_blood                        = 0.7, 0.7
+af_cristall                     = 0.7, 0.7
+af_cristall_flower              = 0.7, 0.7
+af_dummy_battery                = 0.7, 0.7
+af_dummy_dummy                  = 0.7, 0.7
+af_dummy_glassbeads             = 0.7, 0.7
+af_electra_flash                = 0.7, 0.7
+af_electra_moonlight            = 0.7, 0.7
+af_electra_sparkler             = 0.7, 0.7
+af_eye                          = 0.7, 0.7
+af_fire                         = 0.7, 0.7
+af_fireball                     = 0.7, 0.7
+af_fuzz_kolobok                 = 0.7, 0.7
+af_glass                        = 0.7, 0.7
+af_gold_fish                    = 0.7, 0.7
+af_gravi                        = 0.7, 0.7
+af_ice                          = 0.7, 0.7
+af_medusa                       = 0.7, 0.7
+af_mincer_meat                  = 0.7, 0.7
+af_night_star                   = 0.7, 0.7
+af_soul                         = 0.7, 0.7
+af_vyvert                       = 0.7, 0.7
 
+ammo_11.43x23_fmj               = 0.15, 0.15
+ammo_50ae                       = 0.15, 0.15 ; GS port (as ammo_11.43x23_fmj)
+ammo_11.43x23_hydro             = 0.15, 0.15
+ammo_12x70_buck                 = 0.15, 0.15
+ammo_12x76_dart                 = 0.15, 0.15
+ammo_12x76_zhekan               = 0.15, 0.15
+ammo_5.45x39_ap                 = 0.15, 0.15
+ammo_5.45x39_fmj                = 0.15, 0.15
+ammo_5.56x45_ap                 = 0.15, 0.15
+ammo_5.56x45_ss190              = 0.15, 0.15
+ammo_7.62x54_7h1                = 0.15, 0.15
+ammo_7.62x54_7h14               = 0.15, 0.15
+ammo_7.62x54_ap                 = 0.15, 0.15
+ammo_9x18_fmj                   = 0.15, 0.15
+ammo_762x25mm_tt                = 0.15, 0.15 ; GS port (as ammo_9x18_fmj)
+ammo_9x18_pmm                   = 0.15, 0.15
+ammo_9x19_fmj                   = 0.15, 0.15
+ammo_9x19_pbp                   = 0.15, 0.15
+ammo_9x39_ap                    = 0.15, 0.15
+ammo_9x39_pab9                  = 0.15, 0.15
+ammo_9x39_sp5                   = 0.15, 0.15
+ammo_gauss                      = 0.15, 0.15 ; SRP
+ammo_m209                       = 0.15, 0.15 ; vanilla
+ammo_og-7b                      = 0.15, 0.15
+ammo_pkm_100                    = 0.15, 0.15
+ammo_vog-25                     = 0.15, 0.15 ; vanilla
+ammo_vog-25p                    = 0.15, 0.15 ; vanilla
+grenade_f1                      = 0.15, 0.15
+grenade_rgd5                    = 0.15, 0.15
+grenade_rgn                     = 0.15, 0.15	; GS port (as grenade_rgd5)
+grenade_rgo                     = 0.15, 0.15	; GS port (as grenade_f1)
 
-[trade_generic_buy]
-;Артефакты
-af_cristall				= 0.7,	0.7
-af_fireball				= 0.7,	0.7
-af_dummy_glassbeads		= 0.7,	0.7
-af_eye					= 0.7,	0.7
-af_fire					= 0.7,	0.7
-af_medusa				= 0.7,	0.7
-af_cristall_flower		= 0.7,	0.7
-af_night_star			= 0.7,	0.7
-af_vyvert				= 0.7,	0.7
-af_gravi				= 0.7,	0.7
-af_gold_fish			= 0.7,	0.7
-af_blood				= 0.7,	0.7
-af_mincer_meat			= 0.7,	0.7
-af_soul					= 0.7,	0.7
-af_fuzz_kolobok			= 0.7,	0.7
-af_baloon				= 0.7,	0.7
-af_glass				= 0.7,	0.7
-af_electra_sparkler		= 0.7,	0.7
-af_electra_flash		= 0.7,	0.7
-af_electra_moonlight	= 0.7,	0.7
-af_dummy_battery		= 0.7,	0.7
-af_dummy_dummy			= 0.7,	0.7
-af_ice					= 0.7,	0.7
+wpn_abakan                      = 0.1, 0.1
+wpn_ak74                        = 0.1, 0.1
+wpn_ak101                       = 0.1, 0.1      ; GS port (as wpn_ak74)
+wpn_bizon                       = 0.1, 0.1      ; GS port (as wpn_ak74)
+wpn_ak74u                       = 0.1, 0.1
+wpn_ak74u_m1                    = 0.1, 0.1      ; GS port (as wpn_ak74u)
+wpn_ak74u_snag                  = 0.1, 0.1      ; GS port (as wpn_ak74u)
+wpn_beretta                     = 0.1, 0.1
+wpn_apb                         = 0.1, 0.1      ; GS port (as wpn_beretta)
+wpn_stechkin                    = 0.1, 0.1      ; GS port (as wpn_beretta)
+wpn_bm16                        = 0.1, 0.1
+wpn_bm16_obrez1                 = 0.1, 0.1      ; GS port (as wpn_bm16)
+wpn_bm16_obrez2                 = 0.1, 0.1      ; GS port (as wpn_bm16)
+wpn_bm16_obrez_full             = 0.1, 0.1      ; GS port (as wpn_bm16)
+wpn_colt1911                    = 0.1, 0.1
+wpn_grach                       = 0.1, 0.1      ; GS port (as wpn_colt1911)
+wpn_desert_eagle                = 0.1, 0.1
+wpn_desert_eagle_nimble         = 0.1, 0.1      ; GS port (as wpn_desert_eagle)
+wpn_fn2000                      = 0.1, 0.1
+wpn_fort                        = 0.1, 0.1
+wpn_fort_snag                   = 0.1, 0.1      ; GS port (as wpn_fort)
+wpn_g36                         = 0.1, 0.1
+wpn_gauss                       = 0.1, 0.1 ; SRP
+wpn_gauss_aes                   = 0.1, 0.1      ; GS port (as wpn_gauss)
+wpn_groza                       = 0.1, 0.1
+wpn_groza_nimble                = 0.1, 0.1      ; GS port (as wpn_groza)
+wpn_hpsa                        = 0.1, 0.1
+wpn_l85                         = 0.1, 0.1
+wpn_ump45                       = 0.1, 0.1      ; GS port (as wpn_l85)
+wpn_lr300                       = 0.1, 0.1
+wpn_p90                         = 0.1, 0.1      ; GS port (as wpn_lr300)
+wpn_mp5                         = 0.1, 0.1
+wpn_mp5_nimble                  = 0.1, 0.1      ; GS port (as wpn_mp5)
+wpn_mp5sd                       = 0.1, 0.1      ; GS port (as wpn_mp5)
+wpn_pb                          = 0.1, 0.1
+wpn_pkm                         = 0.1, 0.1
+wpn_bozar                       = 0.1, 0.1      ; GS port (as wpn_pkm)
+wpn_pm                          = 0.1, 0.1
+wpn_tt33                        = 0.1, 0.1 ; GS port (as wpn_pm)
+wpn_rg-6                        = 0.1, 0.1
+wpn_rpg7                        = 0.1, 0.1
+wpn_sig220                      = 0.1, 0.1
+wpn_sig220_nimble               = 0.1, 0.1      ; GS port (as wpn_sig220)
+wpn_sr1m                        = 0.1, 0.1      ; GS port (as wpn_sig220)
+wpn_sig550                      = 0.1, 0.1
+wpn_sig_no_draw_sound           = 0.1, 0.1      ; GS port (as wpn_sig550)
+wpn_sig_with_scope              = 0.1, 0.1      ; GS port (as wpn_sig550)
+wpn_sig550_luckygun             = 0.1, 0.1      ; GS port (as wpn_sig550)
+wpn_sig552                      = 0.1, 0.1      ; GS port (as wpn_sig550)
+wpn_spas12                      = 0.1, 0.1
+wpn_protecta_nimble             = 0.1, 0.1      ; GS port (as wpn_spas12)
+wpn_saiga12                     = 0.1, 0.1      ; GS port (as wpn_spas12)
+wpn_svd                         = 0.1, 0.1
+wpn_svu                         = 0.1, 0.1
+wpn_svu_nimble                  = 0.1, 0.1      ; GS port (as wpn_svu)
+wpn_toz34                       = 0.1, 0.1
+wpn_toz34_obrez1                = 0.1, 0.1      ; GS port (as wpn_toz34)
+wpn_toz34_obrez2                = 0.1, 0.1      ; GS port (as wpn_toz34)
+wpn_toz34_obrez_full            = 0.1, 0.1      ; GS port (as wpn_toz34)
+wpn_toz34_scoped                = 0.1, 0.1      ; GS port (as wpn_toz34)
+wpn_usp                         = 0.1, 0.1
+wpn_223_pistol                  = 0.1, 0.1      ; GS port (as wpn_usp)
+wpn_usp_nimble                  = 0.1, 0.1      ; GS port (as wpn_usp)
+wpn_gsh18                       = 0.1, 0.1      ; GS port (as wpn_usp)
+wpn_glock17                     = 0.1, 0.1      ; GS port (as wpn_usp)
+wpn_fiveseven                   = 0.1, 0.1      ; GS port (as wpn_usp)
+wpn_val                         = 0.1, 0.1
+wpn_vintorez                    = 0.1, 0.1
+wpn_vintorez_nimble             = 0.1, 0.1      ; GS port (as wpn_vintorez)
+wpn_walther                     = 0.1, 0.1
+wpn_wincheaster1300             = 0.1, 0.1
+wpn_wincheaster1300_trapper     = 0.1, 0.1      ; GS port (as wpn_wincheaster1300)
 
-;Аммуниция
-ammo_9x18_fmj			= 0.15, 0.15
-ammo_9x18_pmm			= 0.15, 0.15
-ammo_9x19_pbp			= 0.15, 0.15
-ammo_9x19_fmj			= 0.15, 0.15
-ammo_11.43x23_hydro		= 0.15, 0.15
-ammo_11.43x23_fmj		= 0.15, 0.15
-ammo_12x70_buck			= 0.15, 0.15
-ammo_12x76_dart			= 0.15, 0.15
-ammo_12x76_zhekan		= 0.15, 0.15
-ammo_5.45x39_ap			= 0.15, 0.15
-ammo_5.45x39_fmj		= 0.15, 0.15
-ammo_9x39_sp5			= 0.15, 0.15
-ammo_9x39_ap			= 0.15, 0.15
-ammo_9x39_pab9			= 0.15, 0.15
-ammo_5.56x45_ss190		= 0.15, 0.15
-ammo_5.56x45_ap			= 0.15, 0.15
-ammo_7.62x54_7h14		= 0.15, 0.15
-ammo_7.62x54_7h1		= 0.15, 0.15
-ammo_7.62x54_ap			= 0.15, 0.15
-ammo_og-7b				= 0.15, 0.15
-ammo_vog-25p			= 0.15, 0.15
-ammo_vog-25				= 0.15, 0.15
-grenade_f1				= 0.15, 0.15
-grenade_rgd5			= 0.15, 0.15
-ammo_m209				= 0.15, 0.15
-ammo_pkm_100			= 0.15, 0.15
+wpn_addon_grenade_launcher      = 0.15, 0.15 ; vanilla
+wpn_addon_grenade_launcher_groza= 0.15, 0.15 ; GS port (as wpn_addon_grenade_launcher)
+wpn_addon_grenade_launcher_l123a2= 0.15, 0.15 ; GS port (as wpn_addon_grenade_launcher)
+wpn_addon_grenade_launcher_m203 = 0.15, 0.15 ; vanilla
+wpn_addon_scope                 = 0.15, 0.15
+wpn_addon_scope_x2.7            = 0.15, 0.15 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_cobra           = 0.15, 0.15 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_pka             = 0.15, 0.15 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_kashtan         = 0.15, 0.15 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_rakurs          = 0.15, 0.15 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_night           = 0.15, 0.15 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_detector        = 0.15, 0.15 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_pgo7v           = 0.15, 0.15 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_po4x34          = 0.15, 0.15 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_pu              = 0.15, 0.15 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_susat           = 0.15, 0.15
+wpn_addon_scope_susat_x1.6      = 0.15, 0.15 ; GS port (as wpn_addon_scope_susat)
+wpn_addon_scope_susat_dusk      = 0.15, 0.15 ; GS port (as wpn_addon_scope_susat)
+wpn_addon_scope_susat_custom    = 0.15, 0.15 ; GS port (as wpn_addon_scope_susat)
+wpn_addon_scope_susat_night     = 0.15, 0.15 ; GS port (as wpn_addon_scope_susat)
+wpn_addon_silencer              = 0.15, 0.15
+wpn_addon_silencer_rifle        = 0.15, 0.15 ; GS port (as wpn_addon_silencer)
+wpn_addon_silencer_groza        = 0.15, 0.15 ; GS port (as wpn_addon_silencer)
+wpn_addon_silencer_9x18smg      = 0.15, 0.15 ; GS port (as wpn_addon_silencer)
+wpn_silencer_921                = 0.15, 0.15 ; GS port (as wpn_addon_silencer)
+wpn_silencer_hexagon12          = 0.15, 0.15 ; GS port (as wpn_addon_silencer)
+wpn_silencer_m4_2000            = 0.15, 0.15 ; GS port (as wpn_addon_silencer)
+wpn_silencer_svd                = 0.15, 0.15 ; GS port (as wpn_addon_silencer)
+wpn_apb_silencer                = 0.15, 0.15 ; GS port (as wpn_addon_silencer)
+wpn_pb_silencer                 = 0.15, 0.15 ; GS port (as wpn_addon_silencer)
+wpn_colt_p220_silencer          = 0.15, 0.15 ; GS port (as wpn_addon_silencer)
+wpn_57x28_silencer              = 0.15, 0.15 ; GS port (as wpn_addon_silencer)
+wpn_57x28_silencer_pistol       = 0.15, 0.15 ; GS port (as wpn_addon_silencer)
+wpn_silencer_919                = 0.15, 0.15 ; GS port (as wpn_addon_silencer)
 
-;Оружие
-wpn_pm					= 0.1, 0.1
-wpn_pb					= 0.1, 0.1
-wpn_fort				= 0.1, 0.1
-wpn_hpsa				= 0.1, 0.1
-wpn_beretta				= 0.1, 0.1
-wpn_walther				= 0.1, 0.1
-wpn_sig220				= 0.1, 0.1
-wpn_colt1911			= 0.1, 0.1
-wpn_usp					= 0.1, 0.1
-wpn_desert_eagle		= 0.1, 0.1
-wpn_bm16				= 0.1, 0.1
-wpn_toz34				= 0.1, 0.1
-wpn_wincheaster1300		= 0.1, 0.1
-wpn_spas12				= 0.1, 0.1
-wpn_ak74u				= 0.1, 0.1
-wpn_mp5					= 0.1, 0.1
-wpn_ak74				= 0.1, 0.1
-wpn_abakan				= 0.1, 0.1
-wpn_l85					= 0.1, 0.1
-wpn_lr300				= 0.1, 0.1
-wpn_sig550				= 0.1, 0.1
-wpn_groza				= 0.1, 0.1
-wpn_val					= 0.1, 0.1
-wpn_vintorez			= 0.1, 0.1
-wpn_svu					= 0.1, 0.1
-wpn_svd					= 0.1, 0.1
-wpn_rg-6				= 0.1, 0.1
-wpn_rpg7				= 0.1, 0.1
-wpn_g36					= 0.1, 0.1
-wpn_fn2000				= 0.1, 0.1
-wpn_pkm					= 0.1, 0.1
+antirad                         = 0.15, 0.15
+bandage                         = 0.15, 0.15
+medkit                          = 0.15, 0.15
+drug_antidot                    = 0.15, 0.15 ; GS port -- everyone who takes medkits takes this too
+drug_antidot2                   = 0.15, 0.15 ; part-used pack, same rate
+drug_antidot3                   = 0.15, 0.15 ; part-used pack, same rate
+medkit_army                     = 0.15, 0.15
+medkit_scientic                 = 0.15, 0.15
 
-;ADDONS
-wpn_addon_scope					= 0.15, 0.15
-wpn_addon_scope_susat			= 0.15, 0.15
-wpn_addon_silencer				= 0.15, 0.15
-wpn_addon_grenade_launcher		= 0.15, 0.15
-wpn_addon_grenade_launcher_m203 = 0.15, 0.15
+detector_advanced               = 0.2, 0.2
+detector_elite                  = 0.2, 0.2
+detector_elite_broken           = 0.2, 0.2 ; broken Veles (as detector_elite)
+detector_simple                 = 0.2, 0.2
+detector_torch                  = 0.2, 0.2 ; handheld torch (as detector_simple)
 
-;Броники
-novice_outfit			;NO TRADE
-bandit_outfit			;NO TRADE
-specops_outfit			;NO TRADE
-military_outfit			;NO TRADE
-stalker_outfit			;NO TRADE
-scientific_outfit		;NO TRADE
-exo_outfit				;NO TRADE
-svoboda_light_outfit	;NO TRADE
-svoboda_heavy_outfit	;NO TRADE
-svoboda_exo_outfit		;NO TRADE
-cs_light_outfit			;NO TRADE
-cs_heavy_outfit			;NO TRADE
-dolg_outfit				;NO TRADE
-dolg_heavy_outfit		;NO TRADE
+wpn_abakan_up2                  = 0.2, 0.2
+wpn_ak74_up                     = 0.2, 0.2
+wpn_ak74_up2                    = 0.2, 0.2
+wpn_colt1911_up2                = 0.2, 0.2
+wpn_desert_eagle_up             = 0.2, 0.2 ; SRP
+wpn_fort_up                     = 0.2, 0.2
+wpn_g36_up2                     = 0.2, 0.2 ; SRP
+wpn_lr300_up2                   = 0.2, 0.2
+wpn_pm_9x19                     = 0.2, 0.2
+wpn_pm_up                       = 0.2, 0.2
+wpn_sig550_up2                  = 0.2, 0.2
+wpn_vintorez_up                 = 0.2, 0.2
+wpn_walther_up2                 = 0.2, 0.2 ; SRP
 
-;Медикаменты
-bandage					= 0.15, 0.15
-medkit					= 0.15, 0.15
-medkit_scientic			= 0.15, 0.15
-medkit_army				= 0.15, 0.15
-antirad					= 0.15, 0.15
+; csga mutant parts
+mutant_snork_leg				= 0.4, 0.4
+mutant_psevdodog_tail			= 0.4, 0.4
+mutant_boar_leg					= 0.4, 0.4
+mutant_dog_tail					= 0.4, 0.4
+mutant_krovosos_jaw				= 0.4, 0.4
+mutant_flesh_eye				= 0.4, 0.4
 
-;Еда
-bread					;NO TRADE
-kolbasa					;NO TRADE
-conserva				;NO TRADE
-vodka					;NO TRADE
-energy_drink			;NO TRADE
-
-;Предметы
-device_torch			;NO TRADE
-detector_simple			= 0.2, 0.2
-detector_advanced		= 0.2, 0.2
-detector_elite			= 0.2, 0.2
-device_pda				;NO TRADE
-hand_radio				;NO TRADE
-guitar_a				;NO TRADE
-harmonica_a				;NO TRADE
-
-;Квестовые предметы
-device_pda_fang					;NO TRADE
-esc_trader_habar				;NO TRADE
-device_pda_military				;NO TRADE
-device_pda_old					;NO TRADE
-device_pda_garbage_traitor		;NO TRADE
-device_pda_comendant			;NO TRADE
-device_pda_freedom				;NO TRADE
-device_pda_bloodsucker			;NO TRADE
-device_pda_digger				;NO TRADE
-mar_quest_wpn_pm_1				;NO TRADE
-mar_quest_wpn_ak74u_1			;NO TRADE
-mar_quest_af_cristall_flower_1	;NO TRADE
-mar_quest_scout_pda				;NO TRADE
-mar_quest_novice_outfit_1		;NO TRADE
-mil_quest_af_fuzz_kolobok		;NO TRADE
-mil_device_pda_lost_squard		;NO TRADE
-esc_device_pda_driver			;NO TRADE
-esc_mechanic_flash_card_1		;NO TRADE
-esc_mechanic_flash_card_2		;NO TRADE
-esc_mechanic_flash_card_3		;NO TRADE
-esc_mechanic_flash_card_4		;NO TRADE
-agr_mechanic_pda				;NO TRADE
-agr_pda_for_secret_trader		;NO TRADE
-agr_map_animals					;NO TRADE
-red_forest_pda_map				;NO TRADE
-red_forest_pda_map_2			;NO TRADE
-
-;Уникальные предметы
-wpn_ak74_up				= 0.2,	0.2
-wpn_ak74_up2			= 0.2,	0.2
-wpn_abakan_up2			= 0.2,	0.2
-wpn_colt1911_up2		= 0.2,	0.2
-wpn_pm_up				= 0.2,	0.2
-wpn_pm_9x19				= 0.2,	0.2
-wpn_lr300_up2			= 0.2,	0.2
-wpn_fort_up				= 0.2,	0.2
-wpn_sig550_up2			= 0.2,	0.2
-wpn_vintorez_up			= 0.2,	0.2
-stalker_outfit_up_stalk ;NO TRADE
-wpn_pm_arena			;NO TRADE
-wpn_mp5_arena			;NO TRADE
-wpn_toz34_arena			;NO TRADE
-wpn_spas12_arena		;NO TRADE
-wpn_ak74_arena			;NO TRADE
-wpn_bm16_arena			;NO TRADE
-wpn_ak74u_arena			;NO TRADE
-wpn_val_arena			;NO TRADE
-wpn_groza_arena			;NO TRADE
-wpn_fn2000_arena		;NO TRADE
-wpn_g36_arena			;NO TRADE
+; csga weapons
+ammo_223_fmj                    = 0.15, 0.15 ; GS port (ammo parity)
+ammo_5.7x28                     = 0.15, 0.15 ; GS port (ammo parity)
+ammo_9x18_pbp                   = 0.15, 0.15 ; GS port (ammo parity)
+ammo_9x21_sp10                  = 0.15, 0.15 ; GS port (ammo parity)
+ammo_gauss_cardan               = 0.15, 0.15 ; GS port (ammo parity)
+ammo_m397a1                     = 0.15, 0.15 ; GS port (ammo parity)
 
 [trade_good_price_buy]:trade_generic_buy
-;Артефакты
-af_cristall				= 0.9,	0.9
-af_fireball				= 0.9,	0.9
-af_dummy_glassbeads		= 0.9,	0.9
-af_eye					= 0.9,	0.9
-af_fire					= 0.9,	0.9
-af_medusa				= 0.9,	0.9
-af_cristall_flower		= 0.9,	0.9
-af_night_star			= 0.9,	0.9
-af_vyvert				= 0.9,	0.9
-af_gravi				= 0.9,	0.9
-af_gold_fish			= 0.9,	0.9
-af_blood				= 0.9,	0.9
-af_mincer_meat			= 0.9,	0.9
-af_soul					= 0.9,	0.9
-af_fuzz_kolobok			= 0.9,	0.9
-af_baloon				= 0.9,	0.9
-af_glass				= 0.9,	0.9
-af_electra_sparkler		= 0.9,	0.9
-af_electra_flash		= 0.9,	0.9
-af_electra_moonlight	= 0.9,	0.9
-af_dummy_battery		= 0.9,	0.9
-af_dummy_dummy			= 0.9,	0.9
-af_ice					= 0.9,	0.9
+af_baloon                       = 0.9, 0.9
+af_blood                        = 0.9, 0.9
+af_cristall                     = 0.9, 0.9
+af_cristall_flower              = 0.9, 0.9
+af_dummy_battery                = 0.9, 0.9
+af_dummy_dummy                  = 0.9, 0.9
+af_dummy_glassbeads             = 0.9, 0.9
+af_electra_flash                = 0.9, 0.9
+af_electra_moonlight            = 0.9, 0.9
+af_electra_sparkler             = 0.9, 0.9
+af_eye                          = 0.9, 0.9
+af_fire                         = 0.9, 0.9
+af_fireball                     = 0.9, 0.9
+af_fuzz_kolobok                 = 0.9, 0.9
+af_glass                        = 0.9, 0.9
+af_gold_fish                    = 0.9, 0.9
+af_gravi                        = 0.9, 0.9
+af_ice                          = 0.9, 0.9
+af_medusa                       = 0.9, 0.9
+af_mincer_meat                  = 0.9, 0.9
+af_night_star                   = 0.9, 0.9
+af_soul                         = 0.9, 0.9
+af_vyvert                       = 0.9, 0.9
+
+; csga mutant parts
+mutant_snork_leg				= 0.5, 0.5
+mutant_psevdodog_tail			= 0.5, 0.5
+mutant_boar_leg					= 0.5, 0.5
+mutant_dog_tail					= 0.5, 0.5
+mutant_krovosos_jaw				= 0.5, 0.5
+mutant_flesh_eye				= 0.5, 0.5
 
 [supplies_start]
-;Еда
-conserva				= 10,	0.5
-vodka					= 10,	0.5
-;Оружие
-wpn_pm					= 5,	0.5
-wpn_hpsa				= 2,	0.5
-wpn_bm16				= 5,	0.5
-wpn_colt1911			= 2,	0.5
-wpn_wincheaster1300		= 2,	0.5
-;боеприпасы
-grenade_rgd5			= 5,	0.5
-ammo_9x18_fmj			= 10,	0.8
-ammo_9x19_fmj			= 5,	0.5
-ammo_11.43x23_fmj		= 5,  0.5
-ammo_12x70_buck			= 15, 0.5
-ammo_12x76_zhekan		= 15, 0.5
-;броники
-novice_outfit			= 5, 0.5
-bandit_outfit			= 5, 0.5
-stalker_outfit			= 2, 0.5
-;медикаменты
-bandage					= 8, 0.5
-medkit					= 5, 0.5
-antirad					= 3, 0.2
-;Девайсы
-detector_simple			= 2, 0.5
+ammo_11.43x23_fmj               = 5,  0.5
+; ammo_50ae                       = 2,  0.5 ; GS port (with .45 ACP)	; off the shelf by request
+ammo_12x70_buck                 = 15, 0.5
+ammo_12x76_zhekan               = 15, 0.5
+ammo_9x18_fmj                   = 10, 0.8
+ammo_9x19_fmj                   = 5,  0.5
+ammo_762x25mm_tt                = 5,  0.5 ; GS port ; orig 15, 0.7 -- matched to 9x19 above
+grenade_rgd5                    = 5,  0.5
 
+wpn_bm16                        = 5, 0.5
+wpn_colt1911                    = 2, 0.5
+wpn_hpsa                        = 2, 0.5
+wpn_pm                          = 5, 0.5
+wpn_wincheaster1300             = 2, 0.5
+wpn_tt33                        = 2, 0.8 ; GS port
+wpn_silencer_919                = 2, 0.8 ; GS port
+wpn_addon_scope_pu              = 2, 0.8 ; GS port
+
+bandit_outfit                   = 5, 0.5
+novice_outfit                   = 5, 0.5
+stalker_outfit                  = 2, 0.5
+
+antirad                         = 3, 0.2
+bandage                         = 8, 0.5
+medkit                          = 5, 0.5
+
+conserva                        = 10, 0.5
+water                           = 10, 0.5
+vodka                           = 5, 0.5
+vodka_cossacks                  = 5, 0.5
+
+detector_simple                 = 2, 0.5
+detector_torch                  = 2, 0.5 ; handheld torch (as detector_simple)
 
 [supplies_good_price]:supplies_start
-;боеприпасы
-ammo_5.45x39_fmj		= 5, 0.5
-;Оружие
-wpn_ak74u				= 2, 0.5
-wpn_ak74				= 2, 0.5
-;броники
-stalker_outfit			= 2, 0.5
-specops_outfit			= 2, 0.5
+ammo_5.45x39_fmj                = 5, 0.5
+
+wpn_ak74                        = 2, 0.5
+wpn_ak74u                       = 2, 0.5
+
+specops_outfit                  = 2, 0.5
 
 [trade_new_supplies]:supplies_good_price
-;Оружие
-wpn_ak74u				= 2, 0.8
-wpn_ak74				= 2, 0.8
-wpn_l85					= 2, 0.8
-wpn_lr300				= 2, 0.8
-;броники
-specops_outfit			= 2, 0.8
-;боеприпасы
-ammo_5.56x45_ss190		= 5, 0.5
-;Девайсы
-detector_advanced		= 2, 0.5
+ammo_5.56x45_ss190              = 5, 0.5
 
-[trade_generic_sell]
-;Артефакты
-af_medusa				;NO TRADE
-af_cristall_flower		;NO TRADE
-af_night_star			;NO TRADE
-af_vyvert				;NO TRADE
-af_gravi				;NO TRADE
-af_gold_fish			;NO TRADE
-af_blood				;NO TRADE
-af_mincer_meat			;NO TRADE
-af_soul					;NO TRADE
-af_electra_sparkler		;NO TRADE
-af_electra_flash		;NO TRADE
-af_electra_moonlight	;NO TRADE
-af_rusty_thorn			;NO TRADE
-af_rusty_kristall		;NO TRADE
-af_rusty_sea-urchin		;NO TRADE
-af_ameba_slime			;NO TRADE
-af_ameba_slug			;NO TRADE
-af_ameba_mica			;NO TRADE
-af_drops				;NO TRADE
-af_fireball				;NO TRADE
-af_cristall				;NO TRADE
-af_dummy_glassbeads		;NO TRADE
-af_dummy_pellicle		;NO TRADE
-af_dummy_battery		;NO TRADE
-af_dummy_dummy			;NO TRADE
-af_dummy_spring			;NO TRADE
-af_fuzz_kolobok			;NO TRADE
+wpn_ak74                        = 2, 0.8
+wpn_ak74u                       = 2, 0.8
+wpn_l85                         = 2, 0.8
+wpn_lr300                       = 2, 0.8
 
-;Аммуниция
-ammo_9x18_fmj			= 2, 2
-ammo_9x18_pmm			;NO TRADE
-ammo_9x19_pbp			;NO TRADE
-ammo_9x19_fmj			= 2, 2
-ammo_11.43x23_hydro		;NO TRADE
-ammo_11.43x23_fmj		= 3, 2
-ammo_12x70_buck			= 2, 2
-ammo_12x76_dart			;NO TRADE
-ammo_12x76_zhekan		= 2, 2
-ammo_5.45x39_ap			;NO TRADE
-ammo_5.45x39_fmj		= 2, 2
-ammo_9x39_sp5			;NO TRADE
-ammo_9x39_ap			;NO TRADE
-ammo_9x39_pab9			;NO TRADE
-ammo_5.56x45_ss190		;NO TRADE
-ammo_5.56x45_ap			;NO TRADE
-ammo_7.62x54_7h14		;NO TRADE
-ammo_7.62x54_7h1		;NO TRADE
-ammo_7.62x54_ap			;NO TRADE
-ammo_og-7b				;NO TRADE
-ammo_vog-25p			;NO TRADE
-ammo_vog-25				;NO TRADE
-grenade_f1				;NO TRADE
-grenade_rgd5			= 3, 3
-ammo_m209				;NO TRADE
+specops_outfit                  = 2, 0.8
 
-;Оружие
-wpn_pm					= 2, 2
-wpn_pb					= 2, 2
-wpn_fort				= 2, 2
-wpn_hpsa				= 2, 2
-wpn_beretta				= 2, 2
-wpn_walther				= 2, 2
-wpn_sig220				= 2, 2
-wpn_colt1911			= 2, 2
-wpn_usp					= 2, 2
-wpn_desert_eagle		= 2, 2
-wpn_bm16				= 2, 2
-wpn_toz34				= 2, 2
-wpn_wincheaster1300		= 3, 3
-wpn_spas12				= 2, 2
-wpn_ak74u				= 2, 2
-wpn_mp5					= 2, 2
-wpn_ak74				= 2, 2
-wpn_abakan				= 2, 2
-wpn_l85					= 2, 2
-wpn_lr300				= 2, 2
-wpn_sig550				= 2, 2
-wpn_groza				= 2, 2
-wpn_val					= 2, 2
-wpn_vintorez			= 2, 2
-wpn_svu					= 2, 2
-wpn_svd					= 2, 2
-wpn_rg-6				= 2, 2
-wpn_rpg7				= 2, 2
-wpn_g36					= 2, 2
-wpn_fn2000				= 2, 2
-wpn_pkm					= 2, 2
+detector_advanced               = 2, 0.5
 
-;ADDONS
-wpn_addon_scope					= 2, 2
-wpn_addon_scope_susat			= 2, 2
-wpn_addon_silencer				= 2, 2
-wpn_addon_grenade_launcher		= 2, 2
-wpn_addon_grenade_launcher_m203 = 2, 2
+[trade_generic_sell]:trade_nothing
+ammo_11.43x23_fmj               = 3, 2
+ammo_50ae                       = 3, 2 ; GS port (as ammo_11.43x23_fmj)
+ammo_12x70_buck                 = 2, 2
+ammo_12x76_zhekan               = 2, 2
+ammo_5.45x39_fmj                = 2, 2
+ammo_9x18_fmj                   = 2, 2
+ammo_762x25mm_tt                = 2, 2 ; GS port (as ammo_9x18_fmj)
+ammo_9x19_fmj                   = 2, 2
+ammo_vog-25p                    ;NO TRADE ; vanilla
+ammo_vog-25                     ;NO TRADE ; vanilla
+ammo_m209                       ;NO TRADE ; vanilla
+grenade_rgd5                    = 3, 3
 
-;Броники
-novice_outfit			= 2, 2
-bandit_outfit			= 2, 2
-specops_outfit			= 2, 2
-military_outfit			= 2, 2
-stalker_outfit			= 2, 2
-scientific_outfit		= 2, 2
-exo_outfit				= 2, 2
-svoboda_light_outfit	;NO TRADE
-svoboda_heavy_outfit	;NO TRADE
-svoboda_exo_outfit		;NO TRADE
-cs_light_outfit			;NO TRADE
-cs_heavy_outfit			;NO TRADE
-dolg_outfit				;NO TRADE
-dolg_heavy_outfit		;NO TRADE
+wpn_abakan                      = 2, 2
+wpn_ak74                        = 2, 2
+wpn_ak101                       = 2, 2          ; GS port (as wpn_ak74)
+wpn_bizon                       = 2, 2          ; GS port (as wpn_ak74)
+wpn_ak74u                       = 2, 2
+wpn_ak74u_m1                    = 2, 2          ; GS port (as wpn_ak74u)
+wpn_ak74u_snag                  = 2, 2          ; GS port (as wpn_ak74u)
+wpn_beretta                     = 2, 2
+wpn_apb                         = 2, 2          ; GS port (as wpn_beretta)
+wpn_stechkin                    = 2, 2          ; GS port (as wpn_beretta)
+wpn_bm16                        = 2, 2
+wpn_bm16_obrez1                 = 2, 2          ; GS port (as wpn_bm16)
+wpn_bm16_obrez2                 = 2, 2          ; GS port (as wpn_bm16)
+wpn_bm16_obrez_full             = 2, 2          ; GS port (as wpn_bm16)
+wpn_colt1911                    = 2, 2
+wpn_grach                       = 2, 2          ; GS port (as wpn_colt1911)
+wpn_desert_eagle                = 2, 2
+wpn_desert_eagle_nimble         = 2, 2          ; GS port (as wpn_desert_eagle)
+wpn_fn2000                      = 2, 2
+wpn_fort                        = 2, 2
+wpn_fort_snag                   = 2, 2          ; GS port (as wpn_fort)
+wpn_g36                         = 2, 2
+wpn_gauss                       = 2, 2 ; SRP
+wpn_gauss_aes                   = 2, 2          ; GS port (as wpn_gauss)
+wpn_groza                       = 2, 2
+wpn_groza_nimble                = 2, 2          ; GS port (as wpn_groza)
+wpn_hpsa                        = 2, 2
+wpn_l85                         = 2, 2
+wpn_ump45                       = 2, 2          ; GS port (as wpn_l85)
+wpn_lr300                       = 2, 2
+wpn_p90                         = 2, 2          ; GS port (as wpn_lr300)
+wpn_mp5                         = 2, 2
+wpn_mp5_nimble                  ;NO TRADE ; taken out of the shops
+wpn_mp5sd                       = 2, 2          ; GS port (as wpn_mp5)
+wpn_pb                          = 2, 2
+wpn_pkm                         = 2, 2
+wpn_bozar                       = 2, 2          ; GS port (as wpn_pkm)
+wpn_pm                          = 2, 2
+wpn_tt33                        = 2, 2 ; GS port (as wpn_pm)
+wpn_rg-6                        = 2, 2
+wpn_rpg7                        = 2, 2
+wpn_sig220                      = 2, 2
+wpn_sig220_nimble               = 2, 2          ; GS port (as wpn_sig220)
+wpn_sr1m                        = 2, 2          ; GS port (as wpn_sig220)
+wpn_sig550                      = 2, 2
+wpn_sig_no_draw_sound           = 2, 2          ; GS port (as wpn_sig550)
+wpn_sig_with_scope              = 2, 2          ; GS port (as wpn_sig550)
+wpn_sig550_luckygun             = 2, 2          ; GS port (as wpn_sig550)
+wpn_sig552                      = 2, 2          ; GS port (as wpn_sig550)
+wpn_spas12                      = 2, 2
+wpn_protecta_nimble             = 2, 2          ; GS port (as wpn_spas12)
+wpn_saiga12                     = 2, 2          ; GS port (as wpn_spas12)
+wpn_svd                         = 2, 2
+wpn_svu                         = 2, 2
+wpn_svu_nimble                  = 2, 2          ; GS port (as wpn_svu)
+wpn_toz34                       = 2, 2
+wpn_toz34_obrez1                = 2, 2          ; GS port (as wpn_toz34)
+wpn_toz34_obrez2                = 2, 2          ; GS port (as wpn_toz34)
+wpn_toz34_obrez_full            = 2, 2          ; GS port (as wpn_toz34)
+wpn_toz34_scoped                = 2, 2          ; GS port (as wpn_toz34)
+wpn_usp                         = 2, 2
+wpn_223_pistol                  = 2, 2          ; GS port (as wpn_usp)
+wpn_usp_nimble                  = 2, 2          ; GS port (as wpn_usp)
+wpn_gsh18                       = 2, 2          ; GS port (as wpn_usp)
+wpn_glock17                     = 2, 2          ; GS port (as wpn_usp)
+wpn_fiveseven                   = 2, 2          ; GS port (as wpn_usp)
+wpn_val                         = 2, 2
+wpn_vintorez                    = 2, 2
+wpn_vintorez_nimble             = 2, 2          ; GS port (as wpn_vintorez)
+wpn_walther                     = 2, 2
+wpn_wincheaster1300             = 3, 3
+wpn_wincheaster1300_trapper     = 3, 3          ; GS port (as wpn_wincheaster1300)
 
-;Медикаменты
-bandage					= 2, 2
-medkit					= 2, 2
-medkit_scientic			;NO TRADE
-medkit_army				;NO TRADE
-antirad					= 2, 2
+wpn_addon_grenade_launcher      = 2, 2 ; vanilla
+wpn_addon_grenade_launcher_groza= 2, 2 ; GS port (as wpn_addon_grenade_launcher)
+wpn_addon_grenade_launcher_l123a2= 2, 2 ; GS port (as wpn_addon_grenade_launcher)
+wpn_addon_grenade_launcher_m203 = 2, 2 ; vanilla
+wpn_addon_scope                 = 2, 2
+wpn_addon_scope_x2.7            = 2, 2 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_cobra           = 2, 2 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_pka             = 2, 2 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_kashtan         = 2, 2 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_rakurs          = 2, 2 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_night           = 2, 2 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_detector        = 2, 2 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_pgo7v           = 2, 2 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_po4x34          = 2, 2 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_pu              = 2, 2 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_susat           = 2, 2
+wpn_addon_scope_susat_x1.6      = 2, 2 ; GS port (as wpn_addon_scope_susat)
+wpn_addon_scope_susat_dusk      = 2, 2 ; GS port (as wpn_addon_scope_susat)
+wpn_addon_scope_susat_custom    = 2, 2 ; GS port (as wpn_addon_scope_susat)
+wpn_addon_scope_susat_night     = 2, 2 ; GS port (as wpn_addon_scope_susat)
+wpn_addon_silencer              = 2, 2
+wpn_addon_silencer_rifle        = 2, 2 ; GS port (as wpn_addon_silencer)
+wpn_addon_silencer_groza        = 2, 2 ; GS port (as wpn_addon_silencer)
+wpn_addon_silencer_9x18smg      = 2, 2 ; GS port (as wpn_addon_silencer)
+wpn_silencer_921                = 2, 2 ; GS port (as wpn_addon_silencer)
+wpn_silencer_hexagon12          = 2, 2 ; GS port (as wpn_addon_silencer)
+wpn_silencer_m4_2000            = 2, 2 ; GS port (as wpn_addon_silencer)
+wpn_silencer_svd                = 2, 2 ; GS port (as wpn_addon_silencer)
+wpn_apb_silencer                = 2, 2 ; GS port (as wpn_addon_silencer)
+wpn_pb_silencer                 = 2, 2 ; GS port (as wpn_addon_silencer)
+wpn_colt_p220_silencer          = 2, 2 ; GS port (as wpn_addon_silencer)
+wpn_57x28_silencer              = 2, 2 ; GS port (as wpn_addon_silencer)
+wpn_57x28_silencer_pistol       = 2, 2 ; GS port (as wpn_addon_silencer)
+wpn_silencer_919                = 2, 2 ; GS port (as wpn_addon_silencer)
 
-;Еда
-bread					;NO TRADE
-kolbasa					;NO TRADE
-conserva				= 1, 1
-vodka					= 1, 1
-energy_drink			;NO TRADE
+bandit_outfit                   = 2, 2
+exo_outfit                      = 2, 2 ; refuses to buy -> never stocked
+military_outfit                 = 2, 2 ; refuses to buy -> never stocked
+novice_outfit                   = 2, 2
+scientific_outfit               = 2, 2 ; refuses to buy -> never stocked
+specops_outfit                  = 2, 2
+stalker_outfit                  = 2, 2
 
-;Предметы
-device_torch			;NO TRADE
-detector_simple			= 1, 1
-detector_advanced		;NO TRADE
-detector_elite			;NO TRADE
-device_pda				;NO TRADE
-guitar_a				;NO TRADE
-harmonica_a				;NO TRADE
+antirad                         = 2, 2
+bandage                         = 2, 2
+medkit                          = 2, 2
 
-;Квестовые предметы
-af_compass						;NO TRADE
-device_pda_fang					;NO TRADE
-esc_trader_habar				;NO TRADE
-device_pda_military				;NO TRADE
-device_pda_old					;NO TRADE
-device_pda_garbage_traitor		;NO TRADE
-device_pda_comendant			;NO TRADE
-device_pda_freedom				;NO TRADE
-device_pda_bloodsucker			;NO TRADE
-device_pda_digger				;NO TRADE
-mar_quest_wpn_pm_1				;NO TRADE
-mar_quest_wpn_ak74u_1			;NO TRADE
-mar_quest_af_cristall_flower_1	;NO TRADE
-mar_quest_scout_pda				;NO TRADE
-mar_quest_novice_outfit_1		;NO TRADE
-mil_quest_af_fuzz_kolobok		;NO TRADE
-mil_device_pda_lost_squard		;NO TRADE
-esc_device_pda_driver			;NO TRADE
-esc_mechanic_flash_card_1		;NO TRADE
-esc_mechanic_flash_card_2		;NO TRADE
-esc_mechanic_flash_card_3		;NO TRADE
-esc_mechanic_flash_card_4		;NO TRADE
-agr_mechanic_pda				;NO TRADE
-agr_pda_for_secret_trader		;NO TRADE
-agr_map_animals					;NO TRADE
-red_forest_pda_map				;NO TRADE
-red_forest_pda_map_2			;NO TRADE
+conserva                        = 1, 1
+water                           = 1, 1
+vodka                           = 1, 1
+vodka_cossacks                  = 1, 1
 
-;Уникальные предметы
-wpn_ak74_up				= 2, 2
-wpn_ak74_up2			= 2, 2
-wpn_abakan_up2			= 2, 2
-wpn_colt1911_up2		= 2, 2
-wpn_pm_up				= 2, 2
-wpn_pm_9x19				= 2, 2
-wpn_lr300_up2			= 2, 2
-wpn_fort_up				= 2, 2
-wpn_sig550_up2			= 2, 2
-wpn_vintorez_up			= 2, 2
-stalker_outfit_up_stalk ;NO TRADE
-wpn_pm_arena			;NO TRADE
-wpn_mp5_arena			;NO TRADE
-wpn_toz34_arena			;NO TRADE
-wpn_spas12_arena		;NO TRADE
-wpn_ak74_arena			;NO TRADE
-wpn_bm16_arena			;NO TRADE
-wpn_ak74u_arena			;NO TRADE
-wpn_val_arena			;NO TRADE
-wpn_groza_arena			;NO TRADE
-wpn_fn2000_arena		;NO TRADE
-wpn_g36_arena			;NO TRADE
+detector_simple                 = 1, 1
+detector_torch                  = 1, 1 ; handheld torch (as detector_simple)
+
+wpn_abakan_up2                  = 2, 2
+wpn_ak74_up                     = 2, 2
+wpn_ak74_up2                    = 2, 2
+wpn_colt1911_up2                = 2, 2
+wpn_desert_eagle_up             = 2, 2 ; SRP
+wpn_fort_up                     = 2, 2
+wpn_g36_up2                     = 2, 2 ; SRP
+wpn_lr300_up2                   = 2, 2
+wpn_pm_9x19                     = 2, 2
+wpn_pm_up                       = 2, 2
+wpn_sig550_up2                  = 2, 2
+wpn_vintorez_up                 = 2, 2
+wpn_walther_up2                 = 2, 2 ; SRP
+
+; csga weapons
 
 [trade_good_price_sell]:trade_generic_sell
-;Аммуниция
-ammo_9x18_fmj			= 1.5, 1.5
-ammo_9x18_pmm			;NO TRADE
-ammo_9x19_pbp			;NO TRADE
-ammo_9x19_fmj			= 1.5, 1.5
-ammo_11.43x23_hydro		;NO TRADE
-ammo_11.43x23_fmj		= 1.5, 1.5
-ammo_12x70_buck			= 1.5, 1.5
-ammo_12x76_dart			;NO TRADE
-ammo_12x76_zhekan		= 1.5, 1.5
-ammo_5.45x39_ap			;NO TRADE
-ammo_5.45x39_fmj		= 1.5, 1.5
-ammo_9x39_sp5			;NO TRADE
-ammo_9x39_ap			;NO TRADE
-ammo_9x39_pab9			;NO TRADE
-ammo_5.56x45_ss190		;NO TRADE
-ammo_5.56x45_ap			;NO TRADE
-ammo_7.62x54_7h14		;NO TRADE
-ammo_7.62x54_7h1		;NO TRADE
-ammo_7.62x54_ap			;NO TRADE
-ammo_og-7b				;NO TRADE
-ammo_vog-25p			;NO TRADE
-ammo_vog-25				;NO TRADE
-grenade_f1				;NO TRADE
-grenade_rgd5			= 1.5, 1.5
-ammo_m209				;NO TRADE
+ammo_11.43x23_fmj               = 1.5, 1.5
+ammo_12x70_buck                 = 1.5, 1.5
+ammo_12x76_zhekan               = 1.5, 1.5
+ammo_5.45x39_fmj                = 1.5, 1.5
+ammo_9x18_fmj                   = 1.5, 1.5
+ammo_9x19_fmj                   = 1.5, 1.5
+ammo_vog-25p                    ;NO TRADE ; vanilla
+ammo_vog-25                     ;NO TRADE ; vanilla
+ammo_m209                       ;NO TRADE ; vanilla
+grenade_rgd5                    = 1.5, 1.5
 
-;Оружие
-wpn_pm					= 1.5, 1.5
-wpn_pb					= 1.7, 1.7
-wpn_fort				= 1.7, 1.7
-wpn_hpsa				= 1.7, 1.7
-wpn_beretta				= 1.7, 1.7
-wpn_walther				= 1.7, 1.7
-wpn_sig220				= 1.7, 1.7
-wpn_colt1911			= 1.7, 1.7
-wpn_usp					= 1.7, 1.7
-wpn_desert_eagle		= 1.7, 1.7
-wpn_bm16				= 1.7, 1.7
-wpn_toz34				= 1.7, 1.7
-wpn_wincheaster1300		= 1.7, 1.7
-wpn_spas12				= 1.7, 1.7
-wpn_ak74u				= 1.7, 1.7
-wpn_mp5					= 1.7, 1.7
-wpn_ak74				= 2, 2
-wpn_abakan				= 1.7, 1.7
-wpn_l85					= 1.7, 1.7
-wpn_lr300				= 1.7, 1.7
-wpn_sig550				= 1.7, 1.7
-wpn_groza				= 1.7, 1.7
-wpn_val					= 1.7, 1.7
-wpn_vintorez			= 1.7, 1.7
-wpn_svu					= 1.7, 1.7
-wpn_svd					= 1.7, 1.7
-wpn_rg-6				= 1.7, 1.7
-wpn_rpg7				= 1.7, 1.7
-wpn_g36					= 1.7, 1.7
-wpn_fn2000				= 1.7, 1.7
+wpn_abakan                      = 1.7, 1.7
+;wpn_ak74                       = 2,   2   ; not discounted for some reason
+wpn_ak74u                       = 1.7, 1.7
+wpn_ak74u_m1                    = 1.7, 1.7      ; GS port (as wpn_ak74u)
+wpn_ak74u_snag                  = 1.7, 1.7      ; GS port (as wpn_ak74u)
+wpn_beretta                     = 1.7, 1.7
+wpn_apb                         = 1.7, 1.7      ; GS port (as wpn_beretta)
+wpn_stechkin                    = 1.7, 1.7      ; GS port (as wpn_beretta)
+wpn_bm16                        = 1.7, 1.7
+wpn_bm16_obrez1                 = 1.7, 1.7      ; GS port (as wpn_bm16)
+wpn_bm16_obrez2                 = 1.7, 1.7      ; GS port (as wpn_bm16)
+wpn_bm16_obrez_full             = 1.7, 1.7      ; GS port (as wpn_bm16)
+wpn_colt1911                    = 1.7, 1.7
+wpn_grach                       = 1.7, 1.7      ; GS port (as wpn_colt1911)
+wpn_desert_eagle                = 1.7, 1.7
+wpn_desert_eagle_nimble         = 1.7, 1.7      ; GS port (as wpn_desert_eagle)
+wpn_fn2000                      = 1.7, 1.7
+wpn_fort                        = 1.7, 1.7
+wpn_fort_snag                   = 1.7, 1.7      ; GS port (as wpn_fort)
+wpn_g36                         = 1.7, 1.7
+wpn_gauss                       = 1.7, 1.7 ; SRP
+wpn_gauss_aes                   = 1.7, 1.7      ; GS port (as wpn_gauss)
+wpn_groza                       = 1.7, 1.7
+wpn_groza_nimble                = 1.7, 1.7      ; GS port (as wpn_groza)
+wpn_hpsa                        = 1.7, 1.7
+wpn_l85                         = 1.7, 1.7
+wpn_ump45                       = 1.7, 1.7      ; GS port (as wpn_l85)
+wpn_lr300                       = 1.7, 1.7
+wpn_p90                         = 1.7, 1.7      ; GS port (as wpn_lr300)
+wpn_mp5                         = 1.7, 1.7
+wpn_mp5_nimble                  ;NO TRADE ; taken out of the shops
+wpn_bizon                       = 1.7, 1.7      ; GS port (as wpn_mp5)
+wpn_mp5sd                       = 1.7, 1.7      ; GS port (as wpn_mp5)
+wpn_pb                          = 1.7, 1.7
+;wpn_pkm                        = 2,   2   ; not discounted for some reason
+wpn_pm                          = 1.5, 1.5
+wpn_tt33                        = 1.5, 1.5      ; GS port (as wpn_pm)
+wpn_rg-6                        = 1.7, 1.7
+wpn_rpg7                        = 1.7, 1.7
+wpn_sig220                      = 1.7, 1.7
+wpn_sig220_nimble               = 1.7, 1.7      ; GS port (as wpn_sig220)
+wpn_sr1m                        = 1.7, 1.7      ; GS port (as wpn_sig220)
+wpn_sig550                      = 1.7, 1.7
+wpn_sig_no_draw_sound           = 1.7, 1.7      ; GS port (as wpn_sig550)
+wpn_sig_with_scope              = 1.7, 1.7      ; GS port (as wpn_sig550)
+wpn_sig550_luckygun             = 1.7, 1.7      ; GS port (as wpn_sig550)
+wpn_sig552                      = 1.7, 1.7      ; GS port (as wpn_sig550)
+wpn_spas12                      = 1.7, 1.7
+wpn_protecta_nimble             = 1.7, 1.7      ; GS port (as wpn_spas12)
+wpn_saiga12                     = 1.7, 1.7      ; GS port (as wpn_spas12)
+wpn_svd                         = 1.7, 1.7
+wpn_svu                         = 1.7, 1.7
+wpn_svu_nimble                  = 1.7, 1.7      ; GS port (as wpn_svu)
+wpn_toz34                       = 1.7, 1.7
+wpn_toz34_obrez1                = 1.7, 1.7      ; GS port (as wpn_toz34)
+wpn_toz34_obrez2                = 1.7, 1.7      ; GS port (as wpn_toz34)
+wpn_toz34_obrez_full            = 1.7, 1.7      ; GS port (as wpn_toz34)
+wpn_toz34_scoped                = 1.7, 1.7      ; GS port (as wpn_toz34)
+wpn_usp                         = 1.7, 1.7
+wpn_223_pistol                  = 1.7, 1.7      ; GS port (as wpn_usp)
+wpn_usp_nimble                  = 1.7, 1.7      ; GS port (as wpn_usp)
+wpn_gsh18                       = 1.7, 1.7      ; GS port (as wpn_usp)
+wpn_glock17                     = 1.7, 1.7      ; GS port (as wpn_usp)
+wpn_fiveseven                   = 1.7, 1.7      ; GS port (as wpn_usp)
+wpn_val                         = 1.7, 1.7
+wpn_vintorez                    = 1.7, 1.7
+wpn_vintorez_nimble             = 1.7, 1.7      ; GS port (as wpn_vintorez)
+wpn_walther                     = 1.7, 1.7
+wpn_wincheaster1300             = 1.7, 1.7
+wpn_wincheaster1300_trapper     = 1.7, 1.7      ; GS port (as wpn_wincheaster1300)
 
-;ADDONS
-wpn_addon_scope					= 1.7, 1.7
-wpn_addon_scope_susat			= 1.7, 1.7
-wpn_addon_silencer				= 1.7, 1.7
-wpn_addon_grenade_launcher		= 1.7, 1.7
-wpn_addon_grenade_launcher_m203 = 1.7, 1.7
+wpn_addon_grenade_launcher      = 1.7, 1.7 ; vanilla
+wpn_addon_grenade_launcher_groza= 1.7, 1.7 ; GS port (as wpn_addon_grenade_launcher)
+wpn_addon_grenade_launcher_l123a2= 1.7, 1.7 ; GS port (as wpn_addon_grenade_launcher)
+wpn_addon_grenade_launcher_m203 = 1.7, 1.7 ; vanilla
+wpn_addon_scope                 = 1.7, 1.7
+wpn_addon_scope_x2.7            = 1.7, 1.7 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_cobra           = 1.7, 1.7 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_pka             = 1.7, 1.7 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_kashtan         = 1.7, 1.7 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_rakurs          = 1.7, 1.7 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_night           = 1.7, 1.7 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_detector        = 1.7, 1.7 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_pu              = 1.7, 1.7 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_pgo7v           = 1.7, 1.7 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_po4x34          = 1.7, 1.7 ; GS port (as wpn_addon_scope)
+wpn_addon_scope_susat           = 1.7, 1.7
+wpn_addon_scope_susat_x1.6      = 1.7, 1.7 ; GS port (as wpn_addon_scope_susat)
+wpn_addon_scope_susat_dusk      = 1.7, 1.7 ; GS port (as wpn_addon_scope_susat)
+wpn_addon_scope_susat_custom    = 1.7, 1.7 ; GS port (as wpn_addon_scope_susat)
+wpn_addon_scope_susat_night     = 1.7, 1.7 ; GS port (as wpn_addon_scope_susat)
+wpn_addon_silencer              = 1.7, 1.7
+wpn_addon_silencer_rifle        = 1.7, 1.7 ; GS port (as wpn_addon_silencer)
+wpn_addon_silencer_groza        = 1.7, 1.7 ; GS port (as wpn_addon_silencer)
+wpn_addon_silencer_9x18smg      = 1.7, 1.7 ; GS port (as wpn_addon_silencer)
+wpn_silencer_919                = 1.7, 1.7 ; GS port (as wpn_addon_silencer)
+wpn_silencer_921                = 1.7, 1.7 ; GS port (as wpn_addon_silencer)
+wpn_silencer_hexagon12          = 1.7, 1.7 ; GS port (as wpn_addon_silencer)
+wpn_silencer_m4_2000            = 1.7, 1.7 ; GS port (as wpn_addon_silencer)
+wpn_silencer_svd                = 1.7, 1.7 ; GS port (as wpn_addon_silencer)
+wpn_apb_silencer                = 1.7, 1.7 ; GS port (as wpn_addon_silencer)
+wpn_pb_silencer                 = 1.7, 1.7 ; GS port (as wpn_addon_silencer)
+wpn_colt_p220_silencer          = 1.7, 1.7 ; GS port (as wpn_addon_silencer)
+wpn_57x28_silencer              = 1.7, 1.7 ; GS port (as wpn_addon_silencer)
+wpn_57x28_silencer_pistol       = 1.7, 1.7 ; GS port (as wpn_addon_silencer)
 
-;Броники
-novice_outfit			= 2, 2
-bandit_outfit			= 2, 2
-specops_outfit			= 1.7, 1.7
-military_outfit			= 1.7, 1.7
-stalker_outfit			= 1.7, 1.7
-scientific_outfit		= 1.7, 1.7
-exo_outfit				= 1.7, 1.7
-svoboda_light_outfit	;NO TRADE
-svoboda_heavy_outfit	;NO TRADE
-svoboda_exo_outfit		;NO TRADE
-cs_light_outfit			;NO TRADE
-cs_heavy_outfit			;NO TRADE
-dolg_outfit				;NO TRADE
-dolg_heavy_outfit		;NO TRADE
+exo_outfit                      = 1.7, 1.7 ; refuses to buy -> never stocked
+military_outfit                 = 1.7, 1.7 ; refuses to buy -> never stocked
+scientific_outfit               = 1.7, 1.7 ; refuses to buy -> never stocked
+specops_outfit                  = 1.7, 1.7
+stalker_outfit                  = 1.7, 1.7
 
-;Медикаменты
-bandage					= 1.7, 1.7
-medkit					= 1.7, 1.7
-medkit_scientic			;NO TRADE
-medkit_army				;NO TRADE
-antirad					= 1.7, 1.7
+antirad                         = 1.7, 1.7
+bandage                         = 1.7, 1.7
+medkit                          = 1.7, 1.7
 
-;Еда
-bread					;NO TRADE
-kolbasa					;NO TRADE
-conserva				= 1, 1
-vodka					= 1, 1
-energy_drink			;NO TRADE
-
-;Предметы
-device_torch			;NO TRADE
-detector_simple			= 1, 1
-detector_advanced		= 1.5, 1.5
-detector_elite			= 1.5, 1.5
-device_pda				;NO TRADE
-guitar_a				;NO TRADE
-harmonica_a				;NO TRADE
+detector_advanced               = 1.5, 1.5
+detector_elite                  ;NO TRADE ; elite detector: Sakharov only

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+    <string id="mar_lox_msg_1">
+        <text>Гыгыгы, лошара</text>
+    </string>
+    <string id="mar_lox_msg_2">
+        <text>Ну ты это, не серчай ёпт, твои вещи пошли в фонд прожиточного минимума</text>
+    </string>
+    <string id="mar_lox_msg_3">
+        <text>И на лодочную станцию не суйся, иначе ноги тебе поотрываем и спички вставим. Усёк, фраер?</text>
+    </string>
+    <string id="mar_lox_msg_4">
+        <text>И это, мы тебе там оставили «выход из ситуации», так что за отморозков нас не сочти, ага?</text>
+    </string>
+	
+	<string id="mar_lox_sub_1">
+		<text>Ёптыть, отличный подвал! А сталкеры один за другим шо дурные прут! Чё им тут, мёдом помазано?</text>
+	</string>
+	<string id="mar_lox_sub_2">
+		<text>Да-а, мля… Короче, хапаем самое ценное и валим.</text>
+	</string>
+	
+    <string id="mar_lox_sender">
+        <text>Денчик Живчик</text>
+    </string>
+	
+	<string id="mar_lox_sender2">
+        <text>Никитос Счастливчик</text>
+    </string>
+</string_table>

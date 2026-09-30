@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_saiga12">
+		<text>Saiga 12K</text>
+	</string>
+	<string id="gunsl_wpn_saiga12_descr">
+		<text>Self-loading 12 caliber hunting rifle with a folding plastic stock. Based on the AK internal mechanism, therefore exceptionally reliable and does not require frequent maintenance. Effective for hunting any game in the Zone, as well as for close to medium range engagements. In high demand among stalkers thanks to its versatility and durability. Equipped with a dovetail mount from the factory, allowing installation of various scopes.</text>
+	</string>
+</string_table>

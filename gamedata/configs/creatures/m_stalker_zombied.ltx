@@ -28,7 +28,12 @@ satiety_health_v			= 0.001					;увеличение здоровья при уменьшении сытости
 satiety_critical			= 0.0					;критическое значения сытости (в процентах от 0..1) когда здоровье начианает уменьшаться
 radiation_health_v			= 0.001					;уменьшение здоровья при воздействии радиации
 morale_v					= 0.0001				;скорость восстановления морали
-health_hit_part				= 1.0					;процент хита, уходящий на отнимание здоровья
+; TOUGHENED (user, 2026-09-12): under a third of the hit goes into health, so a zombie takes some
+; three times the rounds, whatever they are fired from. This is the only per-creature stand-in for
+; health the engine has: CEntityCondition::reinit gives every entity the same MAX_HEALTH, and what
+; varies is how much of a hit becomes health loss. Zombies have a condition section of their own,
+; so nothing else in the game is touched.
+health_hit_part				= 0.3	; orig 1.0, then 0.5					;процент хита, уходящий на отнимание здоровья
 power_hit_part				= 0.0					;процент хита, уходящий на отнимание силы
 psy_health_v				= 0.1					;скорость восстановления psy-здоровья
 health_restore_v			= 0.001					;скорость восстановления здоровья

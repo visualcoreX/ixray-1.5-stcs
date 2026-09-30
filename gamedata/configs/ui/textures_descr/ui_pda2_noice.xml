@@ -104,7 +104,9 @@
     <texture id="army_wide"      x="889" y="847" width="125" height="54" />
     <texture id="ecolog_wide"    x="889" y="781" width="125" height="54" />
     <!--temp -->
-	<texture id="actor_wide"     x="255" y="956" width="125" height="54" />
+	<!-- was 255,956 = the loner (stalker) logo. The factionless actor now flies the mercenary
+	     colours: same rects as merc_wide / merc_icon just above. -->
+	<texture id="actor_wide"     x="1"   y="956" width="125" height="54" />
    
     <!-- communities -->
     <texture id="dolg_icon"      x="36"  y="793" width="56" height="54" />
@@ -123,7 +125,7 @@
     <texture id="army_icon"      x="922" y="847" width="56" height="54" />
     <texture id="ecolog_icon"    x="923" y="781" width="56" height="54" />
     <!--temp -->
-	<texture id="actor_icon"     x="289" y="956" width="56" height="54" />
+	<texture id="actor_icon"     x="36"  y="956" width="56" height="54" />
 
       <!-- task_buttons -->
     

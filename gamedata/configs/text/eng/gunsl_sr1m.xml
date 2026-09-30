@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_sr1m">
+		<text>SR1MP «Gyurza»</text>
+	</string>
+	<string id="gunsl_wpn_sr1m_descr">
+		<text>Newest Russian pistol, designed for special forces. Uses powerful armor-piercing cartridge, designed specifically for the pistol, for engaging targets wearing body armor and other means of protection. Slots on the front side of the frame allow various tactical accessories like laser sights or flashlights to be installed. Despite excellent characteristics is quite rare in the Zone, mostly due to the ammunition being so scarce.</text>
+	</string>
+</string_table>

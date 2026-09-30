@@ -126,7 +126,7 @@
 		</properties>
 	</upgrade_info>
 
-	<cell_item_text x="1" y="1" width="29" height="16">
+	<cell_item_text x="1" y="1" width="29" height="16" stretch="1">
 		<texture a="200">ui_item_count_back</texture>
 		<text x="0" y="0" width="29" height="16" font="letterica16" color="ui_2" align="c" vert_align="c"/>
 	</cell_item_text>

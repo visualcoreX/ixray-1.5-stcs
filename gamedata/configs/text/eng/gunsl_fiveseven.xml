@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_fiveseven">
+		<text>FN Five-seveN USG</text>
+	</string>
+	<string id="gunsl_wpn_fiveseven_descr">
+		<text>Companion pistol for P90. Five-seveN was developed in the late 1990s. Low weight, high magazine capacity, powerful cartridge, and high reliability make Five-seveN one of the best handguns, therefore is in high demand among mercenaries.</text>
+	</string>
+</string_table>

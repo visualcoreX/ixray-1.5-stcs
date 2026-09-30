@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_usp_match">
+		<text>HK USP Match</text>
+	</string>
+	<string id="gunsl_wpn_usp_match_descr">
+		<text>Спортивный вариант пистолета USP. Отличительная черта - специальная ствольная насадка (компенсатор), которая уменьшает подброс ствола при стрельбе за счёт веса. Выпуск USP Match прекращен в 1999 году. Данный экземпляр, по слухам, когда-то принадлежал наемнику по прозвищу Волкодав.</text>
+	</string>
+</string_table>

@@ -20,7 +20,7 @@ def_state_campering_fire = threat_na
 on_info = {+death_1 +death_2 +death_3 +death_4 +death_5 +death_6 +death_7 +death_8 +death_9 -agr_snork_dialog_shout_sound} remark@predialog
 
 [remark@predialog]
-on_actor_in_zone  = agr_out_restr_hole | remark@dialogwait
+on_actor_in_zone = agr_out_restr_hole | remark@dialogwait
 
 [remark@dialogwait]
 anim = guard
@@ -33,14 +33,14 @@ on_game_timer = 40 | remark@dialog
 anim = guard
 target = actor
 snd = agr_main_hole_actor_arrive
-on_signal = sound_end | %+agr_holeman_dialog% camper@def2
+on_signal = sound_end | %+agr_holeman_dialog +agr_snork_dialog_shout_sound% camper@def2
 meet = no_meet
 combat_ignore_cond = always
 
 [camper@def2]
 path_walk = agr_duty_hole_soldier_1_walk
 path_look = agr_duty_hole_soldier_1_look
-on_info = %+agr_snork_dialog_shout_sound%
+;on_info = %+agr_snork_dialog_shout_sound%
 out_restr = agr_out_restr_hole
 def_state_campering = threat_na
 def_state_campering_fire = threat_na

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_aks74ub_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_aks74ub_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_aks74ub_up_nakladka_priklad_name">
+     <text>Накладка-тыльник</text>
+</string>
+<string id="gunsl_aks74ub_up_nakladka_priklad_descr">
+     <text>Позволяет смягчить отдачу от выстрела из оружия.</text>
+</string>
+<string id="gunsl_aks74ub_up_tsevie_name">
+     <text>Замена цевья</text>
+</string>
+<string id="gunsl_aks74ub_up_tsevie_descr">
+     <text>Установка пластикового цевья с креплениями типа Weaver позволяет устанавливать на оружие дополнительные прицелы, фонарь и ЛЦУ.</text>
+</string>
+<string id="gunsl_aks74ub_up_lastochka_name">
+     <text>Крепление типа "Ласточкин хвост"</text>
+</string>
+<string id="gunsl_aks74ub_up_lastochka_descr">
+     <text>Позволяет устанавливать на оружие большинство прицелов производства стран Варшавского договора.</text>
+</string>
+<string id="gunsl_aks74ub_up_laser_name">
+     <text>Лазерный целеуказатель</text>
+</string>
+<string id="gunsl_aks74ub_up_laser_descr">
+     <text>Визуально обозначает место предполагаемого попадания в цель, значительно облегчая и ускоряя прицеливание, а также оказывая на жертву деморализующий эффект. Не препятствует установке тактического фонаря и может использоваться в паре с ним.</text>
+</string>
+<string id="gunsl_aks74ub_up_torch_name">
+     <text>Тактический фонарь</text>
+</string>
+<string id="gunsl_aks74ub_up_torch_descr">
+     <text>Узконаправленный фонарь дальнего радиуса действия незаменим в ночных вылазках, а также при исследовании темных помещений. Не препятствует установке лазерного целеуказателя и может использоваться в паре с ним.</text>
+</string>
+<string id="gunsl_aks74ub_up_handle_name">
+     <text>Анатомическая рукоять</text>
+</string>
+<string id="gunsl_aks74ub_up_handle_descr">
+     <text>Позволяет повысить удобство пользования оружием.</text>
+</string>
+<string id="gunsl_aks74ub_up_mag45_black_name">
+     <text>Магазин повышенной емкости (черный, 45 патронов)</text>
+</string>
+<string id="gunsl_aks74ub_up_mag45_black_descr">
+     <text>Позволяет сократить число перезарядок в бою, увеличивая шансы остаться в живых.</text>
+</string>
+<string id="gunsl_aks74ub_up_mag45_brown_name">
+     <text>Магазин повышенной емкости (коричневый, 45 патронов)</text>
+</string>
+<string id="gunsl_aks74ub_up_mag45_brown_descr">
+     <text>Позволяет сократить число перезарядок в бою, увеличивая шансы остаться в живых.</text>
+</string>
+<string id="gunsl_aks74ub_up_mag60_name">
+     <text>Магазин высокой емкости (60 патронов)</text>
+</string>
+<string id="gunsl_aks74ub_up_mag60_descr">
+     <text>Позволяет одной очередью отправить в лучший из двух миров еще больше противников.</text>
+</string>
+<string id="gunsl_aks74ub_up_lightdetails_name">
+     <text>Легкосплавные детали</text>
+</string>
+<string id="gunsl_aks74ub_up_lightdetails_descr">
+     <text>Замена деталей оружия на их легкосплавные аналоги позволяет снизить массу оружия.</text>
+</string>
+<string id="gunsl_aks74ub_up_barrel_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_aks74ub_up_barrel_descr">
+     <text>Увеличивает начальную скорость вылета пули, благоприятно сказывается на точности ведения огня.</text>
+</string>
+<string id="gunsl_aks74ub_up_usm_accuracy_name">
+     <text>Калибровка УСМ</text>
+</string>
+<string id="gunsl_aks74ub_up_usm_accuracy_descr">
+     <text>Индивидуальная подгонка и балансировка стандартных деталей ударно-спускового механизма позволяет добиться более высокой точности стрельбы при одновременном снижении отдачи.</text>
+</string>
+<string id="gunsl_aks74ub_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_aks74ub_up_usm_rpm_descr">
+     <text>Доработка узлов УСМ позволяет повысить скорострельность оружия, к сожалению, ценой некоторого снижения надежности.</text>
+</string>
+<string id="gunsl_aks74ub_up_reliability_name">
+     <text>Детали повышенной прочности</text>
+</string>
+<string id="gunsl_aks74ub_up_reliability_descr">
+     <text>Замена деталей оружия на их аналоги из более прочных сплавов позволяет значительно повысить надежность оружия.</text>
+</string>
+</string_table>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_grach">
+		<text>MP-443 «Grach»</text>
+	</string>
+	<string id="gunsl_wpn_grach_descr">
+		<text>Yarygin Pistol was developed in the 1990s to replace PM that was still in service, but did not fully meet the modern firearm requirements. Based on the military trials of 2000 was declared winner of the contest within the research and development "Grach" program and entered service of the Russian army as the new standard weapon. Notable for its high accuracy, however is relatively unpopular among stalkers due to low by the Zone's standards reliability.</text>
+	</string>
+</string_table>

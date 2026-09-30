@@ -1,0 +1,309 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Suit flashlight -- one upgrade node per upgrade TREE (outfits that share a tree share the node).
+; The actor no longer owns a headlamp: the engine (CActor::SwitchTorch) ignores the torch key unless
+; the WORN outfit carries `torch_enabled`, and that is what this upgrade installs. Take the suit off
+; and the light goes out with it.
+; The node sits at the bottom of the scheme -- see the extra <cell> in the upgrade_scheme_* templates
+; of ui\inventory_upgrade.xml and ui\inventory_upgrade_16.xml (bottom of the left column where it
+; fits, bottom-right in the 4:3 layout where the left column already reaches the frame).
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[up_sect_torch_bandit_outfit]
+cost				= 800
+torch_enabled			= true
+
+[up_torch_bandit_outfit]
+scheme_index			= 0, 7
+known				= 1
+effects				=
+section				= up_sect_torch_bandit_outfit
+property			= prop_torch
+
+precondition_functor		= inventory_upgrades.precondition_functor_a
+precondition_parameter		= a & b
+
+effect_functor			= inventory_upgrades.effect_functor_a
+effect_parameter		= something_here
+
+prereq_functor			= inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor		= inventory_upgrades.prereq_tooltip_functor_a
+prereq_params			= money(1000), item(habar)
+name				= st_upg_torch
+description			= st_upg_torch_descr
+icon				= ui_am_upgrade_22
+
+[up_gr_torch_bandit_outfit]
+elements			= up_torch_bandit_outfit
+
+[up_sect_torch_cs_heavy_outfit]
+cost				= 800
+torch_enabled			= true
+
+[up_torch_cs_heavy_outfit]
+scheme_index			= 0, 9
+known				= 1
+effects				=
+section				= up_sect_torch_cs_heavy_outfit
+property			= prop_torch
+
+precondition_functor		= inventory_upgrades.precondition_functor_a
+precondition_parameter		= a & b
+
+effect_functor			= inventory_upgrades.effect_functor_a
+effect_parameter		= something_here
+
+prereq_functor			= inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor		= inventory_upgrades.prereq_tooltip_functor_a
+prereq_params			= money(1000), item(habar)
+name				= st_upg_torch
+description			= st_upg_torch_descr
+icon				= ui_am_upgrade_22
+
+[up_gr_torch_cs_heavy_outfit]
+elements			= up_torch_cs_heavy_outfit
+
+[up_sect_torch_cs_light_outfit]
+cost				= 800
+torch_enabled			= true
+
+[up_torch_cs_light_outfit]
+scheme_index			= 0, 9
+known				= 1
+effects				=
+section				= up_sect_torch_cs_light_outfit
+property			= prop_torch
+
+precondition_functor		= inventory_upgrades.precondition_functor_a
+precondition_parameter		= a & b
+
+effect_functor			= inventory_upgrades.effect_functor_a
+effect_parameter		= something_here
+
+prereq_functor			= inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor		= inventory_upgrades.prereq_tooltip_functor_a
+prereq_params			= money(1000), item(habar)
+name				= st_upg_torch
+description			= st_upg_torch_descr
+icon				= ui_am_upgrade_22
+
+[up_gr_torch_cs_light_outfit]
+elements			= up_torch_cs_light_outfit
+
+
+
+[up_sect_torch_dolg_outfit]
+cost				= 800
+torch_enabled			= true
+
+[up_torch_dolg_outfit]
+scheme_index			= 0, 9
+known				= 1
+effects				=
+section				= up_sect_torch_dolg_outfit
+property			= prop_torch
+
+precondition_functor		= inventory_upgrades.precondition_functor_a
+precondition_parameter		= a & b
+
+effect_functor			= inventory_upgrades.effect_functor_a
+effect_parameter		= something_here
+
+prereq_functor			= inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor		= inventory_upgrades.prereq_tooltip_functor_a
+prereq_params			= money(1000), item(habar)
+name				= st_upg_torch
+description			= st_upg_torch_descr
+icon				= ui_am_upgrade_22
+
+[up_gr_torch_dolg_outfit]
+elements			= up_torch_dolg_outfit
+
+[up_sect_torch_exo_outfit]
+cost				= 800
+torch_enabled			= true
+
+[up_torch_exo_outfit]
+scheme_index			= 0, 9
+known				= 1
+effects				=
+section				= up_sect_torch_exo_outfit
+property			= prop_torch
+
+precondition_functor		= inventory_upgrades.precondition_functor_a
+precondition_parameter		= a & b
+
+effect_functor			= inventory_upgrades.effect_functor_a
+effect_parameter		= something_here
+
+prereq_functor			= inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor		= inventory_upgrades.prereq_tooltip_functor_a
+prereq_params			= money(1000), item(habar)
+name				= st_upg_torch
+description			= st_upg_torch_descr
+icon				= ui_am_upgrade_22
+
+[up_gr_torch_exo_outfit]
+elements			= up_torch_exo_outfit
+
+
+[up_sect_torch_novice_outfit]
+cost				= 800
+torch_enabled			= true
+
+[up_torch_novice_outfit]
+scheme_index			= 0, 7
+known				= 1
+effects				=
+section				= up_sect_torch_novice_outfit
+property			= prop_torch
+
+precondition_functor		= inventory_upgrades.precondition_functor_a
+precondition_parameter		= a & b
+
+effect_functor			= inventory_upgrades.effect_functor_a
+effect_parameter		= something_here
+
+prereq_functor			= inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor		= inventory_upgrades.prereq_tooltip_functor_a
+prereq_params			= money(1000), item(habar)
+name				= st_upg_torch
+description			= st_upg_torch_descr
+icon				= ui_am_upgrade_22
+
+[up_gr_torch_novice_outfit]
+elements			= up_torch_novice_outfit
+
+[up_sect_torch_specops_outfit]
+cost				= 800
+torch_enabled			= true
+
+[up_torch_specops_outfit]
+scheme_index			= 0, 9
+known				= 1
+effects				=
+section				= up_sect_torch_specops_outfit
+property			= prop_torch
+
+precondition_functor		= inventory_upgrades.precondition_functor_a
+precondition_parameter		= a & b
+
+effect_functor			= inventory_upgrades.effect_functor_a
+effect_parameter		= something_here
+
+prereq_functor			= inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor		= inventory_upgrades.prereq_tooltip_functor_a
+prereq_params			= money(1000), item(habar)
+name				= st_upg_torch
+description			= st_upg_torch_descr
+icon				= ui_am_upgrade_22
+
+[up_gr_torch_specops_outfit]
+elements			= up_torch_specops_outfit
+
+[up_sect_torch_stalker_outfit]
+cost				= 800
+torch_enabled			= true
+
+[up_torch_stalker_outfit]
+scheme_index			= 0, 9
+known				= 1
+effects				=
+section				= up_sect_torch_stalker_outfit
+property			= prop_torch
+
+precondition_functor		= inventory_upgrades.precondition_functor_a
+precondition_parameter		= a & b
+
+effect_functor			= inventory_upgrades.effect_functor_a
+effect_parameter		= something_here
+
+prereq_functor			= inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor		= inventory_upgrades.prereq_tooltip_functor_a
+prereq_params			= money(1000), item(habar)
+name				= st_upg_torch
+description			= st_upg_torch_descr
+icon				= ui_am_upgrade_22
+
+[up_gr_torch_stalker_outfit]
+elements			= up_torch_stalker_outfit
+
+[up_sect_torch_svoboda_exo_outfit]
+cost				= 800
+torch_enabled			= true
+
+[up_torch_svoboda_exo_outfit]
+scheme_index			= 0, 9
+known				= 1
+effects				=
+section				= up_sect_torch_svoboda_exo_outfit
+property			= prop_torch
+
+precondition_functor		= inventory_upgrades.precondition_functor_a
+precondition_parameter		= a & b
+
+effect_functor			= inventory_upgrades.effect_functor_a
+effect_parameter		= something_here
+
+prereq_functor			= inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor		= inventory_upgrades.prereq_tooltip_functor_a
+prereq_params			= money(1000), item(habar)
+name				= st_upg_torch
+description			= st_upg_torch_descr
+icon				= ui_am_upgrade_22
+
+[up_gr_torch_svoboda_exo_outfit]
+elements			= up_torch_svoboda_exo_outfit
+
+[up_sect_torch_svoboda_heavy_outfit]
+cost				= 800
+torch_enabled			= true
+
+[up_torch_svoboda_heavy_outfit]
+scheme_index			= 0, 9
+known				= 1
+effects				=
+section				= up_sect_torch_svoboda_heavy_outfit
+property			= prop_torch
+
+precondition_functor		= inventory_upgrades.precondition_functor_a
+precondition_parameter		= a & b
+
+effect_functor			= inventory_upgrades.effect_functor_a
+effect_parameter		= something_here
+
+prereq_functor			= inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor		= inventory_upgrades.prereq_tooltip_functor_a
+prereq_params			= money(1000), item(habar)
+name				= st_upg_torch
+description			= st_upg_torch_descr
+icon				= ui_am_upgrade_22
+
+[up_gr_torch_svoboda_heavy_outfit]
+elements			= up_torch_svoboda_heavy_outfit
+
+[up_sect_torch_svoboda_light_outfit]
+cost				= 800
+torch_enabled			= true
+
+[up_torch_svoboda_light_outfit]
+scheme_index			= 0, 9
+known				= 1
+effects				=
+section				= up_sect_torch_svoboda_light_outfit
+property			= prop_torch
+
+precondition_functor		= inventory_upgrades.precondition_functor_a
+precondition_parameter		= a & b
+
+effect_functor			= inventory_upgrades.effect_functor_a
+effect_parameter		= something_here
+
+prereq_functor			= inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor		= inventory_upgrades.prereq_tooltip_functor_a
+prereq_params			= money(1000), item(habar)
+name				= st_upg_torch
+description			= st_upg_torch_descr
+icon				= ui_am_upgrade_22
+
+[up_gr_torch_svoboda_light_outfit]
+elements			= up_torch_svoboda_light_outfit

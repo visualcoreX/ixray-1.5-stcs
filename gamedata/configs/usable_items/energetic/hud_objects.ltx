@@ -1,0 +1,36 @@
+[energy_drink_hud_model]:gwr_base_usable
+; from the editor:  T 8.572, 1.301, -4.029 cm   S 0.784;  rotation set by hand below
+; cm -> m /100; Z translate flips sign; orientation is setHPB, i.e. Y, X, Z (not X, Y, Z)
+actor_hand_bone	= bip01_l_hand
+position		= 0.08572, 0.01301, 0.04029
+orientation		= 87.0, -7.0, -180.0
+actor_hand_scale	= 0.784
+; world model for THIRD PERSON. gwr_base_usable gives every phantom
+; gwr_base_usable gives them all an empty stand-in visual, so there was nothing to draw in hand.
+visual			= gwr\food\energy\energy_hud.ogf
+actor_torso_anim	= norm_torso_item_drink_staker	; third-person gesture from the xrMPE actor pack
+; GS trash: the empty thrown away at timing_trash (see usable_items/trash_objects.ltx).
+; GS's own value shifted by the gap between our `timing` and GS's, so it lands at the same
+; point relative to the END of the animation.
+trash_object       = energetic_trash
+timing_trash       = 5413
+$spawn          = "weapons\energy_drink_hud_model"
+hud             = energy_drink_hud
+timing          = 5733
+snd_using       = items\energy\energy_drink
+snd_delay       = 250
+snd_delay_detector = 250   ; shorter delay when only a detector is in hands (it holsters faster)
+gwr_eatable_object = energy_drink_eatable
+effect_delay       = 4500
+
+[energy_drink_hud]:gwr_base_usable_hud
+hands_position      = 0.0,-0.02,0.14
+hands_position_16x9 = 0.0,-0.02,0.14
+item_visual     = gwr\food\energy\energy_hud
+anm_show        = energy_drink
+anm_hide        = zaglushka
+anm_idle        = zaglushka
+anm_idle_aim    = zaglushka
+anm_idle_moving = zaglushka
+anm_idle_sprint = zaglushka
+anm_bore        = zaglushka

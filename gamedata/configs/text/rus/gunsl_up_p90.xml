@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+	<string id="gunsl_p90_up_reliability_name">
+		<text>Защитное покрытие</text>
+	</string>
+	<string id="gunsl_p90_up_reliability_descr">
+		<text>Нанесение специального напыления на внутренние детали позволяет замедлить износ оружия.</text>
+	</string>	
+	
+	<string id="gunsl_p90_up_usm_name">
+		<text>Калибровка УСМ</text>
+	</string>
+	<string id="gunsl_p90_up_usm_descr">
+		<text>Индивидуальная подгонка и балансировка стандартных деталей ударно-спускового механизма позволяет добиться более высокой точности стрельбы при одновременном снижении отдачи.</text>
+	</string>	
+	
+	<string id="gunsl_p90_up_torch_name">
+		<text>Тактический фонарь</text>
+	</string>
+	<string id="gunsl_p90_up_torch_descr">
+		<text>Узконаправленный фонарь дальнего радиуса действия незаменим в ночных вылазках, а также при исследовании неосвещенной местности.</text>
+	</string>	
+</string_table>

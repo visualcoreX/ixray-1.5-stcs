@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_wpn_gauss">
+		<text>Gauss rifle</text>
+	</string>
+<string id="gunsl_wpn_gauss_descr">
+		<text>Super-accurate hi-tech weapon known as "Item 62", this rifle was developed in secret laboratories located inside the Zone. The weapon operates by accelerating bullets to extremely high velocities using a system of electromagnets, which provides incredible penetration and stopping power with recoil similar to 7.62x54mmR sniper rifles. The weapon is powered by using capsulated artifact fragments in the batteries. Equipped with an integrated smart optical scope. On the left side of the chassis a mount for a minicomputer is located, which allows to track the condition and characteristics of the weapon.</text>
+	</string>
+</string_table>

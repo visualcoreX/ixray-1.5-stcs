@@ -27,7 +27,7 @@ MaxHealthValue		    = 200								 ; range [0..200]
 DynamicObjectsCount		= 32
 smart_terrain_choose_interval	= 00:15:00
 Spawn_Inventory_Item_Section = mutant_boar_leg
-Spawn_Inventory_Item_Probability = 0.0
+Spawn_Inventory_Item_Probability = 0.2
 
 ;------------------------------------------------------------------------
 ; Physics
@@ -65,13 +65,14 @@ separate_range  = 3   ; радиус в котором расталкивание действует
 ;------------------------------------------------------------------------
 
 ; speed factors			linear | angular_real | angular_path | min	 |  max
-Velocity_Stand			= 0,		1.4,			1.4,		1,		1	
-Velocity_RunFwdNormal	= 7.5,		3.5,			3.5,		0.4,	1	
-Velocity_RunFwdDamaged	= 4.5,		3.0,			3.0,		0.2,	1
-Velocity_WalkFwdDamaged	= 1.3,		2.5,			2.5,		0.2,	2.0	
-Velocity_WalkFwdNormal	= 1.75,		2.5,			2.5,		0.02,	3.0	
+; CoP behaviour port: slower charge, sharper turning (orig CS values in comments)
+Velocity_Stand			= 0,		3.4,			3.0,		1,		1	; orig 0, 1.4, 1.4, 1, 1
+Velocity_RunFwdNormal	= 5.5,		3.0,			2.8,		0.4,	1	; orig 7.5, 3.5, 3.5, 0.4, 1
+Velocity_RunFwdDamaged	= 4.5,		3.0,			2.8,		0.2,	1	; orig 4.5, 3.0, 3.0, 0.2, 1
+Velocity_WalkFwdDamaged	= 1.3,		3.0,			2.8,		0.2,	2.0	; orig 1.3, 2.5, 2.5, 0.2, 2.0
+Velocity_WalkFwdNormal	= 1.75,		3.0,			2.8,		0.02,	3.0	; orig 1.75, 2.5, 2.5, 0.02, 3.0
 Velocity_Drag			= -1.0,		1.0,			1.0,		1,		1
-Velocity_Steal			= 1.5,		3.0,			3.0,		1,		1
+Velocity_Steal			= 1.5,		3.0,			2.5,		1,		1	; orig 1.5, 3.0, 3.0, 1, 1
 
 ; acceleration
 Accel_Generic			= 1.5
@@ -87,13 +88,50 @@ attack_params			= m_boar_attack_params
 ;attack parameters
 MinAttackDist			= 2.6	
 MaxAttackDist			= 3.2
-as_min_dist				= 1.4
+as_min_dist				= 1.6	; orig 1.4 (CoP)
 as_step					= 0.5
 
 Run_Attack_Dist			= 3.5,		4.0
 Run_Attack_Delay		= 1000,		3000
 
 Melee_Rotation_Factor	= 2.2
+
+;------------------------------------------------------------------------
+; Attack On Move (CoP): the boar charges past the target, hits on the run,
+; loops out and comes back in. Engine: CStateMonsterAttackOnRun.
+; Our OMF has a single charge motion, so both sides point at the same one.
+;------------------------------------------------------------------------
+
+aom_enabled								=	1
+aom_animation_left						=	stand_attack_run_
+aom_animation_right						=	stand_attack_run_
+aom_far_radius							=	8
+aom_max_go_close_time					=	8
+aom_prepare_time						=	4
+aom_attack_radius						=	1
+aom_update_side_period					=	3
+aom_prediction_factor					=	1.2
+
+;------------------------------------------------------------------------
+; Gunslinger: a connecting hit can knock the weapon out of the actor's hands.
+; The blow first eats stamina (hit power * hit_stamina_k); only when it is bigger
+; than what is left does the item fly, with a chance of (stamina_hit - stamina).
+; So a rested actor keeps his gun, a winded one loses it. Engine: CBaseMonster::try_knock_actor_weapon.
+;------------------------------------------------------------------------
+
+hit_weapon_drop							=	1
+hit_stamina_k							=	1.2	; GS boar_stamina_hit_k
+hit_weapon_cond_dec_min					=	0.05	; GS boar_hit_conditiondecmin
+hit_weapon_cond_dec_max					=	0.25	; GS boar_hit_conditiondecmax
+hit_weapon_drop_dist					=	-1	; <=0 = no unconditional drop (GS value)
+hit_view_kick_yaw_min					=	4	; view jolt, degrees, scaled by the hit power
+hit_view_kick_yaw_max					=	8
+hit_view_kick_pitch_min					=	3
+hit_view_kick_pitch_max					=	6
+
+; GS boar kick camera motions (anims\camera_effects\weapon\boar_hit_*.anm) instead of the
+; generic monster_base set. Sections at the bottom of this file.
+actor_hit_effect						=	effector_boar_hit
 
 feel_enemy_who_just_hit_max_distance = 20  ;дистанция на которой монстр почувствует стрельнувшего игрока даже спиной
 
@@ -118,6 +156,7 @@ psy_health_v			= 0.1								;скорость восстановления psy-здоровья
 
 ;Immunities 
 immunities_sect			= boar_immunities
+protections_sect			= boar_protections	; GS skin armour
 
 ;открытые раны
 bleeding_v					= 0.05						;потеря крови при номинальной ране в секунду
@@ -268,7 +307,7 @@ stand_attack_0 =	  	0.30,		0.25,	      150,        0.0, 0.5, 0.5,	 -0.6, 0.6, -0
 stand_attack_1 =	  	0.30,		0.25,	      150,        0.0, 0.5, 0.5,	 -0.6, 0.6, -0.6, 0.6,					  3.2
 ;Right Leg Attack
 stand_attack_2 =	  	0.30,		0.5,	      200,        0.0, 1.0, 2.0,	 -0.6, 0.6, -0.6, 0.6,					  3.2
-stand_attack_run_0 =    0.50,		0.5,	      200,        0.0, 1.0, 2.0,	 -0.6, 0.6, -0.6, 0.6,					  2.2
+stand_attack_run_0 =    0.40,		0.5,	      1800,       0.0, 1.0, 2.0,	 -1.0, 1.0, -1.0, 1.0,					  3.2	; orig 0.50 / 200 / -0.6,0.6,-0.6,0.6 / 2.2 (CoP impulse+field)
 
 ;===========================================================================
 ; SPECIAL EFFECTORS
@@ -406,7 +445,7 @@ radiation_immunity		= 0.0
 telepatic_immunity		= 1.0
 chemical_burn_immunity	= 0.8
 explosion_immunity		= 0.15
-fire_wound_immunity		= 0.4 ;0.15
+fire_wound_immunity		= 1.722; orig 0.4 (x2 tougher: was 3.444)
 
 ;*********************************************************************************
 ; BASE PROFILES
@@ -435,7 +474,7 @@ radiation_immunity		= 0.0
 telepatic_immunity		= 0.0
 chemical_burn_immunity	= 0.2
 explosion_immunity		= 0.4
-fire_wound_immunity		= 0.4
+fire_wound_immunity		= 1.722; orig 0.4 (x2 tougher: was 3.444)
 
 [boar_attack_params_weak]
 ;---------------------------------------------------------------------------------------------------------------------------------------------
@@ -447,7 +486,7 @@ stand_attack_0 =	  	0.30,		0.5,	      50,        0.0, 0.5, 0.5,	 -1.0, 1.0, -1.0
 stand_attack_1 =	  	0.30,		0.5,	      50,        0.0, 0.5, 0.5,	 -1.0, 1.0, -1.0, 1.0,					  2.3
 ;Right Leg Attack
 stand_attack_2 =	  	0.30,		0.5,	      50,        0.0, 1.0, 2.0,	 -0.8, 0.8, -1.0, 1.0,					  2.5
-stand_attack_run_0 =    0.50,		0.5,	      100,        0.0, 1.0, 2.0,	 -1.0, 1.0, -1.0, 1.0,					  2.2
+stand_attack_run_0 =    0.40,		0.5,	      1800,       0.0, 1.0, 2.0,	 -1.0, 1.0, -1.0, 1.0,					  3.2	; orig 0.50 / 100 / 2.2 (CoP impulse)
 
 
 
@@ -474,7 +513,7 @@ radiation_immunity		= 0.0
 telepatic_immunity		= 0.0
 chemical_burn_immunity	= 0.2
 explosion_immunity		= 0.3
-fire_wound_immunity		= 0.3
+fire_wound_immunity		= 1.2915; orig 0.3 (x2 tougher: was 2.583)
 
 [boar_attack_params_normal]
 ;---------------------------------------------------------------------------------------------------------------------------------------------
@@ -486,7 +525,7 @@ stand_attack_0 =	  	0.30,		0.6,	      50,        0.0, 0.5, 0.5,	 -1.0, 1.0, -1.0
 stand_attack_1 =	  	0.30,		0.6,	      50,        0.0, 0.5, 0.5,	 -1.0, 1.0, -1.0, 1.0,					  2.3
 ;Right Leg Attack
 stand_attack_2 =	  	0.30,		0.6,	      50,        0.0, 1.0, 2.0,	 -0.8, 0.8, -1.0, 1.0,					  2.5
-stand_attack_run_0 =    0.50,		0.6,	      100,        0.0, 1.0, 2.0,	 -1.0, 1.0, -1.0, 1.0,					  2.2
+stand_attack_run_0 =    0.40,		0.6,	      1800,       0.0, 1.0, 2.0,	 -1.0, 1.0, -1.0, 1.0,					  3.2	; orig 0.50 / 100 / 2.2 (CoP impulse)
 
 
 
@@ -513,7 +552,7 @@ radiation_immunity		= 0.0
 telepatic_immunity		= 0.0
 chemical_burn_immunity	= 0.1
 explosion_immunity		= 0.3
-fire_wound_immunity		= 0.3
+fire_wound_immunity		= 1.2915; orig 0.3 (x2 tougher: was 2.583)
 
 [boar_attack_params_strong]
 ;---------------------------------------------------------------------------------------------------------------------------------------------
@@ -525,7 +564,7 @@ stand_attack_0 =	  	0.20,		0.7,	      50,        0.0, 0.5, 0.5,	 -1.0, 1.0, -1.0
 stand_attack_1 =	  	0.20,		0.7,	      50,        0.0, 0.5, 0.5,	 -1.0, 1.0, -1.0, 1.0,					  2.3
 ;Right Leg Attack
 stand_attack_2 =	  	0.20,		0.7,	      50,        0.0, 1.0, 2.0,	 -0.8, 0.8, -1.0, 1.0,					  2.5
-stand_attack_run_0 =    0.50,		0.7,	      100,        0.0, 1.0, 2.0,	 -1.0, 1.0, -1.0, 1.0,				  2.2
+stand_attack_run_0 =    0.40,		0.7,	      1800,       0.0, 1.0, 2.0,	 -1.0, 1.0, -1.0, 1.0,				  3.2	; orig 0.50 / 100 / 2.2 (CoP impulse)
 
 
 [boar_fake]:boar_weak
@@ -535,3 +574,51 @@ $spawn				= "monsters\boars\boar_fake"
 [boar_zoo]:m_boar_e
 $spawn				= "monsters\boars\boar_zoo"
 species				= zoo_monster
+
+;***************************************************************
+; Gunslinger skin armour (ported 2026-08-09, engine: CBaseMonster::Hit).
+; A bullet whose k_ap beats skin_armor is scaled by (k_ap-skin)/k_ap but never below
+; hit_fraction_monster; one that does not pierce keeps only hit_fraction_monster.
+; tuned down from GS 0.5/0.24 to keep FMJ at the old CS level
+;***************************************************************
+[boar_protections]
+skin_armor				= 0.29
+hit_fraction_monster	= 0.106
+
+;***************************************************************
+; Boar hit camera effectors -- Gunslinger boar_hit_front/back motions.
+; Keys are spelled out instead of inheriting effector_monster_hit: that parent lives in the
+; packed misc\postprocess.ltx and may be parsed after this file.
+;***************************************************************
+[effector_boar_hit_0]
+cam_eff_cyclic	= 0
+cam_eff_name	= camera_effects\weapon\boar_hit_front.anm
+
+[effector_boar_hit_1]
+cam_eff_cyclic	= 0
+cam_eff_name	= camera_effects\weapon\boar_hit_front.anm
+
+[effector_boar_hit_2]
+cam_eff_cyclic	= 0
+cam_eff_name	= camera_effects\weapon\boar_hit_back.anm
+
+[effector_boar_hit_3]
+cam_eff_cyclic	= 0
+cam_eff_name	= camera_effects\weapon\boar_hit_front.anm
+
+[effector_boar_hit_4]
+cam_eff_cyclic	= 0
+cam_eff_name	= camera_effects\weapon\boar_hit_front.anm
+
+[effector_boar_hit_5]
+cam_eff_cyclic	= 0
+cam_eff_name	= camera_effects\weapon\boar_hit_back.anm
+
+[effector_boar_hit_6]
+cam_eff_cyclic	= 0
+cam_eff_name	= camera_effects\weapon\boar_hit_front.anm
+
+[effector_boar_hit_7]
+cam_eff_cyclic	= 0
+cam_eff_name	= camera_effects\weapon\boar_hit_back.anm
+

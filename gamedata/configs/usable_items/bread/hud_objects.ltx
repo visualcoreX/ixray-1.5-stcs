@@ -1,0 +1,49 @@
+; bread -- hud-model phantom (spawned by gwr_eatable) + its hud animation section.
+;
+; anm_show names TWO motions, and that is the whole trick of this HUD architecture:
+;   * the FIRST name is resolved against the HANDS model (player_hud.cpp:1080 -- the motion
+;     container of an attached item is loaded with player_hud::m_model, i.e. wpn_hand) and drives
+;     the hands + the length of the whole gesture;
+;   * the SECOND name is played on the ITEM model itself (attachable_hud_item::anim_play).
+; bread_eat lives in meshes\dynamics\weapons\wpn_hand\wpn_hand_animation.omf (143 frames = 4.77 s),
+; bread_hud inside gwr\food\bread\bread_hud.ogf (171 frames = 5.70 s).
+;
+; Every idle/hide alias also carries the item motion as its second name. The item model has ONE
+; motion and no `idle`, and a missing name there falls back to `idle` -- which would hit the
+; R_ASSERT "model has no motion [idle]". Naming bread_hud keeps every alias resolvable.
+;
+; timing is the HANDS length minus a hair: the phantom is released before anm_show ends, so the
+; item never goes to idle (which would restart bread_hud from frame 0 on the model).
+
+[bread_hud_model]:gwr_base_usable
+; third person: the model that appears in the actor's hand, and the torso gesture
+actor_hand_bone		= bip01_r_hand
+position			= 0.10439, 0.02726, 0.01603
+orientation			= 70, -250, -5.7
+visual				= dynamics\devices\dev_bred\dev_bred.ogf
+actor_torso_anim	= norm_torso_item_drink_staker	; no eat gesture in the xrMPE pack; drink is the closest
+$spawn				= "weapons\bread_hud_model"
+description			= st_bread_descr
+inv_name			= st_bread
+inv_name_short		= st_bread
+; no icon of its own -- phantom, inherits the blank cell from the base section
+hud					= bread_hud
+timing				= 5600	; bread_eat = 170 frames (5667 ms)
+snd_using			= items\bread\bread_use
+snd_delay			= 250
+snd_delay_detector	= 250
+gwr_eatable_object	= bread_eatable
+effect_delay		= 4200
+; no trash: nothing is left of a loaf
+
+[bread_hud]:gwr_base_usable_hud
+item_visual			= gwr\food\bread\bread_hud
+; the models came out of the editor undersized; engine key, applied to the ITEM mesh only
+item_scale			= 1.525
+anm_show			= bread_eat, bread_hud
+anm_hide			= zaglushka, bread_hud
+anm_idle			= zaglushka, bread_hud
+anm_idle_aim		= zaglushka, bread_hud
+anm_idle_moving		= zaglushka, bread_hud
+anm_idle_sprint		= zaglushka, bread_hud
+anm_bore			= zaglushka, bread_hud

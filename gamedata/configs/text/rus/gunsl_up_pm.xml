@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+	<string id="gunsl_wpn_pm_up_sights_name">
+		<text>Тритиевые вставки</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_sights_descr">
+		<text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_usm_accuracy_name">
+		 <text>Калибровка УСМ</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_usm_accuracy_descr">
+		 <text>Индивидуальная подгонка деталей оружия позволяет достичь при стрельбе более высокой точности попаданий.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_usm_rpm_name">
+		 <text>Форсирование УСМ</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_usm_rpm_descr">
+		 <text>Перенастройка УСМ с доработкой некоторых его деталей делает ход спускового крючка более коротким, а сам спуск более мягким. Это позволяет вести огонь в более высоком темпе.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_barrel_sil_name">
+		 <text>Резьба под глушитель</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_barrel_sil_descr">
+		 <text>Замена ствола на удлиненный, со специальной резьбой, предназначенной для накручивания глушителя.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_barrel_hp_name">
+		 <text>Замена ствола</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_barrel_hp_descr">
+		 <text>Замена стандартного ствола на аналог из современного спецсплава повышенной прочности позволяет достигать большего давления пороховых газов и, следовательно, увеличения скорости полета пули.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_plastic_mag_name">
+		 <text>Пластиковый магазин</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_plastic_mag_descr">
+		 <text>Этот продукт современных технологий позволяет вам носить с собой чуть больше других полезных вещей.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_plastic_details_name">
+		 <text>Пластиковые детали</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_plastic_details_descr">
+		 <text>Замена некоторых стандартных металлических корпусных деталей на аналоги из термостойкого пластика позволяет значительно снизить массу оружия.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_handle_recoil_name">
+		 <text>Прорезиненная рукоять</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_handle_recoil_descr">
+		 <text>Замена накладок на более современные зарубежные аналоги благоприятно сказывается на удобстве удержания оружия и точности ведения огня из него.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_reliability_name">
+		 <text>Защитное покрытие</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_reliability_descr">
+		 <text>Нанесение специального напыления на внутренние детали позволяет замедлить износ оружия.</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_recoil_name">
+		 <text>Система компенсации отдачи</text>
+	</string>
+	<string id="gunsl_wpn_pm_up_recoil_descr">
+		 <text>Позволяет значительно снизить отдачу, способствуя более точной стрельбе.</text>
+	</string>
+	
+	<string id="gunsl_wpn_pmm_up_sights_name">
+		 <text>Тритиевые вставки</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_sights_descr">
+		 <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_usm_accuracy_name">
+		 <text>Калибровка УСМ</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_usm_accuracy_descr">
+		 <text>Индивидуальная подгонка деталей оружия позволяет достичь при стрельбе более высокой точности попаданий.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_usm_rpm_name">
+		 <text>Форсирование УСМ</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_usm_rpm_descr">
+		 <text>Перенастройка УСМ с доработкой некоторых его деталей делает ход спускового крючка более коротким, а сам спуск более мягким. Это позволяет вести огонь в более высоком темпе.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_barrel_sil_name">
+		 <text>Резьба под глушитель</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_barrel_sil_descr">
+		 <text>Замена ствола на удлиненный, со специальной резьбой, предназначенной для накручивания глушителя.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_barrel_hp_name">
+		 <text>Замена ствола</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_barrel_hp_descr">
+		 <text>Замена стандартного ствола на аналог из современного спецсплава повышенной прочности позволяет достигать большего давления пороховых газов и, следовательно, увеличения скорости полета пули.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_alter_mag_name">
+		 <text>Замена магазина</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_alter_mag_descr">
+		 <text>Из-за конструктивного просчета магазин оригинального ПММ достаточно быстро изнашивается, становясь причиной осечек в оружии. Замена магазина может уменьшить вероятность осечек.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_plastic_details_name">
+		 <text>Пластиковые детали</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_plastic_details_descr">
+		 <text>Замена некоторых стандартных металлических корпусных деталей на аналоги из термостойкого пластика позволяет значительно снизить массу оружия.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_handle_recoil_name">
+		 <text>Прорезиненная рукоять</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_handle_recoil_descr">
+		 <text>Замена накладок на более современные зарубежные аналоги благоприятно сказывается на удобстве удержания оружия и точности ведения огня из него.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_reliability_name">
+		 <text>Защитное покрытие</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_reliability_descr">
+		 <text>Нанесение специального напыления на внутренние детали позволяет замедлить износ оружия.</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_recoil_name">
+		 <text>Система компенсации отдачи</text>
+	</string>
+	<string id="gunsl_wpn_pmm_up_recoil_descr">
+		 <text>Позволяет значительно снизить отдачу, способствуя более точной стрельбе.</text>
+	</string>
+	
+</string_table>

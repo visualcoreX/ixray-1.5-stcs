@@ -1,0 +1,467 @@
+;------------------------------------------aks74ub_sights------------------------------------------
+[up_sect_aks74ub_sights]
+cost = 500
+crosshair_inertion = -0.3
+control_inertion_factor = -0.1
+show_bones = sight
+
+[up_aks74ub_sights]
+scheme_index = 0, 0
+known = 1
+effects = 
+section = up_sect_aks74ub_sights
+property = prop_lightingsights
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_sights_name
+description =gunsl_aks74ub_up_sights_descr
+icon = ui_gunsl_up_aks74ub_sights
+;------------------------------------------aks74ub_nakladka_priklad------------------------------------------
+[up_sect_aks74ub_nakladka_priklad]
+cost = 1000
+value = -20
+cam_dispersion          = -0.3
+cam_dispersion_inc      = -0.05
+inv_weight              = +0.1
+
+
+zoom_cam_dispersion = -0.2
+zoom_cam_dispersion_inc = -0.1
+show_bones = body3
+
+upgrade_addon_icon = upgrade_addon_icon_stock_amort_3
+upgrade_addon_icon_offset_x = 0
+upgrade_addon_icon_offset_y = 0
+
+[up_aks74ub_nakladka_priklad]
+scheme_index = 0, 1
+known = 1
+effects = 
+section = up_sect_aks74ub_nakladka_priklad
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_nakladka_priklad_name
+description =gunsl_aks74ub_up_nakladka_priklad_descr
+icon = ui_gunsl_up_aks74ub_nakladka_priklad
+;------------------------------------------aks74ub_tsevie------------------------------------------
+[up_sect_aks74ub_tsevie]
+; REQUIRED once scope_status is set here: WeaponUpgrade.cpp reads scope_name/_x/_y from
+; the UPGRADE section (missing key = fatal r_string). Values = the first scope of the list.
+scope_name = wpn_addon_scope_rakurs
+scope_x = 124
+scope_y = -4
+cost = 1500
+hide_bones = foregrip_plastic, foregrip_wood
+show_bones = flash_rail, scope_rakurs
+scopes_sect = scope_rakurs_aks74u
+scope_status				= 2
+
+control_inertion_factor = -0.1
+cam_dispersion          = -0.05
+zoom_cam_dispersion          = =-0.02
+
+PDM_disp_base = -0.1
+PDM_disp_vel_factor = -0.1
+PDM_disp_crouch_no_acc = -0.1
+
+upgrade_addon_icon = icon_element_aks74u_fore
+upgrade_addon_icon_offset_x = 122
+upgrade_addon_icon_offset_y = 0
+
+
+
+[up_aks74ub_tsevie]
+scheme_index = 0, 2
+known = 1
+effects = vartree_aks74ub_laser, vartree_aks74ub_torch
+section = up_sect_aks74ub_tsevie
+property = prop_scope_attach
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_tsevie_name
+description =gunsl_aks74ub_up_tsevie_descr
+icon = ui_gunsl_up_aks74ub_tsevie
+;------------------------------------------aks74ub_lastochka------------------------------------------
+[up_sect_aks74ub_lastochka]
+; REQUIRED once scope_status is set here: WeaponUpgrade.cpp reads scope_name/_x/_y from
+; the UPGRADE section (missing key = fatal r_string). Values = the first scope of the list.
+scope_name = wpn_addon_scope_x2.7
+scope_x = 28
+scope_y = 4
+cost = 1500
+inv_weight              = +0.1
+scopes_sect = scope_pso1m2x1_aks74u, scope_nvas_aks74u, scope_cobra_aks74u, scope_pka_aks74u, scope_kashtan_aks74u, scope_pso1_aks74u, scope_nvsn_aks74u
+scope_status				= 2
+hide_bones = body
+show_bones = rail, scope_cobra, scope_kashtan, scope_nv_assault, scope_pka, scope_pso_assault
+
+[up_aks74ub_lastochka]
+scheme_index = 0, 3
+known = 1
+effects = 
+section = up_sect_aks74ub_lastochka
+property = prop_scope_attach
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_lastochka_name
+description =gunsl_aks74ub_up_lastochka_descr
+icon = ui_gunsl_up_aks74ub_lastochka
+;------------------------------------------aks74ub_laser------------------------------------------
+[up_sect_aks74ub_laser]
+; rewired: GS inherited :red_laser. Params -> [ak74u_laser] in w_ak74u.ltx
+laser_installed = true
+cost = 3500
+show_bones = laser, line	; +line: the beam bone must be shown here -- the engine only hides it (ak74 does the same)
+inv_weight              = +0.2
+crosshair_inertion = -0.1
+
+
+[up_aks74ub_laser]
+scheme_index = 0, 4
+known = 1
+effects = 
+section = up_sect_aks74ub_laser
+property = prop_laser
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_laser_name
+description =gunsl_aks74ub_up_laser_descr
+icon = ui_gunsl_up_aks74ub_laser
+;------------------------------------------aks74ub_torch------------------------------------------
+[up_sect_aks74ub_torch]
+; rewired: GS inherited :tactical_torch. Params -> [ak74u_flashlight] in w_ak74u.ltx
+torch_installed = true
+cost = 3000
+show_bones = flash
+inv_weight              = +0.3
+
+
+
+upgrade_addon_icon = upgrade_addon_icon_flash_ak_2
+upgrade_addon_icon_offset_x = 123
+upgrade_addon_icon_offset_y = 0
+
+
+
+[up_aks74ub_torch]
+scheme_index = 0, 5
+known = 1
+effects = 
+section = up_sect_aks74ub_torch
+property = prop_torch
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_torch_name
+description =gunsl_aks74ub_up_torch_descr
+icon = ui_gunsl_up_aks74ub_torch
+;------------------------------------------aks74ub_handle------------------------------------------
+[up_sect_aks74ub_handle]
+cost = 900
+value = +10
+control_inertion_factor = -0.1
+cam_dispersion = -0.2
+zoom_cam_dispersion = -0.1
+show_bones = handler3
+hide_bones = handler, handler2
+inv_weight = -0.1
+PDM_disp_vel_factor = -0.15
+
+upgrade_addon_icon = upgrade_addon_icon_assault_handler_5
+upgrade_addon_icon_offset_x = 40
+upgrade_addon_icon_offset_y = 0
+
+[up_aks74ub_handle]
+scheme_index = 0, 6
+known = 1
+effects = 
+section = up_sect_aks74ub_handle
+property = prop_inertion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_handle_name
+description =gunsl_aks74ub_up_handle_descr
+icon = ui_gunsl_up_aks74ub_handle
+;------------------------------------------aks74ub_mag45_black------------------------------------------
+[up_sect_aks74ub_mag45_black]
+cost = 500
+value = +15
+show_bones = mag45_black
+hide_bones = mag30_black, mag30
+ammo_mag_size	= +15
+inv_weight              = +0.1
+
+upgrade_addon_icon = upgrade_addon_icon_mag_545_45_black_1
+upgrade_addon_icons_hide = icon_element_aks74ub_mag
+upgrade_addon_icon_offset_x = 96
+upgrade_addon_icon_offset_y = 0
+
+[up_aks74ub_mag45_black]
+scheme_index = 0, 7
+known = 1
+effects = vartree_aks74ub_mag60
+section = up_sect_aks74ub_mag45_black
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_mag45_black_name
+description =gunsl_aks74ub_up_mag45_black_descr
+icon = ui_gunsl_up_aks74ub_mag45_black
+;------------------------------------------aks74ub_mag45_brown------------------------------------------
+[up_sect_aks74ub_mag45_brown]
+cost = 500
+value = +15
+show_bones = mag45
+hide_bones = mag30_black, mag30
+ammo_mag_size	= +15
+inv_weight              = +0.1
+
+upgrade_addon_icon = upgrade_addon_icon_mag_545_45_bakelite_1
+upgrade_addon_icons_hide = icon_element_aks74ub_mag
+upgrade_addon_icon_offset_x = 96
+upgrade_addon_icon_offset_y = 0
+
+[up_aks74ub_mag45_brown]
+scheme_index = 0, 8
+known = 1
+effects = vartree_aks74ub_mag60
+section = up_sect_aks74ub_mag45_brown
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_mag45_brown_name
+description =gunsl_aks74ub_up_mag45_brown_descr
+icon = ui_gunsl_up_aks74ub_mag45_brown
+;------------------------------------------aks74ub_mag60------------------------------------------
+[up_sect_aks74ub_mag60]
+cost = 1500
+value = +15
+show_bones = mag60
+hide_bones_override =  mag45_black, mag45
+ammo_mag_size	= +15
+inv_weight              = +0.1
+
+upgrade_addon_icon = upgrade_addon_icon_mag_545_60_black_1
+upgrade_addon_icons_hide = upgrade_addon_icon_mag_545_45_bakelite_1,upgrade_addon_icon_mag_545_45_black_1
+upgrade_addon_icon_offset_x = 96
+upgrade_addon_icon_offset_y = 0
+
+
+
+[up_aks74ub_mag60]
+scheme_index = 0, 9
+known = 1
+effects = 
+section = up_sect_aks74ub_mag60
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_mag60_name
+description =gunsl_aks74ub_up_mag60_descr
+icon = ui_gunsl_up_aks74ub_mag60
+;------------------------------------------aks74ub_lightdetails------------------------------------------
+[up_sect_aks74ub_lightdetails]
+cost = 4000
+value = -1
+inv_weight              = -1
+control_inertion_factor = -0.1
+
+[up_aks74ub_lightdetails]
+scheme_index = 0, 10
+known = 1
+effects = 
+section = up_sect_aks74ub_lightdetails
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_lightdetails_name
+description =gunsl_aks74ub_up_lightdetails_descr
+icon = ui_gunsl_up_aks74ub_lightdetails
+;------------------------------------------aks74ub_barrel------------------------------------------
+[up_sect_aks74ub_barrel]
+cost = 1500
+value = +20
+bullet_speed = +150
+fire_dispersion_base = -0.02
+
+[up_aks74ub_barrel]
+scheme_index = 0, 11
+known = 1
+effects = vartree_aks74ub_usm
+section = up_sect_aks74ub_barrel
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_barrel_name
+description =gunsl_aks74ub_up_barrel_descr
+icon = ui_gunsl_up_aks74ub_barrel
+;------------------------------------------aks74ub_usm_accuracy------------------------------------------
+[up_sect_aks74ub_usm_accuracy]
+cost = 2500
+value = +20
+fire_dispersion_base = -0.05
+bullet_speed = +10
+crosshair_inertion = -1
+cam_dispersion = -0.1
+zoom_cam_dispersion = -0.05
+cam_dispersion_inc      = -0.1
+zoom_cam_dispersion_inc     = -0.03
+
+PDM_disp_base = -0.2
+PDM_disp_vel_factor 		= -0.1
+PDM_disp_accel_factor 		= -0.2
+PDM_disp_crouch	 			= -0.1
+PDM_disp_crouch_no_acc 		= -0.1
+
+[up_aks74ub_usm_accuracy]
+scheme_index = 0, 12
+known = 1
+effects = vartree_aks74ub_body
+section = up_sect_aks74ub_usm_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_usm_accuracy_name
+description =gunsl_aks74ub_up_usm_accuracy_descr
+icon = ui_gunsl_up_aks74ub_usm_accuracy
+;------------------------------------------aks74ub_usm_rpm------------------------------------------
+[up_sect_aks74ub_usm_rpm]
+cost = 2000
+value = +20
+rpm = +130
+condition_queue_shot_dec     = +0.0002
+misfire_start_prob	     	= +0.001
+misfire_end_prob	     	= +0.005
+
+
+[up_aks74ub_usm_rpm]
+scheme_index = 0, 13
+known = 1
+effects = vartree_aks74ub_body
+section = up_sect_aks74ub_usm_rpm
+property = prop_rpm
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_usm_rpm_name
+description =gunsl_aks74ub_up_usm_rpm_descr
+icon = ui_gunsl_up_aks74ub_usm_rpm
+;------------------------------------------aks74ub_reliability------------------------------------------
+[up_sect_aks74ub_reliability]
+cost = 4000
+value = +50
+condition_queue_shot_dec     = -0.00025
+misfire_start_prob	     	= -0.001
+misfire_end_prob	     	= -0.005
+condition_shot_dec = -0.00005
+
+[up_aks74ub_reliability]
+scheme_index = 0, 14
+known = 1
+effects = 
+section = up_sect_aks74ub_reliability
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_aks74ub_up_reliability_name
+description =gunsl_aks74ub_up_reliability_descr
+icon = ui_gunsl_up_aks74ub_reliability
+;------------------------------------------------------------------------------------
+[vartree_aks74ub_barrel]
+elements = up_aks74ub_barrel
+[vartree_aks74ub_usm]
+elements = up_aks74ub_usm_accuracy, up_aks74ub_usm_rpm
+[vartree_aks74ub_body]
+elements = up_aks74ub_lightdetails, up_aks74ub_reliability
+[vartree_aks74ub_tsevie]
+elements = up_aks74ub_tsevie
+[vartree_aks74ub_laser]
+elements = up_aks74ub_laser
+[vartree_aks74ub_torch]
+elements = up_aks74ub_torch
+[vartree_aks74ub_mag45]
+elements = up_aks74ub_mag45_black, up_aks74ub_mag45_brown
+[vartree_aks74ub_mag60]
+elements = up_aks74ub_mag60
+[vartree_aks74ub_sights]
+elements = up_aks74ub_sights
+[vartree_aks74ub_priklad]
+elements = up_aks74ub_nakladka_priklad
+[vartree_aks74ub_handle]
+elements = up_aks74ub_handle
+[vartree_aks74ub_lastochka]
+elements = up_aks74ub_lastochka

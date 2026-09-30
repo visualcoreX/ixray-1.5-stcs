@@ -30,10 +30,10 @@ max_artefact_count  = 0
 idle_particles        = explosions\campfire_bed_fireplace;campfire_boar_grill
 blowout_particles     = explosions\campfire_disabled
 
-hit_small_particles     = damage_fx\burn_creatures00
-hit_big_particles     = damage_fx\burn_creatures00
-idle_small_particles    = damage_fx\burn_creatures00
-idle_big_particles      = damage_fx\burn_creatures00
+hit_small_particles   = ghost_particles\explosions\campfire_default_burn_hit_small_00
+hit_big_particles     = ghost_particles\explosions\campfire_default_burn_hit_00
+idle_small_particles  = ghost_particles\explosions\campfire_default_burn_idle_small_00
+idle_big_particles    = ghost_particles\explosions\campfire_default_burn_idle_00
 
 idle_particles_dont_stop  = true;
 
@@ -115,10 +115,10 @@ max_artefact_count  = 0
 idle_particles    = explosions\campfire_big
 blowout_particles = explosions\campfire_disabled
 
-hit_small_particles     = damage_fx\burn_creatures
-hit_big_particles     = damage_fx\burn_creatures00
-idle_small_particles    = damage_fx\burn_creatures
-idle_big_particles      = damage_fx\burn_creatures00
+hit_small_particles   = ghost_particles\explosions\campfire_default_burn_hit_small_00
+hit_big_particles     = ghost_particles\explosions\campfire_default_burn_hit_00
+idle_small_particles  = ghost_particles\explosions\campfire_default_burn_idle_small_00
+idle_big_particles    = ghost_particles\explosions\campfire_default_burn_idle_00
 
 idle_particles_dont_stop  = true;
 
@@ -194,10 +194,10 @@ max_artefact_count  = 0
 idle_particles    =
 blowout_particles =
 
-hit_small_particles     = damage_fx\burn_creatures
-hit_big_particles     = damage_fx\burn_creatures00
-idle_small_particles    = damage_fx\burn_creatures
-idle_big_particles      = damage_fx\burn_creatures00
+hit_small_particles   = ghost_particles\explosions\campfire_default_burn_hit_small_00
+hit_big_particles     = ghost_particles\explosions\campfire_default_burn_hit_00
+idle_small_particles  = ghost_particles\explosions\campfire_default_burn_idle_small_00
+idle_big_particles    = ghost_particles\explosions\campfire_default_burn_idle_00
 
 idle_particles_dont_stop  = true;
 
@@ -356,10 +356,10 @@ max_artefact_count  = 0
 idle_particles        = explosions\campfire_bed_fireplace;campfire
 blowout_particles     = explosions\campfire_disabled
 
-hit_small_particles     = damage_fx\burn_creatures00
-hit_big_particles     = damage_fx\burn_creatures00
-idle_small_particles    = damage_fx\burn_creatures00
-idle_big_particles      = damage_fx\burn_creatures00
+hit_small_particles   = ghost_particles\explosions\campfire_default_burn_hit_small_00
+hit_big_particles     = ghost_particles\explosions\campfire_default_burn_hit_00
+idle_small_particles  = ghost_particles\explosions\campfire_default_burn_idle_small_00
+idle_big_particles    = ghost_particles\explosions\campfire_default_burn_idle_00
 
 idle_particles_dont_stop  = true;
 
@@ -433,13 +433,13 @@ period        = 1
 min_artefact_count  = 0
 max_artefact_count  = 0
 
-idle_particles        = explosions\campfire
-blowout_particles     = explosions\campfire_disabled
+idle_particles        = ghost_particles\explosions\campfire_default_00
+blowout_particles     = ghost_particles\explosions\campfire_default_00_blowout
 
-hit_small_particles     = damage_fx\burn_creatures00
-hit_big_particles     = damage_fx\burn_creatures00
-idle_small_particles    = damage_fx\burn_creatures00
-idle_big_particles      = damage_fx\burn_creatures00
+hit_small_particles   = ghost_particles\explosions\campfire_default_burn_hit_small_00
+hit_big_particles     = ghost_particles\explosions\campfire_default_burn_hit_00
+idle_small_particles  = ghost_particles\explosions\campfire_default_burn_idle_small_00
+idle_big_particles    = ghost_particles\explosions\campfire_default_burn_idle_00
 
 idle_particles_dont_stop  = true
 
@@ -511,13 +511,13 @@ period        = 1
 min_artefact_count  = 0
 max_artefact_count  = 0
 
-idle_particles        = explosions\campfire
-blowout_particles     = explosions\campfire_disabled
+idle_particles        = ghost_particles\explosions\campfire_default_00
+blowout_particles     = ghost_particles\explosions\campfire_default_00_blowout
 
-hit_small_particles     = damage_fx\burn_creatures00
-hit_big_particles     = damage_fx\burn_creatures00
-idle_small_particles    = damage_fx\burn_creatures00
-idle_big_particles      = damage_fx\burn_creatures00
+hit_small_particles   = ghost_particles\explosions\campfire_default_burn_hit_small_00
+hit_big_particles     = ghost_particles\explosions\campfire_default_burn_hit_00
+idle_small_particles  = ghost_particles\explosions\campfire_default_burn_idle_small_00
+idle_big_particles    = ghost_particles\explosions\campfire_default_burn_idle_00
 
 idle_particles_dont_stop  = true
 
@@ -576,7 +576,7 @@ script_binding        	= bind_campfire.bind
 
 disabled_particles		= explosions\campfire_disabled
 enabling_particles		= explosions\campfire_enabled
-disabled_sound				= ambient\fire2
+disabled_sound				= ambient\silence
 
 shape_transp_color		= 255, 0, 0, 60
 shape_edge_color		= 32, 32, 32, 255
@@ -591,7 +591,7 @@ script_binding        	= bind_campfire.bind
 idle_particles        = explosions\campfire_bed_fireplace;campfire_hot_no_fire
 disabled_particles		= explosions\campfire_disabled
 enabling_particles		= explosions\campfire_enabled
-disabled_sound				= ambient\fire2
+disabled_sound				= ambient\silence
 
 shape_transp_color		= 255, 0, 0, 60
 shape_edge_color		= 32, 32, 32, 255
@@ -607,7 +607,7 @@ idle_particles		= static\fire_tube
 blowout_particles	=
 disabled_particles		= explosions\campfire_disabled
 enabling_particles		= explosions\campfire_enabled
-disabled_sound				= ambient\fire2
+disabled_sound				= ambient\silence
 
 idle_sound          = ambient\zhar
 blowout_sound       = ambient\fire2
@@ -628,7 +628,7 @@ idle_particles		= industrial_particles\exhaust_isparenie_white_hor
 blowout_particles	=
 disabled_particles		= explosions\campfire_disabled
 enabling_particles		= explosions\campfire_enabled
-disabled_sound				= ambient\fire2
+disabled_sound				= ambient\silence
 
 
 hit_small_particles   = ;damage_fx\burn_creatures00

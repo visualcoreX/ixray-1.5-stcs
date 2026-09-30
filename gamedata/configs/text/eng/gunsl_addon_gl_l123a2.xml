@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_addon_gl_l123a2">
+		<text>L123A2 UGL</text>
+	</string>
+	<string id="gunsl_addon_gl_l123a2_descr">
+		<text>Underbarrel grenade launcher, specifically developed for use with L85A2 rifle. Designed to fire various 40mm grenades used by NATO.</text>
+	</string>
+</string_table>

@@ -1,0 +1,31 @@
+[medkit_scientic_eatable]:identity_immunities
+GroupControlSection = spawn_group
+$spawn              = "weapons\medkit_scientic_eatable"
+$prefetch           = 8
+class               = II_MEDKI
+cform               = skeleton
+visual              = gwr\main\fake_object
+description         = st_medkit_science_descr
+inv_name            = st_medkit_science
+inv_name_short      = st_medkit_science
+inv_weight          = 0.0
+cost                = 0
+inv_grid_width      = 1
+inv_grid_height     = 1
+inv_grid_x          = 20
+inv_grid_y          = 0
+
+eat_health          = 1.0
+eat_satiety         = 0
+eat_power           = 0.0
+eat_radiation       = -1.0
+wounds_heal_perc    = 1.0
+eat_portions_num    = 1
+eat_max_power       = 0.1
+
+; GS medicine intoxication, read by gunsl_peredoz.script (GS medkit_sci -- the gentlest of the three, as it should be).
+; sqprop is proportional to what is already in the blood, mul multiplies it, the flat
+; lsd_factor is the dose itself; _master replaces it from veteran up.
+lsd_factor          = 0.1
+lsd_factor_master   = 0.15
+lsd_factor_sqprop   = 0.4

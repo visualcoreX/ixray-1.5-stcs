@@ -1,12 +1,12 @@
 [up_sect_a_g36]
 cost		      		= 2500
 value					= +15
-rpm                     = 100
+rpm                     = 40	; balance 5.56: L85 < LR300 < G36 (was 100)
 
 [up_sect_b_g36]
 cost		      		= 2500
 value					= +30
-fire_dispersion_base	= -0.15
+fire_dispersion_base	= -0.03	; balance 5.56: L85 < LR300 < G36 (was -0.15)
 
 [up_sect_c_g36]
 cost		      		= 2500
@@ -36,44 +36,60 @@ zoom_cam_step_angle_horz     = -0.45		;1.5
 
 [up_sect_e_g36]
 cost		      		= 2500
-grenade_launcher_status = 2
-grenade_launcher_name   = wpn_addon_grenade_launcher_m203
-grenade_launcher_x      = 128
-grenade_launcher_y      = 28
+value					= +10
+fire_dispersion_base	= -0.02	; 0.7 ; balance 5.56: L85 < LR300 < G36 (was -0.07)
 
 [up_sect_f_g36]
 cost		      		= 2500
 value					= +50
 bullet_speed			= 200
-hit_power				= 0.45, 0.45, 0.45, 0.45
+hit_power				= 0.05, 0.05, 0.05, 0.05	; balance 5.56: L85 < LR300 < G36 (was 0.45, 0.45, 0.45, 0.45)
 
 [up_sect_g_g36]
 cost					= 2500
-value					= "x1.6"
-zoom_rotate_time		= 0.15
-scope_zoom_factor       = 15 	;30 
+value					= +15
+control_inertion_factor	= -0.18
+inv_weight				= -0.3
 
 [up_sect_h_g36]
 cost					= 2500
-value					= "x4"
-zoom_rotate_time		= 0.25
-scope_zoom_factor       = -15 	;30
+value					= -10
+
+cam_dispersion			= -0.02
+cam_dispersion_inc		= -0.02
+cam_step_angle_horz		= -0.12
+
+zoom_cam_dispersion			= -0.01
+zoom_cam_dispersion_inc		= -0.01
+zoom_cam_step_angle_horz	= -0.1
 
 [up_sect_i_g36]
 cost		      		= 2500
-value					= +15
-ammo_mag_size           = 15
+value					= +10		; orig +15
+ammo_mag_size           = 10		; orig 15
+; big magazine: replaces the default mag sprite on the inventory icon
+upgrade_addon_icon          = upgrade_addon_icon_g36_mag_big
+upgrade_addon_icon_offset_x = 107
+upgrade_addon_icon_offset_y = 48
+upgrade_addon_icons_hide    = icon_element_g36_mag
+; swap the standard magazine + magwell for the extended pair on the HUD model.
+; children (ammo40_*) follow their parent -- set_bone_visible is recursive, and naming a child
+; here would fight the re-hide pass in gwr_UpdateBones.
+; magazin/magazin40 are the WORLD model's pair (hud has mag30*/mag40*); both lists go to both
+; models, so one line covers the weapon in the hands and on the ground / on an NPC.
+hide_bones = magwell, mag30, mag30_2, magazin
+show_bones = magwell_adv, mag40, mag40_2, magazin40
 
 [up_sect_ac_g36]
 cost		      		= 3750
 value					= +25
-rpm						= 150
+rpm						= 55	; balance 5.56: L85 < LR300 < G36 (was 150)
 
 [up_sect_bd_g36]
 cost		      		= 3750
 value					= +50
 bullet_speed			= 200
-hit_power				= 0.5, 0.5, 0.5, 0.5
+hit_power				= 0.05, 0.05, 0.05, 0.05	; balance 5.56: L85 < LR300 < G36 (was 0.5, 0.5, 0.5, 0.5)
 
 [up_sect_eg_g36]
 cost		      		= 3750
@@ -90,17 +106,17 @@ zoom_cam_step_angle_horz     = -0.3		;1.5
 [up_sect_fh_g36]
 cost		      		= 3750
 value					= +40
-fire_dispersion_base	= -0.2
+fire_dispersion_base	= -0.03	; balance 5.56: L85 < LR300 < G36 (was -0.2)
 
 [up_sect_aceg_g36]
 cost		      		= 6250
 value					= +50
-rpm						= 300
+rpm						= 75	; balance 5.56: L85 < LR300 < G36 (was 300)
 
 [up_sect_bdfh_g36]
 cost		      		= 6250
 value					= +40
-fire_dispersion_base    = -0.2		;1.0
+fire_dispersion_base    = -0.04	; 1.0 ; balance 5.56: L85 < LR300 < G36 (was -0.2)
 
 [up_a_g36]
 scheme_index            = 0, 0
@@ -193,7 +209,7 @@ scheme_index            = 0, 4
 known                   = 1
 effects                 = up_gr_eg_g36
 section                 = up_sect_e_g36
-property                = prop_underbarrel_slot
+property                = prop_dispersion
 
 precondition_functor    = inventory_upgrades.precondition_functor_a
 precondition_parameter  = a & b
@@ -205,9 +221,9 @@ effect_parameter        = something_here
 prereq_functor          = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
 prereq_params           = money(1000), item(habar)
-name                    = st_upg_bind_grenade
-description             = st_upg_bind_grenade_descr
-icon                    = ui_wp_upgrade_35
+name                    = st_upg_handle_accur2
+description             = st_upg_handle_accur2_descr
+icon                    = ui_wp_upgrade_09
 
 [up_f_g36]
 scheme_index            = 0, 5
@@ -234,7 +250,7 @@ scheme_index            = 0, 6
 known                   = 1
 effects                 = up_gr_eg_g36
 section                 = up_sect_g_g36
-property                = prop_scope_1.6x
+property                = prop_inertion
 
 precondition_functor    = inventory_upgrades.precondition_functor_a
 precondition_parameter  = a & b
@@ -246,16 +262,16 @@ effect_parameter        = something_here
 prereq_functor          = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
 prereq_params           = money(1000), item(habar)
-name                    = st_upg_scope_1_6x_opt
-description             = st_upg_scope_1_6x_opt_descr
-icon                    = ui_wp_upgrade_29
+name                    = st_upg_butt_recoil3
+description             = st_upg_butt_recoil3_descr
+icon                    = ui_wp_upgrade_15
 
 [up_h_g36]
 scheme_index            = 0, 7
 known                   = 1
 effects                 = up_gr_fh_g36
 section                 = up_sect_h_g36
-property                = prop_scope_4x
+property                = prop_recoil
 
 precondition_functor    = inventory_upgrades.precondition_functor_a
 precondition_parameter  = a & b
@@ -266,9 +282,9 @@ effect_parameter        = something_here_h
 prereq_functor          = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
 prereq_params           = money(1000), item(habar)
-name                    = st_upg_scope_4x_opt
-description             = st_upg_scope_4x_opt_descr
-icon                    = ui_wp_upgrade_28
+name                    = st_upg_butt_recoil4
+description             = st_upg_butt_recoil4_descr
+icon                    = ui_wp_upgrade_16
 
 [up_i_g36]
 scheme_index            = 0, 8

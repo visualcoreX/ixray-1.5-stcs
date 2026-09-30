@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_svu_nimble">
+		<text>SVU-A</text>
+	</string>
+	<string id="gunsl_wpn_svu_nimble_descr">
+		<text>SVU-A (Sniper Rifle Shortened - Automatic) is the further development of SVU rate of fire is the next step in the evolution of the SVU sniper rifle. Has select fire capability. This rare firearm belonged to Max, the legendary guardian of Freedom.</text>
+	</string>
+</string_table>

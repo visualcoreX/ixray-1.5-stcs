@@ -1,18 +1,18 @@
 [list_tm_red_forest]
 red_pursuit_strelok_task
 red_pursuit_destroy_ambush
-red_pursuit_talk_csky
+;red_pursuit_talk_csky
 red_find_forester
 red_go_to_signal_sos
 red_take_red_forest_map_pda
 red_find_teleport
 red_find_teleport_2
-red_find_signals_on_military
+;red_find_signals_on_military
 red_find_compass
 red_bring_compass
 red_go_to_military_base
 red_help_with_bridge
-red_bridge_talk_with_comander
+;red_bridge_talk_with_comander
 red_bridge_go_to_positon
 red_bridge_wait_for_allyes
 red_bridge_cover_allyes
@@ -37,7 +37,6 @@ name = red_pursuit_strelok_name
 text = red_pursuit_strelok_text
 target_story_ids = 505
 condlist_0 = {+red_pursuit_csky_talk2} fail
-;on_complete = %+red_pursuit_task_end%
 
 [red_pursuit_destroy_ambush]
 type = storyline
@@ -48,23 +47,21 @@ prior = 20
 name = red_pursuit_destroy_ambush_name
 text = red_pursuit_destroy_ambush_text
 target_story_ids = 511
-;condlist_0 = {+red_pursuit_strelok_spich +red_pursuit_tunnel_explode} complete
 condlist_0 = {+red_pursuit_bounty_hunter_surrender_info} complete, {!squad_exist(red_pursuit_bounty_hunters_squad_1) !squad_exist(red_pursuit_bounty_hunters_squad_2)} complete, {+red_bounty_hunters_free} reversed
-;condlist_1 = {!squad_exist(red_pursuit_bounty_hunters_squad_2)} complete
 on_complete = %+red_strelok_task_end%
 on_reversed = %+red_strelok_task_end%
-	
-[red_pursuit_talk_csky]
-type = storyline
-task_type = storyline
+
+;[red_pursuit_talk_csky]
+;type = storyline
+;task_type = storyline
 ;icon = ui_mt_image_attack_tower
-target_cond = true
-prior = 5
-name = red_pursuit_strelok_name
-text = red_pursuit_strelok_text
-target_story_ids = 512
-condlist_0 = {+red_pursuit_csky_talk2} complete
-on_complete = %+red_pursuit_task_end%
+;target_cond = true
+;prior = 5
+;name = red_pursuit_strelok_name
+;text = red_pursuit_strelok_text
+;target_story_ids = 512
+;condlist_0 = {+red_pursuit_csky_talk2} complete
+;on_complete = %+red_pursuit_task_end%
 
 [red_go_to_signal_sos]
 type = storyline
@@ -77,7 +74,6 @@ text = red_go_to_signal_sos_text
 target_story_ids = 521
 condlist_0 = {+red_go_to_sos_signal_task_complete} reversed
 condlist_1 = {+red_actor_find_forester} reversed
-condlist_2 = {+red_actor_find_teleport} reversed
 
 [red_take_red_forest_map_pda]
 type = storyline
@@ -90,7 +86,6 @@ text = red_take_red_forest_map_pda_text
 target_story_ids = 521
 condlist_0 = {+red_teleport_way} complete
 condlist_1 = {+red_actor_find_forester} reversed
-condlist_2 = {+red_actor_find_teleport} reversed
 
 [red_find_teleport]
 type = storyline
@@ -125,7 +120,6 @@ prior = 10
 name = red_find_forester_name
 text = red_find_forester_text
 target_story_ids = 515
-;target_story_ids = 521
 condlist_0 = {+red_actor_find_forester} complete
 on_complete = %+red_forest_open%
 
@@ -165,19 +159,19 @@ condlist_1 = {+red_bridge_actor_fail} fail
 community_relation_delta_complete = 5000
 community_relation_delta_fail = -100
 reward_money = 50000
-reward_item = wpn_fn2000
+reward_item = wpn_sig550_luckygun	; was wpn_fn2000 + an M203: the FN2000 is a stat-for-stat copy of the SIG550, and the SIG552 mounts no launcher (grenade_launcher_status = 0)
 
-[red_bridge_talk_with_comander]
-type = storyline
-task_type = storyline
+;[red_bridge_talk_with_comander]
+;type = storyline
+;task_type = storyline
 ;icon = ui_mt_image_attack_tower
-target_cond = true
-prior = 11
-name = red_bridge_talk_with_comander_name
-text = red_bridge_talk_with_comander_text
-target_story_ids = 501
-condlist_0 = {+red_bridge_actor_come} complete
-condlist_1 = {+red_bridge_clear_path} complete
+;target_cond = true
+;prior = 11
+;name = red_bridge_talk_with_comander_name
+;text = red_bridge_talk_with_comander_text
+;target_story_ids = 501
+;condlist_0 = {+red_bridge_actor_come} complete
+;condlist_1 = {+red_bridge_clear_path} complete
 
 [red_bridge_go_to_positon]
 type = storyline
@@ -250,16 +244,16 @@ text = red_bridge_kill_sniper_text
 target_story_ids = 504
 condlist_0 = {+red_bridge_sniper_task_complete} complete
 
-;************* connect with military level *****************
+; Connected with the Army Warehouses
 
-[red_find_signals_on_military]
-type = storyline
-task_type = storyline
+;[red_find_signals_on_military]
+;type = storyline
+;task_type = storyline
 ;icon = ui_mt_image_defend_tower
-name = red_find_signals_on_military_name
-text = red_find_signals_on_military_text
-target_story_ids = 1209
-condlist_0 = {+mil_actor_inside_wtower} complete
+;name = red_find_signals_on_military_name
+;text = red_find_signals_on_military_text
+;target_story_ids = 1209
+;condlist_0 = {+mil_actor_inside_wtower} complete
 
 [red_go_to_military_base]
 type = storyline
@@ -270,9 +264,9 @@ name = red_go_to_military_base_name
 text = red_go_to_military_base_text
 target_story_ids = 1215
 condlist_0 = {+forester_talked_2 =actor_on_level(military)} complete
-on_complete = %+red_bridge_scene_begin%
+;on_complete = %+red_bridge_scene_begin%
 
-;*********** additional quest **********************
+; Additional quests
 
 [red_artefact_hunters_defend_squad]
 type = storyline
@@ -297,20 +291,19 @@ prior = 7
 name = red_artefact_huntesr_defend_smart_name
 text = red_artefact_huntesr_defend_smart_text
 on_complete = % +red_artefact_hunters_task_2_complete%
-;reward_money = 2500
 reward_item = af_cristall_flower
 
-[red_forest_stalker_bring_map]
-type = recover_item
-task_type = additional
+;[red_forest_stalker_bring_map]
+;type = recover_item
+;task_type = additional
 ;icon = ui_mt_image_attack_tower
-target_cond = {-red_forest_allyes_have_map =check_npc_squad(red_stalker_artefact_hunters_1)}
-prior = 9
-name = red_forest_stalker_bring_map_name
-text = red_forest_stalker_bring_map_text
-requested_items = red_forest_pda_map
-on_complete = %+red_forest_allyes_have_map%
-reward_money = 1000
+;target_cond = {-red_forest_allyes_have_map =check_npc_squad(red_stalker_artefact_hunters_1)}
+;prior = 9
+;name = red_forest_stalker_bring_map_name
+;text = red_forest_stalker_bring_map_text
+;requested_items = red_forest_pda_map
+;on_complete = %+red_forest_allyes_have_map%
+;reward_money = 1000
 
 [red_stalker_reinforced]
 type = capture_smart
@@ -320,13 +313,12 @@ target_cond = {=target_smart_name(red_smart_terrain_3_2) =actor_on_level(red_for
 prior = 7
 name = red_stalker_reinforced_name
 text = red_stalker_reinforced_text
-on_complete = %+red_capture_undeground_camp_done%
+;on_complete = %+red_capture_undeground_camp_done%
 reward_money = 3000
 
+; Recover Items
 
-;Recover Items
-
-[red_recover_item_1]   ;Принести КПК с картой Рыжего леса
+[red_recover_item_1]
 type = recover_item
 task_type = additional
 name = red_recover_item_1_name
@@ -341,7 +333,7 @@ community_relation_delta_complete = 100
 reward_money = 1500
 auto_faction = true
 
-[red_recover_item_2]   ;Принести пулемет из танка
+[red_recover_item_2]
 type = recover_item
 task_type = additional
 name = red_recover_item_2_name
@@ -356,7 +348,7 @@ community_relation_delta_complete = 100
 reward_money = 7500
 auto_faction = true
 
-[red_recover_item_3]   ;Вернуть экспериментальное устройство
+[red_recover_item_3]
 type = recover_item
 task_type = additional
 name = red_recover_item_3_name

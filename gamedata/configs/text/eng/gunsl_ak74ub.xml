@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_ak74ub">
+		<text>AKS-74UB</text>
+	</string>
+	<string id="gunsl_wpn_ak74ub_descr">
+		<text>%c[01,255,128,0] Shortened suppressed version of AKS-74, designed for special forces. Standard muzzle brake is replaced with a PBS-4 suppressor. Standard wooden handguard and metal stock are replaced with plastic counterparts. %c[01,255,255,255]</text>
+	</string>
+</string_table>

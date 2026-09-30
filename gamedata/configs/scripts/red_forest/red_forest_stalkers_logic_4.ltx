@@ -1,6 +1,3 @@
-;**********************************
-;********* stalker 4 ***********
-
 [logic]
 active = walker@open_gate
 
@@ -10,4 +7,5 @@ combat_ignore_cond = {!npc_in_zone(red_forest_pda_map_zone)}
 out_restr = red_forest_pda_map_zone
 path_walk = red_forest_stalkers_gate_4_walk
 path_look = red_forest_stalkers_gate_4_walk
-on_info = %=kill_npc()%
+;def_state_standing = threat_fire
+on_info = %=kill_npc%

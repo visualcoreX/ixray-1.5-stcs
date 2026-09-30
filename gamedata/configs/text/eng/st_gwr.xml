@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<!-- Burning actor prompt. Ported from Gunslinger's gunsl_actor_burned; the engine shows it while
+	     you are on fire and not yet beating the flames out. The string table scans this whole folder,
+	     so the file just has to be here (see CStringTable: text\<lang>\*.xml). -->
+	<string id="st_gwr_actor_burned">
+		<text>You are on fire! Press [$$ACTION_use$$] to beat the flames out.</text>
+	</string>
+	<string id="kb_wpn_laser">
+		<text>Laser sight</text>
+	</string>
+	<string id="kb_wpn_flashlight">
+		<text>Weapon flashlight</text>
+	</string>
+	<string id="kb_wpn_kick">
+		<text>Quick knife kick</text>
+	</string>
+	<string id="gunsl_detector_torch">
+		<text>Handheld torch</text>
+	</string>
+	<string id="gunsl_detector_torch_descr">
+		<text>A compact tactical flashlight. Takes the detector slot and is held in the left hand. Lights itself as you draw it.</text>
+	</string>
+	<string id="kb_quick_grenade">
+		<text>Quick grenade throw</text>
+	</string>
+	<string id="kb_scope_brightness_plus">
+		<text>Scope reticle illumination +</text>
+	</string>
+	<string id="kb_scope_brightness_minus">
+		<text>Scope reticle illumination -</text>
+	</string>
+	<string id="st_scope_pso1m2x1">
+		<text>PSO-1M2-1 Assault optical sight</text>
+	</string>
+	<string id="st_scope_pso1m2x1_descr">
+		<text>A fixed-magnification telescopic sight. Its reticle is graduated for firing at medium ranges. For aiming in the dark the sight carries reticle illumination that can be switched on when needed. Normally used with assault rifles fitted with the side-rail mount standard across the Warsaw Pact countries.</text>
+	</string>
+	<string id="st_scope_cobra">
+		<text>Kobra Red dot sight</text>
+	</string>
+	<string id="st_scope_cobra_descr">
+		<text>PK-01VS 'Cobra' collimator (red-dot) sight for fast close-range aiming.</text>
+	</string>
+	<string id="st_scope_pka">
+		<text>PK-A Red dot sight</text>
+	</string>
+	<string id="st_scope_pka_descr">
+		<text>PK-A collimator sight with a magnifying lens.</text>
+	</string>
+	<string id="st_scope_kashtan">
+		<text>1P78-1 Kashtan</text>
+	</string>
+	<string id="st_scope_kashtan_descr">
+		<text>1P76 'Kashtan' compact optical sight.</text>
+	</string>
+	<string id="st_scope_rakurs">
+		<text>Rakurs-PM Assault optical sight</text>
+	</string>
+	<string id="st_scope_rakurs_descr">
+		<text>'Rakurs' collimator (red-dot) sight.</text>
+	</string>
+	<string id="st_scope_night">
+		<text>1PN93-1 Assault night sight</text>
+	</string>
+	<string id="st_scope_night_descr">
+		<text>1PN93-1 night vision sight for assault rifles.</text>
+	</string>
+	<string id="st_scope_detector">
+		<text>1PN93-4 Sniper night sight</text>
+	</string>
+	<string id="st_scope_detector_descr">
+		<text>1PN93-4 night vision sight with extended detection range.</text>
+	</string>
+	<!-- Discord Rich Presence: the line built in discord_rpc.cpp. The level ids and the
+	     community ids are string table ids already (ui_st_pda.xml), so only the wrapper
+	     text needs entries of its own. -->
+	<string id="ui_st_discord_exploring">
+		<text>Exploring:</text>
+	</string>
+	<string id="ui_st_discord_no_task">
+		<text>No active task</text>
+	</string>
+	<string id="ui_st_discord_in_menu">
+		<text>In the main menu</text>
+	</string>
+</string_table>

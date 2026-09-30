@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_bm16">
+		<text>ТОЗ-66</text>
+	</string>
+	<string id="gunsl_wpn_bm16_descr">
+		<text>Охотничье ружье - «горизонталка». Широко распространено в рядах бандитов и сталкеров-новичков. Достаточно эффективно в ближнем бою.</text>
+	</string>
+	<string id="gunsl_up_prop_short_stock">
+		<text>Укороченный приклад</text>
+	</string>
+	<string id="gunsl_up_prop_short_barrel">
+		<text>Укороченный ствол</text>
+	</string>
+</string_table>

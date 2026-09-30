@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_wpn_svu_up_sights_name">
+     <text>Tritium sights</text>
+</string>
+<string id="gunsl_wpn_svu_up_sights_descr">
+     <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+</string>
+<string id="gunsl_wpn_svu_up_mag_name">
+     <text>Lightweight magazine</text>
+</string>
+<string id="gunsl_wpn_svu_up_mag_descr">
+     <text>maintenance magazine reduces overall weight of the firearm.</text>
+</string>
+<string id="gunsl_wpn_svu_up_priklad_weight_name">
+     <text>Lightweight stock</text>
+</string>
+<string id="gunsl_wpn_svu_up_priklad_weight_descr">
+     <text>Lighter stock allows to reduce overall weight of the firearm.</text>
+</string>
+<string id="gunsl_wpn_svu_up_handle_anatomic_name">
+     <text>Rubberized pistol grip</text>
+</string>
+<string id="gunsl_wpn_svu_up_handle_anatomic_descr">
+     <text>Provides better grip for the hand.</text>
+</string>
+<string id="gunsl_wpn_svu_up_barrel_recoil_name">
+     <text>Muzzle brake</text>
+</string>
+<string id="gunsl_wpn_svu_up_barrel_recoil_descr">
+     <text>Aftermarket muzzle brake with better recoil compensation.</text>
+</string>
+<string id="gunsl_wpn_svu_up_barrel_bullet_speed_name">
+     <text>Barrel adjustment</text>
+</string>
+<string id="gunsl_wpn_svu_up_barrel_bullet_speed_descr">
+     <text>Increases muzzle velocity, which in turn increases effective range and stopping power.</text>
+</string>
+<string id="gunsl_wpn_svu_up_pokritie_name">
+     <text>Special coating</text>
+</string>
+<string id="gunsl_wpn_svu_up_pokritie_descr">
+     <text>Application of a protective coating to the internal parts significantly reduces wear.</text>
+</string>
+<string id="gunsl_wpn_svu_up_gascam_name">
+     <text>Improved gas block</text>
+</string>
+<string id="gunsl_wpn_svu_up_gascam_descr">
+     <text>Modified gas block is more effective at redirecting gas from the barrel. Increases muzzle velocity while simultaneously reducing recoil.</text>
+</string>
+<string id="gunsl_wpn_svu_up_usm_rpm_name">
+     <text>Trigger tuning</text>
+</string>
+<string id="gunsl_wpn_svu_up_usm_rpm_descr">
+     <text>Significantly increases rate of fire, simultaneously increasing wear of the moving parts of the trigger group.</text>
+</string>
+<string id="gunsl_wpn_svu_up_barrel_accuracy_name">
+     <text>Faster twist rate</text>
+</string>
+<string id="gunsl_wpn_svu_up_barrel_accuracy_descr">
+     <text>Improves muzzle velocity, which improves accuracy.</text>
+</string>
+<string id="gunsl_wpn_svu_up_mag_lock_name">
+     <text>Improved feeding mechanism</text>
+</string>
+<string id="gunsl_wpn_svu_up_mag_lock_descr">
+     <text>Individual adjustment of the standard parts of the feeding mechanism decreases the probability of malfunctions related to feeding issues.</text>
+</string>
+<string id="gunsl_wpn_svu_up_light_tsevie_name">
+     <text>Lightweight handguard</text>
+</string>
+<string id="gunsl_wpn_svu_up_light_tsevie_descr">
+     <text>Reduces overall weight of the weapon.</text>
+</string>
+<string id="gunsl_wpn_svu_up_zatvor_reliability_name">
+     <text>More durable bolt</text>
+</string>
+<string id="gunsl_wpn_svu_up_zatvor_reliability_descr">
+     <text>Reinforced steel bolt carrier significantly increases the number of times the bolt can cycle without maintenance.</text>
+</string>
+<string id="gunsl_wpn_svu_up_zatvor_accuracy_name">
+     <text>Bolt calibration</text>
+</string>
+<string id="gunsl_wpn_svu_up_zatvor_accuracy_descr">
+     <text>Calibrated bolt with smoother movement within the receiver improves accuracy.</text>
+</string>
+<string id="gunsl_wpn_svu_up_zatvor_balancer_recoil_name">
+     <text>Balanced bolt</text>
+</string>
+<string id="gunsl_wpn_svu_up_zatvor_balancer_recoil_descr">
+     <text>Balanced bolt carrier group decreases muzzle climb.</text>
+</string>
+<string id="gunsl_wpn_svu_up_usm_reliability_name">
+     <text>Wear-resistant trigger</text>
+</string>
+<string id="gunsl_wpn_svu_up_usm_reliability_descr">
+     <text>Improves reliability of the firearm by replacing standard parts of the trigger group with their reinforced counterparts.</text>
+</string>
+<string id="gunsl_wpn_svu_up_anatomic_pokritie_tsevie_name">
+     <text>Handguard rubber coating</text>
+</string>
+<string id="gunsl_wpn_svu_up_anatomic_pokritie_tsevie_descr">
+     <text>Provides better grip for the hand, thus improves handling.</text>
+</string>
+<string id="gunsl_wpn_svu_up_prujina_name">
+     <text>Stiffer return spring</text>
+</string>
+<string id="gunsl_wpn_svu_up_prujina_descr">
+     <text>Makes the bolt return to the front position quicker, which increases cyclic rate of fire.</text>
+</string>
+<string id="gunsl_wpn_svu_up_priclad_rezina_name">
+     <text>Recoil pad</text>
+</string>
+<string id="gunsl_wpn_svu_up_priclad_rezina_descr">
+     <text>Anatomical rubberized recoil pad reduced felt recoil.</text>
+</string>
+<string id="gunsl_wpn_svu_up_sheka_name">
+     <text>Cheek riser</text>
+</string>
+<string id="gunsl_wpn_svu_up_sheka_descr">
+     <text>Special pad installed on the stock reduces felt recoil.</text>
+</string>
+<string id="gunsl_wpn_svu_up_titan_details_name">
+     <text>Reinforced receiver</text>
+</string>
+<string id="gunsl_wpn_svu_up_titan_details_descr">
+     <text>Increases durability of the firearm.</text>
+</string>
+</string_table>

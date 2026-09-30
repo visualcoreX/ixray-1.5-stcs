@@ -16,9 +16,22 @@ combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
 def_state_campering = hide_na
 path_walk = lim_final_sniper_attack_walk
-path_look = lim_final_sniper_attack_walk
+path_look = lim_final_sniper_attack_look
 on_info = {+lim_final_sniper_fire} remark@first_fire
 on_info2 = {=actor_in_zone(lim_final_transformer)} camper@walk2
+; player entered lim_final_enemy_restr_2 -> this state, mortal
+on_info3 = {=actor_in_zone(lim_final_enemy_restr_2)} camper@wait_mortal
+
+; copy of [camper@wait] without invulnerable; all targets are _mortal copies (no way back)
+[camper@wait_mortal]
+out_restr = lim_final_sniper_restr
+combat_ignore_cond = true
+combat_ignore_keep_when_attacked = true
+def_state_campering = hide_na
+path_walk = lim_final_sniper_attack_walk
+path_look = lim_final_sniper_attack_look
+on_info = {+lim_final_sniper_fire} remark@first_fire_mortal
+on_info2 = {=actor_in_zone(lim_final_transformer)} camper@walk2_mortal
 
 [remark@first_fire]
 invulnerable = true
@@ -29,9 +42,22 @@ target = actor
 anim = threat_sniper_fire
 on_game_timer = 20 | remark@fire_actor %+lim_final_sniper_fire2%
 on_info = {=actor_in_zone(lim_final_transformer)} camper@walk2
+; player entered lim_final_enemy_restr_2 -> this state, mortal
+on_info2 = {=actor_in_zone(lim_final_enemy_restr_2)} remark@first_fire_mortal
+
+; copy of [remark@first_fire] without invulnerable; all targets are _mortal copies (no way back)
+[remark@first_fire_mortal]
+out_restr = lim_final_sniper_restr
+combat_ignore_keep_when_attacked = true
+combat_ignore_cond = true
+target = actor
+anim = threat_sniper_fire
+on_game_timer = 20 | remark@fire_actor_mortal %+lim_final_sniper_fire2%
+on_info = {=actor_in_zone(lim_final_transformer)} camper@walk2_mortal
 
 [camper@fire]
-;invulnerable = true
+; orig: ;invulnerable = true -- he could be killed here before lim_final_enemy_restr_2
+invulnerable = true
 out_restr = lim_final_sniper_restr
 combat_ignore_cond = {!is_enemy_actor}
 path_walk = lim_final_sniper_attack_walk
@@ -46,9 +72,24 @@ on_info = {=actor_in_zone(lim_final_transformer)} camper@walk2
 ;on_info2 = {+lim_final_sniper_fire_actor} remark@search
 wounded = wounded@work1
 ;sniper = true
+; player entered lim_final_enemy_restr_2 -> this state, mortal
+on_info2 = {=actor_in_zone(lim_final_enemy_restr_2)} camper@fire_mortal
+
+; copy of [camper@fire] without invulnerable; all targets are _mortal copies (no way back)
+[camper@fire_mortal]
+out_restr = lim_final_sniper_restr
+combat_ignore_cond = {!is_enemy_actor}
+path_walk = lim_final_sniper_attack_walk
+path_look = lim_final_sniper_attack_look
+radius = 0
+def_state_campering = threat_na
+def_state_campering_fire = threat_sniper_fire
+on_info = {=actor_in_zone(lim_final_transformer)} camper@walk2_mortal
+wounded = wounded@work1
 
 [remark@fire_actor]
-;invulnerable = true
+; orig: ;invulnerable = true -- he could be killed here before lim_final_enemy_restr_2
+invulnerable = true
 out_restr = lim_final_sniper_restr
 combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
@@ -56,18 +97,43 @@ anim = threat_sniper_fire
 target = actor
 on_game_timer = 50 | {!see_actor} remark@hide
 on_info = {=actor_in_zone(lim_final_transformer)} camper@walk2
+; player entered lim_final_enemy_restr_2 -> this state, mortal
+on_info2 = {=actor_in_zone(lim_final_enemy_restr_2)} remark@fire_actor_mortal
+
+; copy of [remark@fire_actor] without invulnerable; all targets are _mortal copies (no way back)
+[remark@fire_actor_mortal]
+out_restr = lim_final_sniper_restr
+combat_ignore_cond = true
+combat_ignore_keep_when_attacked = true
+anim = threat_sniper_fire
+target = actor
+on_game_timer = 50 | {!see_actor} remark@hide_mortal
+on_info = {=actor_in_zone(lim_final_transformer)} camper@walk2_mortal
 
 [remark@hide]
-;invulnerable = true
+; orig: ;invulnerable = true -- he could be killed here before lim_final_enemy_restr_2
+invulnerable = true
 out_restr = lim_final_sniper_restr
 combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
 anim = hide_na
 on_game_timer = 20 | remark@fire_actor
 on_info = {=actor_in_zone(lim_final_transformer)} camper@walk2
+; player entered lim_final_enemy_restr_2 -> this state, mortal
+on_info2 = {=actor_in_zone(lim_final_enemy_restr_2)} remark@hide_mortal
+
+; copy of [remark@hide] without invulnerable; all targets are _mortal copies (no way back)
+[remark@hide_mortal]
+out_restr = lim_final_sniper_restr
+combat_ignore_cond = true
+combat_ignore_keep_when_attacked = true
+anim = hide_na
+on_game_timer = 20 | remark@fire_actor_mortal
+on_info = {=actor_in_zone(lim_final_transformer)} camper@walk2_mortal
 
 [camper@walk]
-;invulnerable = true
+; orig: ;invulnerable = true -- he could be killed here before lim_final_enemy_restr_2
+invulnerable = true
 out_restr = lim_final_sniper_restr
 combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
@@ -76,8 +142,23 @@ path_look = lim_final_sniper_attack_look
 on_signal = action | remark@fire_actor
 def_state_moving = sneak_run
 wounded = wounded@work1
+; player entered lim_final_enemy_restr_2 -> this state, mortal
+on_info = {=actor_in_zone(lim_final_enemy_restr_2)} camper@walk_mortal
+
+; copy of [camper@walk] without invulnerable; all targets are _mortal copies (no way back)
+[camper@walk_mortal]
+out_restr = lim_final_sniper_restr
+combat_ignore_cond = true
+combat_ignore_keep_when_attacked = true
+path_walk = lim_final_sniper_attack_walk
+path_look = lim_final_sniper_attack_look
+on_signal = action | remark@fire_actor_mortal
+def_state_moving = sneak_run
+wounded = wounded@work1
 
 [camper@walk2]
+; orig: (no invulnerable key) -- he could be killed here before lim_final_enemy_restr_2
+invulnerable = true
 out_restr = lim_final_sniper_restr
 combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
@@ -86,8 +167,23 @@ path_look = lim_final_sniper_attack_2_look
 on_signal = action | camper@fire2
 def_state_moving = sneak_run
 wounded = wounded@work1
+; player entered lim_final_enemy_restr_2 -> this state, mortal
+on_info = {=actor_in_zone(lim_final_enemy_restr_2)} camper@walk2_mortal
+
+; copy of [camper@walk2] without invulnerable; all targets are _mortal copies (no way back)
+[camper@walk2_mortal]
+out_restr = lim_final_sniper_restr
+combat_ignore_cond = true
+combat_ignore_keep_when_attacked = true
+path_walk = lim_final_sniper_attack_2_walk
+path_look = lim_final_sniper_attack_2_look
+on_signal = action | camper@fire2_mortal
+def_state_moving = sneak_run
+wounded = wounded@work1
 
 [camper@fire2]
+; orig: (no invulnerable key) -- he could be killed here before lim_final_enemy_restr_2
+invulnerable = true
 out_restr = lim_final_sniper_restr
 combat_ignore_cond = {!is_enemy_actor}
 path_walk = lim_final_sniper_attack_2_walk
@@ -97,6 +193,20 @@ def_state_campering = hide_na
 def_state_campering_fire = hide_sniper_fire
 on_info = {!actor_in_zone(lim_final_transformer)} camper@walk
 wounded = wounded@work1
+; player entered lim_final_enemy_restr_2 -> this state, mortal
+on_info2 = {=actor_in_zone(lim_final_enemy_restr_2)} camper@fire2_mortal
+
+; copy of [camper@fire2] without invulnerable; all targets are _mortal copies (no way back)
+[camper@fire2_mortal]
+out_restr = lim_final_sniper_restr
+combat_ignore_cond = {!is_enemy_actor}
+path_walk = lim_final_sniper_attack_2_walk
+path_look = lim_final_sniper_attack_2_look
+radius = 0
+def_state_campering = hide_na
+def_state_campering_fire = hide_sniper_fire
+on_info = {!actor_in_zone(lim_final_transformer)} camper@walk_mortal
+wounded = wounded@work1
 
 [wounded@work1]
 hp_state        = 0|wounded_heavy@help_heavy
@@ -104,5 +214,3 @@ hp_state_see    = 0|wounded_heavy@help_heavy
 hp_victim       = 0|nil
 hp_fight        = 0|false
 hp_cover        = 0|false
-
-

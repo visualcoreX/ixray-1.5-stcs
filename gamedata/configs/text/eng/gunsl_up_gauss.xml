@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+	<string id="gunsl_wpn_gauss_up_computer_name">
+		 <text>Condition monitoring system</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_computer_descr">
+		 <text>This monitoring system is an on-board computer, which is closely integrated with the mainframe of the weapon. Software continuously monitors the condition of every firearm assembly unit and shows it on the display. Provides wide possibilities for tweaking the behavior of the gun according to the shooter's preferences.  \n \n%c[01,255,128,0](Hint: to turn on/off the functions of the computer use "Next/Previous firing mode" keys).</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_guard_name">
+		 <text>"Snipe-Guard" complex</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_guard_descr">
+		 <text>Installed on the weapon this software-and-hardware complex provides automatic target acquisition thanks to multiple IR sensors, and prevents the weapon from being fired by blocking the trigger, if the shot is estimated to miss. System is designed exclusively for anti-personnel use.</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_safari_name">
+		 <text>"Safari-Snipe" complex</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_safari_descr">
+		 <text>Complex developed for experienced military snipers, where weapon reliability is crucial. When the system is activated the shot is fired when the estimated point of impact is aligned with the acquired target or after the trigger is released. This method of operation allows to reduce the negative effect of the system's inability to acquire a camouflaged target - even if it failed to acquire a target, the weapon will fire, when the trigger is released. System is designed exclusively for anti-personnel use.  \n \n%c[01,255,128,0](Hint: to enable the functionality turn on the onboard computer by pressing "Next/Previous firing mode" keys).</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_ideal_name">
+		 <text>"Ideal-M" complex</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_ideal_descr">
+		 <text>Highly effective smart fire control system of continuous operation. Complex in its design, yet easy to operate. Pull the trigger and aim at the target - the rifle will do the rest. Boasts of high information processing power, thus operates quickly. Initially developed for anti-personnel use, however it can successfully acquire materiel targets as well. The system was proved to increase hit probability even for rookies. \n \n%c[01,255,128,0](Hint: to enable the functionality turn on the onboard computer by pressing "Next/Previous firing mode" keys).</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_provoda_name">
+		 <text>Wiring replacement</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_provoda_descr">
+		 <text>Higher quality copper wiring with higher conductivity increases initial projectile acceleration and muzzle velocity.</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_katushki_name">
+		 <text>Low-resistance acceleration coils</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_katushki_descr">
+		 <text>Reduces heat output of the weapon. Positively affects durability and increases muzzle velocity.</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_compensator_name">
+		 <text>Magnetic recoil compensator</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_compensator_descr">
+		 <text>Making use of electromagnetic induction, the compensator generates force contra-directional to the recoil impulse, thus making the shooting more comfortable.</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_fast_conders_name">
+		 <text>Fast-charging capacitors</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_fast_conders_descr">
+		 <text>Capacitors accumulate a sufficient charge much faster, thus significantly increasing the rate of fire.</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_ionistori_name">
+		 <text>Supercapacitors</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_ionistori_descr">
+		 <text>Replacing standard capacitors with supercapacitors has numerous benefits. Firstly, it increases weapon's lifespan and reliability. Muzzle velocity and stopping power are also increased. However, a shot requires more energy, thus the number of shots made with a single battery is reduced.</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_lowesr_name">
+		 <text>Low ESR capacitors</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_lowesr_descr">
+		 <text>Capacitors with reduced resistance and low leakage current raise the number of shots made with a single battery, increasing the weapon's lifespan.</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_zoom_name">
+		 <text>Optical magnification block</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_zoom_descr">
+		 <text>Installation of the block allows to adjust scope magnification in a wide range.</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_nv_name">
+		 <text>Photomultiplier block</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_nv_descr">
+		 <text>With the block installed the shooter is able to adjust contrast, that facilitates shooting in poorly-lit environments.</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_kardan_ammo_name">
+		 <text>Improved charging mechanism</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_kardan_ammo_descr">
+		 <text>Improves reliability and enables the use of home-made batteries.</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_priklad_weight_name">
+		 <text>Lightweight stock</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_priklad_weight_descr">
+		 <text>Reduces the weight of the gun, that definitely is a welcome change.</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_priklad_ergonomics_name">
+		 <text>Ergonomic stock</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_priklad_ergonomics_descr">
+		 <text>Improved stock significantly reduces felt recoil.</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_tsevie_ergonomics_name">
+		 <text>Anatomical handguard</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_tsevie_ergonomics_descr">
+		 <text>New custom handguard fit according to the shooter's preferences improves handling.</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_pokritie_name">
+		 <text>Special coating</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_pokritie_descr">
+		 <text>Application of a special protective coating to the moving parts of the weapon prevents corrosion, reduces wear and improves durability.</text>
+	</string>
+
+	<string id="gunsl_wpn_gauss_up_zoom_speed_name">
+		 <text>Scope digital control system</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_zoom_speed_descr">
+		 <text>Controls focus of the lens and digital processing of the image, increases focusing speed during magnification adjustment.</text>
+	</string>
+
+	<string id="gunsl_wpn_gauss_up_magnetic_shield_name">
+		 <text>Electromagnetic shielding</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_magnetic_shield_descr">
+		 <text>As strange as it may seem, but thank to electromagnetic shielding of the power section of the weapon, the number of malfunctions related to emissions practically drops to zero.</text>
+	</string>
+	
+	<string id="gunsl_wpn_gauss_up_detector_name">
+		<text>Target acquisition system</text>
+	</string>
+	<string id="gunsl_wpn_gauss_up_detector_descr">
+		<text>Latest target acquisition system integrated into the sighting device. The system allows to detect most camouflaged targets in any weather condition. When a target is detected, the system marks it with a holographic frame, informing the shooter of enemy presence(even if the target is outside the field of view of the scope), thus facilitating aiming. IFF (Identification, friend or foe) comes as a bonus.</text>
+	</string>	
+	
+</string_table>

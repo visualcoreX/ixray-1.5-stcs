@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_protecta_nimble_up_rail_name">
+     <text>Рельсовое крепление</text>
+</string>
+<string id="gunsl_protecta_nimble_up_rail_descr">
+     <text>Позволяет устанавливать на оружие различные виды прицелов.</text>
+</string>
+<string id="gunsl_protecta_nimble_up_barrel_voronenie_name">
+     <text>Воронение ствола</text>
+</string>
+<string id="gunsl_protecta_nimble_up_barrel_voronenie_descr">
+     <text>Особое термостойкое покрытие делает ствол оружия более стойким к неблагоприятным условиям окружающей среды, повышая надёжность оружия.</text>
+</string>
+<string id="gunsl_protecta_nimble_up_usm_rpm_name">
+     <text>Мягкий спуск</text>
+</string>
+<string id="gunsl_protecta_nimble_up_usm_rpm_descr">
+     <text>Позволяет повысить темп ведения огня.</text>
+</string>
+<string id="gunsl_protecta_nimble_up_ejector_name">
+     <text>Улучшенная отсечка</text>
+</string>
+<string id="gunsl_protecta_nimble_up_ejector_descr">
+     <text>Модификация системы выброса гильз снижает вероятность возникновения задержек при стрельбе.</text>
+</string>
+<string id="gunsl_protecta_nimble_up_barrel_narezka_name">
+     <text>Нарезной ствол</text>
+</string>
+<string id="gunsl_protecta_nimble_up_barrel_narezka_descr">
+     <text>Нарезка ствола позволяет значительно повысить точность стрельбы и увеличивает начальную скорость пули, но делает невозможной стрельбу дробью.</text>
+</string>
+<string id="gunsl_protecta_nimble_up_light_details_name">
+     <text>Облегченные детали</text>
+</string>
+<string id="gunsl_protecta_nimble_up_light_details_descr">
+     <text>Замена стандартных деталей оружия на легковесные аналоги из современных сплавов позволяет снизить массу оружия.</text>
+</string>
+<string id="gunsl_protecta_nimble_up_laser_name">
+     <text>Тактический модуль</text>
+</string>
+<string id="gunsl_protecta_nimble_up_laser_descr">
+     <text>Установка на оружие специального тактического блока, который сочетает в себе функции лазерного целеуказателя и тактического фонаря. Незаменимая вещь для ведения боя в ночных условиях.</text>
+</string>
+<string id="gunsl_protecta_nimble_up_plastic_mag_name">
+     <text>Пластиковый барабан</text>
+</string>
+<string id="gunsl_protecta_nimble_up_plastic_mag_descr">
+     <text>Барабан из современного износостойкого пластика позволяет снизить массу оружия без ухудшения других его характеристик.</text>
+</string>
+<string id="gunsl_protecta_nimble_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_protecta_nimble_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_protecta_nimble_up_body_reliability_name">
+     <text>Защитное покрытие</text>
+</string>
+<string id="gunsl_protecta_nimble_up_body_reliability_descr">
+     <text>Нанесение специального напыления на внутренние детали позволяет замедлить износ оружия.</text>
+</string>
+<string id="gunsl_protecta_nimble_up_stock_name">
+     <text>Складной приклад</text>
+</string>
+<string id="gunsl_protecta_nimble_up_stock_descr">
+     <text>Благодаря установке приклада стрелку становится значительно легче парировать отдачу.</text>
+</string>
+<string id="gunsl_protecta_nimble_up_usm_recoil_name">
+     <text>Компенсатор отдачи</text>
+</string>
+<string id="gunsl_protecta_nimble_up_usm_recoil_descr">
+     <text>Внедрение в конструкцию оружия специального полимерного демпфера позволяет немного снизить ощущаемую стрелком отдачу.</text>
+</string>
+<string id="gunsl_protecta_nimble_up_handle_name">
+     <text>Анатомическая рукоять</text>
+</string>
+<string id="gunsl_protecta_nimble_up_handle_descr">
+     <text>Обеспечивает правой руке более удобный хват.</text>
+</string>
+</string_table>

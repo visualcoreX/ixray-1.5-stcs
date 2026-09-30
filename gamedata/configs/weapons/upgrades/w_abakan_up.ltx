@@ -1,487 +1,567 @@
-[up_sect_a_abakan]
-cost		      		= 2000
-value					= +15
-rpm                     = 100
+; ============================================================================
+;  AN-94 "Abakan" upgrade tree -- Gunslinger assault\an94\upgrades.ltx.
+;  19 nodes / 13 vartrees, scheme_index 0..18 verbatim from GS. Replaces the stock
+;  CS grid (up_gr_*_abakan / upgrade_scheme_u16a).
+;  CS-side adjustments: the knife node lost GS's :base_bayonet parent (no such
+;  section here) and got bayonet_installed instead; the two weight nodes use
+;  prop_weight_kg so the tooltip reads kg, not %.
+;  No laser/torch/rail/silencer nodes in this tree -- nothing to rewire.
+; ============================================================================
 
-[up_sect_b_abakan]
-cost		      		= 2000
-value					= +10
-fire_dispersion_base	= -0.07 ;0.7
+;------------------------------------------abakan_barrel_otkat------------------------------------------
+[up_sect_abakan_barrel_otkat]
+cost = 1500
+value = -10
+cam_dispersion          = -0.05
+cam_dispersion_inc      = -0.03
 
-[up_sect_c_abakan]
-cost		      		= 2000
-value					= -30
+zoom_cam_dispersion = -0.04
+zoom_cam_dispersion_inc = -0.002
 
-cam_dispersion              = -0.03		;0.1
-cam_dispersion_inc         	= -0.18		;0.6
-cam_step_angle_horz        	= -0.18		;0.6
+fire_dispersion_base = -0.01
 
-zoom_cam_dispersion          = -0.03	;0.1
-zoom_cam_dispersion_inc      = -0.3		;0.5
-zoom_cam_step_angle_horz     = -0.15	;0.5
-
-[up_sect_d_abakan]
-cost		      		= 2000
-value					= -50
-value2					= st_upgr_rpm_lowered
-rpm                     = -200
-
-cam_dispersion              = -0.05		;0.1
-cam_dispersion_inc         	= -0.15		;0.6
-cam_step_angle_horz        	= -0.15		;0.6
-
-zoom_cam_dispersion          = -0.05	;0.1
-zoom_cam_dispersion_inc      = -0.15	;0.5
-zoom_cam_step_angle_horz     = -0.15	;0.5
-
-[up_sect_e_abakan]
-cost		      		= 2000
-grenade_launcher_status = 2
-grenade_launcher_name   = wpn_addon_grenade_launcher
-grenade_launcher_x      = 126
-grenade_launcher_y      = 24
-
-[up_sect_f_abakan]
-cost		      		= 2000
-value					= +50
-bullet_speed			= 200
-hit_power				= 0.45, 0.45, 0.45, 0.45
-
-[up_sect_g_abakan]
-cost	      	     	= 2000
-value 					= +15
-control_inertion_factor	= -0.3
-inv_weight				= -0.45
-PDM_disp_vel_factor     = -0.3 ;1.8
-PDM_disp_accel_factor   = -0.3 ;1.8
-
-[up_sect_h_abakan]
-cost		      		= 2000
-value					= -10
-
-cam_dispersion              = -0.01		;0.1
-cam_dispersion_inc         	= -0.06		;0.6
-cam_step_angle_horz        	= -0.06		;0.6
-
-zoom_cam_dispersion          = -0.01	;0.1
-zoom_cam_dispersion_inc      = -0.05	;0.5
-zoom_cam_step_angle_horz     = -0.05	;0.5
-
-[up_sect_i_abakan]
-cost		      		= 2000
-value					= +15
-ammo_mag_size           = 15
-
-[up_sect_j_abakan]
-cost		      		= 1200
-value					= "5.56x45"
-ammo_class				= ammo_5.56x45_ss190, ammo_5.56x45_ap
-
-[up_sect_ac_abakan]
-cost		      		= 3000
-value					= +25
-rpm						= 150
-
-[up_sect_bd_abakan]
-cost		      		= 3000
-value					= +50
-bullet_speed			= 200
-hit_power				= 0.5, 0.5, 0.5, 0.5
-
-[up_sect_eg_abakan]
-cost		      		= 3000
-value					= -20
-
-cam_dispersion              = -0.02		;0.1
-cam_dispersion_inc         	= -0.12		;0.6
-cam_step_angle_horz        	= -0.12		;0.6
-
-zoom_cam_dispersion          = -0.02	;0.1
-zoom_cam_dispersion_inc      = -0.1		;0.5
-zoom_cam_step_angle_horz     = -0.1		;0.5
-
-[up_sect_fh_abakan]
-cost		      		= 3000
-value					= +20
-fire_dispersion_base	= -0.14 ;0.7
-
-[up_sect_aceg_abakan]
-cost		      		= 5000
-value					= +30
-rpm						= 200
-
-[up_sect_bdfh_abakan]
-cost		      		= 5000
-value					= +30
-fire_dispersion_base	= -0.21 ;0.7
-
-[up_a_abakan]
-scheme_index            = 0, 0
-known                   = 1
-effects                 = up_gr_ac_abakan
-section                 = up_sect_a_abakan
-property                = prop_rpm
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = {+tets_info_1}
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = on_weapon_upgrade_something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_barrel_otkat]
+scheme_index = 0, 0
+known = 1
+effects = vartree_abakan_usm
+section = up_sect_abakan_barrel_otkat
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_a_abakan
-name                    = st_upg_zatvor_rpm
-description             = st_upg_zatvor_rpm_descr
-icon                    = ui_wp_upgrade_30
+prereq_params  = 
+name =gunsl_abakan_up_barrel_otkat_name
+description =gunsl_abakan_up_barrel_otkat_descr
+icon = ui_gunsl_up_abakan_barrel_otkat
+;------------------------------------------abakan_barrel_bullet_speed------------------------------------------
+[up_sect_abakan_barrel_bullet_speed]
+cost = 5000
+value = +50
+bullet_speed = +275
 
-[up_b_abakan]
-scheme_index            = 0, 1
-known                   = 1
-effects                 = up_gr_bd_abakan
-section                 = up_sect_b_abakan
-property                = prop_dispersion
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_barrel_bullet_speed]
+scheme_index = 0, 1
+known = 1
+effects = 
+section = up_sect_abakan_barrel_bullet_speed
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_b_abakan
-name                    = st_upg_zatvor_recoil
-description             = st_upg_zatvor_recoil_descr
-icon                    = ui_wp_upgrade_31
+prereq_params  = 
+name =gunsl_abakan_up_barrel_bullet_speed_name
+description =gunsl_abakan_up_barrel_bullet_speed_descr
+icon = ui_gunsl_up_abakan_barrel_bullet_speed
+;------------------------------------------abakan_barrel_accuracy------------------------------------------
+[up_sect_abakan_barrel_accuracy]
+cost = 5000
+value = +30
+fire_dispersion_base = -0.05
+PDM_disp_base = -0.3
+PDM_disp_vel_factor 		= -0.1
+PDM_disp_accel_factor 		= -0.2
+PDM_disp_crouch	 		= -0.1
+PDM_disp_crouch_no_acc 		= -0.1
 
-[up_c_abakan]
-scheme_index            = 0, 2
-known                   = 1
-effects                 = up_gr_ac_abakan
-section                 = up_sect_c_abakan
-property                = prop_recoil
+cam_dispersion = -0.05
+zoom_cam_dispersion = -0.02
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_barrel_accuracy]
+scheme_index = 0, 2
+known = 1
+effects = 
+section = up_sect_abakan_barrel_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_c_abakan
-name                    = st_upg_porsh_recoil
-description             = st_upg_porsh_recoil_descr
-icon                    = ui_wp_upgrade_41
+prereq_params  = 
+name =gunsl_abakan_up_barrel_accuracy_name
+description =gunsl_abakan_up_barrel_accuracy_descr
+icon = ui_gunsl_up_abakan_barrel_accuracy
+;------------------------------------------abakan_barrel_compensator------------------------------------------
+[up_sect_abakan_barrel_compensator]
+cost = 5000
+value = -25
+PDM_disp_base = -0.1
 
-[up_d_abakan]
-scheme_index            = 0, 3
-known                   = 1
-effects                 = up_gr_bd_abakan
-section                 = up_sect_d_abakan
-property                = prop_recoil
+cam_dispersion = -0.15
+cam_dispersion_inc = -0.12
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
+zoom_cam_dispersion = -0.06
+zoom_cam_dispersion_inc = -0.05
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_barrel_compensator]
+scheme_index = 0, 3
+known = 1
+effects = 
+section = up_sect_abakan_barrel_compensator
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_d_abakan
-name                    = st_upg_porsh_rpm
-description             = st_upg_porsh_rpm_descr
-icon                    = ui_wp_upgrade_42
+prereq_params  = 
+name =gunsl_abakan_up_barrel_compensator_name
+description =gunsl_abakan_up_barrel_compensator_descr
+icon = ui_gunsl_up_abakan_barrel_compensator
+;------------------------------------------abakan_body_reliability------------------------------------------
+[up_sect_abakan_body_reliability]
+cost = 4100
+value = +30
+condition_queue_shot_dec = -0.0003
+condition_shot_dec = -0.00003
+misfire_start_prob	     	= -0.001
+misfire_end_prob	     	= -0.004
 
-[up_e_abakan]
-scheme_index            = 0, 4
-known                   = 1
-effects                 = up_gr_eg_abakan
-section                 = up_sect_e_abakan
-property                = prop_underbarrel_slot
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_body_reliability]
+scheme_index = 0, 4
+known = 1
+effects = 
+section = up_sect_abakan_body_reliability
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_e_abakan
-name                    = st_upg_bind_grenade
-description             = st_upg_bind_grenade_descr
-icon                    = ui_wp_upgrade_35
+prereq_params  = 
+name =gunsl_abakan_up_body_reliability_name
+description =gunsl_abakan_up_body_reliability_descr
+icon = ui_gunsl_up_abakan_body_reliability
+;------------------------------------------abakan_grip------------------------------------------
+[up_sect_abakan_grip]
+cost = 900
+value = +10
+control_inertion_factor = -0.2
+PDM_disp_vel_factor = -0.2
 
-[up_f_abakan]
-scheme_index            = 0, 5
-known                   = 1
-effects                 = up_gr_fh_abakan
-section                 = up_sect_f_abakan
-property                = prop_bullet_speed
+cam_dispersion = -0.01
+zoom_cam_dispersion = -0.01
+inv_weight = +0.05
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
+show_bones = handler2
+hide_bones = handler
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
+upgrade_addon_icon = upgrade_addon_icon_assault_handler_4
+upgrade_addon_icon_offset_x = 50
+upgrade_addon_icon_offset_y = 0
 
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_grip]
+scheme_index = 0, 5
+known = 1
+effects = 
+section = up_sect_abakan_grip
+property = prop_inertion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_f_abakan
-name                    = st_upg_accel_curved
-description             = st_upg_accel_curved_descr
-icon                    = ui_wp_upgrade_18
+prereq_params  = 
+name =gunsl_abakan_up_grip_name
+description =gunsl_abakan_up_grip_descr
+icon = ui_gunsl_up_abakan_grip
+;------------------------------------------abakan_knife------------------------------------------
+[up_sect_abakan_knife]
+; GS inherits :base_bayonet (a section CS lacks) -- rewired the ak74 way:
+; visual bone + the engine's quick-kick stab flag.
+bayonet_installed = true
+cost = 2000
+show_bones = knife
+inv_weight              = +0.2
 
-[up_g_abakan]
-scheme_index            = 0, 6
-known                   = 1
-effects                 = up_gr_eg_abakan
-section                 = up_sect_g_abakan
-property                = prop_inertion
+upgrade_addon_icon = upgrade_addon_icon_knife_nsak_2
+upgrade_addon_icon_offset_x = 200
+upgrade_addon_icon_offset_y = 0
+inv_grid_width = +1
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_knife]
+scheme_index = 0, 6
+known = 1
+effects = 
+section = up_sect_abakan_knife
+property = prop_bayonet
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_g_abakan
-name                    = st_upg_butt_recoil3
-description             = st_upg_butt_recoil3_descr
-icon                    = ui_wp_upgrade_15
+prereq_params  = 
+name =gunsl_abakan_up_knife_name
+description =gunsl_abakan_up_knife_descr
+icon = ui_gunsl_up_abakan_knife
+;------------------------------------------abakan_lightdetails------------------------------------------
+[up_sect_abakan_lightdetails]
+cost = 4400
+value = -1.1
+inv_weight              = -1.1
+control_inertion_factor = -0.2
 
-
-[up_h_abakan]
-scheme_index            = 0, 7
-known                   = 1
-effects                 = up_gr_fh_abakan
-section                 = up_sect_h_abakan
-property                = prop_recoil
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here_h
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_lightdetails]
+scheme_index = 0, 7
+known = 1
+effects = 
+section = up_sect_abakan_lightdetails
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_h_abakan
-name                    = st_upg_butt_recoil4
-description             = st_upg_butt_recoil4_descr
-icon                    = ui_wp_upgrade_16
+prereq_params  = 
+name =gunsl_abakan_up_lightdetails_name
+description =gunsl_abakan_up_lightdetails_descr
+icon = ui_gunsl_up_abakan_lightdetails
+;------------------------------------------abakan_podacha------------------------------------------
+[up_sect_abakan_podacha]
+cost = 1200
+value = +10
+misfire_start_condition = -0.06
+misfire_start_prob = -0.0004
+misfire_end_prob = -0.006
 
-[up_i_abakan]
-scheme_index            = 0, 8
-known                   = 1
-effects                 = 
-section                 = up_sect_i_abakan
-property                = prop_ammo_size
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_podacha]
+scheme_index = 0, 8
+known = 1
+effects = vartree_abakan_zatvor	; GS wired this to vartree_abakan_body, skipping the
+; zatvor pair that its own UI layout draws between them -- and left vartree_abakan_zatvor
+; as a separate ROOT, so the branch could be started from either end. Fixed to follow the
+; drawn chain: podacha -> {usilenie_korobki, zatvor_balancer} -> {body_reliability, lightdetails}.
+section = up_sect_abakan_podacha
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_i_abakan
-name                    = st_upg_charger_big
-description             = st_upg_charger_big_descr
-icon                    = ui_wp_upgrade_19
+prereq_params  = 
+name =gunsl_abakan_up_podacha_name
+description =gunsl_abakan_up_podacha_descr
+icon = ui_gunsl_up_abakan_podacha
+;------------------------------------------abakan_mag45_black------------------------------------------
+[up_sect_abakan_mag45_black]
+cost = 500
+value = +15
+show_bones = mag45_black
+hide_bones =  mag30
+ammo_mag_size	= +15
+inv_weight              = +0.1
 
-[up_j_abakan]
-scheme_index            = 1, 4
-known                   = 1
-effects                 = 
-section                 = up_sect_j_abakan
-property                = prop_calibre
+upgrade_addon_icon = upgrade_addon_icon_mag_545_45_black_1
+upgrade_addon_icon_offset_x = 88
+upgrade_addon_icon_offset_y = 0
+upgrade_addon_icons_hide = icon_element_an94_mag
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_mag45_black]
+scheme_index = 0, 9
+known = 1
+effects = vartree_abakan_mag60
+section = up_sect_abakan_mag45_black
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_j_abakan
-name                    = st_upg_calibre_5_56
-description             = st_upg_calibre_5_56_descr
-icon                    = ui_wp_upgrade_21
+prereq_params  = 
+name =gunsl_abakan_up_mag45_black_name
+description =gunsl_abakan_up_mag45_black_descr
+icon = ui_gunsl_up_abakan_mag45_black
+;------------------------------------------abakan_mag45_brown------------------------------------------
+[up_sect_abakan_mag45_brown]
+cost = 500
+value = +15
+show_bones = mag45
+hide_bones = mag30
+ammo_mag_size	= +15
+inv_weight              = +0.1
 
+upgrade_addon_icon = upgrade_addon_icon_mag_545_45_bakelite_1
+upgrade_addon_icon_offset_x = 88
+upgrade_addon_icon_offset_y = 0
+upgrade_addon_icons_hide = icon_element_an94_mag
 
-[up_ac_abakan]
-scheme_index            = 1, 0
-known                   = 1
-effects                 = up_gr_aceg_abakan
-section                 = up_sect_ac_abakan
-property                = prop_rpm
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_mag45_brown]
+scheme_index = 0, 10
+known = 1
+effects = vartree_abakan_mag60
+section = up_sect_abakan_mag45_brown
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_ac_abakan
-name                    = st_upg_auto_rpm
-description             = st_upg_auto_rpm_descr
-icon                    = ui_wp_upgrade_38
+prereq_params  = 
+name =gunsl_abakan_up_mag45_brown_name
+description =gunsl_abakan_up_mag45_brown_descr
+icon = ui_gunsl_up_abakan_mag45_brown
+;------------------------------------------abakan_mag60------------------------------------------
+[up_sect_abakan_mag60]
+cost = 1500
+value = +15
+show_bones = mag60
+hide_bones_override =  mag45_black, mag45
+ammo_mag_size	= +15
+inv_weight              = +0.1
 
-[up_bd_abakan]
-scheme_index            = 1, 1
-known                   = 1
-effects                 = up_gr_bdfh_abakan
-section                 = up_sect_bd_abakan
-property                = prop_bullet_speed
+upgrade_addon_icon = upgrade_addon_icon_mag_545_60_black_1
+upgrade_addon_icon_offset_x = 88
+upgrade_addon_icon_offset_y = 0
+upgrade_addon_icons_hide = upgrade_addon_icon_mag_545_45_black_1, upgrade_addon_icon_mag_545_45_bakelite_1
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_mag60]
+scheme_index = 0, 11
+known = 1
+effects = 
+section = up_sect_abakan_mag60
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_bd_abakan
-name                    = st_upg_hard_barrel_curved
-description             = st_upg_hard_barrel_curved_descr
-icon                    = ui_wp_upgrade_23
+prereq_params  = 
+name =gunsl_abakan_up_mag60_name
+description =gunsl_abakan_up_mag60_descr
+icon = ui_gunsl_up_abakan_mag60
+;------------------------------------------abakan_tilnik------------------------------------------
+[up_sect_abakan_tilnik]
+cost = 2000
+value = -20
+cam_dispersion          = -0.11
+cam_dispersion_inc      = -0.02
+inv_weight              = +0.1
 
-[up_eg_abakan]
-scheme_index            = 1, 2
-effects                 = up_gr_aceg_abakan
-section                 = up_sect_eg_abakan
-property                = prop_recoil
+zoom_cam_dispersion = -0.07
+zoom_cam_dispersion_inc = -0.02
+show_bones = tilnik
 
-known                   = 1
+upgrade_addon_icon = upgrade_addon_icon_stock_amort_3
+upgrade_addon_icon_offset_x = 1
+upgrade_addon_icon_offset_y = 0
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_tilnik]
+scheme_index = 0, 12
+known = 1
+effects = 
+section = up_sect_abakan_tilnik
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_eg_abakan
-name                    = st_upg_barrel_recoil
-description             = st_upg_barrel_recoil_descr
-icon                    = ui_wp_upgrade_24
+prereq_params  = 
+name =gunsl_abakan_up_tilnik_name
+description =gunsl_abakan_up_tilnik_descr
+icon = ui_gunsl_up_abakan_tilnik
+;------------------------------------------abakan_stock_weight------------------------------------------
+[up_sect_abakan_stock_weight]
+cost = 900
+value = -0.3
+inv_weight              = -0.3
 
-[up_fh_abakan]
-scheme_index            = 1, 3
-effects                 = up_gr_bdfh_abakan
-section                 = up_sect_fh_abakan
-property                = prop_dispersion
-
-known                   = 1
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_stock_weight]
+scheme_index = 0, 13
+known = 1
+effects = vartree_abakan_tilnik
+section = up_sect_abakan_stock_weight
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_fh_abakan
-name                    = st_upg_trigger_accur
-description             = st_upg_trigger_accur_descr
-icon                    = ui_wp_upgrade_34
+prereq_params  = 
+name =gunsl_abakan_up_stock_weight_name
+description =gunsl_abakan_up_stock_weight_descr
+icon = ui_gunsl_up_abakan_stock_weight
+;------------------------------------------abakan_usilenie_korobki------------------------------------------
+[up_sect_abakan_usilenie_korobki]
+cost = 2800
+value = +20
+misfire_start_condition = -0.1
+misfire_end_condition = -0.02
+misfire_start_prob = -0.0003
+misfire_end_prob = -0.007
+condition_queue_shot_dec = -0.0002
+condition_shot_dec = -0.0003
+inv_weight = +0.1
 
-[up_aceg_abakan]
-scheme_index            = 2, 0
-effects                 =
-section                 = up_sect_aceg_abakan
-property                = prop_rpm
-
-known                   = 1
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_usilenie_korobki]
+scheme_index = 0, 14
+known = 1
+effects = vartree_abakan_body
+section = up_sect_abakan_usilenie_korobki
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_aceg_abakan
-name                    = st_upg_gas_rpm
-description             = st_upg_gas_rpm_descr
-icon                    = ui_wp_upgrade_30
+prereq_params  = 
+name =gunsl_abakan_up_usilenie_korobki_name
+description =gunsl_abakan_up_usilenie_korobki_descr
+icon = ui_gunsl_up_abakan_usilenie_korobki
+;------------------------------------------abakan_sights------------------------------------------
+[up_sect_abakan_sights]
+cost = 600
+crosshair_inertion = -1
+control_inertion_factor = -0.05
+show_bones = sight, sight_back
 
-[up_bdfh_abakan]
-scheme_index            = 2, 1
-effects                 =
-section                 = up_sect_bdfh_abakan
-property                = prop_dispersion
-
-known                   = 1
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_abakan_sights]
+scheme_index = 0, 15
+known = 1
+effects = 
+section = up_sect_abakan_sights
+property = prop_lightingsights
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = up_bdfh_ak74
-name                    = st_upg_gravi_accur
-description             = st_upg_gravi_accur_descr
-icon                    = ui_wp_upgrade_37
+prereq_params  = 
+name =gunsl_abakan_up_sights_name
+description =gunsl_abakan_up_sights_descr
+icon = ui_gunsl_up_abakan_sights
+;------------------------------------------abakan_usm_rpm------------------------------------------
+[up_sect_abakan_usm_rpm]
+cost = 3000
+value = +20
+rpm = +130
+condition_queue_shot_dec     = +0.0004
+misfire_start_prob	     	= +0.002
+misfire_end_prob	     	= +0.007
 
+[up_abakan_usm_rpm]
+scheme_index = 0, 16
+known = 1
+effects = vartree_abakan_barrel
+section = up_sect_abakan_usm_rpm
+property = prop_rpm
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_abakan_up_usm_rpm_name
+description =gunsl_abakan_up_usm_rpm_descr
+icon = ui_gunsl_up_abakan_usm_rpm
+;------------------------------------------abakan_usm_accuracy------------------------------------------
+[up_sect_abakan_usm_accuracy]
+cost = 3400
+value = +20
+fire_dispersion_base = -0.03
+PDM_disp_base = -0.3
+PDM_disp_vel_factor 		= -0.1
+PDM_disp_accel_factor 		= -0.2
+PDM_disp_crouch	 			= -0.1
+PDM_disp_crouch_no_acc 		= -0.1
 
-[up_gr_ab_abakan]
-elements                = up_a_abakan, up_b_abakan
+bullet_speed = +10
+crosshair_inertion = -1
+cam_dispersion = -0.05
+zoom_cam_dispersion = -0.03
+cam_dispersion_inc      = -0.05
+zoom_cam_dispersion_inc     = -0.03
 
-[up_gr_cd_abakan]
-elements                = up_c_abakan, up_d_abakan
+[up_abakan_usm_accuracy]
+scheme_index = 0, 17
+known = 1
+effects = vartree_abakan_barrel
+section = up_sect_abakan_usm_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_abakan_up_usm_accuracy_name
+description =gunsl_abakan_up_usm_accuracy_descr
+icon = ui_gunsl_up_abakan_usm_accuracy
+;------------------------------------------abakan_zatvor_balancer------------------------------------------
+[up_sect_abakan_zatvor_balancer]
+cost = 3000
+value = -20
+zoom_cam_dispersion          = -0.08
+cam_dispersion          = -0.15
 
-[up_gr_ef_abakan]
-elements                = up_e_abakan, up_f_abakan
+misfire_start_prob	     	= -0.0002
+misfire_end_prob	     	= -0.005
 
-[up_gr_gh_abakan]
-elements                = up_g_abakan, up_h_abakan
+PDM_disp_base = -0.05
+fire_dispersion_base = -0.03
 
-[up_gr_i_abakan]
-elements                = up_i_abakan
-
-[up_gr_j_abakan]
-elements                = up_j_abakan
-
-
-[up_gr_ac_abakan]
-elements                = up_ac_abakan
-
-[up_gr_bd_abakan]
-elements                = up_bd_abakan
-
-[up_gr_eg_abakan]
-elements                = up_eg_abakan
-
-[up_gr_fh_abakan]
-elements                = up_fh_abakan
-
-[up_gr_aceg_abakan]
-elements                = up_aceg_abakan
-
-[up_gr_bdfh_abakan]
-elements                = up_bdfh_abakan
+[up_abakan_zatvor_balancer]
+scheme_index = 0, 18
+known = 1
+effects = vartree_abakan_body
+section = up_sect_abakan_zatvor_balancer
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_abakan_up_zatvor_balancer_name
+description =gunsl_abakan_up_zatvor_balancer_descr
+icon = ui_gunsl_up_abakan_zatvor_balancer
+;------------------------------------------------------------------------------------
+[vartree_abakan_otkat]
+elements = up_abakan_barrel_otkat
+[vartree_abakan_usm]
+elements = up_abakan_usm_rpm, up_abakan_usm_accuracy
+[vartree_abakan_barrel]
+elements = up_abakan_barrel_bullet_speed, up_abakan_barrel_accuracy, up_abakan_barrel_compensator
+[vartree_abakan_podacha]
+elements = up_abakan_podacha
+[vartree_abakan_zatvor]
+elements = up_abakan_usilenie_korobki, up_abakan_zatvor_balancer
+[vartree_abakan_body]
+elements = up_abakan_body_reliability, up_abakan_lightdetails
+[vartree_abakan_mag45]
+elements = up_abakan_mag45_black, up_abakan_mag45_brown
+[vartree_abakan_mag60]
+elements = up_abakan_mag60
+[vartree_abakan_stock]
+elements = up_abakan_stock_weight
+[vartree_abakan_tilnik]
+elements = up_abakan_tilnik
+[vartree_abakan_grip]
+elements = up_abakan_grip
+[vartree_abakan_sights]
+elements = up_abakan_sights
+[vartree_abakan_knife]
+elements = up_abakan_knife

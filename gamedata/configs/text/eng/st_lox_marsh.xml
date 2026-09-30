@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+    <string id="mar_lox_msg_1">
+        <text>Hah, sucker!</text>
+    </string>
+    <string id="mar_lox_msg_2">
+        <text>Don't hold a grudge, pal - your stuff went to a good cause.</text>
+    </string>
+    <string id="mar_lox_msg_3">
+        <text>And stay away from the boat park, or we'll tear your legs off and use 'em as toothpicks. Got it, chump?</text>
+    </string>
+    <string id="mar_lox_msg_4">
+        <text>Oh, and we left you a little something as a "way out" over there too. So don't go thinking we're savages, yeah?</text>
+    </string>
+	
+	<string id="mar_lox_sub_1">
+		<text>This place is pretty damn good. Look at all these stalkers charging in here like flies to honey. I wonder what they’re after…</text>
+	</string>
+	<string id="mar_lox_sub_2">
+		<text>Yeah… Let’s grab the best stuff and get the hell outta here…</text>
+	</string>
+	
+    <string id="mar_lox_sender">
+        <text>Denchik Sparky</text>
+    </string>
+	
+	<string id="mar_lox_sender2">
+        <text>Nikitos Lucky</text>
+    </string>
+</string_table>

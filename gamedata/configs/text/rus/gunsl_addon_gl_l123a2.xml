@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_addon_gl_l123a2">
+		<text>L123A2 UGL</text>
+	</string>
+	<string id="gunsl_addon_gl_l123a2_descr">
+		<text>Подствольный гранатомет, разработанный специально для использования совместно с винтовкой L85A2. Предназначен для стрельбы различными типами подствольных гранат калибра 40 мм, находящимися на вооружении НАТО.</text>
+	</string>
+</string_table>

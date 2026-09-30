@@ -216,4 +216,10 @@
 	<string id="agr_weaponmaster_name">
 		<text>Майор Звягинцев</text>
 	</string>
+	<string id="mar_lucky_name">
+		<text>Никитос Счастливчик</text>
+	</string>
+	<string id="mar_lively_name">
+		<text>Денчик Живчик</text>
+	</string>
 </string_table>

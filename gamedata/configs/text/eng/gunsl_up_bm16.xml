@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_bm16_up_accurate_stock_name">
+     <text>Improved recoil pad</text>
+</string>
+<string id="gunsl_bm16_up_accurate_stock_descr">
+     <text>Softer recoil pad with better shock-absorption improves handling.</text>
+</string>
+<string id="gunsl_bm16_up_short_stock_name">
+     <text>Sawed-off stock</text>
+</string>
+<string id="gunsl_bm16_up_short_stock_descr">
+     <text>Without a stock the rifle is noticeably maintenance, increasing mobility, at the expense of higher recoil.</text>
+</string>
+<string id="gunsl_bm16_up_sights_name">
+     <text>Tritium sights</text>
+</string>
+<string id="gunsl_bm16_up_sights_descr">
+     <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+</string>
+<string id="gunsl_bm16_up_short_barrel_name">
+     <text>Sawed-off barrel</text>
+</string>
+<string id="gunsl_bm16_up_short_barrel_descr">
+     <text>Significantly shortened barrel cuts weight, increases mobility and pellet spread, reduces effective range and accuracy.</text>
+</string>
+<string id="gunsl_bm16_up_calibration_name">
+     <text>Trigger calibration</text>
+</string>
+<string id="gunsl_bm16_up_calibration_descr">
+     <text>Individual adjustment and balancing of the standard parts of the trigger mechanism improves accuracy while simultaneously lowering recoil.</text>
+</string>
+<string id="gunsl_bm16_up_barrel_dovodka_name">
+     <text>Barrel lapping</text>
+</string>
+<string id="gunsl_bm16_up_barrel_dovodka_descr">
+     <text>Increases muzzle velocity and reduces weapon wear.</text>
+</string>
+<string id="gunsl_bm16_up_light_tsevie_name">
+     <text>Lightweight handguard</text>
+</string>
+<string id="gunsl_bm16_up_light_tsevie_descr">
+     <text>maintenance handguard decreases overall weight of the weapon.</text>
+</string>
+<string id="gunsl_bm16_up_sharnir_name">
+     <text>Titanium hinge</text>
+</string>
+<string id="gunsl_bm16_up_sharnir_descr">
+     <text>More durable hinge pin improves wear-resistance of the break-action mechanism.</text>
+</string>
+<string id="gunsl_bm16_up_kurki_name">
+     <text>Improved hammers</text>
+</string>
+<string id="gunsl_bm16_up_kurki_descr">
+     <text>Reduces the probability of misfires related to insufficient indent.</text>
+</string>
+<string id="gunsl_bm16_up_korobka_name">
+     <text>Complex adjustment</text>
+</string>
+<string id="gunsl_bm16_up_korobka_descr">
+     <text>Complex modification concerning almost every action of the firearm. Improves accuracy and recoil.</text>
+</string>
+<string id="gunsl_bm16_up_barrel_narezka_name">
+     <text>Rifled barrel</text>
+</string>
+<string id="gunsl_bm16_up_barrel_narezka_descr">
+     <text>Barrel rifling increases muzzle velocity and accuracy, however makes the use of buckshot impossible.</text>
+</string>
+<string id="gunsl_bm16_up_barrel_break_speed_name">
+     <text>Protective coating</text>
+</string>
+<string id="gunsl_bm16_up_barrel_break_speed_descr">
+     <text>Application of a protective coating to the barrels significantly reduces wear, increasing rifle's lifespan.</text>
+</string>
+</string_table>

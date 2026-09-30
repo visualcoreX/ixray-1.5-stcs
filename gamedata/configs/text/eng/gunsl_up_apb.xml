@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_apb_up_barrel_accuracy_name">
+     <text>Barrel adjustment</text>
+</string>
+<string id="gunsl_apb_up_barrel_accuracy_descr">
+     <text>Decreases bullet dispersion, which improves accuracy.</text>
+</string>
+<string id="gunsl_apb_up_barrel_speed_name">
+     <text>Rebored barrel</text>
+</string>
+<string id="gunsl_apb_up_barrel_speed_descr">
+     <text>Higher rifling twist rate increases muzzle velocity and reduces bullet dispersion.</text>
+</string>
+<string id="gunsl_apb_up_barrel_silencer_name">
+     <text>Threaded barrel</text>
+</string>
+<string id="gunsl_apb_up_barrel_silencer_descr">
+     <text>Barrel replacement for APB pistol allows a suppressor to be installed.</text>
+</string>
+<string id="gunsl_apb_up_zaschelka_name">
+     <text>Improved feed lips</text>
+</string>
+<string id="gunsl_apb_up_zaschelka_descr">
+     <text>Reduces the play of the magazine inside the pistol grip, reduces the probability of feeding issues making the gun more reliable.</text>
+</string>
+<string id="gunsl_apb_up_prujina_name">
+     <text>Improved rate reducer</text>
+</string>
+<string id="gunsl_apb_up_prujina_descr">
+     <text>Modified rate reducer along with a stiffer return spring allows to increase rate of fire.</text>
+</string>
+<string id="gunsl_apb_up_light_mag_name">
+     <text>Lightweight magazine</text>
+</string>
+<string id="gunsl_apb_up_light_mag_descr">
+     <text>Reduces overall weight of the gun by replacing the standard magazine with a lightweight counterpart.</text>
+</string>
+<string id="gunsl_apb_up_usm_rpm_name">
+     <text>Trigger tuning</text>
+</string>
+<string id="gunsl_apb_up_usm_rpm_descr">
+     <text>Modification of the trigger mechanism increases rate of fire, at the cost of durability.</text>
+</string>
+<string id="gunsl_apb_up_perevodchik_name">
+     <text>3-round burst</text>
+</string>
+<string id="gunsl_apb_up_perevodchik_descr">
+     <text>Burst fire limiter restricts the burst to three rounds. In three-round burst mode the gun is more controllable, thus ammo needed for each target is reduced.</text>
+</string>
+<string id="gunsl_apb_up_handle_name">
+     <text>Anatomical grips</text>
+</string>
+<string id="gunsl_apb_up_handle_descr">
+     <text>Grip panels made to fit the shooter's preferences. New panels allow for better grip and more comfortable shooting.</text>
+</string>
+<string id="gunsl_apb_up_sights_name">
+     <text>Tritium sights</text>
+</string>
+<string id="gunsl_apb_up_sights_descr">
+     <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+</string>
+<string id="gunsl_apb_up_usm_recoil_name">
+     <text>Match trigger</text>
+</string>
+<string id="gunsl_apb_up_usm_recoil_descr">
+     <text>Reduces recoil, thus improving accuracy.</text>
+</string>
+<string id="gunsl_apb_up_shell_ejector_name">
+     <text>Improved ejector</text>
+</string>
+<string id="gunsl_apb_up_shell_ejector_descr">
+     <text>Reduces the probability of malfunctions related to ejecting an empty case from the firearm. Improves reliability.</text>
+</string>
+<string id="gunsl_apb_up_zapiratel_name">
+     <text>Improved locking mechanism</text>
+</string>
+<string id="gunsl_apb_up_zapiratel_descr">
+     <text>Improves obturation due to tighter lock-up, which in turn increases muzzle velocity.</text>
+</string>
+<string id="gunsl_apb_up_zatvor_balancer_name">
+     <text>Balanced slide</text>
+</string>
+<string id="gunsl_apb_up_zatvor_balancer_descr">
+     <text>Balanced slide decreases muzzle climb and felt recoil.</text>
+</string>
+<string id="gunsl_apb_up_pokritie_name">
+     <text>Protective coating</text>
+</string>
+<string id="gunsl_apb_up_pokritie_descr">
+     <text>Application of a protective coating to the internal parts significantly reduces wear.</text>
+</string>
+<string id="gunsl_apb_up_zatvor_dispersion_name">
+     <text>Slide adjustment</text>
+</string>
+<string id="gunsl_apb_up_zatvor_dispersion_descr">
+     <text>Exact fit of the slide and its internal parts reduces play, which improves accuracy.</text>
+</string>
+<string id="gunsl_apb_up_light_details_name">
+     <text>Lightweight parts</text>
+</string>
+<string id="gunsl_apb_up_light_details_descr">
+     <text>Reduces weight by replacing weapon parts with their light-alloy counterparts.</text>
+</string>
+<string id="gunsl_apb_up_titan_details_name">
+     <text>More durable parts</text>
+</string>
+<string id="gunsl_apb_up_titan_details_descr">
+     <text>Parts made of refractory metals that are extraordinarily resistant to heat and wear improve durability.</text>
+</string>
+</string_table>

@@ -1,476 +1,587 @@
-[up_sect_a_l85]
-cost		      		= 2000
-value					= +15
-rpm                     = 100
+; ============================================================================
+;  l85 upgrade tree -- ported from Gunslinger (wpn_l85).
+;  CS adjustments applied by gsw.py: :base_bayonet rewired, prop_weight ->
+;  prop_weight_kg, snd_silncer_shot stripped from any barrel_sil node.
+; ============================================================================
 
-[up_sect_b_l85]
-cost		      		= 2000
-value					= +10
-fire_dispersion_base	= -0.08 ;0.8
+;------------------------------------------wpn_l85_mag40------------------------------------------
+[up_sect_wpn_l85_mag40]
+cost = 500
+value = +10
+show_bones = mag40
+hide_bones = mag30
+ammo_mag_size	= +10
+inv_weight              = +0.05
 
-[up_sect_c_l85]
-cost		      		= 2000
-value					= -30
+cam_dispersion = +0.02
+zoom_cam_dispersion = +0.01
 
-cam_dispersion              = -0.12		;0.4
-cam_dispersion_inc         	= -0.12		;0.4
-cam_step_angle_horz        	= -0.6		;2.0
+hud = wpn_l85_long_mag_hud
 
-zoom_cam_dispersion          = -0.09	;0.3
-zoom_cam_dispersion_inc      = -0.09	;0.3
-zoom_cam_step_angle_horz     = -0.5		;1.5
+upgrade_addon_icon = upgrade_addon_icon_mag_556_40_1
+upgrade_addon_icons_hide = icon_element_l85_mag_default
+upgrade_addon_icon_offset_x = 50
+upgrade_addon_icon_offset_y = 0
 
-[up_sect_d_l85]
-cost		      		= 2000
-value					= -50
-value2					= st_upgr_rpm_lowered
-rpm                     = -200
-
-cam_dispersion              = -0.2		;0.4
-cam_dispersion_inc         	= -0.2		;0.4
-cam_step_angle_horz        	= -1.0		;2.0
-
-zoom_cam_dispersion          = -0.15	;0.3
-zoom_cam_dispersion_inc      = -0.15	;0.3
-zoom_cam_step_angle_horz     = -0.75	;1.5
-
-
-[up_sect_e_l85]
-cost		      		= 2000
-grenade_launcher_status = 2
-grenade_launcher_name   = wpn_addon_grenade_launcher_m203
-grenade_launcher_x      = 128
-grenade_launcher_y      = 28
-
-[up_sect_f_l85]
-cost		      		= 2000
-value					= +50
-bullet_speed			= 200
-hit_power				= 0.45, 0.45, 0.45, 0.45
-
-[up_sect_g_l85]
-cost					= 2000
-value					= "x1.6"
-scope_zoom_factor       = 10 	;30 
-
-[up_sect_h_l85]
-cost					= 2000
-value					= "x4"
-scope_zoom_factor       = -15 	;30
-
-[up_sect_i_l85]
-cost		      		= 2000
-value					= +15
-ammo_mag_size           = 15
-
-[up_sect_j_l85]
-cost		      		= 2000
-value					= "5.45x39"
-ammo_class          	= ammo_5.45x39_fmj, ammo_5.45x39_ap
-
-[up_sect_ac_l85]
-cost		      		= 3000
-value					= +25
-rpm						= 150
-
-[up_sect_bd_l85]
-cost		      		= 3000
-value					= +50
-bullet_speed			= 200
-hit_power				= 0.5, 0.5, 0.5, 0.5
-
-[up_sect_eg_l85]
-cost		      		= 3000
-value					= -20
-
-cam_dispersion              = -0.08		;0.4
-cam_dispersion_inc         	= -0.08		;0.4
-cam_step_angle_horz        	= -0.4		;2.0
-
-zoom_cam_dispersion          = -0.06	;0.3
-zoom_cam_dispersion_inc      = -0.06	;0.3
-zoom_cam_step_angle_horz     = -0.3		;1.5
-
-[up_sect_fh_l85]
-cost		      		= 3000
-value					= +20
-fire_dispersion_base	= -0.16 ;0.8
-
-[up_sect_aceg_l85]
-cost		      		= 5000
-value					= +50
-rpm						= 300
-
-[up_sect_bdfh_l85]
-cost		      		= 5000
-value					= +30
-fire_dispersion_base    = -0.24 ;0.8
-
-[up_a_l85]
-scheme_index            = 0, 0
-known                   = 1
-effects                 = up_gr_ac_l85
-section                 = up_sect_a_l85
-property                = prop_rpm
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = on_weapon_upgrade_something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_l85_mag40]
+scheme_index = 0, 0
+known = 1
+effects = vartree_wpn_l85_mag60, vartree_wpn_l85_tac_handler
+section = up_sect_wpn_l85_mag40
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_zatvor_rpm
-description             = st_upg_zatvor_rpm_descr
-icon                    = ui_wp_upgrade_30
+prereq_params  = 
+name =gunsl_wpn_l85_up_mag40_name
+description =gunsl_wpn_l85_up_mag40_descr
+icon = ui_gunsl_up_wpn_l85_mag40
+;------------------------------------------wpn_l85_mag60------------------------------------------
+[up_sect_wpn_l85_mag60]
+cost = 1500
+value = +20
+show_bones = mag60
+hide_bones_override =  mag40
+ammo_mag_size	= +20
+inv_weight              = +0.07
 
-;;...
-[up_b_l85]
-scheme_index            = 0, 1
-known                   = 1
-effects                 = up_gr_bd_l85
-section                 = up_sect_b_l85
-property                = prop_dispersion
+cam_dispersion = +0.03
+zoom_cam_dispersion = +0.02
 
+upgrade_addon_icon = upgrade_addon_icon_mag_556_60_1
+upgrade_addon_icons_hide = upgrade_addon_icon_mag_556_40_1
+upgrade_addon_icon_offset_x = 50
+upgrade_addon_icon_offset_y = 0
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_l85_mag60]
+scheme_index = 0, 1
+known = 1
+effects = 
+section = up_sect_wpn_l85_mag60
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_zatvor_recoil
-description             = st_upg_zatvor_recoil_descr
-icon                    = ui_wp_upgrade_31
+prereq_params  = 
+name =gunsl_wpn_l85_up_mag60_name
+description =gunsl_wpn_l85_up_mag60_descr
+icon = ui_gunsl_up_wpn_l85_mag60
+;------------------------------------------wpn_l85_tac_handle------------------------------------------
+[up_sect_wpn_l85_tac_handle]
+cost = 5000
+control_inertion_factor = -0.3
+inv_weight              = +0.2
 
-[up_c_l85]
-scheme_index            = 0, 2
-known                   = 1
-effects                 = up_gr_ac_l85
-section                 = up_sect_c_l85
-property                = prop_recoil
+crosshair_inertion		= -3.0
+cam_relax_speed         = +1
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
+cam_max_angle           = -20.0      
+cam_max_angle_horz      = -20.0
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
+cam_dispersion          = -0.15 
+cam_dispersion_inc      = -0.1
 
-prereq_functor          = inventory_upgrades.prereq_functor_a
+zoom_cam_dispersion = -0.07
+zoom_cam_dispersion_inc = -0.05
+
+PDM_disp_base = -0.1
+
+show_bones = handguard_rail, tac_handler
+hide_bones = handguard
+
+hud = wpn_l85_handler_long_mag_hud
+
+upgrade_addon_icon = icon_element_l85_fore_tac
+upgrade_addon_icons_hide = icon_element_l85_fore_stock
+upgrade_addon_icon_offset_x = 118
+upgrade_addon_icon_offset_y = 0
+upgrade_addon_icon_banned_addons_mask = 2
+
+[up_wpn_l85_tac_handle]
+scheme_index = 0, 2
+known = 1
+effects = vartree_wpn_l85_laser
+section = up_sect_wpn_l85_tac_handle
+property = prop_tacticalhandle
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_porsh_recoil
-description             = st_upg_porsh_recoil_descr
-icon                    = ui_wp_upgrade_41
+prereq_params  = 
+name =gunsl_wpn_l85_up_tac_handle_name
+description =gunsl_wpn_l85_up_tac_handle_descr
+icon = ui_gunsl_up_wpn_l85_tac_handle
+;------------------------------------------wpn_l85_flashlaser------------------------------------------
+[up_sect_wpn_l85_flashlaser]
+; GS parents :red_laser, :tactical_torch do not exist in CS -- the params live in
+; [l85_laser] / [l85_flashlight] (w_l85.ltx), the node only flips the install flags
+laser_installed = true
+torch_installed = true
+cost = 7000
+crosshair_inertion = -0.3
+show_bones = flash, laser, rope, line
+inv_weight              = +0.3
+laserdot_world_attach_offset_x = -0.020
+laserdot_world_attach_offset_y = 0.228
+laserdot_world_attach_offset_z = 0.194
 
-[up_d_l85]
-scheme_index            = 0, 3
-known                   = 1
-effects                 = up_gr_bd_l85
-section                 = up_sect_d_l85
-property                = prop_recoil
+torch_world_attach_offset_x = 0.020
+torch_world_attach_offset_y = 0.234
+torch_world_attach_offset_z = 0.194
 
+torch_omni_world_attach_offset_x = 0.020
+torch_omni_world_attach_offset_y = 0.234
+torch_omni_world_attach_offset_z = 0.194
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
+upgrade_addon_icon = upgrade_addon_icon_laser_anpeq_1
+upgrade_addon_icon_offset_x = 123
+upgrade_addon_icon_offset_y = 0
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_l85_flashlaser]
+scheme_index = 0, 3
+known = 1
+effects = 
+section = up_sect_wpn_l85_flashlaser
+property = prop_laser
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_porsh_rpm
-description             = st_upg_porsh_rpm_descr
-icon                    = ui_wp_upgrade_42
+prereq_params  = 
+name =gunsl_wpn_l85_up_flashlaser_name
+description =gunsl_wpn_l85_up_flashlaser_descr
+icon = ui_gunsl_up_wpn_l85_flashlaser
+;------------------------------------------wpn_l85_sights------------------------------------------
+[up_sect_wpn_l85_sights]
+cost = 500
+crosshair_inertion = -1
+control_inertion_factor = -0.05
+show_bones = sight, sight_top
 
-[up_e_l85]
-scheme_index            = 0, 4
-known                   = 1
-effects                 = up_gr_eg_l85
-section                 = up_sect_e_l85
-property                = prop_underbarrel_slot
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_l85_sights]
+scheme_index = 0, 4
+known = 1
+effects = 
+section = up_sect_wpn_l85_sights
+property = prop_lightingsights
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_bind_grenade
-description             = st_upg_bind_grenade_descr
-icon                    = ui_wp_upgrade_35
+prereq_params  = 
+name =gunsl_wpn_l85_up_sights_name
+description =gunsl_wpn_l85_up_sights_descr
+icon = ui_gunsl_up_wpn_l85_sights
+;------------------------------------------wpn_l85_grip------------------------------------------
+[up_sect_wpn_l85_grip]
+cost = 900
+value = +10
+control_inertion_factor = -0.2
+PDM_disp_vel_factor = -0.2
 
-[up_f_l85]
-scheme_index            = 0, 5
-known                   = 1
-effects                 = up_gr_fh_l85
-section                 = up_sect_f_l85
-property                = prop_bullet_speed
+cam_dispersion = -0.01
+zoom_cam_dispersion = -0.01
+inv_weight = +0.05
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
+show_bones = handler2
+hide_bones = handler
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
 
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_l85_grip]
+scheme_index = 0, 5
+known = 1
+effects = 
+section = up_sect_wpn_l85_grip
+property = prop_inertion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_curved
-description             = st_upg_barrel_curved_descr
-icon                    = ui_wp_upgrade_25
+prereq_params  = 
+name =gunsl_wpn_l85_up_grip_name
+description =gunsl_wpn_l85_up_grip_descr
+icon = ui_gunsl_up_wpn_l85_grip
+;------------------------------------------wpn_l85_bayonet------------------------------------------
+[up_sect_wpn_l85_bayonet]
+; GS parent :base_bayonet does not exist in CS -- visual bone + engine kick flag
+bayonet_installed = true
+cost = 2000
+show_bones = bayonet
 
-[up_g_l85]
-scheme_index            = 0, 6
-known                   = 1
-effects                 = up_gr_eg_l85
-section                 = up_sect_g_l85
-property                = prop_scope_1.6x
+disable_kick_anim_when_sil_attached = true
+hide_bones_override_when_silencer_attached = bayonet
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
+disable_kick_anim_when_gl_attached = true
+hide_bones_override_when_gl_attached = bayonet
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
+disable_kick_anim_when_gl_enabled = true
+hide_bones_override_grenade = bayonet
 
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+inv_weight              = +0.3
+
+upgrade_addon_icon = upgrade_addon_icon_knife_l3a1_1
+upgrade_addon_icon_offset_x = 200
+upgrade_addon_icon_offset_y = 0
+inv_grid_width = +1
+upgrade_addon_icon_banned_addons_mask = 6
+
+
+[up_wpn_l85_bayonet]
+scheme_index = 0, 6
+known = 1
+effects = 
+section = up_sect_wpn_l85_bayonet
+property = prop_bayonet
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_scope_1_6x_opt
-description             = st_upg_scope_1_6x_opt_descr
-icon                    = ui_wp_upgrade_29
+prereq_params  = 
+name =gunsl_wpn_l85_up_bayonet_name
+description =gunsl_wpn_l85_up_bayonet_descr
+icon = ui_gunsl_up_wpn_l85_bayonet
+;------------------------------------------wpn_l85_usm_accuracy------------------------------------------
+[up_sect_wpn_l85_usm_accuracy]
+cost = 4000
+value = +20
+fire_dispersion_base = -0.05
+bullet_speed = +10
 
-[up_h_l85]
-scheme_index            = 0, 7
-known                   = 1
-effects                 = up_gr_fh_l85
-section                 = up_sect_h_l85
-property                = prop_scope_4x
+PDM_disp_base = -0.15
+PDM_disp_vel_factor 		= -0.05
+PDM_disp_accel_factor 		= -0.05
+PDM_disp_crouch	 		= -0.05
+PDM_disp_crouch_no_acc 		= -0.05
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
+cam_dispersion = -0.05
+zoom_cam_dispersion = -0.05
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here_h
+cam_dispersion_inc      = -0.05
+zoom_cam_dispersion_inc     = -0.05
 
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_l85_usm_accuracy]
+scheme_index = 0, 7
+known = 1
+effects = vartree_wpn_l85_barrel
+section = up_sect_wpn_l85_usm_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_scope_4x_opt
-description             = st_upg_scope_4x_opt_descr
-icon                    = ui_wp_upgrade_28
+prereq_params  = 
+name =gunsl_wpn_l85_up_usm_accuracy_name
+description =gunsl_wpn_l85_up_usm_accuracy_descr
+icon = ui_gunsl_up_wpn_l85_usm_accuracy
+;------------------------------------------wpn_l85_usm_rpm------------------------------------------
+[up_sect_wpn_l85_usm_rpm]
+cost = 3000
+value = +20
+rpm = +120
+condition_queue_shot_dec     = +0.0002
+misfire_start_prob	     	= +0.0005
+misfire_end_prob	     	= +0.005
 
-[up_i_l85]
-scheme_index            = 0, 8
-known                   = 1
-effects                 = 
-section                 = up_sect_i_l85
-property                = prop_ammo_size
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_l85_usm_rpm]
+scheme_index = 0, 8
+known = 1
+effects = vartree_wpn_l85_barrel
+section = up_sect_wpn_l85_usm_rpm
+property = prop_rpm
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_charger_big
-description             = st_upg_charger_big_descr
-icon                    = ui_wp_upgrade_19
+prereq_params  = 
+name =gunsl_wpn_l85_up_usm_rpm_name
+description =gunsl_wpn_l85_up_usm_rpm_descr
+icon = ui_gunsl_up_wpn_l85_usm_rpm
+;------------------------------------------wpn_l85_mag_fixator------------------------------------------
+[up_sect_wpn_l85_mag_fixator]
+cost = 1000
+value = +10
+misfire_start_condition = -0.1
+misfire_start_prob = -0.0004
+misfire_end_prob = -0.008
 
-[up_j_l85]
-scheme_index            = 1, 4
-known                   = 1
-effects                 = 
-section                 = up_sect_j_l85
-property                = prop_calibre
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_l85_mag_fixator]
+scheme_index = 0, 9
+known = 1
+effects = vartree_wpn_l85_usm
+section = up_sect_wpn_l85_mag_fixator
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_calibre_5_45
-description             = st_upg_calibre_5_45_descr
-icon                    = ui_wp_upgrade_21
+prereq_params  = 
+name =gunsl_wpn_l85_up_mag_fixator_name
+description =gunsl_wpn_l85_up_mag_fixator_descr
+icon = ui_gunsl_up_wpn_l85_mag_fixator
+;------------------------------------------wpn_l85_barrel_kompensator------------------------------------------
+[up_sect_wpn_l85_barrel_kompensator]
+cost = 5000
+value = -30
+PDM_disp_base = -0.1
 
+cam_dispersion = -0.12
+cam_dispersion_inc = -0.07
 
-[up_ac_l85]
-scheme_index            = 1, 0
-known                   = 1
-effects                 = up_gr_aceg_l85
-section                 = up_sect_ac_l85
-property                = prop_rpm
+zoom_cam_dispersion = -0.08
+zoom_cam_dispersion_inc = -0.07
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_l85_barrel_kompensator]
+scheme_index = 0, 10
+known = 1
+effects = 
+section = up_sect_wpn_l85_barrel_kompensator
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_auto_rpm
-description             = st_upg_auto_rpm_descr
-icon                    = ui_wp_upgrade_38
+prereq_params  = 
+name =gunsl_wpn_l85_up_barrel_kompensator_name
+description =gunsl_wpn_l85_up_barrel_kompensator_descr
+icon = ui_gunsl_up_wpn_l85_barrel_kompensator
+;------------------------------------------wpn_l85_barrel_accuracy------------------------------------------
+[up_sect_wpn_l85_barrel_accuracy]
+cost = 5000
+value = +25
+fire_dispersion_base = -0.07
+PDM_disp_base = -0.2
+PDM_disp_vel_factor 		= -0.1
+PDM_disp_accel_factor 		= -0.2
+PDM_disp_crouch	 		= -0.1
+PDM_disp_crouch_no_acc 		= -0.1
 
-[up_bd_l85]
-scheme_index            = 1, 1
-known                   = 1
-effects                 = up_gr_bdfh_l85
-section                 = up_sect_bd_l85
-property                = prop_bullet_speed
+cam_dispersion = -0.05
+zoom_cam_dispersion = -0.02
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_l85_barrel_accuracy]
+scheme_index = 0, 11
+known = 1
+effects = 
+section = up_sect_wpn_l85_barrel_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_hard_barrel_curved
-description             = st_upg_hard_barrel_curved_descr
-icon                    = ui_wp_upgrade_23
+prereq_params  = 
+name =gunsl_wpn_l85_up_barrel_accuracy_name
+description =gunsl_wpn_l85_up_barrel_accuracy_descr
+icon = ui_gunsl_up_wpn_l85_barrel_accuracy
+;------------------------------------------wpn_l85_barrel_bullet_speed------------------------------------------
+[up_sect_wpn_l85_barrel_bullet_speed]
+cost = 5000
+value = +50
+bullet_speed = +250
 
-[up_eg_l85]
-scheme_index            = 1, 2
-known                   = 1
-effects                 = up_gr_aceg_l85
-section                 = up_sect_eg_l85
-property                = prop_recoil
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_l85_barrel_bullet_speed]
+scheme_index = 0, 12
+known = 1
+effects = 
+section = up_sect_wpn_l85_barrel_bullet_speed
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_recoil
-description             = st_upg_barrel_recoil_descr
-icon                    = ui_wp_upgrade_24
+prereq_params  = 
+name =gunsl_wpn_l85_up_barrel_bullet_speed_name
+description =gunsl_wpn_l85_up_barrel_bullet_speed_descr
+icon = ui_gunsl_up_wpn_l85_barrel_bullet_speed
+;------------------------------------------wpn_l85_priklad------------------------------------------
+[up_sect_wpn_l85_priklad]
+cost = 1200
+value = -10
+cam_dispersion = -0.07
+zoom_cam_dispersion = -0.05
+cam_dispersion_inc = -0.01
+zoom_cam_dispersion_inc = -0.04
 
-[up_fh_l85]
-scheme_index            = 1, 3
-known                   = 1
-effects                 = up_gr_bdfh_l85
-section                 = up_sect_fh_l85
-property                = prop_dispersion
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_l85_priklad]
+scheme_index = 0, 13
+known = 1
+effects = 
+section = up_sect_wpn_l85_priklad
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_electro_accur
-description             = st_upg_electro_accur_descr
-icon                    = ui_wp_upgrade_34
+prereq_params  = 
+name =gunsl_wpn_l85_up_priklad_name
+description =gunsl_wpn_l85_up_priklad_descr
+icon = ui_gunsl_up_wpn_l85_priklad
+;------------------------------------------wpn_l85_zatvor_balancer------------------------------------------
+[up_sect_wpn_l85_zatvor_balancer]
+cost = 5000
+value = -30
+zoom_cam_dispersion          = -0.1
+cam_dispersion          = -0.17
 
-[up_aceg_l85]
-scheme_index            = 2, 0
-known                   = 1
-effects                 =
-section                 = up_sect_aceg_l85
-property                = prop_rpm
+misfire_start_prob	     	= -0.0002
+misfire_end_prob	     	= -0.005
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
+PDM_disp_base = -0.05
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_l85_zatvor_balancer]
+scheme_index = 0, 14
+known = 1
+effects = 
+section = up_sect_wpn_l85_zatvor_balancer
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_rpm
-description             = st_upg_barrel_rpm_descr
-icon                    = ui_wp_upgrade_27
+prereq_params  = 
+name =gunsl_wpn_l85_up_zatvor_balancer_name
+description =gunsl_wpn_l85_up_zatvor_balancer_descr
+icon = ui_gunsl_up_wpn_l85_zatvor_balancer
+;------------------------------------------wpn_l85_body_reliability------------------------------------------
+[up_sect_wpn_l85_body_reliability]
+cost = 4000
+value = +25
+misfire_start_condition = -0.05
 
-[up_bdfh_l85]
-scheme_index            = 2, 1
-known                   = 1
-effects                 =
-section                 = up_sect_bdfh_l85
-property                = prop_dispersion
+misfire_start_prob = -0.0008
+misfire_end_prob  = -0.016
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
+condition_shot_dec      	= -0.0002
+condition_queue_shot_dec	= -0.0003
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_l85_body_reliability]
+scheme_index = 0, 15
+known = 1
+effects = vartree_wpn_l85_zatvor
+section = up_sect_wpn_l85_body_reliability
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_trigger_accur
-description             = st_upg_trigger_accur_descr
-icon                    = ui_wp_upgrade_33
+prereq_params  = 
+name =gunsl_wpn_l85_up_body_reliability_name
+description =gunsl_wpn_l85_up_body_reliability_descr
+icon = ui_gunsl_up_wpn_l85_body_reliability
+;------------------------------------------wpn_l85_body_weight------------------------------------------
+[up_sect_wpn_l85_body_weight]
+cost = 4500
+value = -1
+inv_weight           	= -1
+control_inertion_factor = -0.2
 
+PDM_disp_base = +0.1
+cam_dispersion = +0.05
+zoom_cam_dispersion = +0.03
 
-[up_gr_ab_l85]
-elements                = up_a_l85, up_b_l85
+[up_wpn_l85_body_weight]
+scheme_index = 0, 16
+known = 1
+effects = vartree_wpn_l85_zatvor
+section = up_sect_wpn_l85_body_weight
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_l85_up_body_weight_name
+description =gunsl_wpn_l85_up_body_weight_descr
+icon = ui_gunsl_up_wpn_l85_body_weight
+;------------------------------------------wpn_l85_firemode------------------------------------------
+[up_sect_wpn_l85_firemode]
+cost = 1000
+value = +10
+misfire_start_condition = -0.1
+misfire_start_prob = -0.0004
+misfire_end_prob = -0.008
 
-[up_gr_cd_l85]
-elements                = up_c_l85, up_d_l85
+condition_shot_dec = -0.00005
+condition_queue_shot_dec	= -0.00008
 
-[up_gr_ef_l85]
-elements                = up_e_l85, up_f_l85
-
-[up_gr_gh_l85]
-elements                = up_g_l85, up_h_l85
-
-[up_gr_i_l85]
-elements                = up_i_l85
-
-[up_gr_j_l85]
-elements                = up_j_l85
-
-
-[up_gr_ac_l85]
-elements                = up_ac_l85
-
-[up_gr_bd_l85]
-elements                = up_bd_l85
-
-[up_gr_eg_l85]
-elements                = up_eg_l85
-
-[up_gr_fh_l85]
-elements                = up_fh_l85
-
-[up_gr_aceg_l85]
-elements                = up_aceg_l85
-
-[up_gr_bdfh_l85]
-elements                = up_bdfh_l85
+[up_wpn_l85_firemode]
+scheme_index = 0, 17
+known = 1
+effects = vartree_wpn_l85_body
+section = up_sect_wpn_l85_firemode
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_l85_up_firemode_name
+description =gunsl_wpn_l85_up_firemode_descr
+icon = ui_gunsl_up_wpn_l85_firemode
+;------------------------------------------------------------------------------------
+[vartree_wpn_l85_podacha]
+elements = up_wpn_l85_mag_fixator
+[vartree_wpn_l85_usm]
+elements = up_wpn_l85_usm_accuracy, up_wpn_l85_usm_rpm
+[vartree_wpn_l85_barrel]
+elements = up_wpn_l85_barrel_kompensator, up_wpn_l85_barrel_accuracy, up_wpn_l85_barrel_bullet_speed
+[vartree_wpn_l85_perevodchik]
+elements = up_wpn_l85_firemode
+[vartree_wpn_l85_body]
+elements = up_wpn_l85_body_reliability, up_wpn_l85_body_weight
+[vartree_wpn_l85_zatvor]
+elements = up_wpn_l85_zatvor_balancer
+[vartree_wpn_l85_mag45]
+elements = up_wpn_l85_mag40
+[vartree_wpn_l85_mag60]
+elements = up_wpn_l85_mag60
+[vartree_wpn_l85_tac_handler]
+elements = up_wpn_l85_tac_handle
+[vartree_wpn_l85_laser]
+elements = up_wpn_l85_flashlaser
+[vartree_wpn_l85_sights]
+elements = up_wpn_l85_sights
+[vartree_wpn_l85_priklad]
+elements = up_wpn_l85_priklad
+[vartree_wpn_l85_grip]
+elements = up_wpn_l85_grip
+[vartree_wpn_l85_bayonet]
+elements = up_wpn_l85_bayonet

@@ -1,305 +1,503 @@
-[up_sect_a_mp5]
-cost		      		= 750
-value					= +15
-rpm                     = 100
+;------------------------------------------mp5_sights------------------------------------------
+[up_sect_mp5_sights]
+cost = 500
+crosshair_inertion = -1
+control_inertion_factor = -0.05
+show_bones = sight
 
-[up_sect_b_mp5]
-cost		      		= 750
-value					= +40
-fire_dispersion_base	= -0.3 	
-
-[up_sect_c_mp5]
-cost	      	     	= 750
-value					= +10
-control_inertion_factor = -0.1
-inv_weight              = -0.3
-
-[up_sect_d_mp5]
-cost		      		= 750
-value					= +50
-bullet_speed			= 100
-hit_power				= 0.52, 0.52, 0.52, 0.52
-
-[up_sect_e_mp5]
-cost		      		= 750
-value					= -20
-
-cam_dispersion              = -0.2		;1.0
-cam_dispersion_inc         	= -0.1		;0.5
-cam_step_angle_horz        	= -0.4		;2.0
-
-zoom_cam_dispersion          = -0.1		;0.5
-zoom_cam_dispersion_inc      = -0.1		;0.5
-zoom_cam_step_angle_horz     = -0.4		;2.0
-
-[up_sect_f_mp5]
-cost		      		= 750
-value					= -30
-value2					= st_upgr_rpm_lowered
-rpm                     = -200
-
-cam_dispersion              = -0.3		;1.0
-cam_dispersion_inc         	= -0.15		;0.5
-cam_step_angle_horz        	= -0.6		;2.0
-
-zoom_cam_dispersion          = -0.15	;0.5
-zoom_cam_dispersion_inc      = -0.15	;0.5
-zoom_cam_step_angle_horz     = -0.6		;2.0
-
-[up_sect_h_mp5]
-cost		      		= 750
-value					= +15
-ammo_mag_size           = 15
-
-[up_sect_i_mp5]
-cost		      		= 1500
-value					= "9x18"
-ammo_class				= ammo_9x18_fmj, ammo_9x18_pmm
-
-[up_sect_ac_mp5]
-cost		      		= 1125
-value					= -20
-
-cam_dispersion              = -0.2		;1.0
-cam_dispersion_inc         	= -0.1		;0.5
-cam_step_angle_horz        	= -0.4		;2.0
-
-zoom_cam_dispersion          = -0.1		;0.5
-zoom_cam_dispersion_inc      = -0.1		;0.5
-zoom_cam_step_angle_horz     = -0.4		;2.0
-
-[up_sect_bd_mp5]
-cost		      		= 1125
-value					= +50
-bullet_speed			= 100
-hit_power				= 0.55, 0.55, 0.55, 0.55
-
-[up_a_mp5]
-scheme_index            = 0, 0
-known                   = 1
-effects                 = up_gr_ac_mp5
-section                 = up_sect_a_mp5
-property                = prop_rpm
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = on_weapon_upgrade_something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_mp5_sights]
+scheme_index = 0, 0
+known = 1
+effects = 
+section = up_sect_mp5_sights
+property = prop_lightingsights
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_zatvor_rpm
-description             = st_upg_zatvor_rpm_descr
-icon                    = ui_wp_upgrade_30
+prereq_params  = 
+name =gunsl_mp5_up_sights_name
+description =gunsl_mp5_up_sights_descr
+icon = ui_gunsl_up_mp5_sights
+;------------------------------------------mp5_mag40------------------------------------------
+[up_sect_mp5_mag40]
+cost = 600
+value = +10
+show_bones = mag40
+hide_bones = mag30
 
-;;...
-[up_b_mp5]
-scheme_index            = 0, 1
-known                   = 1
-effects                 = up_gr_bd_mp5
-section                 = up_sect_b_mp5
-property                = prop_dispersion
+ammo_mag_size	= +10
+inv_weight              = +0.05
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
+cam_dispersion = +0.007
+zoom_cam_dispersion = +0.0105
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
+upgrade_addon_icon = icon_element_mp5_mag40
+upgrade_addon_icons_hide = icon_element_mp5_mag
+upgrade_addon_icon_offset_x = 100
+upgrade_addon_icon_offset_y = 0
 
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_mp5_mag40]
+scheme_index = 0, 1
+known = 1
+effects = 
+section = up_sect_mp5_mag40
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_zatvor_recoil
-description             = st_upg_zatvor_recoil_descr
-icon                    = ui_wp_upgrade_31
+prereq_params  = 
+name =gunsl_mp5_up_mag40_name
+description =gunsl_mp5_up_mag40_descr
+icon = ui_gunsl_up_mp5_mag40
+;------------------------------------------mp5_rail------------------------------------------
+[up_sect_mp5_rail]
+; REQUIRED once scope_status is set here: WeaponUpgrade.cpp reads scope_name/_x/_y from
+; the UPGRADE section (missing key = fatal r_string). Values = the first scope of the list.
+scope_name = wpn_addon_scope_susat_x1.6
+scope_x = 74
+scope_y = -4
+cost = 1100
+inv_weight = +0.2
+show_bones = rail, scope1, scope2, scope3, scope4
+scope_status = 2
+scopes_sect = scope_eotech_mp5, scope_aimpoint_mp5, scope_elcan_mp5, scope_pn23_mp5
 
-[up_c_mp5]
-scheme_index            = 0, 2
-known                   = 1
-effects                 = up_gr_ac_mp5
-section                 = up_sect_c_mp5
-property                = prop_inertion
+upgrade_addon_icon = icon_element_mp5_rail
+upgrade_addon_icon_offset_x = 76
+upgrade_addon_icon_offset_y = 0
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_mp5_rail]
+scheme_index = 0, 2
+known = 1
+effects = 
+section = up_sect_mp5_rail
+property = prop_scope_attach
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_weight
-description             = st_upg_barrel_weight_descr
-icon                    = ui_wp_upgrade_52
+prereq_params  = 
+name =gunsl_mp5_up_rail_name
+description =gunsl_mp5_up_rail_descr
+icon = ui_gunsl_up_mp5_rail
+;------------------------------------------mp5_handle------------------------------------------
+[up_sect_mp5_handle]
+cost = 2000
+show_bones = grip_rail
+hide_bones = grip
+inv_weight  = +0.15
 
-[up_d_mp5]
-scheme_index            = 0, 3
-known                   = 1
-effects                 = up_gr_bd_mp5
-section                 = up_sect_d_mp5
-property                = prop_bullet_speed
+control_inertion_factor = -0.15
+crosshair_inertion = -3.0
+cam_relax_speed = +1
+cam_dispersion = -0.12 
+cam_dispersion_inc = -0.07
+cam_max_angle = -15.0      
+cam_max_angle_horz = -15
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
+zoom_cam_relax_speed = +1
+zoom_cam_dispersion = -0.08
+zoom_cam_dispersion_inc = -0.05
+zoom_cam_max_angle = -20
+zoom_cam_max_angle_horz = -20
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
+PDM_disp_base = -0.23
+PDM_disp_vel_factor = -0.3
+PDM_disp_accel_factor = -0.2
 
-prereq_functor          = inventory_upgrades.prereq_functor_a
+PDM_disp_crouch = -0.2
+PDM_disp_crouch_no_acc = -0.4
+
+hud=wpn_mp5_handler_hud
+
+upgrade_addon_icon = icon_element_mp5_handle
+upgrade_addon_icon_offset_x = 116
+upgrade_addon_icon_offset_y = 0
+
+[up_mp5_handle]
+scheme_index = 0, 3
+known = 1
+effects = vartree_mp5_laser, vartree_mp5_flash
+section = up_sect_mp5_handle
+property = prop_tacticalhandle
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_curved
-description             = st_upg_barrel_curved_descr
-icon                    = ui_wp_upgrade_25
+prereq_params  = 
+name =gunsl_mp5_up_handle_name
+description =gunsl_mp5_up_handle_descr
+icon = ui_gunsl_up_mp5_handle
+;------------------------------------------mp5_laser------------------------------------------
+[up_sect_mp5_laser]
+; rewired: GS inherited :red_laser. Params -> [mp5_laser] in w_mp5.ltx
+laser_installed = true
+cost = 3500
+crosshair_inertion = -0.3
+show_bones = laser
+inv_weight = +0.3
 
-[up_e_mp5]
-scheme_index            = 0, 4
-known                   = 1
-effects                 = 
-section                 = up_sect_e_mp5
-property                = prop_recoil
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_mp5_laser]
+scheme_index = 0, 4
+known = 1
+effects = 
+section = up_sect_mp5_laser
+property = prop_laser
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_porsh_recoil
-description             = st_upg_porsh_recoil_descr
-icon                    = ui_wp_upgrade_41
+prereq_params  = 
+name =gunsl_mp5_up_laser_name
+description =gunsl_mp5_up_laser_descr
+icon = ui_gunsl_up_mp5_laser
+;------------------------------------------mp5_torch------------------------------------------
+[up_sect_mp5_torch]
+; rewired: GS inherited :tactical_torch. Params -> [mp5_flashlight] in w_mp5.ltx
+torch_installed = true
+cost = 3000
+show_bones = flash
+inv_weight              = +0.3
 
-[up_f_mp5]
-scheme_index            = 0, 5
-known                   = 1
-effects                 = 
-section                 = up_sect_f_mp5
-property                = prop_recoil
+upgrade_addon_icon = upgrade_addon_icon_flash_ak_1
+upgrade_addon_icon_offset_x = 110
+upgrade_addon_icon_offset_y = 0
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_mp5_torch]
+scheme_index = 0, 5
+known = 1
+effects = 
+section = up_sect_mp5_torch
+property = prop_torch
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_porsh_rpm
-description             = st_upg_porsh_rpm_descr
-icon                    = ui_wp_upgrade_42
+prereq_params  = 
+name =gunsl_mp5_up_torch_name
+description =gunsl_mp5_up_torch_descr
+icon = ui_gunsl_up_mp5_torch
+;------------------------------------------mp5_plastic_stock------------------------------------------
+[up_sect_mp5_plastic_stock]
+cost = 3000
+value = -0.2
+show_bones = stock_plastic
+hide_bones = stock_teleskop
 
-[up_h_mp5]
-scheme_index            = 0, 6
-known                   = 1
-effects                 = 
-section                 = up_sect_h_mp5
-property                = prop_ammo_size
+inv_weight = -0.2
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
+PDM_disp_base = -0.15
+PDM_disp_crouch = -0.02
+PDM_disp_crouch_no_acc = -0.02
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
+cam_dispersion = -0.07
+zoom_cam_dispersion = -0.05
+cam_dispersion_inc = -0.02
+zoom_cam_dispersion_inc = -0.01
 
-prereq_functor          = inventory_upgrades.prereq_functor_a
+upgrade_addon_icon = icon_element_mp5_stock_up
+upgrade_addon_icons_hide = icon_element_mp5_stock_default
+upgrade_addon_icon_offset_x = 0
+upgrade_addon_icon_offset_y = 0
+
+[up_mp5_plastic_stock]
+scheme_index = 0, 6
+known = 1
+effects = 
+section = up_sect_mp5_plastic_stock
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_charger_big
-description             = st_upg_charger_big_descr
-icon                    = ui_wp_upgrade_19
+prereq_params  = 
+name =gunsl_mp5_up_plastic_stock_name
+description =gunsl_mp5_up_plastic_stock_descr
+icon = ui_gunsl_up_mp5_plastic_stock
+;------------------------------------------mp5_max_fixator------------------------------------------
+[up_sect_mp5_max_fixator]
+cost = 1000
+value = +10
+misfire_start_condition = -0.06
+misfire_start_prob = -0.0004
+misfire_end_prob = -0.007
 
-[up_i_mp5]
-scheme_index            = 0, 7
-known                   = 1
-effects                 = 
-section                 = up_sect_i_mp5
-property                = prop_calibre
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_mp5_max_fixator]
+scheme_index = 0, 7
+known = 1
+effects = vartree_mp5_barrel
+section = up_sect_mp5_max_fixator
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_calibre_9_18
-description             = st_upg_calibre_9_18_descr
-icon                    = ui_wp_upgrade_20
+prereq_params  = 
+name =gunsl_mp5_up_max_fixator_name
+description =gunsl_mp5_up_max_fixator_descr
+icon = ui_gunsl_up_mp5_max_fixator
+;------------------------------------------mp5_usm_rpm------------------------------------------
+[up_sect_mp5_usm_rpm]
+cost = 2000
+value = +20
+rpm = +110
+condition_queue_shot_dec     = +0.0003
+misfire_start_prob	     	= +0.0005
+misfire_end_prob	     	= +0.005
 
-
-[up_ac_mp5]
-scheme_index            = 1, 0
-known                   = 1
-effects                 = 
-section                 = up_sect_ac_mp5
-property                = prop_recoil
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_mp5_usm_rpm]
+scheme_index = 0, 8
+known = 1
+effects = 
+section = up_sect_mp5_usm_rpm
+property = prop_rpm
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_recoil
-description             = st_upg_barrel_recoil_descr
-icon                    = ui_wp_upgrade_24
+prereq_params  = 
+name =gunsl_mp5_up_usm_rpm_name
+description =gunsl_mp5_up_usm_rpm_descr
+icon = ui_gunsl_up_mp5_usm_rpm
+;------------------------------------------mp5_usm_accuracy------------------------------------------
+[up_sect_mp5_usm_accuracy]
+cost = 3000
+value = +30
+fire_dispersion_base = -0.05
+bullet_speed = +10
 
-[up_bd_mp5]
-scheme_index            = 1, 1
-known                   = 1
-effects                 = 
-section                 = up_sect_bd_mp5
-property                = prop_bullet_speed
+PDM_disp_base = -0.25
+PDM_disp_vel_factor 		= -0.05
+PDM_disp_accel_factor 		= -0.05
+PDM_disp_crouch	 		= -0.05
+PDM_disp_crouch_no_acc 		= -0.05
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = true
+cam_dispersion = -0.06
+zoom_cam_dispersion = -0.03
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
+cam_dispersion_inc      = -0.05
+zoom_cam_dispersion_inc     = -0.05
 
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_mp5_usm_accuracy]
+scheme_index = 0, 9
+known = 1
+effects = 
+section = up_sect_mp5_usm_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_curved
-description             = st_upg_barrel_curved_descr
-icon                    = ui_wp_upgrade_25
+prereq_params  = 
+name =gunsl_mp5_up_usm_accuracy_name
+description =gunsl_mp5_up_usm_accuracy_descr
+icon = ui_gunsl_up_mp5_usm_accuracy
+;------------------------------------------mp5_barrel_speed------------------------------------------
+[up_sect_mp5_barrel_speed]
+cost = 2500
+value = +30
+bullet_speed = +130
 
+[up_mp5_barrel_speed]
+scheme_index = 0, 10
+known = 1
+effects = vartree_mp5_body
+section = up_sect_mp5_barrel_speed
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_mp5_up_barrel_speed_name
+description =gunsl_mp5_up_barrel_speed_descr
+icon = ui_gunsl_up_mp5_barrel_speed
+;------------------------------------------mp5_barrel_compensator------------------------------------------
+[up_sect_mp5_barrel_compensator]
+cost = 2500
+value = -30
+PDM_disp_base = -0.1
+PDM_disp_crouch = -0.01
+PDM_disp_crouch_no_acc = -0.01
 
+cam_dispersion = -0.25
+zoom_cam_dispersion = -0.2
+cam_dispersion_inc = -0.04
+zoom_cam_dispersion_inc = -0.02
 
-[up_gr_ab_mp5]
-elements                = up_a_mp5, up_b_mp5
+[up_mp5_barrel_compensator]
+scheme_index = 0, 11
+known = 1
+effects = vartree_mp5_body
+section = up_sect_mp5_barrel_compensator
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_mp5_up_barrel_compensator_name
+description =gunsl_mp5_up_barrel_compensator_descr
+icon = ui_gunsl_up_mp5_barrel_compensator
+;------------------------------------------mp5_zatvor_balancer------------------------------------------
+[up_sect_mp5_zatvor_balancer]
+cost = 1000
+value = -15
+PDM_disp_base = -0.2
 
-[up_gr_cd_mp5]
-elements                = up_c_mp5, up_d_mp5
+cam_dispersion = -0.18
+zoom_cam_dispersion  = -0.12
+cam_dispersion_inc = -0.05
+zoom_cam_dispersion_inc  = -0.04
 
-[up_gr_ef_mp5]
-elements                = up_e_mp5, up_f_mp5
+[up_mp5_zatvor_balancer]
+scheme_index = 0, 12
+known = 1
+effects = vartree_mp5_extractor
+section = up_sect_mp5_zatvor_balancer
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_mp5_up_zatvor_balancer_name
+description =gunsl_mp5_up_zatvor_balancer_descr
+icon = ui_gunsl_up_mp5_zatvor_balancer
+;------------------------------------------mp5_body_coating------------------------------------------
+[up_sect_mp5_body_coating]
+cost = 4500
+value = +40
+misfire_start_condition = -0.12
+misfire_end_condition = -0.001
+misfire_start_prob = -0.0006
+misfire_end_prob = -0.01
+condition_shot_dec = -0.0006
+condition_queue_shot_dec = -0.0006
 
-[up_gr_h_mp5]
-elements                = up_h_mp5
+[up_mp5_body_coating]
+scheme_index = 0, 13
+known = 1
+effects = 
+section = up_sect_mp5_body_coating
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_mp5_up_body_coating_name
+description =gunsl_mp5_up_body_coating_descr
+icon = ui_gunsl_up_mp5_body_coating
+;------------------------------------------mp5_extractor------------------------------------------
+[up_sect_mp5_extractor]
+cost = 1500
+value = +20
+misfire_start_condition  = -0.03
+misfire_end_condition  = -0.002
+misfire_start_prob = -0.0002
+misfire_end_prob  = -0.004
+condition_shot_dec = -0.0003
+condition_queue_shot_dec= -0.0003
 
-[up_gr_i_mp5]
-elements                = up_i_mp5
+[up_mp5_extractor]
+scheme_index = 0, 14
+known = 1
+effects = vartree_mp5_usm
+section = up_sect_mp5_extractor
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_mp5_up_extractor_name
+description =gunsl_mp5_up_extractor_descr
+icon = ui_gunsl_up_mp5_extractor
+;------------------------------------------mp5_body_weight------------------------------------------
+[up_sect_mp5_body_weight]
+cost = 4500
+value = -0.8
+inv_weight = -0.8
+control_inertion_factor = -0.3
 
+PDM_disp_base = +0.1
+cam_dispersion = +0.04
+zoom_cam_dispersion = +0.03
 
-[up_gr_ac_mp5]
-elements                = up_ac_mp5
-
-[up_gr_bd_mp5]
-elements                = up_bd_mp5
+[up_mp5_body_weight]
+scheme_index = 0, 15
+known = 1
+effects = 
+section = up_sect_mp5_body_weight
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_mp5_up_body_weight_name
+description =gunsl_mp5_up_body_weight_descr
+icon = ui_gunsl_up_mp5_body_weight
+;------------------------------------------------------------------------------------
+[vartree_mp5_mag_fix]
+elements = up_mp5_max_fixator
+[vartree_mp5_barrel]
+elements = up_mp5_barrel_speed, up_mp5_barrel_compensator
+[vartree_mp5_body]
+elements = up_mp5_body_coating, up_mp5_body_weight
+[vartree_mp5_zatvor]
+elements = up_mp5_zatvor_balancer
+[vartree_mp5_extractor]
+elements = up_mp5_extractor
+[vartree_mp5_usm]
+elements = up_mp5_usm_rpm, up_mp5_usm_accuracy
+[vartree_mp5_rail]
+elements = up_mp5_rail
+[vartree_mp5_handle]
+elements = up_mp5_handle
+[vartree_mp5_laser]
+elements = up_mp5_laser
+[vartree_mp5_flash]
+elements = up_mp5_torch
+[vartree_mp5_sights]
+elements = up_mp5_sights
+[vartree_mp5_mag40]
+elements = up_mp5_mag40
+[vartree_mp5_stock]
+elements = up_mp5_plastic_stock

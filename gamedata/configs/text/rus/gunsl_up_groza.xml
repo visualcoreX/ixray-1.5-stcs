@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_groza_up_gascam_name">
+     <text>Модификация газоотвода</text>
+</string>
+<string id="gunsl_groza_up_gascam_descr">
+     <text>Измененный газоотвод позволяет добиться увеличения начальной скорости пули при одновременном снижении отдачи.</text>
+</string>
+<string id="gunsl_groza_up_barrel_accuracy_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_groza_up_barrel_accuracy_descr">
+     <text>Позволяет снизить разброс пуль, что благоприятно сказывается на точности ведения огня.</text>
+</string>
+<string id="gunsl_groza_up_barrel_speed_name">
+     <text>Изменение шага нарезки ствола</text>
+</string>
+<string id="gunsl_groza_up_barrel_speed_descr">
+     <text>Увеличивает начальную скорость пули, благодаря чему пуля меньше отклоняется от ожидаемой траектории и быстрее достигает цели. Полезно для стрельбы на большие дистанции.</text>
+</string>
+<string id="gunsl_groza_up_body_name">
+     <text>Защитное покрытие</text>
+</string>
+<string id="gunsl_groza_up_body_descr">
+     <text>Нанесение специального напыления на внутренние детали позволяет замедлить износ оружия.</text>
+</string>
+<string id="gunsl_groza_up_flash_name">
+     <text>Тактический фонарь</text>
+</string>
+<string id="gunsl_groza_up_flash_descr">
+     <text>Узконаправленный фонарь дальнего радиуса действия незаменим в ночных вылазках, а также при исследовании и зачистке тёмных помещений. Не препятствует установке лазерного целеуказателя и может использоваться в паре с ним.</text>
+</string>
+<string id="gunsl_groza_up_tactical_rail_name">
+     <text>Рельсовое крепление</text>
+</string>
+<string id="gunsl_groza_up_tactical_rail_descr">
+     <text>Замена накладки газоотвода на пластиковую с планками типа Piccatiny позволяет оснащать оружие различным тактическим оборудованием (включая ЛЦУ, тактический фонарь и дополнительные типы прицелов).</text>
+</string>
+<string id="gunsl_groza_up_handle_name">
+     <text>Анатомическая рукоять</text>
+</string>
+<string id="gunsl_groza_up_handle_descr">
+     <text>Обеспечивает правой руке более удобный хват.</text>
+</string>
+<string id="gunsl_groza_up_usilenie_korobki_name">
+     <text>Детали повышенной прочности</text>
+</string>
+<string id="gunsl_groza_up_usilenie_korobki_descr">
+     <text>Замена стандартных деталей на аналоги из высокопрочных сплавов позволяет повысить износостойкость оружия.</text>
+</string>
+<string id="gunsl_groza_up_laser_name">
+     <text>Лазерный целеуказатель</text>
+</string>
+<string id="gunsl_groza_up_laser_descr">
+     <text>Визуально обозначает место предполагаемого попадания в цель, значительно облегчая и ускоряя прицеливание, а также оказывая на жертву деморализующий эффект. Не препятствует установке тактического фонаря и может использоваться в паре с ним.</text>
+</string>
+<string id="gunsl_groza_up_mag_fixator_name">
+     <text>Доработка узла подачи патронов</text>
+</string>
+<string id="gunsl_groza_up_mag_fixator_descr">
+     <text>Доработка узла боепитания позволяет снизить количество задержек, связанных с неподачей и перекосом патрона.</text>
+</string>
+<string id="gunsl_groza_up_mag_size_name">
+     <text>Замена пружины</text>
+</string>
+<string id="gunsl_groza_up_mag_size_descr">
+     <text>Замена стандартной пружины в магазине на аналогичную по жесткости, но со значительно меньшим сечением, позволяет немного увеличить количество вмещаемых магазином патронов.</text>
+</string>
+<string id="gunsl_groza_up_light_details_name">
+     <text>Легкосплавные детали</text>
+</string>
+<string id="gunsl_groza_up_light_details_descr">
+     <text>Замена деталей в основных узлах оружия на их легкосплавные аналоги позволяет снизить массу оружия без существенного вреда для его остальных тактико-технических характеристик.</text>
+</string>
+<string id="gunsl_groza_up_stock_inertion_name">
+     <text>Улучшенный тыльник</text>
+</string>
+<string id="gunsl_groza_up_stock_inertion_descr">
+     <text>Установка мягкого прорезиненного тыльника снижает ощущаемую стрелком отдачу от выстрелов из оружия.</text>
+</string>
+<string id="gunsl_groza_up_light_stock_name">
+     <text>Облегченный приклад</text>
+</string>
+<string id="gunsl_groza_up_light_stock_descr">
+     <text>Позволяет снизить массу оружия.</text>
+</string>
+<string id="gunsl_groza_up_shell_ejector_name">
+     <text>Улучшенная отсечка</text>
+</string>
+<string id="gunsl_groza_up_shell_ejector_descr">
+     <text>Модификация системы выброса гильз снижает вероятность возникновения при стрельбе задержек, связанных с прихватом гильзы после выстрела.</text>
+</string>
+<string id="gunsl_groza_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_groza_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_groza_up_tac_handle_name">
+     <text>Тактическая рукоять</text>
+</string>
+<string id="gunsl_groza_up_tac_handle_descr">
+     <text>Установка подствольной рукояти позволяет сделать оружие более удобным в обращении, благодаря чему компенсировать отдачу становится легче.</text>
+</string>
+<string id="gunsl_groza_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_groza_up_usm_rpm_descr">
+     <text>Доработка узлов ударно-спускового механизма позволяет повысить скорострельность оружия, к сожалению, ценой некоторого снижения надежности.</text>
+</string>
+<string id="gunsl_groza_up_usm_accuracy_name">
+     <text>Калибровка УСМ</text>
+</string>
+<string id="gunsl_groza_up_usm_accuracy_descr">
+     <text>Индивидуальная подгонка и балансировка стандартных деталей ударно-спускового механизма позволяет добиться более высокой точности стрельбы при одновременном уменьшении отдачи.</text>
+</string>
+<string id="gunsl_groza_up_barrel_recoil_name">
+     <text>Компенсатор отдачи</text>
+</string>
+<string id="gunsl_groza_up_barrel_recoil_descr">
+     <text>Интегрированный в ствол улучшенный компенсатор отдачи значительно снижает ощущаемую от выстрела из оружия отдачу и способствует ведению более комфортной стрельбы.</text>
+</string>
+<string id="gunsl_groza_up_zatvor_balancer_name">
+     <text>Балансировка затвора</text>
+</string>
+<string id="gunsl_groza_up_zatvor_balancer_descr">
+     <text>Балансировка деталей затворной группы уменьшает увод ствола с линии прицеливания при выстреле, а также снижает вероятность возникновения задержек при стрельбе.</text>
+</string>
+<string id="gunsl_groza_up_patronnik_accuracy_name">
+     <text>Юстировка патронника</text>
+</string>
+<string id="gunsl_groza_up_patronnik_accuracy_descr">
+     <text>Позволяет улучшить обтюрацию и добиться более высокой точности стрельбы.</text>
+</string>
+<string id="gunsl_groza_up_usm_rpm_down_name">
+     <text>Замедлитель темпа стрельбы</text>
+</string>
+<string id="gunsl_groza_up_usm_rpm_down_descr">
+     <text>Позволяет сделать стрельбу более стабильной благодаря уменьшению разброса пуль, способствует более экономному расходу боеприпасов. Также снижает нагрев ствола, что благоприятным образом сказывается на ресурсе оружия.</text>
+</string>
+</string_table>

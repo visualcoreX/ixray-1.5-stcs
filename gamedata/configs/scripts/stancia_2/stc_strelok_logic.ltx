@@ -214,7 +214,7 @@ loophole_name = second
 danger = danger@ignore
 meet = no_meet
 on_timer = 30000 | %+stc_strelok_can_run_7% 
-on_info = {=in_zone(stc_strelok_loophole_check_7) +stc_strelok_can_run_7 -stc_strelok_dead} smartcover@way_6_fake_wait %=play_sound(stc_strelok_kill_reminder_4)% ,{=in_zone(stc_strelok_loophole_check_7) +stc_strelok_can_run_7} smartcover@way_6_fake_wait 
+on_info = {=in_zone(stc_strelok_loophole_check_7) +stc_strelok_can_run_7 -stc_strelok_dead} smartcover@way_6_fake_wait %=play_sound(stc_strelok_kill_reminder_4:csky:mar_csky_commander_name)% ,{=in_zone(stc_strelok_loophole_check_7) +stc_strelok_can_run_7} smartcover@way_6_fake_wait 
  
 [smartcover@way_6_fake_wait];фдел 7 яейсмд
 use_in_combat = true
@@ -246,7 +246,7 @@ meet = no_meet
 path_walk = stc_smartcover_last_way
 combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
-on_signal = stairway | {-stc_strelok_dead} remark@stairway %=play_sound(stc_strelok_kill_reminder_5)% , remark@stairway
+on_signal = stairway | {-stc_strelok_dead} remark@stairway %=play_sound(stc_strelok_kill_reminder_5:csky:mar_csky_commander_name)% , remark@stairway
 ;on_info = {+} smartcover@way_7_1
 def_state_moving = assault
 

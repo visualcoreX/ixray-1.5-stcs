@@ -35,8 +35,8 @@ def_state_moving2 = rush
 def_state_moving3 = rush
 on_signal = action | remark@actor_see_work1 
 on_info = {+lim_ambush2} walker@retreat_work1 %=request_current_squad_stage(prepare)%
-on_info2 = %=play_sound(lim_cs_storm_troop_leader_to_actor1)% 
-on_actor_dist_le = 5 | remark@talk2_work1 %=play_sound(lim_cs_storm_troop_leader_to_actor2)%
+on_info2 = %=play_sound(lim_cs_storm_troop_leader_to_actor1:csky:st_ui_pda_legend_squad)% 
+on_actor_dist_le = 5 | remark@talk2_work1 %=play_sound(lim_cs_storm_troop_leader_to_actor2:csky:st_ui_pda_legend_squad)%
 
 [remark@actor_see_work1]
 invulnerable = true
@@ -45,7 +45,7 @@ target = actor
 meet = no_meet
 anim = hello_wpn
 on_info = {+lim_ambush2} walker@retreat_work1 %+lim_csky_go_to_smart_3%
-on_actor_dist_le = 5 | remark@talk2_work1 %=play_sound(lim_cs_storm_troop_leader_to_actor2)%
+on_actor_dist_le = 5 | remark@talk2_work1 %=play_sound(lim_cs_storm_troop_leader_to_actor2:csky:st_ui_pda_legend_squad)%
 
 [remark@talk_work1]
 invulnerable = true

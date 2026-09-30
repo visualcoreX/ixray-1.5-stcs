@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+	<string id="em1_ask_esc_tech_0">
+		<text>Take a look at this rifle. It's called the EM1, experimental. Ever heard of it?</text>
+	</string>
+	<string id="em1_ask_esc_tech_1">
+		<text>Whoa, some contraption... No, buddy, never heard of it. Told you - don't expect any fancy gadgets from me. The electronics in there are such that I'd be scared to even take the cover off: what if I can't put it back together? Take it to someone more educated.</text>
+	</string>
+	<string id="em1_ask_agr_mech_0">
+		<text>You like rare guns, right? What do you make of this one - the EM1?</text>
+	</string>
+	<string id="em1_ask_agr_mech_1">
+		<text>Wow! Rare, you say... This isn't rare, this is who-knows-what. Batteries, some kind of coils... No, brother, honestly - first time I've seen anything like it. I've still got a lot to learn with rifles, and I'm not risking poking around in this thing. If I break it, I'll never pay it off.</text>
+	</string>
+	<string id="em1_ask_agr_duty_mech_0">
+		<text>What can you tell me about the EM1 rifle?</text>
+	</string>
+	<string id="em1_ask_agr_duty_mech_1">
+		<text>Nothing. Not my field. Bring me a machine gun - then we'll talk.</text>
+	</string>
+	<string id="em1_ask_val_fixer_0">
+		<text>Take a look at this rifle. It's called the EM1. Know anything about it?</text>
+	</string>
+	<string id="em1_ask_val_fixer_1">
+		<text>Now that's a beauty! Whatever else, lad, I've never held one of these. The scope looks good, I'll give it that, but inside it's all wires and coils - that's not my line. I'm a sniper man, and this looks more like an electrician's job. No, I don't know what kind of beast it is, and I won't spin you a yarn.</text>
+	</string>
+	<string id="em1_ask_gar_fixer_0">
+		<text>Ever seen a rifle like this? It's called the EM1.</text>
+	</string>
+	<string id="em1_ask_gar_fixer_1">
+		<text>What's that, a vacuum cleaner? No, wait... A gun, looks like. Listen, I saw all sorts at the plant, but a monster like this - first time. Maybe I'm not awake yet? No, no kidding: no idea what that thing is, and I don't want to know. You take it apart, and it zaps you. Put it away, for Pete's sake.</text>
+	</string>
+	<string id="em1_ask_red_forester_0">
+		<text>Ever seen a rifle like this? The EM1.</text>
+	</string>
+	<string id="em1_ask_red_forester_1">
+		<text>Eh, the things people drag into the Zone... No, never seen one. I live in the forest, a simple gun suits me better - a carbine, or a double-barrel. And that contraption must be one of those the scientists put together - only the Zone doesn't care much for such toys. Be careful with it, you never know.</text>
+	</string>
+	<string id="em1_ask_esc_sid_0">
+		<text>Heard anything about the EM1 rifle?</text>
+	</string>
+	<string id="em1_ask_esc_sid_1">
+		<text>EM1? No, never heard of it. I'm an old man, sausage and tinned food make more sense to me than all your scientific gizmos. And who'd buy a thing like that? A stalker needs a gun that shoots, not one that hums. So if you're thinking of selling it - you've come to the wrong man.</text>
+	</string>
+	<string id="em1_ask_esc_shilov_0">
+		<text>Know anything about the EM1 rifle?</text>
+	</string>
+	<string id="em1_ask_esc_shilov_1">
+		<text>EM1? Hm... No, buddy, I won't lie to you - first I've heard of it. I'm just starting out as a trader, rarities like that are way above my level. But it must be a rare piece! Maybe ask Sidorovich? Though he'll charge you just for asking.</text>
+	</string>
+	<string id="em1_ask_agr_drozd_0">
+		<text>Any idea what this rifle is? The EM1.</text>
+	</string>
+	<string id="em1_ask_agr_drozd_1">
+		<text>That's just what I was saying - nobody brings anything unique. Only this is a bit too unique: never seen one, and I've no idea what to do with it. I've got neither ammo nor parts for it. So I'm no help to you here.</text>
+	</string>
+	<string id="em1_ask_agr_mityai_0">
+		<text>Heard about the EM1 rifle?</text>
+	</string>
+	<string id="em1_ask_agr_mityai_1">
+		<text>What? Do I look like an information desk to you? I don't know a thing about your rifle and I don't want to. If you're buying - buy, if not - stop blocking the counter.</text>
+	</string>
+	<string id="em1_ask_val_ashot_0">
+		<text>Have you heard anything about the EM1 rifle?</text>
+	</string>
+	<string id="em1_ask_val_ashot_1">
+		<text>Listen, my friend, every bit of news about the Zone passes through me - and not once, not half a word about this! It's almost insulting, honest. A handsome rifle, a solid one... No, I don't know. But if you ever decide to sell it - you come to me first, all right?</text>
+	</string>
+	<string id="em1_ask_gar_zub_0">
+		<text>Know anything about the EM1 rifle?</text>
+	</string>
+	<string id="em1_ask_gar_zub_1">
+		<text>No, brother, never seen a piece like that. I moved plenty of stuff back in the Soviet days, but nothing like this. Shady gun, looks government-issue, from some agency. Easy to get burned with a thing like that. So you deal with it yourself, I'm staying out of it.</text>
+	</string>
+	<string id="em1_ask_agr_hermit_0">
+		<text>Do you know anything about the EM1 rifle?</text>
+	</string>
+	<string id="em1_ask_agr_hermit_1">
+		<text>No. And, to be honest, I don't care to. People keep bringing new ways of killing into the Zone, and then they're surprised when the Zone answers in kind. What that device is - I can't say, I don't know. Better ask yourself why you need it.</text>
+	</string>
+	<string id="em1_ask_mar_suslov_0">
+		<text>Any idea what this rifle is? The EM1.</text>
+	</string>
+	<string id="em1_ask_mar_suslov_1">
+		<text>Hm, first time I've seen one. I'm more about supplies: ammo, medkits, food... Leave experimental hardware to the technicians. Ask our mechanic, he loves tinkering with that kind of thing.</text>
+	</string>
+	<string id="em1_ask_esc_agent_0">
+		<text>Does the military know anything about the EM1 rifle?</text>
+	</string>
+	<string id="em1_ask_esc_agent_1">
+		<text>I know nothing. And even if I did - it's none of your business. And don't flash it around here: questions about things like that get asked by very different people.</text>
+	</string>
+	<string id="em1_ask_yan_sakharov_0">
+		<text>Professor, take a look at this rifle. The EM1, an experimental prototype. Do you know anything about it?</text>
+	</string>
+	<string id="em1_ask_yan_sakharov_1">
+		<text>Allow me... Curious, very curious! Judging by the coils, it's some kind of electromagnetic accelerator - the principle has been known for a long time, but for someone to bring it to a portable model... No, alas: I know nothing about this project or who was behind it. Our laboratory deals with entirely different matters. But if you ever find out where it came from, do tell me - I'm extremely interested!</text>
+	</string>
+</string_table>

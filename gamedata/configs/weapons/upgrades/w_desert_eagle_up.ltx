@@ -1,275 +1,577 @@
-[up_sect_a_desert_eagle]
-cost		      		= 750
-value					= +25
-rpm						= 50
+;------------------------------------------wpn_deagle_barrel_compensator------------------------------------------
+[up_sect_wpn_deagle_barrel_compensator]
+cost = 4000
+value = -20
+cam_dispersion          = -0.4
+cam_dispersion_inc		= -0.35		
+cam_step_angle_horz		= -0.3
+bullet_speed		 	= +20
+fire_dispersion_base	= -0.03
+inv_weight              = +0.05
+crosshair_inertion = -0.3
+rpm = +20
 
-[up_sect_b_desert_eagle]
-cost		      		= 750
-value					= -20
 
-cam_dispersion          = -0.1		;0.5
-cam_dispersion_inc		= -0.1		;0.5
-cam_step_angle_horz		= -0.2		;1.0
+zoom_cam_dispersion          = -0.2
+zoom_cam_dispersion_inc		= -0.15		
+zoom_cam_step_angle_horz		= -0.6
+PDM_disp_base = -0.2
 
-[up_sect_c_desert_eagle]
-cost		      		= 750
-value					= -20
-inv_weight				= -0.1
-fire_dispersion_base	= -0.1 ;0.5
+show_bones = barrel_compensator
 
-[up_sect_d_desert_eagle]
-cost		      		= 750
-value					= +20
-bullet_speed		 	= 50
-hit_power           	= 0.6, 0.6, 0.6, 0.6
+upgrade_addon_icon = icon_element_deagle_compensator
+upgrade_addon_icon_offset_x = 56
+upgrade_addon_icon_offset_y = 0
+inv_addons_correction_x = -5
 
-[up_sect_e_desert_eagle]
-cost		      		= 750
-value					= +20
-fire_dispersion_base	= -0.1 ;0.5
-
-[up_sect_f_desert_eagle]
-cost		      		= 750
-value					= +20
-fire_dispersion_base	= -0.1 ;0.5
-
-cam_dispersion          = -0.1		;0.5
-cam_dispersion_inc		= -0.1		;0.5
-cam_step_angle_horz		= -0.2		;1.0
-
-[up_sect_g_desert_eagle]
-cost		      		= 750
-value					= +4
-ammo_mag_size		 	= 4
-
-[up_sect_ac_desert_eagle]
-cost		      		= 1125
-value					= -50
-;value2					= st_upgr_silencer_disable
-
-cam_dispersion          = -0.25		;0.5
-cam_dispersion_inc		= -0.25		;0.5
-cam_step_angle_horz		= -0.5		;1.0
-
-;silencer_status			= 0
-
-[up_sect_bd_desert_eagle]
-cost		      		= 1125
-value					= +30
-;value2					= st_upgr_silencer_disable
-bullet_speed		 	= 100
-hit_power           	= 0.65, 0.65, 0.65, 0.65
-;silencer_status			= 0
-
-[up_a_desert_eagle]
-scheme_index            = 0, 0
-known                   = 1
-;;invented                = 1                							; 0
-effects                 = up_gr_ac_desert_eagle
-section                 = up_sect_a_desert_eagle
-property                = prop_rpm
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = on_weapon_upgrade_something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_deagle_barrel_compensator]
+scheme_index = 0, 0
+known = 1
+effects = vartree_wpn_deagle_usm
+section = up_sect_wpn_deagle_barrel_compensator
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_zatvor_rpm
-description             = st_upg_zatvor_rpm_descr
-icon                    = ui_wp_upgrade_01
+prereq_params  = 
+name =gunsl_wpn_deagle_up_barrel_compensator_name
+description =gunsl_wpn_deagle_up_barrel_compensator_descr
+icon = ui_gunsl_up_wpn_deagle_barrel_compensator
+;------------------------------------------wpn_deagle_barrel_hp------------------------------------------
+[up_sect_wpn_deagle_barrel_hp]
+cost = 4000
+value = +20
+hit_power           	= 1.35, 1.35, 1.35, 1.35
+fire_dispersion_base = +0.05
+bullet_speed = +40
+condition_shot_dec      	= +0.002
+cam_dispersion = +0.15
+zoom_cam_dispersion         = +0.1
+cam_dispersion_inc = +0.1
+PDM_disp_base = +0.1
+hit_impulse = +20
 
-;;...
-[up_b_desert_eagle]
-scheme_index            = 0, 1
-known                   = 1
-effects                 = up_gr_bd_desert_eagle
-section                 = up_sect_b_desert_eagle
-property                = prop_recoil
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_deagle_barrel_hp]
+scheme_index = 0, 1
+known = 1
+effects = vartree_wpn_deagle_usm
+section = up_sect_wpn_deagle_barrel_hp
+property = prop_destruction
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_zatvor_recoil
-description             = st_upg_zatvor_recoil_descr
-icon                    = ui_wp_upgrade_02
+prereq_params  = 
+name =gunsl_wpn_deagle_up_barrel_hp_name
+description =gunsl_wpn_deagle_up_barrel_hp_descr
+icon = ui_gunsl_up_wpn_deagle_barrel_hp
+;------------------------------------------wpn_deagle_mag_uderzhatel------------------------------------------
+[up_sect_wpn_deagle_mag_uderzhatel]
+cost = 2000
+value = +15
+condition_shot_dec = -0.0015
+misfire_end_prob	     	= -0.02
 
-[up_c_desert_eagle]
-scheme_index            = 0, 2
-known                   = 1
-effects                 = up_gr_ac_desert_eagle
-section                 = up_sect_c_desert_eagle
-property                = prop_weight      
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_deagle_mag_uderzhatel]
+scheme_index = 0, 2
+known = 1
+effects = vartree_wpn_deagle_patronnik
+section = up_sect_wpn_deagle_mag_uderzhatel
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_weight
-description             = st_upg_barrel_weight_descr
-icon                    = ui_wp_upgrade_03
+prereq_params  = 
+name =gunsl_wpn_deagle_up_mag_uderzhatel_name
+description =gunsl_wpn_deagle_up_mag_uderzhatel_descr
+icon = ui_gunsl_up_wpn_deagle_mag_uderzhatel
+;------------------------------------------wpn_deagle_barrel_accuracy------------------------------------------
+[up_sect_wpn_deagle_barrel_accuracy]
+cost = 4000
+value = +20
+fire_dispersion_base = -0.06
+PDM_disp_base = -0.5
+PDM_disp_vel_factor = -0.1
+PDM_disp_crouch_no_acc = -0.1
+PDM_disp_crouch	 = -0.1
 
-[up_d_desert_eagle]
-scheme_index            = 0, 3
-known                   = 1
-effects                 = up_gr_bd_desert_eagle
-section                 = up_sect_d_desert_eagle
-property                = prop_bullet_speed
+misfire_start_prob = -0.001
+misfire_start_condition= -0.05
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_deagle_barrel_accuracy]
+scheme_index = 0, 3
+known = 1
+effects = vartree_wpn_deagle_usm
+section = up_sect_wpn_deagle_barrel_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_hard_barrel_curved
-description             = st_upg_hard_barrel_curved_descr
-icon                    = ui_wp_upgrade_04
+prereq_params  = 
+name =gunsl_wpn_deagle_up_barrel_accuracy_name
+description =gunsl_wpn_deagle_up_barrel_accuracy_descr
+icon = ui_gunsl_up_wpn_deagle_barrel_accuracy
+;------------------------------------------wpn_deagle_light_mag------------------------------------------
+[up_sect_wpn_deagle_light_mag]
+cost = 1100
+value = -0.1
+inv_weight = -0.1
 
-[up_e_desert_eagle]
-scheme_index            = 0, 4
-known                   = 1
-effects                 = 
-section                 = up_sect_e_desert_eagle
-property                = prop_dispersion
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_deagle_light_mag]
+scheme_index = 0, 4
+known = 1
+effects = vartree_wpn_deagle_mag2
+section = up_sect_wpn_deagle_light_mag
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_trigger_accur
-description             = st_upg_trigger_accur_descr
-icon                    = ui_wp_upgrade_05
+prereq_params  = 
+name =gunsl_wpn_deagle_up_light_mag_name
+description =gunsl_wpn_deagle_up_light_mag_descr
+icon = ui_gunsl_up_wpn_deagle_light_mag
+;------------------------------------------wpn_deagle_mag_balance------------------------------------------
+[up_sect_wpn_deagle_mag_balance]
+cost = 2000
+value = -20
+cam_dispersion = -0.1
+PDM_disp_base  = -0.5
 
-[up_f_desert_eagle]
-scheme_index            = 0, 5
-known                   = 1
-effects                 = 
-section                 = up_sect_f_desert_eagle
-property                = prop_dispersion
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_deagle_mag_balance]
+scheme_index = 0, 5
+known = 1
+effects = vartree_wpn_deagle_patronnik
+section = up_sect_wpn_deagle_mag_balance
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_handle_accur2
-description             = st_upg_handle_accur2_descr
-icon                    = ui_wp_upgrade_09
+prereq_params  = 
+name =gunsl_wpn_deagle_up_mag_balance_name
+description =gunsl_wpn_deagle_up_mag_balance_descr
+icon = ui_gunsl_up_wpn_deagle_mag_balance
+;------------------------------------------wpn_deagle_usm_accuracy------------------------------------------
+[up_sect_wpn_deagle_usm_accuracy]
+cost = 6000
+value = +25
+fire_dispersion_base = -0.05
+cam_dispersion          = -0.1
+cam_dispersion_inc		= -0.1
+crosshair_inertion = -0.6
+cam_dispersion_frac = +0.12
 
-[up_g_desert_eagle]
-scheme_index            = 0, 6
-known                   = 1
-effects                 = 
-section                 = up_sect_g_desert_eagle
-property                = prop_ammo_size
+zoom_cam_dispersion          = -0.08
+zoom_cam_dispersion_inc		= -0.1	
+zoom_cam_step_angle_horz		= -0.25
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
+PDM_disp_base = -0.2
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_deagle_usm_accuracy]
+scheme_index = 0, 6
+known = 1
+effects = 
+section = up_sect_wpn_deagle_usm_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_charger_big
-description             = st_upg_charger_big_descr
-icon                    = ui_wp_upgrade_06
+prereq_params  = 
+name =gunsl_wpn_deagle_up_usm_accuracy_name
+description =gunsl_wpn_deagle_up_usm_accuracy_descr
+icon = ui_gunsl_up_wpn_deagle_usm_accuracy
+;------------------------------------------wpn_deagle_rail------------------------------------------
+[up_sect_wpn_deagle_rail]
+cost = 1500
+value = 0
+show_bones = rail
+inv_weight = +0.05
 
+upgrade_addon_icon = icon_element_deagle_rail
+upgrade_addon_icon_offset_x = 48
+upgrade_addon_icon_offset_y = 0
 
-[up_ac_desert_eagle]
-scheme_index            = 1, 0
-known                   = 1
-effects                 = 
-section                 = up_sect_ac_desert_eagle
-property                = prop_recoil
-
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_deagle_rail]
+scheme_index = 0, 7
+known = 1
+effects = vartree_wpn_deagle_laser
+section = up_sect_wpn_deagle_rail
+property = prop_rail
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_recoil
-description             = st_upg_barrel_recoil_descr
-icon                    = ui_wp_upgrade_07
+prereq_params  = 
+name =gunsl_wpn_deagle_up_rail_name
+description =gunsl_wpn_deagle_up_rail_descr
+icon = ui_gunsl_up_wpn_deagle_rail
+;------------------------------------------wpn_deagle_flashlaser------------------------------------------
+[up_sect_wpn_deagle_flashlaser]
+laser_installed = true
+torch_installed = true
+cost = 5000
+crosshair_inertion = -0.5
+show_bones = flash, laser, line
+laserdot_world_attach_offset_x = 0.0
+laserdot_world_attach_offset_y = 0.1
+laserdot_world_attach_offset_z = 0.05
 
-[up_bd_desert_eagle]
-scheme_index            = 1, 1
-known                   = 1
-effects                 = 
-section                 = up_sect_bd_desert_eagle
-property                = prop_bullet_speed
+upgrade_addon_icon = upgrade_addon_icon_laser_m6x_1
+upgrade_addon_icon_offset_x = 44
+upgrade_addon_icon_offset_y = 0
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_deagle_flashlaser]
+scheme_index = 0, 8
+known = 1
+effects = 
+section = up_sect_wpn_deagle_flashlaser
+property = prop_laser
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_curved
-description             = st_upg_barrel_curved_descr
-icon                    = ui_wp_upgrade_08
+prereq_params  = 
+name =gunsl_wpn_deagle_up_flashlaser_name
+description =gunsl_wpn_deagle_up_flashlaser_descr
+icon = ui_gunsl_up_wpn_deagle_flashlaser
+;------------------------------------------wpn_deagle_sights------------------------------------------
+[up_sect_wpn_deagle_sights]
+cost = 1000
+; value removed (was 0) - prop_lightingsights is boolean; empty value -> functor shows name only, no "0%"
+show_bones = sight
+crosshair_inertion = -0.2
+
+[up_wpn_deagle_sights]
+scheme_index = 0, 9
+known = 1
+effects = 
+section = up_sect_wpn_deagle_sights
+property = prop_lightingsights
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_deagle_up_sights_name
+description =gunsl_wpn_deagle_up_sights_descr
+icon = ui_gunsl_up_wpn_deagle_sights
+;------------------------------------------wpn_deagle_patronnik------------------------------------------
+[up_sect_wpn_deagle_patronnik]
+cost = 4000
+value = +20
+cam_dispersion = -0.3
+PDM_disp_base  = -0.2
+
+[up_wpn_deagle_patronnik]
+scheme_index = 0, 10
+known = 1
+effects = 
+section = up_sect_wpn_deagle_patronnik
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_deagle_up_patronnik_name
+description =gunsl_wpn_deagle_up_patronnik_descr
+icon = ui_gunsl_up_wpn_deagle_patronnik
+;------------------------------------------wpn_deagle_pokritie------------------------------------------
+[up_sect_wpn_deagle_pokritie]
+cost = 5000
+value = +20
+condition_shot_dec      	= -0.0015
+misfire_end_prob	     	= -0.02
+
+[up_wpn_deagle_pokritie]
+scheme_index = 0, 11
+known = 1
+effects = 
+section = up_sect_wpn_deagle_pokritie
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_deagle_up_pokritie_name
+description =gunsl_wpn_deagle_up_pokritie_descr
+icon = ui_gunsl_up_wpn_deagle_pokritie
+;------------------------------------------wpn_deagle_usm_rpm------------------------------------------
+[up_sect_wpn_deagle_usm_rpm]
+cost = 6000
+value = +25
+rpm  = +35
+cam_dispersion          = -0.1
+zoom_cam_dispersion         = -0.07
+misfire_start_condition	=+0.1
+condition_shot_dec = +0.001
+
+[up_wpn_deagle_usm_rpm]
+scheme_index = 0, 12
+known = 1
+effects = 
+section = up_sect_wpn_deagle_usm_rpm
+property = prop_rpm
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_deagle_up_usm_rpm_name
+description =gunsl_wpn_deagle_up_usm_rpm_descr
+icon = ui_gunsl_up_wpn_deagle_usm_rpm
+;------------------------------------------wpn_deagle_usm_recoil------------------------------------------
+[up_sect_wpn_deagle_usm_recoil]
+cost = 6000
+value = -25
+cam_relax_speed         = +1.0
+cam_dispersion          = -0.45
+cam_dispersion_inc      = -0.2
+
+zoom_cam_relax_speed = +2
+zoom_cam_dispersion = -0.25
+zoom_cam_dispersion_inc = -0.2
+
+PDM_disp_base = -0.1
+
+[up_wpn_deagle_usm_recoil]
+scheme_index = 0, 13
+known = 1
+effects = 
+section = up_sect_wpn_deagle_usm_recoil
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_deagle_up_usm_recoil_name
+description =gunsl_wpn_deagle_up_usm_recoil_descr
+icon = ui_gunsl_up_wpn_deagle_usm_recoil
+;------------------------------------------wpn_deagle_zapiratel------------------------------------------
+[up_sect_wpn_deagle_zapiratel]
+cost = 4000
+value = +20
+bullet_speed = +50
+misfire_start_condition		= -0.1
+misfire_end_condition		= -0.003
+
+[up_wpn_deagle_zapiratel]
+scheme_index = 0, 14
+known = 1
+effects = 
+section = up_sect_wpn_deagle_zapiratel
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_deagle_up_zapiratel_name
+description =gunsl_wpn_deagle_up_zapiratel_descr
+icon = ui_gunsl_up_wpn_deagle_zapiratel
+;------------------------------------------wpn_deagle_usm_reliability------------------------------------------
+[up_sect_wpn_deagle_usm_reliability]
+cost = 6000
+value = +25
+misfire_start_condition		= -0.15
+misfire_end_condition		= -0.03
+misfire_end_prob	     	= -0.1
+condition_shot_dec      	= -0.0015
+
+[up_wpn_deagle_usm_reliability]
+scheme_index = 0, 15
+known = 1
+effects = 
+section = up_sect_wpn_deagle_usm_reliability
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_deagle_up_usm_reliability_name
+description =gunsl_wpn_deagle_up_usm_reliability_descr
+icon = ui_gunsl_up_wpn_deagle_usm_reliability
+;------------------------------------------wpn_deagle_gazootvod------------------------------------------
+[up_sect_wpn_deagle_gazootvod]
+cost = 2500
+value = -10
+cam_dispersion          = -0.25
+cam_dispersion_inc		= -0.1		
+bullet_speed		 	= +10
+crosshair_inertion = -0.5
+rpm = +5
 
 
-[up_gr_ab_desert_eagle]
-elements                = up_a_desert_eagle, up_b_desert_eagle
+zoom_cam_dispersion          = -0.12
+PDM_disp_base = -0.1
 
-[up_gr_cd_desert_eagle]
-elements                = up_c_desert_eagle, up_d_desert_eagle
+[up_wpn_deagle_gazootvod]
+scheme_index = 0, 16
+known = 1
+effects = vartree_wpn_deagle_barrel
+section = up_sect_wpn_deagle_gazootvod
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_deagle_up_gazootvod_name
+description =gunsl_wpn_deagle_up_gazootvod_descr
+icon = ui_gunsl_up_wpn_deagle_gazootvod
+;------------------------------------------wpn_deagle_polymer_details------------------------------------------
+[up_sect_wpn_deagle_polymer_details]
+cost = 3000
+value = -0.5
+inv_weight = -0.5
 
-[up_gr_e_desert_eagle]
-elements                = up_e_desert_eagle
+[up_wpn_deagle_polymer_details]
+scheme_index = 0, 17
+known = 1
+effects = vartree_wpn_deagle_barrel
+section = up_sect_wpn_deagle_polymer_details
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_deagle_up_polymer_details_name
+description =gunsl_wpn_deagle_up_polymer_details_descr
+icon = ui_gunsl_up_wpn_deagle_polymer_details
+;------------------------------------------wpn_deagle_handle------------------------------------------
+[up_sect_wpn_deagle_handle]
+cost = 1500
+value = +10
+control_inertion_factor = -0.3
 
-[up_gr_f_desert_eagle]
-elements                = up_f_desert_eagle
+cam_relax_speed         = +1.0
+cam_dispersion          = -0.03
 
-[up_gr_g_desert_eagle]
-elements                = up_g_desert_eagle
+zoom_cam_relax_speed = +2
+zoom_cam_dispersion = -0.05
+zoom_cam_dispersion_inc = -0.03
+
+PDM_disp_base = -0.25
+PDM_disp_vel_factor = -0.1
+
+[up_wpn_deagle_handle]
+scheme_index = 0, 18
+known = 1
+effects = 
+section = up_sect_wpn_deagle_handle
+property = prop_inertion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_deagle_up_handle_name
+description =gunsl_wpn_deagle_up_handle_descr
+icon = ui_gunsl_up_wpn_deagle_handle
+;------------------------------------------------------------------------------------
+[vartree_wpn_deagle_gazootvod]
+elements = up_wpn_deagle_gazootvod, up_wpn_deagle_polymer_details
+[vartree_wpn_deagle_barrel]
+elements = up_wpn_deagle_barrel_compensator, up_wpn_deagle_barrel_hp, up_wpn_deagle_barrel_accuracy
+[vartree_wpn_deagle_usm]
+elements = up_wpn_deagle_usm_accuracy, up_wpn_deagle_usm_rpm, up_wpn_deagle_usm_recoil, up_wpn_deagle_usm_reliability
+[vartree_wpn_deagle_mag1]
+elements = up_wpn_deagle_light_mag
+[vartree_wpn_deagle_mag2]
+elements = up_wpn_deagle_mag_uderzhatel, up_wpn_deagle_mag_balance
+[vartree_wpn_deagle_patronnik]
+elements = up_wpn_deagle_patronnik, up_wpn_deagle_pokritie, up_wpn_deagle_zapiratel
+[vartree_wpn_deagle_rail]
+elements = up_wpn_deagle_rail
+[vartree_wpn_deagle_laser]
+elements = up_wpn_deagle_flashlaser
+[vartree_wpn_deagle_sights]
+elements = up_wpn_deagle_sights
+[vartree_wpn_deagle_handle]
+elements = up_wpn_deagle_handle
 
 
-[up_gr_ac_desert_eagle]
-elements                = up_ac_desert_eagle
+;================================================================================
+; UNIQUE Desert Eagle (nimble) upgrade branch - GS upgrades_uniq.ltx (inherits base nodes)
+;================================================================================
+[up_wpn_deagle_uniq_gazootvod]:up_wpn_deagle_gazootvod
+effects = vartree_wpn_deagle_uniq_barrel
 
-[up_gr_bd_desert_eagle]
-elements                = up_bd_desert_eagle
+[up_wpn_deagle_uniq_polymer_details]:up_wpn_deagle_polymer_details
+effects = vartree_wpn_deagle_uniq_barrel
+
+[up_sect_wpn_deagle_uniq_barrel_compensator]:up_sect_wpn_deagle_barrel_compensator
+upgrade_addon_icon = icon_element_deagle_compensator_uniq
+
+[up_wpn_deagle_uniq_barrel_compensator]:up_wpn_deagle_barrel_compensator
+scheme_index = 0, 0
+known = 1
+effects = vartree_wpn_deagle_uniq_usm
+section = up_sect_wpn_deagle_uniq_barrel_compensator
+
+[up_wpn_deagle_uniq_barrel_hp]:up_wpn_deagle_barrel_hp
+effects = vartree_wpn_deagle_uniq_usm
+
+[up_wpn_deagle_uniq_barrel_accuracy]:up_wpn_deagle_barrel_accuracy
+effects = vartree_wpn_deagle_uniq_usm
+
+[up_wpn_deagle_uniq_usm_accuracy]:up_wpn_deagle_usm_accuracy
+[up_wpn_deagle_uniq_usm_rpm]:up_wpn_deagle_usm_rpm
+[up_wpn_deagle_uniq_usm_recoil]:up_wpn_deagle_usm_recoil
+[up_wpn_deagle_uniq_usm_reliability]:up_wpn_deagle_usm_reliability
+
+[vartree_wpn_deagle_uniq_gazootvod]
+elements = up_wpn_deagle_uniq_gazootvod, up_wpn_deagle_uniq_polymer_details
+
+[vartree_wpn_deagle_uniq_barrel]
+elements = up_wpn_deagle_uniq_barrel_compensator, up_wpn_deagle_uniq_barrel_hp, up_wpn_deagle_uniq_barrel_accuracy
+
+[vartree_wpn_deagle_uniq_usm]
+elements = up_wpn_deagle_uniq_usm_accuracy, up_wpn_deagle_uniq_usm_rpm, up_wpn_deagle_uniq_usm_recoil, up_wpn_deagle_uniq_usm_reliability

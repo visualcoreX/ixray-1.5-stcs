@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_fort_up_barrel_sil_name">
+     <text>Threaded barrel</text>
+</string>
+<string id="gunsl_fort_up_barrel_sil_descr">
+     <text>Extended barrel, threaded for mounting a suppressor.</text>
+</string>
+<string id="gunsl_fort_up_barrel_speed_name">
+     <text>Faster twist rate</text>
+</string>
+<string id="gunsl_fort_up_barrel_speed_descr">
+     <text>Barrel with a faster twist rate increases muzzle velocity and reduces dispersion.</text>
+</string>
+<string id="gunsl_fort_up_body_name">
+     <text>Protective coating</text>
+</string>
+<string id="gunsl_fort_up_body_descr">
+     <text>Application of a protective coating to the parts significantly reduces wear.</text>
+</string>
+<string id="gunsl_fort_up_ejector_name">
+     <text>Improved ejector</text>
+</string>
+<string id="gunsl_fort_up_ejector_descr">
+     <text>Improved ejector reduces the probability of malfunctions related to ejecting an empty case from the firearm. Improves reliability.</text>
+</string>
+<string id="gunsl_fort_up_handle_name">
+     <text>Anatomical grips</text>
+</string>
+<string id="gunsl_fort_up_handle_descr">
+     <text>Grip panels made to fit the shooter's preferences. New panels allow for better grip and more comfortable shooting.</text>
+</string>
+<string id="gunsl_fort_up_usm_recoil_name">
+     <text>Match trigger</text>
+</string>
+<string id="gunsl_fort_up_usm_recoil_descr">
+     <text>Reduces felt recoil, thus improving accuracy.</text>
+</string>
+<string id="gunsl_fort_up_light_mag_name">
+     <text>Lightweight magazine</text>
+</string>
+<string id="gunsl_fort_up_light_mag_descr">
+     <text>Reduces the gun's overall weight by replacing the standard magazine with a lightweight counterparts.</text>
+</string>
+<string id="gunsl_fort_up_patronnik_accuracy_name">
+     <text>Chamber adjustment</text>
+</string>
+<string id="gunsl_fort_up_patronnik_accuracy_descr">
+     <text>Improves obturation and accuracy by removing play in the chamber.</text>
+</string>
+<string id="gunsl_fort_up_zatvor_balancer_name">
+     <text>Balanced slide</text>
+</string>
+<string id="gunsl_fort_up_zatvor_balancer_descr">
+     <text>Balanced slide reduces muzzle climb and felt recoil.</text>
+</string>
+<string id="gunsl_fort_up_light_details_name">
+     <text>Lightweight parts</text>
+</string>
+<string id="gunsl_fort_up_light_details_descr">
+     <text>Reduces weight by replacing weapon parts with their light-alloy counterparts.</text>
+</string>
+<string id="gunsl_fort_up_sights_name">
+     <text>Tritium sights</text>
+</string>
+<string id="gunsl_fort_up_sights_descr">
+     <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+</string>
+<string id="gunsl_fort_up_usm_rpm_name">
+     <text>Trigger tuning</text>
+</string>
+<string id="gunsl_fort_up_usm_rpm_descr">
+     <text>Modification of the trigger mechanism increases rate of fire, at the cost of durability.</text>
+</string>
+<string id="gunsl_fort_up_podacha_name">
+     <text>Improved feeding mechanism</text>
+</string>
+<string id="gunsl_fort_up_podacha_descr">
+     <text>Individual adjustment of every part of the feeding mechanism decreases the probability of feeding issues.</text>
+</string>
+</string_table>

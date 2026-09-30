@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_sig220_nimble">
+		<text>SIG Sauer P220R</text>
+	</string>
+	<string id="gunsl_wpn_sig220_nimble_descr">
+		<text>Тактическая модификация хорошо известного многим сталкерам пистолета. Снабжена рельсовым креплением для установки дополнительных аксессуаров, таких как фонарик или ЛЦУ. Нечасто встречается в Зоне.</text>
+	</string>
+</string_table>

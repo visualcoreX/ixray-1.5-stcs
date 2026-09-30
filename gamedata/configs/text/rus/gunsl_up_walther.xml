@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_wpn_walther_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_wpn_walther_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_wpn_walther_up_usilinie_ramki_name">
+     <text>Усиленная рамка</text>
+</string>
+<string id="gunsl_wpn_walther_up_usilinie_ramki_descr">
+     <text>Усиление стандартной пластиковой рамки пистолета позволяет уменьшить деформации, испытываемые пластиковыми деталями при выстреле, и тем самым продлить срок службы оружия.</text>
+</string>
+<string id="gunsl_wpn_walther_up_flashlaser_name">
+     <text>Комбинированный тактический модуль</text>
+</string>
+<string id="gunsl_wpn_walther_up_flashlaser_descr">
+     <text>Сочетает в себе функции узконаправленного тактического фонаря и лазерного целеуказателя. Особенно полезен в ночных условиях.</text>
+</string>
+<string id="gunsl_wpn_walther_up_light_mag_name">
+     <text>Легковесный магазин</text>
+</string>
+<string id="gunsl_wpn_walther_up_light_mag_descr">
+     <text>Позволяет немного уменьшить массу оружия.</text>
+</string>
+<string id="gunsl_wpn_walther_up_shell_ejector_name">
+     <text>Доработка экстрактора</text>
+</string>
+<string id="gunsl_wpn_walther_up_shell_ejector_descr">
+     <text>Позволяет уменьшить число задержек, связанных с прихватом гильз, выбрасываемых из пистолета после выстрела. Благоприятным образом сказывается на надежности оружия.</text>
+</string>
+<string id="gunsl_wpn_walther_up_zatvor_zapiratel_name">
+     <text>Подгонка запирающего механизма</text>
+</string>
+<string id="gunsl_wpn_walther_up_zatvor_zapiratel_descr">
+     <text>За счет более плотного запирания канала ствола улучшается обтюрация канала ствола и повышается начальная скорость пули.</text>
+</string>
+<string id="gunsl_wpn_walther_up_zatvor_recoil_name">
+     <text>Компенсатор отдачи</text>
+</string>
+<string id="gunsl_wpn_walther_up_zatvor_recoil_descr">
+     <text>Интегрированная в конструкцию затвора система компенсации отдачи способствует более комфортной и точной стрельбе.</text>
+</string>
+<string id="gunsl_wpn_walther_up_patronnik_name">
+     <text>Доработка патронника</text>
+</string>
+<string id="gunsl_wpn_walther_up_patronnik_descr">
+     <text>Позволяет добиться более высокой точности стрельбы.</text>
+</string>
+<string id="gunsl_wpn_walther_up_barrel_sil_name">
+     <text>Резьба под глушитель</text>
+</string>
+<string id="gunsl_wpn_walther_up_barrel_sil_descr">
+     <text>Замена ствола на удлиненный, с резьбой, предназначенной для установки глушителя под калибр 9х19 мм.</text>
+</string>
+<string id="gunsl_wpn_walther_up_barrel_bullet_speed_name">
+     <text>Ствол с измененным шагом нарезки</text>
+</string>
+<string id="gunsl_wpn_walther_up_barrel_bullet_speed_descr">
+     <text>Позволяет повысить начальную скорость пули.</text>
+</string>
+<string id="gunsl_wpn_walther_up_barrel_accuracy_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_wpn_walther_up_barrel_accuracy_descr">
+     <text>Позволяет сделать стрельбу из оружия более точной.</text>
+</string>
+<string id="gunsl_wpn_walther_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_wpn_walther_up_usm_rpm_descr">
+     <text>Перенастройка УСМ с доработкой некоторых его деталей позволяет стрелку вести огонь в более высоком темпе. К сожалению, оружие от этого начинает изнашиваться немного быстрее.</text>
+</string>
+<string id="gunsl_wpn_walther_up_body_name">
+     <text>Защитное покрытие</text>
+</string>
+<string id="gunsl_wpn_walther_up_body_descr">
+     <text>Нанесение специального напыления на внутренние детали позволяет замедлить износ оружия.</text>
+</string>
+<string id="gunsl_wpn_walther_up_usm_recoil_name">
+     <text>Мягкий спуск УСМ</text>
+</string>
+<string id="gunsl_wpn_walther_up_usm_recoil_descr">
+     <text>Позволяет снизить отдачу, способствуя более точной стрельбе.</text>
+</string>
+<string id="gunsl_wpn_walther_up_handle_name">
+     <text>Анатомическая рукоять</text>
+</string>
+<string id="gunsl_wpn_walther_up_handle_descr">
+     <text>Подбор и установка на оружие более подходящих для конкретного стрелка накладок на рукоять позволяет добиться лучших результатов при стрельбе.</text>
+</string>
+<string id="gunsl_wpn_walther_up_titan_details_name">
+     <text>Детали повышенной прочности</text>
+</string>
+<string id="gunsl_wpn_walther_up_titan_details_descr">
+     <text>Обладают более высокой стойкостью к износу, за счет чего оружие становится более надежным.</text>
+</string>
+</string_table>

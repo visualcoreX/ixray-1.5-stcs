@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_ammo_9x21_sp10">
+		<text>9x21mm SP-10</text>
+	</string>
+	<string id="gunsl_ammo_9x21_sp10_short">
+		<text>9x21mm SP-10</text>
+	</string>
+	<string id="gunsl_ammo_9x21_sp10_descr">
+		<text>Pistol 9x21mm cartridge with increased penetrating performance. Designed as anti-personnel ammunition, effective against light body armor. The nose part of the subcaliber hardened steel core sticks out of the jacket, thus higher penetrating performance is achieved.</text>
+	</string>
+</string_table>

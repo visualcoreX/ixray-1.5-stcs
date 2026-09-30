@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_gsh18_up_barrel_speed_name">
+     <text>Rebored barrel</text>
+</string>
+<string id="gunsl_gsh18_up_barrel_speed_descr">
+     <text>Faster twist rate increases muzzle velocity and reduces bullet dispersion.</text>
+</string>
+<string id="gunsl_gsh18_up_barrel_recoil_name">
+     <text>Recoil compensator</text>
+</string>
+<string id="gunsl_gsh18_up_barrel_recoil_descr">
+     <text>Extended barrel with an integrated compensator significantly reduces felt recoil.</text>
+</string>
+<string id="gunsl_gsh18_up_barrel_accuracy_name">
+     <text>Barrel adjustment</text>
+</string>
+<string id="gunsl_gsh18_up_barrel_accuracy_descr">
+     <text>Reduces bullet dispersion, which improves accuracy.</text>
+</string>
+<string id="gunsl_gsh18_up_body_reliability_name">
+     <text>Protective coating</text>
+</string>
+<string id="gunsl_gsh18_up_body_reliability_descr">
+     <text>Application of a protective coating to the internal parts significantly reduces wear.</text>
+</string>
+<string id="gunsl_gsh18_up_usm_recoil_name">
+     <text>Match trigger</text>
+</string>
+<string id="gunsl_gsh18_up_usm_recoil_descr">
+     <text>Decreases recoil, thus improving accuracy.</text>
+</string>
+<string id="gunsl_gsh18_up_handle_name">
+     <text>Rubberized grip</text>
+</string>
+<string id="gunsl_gsh18_up_handle_descr">
+     <text>New grip panels allow for better grip and more comfortable shooting.</text>
+</string>
+<string id="gunsl_gsh18_up_patronnik_obturation_name">
+     <text>Improved locking mechanism</text>
+</string>
+<string id="gunsl_gsh18_up_patronnik_obturation_descr">
+     <text>Improves obturation and muzzle velocity thanks to tighter lock-up .</text>
+</string>
+<string id="gunsl_gsh18_up_patronnik_dispersion_name">
+     <text>Chamber adjustment</text>
+</string>
+<string id="gunsl_gsh18_up_patronnik_dispersion_descr">
+     <text>Improves obturation and accuracy by removing play in the chamber.</text>
+</string>
+<string id="gunsl_gsh18_up_ramka_name">
+     <text>Reinforced frame</text>
+</string>
+<string id="gunsl_gsh18_up_ramka_descr">
+     <text>Reinforced frame increases durability of the firearm.</text>
+</string>
+<string id="gunsl_gsh18_up_shell_ejector_name">
+     <text>Improved ejector</text>
+</string>
+<string id="gunsl_gsh18_up_shell_ejector_descr">
+     <text>Improved ejector reduces the probability of malfunctions related to ejecting an empty case from the firearm.</text>
+</string>
+<string id="gunsl_gsh18_up_sights_name">
+     <text>Tritium sights</text>
+</string>
+<string id="gunsl_gsh18_up_sights_descr">
+     <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+</string>
+<string id="gunsl_gsh18_up_usm_rpm_name">
+     <text>Trigger tuning</text>
+</string>
+<string id="gunsl_gsh18_up_usm_rpm_descr">
+     <text>Modification of the trigger mechanism increases rate of fire, at the cost of durability.</text>
+</string>
+<string id="gunsl_gsh18_up_polymer_buffer_name">
+     <text>Polymer buffer</text>
+</string>
+<string id="gunsl_gsh18_up_polymer_buffer_descr">
+     <text>Addition of a polymer buffer to the return mechanism reduces felt recoil.</text>
+</string>
+<string id="gunsl_gsh18_up_usm_reliability_name">
+     <text>Wear-resistant trigger</text>
+</string>
+<string id="gunsl_gsh18_up_usm_reliability_descr">
+     <text>Improves reliability of the firearm by replacing standard parts of the trigger group with their reinforced counterparts.</text>
+</string>
+</string_table>

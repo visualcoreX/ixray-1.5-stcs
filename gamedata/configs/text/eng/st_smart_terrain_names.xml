@@ -256,10 +256,10 @@
 		<text>Meeting point</text>
 	</string>
 	<string id="st_name_gar_smart_terrain_5_5">
-		<text>Treasure hunters' camp</text>
+		<text>Treasure hunters’ camp</text>
 	</string>
 	<string id="st_name_gar_smart_terrain_5_6">
-		<text>Decrepit crane </text>
+		<text>Decrepit crane</text>
 	</string>
 	<string id="st_name_gar_smart_terrain_5_8">
 		<text>Receiving outpost</text>
@@ -283,7 +283,7 @@
 		<text>Gravel pit</text>
 	</string>
 	<string id="st_name_gar_smart_terrain_7_2">
-		<text>Miners' den</text>
+		<text>Miners’ den</text>
 	</string>
 	<string id="st_name_gar_smart_terrain_7_3">
 		<text>Shore of small swamp</text>
@@ -448,7 +448,7 @@
 		<text>Barrier</text>
 	</string>
 	<string id="st_name_mil_smart_terrain_4_2">
-		<text>Mercenary bivouac </text>
+		<text>Mercenary bivouac</text>
 	</string>
 	<string id="st_name_mil_smart_terrain_4_3">
 		<text>Water tower</text>
@@ -520,13 +520,16 @@
 		<text>Water tower</text>
 	</string>
 	<string id="st_name_mil_smart_terrain_base5">
-		<text>Mercenary bivouac </text>
+		<text>Mercenary bivouac</text>
 	</string>
 	<string id="st_name_mil_smart_terrain_base_monster">
 		<text>Fortification area near village</text>
 	</string>
 	<string id="st_name_red_bridge_ally_smart">
 		<text>Limansk outskirts</text>
+	</string>
+	<string id="st_name_red_bridge_bandit_smart">
+		<text>Bandit fortifications</text>
 	</string>
 	<string id="st_name_red_smart_terrain_3_1">
 		<text>Camp on side of road</text>
@@ -535,7 +538,7 @@
 		<text>Barracks in mine</text>
 	</string>
 	<string id="st_name_red_smart_terrain_3_3">
-		<text>Bloodsucker's resting place</text>
+		<text>Bloodsucker’s resting place</text>
 	</string>
 	<string id="st_name_red_smart_terrain_4_2">
 		<text>Camp near caper</text>
@@ -565,7 +568,7 @@
 		<text>Notorious path</text>
 	</string>
 	<string id="st_name_red_smart_terrain_monsters_2">
-		<text>Mutant's den</text>
+		<text>Mutant’s den</text>
 	</string>
 	<string id="st_name_red_smart_terrain_monsters_3">
 		<text>Den facing forest</text>
@@ -616,7 +619,7 @@
 		<text>Outpost near farm</text>
 	</string>
 	<string id="st_name_val_smart_terrain_7_3">
-		<text>Uncle Yar's hangar</text>
+		<text>Uncle Yar’s hangar</text>
 	</string>
 	<string id="st_name_val_smart_terrain_7_4">
 		<text>Freedom base</text>
@@ -691,7 +694,7 @@
 		<text>Encampment past swamp</text>
 	</string>
 	<string id="st_name_yan_smart_terrain_6_4">
-		<text>Scientists' camp</text>
+		<text>Scientists’ camp</text>
 	</string>
 	<string id="st_name_yan_smart_terrain_for_squad_levsha">
 		<text>Secret entrance</text>

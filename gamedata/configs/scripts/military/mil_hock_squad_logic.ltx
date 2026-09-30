@@ -1,12 +1,12 @@
 [logic@hock]
-active = camper@0
+active = camper@1
 suitable = {=check_npc_name(mil_hog)} true
 on_death = death
 
 [camper@0]
 path_walk = com_2_walk
 path_look = com_2_look
-on_info = {+mil_start_after_red_forest +mil_actor_bridge} camper@1
+on_info = {+mil_start_after_red_forest} camper@1
 on_info2 = {+forester_telled_coordinates +forester_talked_2} camper@1
 meet = no_meet
 

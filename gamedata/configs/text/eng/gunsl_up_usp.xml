@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_wpn_usp_up_sights_name">
+     <text>Tritium sights</text>
+</string>
+<string id="gunsl_wpn_usp_up_sights_descr">
+     <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+</string>
+<string id="gunsl_wpn_usp_up_anatomic_handle_name">
+     <text>Anatomical grips</text>
+</string>
+<string id="gunsl_wpn_usp_up_anatomic_handle_descr">
+     <text>Grip panels specially picked to better fit the preferences of a particular shooter. Improves handling.</text>
+</string>
+<string id="gunsl_wpn_usp_up_ramka_name">
+     <text>Reinforced frame</text>
+</string>
+<string id="gunsl_wpn_usp_up_ramka_descr">
+     <text>Frame made of tougher polymer increases durability of the firearm.</text>
+</string>
+<string id="gunsl_wpn_usp_up_flashlaser_name">
+     <text>Tactical combo device</text>
+</string>
+<string id="gunsl_wpn_usp_up_flashlaser_descr">
+     <text>Combines the functions of narrow beam tactical flashlight and laser sight. Particularly useful in night conditions.</text>
+</string>
+<string id="gunsl_wpn_usp_up_light_mag_name">
+     <text>Lightweight magazine</text>
+</string>
+<string id="gunsl_wpn_usp_up_light_mag_descr">
+     <text>Reduces overall weight of the firearm by replacing the standard magazine with a lightweight counterpart.</text>
+</string>
+<string id="gunsl_wpn_usp_up_pokritie_name">
+     <text>Protective coating</text>
+</string>
+<string id="gunsl_wpn_usp_up_pokritie_descr">
+     <text>Application of a protective coating to the internal parts significantly reduces wear.</text>
+</string>
+<string id="gunsl_wpn_usp_up_usm_rpm_name">
+     <text>Trigger tuning</text>
+</string>
+<string id="gunsl_wpn_usp_up_usm_rpm_descr">
+     <text>Reconfiguration of the trigger assembly with improvement of various parts gives a crisp break with a shorter, smoother trigger take-up, leading to faster follow-up shots, at the cost of durability.</text>
+</string>
+<string id="gunsl_wpn_usp_up_usm_recoil_name">
+     <text>Match trigger</text>
+</string>
+<string id="gunsl_wpn_usp_up_usm_recoil_descr">
+     <text>Decreases recoil, thus improving accuracy.</text>
+</string>
+<string id="gunsl_wpn_usp_up_barrel_accuracy_name">
+     <text>Barrel adjustment</text>
+</string>
+<string id="gunsl_wpn_usp_up_barrel_accuracy_descr">
+     <text>Reduces bullet dispersion, which improves accuracy.</text>
+</string>
+<string id="gunsl_wpn_usp_up_barrel_bullet_speed_name">
+     <text>Faster twist rate</text>
+</string>
+<string id="gunsl_wpn_usp_up_barrel_bullet_speed_descr">
+     <text>Barrel with a faster twist rate increases muzzle velocity.</text>
+</string>
+<string id="gunsl_wpn_usp_up_barrel_recoil_name">
+     <text>Recoil reduction system</text>
+</string>
+<string id="gunsl_wpn_usp_up_barrel_recoil_descr">
+     <text>Integrated system significantly reduces felt recoil, making the shooting more comfortable and accurate.</text>
+</string>
+<string id="gunsl_wpn_usp_up_zatvor_ejector_name">
+     <text>Improved ejector</text>
+</string>
+<string id="gunsl_wpn_usp_up_zatvor_ejector_descr">
+     <text>Modification of the case ejector reduces the probability of malfunctions related to ejecting an empty case from the firearm.</text>
+</string>
+<string id="gunsl_wpn_usp_up_zatvor_zapiratel_name">
+     <text>Improved locking mechanism</text>
+</string>
+<string id="gunsl_wpn_usp_up_zatvor_zapiratel_descr">
+     <text>Improves obturation and muzzle velocity thanks to tighter lock-up.</text>
+</string>
+<string id="gunsl_wpn_usp_up_zatvor_rpm_name">
+     <text>Slide shorter travel</text>
+</string>
+<string id="gunsl_wpn_usp_up_zatvor_rpm_descr">
+     <text>Increases effective rate of fire by reducing the time needed to feed a new cartridge into the chamber.</text>
+</string>
+<string id="gunsl_wpn_usp_up_polymer_buffer_name">
+     <text>Polymer buffer</text>
+</string>
+<string id="gunsl_wpn_usp_up_polymer_buffer_descr">
+     <text>Addition of a polymer buffer to the return mechanism reduces felt recoil.</text>
+</string>
+<string id="gunsl_wpn_usp_up_patronnik_name">
+     <text>Chamber adjustment</text>
+</string>
+<string id="gunsl_wpn_usp_up_patronnik_descr">
+     <text>Improves obturation and accuracy by removing play in the chamber.</text>
+</string>
+<string id="gunsl_wpn_usp_up_light_details_name">
+     <text>Lightweight parts</text>
+</string>
+<string id="gunsl_wpn_usp_up_light_details_descr">
+     <text>Reduces weight by replacing weapon parts with their modern light-alloy counterparts.</text>
+</string>
+</string_table>

@@ -13,22 +13,22 @@
 		<text>Here, take this medkit.</text>
 	</string>
 	<string id="actor_help_wounded_111">
-		<text>Thanks brother, I won't forget it.</text>
+		<text>Thanks brother, I won’t forget it.</text>
 	</string>
 	<string id="actor_help_wounded_12">
 		<text>Here, take this bandage.</text>
 	</string>
 	<string id="actor_help_wounded_13">
-		<text>Sorry, I haven't got any. </text>
+		<text>Sorry, I haven’t got any.</text>
 	</string>
 	<string id="actor_help_wounded_131">
-		<text>How do you even survive in the Zone? What if you get hurt? You won't even be able to patch yourself up!</text>
+		<text>How do you even survive in the Zone? What if you get hurt? You won’t even be able to patch yourself up!</text>
 	</string>
 	<string id="actor_help_wounded_14">
-		<text>Hrm, well, that's unfortunate. I'm sorry but I can't give you any - otherwise I'd be left with nothing.</text>
+		<text>Hrm, well, that’s unfortunate. I’m sorry but I can’t give you any - otherwise I’d be left with nothing.</text>
 	</string>
 	<string id="actor_help_wounded_141">
-		<text>That's your business, man, but trust me - that does you no credit.</text>
+		<text>That’s your business, man, but trust me - that does you no credit.</text>
 	</string>
 	<string id="agr_duty_tir_dialog_all_targets_phrase_part_1">
 		<text>text in default</text>
@@ -97,10 +97,10 @@
 		<text>Thanks.</text>
 	</string>
 	<string id="crowkiller_dialog_100">
-		<text>Hey, how are things? You like shooting crows? I bet you won't beat my record!</text>
+		<text>Hey, how are things? You like shooting crows? I bet you won’t beat my record!</text>
 	</string>
 	<string id="crowkiller_dialog_200">
-		<text>Oh, it's you again!</text>
+		<text>Oh, it’s you again!</text>
 	</string>
 	<string id="crowkiller_dialog_210">
 		<text>Feel like trying to beat my record again?</text>
@@ -109,25 +109,25 @@
 		<text>Tell me the rules first.</text>
 	</string>
 	<string id="crowkiller_dialog_2110">
-		<text>The rules are simple: you need to kill as many crows as you can within a minute using your own weapon. Just don't wander off too far or the kills won't count.</text>
+		<text>The rules are simple: you need to kill as many crows as you can within a minute using your own weapon. Just don’t wander off too far or the kills won’t count.</text>
 	</string>
 	<string id="crowkiller_dialog_212">
-		<text>What's the current record?</text>
+		<text>What’s the current record?</text>
 	</string>
 	<string id="crowkiller_dialog_2120">
 		<text>The current record is 0</text>
 	</string>
 	<string id="crowkiller_dialog_213">
-		<text>Let's get shooting.</text>
+		<text>Let’s get shooting.</text>
 	</string>
 	<string id="crowkiller_dialog_214">
-		<text>Nah, thanks. I'm gonna go.</text>
+		<text>Nah, thanks. I’m gonna go.</text>
 	</string>
 	<string id="crowkiller_dialog_220">
-		<text>I told you not to wander off. That doesn't count.</text>
+		<text>I told you not to wander off. That doesn’t count.</text>
 	</string>
 	<string id="crowkiller_dialog_230">
-		<text>Time's up.</text>
+		<text>Time’s up.</text>
 	</string>
 	<string id="crowkiller_dialog_231">
 		<text>Congratulations. You beat the record.</text>
@@ -136,16 +136,16 @@
 		<text>You failed, unfortunately.</text>
 	</string>
 	<string id="crowkiller_dialog_300">
-		<text>Don't waste time.</text>
+		<text>Don’t waste time.</text>
 	</string>
 	<string id="crowkiller_dialog_crows_per_minute">
-		<text>I'm thinking</text>
+		<text>I’m thinking</text>
 	</string>
 	<string id="crowkiller_dialog_money_stake">
 		<text>Well, then the bet is:</text>
 	</string>
 	<string id="crowkiller_dialog_record_crows">
-		<text>Ah, that's a real man's choice. You need to take out as many crows as you can within a minute. The current record is:</text>
+		<text>Ah, that’s a real man’s choice. You need to take out as many crows as you can within a minute. The current record is:</text>
 	</string>
 	<string id="crowkiller_dialog_record_stake">
 		<text>Well, given that record, the bet is:</text>
@@ -157,7 +157,7 @@
 		<text>You left the area!</text>
 	</string>
 	<string id="crowkiller_game_time_is_out">
-		<text>Time's up!</text>
+		<text>Time’s up!</text>
 	</string>
 	<string id="crowkiller_game_crows_killed">
 		<text>Crows killed:</text>
@@ -166,10 +166,10 @@
 		<text>Buddy, splash the cash or piss off.</text>
 	</string>
 	<string id="default_robbery_dialog_1">
-		<text>No problem, here's the cash.</text>
+		<text>No problem, here’s the cash.</text>
 	</string>
 	<string id="default_robbery_dialog_11">
-		<text>Well, you can pass, but keep quiet or we'll blow your brains out!</text>
+		<text>Well, you can pass, but keep quiet or we’ll blow your brains out!</text>
 	</string>
 	<string id="default_robbery_dialog_111">
 		<text>OK.</text>
@@ -178,22 +178,22 @@
 		<text>Hey!</text>
 	</string>
 	<string id="dm_information_general">
-		<text>What's new in the Zone?</text>
+		<text>What’s new in the Zone?</text>
 	</string>
 	<string id="dm_information_no_more">
-		<text>I don't know anything else.</text>
+		<text>I don’t know anything else.</text>
 	</string>
 	<string id="dm_occupation_general">
-		<text>What are you doing here? </text>
+		<text>What are you doing here?</text>
 	</string>
 	<string id="dm_occupation_no_more">
-		<text>I've got nothing else to say</text>
+		<text>I’ve got nothing else to say</text>
 	</string>
 	<string id="dm_place_general">
 		<text>Tell me about this place.</text>
 	</string>
 	<string id="dm_place_no_more">
-		<text>I don't know anything else</text>
+		<text>I don’t know anything else</text>
 	</string>
 	<string id="dm_wounded_bandage">
 		<text>Take this bandage.</text>
@@ -205,7 +205,7 @@
 		<text>Take this medkit.</text>
 	</string>
 	<string id="dm_wounded_sorry">
-		<text>Sorry, I haven't got any. </text>
+		<text>Sorry, I haven’t got any.</text>
 	</string>
 	<string id="dm_wounded_thanks">
 		<text>Thanks a lot.</text>
@@ -214,7 +214,7 @@
 		<text>I have information about upgrades. Wanna see?</text>
 	</string>
 	<string id="exchange_flash_card_1">
-		<text>Sure thing. Check out the prices I'm offering for information:</text>
+		<text>Sure thing. Check out the prices I’m offering for information:</text>
 	</string>
 	<string id="exchange_flash_card_11">
 		<text>Flash drive1</text>
@@ -232,19 +232,19 @@
 		<text>Bye.</text>
 	</string>
 	<string id="exchange_flash_card_21">
-		<text>Great. Here's your money. Now I can perform new upgrades.</text>
+		<text>Great. Here’s your money. Now I can perform new upgrades.</text>
 	</string>
 	<string id="exchange_flash_card_22">
-		<text>Great. Here's your money. Now I can perform new upgrades.</text>
+		<text>Great. Here’s your money. Now I can perform new upgrades.</text>
 	</string>
 	<string id="exchange_flash_card_23">
-		<text>Great. Here's your money. Now I can perform new upgrades.</text>
+		<text>Great. Here’s your money. Now I can perform new upgrades.</text>
 	</string>
 	<string id="exchange_flash_card_24">
-		<text>Great. Here's your money. Now I can perform new upgrades.</text>
+		<text>Great. Here’s your money. Now I can perform new upgrades.</text>
 	</string>
 	<string id="find_upgrade_task_0">
-		<text>I found the information about upgrades you were looking for.</text>
+		<text>I found the upgrade information you were looking for.</text>
 	</string>
 	<string id="find_upgrade_task_1">
 		<text>Thanks for your help. Now I can perform new upgrades.</text>
@@ -358,7 +358,7 @@
 		<text>Yes.</text>
 	</string>
 	<string id="test_dialog_3">
-		<text>Don't know.</text>
+		<text>Don’t know.</text>
 	</string>
 	<string id="tm_mechanic_task_0">
 		<text>Which weapons can you upgrade?</text>
@@ -385,7 +385,7 @@
 		<text>Thanks, I changed my mind.</text>
 	</string>
 	<string id="tm_random_task_2">
-		<text>You can't.</text>
+		<text>You can’t.</text>
 	</string>
 	<string id="tm_random_task_21">
 		<text>OK.</text>
@@ -412,10 +412,10 @@
 		<text>You got something for me?</text>
 	</string>
 	<string id="tm_reward_task_1">
-		<text>Yeah, you helped us out good, buddy. Here's your reward.</text>
+		<text>Yeah, you helped us out good, buddy. Here’s your reward.</text>
 	</string>
 	<string id="tm_reward_task_2">
-		<text>Sorry, but there ain't nothing to reward you for yet.</text>
+		<text>Sorry, but there ain’t nothing to reward you for yet.</text>
 	</string>
 	<string id="tm_upgr_task_0">
 		<text>You got any work for me?</text>
@@ -427,7 +427,7 @@
 		<text>Weapons and Armor.</text>
 	</string>
 	<string id="tm_upgr_task_21">
-		<text>There is something. I have been looking for diagrams of some upgrades for a while. If you come across any, keep them and bring them to me. Here is a list of the ones I'm looking for:</text>
+		<text>There is something. I have been looking for diagrams of some upgrades for a while. If you come across any, keep them and bring them to me. Here is a list of the ones I’m looking for:</text>
 	</string>
 	<string id="tm_upgr_task_31">
 		<text>Task1</text>
@@ -460,7 +460,7 @@
 		<text>Agreed?</text>
 	</string>
 	<string id="tm_upgr_task_51">
-		<text>OK, I'll bring you whatever I find.</text>
+		<text>OK, I’ll bring you whatever I find.</text>
 	</string>
 	<string id="tm_upgr_task_52">
 		<text>Yes.</text>
@@ -532,7 +532,7 @@
 		<text>How much is that going to set me back?</text>
 	</string>
 	<string id="treasure_dialog_1111">
-		<text>So what's actually in there?</text>
+		<text>So what’s actually in there?</text>
 	</string>
 	<string id="treasure_dialog_11111">
 		<text>OK, here are the coordinates.</text>
@@ -544,13 +544,13 @@
 		<text>Well, come back when you have enough.</text>
 	</string>
 	<string id="treasure_dialog_1113">
-		<text>Are you crazy? I don't have that much cash.</text>
+		<text>Are you crazy? I don’t have that much cash.</text>
 	</string>
 	<string id="treasure_dialog_11131">
 		<text>No idea.</text>
 	</string>
 	<string id="treasure_dialog_1114">
-		<text>Nah, I'm not interested.</text>
+		<text>Nah, I’m not interested.</text>
 	</string>
 	<string id="treasure_dialog_12">
 		<text>No, thanks.</text>
@@ -586,7 +586,7 @@
 		<text>Ready to leave?</text>
 	</string>
 	<string id="st_tm_guide_211">
-		<text>Yeah, let's go.</text>
+		<text>Yeah, let’s go.</text>
 	</string>
 	<string id="st_tm_guide_212">
 		<text>A bit later.</text>

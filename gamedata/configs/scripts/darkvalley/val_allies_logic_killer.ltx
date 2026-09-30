@@ -1,3 +1,7 @@
+; Unpacked from the stock archive. Change: the mercs in the factory-entrance smartcovers had
+; combat_ignore_cond = true (ignore EVERY enemy, the actor included) -- they only fought once hit.
+; Now they ignore everyone but the actor, so the Freedom-assault scene is unchanged.
+; kill3-5 (the roof) are back to stock: they keep their scripted fire at the target point.
 ;----------------------------walker1-------------------
 [logic@work1]
 active = smartcover@kill1
@@ -8,7 +12,8 @@ prior = 200
 path_walk = killer_1_combat_1_walk
 cover_name = val_1_3_kill5_smartcover_1
 cover_state = default_behaviour
-combat_ignore_cond = true
+; orig combat_ignore_cond = true
+combat_ignore_cond = {!is_enemy_actor}
 on_info = {=actor_in_zone(val_attack_killer_1_zone)} walker@killer1_combat
 
 [walker@killer1_combat]
@@ -31,7 +36,8 @@ path_walk = killer_2_combat_1_walk
 cover_name = val_1_3_kill2_smartcover
 target_path = val_1_3_kill2_smartcover_target
 cover_state = fire_target
-combat_ignore_cond = true
+; orig combat_ignore_cond = true
+combat_ignore_cond = {!is_enemy_actor}
 on_info = {+val_freedom_attack_2} walker@killer2_combat
 
 [walker@killer2_combat]

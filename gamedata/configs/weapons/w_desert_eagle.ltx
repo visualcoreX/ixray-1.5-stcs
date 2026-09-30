@@ -1,4 +1,16 @@
 [wpn_desert_eagle]:identity_immunities,weapon_probability,default_weapon_params
+bullet_material				= objects\bullet	; wallmark/impact/ricochet pair on hit
+
+; GS use_light_misfire: per-shot light strike (click, no bang) -- plays anm_shoot_lightmisfire,
+; NOT a jam (just pull again). Chance rises as the pistol wears. Values from GS.
+use_light_misfire = true
+light_misfire_start_condition = 0.5
+light_misfire_end_condition = 0.1
+light_misfire_start_probability = 0.8
+light_misfire_end_probability = 0.4
+snd_light_misfire = weapons\pistol_light_misfire
+; ---- GS bone-visibility (attachments) ----
+def_hide_bones = sight, sight2, barrel_compensator, flash, laser, line, light
 GroupControlSection			= spawn_group
 discovery_dependency 		=
 $spawn                  	= "weapons\Desert Eagle"		; option for Level Editor
@@ -9,32 +21,33 @@ cform             			= skeleton
 class                   	= WP_PM
 min_radius              	= 0
 max_radius              	= 50
-description					= st_wpn_eagle_descr
+description					= gunsl_wpn_eagle_descr	; orig st_wpn_eagle_descr
 
 ef_weapon_type					= 5
 
 ;---DOF-------------------------------------------------------------------------
 zoom_dof					= -1000, 1.0, 1000
-reload_dof				= 0.0, 0.5, 5, 1.7
+reload_dof				= 0.0, 0.5, 5, 2.25
 
 ;-----------------------------------------------------------------------------
-upgrades                = up_gr_ab_desert_eagle, up_gr_cd_desert_eagle, up_gr_e_desert_eagle, up_gr_f_desert_eagle, up_gr_g_desert_eagle
+upgrades                = vartree_wpn_deagle_gazootvod, vartree_wpn_deagle_mag1, vartree_wpn_deagle_rail, vartree_wpn_deagle_sights, vartree_wpn_deagle_handle
 installed_upgrades      =
-upgrade_scheme          = upgrade_scheme_u9
+upgrade_scheme          = upgrade_scheme_wpn_deagle
+allowed_upgrades        = up_wpn_deagle_
 
 ;--- scope weapons -------------------------------------------------------------
-holder_range_modifier	= 1.0               ; во сколько раз увеличивается eye_range
-holder_fov_modifier		= 1.0              ; во сколько раз увеличивается eye_fov
+holder_range_modifier	= 1.0               ; пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ eye_range
+holder_fov_modifier		= 1.0              ; пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ eye_fov
 ;-------------------------------------------------------------------------------
 
 cost					= 3750
 
 ammo_limit		 		= 120
 ammo_current		 	= 90
-ammo_elapsed		 	= 12
+ammo_elapsed		 	= 8
 
 ammo_mag_size		 	= 8
-ammo_class		 		= ammo_11.43x23_fmj, ammo_11.43x23_hydro
+ammo_class		 		= ammo_50ae	; GS: the Desert Eagle fires .50 Action Express (was .45 ACP ammo_11.43x23)
 
 hand_dependence		 	= 1
 single_handed			= 1
@@ -50,8 +63,8 @@ inv_weight				= 1.7
 
 inv_grid_width			= 2
 inv_grid_height			= 1
-inv_grid_x				= 14
-inv_grid_y				= 8
+inv_grid_x				= 20			; orig 14 -> GS empty base slot (layered icon: body from element_icon_0)
+inv_grid_y				= 0			; orig 8
 
 kill_msg_x				= 194
 kill_msg_y				= 123
@@ -59,27 +72,28 @@ kill_msg_width			= 46
 kill_msg_height			= 27
 
 ;-------------------------------------------------------------------------------
-;базовая дисперсия
-fire_dispersion_base		= 0.7 			;угол (в градусах) базовой дисперсии оружия (оружия зажатого в тисках)
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+fire_dispersion_base		= 0.25		;пїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
 control_inertion_factor		= 1.1
 
-;отдача
-cam_relax_speed         	= 6			;скорость возврата в исходное положение
+;пїЅпїЅпїЅпїЅпїЅпїЅ
+cam_relax_speed         	= 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 cam_relax_speed_ai      	= 120.75
-cam_dispersion          	= 1.2		;увеличения угла (в градусах) с каждым выстрелом
-cam_dispersion_inc			= 1.2		;увеличениe cam_dispersion с каждым выстрелом
-cam_dispersion_frac			= 1.0		;ствол будет подыматься на cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
-cam_max_angle				= 15.0		;максимальный угол отдачи
+cam_dispersion          	= 3.5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+cam_dispersion_inc			= 2.8		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅe cam_dispersion пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+cam_dispersion_frac			= 0.7		;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
+cam_max_angle				= 65.0		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 cam_max_angle_horz			= 15.0		;(degree) maximum shot horizontal degree
 cam_step_angle_horz			= 1.0		;(degree) size of step camera moved in horizontal position while shooting
 
-fire_dispersion_condition_factor = 5		;увеличение дисперсии в процентах при максимальном износе
-misfire_probability 			= 0.003	    	;вероятность осечки при максимальном износе
-condition_shot_dec 			= 0.00130		;увеличение износа при каждом выстреле
+fire_dispersion_condition_factor = 12		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+detector_disp_factor            = 3	; GS: cone multiplier while a detector is out in the other hand (one-handed fire)
+misfire_probability 			= 0.005		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+condition_shot_dec 			= 0.0055		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
 ;-------------------------------------------------------------------------------
 ; ttc
-hit_power           			= 0.55, 0.55, 0.55, 0.55
+hit_power           			= 1.1, 1.1, 1.1, 1.1
 hit_impulse	 		 			= 75
 hit_type 						= fire_wound
 
@@ -88,25 +102,21 @@ hit_probability_gd_stalker	= 0.80
 hit_probability_gd_veteran	= 0.80
 hit_probability_gd_master	= 0.80
 
-PDM_disp_base 				= 1.0
-PDM_disp_vel_factor 		= 1.1
+PDM_disp_base 				= 2.5
+PDM_disp_vel_factor 		= 1.3
 PDM_disp_accel_factor 		= 1.1
 PDM_disp_crouch	 			= 1.0
 PDM_disp_crouch_no_acc 		= 1.0
 
-use_aim_bullet					= true		;Поддерживается ли первая суппер пуля
+use_aim_bullet					= false		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 time_to_aim						= 1.0
 
-fire_distance           	= 70
-bullet_speed		 		= 300
-rpm                     	= 200
-rpm_empty_click 	 		= 200
+fire_distance           	= 200
+bullet_speed		 		= 275
+rpm                     	= 130
+rpm_empty_click 	 		= 120
 ; end ttc
 
-silencer_hit_power      	= 0.57
-silencer_hit_impulse	 		= 60
-silencer_fire_distance  	= 100
-silencer_bullet_speed		= 250
 
 ;-------------------------------------------------------------------------------
 hud                     	= wpn_desert_eagle_hud
@@ -123,12 +133,12 @@ fire_point              	= 0.0, 0.133, 0.22
 ;strap_bone0					= bip01_spine2
 ;strap_bone1					= bip01_spine1
 
-flame_particles		   	= weapons\generic_weapon03
-smoke_particles		   	= weapons\generic_shoot_00
+flame_particles		   	= ghost_particles\weapons\flame_deagle
+smoke_particles		   	= ghost_particles\weapons\smoke_deagle
 
 shell_point		 				= 0.0, 0.133, 0.047
 shell_dir		 				= 0.0, 0.0, 0.4
-shell_particles	 			= weapons\generic_shells
+;shell_particles	 			= weapons\generic_shells
 
 ;-------------------------------------------------------------------------------
 ;startup_ammo           	= 90
@@ -149,110 +159,556 @@ grenade_launcher_status		= 0
 
 zoom_enabled					= true
 zoom_rotate_time				= 0.25
-scope_zoom_factor	    		= 55
+scope_zoom_factor	    		= 98
 
-;звуки
-snd_draw							= weapons\fort_draw
-snd_holster						= weapons\generic_holster
-snd_shoot						= weapons\n_desert_eagle_shot
-snd_empty						= weapons\pistol_empty
-snd_reload						= weapons\pistol_reload, 0.8
-snd_close						= weapons\generic_close
+;пїЅпїЅпїЅпїЅпїЅ
+snd_draw							= weapons\deagle\de_draw
+snd_holster						= weapons\m1911\hide
+snd_shoot						= weapons\deagle\de_shoot, -1.1
+snd_empty						= weapons\glock17\glock17_dry
+snd_reload						= weapons\deagle\de_reload
+snd_reload_empty						= weapons\deagle\de_reload_full
+snd_reload_jammed						= weapons\grach\grach_revival
+; the jam-clear with a detector is a different motion (pm_det_revival, 1 token) with its
+; own timing -> its own sound, like Gunslinger's snd_reload_jammed_detector
+snd_reload_jammed_detector	= weapons\grach\grach_revival_det
+snd_close						= $silent
+
+; ---- GS laser/flashlight (installed via the flashlaser upgrade, ak74-style) ----
+laser_params_section      = de_laser
+flashlight_params_section = de_flashlight
+; The bone that TOGGLES with the torch is the lit lens `light` -- NOT `flash`/`laser` (those are the
+; physical device, revealed permanently by the flashlaser upgrade). The engine default is `flash`,
+; which would make the whole block VANISH when the light is switched off.
+flashlight_bone           = light
+snd_laser_on              = weapons\l85\l85_lam
+snd_laser_off             = weapons\l85\l85_lam
+snd_torch_on              = weapons\l85\l85_lam
+snd_torch_off             = weapons\l85\l85_lam
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; silencer
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 silencer_name  				= wpn_addon_silencer		; section name for the attachable silencer
-silencer_x 						= 78						; offset in inventory icon
-silencer_y 						= -18
+silencer_x 						= 66		; offset in inventory icon
+silencer_y 						= -13
 
 ;params when silencer is attached
 ;similar to corresponding params without prefix silencer_
 
 ;silencer_flame_particles 	= weapons\generic_weapon01
-silencer_smoke_particles 	= weapons\generic_shoot_00
-snd_silncer_shot				= weapons\n_pb_shot
+silencer_smoke_particles 	= ghost_particles\weapons\suppressor_smoke_pistol_common
+snd_silncer_shot				= weapons\deagle\old\sil_shoot, -1.1
 silencer_light_color			= 0.6,0.5,0.3
 silencer_light_range			= 0.01
 silencer_light_var_color	= 0.05
-silencer_light_var_range	= 0.5
-silencer_light_time 			= 0.2
+silencer_light_var_range	= 0.01
+silencer_light_time 			= 0.01
+
+
+; --- GS parity: ammo_in_chamber + GS jam model + world anims + layered icon (ported from GS base.ltx) ---
+ammo_in_chamber = true
+crosshair_inertion = 4
+misfire_start_condition = 0.7
+misfire_end_condition = 0.1
+misfire_start_prob = 0.01
+misfire_end_prob = 0.2
+condition_queue_shot_dec = 0.0055
+snd_jammed_click = weapons\glock17\glock17_dry
+
+element_icon_0 = icon_element_deagle_body	; GS body @6,25 (atlas layout == GS)
+element_icon_offset_x_0 = 0
+element_icon_offset_y_0 = 0
+
+; zoom camera block (GS values)
+zoom_cam_relax_speed        = 5
+zoom_cam_relax_speed_ai     = 120.75
+zoom_cam_dispersion         = 2.0
+zoom_cam_dispersion_inc     = 1.6
+zoom_cam_dispersion_frac    = 0.95
+zoom_cam_max_angle          = 45.0
+zoom_cam_max_angle_horz     = 10.0
+zoom_cam_step_angle_horz    = 1.5
+
+use_world_anims = true
+wanm_idle = idle
+wanm_idle_empty = idle_empty
+wanm_idle_jammed = idle_jammed
+wanm_shoot = shoot
+wanm_shoot_jammed = idle_jammed
+wanm_shoot_last = shoot_last
+wanm_shoot_last_jammed = idle_jammed
+wanm_reload = idle
+wanm_reload_empty = idle
+wanm_reload_jammed = idle
 
 [wpn_desert_eagle_hud]:hud_base
-zoom_hide_crosshair			= false
-
-
+use_advanced_ammo_bones = true
+ammo_params_section = wpn_deagle_ammo_bones
+ammo_reload_insert_mark = 0.2   ; fraction of the reload anim at which mag bullets appear (lower = earlier)
+lock_time_anm_idle_aim_start = 0.25
+lock_time_anm_idle_aim_end = 0.3
+zoom_hide_crosshair			= true
 hands_position				= -0.021000,-0.160000,0.002500
 hands_orientation			= -0.500000,1.000000,1.149999
-hands_position_16x9				= 0.033000,-0.189500,0.039000
-hands_orientation_16x9			= 2.349998,2.749999,2.849998
-
-;hands_position				= -0.021000,-0.160000,0.002500
-;hands_orientation			= -0.350000,0.650000,0.849999
-;hands_position_16x9				= -0.010000,-0.176500,0.039000
-;hands_orientation_16x9			= -1.500000,0.800000,2.449998
-
-item_position					= 0.000746,-0.000321,0.003479
-item_orientation				= 1.239378,-0.134046,-2.052052
-
+hands_position_16x9				= 0.0,-0.13,0.03
+hands_orientation_16x9			= 0.0,0.0,0.0
+item_position					= 0.0,0.0,0.0
+item_orientation				= 0.0,0.0,0.0
 item_visual             	= dynamics\weapons\wpn_desert_eagle\wpn_desert_eagle_hud.ogf
+fire_mode_bone             = pred
 attach_place_idx				= 0
-
 shell_point						= 0.021,0.057,0.456
 shell_bone              	= wpn_body
-
-fire_point			= 0,0.048,0.222
+fire_point					= -0.010,0.13,0.37
 fire_bone               	= wpn_body
-
-;-delme begin
-anm_empty             	= walter99_idle, walter99_opened
-anm_close				= walter99_holster
-;-delme end
-anm_show					= desert_eagle_draw
-anm_show_empty				= desert_eagle_draw, desert_eagle_opened
-
-anm_hide             		= desert_eagle_holster
-anm_hide_empty         		= desert_eagle_holster, desert_eagle_opened
-
-anm_idle             		= desert_eagle_idle
-anm_idle_empty         		= desert_eagle_idle, desert_eagle_opened
-
-anm_shots					= desert_eagle_shoot
-anm_shot_l					= desert_eagle_shoot, desert_eagle_open
-
-anm_idle_aim				= desert_eagle_idle_aim
-anm_idle_aim_empty			= desert_eagle_idle_aim, desert_eagle_opened
-
-anm_reload					= desert_eagle_reload
-anm_reload_empty			= desert_eagle_reload, desert_eagle_close
-
-anm_idle_moving 			= desert_eagle_idle_moving
-anm_idle_moving_empty		= desert_eagle_idle_moving, desert_eagle_opened
-anm_idle_sprint				= desert_eagle_idle_sprint
-anm_idle_sprint_empty		= desert_eagle_idle_sprint, desert_eagle_opened
-anm_bore					= desert_eagle_idle_bore
-anm_bore_empty				= desert_eagle_idle_bore, desert_eagle_opened
-
-aim_hud_offset_pos				= -0.041000,0.010500,-0.063500
-aim_hud_offset_rot				= -0.015000,-0.017500,-0.035000
-
+lock_time_anm_prepare_detector	= 0.4667
+aim_hud_offset_pos				= 0.000000,0.01100,0.0
+aim_hud_offset_rot				= -0.0020000,0.00000,0.0
 gl_hud_offset_pos				= 0,0,0
 gl_hud_offset_rot				= 0,0,0
-
 lean_hud_offset_pos			= 0,0,0
 lean_hud_offset_rot			= 0,0,0
+aim_hud_offset_pos_16x9				= 0.000000,0.01100,0.0
+aim_hud_offset_rot_16x9				= -0.0020000,0.00000,0.0;********************** new *************************
 
-aim_hud_offset_pos_16x9				= -0.082500,0.040500,0.000000
-aim_hud_offset_rot_16x9				= 0.012500,0.022500,-0.010000
+; ==================== SEMI-AUTO / BASE ANIMATION SET (from Gunslinger) ====================
 
-;********************** new *************************
+; ---- show / draw ----
+anm_show = de_draw
+anm_show_empty = de_draw, idle_empty
+anm_show_jammed = de_draw, idle_jammed
+
+; ---- hide / holster ----
+anm_hide = de_hide
+anm_hide_empty = de_hide, idle_empty
+anm_hide_jammed = de_hide, idle_jammed
+
+; ---- bore ----
+anm_bore = de_bore
+anm_bore_empty = de_bore, pm_bore_empty
+anm_bore_jammed = de_bore, pm_bore_jammed
+
+; ---- sprint (enter / loop / exit) ----
+anm_idle_sprint_start = de_sprint_start
+anm_idle_sprint_start_empty = de_sprint_start, idle_empty
+anm_idle_sprint_start_jammed = de_sprint_start, idle_jammed
+anm_idle_sprint = de_sprint
+anm_idle_sprint_empty = de_sprint, idle_empty
+anm_idle_sprint_jammed = de_sprint, idle_jammed
+anm_idle_sprint_end = de_sprint_end
+anm_idle_sprint_end_empty = de_sprint_end, idle_empty
+anm_idle_sprint_end_jammed = de_sprint_end, idle_jammed
+
+; ---- aim walk (directional) ----
+anm_idle_aim_moving_forward = de_aim_walk
+anm_idle_aim_moving_forward_empty = de_aim_walk, idle_empty
+anm_idle_aim_moving_forward_jammed = de_aim_walk, idle_jammed
+anm_idle_aim_moving_back = de_aim_walk_back
+anm_idle_aim_moving_back_empty = de_aim_walk_back, idle_empty
+anm_idle_aim_moving_back_jammed = de_aim_walk_back, idle_jammed
+anm_idle_aim_moving_left = de_aim_walk_left
+anm_idle_aim_moving_left_empty = de_aim_walk_left , idle_empty
+anm_idle_aim_moving_left_jammed = de_aim_walk_left , idle_jammed
+anm_idle_aim_moving_right = de_aim_walk_right
+anm_idle_aim_moving_right_empty = de_aim_walk_right , idle_empty
+anm_idle_aim_moving_right_jammed = de_aim_walk_right , idle_jammed
+anm_idle_aim_moving_forward_left = de_aim_walk_left
+anm_idle_aim_moving_forward_left_empty = de_aim_walk_left, idle_empty
+anm_idle_aim_moving_forward_left_jammed = de_aim_walk_left, idle_jammed
+anm_idle_aim_moving_forward_right = de_aim_walk_right
+anm_idle_aim_moving_forward_right_empty = de_aim_walk_right, idle_empty
+anm_idle_aim_moving_forward_right_jammed = de_aim_walk_right, idle_jammed
+anm_idle_aim_moving_back_left = de_aim_walk_left
+anm_idle_aim_moving_back_left_empty = de_aim_walk_left, idle_empty
+anm_idle_aim_moving_back_left_jammed = de_aim_walk_left, idle_jammed
+anm_idle_aim_moving_back_right = de_aim_walk_right
+anm_idle_aim_moving_back_right_empty = de_aim_walk_right, idle_empty
+anm_idle_aim_moving_back_right_jammed = de_aim_walk_right, idle_jammed
+
+; ---- aim idle (in / out / hold) ----
+anm_idle_aim_start = de_aim_start
+anm_idle_aim_start_empty = de_aim_start, idle_empty
+anm_idle_aim_start_jammed = de_aim_start, idle_jammed
+anm_idle_aim = de_aim
+anm_idle_aim_empty = de_aim, idle_empty
+anm_idle_aim_jammed = de_aim, idle_jammed
+anm_idle_aim_end = de_aim_end
+anm_idle_aim_end_empty = de_aim_end, idle_empty
+anm_idle_aim_end_jammed = de_aim_end, idle_jammed
+
+; ---- walk (fwd / slow / crouch) ----
+anm_idle_moving = de_walk
+anm_idle_moving_jammed = de_walk, idle_jammed
+anm_idle_moving_empty = de_walk, idle_empty
+anm_idle_moving_slow = de_slow
+anm_idle_moving_slow_jammed = de_slow, idle_jammed
+anm_idle_moving_slow_empty = de_slow, idle_empty
+anm_idle_moving_crouch = de_slow_down
+anm_idle_moving_crouch_jammed = de_slow_down, idle_jammed
+anm_idle_moving_crouch_empty = de_slow_down, idle_empty
+anm_idle_moving_crouch_slow = de_slow_super
+anm_idle_moving_crouch_slow_jammed = de_slow_super, idle_jammed
+anm_idle_moving_crouch_slow_empty = de_slow_super, idle_empty
+
+; ---- idle ----
+anm_idle = de_idle
+anm_idle_empty = de_idle, idle_empty
+anm_idle_jammed = de_idle, idle_jammed
+anm_idle_slow = de_idle
+anm_idle_crouch = de_idle
+anm_idle_crouch_slow = de_idle
+anm_idle_slow_empty = de_idle, idle_empty
+anm_idle_crouch_empty = de_idle, idle_empty
+anm_idle_crouch_slow_empty = de_idle, idle_empty
+anm_idle_slow_jammed = de_idle, idle_jammed
+anm_idle_crouch_jammed = de_idle, idle_jammed
+anm_idle_crouch_slow_jammed = de_idle, idle_jammed
+
+; ---- shots ----
+anm_shoot_suicide = beretta_suicide_shoot
+anm_shoot_suicide_sil = beretta_suicide_shoot
+anm_shoot_last_suicide = beretta_suicide_shoot
+anm_shoot_last_suicide_sil = beretta_suicide_shoot
+anm_shoot = de_shoot
+anm_shoot_sil = de_shoot
+anm_shoot_jammed = de_shoot, idle_jammed
+anm_shoot_jammed_sil = de_shoot, idle_jammed
+anm_shoot_last = de_shoot_empty
+anm_shoot_last_sil = de_shoot_empty
+anm_shoot_aim = de_aim_shoot
+anm_shoot_aim_sil = de_aim_shoot
+anm_shoot_aim_jammed = de_aim_shoot, idle_jammed
+anm_shoot_aim_jammed_sil = de_aim_shoot, idle_jammed
+anm_shoot_aim_last = de_aim_shoot_empty
+anm_shoot_aim_last_sil = de_aim_shoot_empty
+anm_shoot_lightmisfire = de_misfire
+lock_time_anm_shoot_lightmisfire     = 1.0    ; GS: lock re-fire for 1s (not full anim)
+anm_shoot_lightmisfire_aim = de_aim_misfire
+lock_time_anm_shoot_lightmisfire_aim = 1.0    ; GS
+
+; ---- dry fire ----
+anm_fakeshoot_empty = de_dry_empty, idle_empty
+anm_fakeshoot_aim_empty = de_aim_dry, idle_empty
+anm_fakeshoot_jammed = de_dry, idle_jammed
+anm_fakeshoot_aim_jammed = de_aim_dry, idle_jammed
+anm_fakeshoot = de_dry	; (kept: not in GS set)
+anm_fakeshoot_aim = de_aim_dry	; (kept: not in GS set)
+
+; ---- reload ----
+anm_reload = de_reload
+anm_reload_empty = de_reload_full
+anm_reload_detector = de_det_reload, de_reload
+anm_reload_empty_detector = de_det_reload_full, de_reload_full
+anm_reload_jammed = de_revival
+anm_reload_jammed_last = de_revival_last
+anm_reload_ammochange = de_reload
+anm_reload_empty_ammochange = de_reload_full
+anm_reload_ammochange_detector = de_det_reload, de_reload
+anm_reload_empty_ammochange_detector = de_det_reload_full, de_reload_full
+anm_reload_jammed_detector = de_det_revival
+anm_reload_jammed_last_detector = de_det_revival_last
+
+; ---- attach silencer ----
+anm_attach_sil = glock17_reload
+anm_attach_sil_jammed = glock17_reload
+anm_attach_sil_empty = glock17_reload
+
+; ---- unload magazine ----
+anm_unload_mag = de_draw, idle_empty
+anm_unload_mag_jammed = de_draw, idle_jammed
+anm_unload_mag_empty = de_draw, idle_empty
+
+; ---- laser on / off ----
+anm_laser_on = de_lam
+anm_laser_on_empty = de_lam, idle_empty
+anm_laser_on_jammed = de_lam, idle_jammed
+anm_laser_off = de_lam
+anm_laser_off_empty = de_lam, idle_empty
+anm_laser_off_jammed = de_lam, idle_jammed
+; laser aiming (GS base values): hide only when the beam points away; hip dir widening for the hud fov
+laserdot_hud_treshold = 90
+hud_recalc_koef       = 1.2
+
+; ---- flashlight on / off ----
+anm_torch_on = de_lam
+anm_torch_on_empty = de_lam, idle_empty
+anm_torch_on_jammed = de_lam, idle_jammed
+anm_torch_off = de_lam
+anm_torch_off_empty = de_lam, idle_empty
+anm_torch_off_jammed = de_lam, idle_jammed
+
+; laser/LAM(LCU) + torch on/off gesture timing (engine flips beam/light mid-gesture, not on keypress)
+lock_time_start_anm_laser_on = 0.58
+lock_time_end_anm_laser_on = 0.5
+lock_time_start_anm_laser_on_empty = 0.58
+lock_time_end_anm_laser_on_empty = 0.5
+lock_time_start_anm_laser_on_jammed = 0.58
+lock_time_end_anm_laser_on_jammed = 0.5
+lock_time_start_anm_laser_off = 0.58
+lock_time_end_anm_laser_off = 0.5
+lock_time_start_anm_laser_off_empty = 0.58
+lock_time_end_anm_laser_off_empty = 0.5
+lock_time_start_anm_laser_off_jammed = 0.58
+lock_time_end_anm_laser_off_jammed = 0.5
+lock_time_start_anm_torch_on = 0.58
+lock_time_end_anm_torch_on = 0.5
+lock_time_start_anm_torch_on_empty = 0.58
+lock_time_end_anm_torch_on_empty = 0.5
+lock_time_start_anm_torch_on_jammed = 0.58
+lock_time_end_anm_torch_on_jammed = 0.5
+lock_time_start_anm_torch_off = 0.58
+lock_time_end_anm_torch_off = 0.5
+lock_time_start_anm_torch_off_empty = 0.58
+lock_time_end_anm_torch_off_empty = 0.5
+lock_time_start_anm_torch_off_jammed = 0.58
+lock_time_end_anm_torch_off_jammed = 0.5
+
+; ---- headlamp on / off ----
+anm_headlamp_on = de_headflash
+anm_headlamp_on_empty = de_headflash, idle_empty
+anm_headlamp_on_jammed = de_headflash, idle_jammed
+anm_headlamp_off = de_headflash
+anm_headlamp_off_empty = de_headflash, idle_empty
+anm_headlamp_off_jammed = de_headflash, idle_jammed
+
+; ---- night vision on / off ----
+anm_nv_on = de_nv_on
+anm_nv_on_empty = de_nv_on, idle_empty
+anm_nv_on_jammed = de_nv_on, idle_jammed
+anm_nv_off = de_nv_off
+anm_nv_off_empty = de_nv_off, idle_empty
+anm_nv_off_jammed = de_nv_off, idle_jammed
+
+; ---- misc ----
+anm_suicide = beretta_suicide
+anm_stop_suicide = beretta_suicide_end
+
+; ---- GS controller-suicide animation block (verbatim from GS pistols/deagle/huds.ltx). The alias
+; alone is not enough: without lock_time_anm_suicide the engine uses a hardcoded 3 s and the
+; shot lands in the middle of the gesture. ----
+custom_suicide_shot                = true
+lock_time_anm_suicide              = 7.37
+lock_time_anm_stop_suicide         = 1.37
+suicide_delay                      = 0.25
+
+; ---- GS controller-suicide flags (defines.ltx defaults are the opposite: a weapon
+; that does not set these is dropped for the knife). Values from GS's own huds.ltx. ----
+prohibit_suicide                 = false
+suicide_by_animation             = true
+anm_detach_sil = glock17_reload
+anm_detach_sil_jammed = glock17_reload
+anm_detach_sil_empty = glock17_reload
+anm_prepare_detector = de_hand_hide
+anm_prepare_detector_jammed = de_hand_hide, idle_jammed
+anm_prepare_detector_empty = de_hand_hide, idle_empty
+anm_draw_detector = de_hand_hide_end
+anm_draw_detector_jammed = de_hand_hide_end, idle_jammed
+anm_draw_detector_empty = de_hand_hide_end, idle_empty
+anm_finish_detector = de_hand_draw
+anm_finish_detector_jammed = de_hand_draw, idle_jammed
+anm_finish_detector_empty = de_hand_draw, idle_empty
+anm_holster_detector = de_hand_draw	; (kept: not in GS set)
+anm_holster_detector_jammed = de_hand_draw, idle_jammed	; (kept: not in GS set)
+anm_holster_detector_empty = de_hand_draw, idle_empty	; (kept: not in GS set)
+
+; ==================== AUTO-FIRE MODE ANIMATION SET (mask_firemode_a = _auto) ====================
+
+; =========================================================================
+; Desert Eagle laser designator params (recipe: correction=on + parallax-zero). RED dot, emitter bone `line`.
+; Read after the flashlaser upgrade sets laser_installed. See cs-laser-port-recipe.
+; =========================================================================
+; --- lock_time values copied verbatim from GS huds.ltx (audit 2026-08-07) ---
+lock_time_anm_attach_sil = 4
+lock_time_anm_attach_sil_empty = 4
+lock_time_anm_attach_sil_jammed = 4
+lock_time_anm_detach_sil = 2.5
+lock_time_anm_detach_sil_empty = 2.5
+lock_time_anm_detach_sil_jammed = 2.5
+lock_time_anm_draw_detector = 0.40
+lock_time_anm_draw_detector_empty = 0.40
+lock_time_anm_draw_detector_jammed = 0.40
+lock_time_anm_fakeshoot_aim_empty = 0.20
+lock_time_anm_fakeshoot_aim_jammed = 0.20
+lock_time_anm_fakeshoot_empty = 0.20
+lock_time_anm_fakeshoot_jammed = 1.0
+lock_time_anm_finish_detector = 0.60
+lock_time_anm_finish_detector_empty = 0.60
+lock_time_anm_finish_detector_jammed = 0.60
+lock_time_anm_idle_aim_end_empty = 0.3
+lock_time_anm_idle_aim_end_jammed = 0.3
+lock_time_anm_idle_aim_start_empty = 0.25
+lock_time_anm_idle_aim_start_jammed = 0.25
+lock_time_anm_idle_sprint_end = 0.4
+lock_time_anm_idle_sprint_end_empty = 0.4
+lock_time_anm_idle_sprint_end_jammed = 0.4
+lock_time_anm_idle_sprint_start = 0.15
+lock_time_anm_idle_sprint_start_empty = 0.15
+lock_time_anm_idle_sprint_start_jammed = 0.15
+lock_time_anm_prepare_detector_empty = 0.5
+lock_time_anm_prepare_detector_jammed = 0.5
+lock_time_anm_reload_jammed_detector = 2.21
+lock_time_anm_reload_jammed_last_detector = 2.21
+lock_time_anm_unload_mag = 0.8
+lock_time_anm_unload_mag_empty = 0.8
+lock_time_anm_unload_mag_jammed = 0.8
+lock_time_end_anm_headlamp_off = 0.5
+lock_time_end_anm_headlamp_off_empty = 0.5
+lock_time_end_anm_headlamp_off_jammed = 0.5
+lock_time_end_anm_headlamp_on = 0.5
+lock_time_end_anm_headlamp_on_empty = 0.5
+lock_time_end_anm_headlamp_on_jammed = 0.5
+lock_time_end_anm_reload = 2.77
+lock_time_end_anm_reload_ammochange = 2.77
+lock_time_end_anm_reload_ammochange_detector = 2.35
+lock_time_end_anm_reload_detector = 2.35
+lock_time_end_anm_reload_empty = 3.07
+lock_time_end_anm_reload_empty_ammochange = 3.07
+lock_time_end_anm_reload_empty_ammochange_detector = 3.15
+lock_time_end_anm_reload_empty_detector = 3.15
+lock_time_start_anm_headlamp_off = 0.58
+lock_time_start_anm_headlamp_off_empty = 0.58
+lock_time_start_anm_headlamp_off_jammed = 0.58
+lock_time_start_anm_headlamp_on = 0.58
+lock_time_start_anm_headlamp_on_empty = 0.58
+lock_time_start_anm_headlamp_on_jammed = 0.58
+lock_time_start_anm_reload = 0.6
+lock_time_start_anm_reload_ammochange = 0.6
+lock_time_start_anm_reload_ammochange_detector = 0.6
+lock_time_start_anm_reload_detector = 0.6
+lock_time_start_anm_reload_empty = 0.6
+lock_time_start_anm_reload_empty_ammochange = 0.6
+lock_time_start_anm_reload_empty_ammochange_detector = 0.6
+lock_time_start_anm_reload_empty_detector = 0.6
+[de_laser]
+laser_installed                = true
+laserdot_correction            = true	; GS default: camera-pull -> converge to device + center-aim + constant size
+laser_ray_bones                = line
+particles_count                = 4
+laserdot_particle_0            = laser\red_dot
+laserdot_particle_1            = laser\red_dot1
+laserdot_dist_1                = 0.1
+laserdot_particle_2            = laser\red_dot2
+laserdot_dist_2                = 7
+laserdot_particle_3            = laser\red_dot3
+laserdot_dist_3                = 15
+laserdot_attach_bone           = line
+laserdot_attach_offset_x       = 0.0	; GS-universal (emitter on the `line` bone); fine-tune y if close-up dot is off the device
+laserdot_attach_offset_y       = 0.017
+laserdot_attach_offset_z       = -0.6
+laserdot_hud_point_koef        = 0.0
+laserdot_zero_dist             = 3	; parallax zero: centered from 10m outward (aiming), converges to device closer, sway preserved
+laserdot_surface_pull          = 0.85
+laserdot_world_attach_offset_x = 0.0	; GS deagle flashlaser node
+laserdot_world_attach_offset_y = 0.1
+laserdot_world_attach_offset_z = 0.05
+laserdot_dists_count           = 3
+laserdot_dist_treshold_1       = 0.5
+laserdot_dist_scale_1          = 0.08
+laserdot_dist_treshold_2       = 10
+laserdot_dist_scale_2          = 0.03
+laserdot_dist_treshold_3       = 40
+laserdot_dist_scale_3          = 0.05
+
+; Desert Eagle flashlight params (GS tactical_torch; ak74-style). Read after the upgrade sets torch_installed.
+[de_flashlight]
+torch_light_bone               = wpn_body
+torch_attach_offset_x          = 0.0
+torch_attach_offset_y          = 0.0
+torch_attach_offset_z          = 0.3	; orig -0.2 -- emitter pushed past the muzzle: at ~0 the weapon and the camera sit inside the cone (screen-wide glare, bright at the edges)
+torch_world_attach_offset_x    = 0.0
+torch_world_attach_offset_y    = 0.1
+torch_world_attach_offset_z    = 0.05
+torch_omni_attach_offset_x     = 0.0
+torch_omni_attach_offset_y     = 0.0
+torch_omni_attach_offset_z     = -0.2
+torch_spot_angle               = 60
+torch_spot_texture             = internal\internal_light_torch_tactical_r2
+torch_r2_range                 = 50
+torch_r2_color_r               = 0.6
+torch_r2_color_g               = 0.55
+torch_r2_color_b               = 0.55
+torch_r2_color_a               = 1.0
+torch_r2_omni_range            = 0.25
+torch_r2_omni_color_r          = 1.0
+torch_r2_omni_color_g          = 1.0
+torch_r2_omni_color_b          = 1.0
+torch_r2_omni_color_a          = 0.0
+create_glow                    = true
+torch_glow_texture             = glow\glow_torch_r2
+torch_glow_radius              = 0.3
 
 [wpn_desert_eagle_up]:wpn_desert_eagle
 $spawn                  	= "weapons\Desert_Eagle_up"		; option for Level Editor
 
 
 ;-----------------------------------------------------------------------------
-upgrades                = up_gr_ab_desert_eagle, up_gr_cd_desert_eagle, up_gr_e_desert_eagle, up_gr_f_desert_eagle, up_gr_g_desert_eagle
-installed_upgrades      = up_a_desert_eagle, up_c_desert_eagle, up_ac_desert_eagle, up_e_desert_eagle, up_f_desert_eagle, up_g_desert_eagle
-upgrade_scheme          = upgrade_scheme_u9
+upgrades                = vartree_wpn_deagle_gazootvod, vartree_wpn_deagle_mag1, vartree_wpn_deagle_rail, vartree_wpn_deagle_sights, vartree_wpn_deagle_handle
+installed_upgrades      =
+upgrade_scheme          = upgrade_scheme_wpn_deagle
+allowed_upgrades        = up_wpn_deagle_
+
+[wpn_deagle_ammo_bones]
+additional_ammo_bone_when_jammed = true
+all_bones = bullet1,bullet2,bullet3,bullet4,bullet5,bullet6,bullet7,bashmak0,bashmak1,bashmak2,bashmak3,bashmak4,bashmak5,bashmak6,bashmak7
+configuration_0 = bashmak0
+configuration_1 = bullet1, bashmak1
+configuration_2 = bullet1,bullet2, bashmak2
+configuration_3 = bullet1,bullet2,bullet3, bashmak3
+configuration_4 = bullet1,bullet2,bullet3,bullet4, bashmak4
+configuration_5 = bullet1,bullet2,bullet3,bullet4,bullet5, bashmak5
+configuration_6 = bullet1,bullet2,bullet3,bullet4,bullet5,bullet6, bashmak6
+configuration_7 = bullet1,bullet2,bullet3,bullet4,bullet5,bullet6,bullet7, bashmak7
+configuration_8 = bullet1,bullet2,bullet3,bullet4,bullet5,bullet6,bullet7, bashmak7
+configuration_9 = bullet1,bullet2,bullet3,bullet4,bullet5,bullet6,bullet7, bashmak7
+configuration_10 = bullet1,bullet2,bullet3,bullet4,bullet5,bullet6,bullet7, bashmak7
+configuration_11 = bullet1,bullet2,bullet3,bullet4,bullet5,bullet6,bullet7, bashmak7
+
+
+
+;================================================================================
+; UNIQUE Desert Eagle "Silver Lion" (GS wpn_desert_eagle_nimble). Inherits base.
+;================================================================================
+[wpn_desert_eagle_nimble]:wpn_desert_eagle
+$spawn                  = "weapons\wpn_desert_eagle_nimble"
+description             = gunsl_wpn_deagle_uniq_descr
+
+upgrades = vartree_wpn_deagle_uniq_gazootvod, vartree_wpn_deagle_mag1, vartree_wpn_deagle_rail, vartree_wpn_deagle_sights, vartree_wpn_deagle_handle
+installed_upgrades =
+upgrade_scheme = upgrade_scheme_wpn_deagle
+banned_upgrades = up_wpn_deagle_gazootvod, up_wpn_deagle_polymer_details, up_wpn_deagle_barrel_, up_wpn_deagle_usm_
+
+; NOTE: GS uniq.ltx uses the SHORT list (does NOT hide flash/laser/line/light) - verify in-game the laser/torch device isnt shown permanently on the silver model
+def_hide_bones = sight, sight2, barrel_compensator, flash, laser, line, light	; +tactical-block device bones hidden by default (shown by flashlaser upgrade)
+
+cost = 4300
+
+hud                     = wpn_desert_eagle_nimble_hud
+visual                  = dynamics\weapons\wpn_desert_eagle\wpn_desert_eagle_silver.ogf
+
+; uniq TTX overrides (GS uniq.ltx) - tighter than base
+fire_dispersion_base    = 0.15
+cam_dispersion          = 1.7
+cam_dispersion_inc      = 1.7
+cam_max_angle           = 14.0
+cam_max_angle_horz      = 14.0
+
+inv_name                = gunsl_wpn_deagle_uniq
+inv_name_short          = gunsl_wpn_deagle_uniq
+
+element_icon_0 = icon_element_deagle_body_uniq
+element_icon_offset_x_0 = 0
+element_icon_offset_y_0 = 0
+
+uniq_icon = upgrade_addon_icon_uniq_item
+uniq_icon_offset_x = 50
+uniq_icon_offset_y = 0
+
+upgr_icon_x         = 1005
+upgr_icon_y         = 614
+upgr_icon_width     = 209
+upgr_icon_height    = 133
+
+[wpn_desert_eagle_nimble_hud]:wpn_desert_eagle_hud
+item_visual             = dynamics\weapons\wpn_desert_eagle\wpn_desert_eagle_silver_hud.ogf

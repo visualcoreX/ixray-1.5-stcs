@@ -223,7 +223,7 @@
 		<text>Броня</text>
 	</string>
 	<string id="st_prop_artefact">
-		<text>контейнер для артефактов</text>
+		<text>Контейнер для артефактов</text>
 	</string>
 	<string id="st_prop_bullet_speed">
 		<text>Настильность</text>
@@ -241,7 +241,7 @@
 		<text>Прочность</text>
 	</string>
 	<string id="st_prop_grenade_launcher">
-		<text>подствольный гранатомёт</text>
+		<text>Подствольный гранатомёт</text>
 	</string>
 	<string id="st_prop_inertion">
 		<text>Удобность</text>
@@ -249,14 +249,17 @@
 	<string id="st_prop_night_vision">
 		<text>ПНВ</text>
 	</string>
+	<string id="st_prop_night_vision_2">
+		<text>ПНВ Mk. 2</text>
+	</string>
 	<string id="st_prop_power">
-		<text>восстановление сил</text>
+		<text>Восстановление сил</text>
 	</string>
 	<string id="st_prop_psy">
-		<text>защита от пси-воздействия</text>
+		<text>Защита от пси-воздействия</text>
 	</string>
 	<string id="st_prop_radio_chem">
-		<text>радио- и химзащита</text>
+		<text>Радио- и химзащита</text>
 	</string>
 	<string id="st_prop_recoil">
 		<text>Отдача</text>
@@ -265,10 +268,10 @@
 		<text>Надёжность</text>
 	</string>
 	<string id="st_prop_restore_bleeding">
-		<text>заживление ран</text>
+		<text>Заживление ран</text>
 	</string>
 	<string id="st_prop_restore_health">
-		<text>востановление здоровья</text>
+		<text>Востановление здоровья</text>
 	</string>
 	<string id="st_prop_rpm">
 		<text>Скорострельность</text>
@@ -283,7 +286,7 @@
 		<text>Глушитель</text>
 	</string>
 	<string id="st_prop_thermo_electro">
-		<text>термо- и электрозащита</text>
+		<text>Термо- и электрозащита</text>
 	</string>
 	<string id="st_prop_underbarrel_slot">
 		<text>Крепление подствольника</text>
@@ -292,7 +295,7 @@
 		<text>Вес</text>
 	</string>
 	<string id="st_tonnage">
-		<text>переносимый вес</text>
+		<text>Переносимый вес</text>
 	</string>
 	<string id="st_upg_active_filter_stalk">
 		<text>Активные фильтры</text>
@@ -529,7 +532,7 @@
 		<text>Усиленный военный бронежилет, хорошо защищает носителя от пуль из ручного стрелкового оружия</text>
 	</string>
 	<string id="st_upg_upgrade_night_vision_battle">
-		<text>Прибор ночного видения</text>
+		<text>Прибор ночного видения Mk. 2</text>
 	</string>
 	<string id="st_upg_upgrade_night_vision_battle_descr">
 		<text>Прибор ночного виденья второго поколения. Отличается меньшим количеством помех и, соответственно, более чёткой «картинкой».</text>
@@ -564,4 +567,32 @@
 	<string id="st_upgrade_install">
 		<text>Вы действительно хотите установить:</text>
 	</string>
+	
+	<!--csga-->
+	
+	<string id="st_upg_sig_fix">
+		<text>Облегченная пистолетная рукоять</text>
+	</string>
+	<string id="st_upg_sig_fix_descr">
+		<text>Замена пистолетной рукояти на облегчённую уменьшает вес оружия</text>
+	</string>
+	
+	<string id="st_up_exo_c2_name">
+		<text>Оснащение сервоприводов гидравлическими усилителями</text>
+	</string>
+	<string id="st_up_exo_c2_descr">
+		<text>Гидравлические усилители, позволяющие переходить на бег, - главное отличие четвёртого поколения экзоскелетов от третьего.</text>
+	</string>
+	<string id="st_prop_sprint">
+		<text>Усилители сервоприводов</text>
+	</string>
+	
+	<!-- suit flashlight upgrade (all outfits) -->
+	<string id="st_upg_torch">
+		<text>Нашлемный фонарь</text>
+	</string>
+	<string id="st_upg_torch_descr">
+		<text>Крепление, аккумулятор и герметичный разъем под фонарь. Фонарем можно пользоваться, пока костюм надет.</text>
+	</string>
+
 </string_table>

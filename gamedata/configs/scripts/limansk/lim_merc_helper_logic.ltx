@@ -19,7 +19,7 @@ combat_ignore_cond = true
 cover_name = lim_merc_helper_cover
 ;target_path = lim_merc_helper_fire_point
 ;cover_state = lookout_target
-on_info = {=dist_to_actor_le(5)} smartcover@idle %=play_sound(lim_cs_stalker_hint)%
+on_info = {=dist_to_actor_le(5)} smartcover@idle %=play_sound(lim_cs_stalker_hint:killer)%
 on_info2 = {+lim_bandit_house_attack2} walker@fire
 ;on_info3 = {+lim_bandit_house_attack1} ;%=play_sound(lim_cs_stalker_spich)%
 
@@ -40,7 +40,7 @@ combat_ignore_cond = true
 cover_name = lim_merc_helper_cover
 target_path = lim_merc_helper_fire_point
 cover_state = fire_target
-on_game_timer = 20 | smartcover@fire %=play_sound(lim_cs_stalker_oreder_1)%
+on_game_timer = 20 | smartcover@fire %=play_sound(lim_cs_stalker_oreder_1:killer)%
 
 [camper@go_fire]
 meet = no_meet
@@ -49,7 +49,7 @@ path_walk = lim_merc_helper_go_fire_walk
 path_look = lim_merc_helper_go_fire_walk
 radius = 5
 def_state_moving = sneak_run
-on_signal = action | smartcover@fire %=play_sound(lim_cs_stalker_oreder_1)%
+on_signal = action | smartcover@fire %=play_sound(lim_cs_stalker_oreder_1:killer)%
 
 [smartcover@fire]
 meet = no_meet
@@ -84,7 +84,7 @@ on_game_timer = 600 | walker@out
 [walker@out]
 path_walk = lim_merc_helper_help_walk
 path_look = lim_merc_helper_help_walk
-on_info = {=dist_to_actor_ge(50) !actor_see_npc()} %=destroy_object%
+on_info = {=dist_to_actor_ge(50) !actor_see_npc} %=destroy_object%
 meet = meet@merc_help
 
 [meet@merc_help]

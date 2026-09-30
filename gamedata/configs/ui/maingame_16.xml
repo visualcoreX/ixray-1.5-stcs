@@ -28,6 +28,45 @@
 		</progress>
 	</progress_bar_armor>
 	
+
+  <!-- CoP quick-use slots on the hud: icon of the section parked in each slot, an "xN" counter and
+       the key that fires it. Optional -- the window stops building at the first quick_slot<N> that
+       is missing, so deleting these four blocks removes the display entirely.
+       Bottom-left, above the ammo readout; 32x32 icons in a row. -->
+  <quick_slot0 x="18"  y="704" width="32" height="32" stretch="1">
+    <counter x="14" y="20" width="20" height="12">
+      <text font="letterica16" align="r" color="ui_7"/>
+    </counter>
+  </quick_slot0>
+  <quick_slot1 x="58"  y="704" width="32" height="32" stretch="1">
+    <counter x="14" y="20" width="20" height="12">
+      <text font="letterica16" align="r" color="ui_7"/>
+    </counter>
+  </quick_slot1>
+  <quick_slot2 x="98"  y="704" width="32" height="32" stretch="1">
+    <counter x="14" y="20" width="20" height="12">
+      <text font="letterica16" align="r" color="ui_7"/>
+    </counter>
+  </quick_slot2>
+  <quick_slot3 x="138" y="704" width="32" height="32" stretch="1">
+    <counter x="14" y="20" width="20" height="12">
+      <text font="letterica16" align="r" color="ui_7"/>
+    </counter>
+  </quick_slot3>
+
+  <quick_slot0_text x="18"  y="738" width="32" height="12">
+    <text font="letterica16" align="c" r="255" g="255" b="255" a="255"/>
+  </quick_slot0_text>
+  <quick_slot1_text x="58"  y="738" width="32" height="12">
+    <text font="letterica16" align="c" r="255" g="255" b="255" a="255"/>
+  </quick_slot1_text>
+  <quick_slot2_text x="98"  y="738" width="32" height="12">
+    <text font="letterica16" align="c" r="255" g="255" b="255" a="255"/>
+  </quick_slot2_text>
+  <quick_slot3_text x="138" y="738" width="32" height="12">
+    <text font="letterica16" align="c" r="255" g="255" b="255" a="255"/>
+  </quick_slot3_text>
+
 	<quick_info x="1" y="700" width="1022" height="50" complex_mode="1" light_anim="ui_btn_hint"  la_cyclic="0" la_texture="0" la_text="1" la_alpha="1">
 		<text align="c" font="graffiti22" r="225" g="225" b="250" a="255" />
 	</quick_info>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_sig552">
+		<text>SIG SG-552 Commando</text>
+	</string>
+	<string id="gunsl_wpn_sig552_descr">
+		<text>Shortened variant of the Swiss-made assault rifle SIG SG-550, designed for special police forces. Unlike SG-550, the recoil spring rests against lower receiver instead of being wrapped around the gas piston rod. Like the base model, SG-552 is quite reliable and accurate, therefore popular with law enforcement agencies worldwide, like SWAT or British SAS.</text>
+	</string>
+	<string id="gunsl_wpn_sig552_strelok">
+		<text>SIG SG-552 Modified</text>
+	</string>
+	<string id="gunsl_wpn_sig552_strelok_descr">
+		<text>Swiss-made SIG SG-552 assault rifle. Although hardly new, it is clear that the previous owner took good care of it: the weapon has been taken apart and put back together, with every component fine-tuned, increasing stopping power.</text>
+	</string>
+</string_table>

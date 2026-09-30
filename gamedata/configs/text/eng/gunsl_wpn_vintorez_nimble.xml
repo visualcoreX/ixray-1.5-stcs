@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_vintorez_nimble">
+		<text>«Tide»</text>
+	</string>
+	<string id="gunsl_wpn_vintorez_nimble_descr">
+		<text>Developed for military special forces units based on the Vintorez Special Sniper Rifle. Compared to its predecessor has a reduced rate of fire and higher stopping power.</text>
+	</string>
+</string_table>

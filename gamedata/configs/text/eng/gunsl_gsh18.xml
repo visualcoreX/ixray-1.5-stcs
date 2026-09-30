@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_gsh18">
+		<text>GSh-18</text>
+	</string>
+	<string id="gunsl_wpn_gsh18_descr">
+		<text>Russian-made semi-automatic pistol, developed in the 1990s to replace PM, which by that time was becoming obsolete. Key advantages are very small weight of the firearm and high-capacity magazine. Low position of the barrel relative to the shooter's hands and excellent weight distribution allows for accurate and tightly-grouped fire. Mass production started in 2001 and the firearm is used as self-defense weapon in various Russian law enforcement agencies and the military.</text>
+	</string>
+</string_table>

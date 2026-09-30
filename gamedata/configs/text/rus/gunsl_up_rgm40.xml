@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_rgm40_up_body_name">
+     <text>Спецпокрытие</text>
+</string>
+<string id="gunsl_rgm40_up_body_descr">
+     <text>Нанесение защитного напыления позволяет замедлить износ механизмов оружия.</text>
+</string>
+<string id="gunsl_rgm40_up_handle_name">
+     <text>Анатомическая рукоять</text>
+</string>
+<string id="gunsl_rgm40_up_handle_descr">
+     <text>Накладка на рукоять, подобранная с учетом индивидуальных особенностей и предпочтений стрелка, обеспечивает более комфортный хват.</text>
+</string>
+<string id="gunsl_rgm40_up_polymer_details_name">
+     <text>Облегчённая рама</text>
+</string>
+<string id="gunsl_rgm40_up_polymer_details_descr">
+     <text>Замена деталей оружия на облегченные аналоги позволяет снизить массу оружия.</text>
+</string>
+<string id="gunsl_rgm40_up_recoil_stock_name">
+     <text>Компенсатор отдачи</text>
+</string>
+<string id="gunsl_rgm40_up_recoil_stock_descr">
+     <text>Размещение в прикладе оружия специального компенсатора позволяет снизить ощущаемую стрелком отдачу.</text>
+</string>
+<string id="gunsl_rgm40_up_trigger_name">
+     <text>Титановый ударник</text>
+</string>
+<string id="gunsl_rgm40_up_trigger_descr">
+     <text>Обладает повышенной износостойкостью, что благоприятно сказывается на сроке службы оружия.</text>
+</string>
+<string id="gunsl_rgm40_up_narezka_gren_speed_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_rgm40_up_narezka_gren_speed_descr">
+     <text>Благодаря перенарезке и юстировке ствола получается увеличить начальную скорость полёта гранаты.</text>
+</string>
+<string id="gunsl_rgm40_up_titan_details_name">
+     <text>Износостойкий УСМ</text>
+</string>
+<string id="gunsl_rgm40_up_titan_details_descr">
+     <text>Замена стандартных деталей УСМ на аналоги из сплавов повышенной прочности благоприятным образом сказывается на надёжности оружия.</text>
+</string>
+<string id="gunsl_rgm40_up_light_stock_name">
+     <text>Облегчённый приклад</text>
+</string>
+<string id="gunsl_rgm40_up_light_stock_descr">
+     <text>Замена стандартного приклада на легкосплавный аналог позволяет снизить массу оружия.</text>
+</string>
+<string id="gunsl_rgm40_up_light_details_name">
+     <text>Облегчённые детали</text>
+</string>
+<string id="gunsl_rgm40_up_light_details_descr">
+     <text>Замена стандартных деталей оружия на легкосплавные аналоги позволяет снизить массу оружия.</text>
+</string>
+</string_table>

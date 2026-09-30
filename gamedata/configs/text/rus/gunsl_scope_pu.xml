@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_addon_scope_pu">
+		<text>Прицел охотничий ПУ</text>
+	</string>
+	<string id="gunsl_addon_scope_pu_descr">
+		<text>Охотничий прицел кратности 3.5x. Предназначен для установки на ружья, снабженные специальным кронштейном, и не совместим с другим оружием.</text>
+	</string>
+</string_table>

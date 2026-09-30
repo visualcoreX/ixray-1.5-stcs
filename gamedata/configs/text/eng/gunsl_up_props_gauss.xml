@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_up_prop_computer">
+		<text>Onboard computer</text>
+	</string>
+	<string id="gunsl_up_prop_autoshot">
+		<text>Program safety</text>
+	</string>
+	<string id="gunsl_up_prop_autoaim">
+		<text>Auto-release</text>
+	</string>
+	<string id="gunsl_up_prop_zoomspeed">
+		<text>Fast zoom</text>
+	</string>
+	<string id="gunsl_up_magneticshield">
+		<text>Shielding</text>
+	</string>
+	<string id="st_prop_autolockscope">
+		<text>Target auto-lock system</text>
+	</string>
+	<string id="st_prop_scope">
+		<text>Adjustable scope</text>
+	</string>
+	<string id="st_prop_contrast">
+		<text>High-contrast scope</text>
+	</string>
+</string_table>

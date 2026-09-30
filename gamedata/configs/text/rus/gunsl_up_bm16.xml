@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_bm16_up_accurate_stock_name">
+     <text>Улучшенный тыльник</text>
+</string>
+<string id="gunsl_bm16_up_accurate_stock_descr">
+     <text>Замена стандартного тыльника приклада на более мягкий с улучшенной амортизацией повышает удобство обращения с ружьем.</text>
+</string>
+<string id="gunsl_bm16_up_short_stock_name">
+     <text>Обрезка приклада</text>
+</string>
+<string id="gunsl_bm16_up_short_stock_descr">
+     <text>Без приклада ружье весит значительно меньше, повышается маневренность, но при этом увеличивается отдача.</text>
+</string>
+<string id="gunsl_bm16_up_sights_name">
+     <text>Тритиевая вставка</text>
+</string>
+<string id="gunsl_bm16_up_sights_descr">
+     <text>Установка светящейся вставки в прицельное приспособление позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_bm16_up_short_barrel_name">
+     <text>Обрезка стволов</text>
+</string>
+<string id="gunsl_bm16_up_short_barrel_descr">
+     <text>Значительное укорачивание стволов уменьшает массу ружья, повышает маневренность и разброс, но при этом снижается дальность и точность стрельбы.</text>
+</string>
+<string id="gunsl_bm16_up_calibration_name">
+     <text>Калибровка УСМ</text>
+</string>
+<string id="gunsl_bm16_up_calibration_descr">
+     <text>Индивидуальная подгонка и балансировка стандартных деталей ударно-спускового механизма позволяет добиться более высокой точности стрельбы при одновременном снижении отдачи.</text>
+</string>
+<string id="gunsl_bm16_up_barrel_dovodka_name">
+     <text>Доработка стволов</text>
+</string>
+<string id="gunsl_bm16_up_barrel_dovodka_descr">
+     <text>Благодаря комплексной доработке увеличивается начальная скорость пули и уменьшается скорость износа ствола ружья.</text>
+</string>
+<string id="gunsl_bm16_up_light_tsevie_name">
+     <text>Облегченное цевье</text>
+</string>
+<string id="gunsl_bm16_up_light_tsevie_descr">
+     <text>Замена стандартного цевья на облегченное позволяет несколько снизить общую массу оружия.</text>
+</string>
+<string id="gunsl_bm16_up_sharnir_name">
+     <text>Титановый шарнир</text>
+</string>
+<string id="gunsl_bm16_up_sharnir_descr">
+     <text>Замена стандартного шарнира на шарнир повышенной прочности позволяет значительно увеличить износостойкость механизма перелома стволов ружья.</text>
+</string>
+<string id="gunsl_bm16_up_kurki_name">
+     <text>Замена курков</text>
+</string>
+<string id="gunsl_bm16_up_kurki_descr">
+     <text>Позволяет минимизировать число осечек из-за недостаточного накола патрона.</text>
+</string>
+<string id="gunsl_bm16_up_korobka_name">
+     <text>Балансировка</text>
+</string>
+<string id="gunsl_bm16_up_korobka_descr">
+     <text>Комплексная модификация, затрагивающая почти все узлы ружья. Благоприятно сказывается на точности и отдаче.</text>
+</string>
+<string id="gunsl_bm16_up_barrel_narezka_name">
+     <text>Нарезной ствол</text>
+</string>
+<string id="gunsl_bm16_up_barrel_narezka_descr">
+     <text>Нарезка ствола позволяет значительно повысить точность стрельбы и увеличивает начальную скорость пули, но делает невозможной стрельбу дробью.</text>
+</string>
+<string id="gunsl_bm16_up_barrel_break_speed_name">
+     <text>Защитное покрытие</text>
+</string>
+<string id="gunsl_bm16_up_barrel_break_speed_descr">
+     <text>Нанесение защитного покрытия на стволы позволяет значительно снизить скорость их износа, тем самым продлевая срок службы оружия.</text>
+</string>
+</string_table>

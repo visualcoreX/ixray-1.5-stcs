@@ -1,303 +1,445 @@
-[up_sect_a_walther]
-cost		      		= 300
-value					= +25
-rpm						= 50
+;==================================================================================================
+; Walther P99 upgrade tree -- ported from Gunslinger (walther99/upgrades.ltx). CoP-style scheme.
+; Adaptations: flashlaser node kept but wired ak74-style (laser_installed/torch_installed, light params in
+; weapon base [walther_laser]/[walther_flashlight]); barrel_sil silencer stripped; light_mag -> prop_weight_kg.
+;==================================================================================================
 
-[up_sect_b_walther]
-cost		      		= 300
-value					= -20
+;------------------------------------------wpn_walther_sights------------------------------------------
+[up_sect_wpn_walther_sights]
+cost = 1000
+crosshair_inertion = -1
+control_inertion_factor = -0.1
+show_bones = sight
 
-cam_dispersion          = -0.1		;0.5
-cam_dispersion_inc		= -0.1		;0.5
-cam_step_angle_horz		= -0.1		;0.5
-
-[up_sect_c_walther]
-cost		      		= 300
-value					= -20
-inv_weight				= -0.1
-fire_dispersion_base	= -0.1 ;0.5
-
-[up_sect_d_walther]
-cost		      		= 300
-value					= +20
-bullet_speed		 	= 50
-hit_power           	= 0.55, 0.55, 0.55, 0.55
-
-[up_sect_e_walther]
-cost		      		= 300
-value					= +20
-fire_dispersion_base	= -0.1 ;0.5
-
-[up_sect_f_walther]
-cost		      		= 300
-value					= +20
-fire_dispersion_base	= -0.1 ;0.5
-
-cam_dispersion          = -0.1		;0.5
-cam_dispersion_inc		= -0.1		;0.5
-cam_step_angle_horz		= -0.1		;0.5
-
-[up_sect_g_walther]
-cost		      		= 300
-value2					= "9x18"
-ammo_class		 		= ammo_9x18_fmj, ammo_9x18_pmm
-
-[up_sect_h_walther]
-cost		      		= 300
-value					= +4
-ammo_mag_size		 	= 4
-
-[up_sect_ac_walther]
-cost		      		= 450
-value					= -50
-;value2					= st_upgr_silencer_disable
-
-cam_dispersion          = -0.25		;0.5
-cam_dispersion_inc		= -0.25		;0.5
-cam_step_angle_horz		= -0.25		;0.5
-
-;silencer_status			= 0
-
-[up_sect_bd_walther]
-cost		      		= 450
-value					= +30
-;value2					= st_upgr_silencer_disable
-bullet_speed		 	= 100
-hit_power           	= 0.6, 0.6, 0.6, 0.6
-;silencer_status			= 0
-
-[up_a_walther]
-scheme_index            = 0, 0
-known                   = 1
-;;invented                = 1                							; 0
-effects                 = up_gr_ac_walther
-section                 = up_sect_a_walther
-property                = prop_rpm
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = on_weapon_upgrade_something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_walther_sights]
+scheme_index = 0, 0
+known = 1
+effects = 
+section = up_sect_wpn_walther_sights
+property = prop_lightingsights
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_zatvor_rpm
-description             = st_upg_zatvor_rpm_descr
-icon                    = ui_wp_upgrade_01
+prereq_params  = 
+name =gunsl_wpn_walther_up_sights_name
+description =gunsl_wpn_walther_up_sights_descr
+icon = ui_gunsl_up_wpn_walther_sights
+;------------------------------------------wpn_walther_usilinie_ramki------------------------------------------
+[up_sect_wpn_walther_usilinie_ramki]
+cost = 3000
+value = +10
+condition_shot_dec = -0.0003
+condition_queue_shot_dec = -0.0003
 
-;;...
-[up_b_walther]
-scheme_index            = 0, 1
-known                   = 1
-effects                 = up_gr_bd_walther
-section                 = up_sect_b_walther
-property                = prop_recoil
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_walther_usilinie_ramki]
+scheme_index = 0, 1
+known = 1
+effects = vartree_wpn_walther_body
+section = up_sect_wpn_walther_usilinie_ramki
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_zatvor_recoil
-description             = st_upg_zatvor_recoil_descr
-icon                    = ui_wp_upgrade_02
+prereq_params  = 
+name =gunsl_wpn_walther_up_usilinie_ramki_name
+description =gunsl_wpn_walther_up_usilinie_ramki_descr
+icon = ui_gunsl_up_wpn_walther_usilinie_ramki
+;------------------------------------------wpn_walther_flashlaser------------------------------------------
+[up_sect_wpn_walther_flashlaser]
+; GS inherited :green_laser, tactical_torch + put offsets here; adapted to our ak74-style
+; mechanism: laser_installed/torch_installed flags + show_bones; light params live in the
+; weapon base sections [walther_laser]/[walther_flashlight].
+laser_installed = true
+torch_installed = true
+cost = 6000
+crosshair_inertion = -0.5
+show_bones = flash, laser
 
-[up_c_walther]
-scheme_index            = 0, 2
-known                   = 1
-effects                 = up_gr_ac_walther
-section                 = up_sect_c_walther
-property                = prop_weight      
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
 
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
 
-prereq_functor          = inventory_upgrades.prereq_functor_a
+
+inv_weight = +0.2
+
+upgrade_addon_icon = upgrade_addon_icon_laser_x5l_1
+upgrade_addon_icon_offset_x = 50
+upgrade_addon_icon_offset_y = 0
+
+[up_wpn_walther_flashlaser]
+scheme_index = 0, 2
+known = 1
+effects = 
+section = up_sect_wpn_walther_flashlaser
+property = prop_laser
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_weight
-description             = st_upg_barrel_weight_descr
-icon                    = ui_wp_upgrade_03
+prereq_params  = 
+name =gunsl_wpn_walther_up_flashlaser_name
+description =gunsl_wpn_walther_up_flashlaser_descr
+icon = ui_gunsl_up_wpn_walther_flashlaser
+;------------------------------------------wpn_walther_light_mag------------------------------------------
+[up_sect_wpn_walther_light_mag]
+cost = 1000
+value = -0.1
+inv_weight = -0.1
 
-[up_d_walther]
-scheme_index            = 0, 3
-known                   = 1
-effects                 = up_gr_bd_walther
-section                 = up_sect_d_walther
-property                = prop_bullet_speed
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_walther_light_mag]
+scheme_index = 0, 3
+known = 1
+effects = 
+section = up_sect_wpn_walther_light_mag
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_hard_barrel_curved
-description             = st_upg_hard_barrel_curved_descr
-icon                    = ui_wp_upgrade_04
+prereq_params  = 
+name =gunsl_wpn_walther_up_light_mag_name
+description =gunsl_wpn_walther_up_light_mag_descr
+icon = ui_gunsl_up_wpn_walther_light_mag
+;------------------------------------------wpn_walther_shell_ejector------------------------------------------
+[up_sect_wpn_walther_shell_ejector]
+cost = 6000
+value = +20
+misfire_start_prob = -0.001
+misfire_end_prob = -0.02
 
-[up_e_walther]
-scheme_index            = 0, 4
-known                   = 1
-effects                 = 
-section                 = up_sect_e_walther
-property                = prop_dispersion
+condition_shot_dec = -0.0003
+condition_queue_shot_dec = -0.0003
 
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_walther_shell_ejector]
+scheme_index = 0, 4
+known = 1
+effects = vartree_wpn_walther_zatvor
+section = up_sect_wpn_walther_shell_ejector
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_trigger_accur
-description             = st_upg_trigger_accur_descr
-icon                    = ui_wp_upgrade_05
+prereq_params  = 
+name =gunsl_wpn_walther_up_shell_ejector_name
+description =gunsl_wpn_walther_up_shell_ejector_descr
+icon = ui_gunsl_up_wpn_walther_shell_ejector
+;------------------------------------------wpn_walther_zatvor_zapiratel------------------------------------------
+[up_sect_wpn_walther_zatvor_zapiratel]
+cost = 7000
+value = +30
+bullet_speed = +55
+fire_distance = +100
 
-[up_f_walther]
-scheme_index            = 0, 5
-known                   = 1
-effects                 = 
-section                 = up_sect_f_walther
-property                = prop_dispersion
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_walther_zatvor_zapiratel]
+scheme_index = 0, 5
+known = 1
+effects = 
+section = up_sect_wpn_walther_zatvor_zapiratel
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_handle_accur2
-description             = st_upg_handle_accur2_descr
-icon                    = ui_wp_upgrade_09
+prereq_params  = 
+name =gunsl_wpn_walther_up_zatvor_zapiratel_name
+description =gunsl_wpn_walther_up_zatvor_zapiratel_descr
+icon = ui_gunsl_up_wpn_walther_zatvor_zapiratel
+;------------------------------------------wpn_walther_zatvor_recoil------------------------------------------
+[up_sect_wpn_walther_zatvor_recoil]
+cost = 7000
+value = -30
+PDM_disp_base = -0.1
+cam_dispersion = -0.20
+cam_dispersion_inc = -0.1
+zoom_cam_dispersion = -0.08
+zoom_cam_dispersion_inc = -0.2
 
-[up_g_walther]
-scheme_index            = 0, 6
-known                   = 1
-effects                 = 
-section                 = up_sect_g_walther
-property                = prop_calibre
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_walther_zatvor_recoil]
+scheme_index = 0, 6
+known = 1
+effects = 
+section = up_sect_wpn_walther_zatvor_recoil
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_calibre_9_18
-description             = st_upg_calibre_9_18_descr
-icon                    = ui_wp_upgrade_10
+prereq_params  = 
+name =gunsl_wpn_walther_up_zatvor_recoil_name
+description =gunsl_wpn_walther_up_zatvor_recoil_descr
+icon = ui_gunsl_up_wpn_walther_zatvor_recoil
+;------------------------------------------wpn_walther_patronnik------------------------------------------
+[up_sect_wpn_walther_patronnik]
+cost = 4000
+value = +15
+PDM_disp_base = -0.1
+fire_dispersion_base = -0.02
 
-[up_h_walther]
-scheme_index            = 0, 7
-known                   = 1
-effects                 = 
-section                 = up_sect_h_walther
-property                = prop_ammo_size
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_walther_patronnik]
+scheme_index = 0, 7
+known = 1
+effects = vartree_wpn_walther_ejector
+section = up_sect_wpn_walther_patronnik
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_charger_big
-description             = st_upg_charger_big_descr
-icon                    = ui_wp_upgrade_06
+prereq_params  = 
+name =gunsl_wpn_walther_up_patronnik_name
+description =gunsl_wpn_walther_up_patronnik_descr
+icon = ui_gunsl_up_wpn_walther_patronnik
+;------------------------------------------wpn_walther_barrel_sil------------------------------------------
+[up_sect_wpn_walther_barrel_sil]
+; GS-way silencer via upgrade (retrofit): status/name/x/y REQUIRED (WeaponUpgrade.cpp:292);
+; snd_silncer_shot OMITTED -- re-declaring re-runs LoadSound -> crash; base loads the sound.
+silencer_status = 2
+silencer_name = wpn_silencer_919
+silencer_x = 67
+silencer_y = -19
+cost = 7000
 
+hide_bones = barrel
+show_bones = barrel_silencer
 
-[up_ac_walther]
-scheme_index            = 1, 0
-known                   = 1
-effects                 = 
-section                 = up_sect_ac_walther
-property                = prop_recoil
+upgrade_addon_icon = upgrade_addon_icon_barrel_silencer_1
+upgrade_addon_icon_offset_x = 50
+upgrade_addon_icon_offset_y = 0
 
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_walther_barrel_sil]
+scheme_index = 0, 8
+known = 1
+effects = 
+section = up_sect_wpn_walther_barrel_sil
+property = prop_silencer
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_recoil
-description             = st_upg_barrel_recoil_descr
-icon                    = ui_wp_upgrade_07
+prereq_params  = 
+name =gunsl_wpn_walther_up_barrel_sil_name
+description =gunsl_wpn_walther_up_barrel_sil_descr
+icon = ui_gunsl_up_wpn_walther_barrel_sil
+;------------------------------------------wpn_walther_barrel_bullet_speed------------------------------------------
+[up_sect_wpn_walther_barrel_bullet_speed]
+cost = 7000
+value = +30
+fire_distance = +70
+bullet_speed = +80
 
-[up_bd_walther]
-scheme_index            = 1, 1
-known                   = 1
-effects                 = 
-section                 = up_sect_bd_walther
-property                = prop_bullet_speed
-
-precondition_functor    = inventory_upgrades.precondition_functor_a
-precondition_parameter  = a & b
-
-effect_functor          = inventory_upgrades.effect_functor_a
-effect_parameter        = something_here
-
-; ui
-prereq_functor          = inventory_upgrades.prereq_functor_a
+[up_wpn_walther_barrel_bullet_speed]
+scheme_index = 0, 9
+known = 1
+effects = 
+section = up_sect_wpn_walther_barrel_bullet_speed
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
 prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
-prereq_params           = money(1000), item(habar)
-name                    = st_upg_barrel_curved
-description             = st_upg_barrel_curved_descr
-icon                    = ui_wp_upgrade_08
+prereq_params  = 
+name =gunsl_wpn_walther_up_barrel_bullet_speed_name
+description =gunsl_wpn_walther_up_barrel_bullet_speed_descr
+icon = ui_gunsl_up_wpn_walther_barrel_bullet_speed
+;------------------------------------------wpn_walther_barrel_accuracy------------------------------------------
+[up_sect_wpn_walther_barrel_accuracy]
+cost = 7000
+value = +30
+PDM_disp_base = -0.3
+fire_dispersion_base = -0.05
+
+[up_wpn_walther_barrel_accuracy]
+scheme_index = 0, 10
+known = 1
+effects = 
+section = up_sect_wpn_walther_barrel_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_walther_up_barrel_accuracy_name
+description =gunsl_wpn_walther_up_barrel_accuracy_descr
+icon = ui_gunsl_up_wpn_walther_barrel_accuracy
+;------------------------------------------wpn_walther_usm_rpm------------------------------------------
+[up_sect_wpn_walther_usm_rpm]
+cost = 4000
+value = +20
+condition_shot_dec  = +0.003
+rpm = +60
+
+[up_wpn_walther_usm_rpm]
+scheme_index = 0, 11
+known = 1
+effects = vartree_wpn_walther_barrel
+section = up_sect_wpn_walther_usm_rpm
+property = prop_rpm
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_walther_up_usm_rpm_name
+description =gunsl_wpn_walther_up_usm_rpm_descr
+icon = ui_gunsl_up_wpn_walther_usm_rpm
+;------------------------------------------wpn_walther_body------------------------------------------
+[up_sect_wpn_walther_body]
+cost = 4000
+value = +20
+misfire_end_prob = -0.02
+misfire_start_condition = -0.1
+misfire_end_condition = -0.05
 
 
-[up_gr_ab_walther]
-elements                = up_a_walther, up_b_walther
+condition_shot_dec = -0.0005
+condition_queue_shot_dec = -0.0005
 
-[up_gr_cd_walther]
-elements                = up_c_walther, up_d_walther
+[up_wpn_walther_body]
+scheme_index = 0, 12
+known = 1
+effects = vartree_wpn_walther_laser
+section = up_sect_wpn_walther_body
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_walther_up_body_name
+description =gunsl_wpn_walther_up_body_descr
+icon = ui_gunsl_up_wpn_walther_body
+;------------------------------------------wpn_walther_usm_recoil------------------------------------------
+[up_sect_wpn_walther_usm_recoil]
+cost = 4000
+value = -20
+PDM_disp_base = -0.05
+cam_dispersion = -0.15
+cam_dispersion_inc = -0.25
+zoom_cam_dispersion = -0.06
+zoom_cam_dispersion_inc = -0.30
 
-[up_gr_e_walther]
-elements                = up_e_walther
+[up_wpn_walther_usm_recoil]
+scheme_index = 0, 13
+known = 1
+effects = vartree_wpn_walther_barrel
+section = up_sect_wpn_walther_usm_recoil
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_walther_up_usm_recoil_name
+description =gunsl_wpn_walther_up_usm_recoil_descr
+icon = ui_gunsl_up_wpn_walther_usm_recoil
+;------------------------------------------wpn_walther_handle------------------------------------------
+[up_sect_wpn_walther_handle]
+cost = 1500
+value = +20
+control_inertion_factor = -0.2
 
-[up_gr_f_walther]
-elements                = up_f_walther
+cam_relax_speed         = +1.0
+cam_dispersion          = -0.03
 
-[up_gr_g_walther]
-elements                = up_g_walther
+zoom_cam_relax_speed = +2
+zoom_cam_dispersion = -0.05
+zoom_cam_dispersion_inc = -0.03
 
-[up_gr_h_walther]
-elements                = up_h_walther
+PDM_disp_base = -0.1
+PDM_disp_vel_factor = -0.1
 
-[up_gr_ac_walther]
-elements                = up_ac_walther
+[up_wpn_walther_handle]
+scheme_index = 0, 14
+known = 1
+effects = 
+section = up_sect_wpn_walther_handle
+property = prop_inertion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_walther_up_handle_name
+description =gunsl_wpn_walther_up_handle_descr
+icon = ui_gunsl_up_wpn_walther_handle
+;------------------------------------------wpn_walther_titan_details------------------------------------------
+[up_sect_wpn_walther_titan_details]
+cost = 2000
+value = +10
+condition_shot_dec = 0.0003
+condition_queue_shot_dec = -0.0003
 
-[up_gr_bd_walther]
-elements                = up_bd_walther
-
+[up_wpn_walther_titan_details]
+scheme_index = 0, 15
+known = 1
+effects = vartree_wpn_walther_usm
+section = up_sect_wpn_walther_titan_details
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_wpn_walther_up_titan_details_name
+description =gunsl_wpn_walther_up_titan_details_descr
+icon = ui_gunsl_up_wpn_walther_titan_details
+;------------------------------------------------------------------------------------
+[vartree_wpn_walther_titan]
+elements = up_wpn_walther_titan_details
+[vartree_wpn_walther_usm]
+elements = up_wpn_walther_usm_rpm, up_wpn_walther_usm_recoil
+[vartree_wpn_walther_barrel]
+elements = up_wpn_walther_barrel_sil, up_wpn_walther_barrel_bullet_speed, up_wpn_walther_barrel_accuracy
+[vartree_wpn_walther_patronnik]
+elements = up_wpn_walther_patronnik
+[vartree_wpn_walther_ejector]
+elements = up_wpn_walther_shell_ejector
+[vartree_wpn_walther_zatvor]
+elements = up_wpn_walther_zatvor_zapiratel, up_wpn_walther_zatvor_recoil
+[vartree_wpn_walther_ramka]
+elements = up_wpn_walther_usilinie_ramki
+[vartree_wpn_walther_body]
+elements = up_wpn_walther_body
+[vartree_wpn_walther_laser]
+elements = up_wpn_walther_flashlaser
+[vartree_wpn_walther_sights]
+elements = up_wpn_walther_sights
+[vartree_wpn_walther_mag]
+elements = up_wpn_walther_light_mag
+[vartree_wpn_walther_handle]
+elements = up_wpn_walther_handle

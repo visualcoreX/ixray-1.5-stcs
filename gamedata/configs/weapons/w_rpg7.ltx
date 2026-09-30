@@ -2,7 +2,8 @@
 ;; RPG7
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-[wpn_rpg7]:zero_immunities,weapon_probability,default_weapon_params
+; base immunities: identity like GS heavy/rpg-7/base.ltx:1 (was zero_immunities)
+[wpn_rpg7]:identity_immunities,weapon_probability,default_weapon_params
 
 GroupControlSection			= spawn_group
 discovery_dependency 		=
@@ -16,10 +17,10 @@ min_radius               	= 50
 max_radius               	= 150
 max_zoom_factor				= 5
 sprint_allowed				= false
-description					= st_wpn_rpg7_descr
+description					= gunsl_wpn_rpg7_descr	; orig st_wpn_rpg7_descr (GS wpn_rpg7)
 
 ef_main_weapon_type		= 4
-ef_weapon_type			= 9
+ef_weapon_type          = 9	; restored: 12 broke the AI queue length (select_queue_params keys on ef_weapon_type)
 
 ;---DOF-------------------------------------------------------------------------
 zoom_dof			= 0.5, 1.0, 180
@@ -27,11 +28,11 @@ reload_dof			= 0.0, 0.5, 5, 1.7
 ;-------------------------------------------------------------------------------
 
 ;-------------------------------------------------------------------------------
-holder_range_modifier 	= 2.0               ; во сколько раз увеличивается eye_range
-holder_fov_modifier		= 0.3              ; во сколько раз увеличивается eye_fov
+holder_range_modifier 	= 2.0               ; пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ eye_range
+holder_fov_modifier     = 1.0	; orig 0.3 (GS wpn_rpg7)
 ;-------------------------------------------------------------------------------
 
-cost					= 25000
+cost                    = 26000	; orig 25000 (GS wpn_rpg7)
 weapon_class			= heavy_weapon
 
 ammo_limit		 		= 120
@@ -47,16 +48,16 @@ single_handed			= 0
 slot 				 	= 2
 animation_slot		 	= 4		; type of the animation that will be used
 
-launch_speed			= 5
+launch_speed			= 20	; orig 5 (GS base.ltx:117) -- ours flew 4x slower and dropped far more
 
-inv_name				= st_wpn_rpg7
-inv_name_short			= st_wpn_rpg7
+inv_name				= gunsl_wpn_rpg7	; orig st_wpn_rpg7 (GS wpn_rpg7)
+inv_name_short			= gunsl_wpn_rpg7	; orig st_wpn_rpg7 (GS wpn_rpg7)
 inv_weight				= 6.3
 
-inv_grid_width				= 5
-inv_grid_height				= 1
-inv_grid_x				= 6
-inv_grid_y				= 0
+inv_grid_width     = 5
+inv_grid_height    = 2
+inv_grid_x         = 9
+inv_grid_y         = 34
 
 kill_msg_x				= 0
 kill_msg_y				= 85
@@ -64,22 +65,22 @@ kill_msg_width				= 73
 kill_msg_height				= 19
 
 ;-------------------------------------------------------------------------------
-;базовая дисперсия
-fire_dispersion_base			= 1.5   ;угол (в градусах) базовой дисперсии оружия (оружия зажатого в тисках)
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+fire_dispersion_base			= 1.5   ;пїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
 
-;отдача
-cam_relax_speed         = 2.0	;скорость возврата в исходное положение
+;пїЅпїЅпїЅпїЅпїЅпїЅ
+cam_relax_speed         = 5.0	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 cam_relax_speed_ai      = 360
-cam_dispersion          = 10.0	;увеличения угла (в градусах) с каждым выстрелом
-cam_max_angle			= 15		;максимальный угол отдачи
+cam_dispersion          = 0.1	; orig 10.0 (GS wpn_rpg7)
+cam_max_angle			= 15		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 cam_max_angle_horz		= 15	;(degree) maximum shot horizontal degree
 cam_step_angle_horz		= 0.5	;(degree) size of step camera moved in horizontal position while shooting
 
-fire_dispersion_condition_factor 	= 5	;увеличение дисперсии в процентах при максимальном износе
-misfire_probability 			= 0.0	;вероятность осечки при максимальном износе
-condition_shot_dec 			= 0.0	;увеличение износа при каждом выстреле
+fire_dispersion_condition_factor 	= 5	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+misfire_probability 			= 0.0	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+condition_shot_dec      = 0.00001	; orig 0.0 (GS wpn_rpg7)
 ;-------------------------------------------------------------------------------
-PDM_disp_base           = 1.0
+PDM_disp_base           = 2.0	; orig 1.0 (GS wpn_rpg7)
 PDM_disp_vel_factor     = 1.0
 PDM_disp_accel_factor   = 1.0
 PDM_disp_crouch         = 1.0
@@ -91,18 +92,18 @@ position                = -0.027, -0.113, 0.0
 orientation             = 0, 0, 0
 
 shell_point				= 0.0, 0.0, 0.0
-fire_point              = 0.0, 0.162, 0.35
+fire_point              = 0.0, 0.12, 0.357	; orig 0.0, 0.162, 0.35 (GS wpn_rpg7)
 
-smoke_particles		   	= weapons\generic_weapon02;generic_rpg_shot
+smoke_particles		   	= ghost_particles\weapons\flame_rpg7 ;weapons\generic_weapon02;generic_rpg_shot
 
 ; ttc
 ;---------------------------------------------------------------
-hit_power       		= 3.00
+hit_power               = 1.0, 1.0, 1.0, 1.0	; orig 3.00 (GS wpn_rpg7)
 hit_impulse				= 100
 hit_type 				= explosion
 
 fire_distance           = 400
-bullet_speed			= 100 ;300			;начальная скорость пули
+bullet_speed			= 100 ;300			;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 rpm                     = 200
 
 
@@ -111,7 +112,7 @@ rpm                     = 200
 
 
 ;--STRAP PARAMETERS-----------------------------------------------------------------
-;под мишкой стволом в верх
+;пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ
 strap_position         			= -0.28,-0.20,0.25			; position (offset) and orientation of the weapon when it is strapped
 strap_orientation      			= -15,-189,110				; (3rd person view in degrees)
 strap_bone0				= bip01_spine2
@@ -120,7 +121,7 @@ strap_bone1				= bip01_spine1
 
 fragment_speed	 			= 50
 
-explode_duration		 	= 5		;подолжительность взрыва (с)
+explode_duration		 	= 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 
 light_color		 		= 0.95,0.95,0.3
 light_range		 		= 20.0
@@ -130,21 +131,22 @@ light_time 		 		= 0.75
 
 ph_mass			 		= 1
 
-scope_status				= 1
+; GS base.ltx:167 -- the PGO-7V is a DETACHABLE optic (2 = attachable), not a permanent one
+scope_status				= 2	; orig 1 (GS wpn_rpg7)
 silencer_status				= 0
 grenade_launcher_status			= 0
-scope_texture				= wpn_crosshair_rpg
+scope_texture				= wpn_crosshair_rpg	; iron-sight overlay; the scope brings its own
 
 zoom_enabled				= true
-scope_zoom_factor			= 30		;ПСО-1 2X
+scope_zoom_factor			= 98	; orig 30 -- iron-sight FOV (our standing rule); the mounted PGO-7V overrides it
 
-;звуки
-snd_draw				= weapons\generic_draw
-snd_holster				= weapons\generic_holster
-snd_shoot				= weapons\n_rpg7_shot
+;пїЅпїЅпїЅпїЅпїЅ
+snd_draw				= weapons\rpg7\rpg7_draw
+snd_holster				= weapons\rpg7\rpg7_hide
+snd_shoot				= weapons\rpg7\rpg7_shoot
 snd_empty				= weapons\generic_empty
-snd_reload				= weapons\rpg7_reload
-snd_explode				= weapons\rpg7_explode; t_rpg7_explosion
+snd_reload				= weapons\rpg7\rpg7_reload
+snd_explode				= weapons\grenade\grenade_explosion2
 
 rocket_class				= wpn_rpg7_missile
 wallmark_section			= explosion_marks
@@ -152,50 +154,255 @@ auto_spawn_ammo				= false
 
 
 
+
+; ---- added by the Gunslinger port (wpn_rpg7) ----
+misfire_start_condition = 0.6
+misfire_end_condition   = 0.1
+misfire_start_prob      = 0.0
+misfire_end_prob        = 0.0
+condition_queue_shot_dec= 0.00002
+snd_breechblock         = $silent
+crosshair_inertion      = 10
+repair_group            = rpg7
+scopes_sect             = scope_pgo7v_rpg7
+; scope OFF -> `mount` visible, `mount_off` hidden; scope ON -> the reverse (the scope section shows
+; mount_off + scope1 and its overriding_hide_bones takes `mount` away). These defaults are what makes
+; the OFF state right: our per-scope hide only runs while the optic is attached, so `mount` needs a
+; def_show to come back on detach, and `mount_off`/`scope1`/`metka1` need a def_hide to start off.
+def_show_bones          = mount
+def_hide_bones          = mount_off, scope1, metka1
+; InitAddons reads these from the WEAPON section with fatal r_string/r_s32 as soon as scope_status = 2,
+; even on a multi-scope weapon (the per-scope section only overrides them). Values = GS scopes.ltx.
+scope_name              = wpn_addon_scope_pgo7v	; default/fallback scope item
+scope_x                 = 135	; offset in the inventory icon
+scope_y                 = 11
+; reticle-brightness clicks (GS base.ltx:202-203) -- read from the WEAPON section, not the scope one
+snd_scope_brightness_plus  = weapons\nv_intensity
+snd_scope_brightness_minus = weapons\nv_intensity
+
+; ---- GS backblast + rocket malfunction (heavy/rpg-7/base.ltx:48-66) ----
+; the blast out of the BACK of the tube: 10 pellets at 7 m, plus a reverse wave off anything close behind
+reactive_hit_dist			= 7
+reactive_hit_power			= 0.7
+reactive_hit_impulse		= 200
+reactive_hit_buck			= 10
+reactive_hit_buck_disp		= 0.3
+reactive_hit_type			= 7		; explosion -- orig 8, which is GS's number for it; ours is 7
+reactive_hit_bullet_material = default
+reactive_hit_reverse_k		= 0.5
+reactive_hit_reverse_disp	= 0.1
+reactive_hit_reverse_disp2	= 0.3
+reactive_hit_reverse_buck	= 3
+reactive_hit_reverse_power	= 0.25
+; a worn launcher can set the rocket off in the tube
+rocket_misfunc_start_condition		= 0.5
+rocket_misfunc_end_condition		= 0.1
+rocket_misfunc_start_probability	= 0.1
+rocket_misfunc_end_probability		= 0.9
+
+; world (3rd person) model animations -- GS wpn_rpg7
+use_world_anims=true
+wanm_idle = idle
+wanm_idle_empty = idle_empty
+wanm_shoot = idle_empty
+wanm_shoot_last = idle_empty
+wanm_reload = idle
+wanm_reload_empty = idle
+
 [wpn_rpg7_hud]:hud_base
+; GS huds.ltx:21 `hud_fov_factor = 1.25` is a MULTIPLIER of ITS base hud fov (0.5625); ours is an
+; absolute value and our engine default is 0.45 -- that gap is why the weapon sat closer than in GS,
+; both from the hip and in aim. 1.25 x 0.5625 = 0.703.
+; hud_fov				= 0.703	; orig, removed 2026-08-07 -- GS rpg-7 is a plain hud_fov_factor = 1.25, i.e. our console default. 0.703 held it FARTHER than every other weapon.
+lock_time_anm_idle_aim_start = 0.25
+lock_time_anm_idle_aim_end = 0.3
 attach_place_idx			= 0
 item_visual                   		= dynamics\weapons\wpn_rpg7\wpn_rpg7_hud
-
-fire_point				= -0.020000,0.200500,0.145003
+fire_mode_bone             = pred
+fire_point				= 0.0,0.0,0.066
 fire_bone               = wpn_body
-
-
-hands_position						= 0.020500,-0.206999,0.261999
-hands_orientation					= 3.349998,2.599999,-0.050000
-hands_position_16x9				= 0.020500,-0.165999,0.209500
-hands_orientation_16x9			= 3.649998,1.050001,-0.050000
-
+hands_position          = 0.000000,-0.0080000,-0.11	; orig 0.020500,-0.206999,0.261999 (GS wpn_rpg7)
+hands_orientation       = 0.000000,0.000000,0.0	; orig 3.349998,2.599999,-0.050000 (GS wpn_rpg7)
+hands_position_16x9     = 0.000000,-0.0080000,-0.11	; orig 0.000000,-0.0080000,0.07 (GS wpn_rpg7)
+hands_orientation_16x9			= 0.000000,0.000000,0.0
 item_position						= 0,0,0
 item_orientation					= 0,0,0
-
-aim_hud_offset_pos				= -0.102000,0.019500,-0.148000
-aim_hud_offset_rot				= 0.010000,0.002500,-0.010000
-
-aim_hud_offset_pos_16x9     	= -0.05000,-0.022500,-0.130500
-aim_hud_offset_rot_16x9     	= 0.012500,-0.012500,-0.010000
-
+aim_hud_offset_pos      = -0.0658000,-0.00240000,0.0	; orig -0.102000,0.019500,-0.148000 (GS wpn_rpg7)
+aim_hud_offset_rot      = -0.00560000,0.000000,0.0	; orig 0.010000,0.002500,-0.010000 (GS wpn_rpg7)
+aim_hud_offset_pos_16x9 = -0.0658000,-0.00240000,0.0	; orig -0.05000,-0.022500,-0.130500 (GS wpn_rpg7)
+aim_hud_offset_rot_16x9 = -0.00560000,0.000000,0.0	; orig 0.012500,-0.012500,-0.010000 (GS wpn_rpg7)
 gl_hud_offset_pos					= 0,0,0
 gl_hud_offset_rot					= 0,0,0
-
 lean_hud_offset_pos				= 0,0,0
 lean_hud_offset_rot				= 0,0,0
 
-anm_show								= rpg7_draw
-anm_hide								= rpg7_holster
-anm_reload							= rpg7_reload
-anm_shots							= rpg7_shoot
-anm_idle								= rpg7_idle
-anm_idle_aim						= rpg7_idle_aim
-anm_idle_moving					= rpg7_idle_moving
-anm_bore								= rpg7_idle_bore
+; ==================== SEMI-AUTO / BASE ANIMATION SET (from Gunslinger) ====================
+
+; ---- show / draw ----
+anm_show = rpg7_draw
+anm_show_empty = rpg7_draw, idle_empty
+
+; ---- hide / holster ----
+anm_hide = rpg7_hide
+anm_hide_empty = rpg7_hide, idle_empty
+
+; ---- bore ----
+anm_bore = rpg7_bore
+anm_bore_empty = rpg7_bore, idle_empty
+
+; ---- sprint (enter / loop / exit) ----
+anm_idle_sprint_start = rpg7_sprint_start
+anm_idle_sprint_start_empty = rpg7_sprint_start, idle_empty
+anm_idle_sprint = rpg7_sprint
+anm_idle_sprint_empty = rpg7_sprint, idle_empty
+anm_idle_sprint_end = rpg7_sprint_end
+anm_idle_sprint_end_empty = rpg7_sprint_end, idle_empty
+
+; ---- aim walk (directional) ----
+anm_idle_aim_moving_forward = rpg7_aim_walk
+anm_idle_aim_moving_forward_empty = rpg7_aim_walk, idle_empty
+anm_idle_aim_moving_back = rpg7_aim_walk
+anm_idle_aim_moving_back_empty = rpg7_aim_walk, idle_empty
+anm_idle_aim_moving_left = rpg7_aim_walk_left
+anm_idle_aim_moving_left_empty = rpg7_aim_walk_left , idle_empty
+anm_idle_aim_moving_right = rpg7_aim_walk_right
+anm_idle_aim_moving_right_empty = rpg7_aim_walk_right , idle_empty
+anm_idle_aim_moving_forward_left = rpg7_aim_walk_left
+anm_idle_aim_moving_forward_left_empty = rpg7_aim_walk_left, idle_empty
+anm_idle_aim_moving_forward_right = rpg7_aim_walk_right
+anm_idle_aim_moving_forward_right_empty = rpg7_aim_walk_right, idle_empty
+anm_idle_aim_moving_back_left = rpg7_aim_walk_left
+anm_idle_aim_moving_back_left_empty = rpg7_aim_walk_left, idle_empty
+anm_idle_aim_moving_back_right = rpg7_aim_walk_right
+anm_idle_aim_moving_back_right_empty = rpg7_aim_walk_right, idle_empty
+anm_idle_aim_scope_moving = rpg7_aim_walk_scope, ak74_aim
+anm_idle_aim_scope_moving_empty = rpg7_aim_walk_scope, ak74_aim
+anm_idle_aim_scope_moving_jammed = rpg7_aim_walk_scope, ak74_aim_jammed
+
+; ---- aim idle (in / out / hold) ----
+anm_idle_aim_start = rpg7_aim_start
+anm_idle_aim_start_empty = rpg7_aim_start, idle_empty
+anm_idle_aim = rpg7_aim
+anm_idle_aim_empty = rpg7_aim, idle_empty
+anm_idle_aim_scope = rpg7_aim
+anm_idle_aim_scope_empty = rpg7_aim, idle_empty
+anm_idle_aim_end = rpg7_aim_end
+anm_idle_aim_end_empty = rpg7_aim_end, idle_empty
+
+; ---- walk (fwd / slow / crouch) ----
+anm_idle_moving = rpg7_walk
+anm_idle_moving_empty = rpg7_walk, idle_empty
+anm_idle_moving_slow = rpg7_walk_slow
+anm_idle_moving_slow_empty = rpg7_walk_slow, idle_empty
+anm_idle_moving_crouch = rpg7_walk_slow_down
+anm_idle_moving_crouch_empty = rpg7_walk_slow_down, idle_empty
+anm_idle_moving_crouch_slow = rpg7_walk_slow_super
+anm_idle_moving_crouch_slow_empty = rpg7_walk_slow_super, idle_empty
+
+; ---- idle ----
+anm_idle = rpg7_idle
+anm_idle_slow = rpg7_idle
+anm_idle_crouch = rpg7_idle
+anm_idle_crouch_slow = rpg7_idle
+anm_idle_empty = rpg7_idle, idle_empty
+anm_idle_slow_empty = rpg7_idle, idle_empty
+anm_idle_crouch_empty = rpg7_idle, idle_empty
+anm_idle_crouch_slow_empty = rpg7_idle, idle_empty
+
+; ---- shots ----
+anm_shoot = rpg7_shoot, idle_empty
+anm_shoot_last = rpg7_shoot, idle_empty
+anm_shoot_aim = rpg7_aim_shoot, idle_empty
+anm_shoot_aim_last = rpg7_aim_shoot, idle_empty
+anm_shoot_aim_scope = rpg7_aim_shoot_scope, idle_empty
+anm_shoot_aim_scope_last = rpg7_aim_shoot_scope, idle_empty
+
+; ---- dry fire ----
+anm_fakeshoot_empty = rpg7_dry, idle_empty
+anm_fakeshoot_aim_empty = rpg7_aim_dry, idle_empty
+anm_fakeshoot = rpg7_dry	; (kept: not in GS set)
+anm_fakeshoot_aim = rpg7_aim_dry	; (kept: not in GS set)
+
+; ---- reload ----
+anm_reload = rpg7_reload
+anm_reload_empty = rpg7_reload
+
+; ---- change cartridge type ----
+anm_changecartridgetype = rpg7_reload
+
+; ---- unload magazine ----
+anm_unload_mag = rpg7_draw, idle_empty
+anm_unload_mag_empty = rpg7_draw, idle_empty
+
+; ---- headlamp on / off ----
+anm_headlamp_on = rpg7_headflash
+anm_headlamp_on_empty = rpg7_headflash, idle_empty
+anm_headlamp_off = rpg7_headflash
+anm_headlamp_off_empty = rpg7_headflash, idle_empty
+
+; ---- night vision on / off ----
+anm_nv_on = rpg7_headflash
+anm_nv_on_empty = rpg7_headflash, idle_empty
+anm_nv_off = rpg7_headflash
+anm_nv_off_empty = rpg7_headflash, idle_empty
+
+; ==================== AUTO-FIRE MODE ANIMATION SET (mask_firemode_a = _auto) ====================
+
+
+
+; ---- GS hud behaviour keys the value step does not carry (huds.ltx of wpn_rpg7) ----
+prohibit_suicide                         = false
+hud_move_suicide_offset_pos              = 0, 0, 0.2
+hud_move_suicide_offset_rot              = 10, -50, 0
+hud_move_suicide_offset_pos_16x9         = 0, 0, 0.2
+hud_move_suicide_offset_rot_16x9         = 10, -50, 0
+suicide_delay                            = 1
+zoom_dof_near                            = 0.25
+zoom_dof_focus                           = 0.5
+inertion_pitch_offset_r                  = 0.0
+inertion_pitch_offset_n                  = 0.0
+inertion_pitch_offset_d                  = 0.0
+inertion_origin_offset                   = -0.03	; GS raw 0.03 (axis mirrored)
+inertion_aim_origin_offset               = -0.015	; GS raw 0.015 (axis mirrored)
+disable_bore                             = false
+autoshoot_anm_idle_aim_start             = true
+autoshoot_anm_idle_aim_start_empty       = true
+lock_time_anm_idle_aim_start_empty       = 0.25
+autoshoot_anm_idle_aim_end               = true
+autoshoot_anm_idle_aim_end_empty         = true
+lock_time_anm_idle_aim_end_empty         = 0.3
+enable_directions_anm_idle_aim           = true
+lock_time_anm_idle_sprint_start          = 0.15
+lock_time_anm_idle_sprint_start_empty    = 0.15
+lock_time_anm_idle_sprint_end            = 0.4
+lock_time_anm_idle_sprint_end_empty      = 0.4
+lock_time_anm_fakeshoot_empty            = 0.20
+lock_time_anm_fakeshoot_aim_empty        = 0.20
+lock_time_anm_fakeshoot_jammed           = 1.0
+use_unloadmag_anim                       = true
+lock_time_anm_unload_mag                 = 0.8
+lock_time_anm_unload_mag_empty           = 0.8
+lock_time_start_anm_headlamp_on          = 0.58
+lock_time_end_anm_headlamp_on            = 0.5
+lock_time_start_anm_headlamp_on_empty    = 0.58
+lock_time_end_anm_headlamp_on_empty      = 0.5
+lock_time_start_anm_headlamp_off         = 0.58
+lock_time_end_anm_headlamp_off           = 0.5
+lock_time_start_anm_headlamp_off_empty   = 0.58
+lock_time_end_anm_headlamp_off_empty     = 0.5
 
 [wpn_rpg7_missile]:identity_immunities,default_weapon_params,weapon_probability
+; GS ammo/fake_missiles.ltx: the rocket plays its own `idle` motion in flight (fins/spin)
+script_binding = gwr_worldweapon_binder.init_rpg_rocket
 GroupControlSection			= spawn_group
 discovery_dependency 			=
-visual                  		= dynamics\weapons\wpn_rpg7\wpn_rpg7_grenade.ogf
+visual                  		= dynamics\weapons\wpn_rpg7\wpn_rpg7_missile.ogf	; orig ..._grenade.ogf (GS fake_missiles.ltx)
 cform                    		= skeleton
 class                    		= G_RPG7
 $prefetch 		 		= 32
+; in-flight sound (GS base.ltx:187). CCustomRocket::Load reads it from the ROCKET's section, not the
+; weapon's. The ogg is not in gamedata\sounds -- it ships inside the packed .db, so it resolves fine.
+snd_fly_sound				= weapons\rocket_fly
 
 inv_weight				= 0
 kill_msg_x				= 0
@@ -205,12 +412,12 @@ kill_msg_height				= 19
 
 cost					= 200
 ;---------------------------------------------------------------
-blast					= 5.00
+blast					= 8.00	; orig 5.00 (GS fake_missiles.ltx)
 blast_r					= 10;15
 blast_impulse				= 350
 blast_impulse_factor 			= 1
 
-frags					= 8
+frags					= 17	; orig 8 (GS fake_missiles.ltx)
 frags_r					= 25
 frag_hit				= 1.50
 frag_hit_impulse			= 275
@@ -225,51 +432,50 @@ wm_size                  		= 0.1
 wallmark_section			= explosion_marks
 
 light_color		         	= 1.9,1.4,0.5
-light_range		         	= 24.0
-light_time 		         	= 1.28
-
-ph_mass			 			= 5
-
+light_range		         	= 0.01	; orig 24.0 (GS fake_missiles.ltx)
+light_time 		         	= 0.01	; orig 1.28 (GS fake_missiles.ltx)
+ph_mass			 			= 0	; orig 5 (GS fake_missiles.ltx)
 jump_height 				= 0
 
-explode_particles			= explosions\explosion_04
+;explode_particles			= explosions\explosion_04
+explode_particles		 = ghost_particles\explosions\explosion_ground_00
 
 
-;трассы от осколков
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 fragment_speed	     		= 100
 
-explode_duration		 	= 5		;подолжительность взрыва (с)
+explode_duration		 	= 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ)
 
 
-;звуки
-snd_explode 				= weapons\rpg7_explode
+;пїЅпїЅпїЅпїЅпїЅ
+snd_explode 				= weapons\grenade\grenade_explosion2
 snd_fly_sound				= weapons\rocket_fly
 
-;свойства которые читаются, но не используются (надо убрать)
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
 inv_name					= "Og-7b"
 inv_name_short				= "Og-7b"
 inv_weight					= .2
 
-inv_grid_width				= 4
-inv_grid_height				= 1
-inv_grid_x					= 15
-inv_grid_y					= 5
+inv_grid_width     = 5
+inv_grid_height    = 1
+inv_grid_x         = 6
+inv_grid_y         = 0
 
 kill_msg_x			= 0
 kill_msg_y			= 85
 kill_msg_width		= 73
 kill_msg_height		= 19
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Свойства CustomRocket
+;; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ CustomRocket
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-engine_present				= true		;присутствует ли в ракете двигатель
-engine_work_time			= 3000		;время работы двигателя (в милисекундах)
+engine_present				= true		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+engine_work_time			= 3000		;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 engine_impulse				= 300
-engine_impulse_up			= 133,906	;137.34 ;137.34 = 2*9.81*7 - значение этого параметра (который является некой подъемной силой, вопреки названию),
-										;при котором ракета массой 7кг не опускается под дейсвием
-										;гравитации. 2*9.81=19.62 - ускорение свободного падения в мире сталкеров
-										;при меньших значениях ракета будет опускаться, при больших подниматься
-lights_enabled 				= true		;свет вокруг ракеты, во время полета
+engine_impulse_up			= 134.34	; orig 133,906 (GS fake_missiles.ltx)
+										;пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ 7пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+										;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ. 2*9.81=19.62 - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+										;пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+lights_enabled 				= true		;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 trail_light_color 			= 0.6,0.5,0.3
 trail_light_range 			= 15.0
 

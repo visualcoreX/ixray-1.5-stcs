@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_sig552_up_buffer_name">
+     <text>Полимерный буфер</text>
+</string>
+<string id="gunsl_sig552_up_buffer_descr">
+     <text>Внедрение в возвратный механизм дополнительного полимерного буфера снижает ощущаемую стрелком отдачу.</text>
+</string>
+<string id="gunsl_sig552_up_barrel_accuracy_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_sig552_up_barrel_accuracy_descr">
+     <text>Позволяет снизить разброс пуль, что благоприятным образом сказывается на точности ведения огня.</text>
+</string>
+<string id="gunsl_sig552_up_barrel_speed_name">
+     <text>Изменение шага нарезки ствола</text>
+</string>
+<string id="gunsl_sig552_up_barrel_speed_descr">
+     <text>Увеличивает начальную скорость пули, благодаря чему пуля меньше отклоняется от ожидаемой траектории и быстрее достигает цели. Полезно для стрельбы на большие дистанции.</text>
+</string>
+<string id="gunsl_sig552_up_body_reliability_name">
+     <text>Защитное покрытие</text>
+</string>
+<string id="gunsl_sig552_up_body_reliability_descr">
+     <text>Нанесение специального напыления на внутренние детали позволяет замедлить износ оружия.</text>
+</string>
+<string id="gunsl_sig552_up_usm_recoil_name">
+     <text>Калибровка УСМ</text>
+</string>
+<string id="gunsl_sig552_up_usm_recoil_descr">
+     <text>Индивидуальная подгонка и балансировка стандартных деталей ударно-спускового механизма позволяет добиться более высокой точности стрельбы при одновременном уменьшении отдачи.</text>
+</string>
+<string id="gunsl_sig552_up_flashlaser_name">
+     <text>Тактический модуль</text>
+</string>
+<string id="gunsl_sig552_up_flashlaser_descr">
+     <text>Тактический блок Insight AN/PEQ-16a сочетает в себе функции лазерного целеуказателя и тактического фонаря. Незаменимая вещь для ведения боя в ночных условиях.</text>
+</string>
+<string id="gunsl_sig552_up_handle_name">
+     <text>Анатомическая рукоять</text>
+</string>
+<string id="gunsl_sig552_up_handle_descr">
+     <text>Обеспечивает правой руке более удобный хват.</text>
+</string>
+<string id="gunsl_sig552_up_korobka_name">
+     <text>Легкосплавные детали</text>
+</string>
+<string id="gunsl_sig552_up_korobka_descr">
+     <text>Замена стандартных деталей на аналоги из легких сплавов позволяет снизить массу оружия без существенного вреда для его остальных тактико-технических характеристик.</text>
+</string>
+<string id="gunsl_sig552_up_mag_custom_prujina_name">
+     <text>Замена пружины</text>
+</string>
+<string id="gunsl_sig552_up_mag_custom_prujina_descr">
+     <text>Замена стандартной пружины в магазине на аналогичную по жесткости, но со значительно меньшим сечением, позволяет немного увеличить количество вмещаемых магазином патронов.</text>
+</string>
+<string id="gunsl_sig552_up_mag_lock_name">
+     <text>Доработка узла подачи патронов</text>
+</string>
+<string id="gunsl_sig552_up_mag_lock_descr">
+     <text>Доработка узла боепитания позволяет снизить количество задержек, связанных с неподачей и перекосом патрона.</text>
+</string>
+<string id="gunsl_sig552_up_shell_ejector_name">
+     <text>Улучшенная отсечка</text>
+</string>
+<string id="gunsl_sig552_up_shell_ejector_descr">
+     <text>Модификация системы выброса гильз снижает вероятность возникновения при стрельбе задержек, связанных с прихватом гильзы после выстрела.</text>
+</string>
+<string id="gunsl_sig552_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_sig552_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_sig552_up_tactic_handle_name">
+     <text>Тактическая рукоять</text>
+</string>
+<string id="gunsl_sig552_up_tactic_handle_descr">
+     <text>Оснащение цевья оружия планками Piccatiny и установка на одну из них тактической рукояти повышает удобство ведения огня из оружия, а также позволяет установить на оружие дополнительные тактические модули.</text>
+</string>
+<string id="gunsl_sig552_up_usm_rpm_up_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_sig552_up_usm_rpm_up_descr">
+     <text>Доработка узлов ударно-спускового механизма позволяет повысить скорострельность оружия, к сожалению, ценой некоторого снижения надежности.</text>
+</string>
+<string id="gunsl_sig552_up_light_grip_name">
+     <text>Облегченное цевьё</text>
+</string>
+<string id="gunsl_sig552_up_light_grip_descr">
+     <text>Позволяет снизить массу оружия.</text>
+</string>
+<string id="gunsl_sig552_up_zatvor_balancer_name">
+     <text>Балансировка затвора</text>
+</string>
+<string id="gunsl_sig552_up_zatvor_balancer_descr">
+     <text>Балансировка деталей затворной группы уменьшает увод ствола с линии прицеливания при выстреле, а также снижает вероятность возникновения задержек при стрельбе.</text>
+</string>
+<string id="gunsl_sig552_up_patronnik_name">
+     <text>Юстировка патронника</text>
+</string>
+<string id="gunsl_sig552_up_patronnik_descr">
+     <text>Позволяет улучшить обтюрацию и добиться более высокой точности стрельбы.</text>
+</string>
+<string id="gunsl_sig552_up_light_stock_name">
+     <text>Облегченный приклад</text>
+</string>
+<string id="gunsl_sig552_up_light_stock_descr">
+     <text>Позволяет снизить массу оружия.</text>
+</string>
+<string id="gunsl_sig552_up_stock_name">
+     <text>Улучшенный тыльник</text>
+</string>
+<string id="gunsl_sig552_up_stock_descr">
+     <text>Установка анатомического прорезиненного тыльника снижает ощущаемую стрелком отдачу от выстрелов из оружия.</text>
+</string>
+<string id="gunsl_sig552_up_zatvor_accuracy_name">
+     <text>Юстировка затворного механизма</text>
+</string>
+<string id="gunsl_sig552_up_zatvor_accuracy_descr">
+     <text>Точная подгонка элементов затворного механизма уменьшает люфты и позволяет достичь более высокой точности стрельбы.</text>
+</string>
+<string id="gunsl_sig552_up_rpm_speed_down_name">
+     <text>Замедлитель темпа стрельбы</text>
+</string>
+<string id="gunsl_sig552_up_rpm_speed_down_descr">
+     <text>Позволяет сделать стрельбу более стабильной благодаря уменьшению разброса пуль, способствует более экономному расходу боеприпасов. Также снижает нагрев ствола, что благоприятным образом сказывается на ресурсе оружия.</text>
+</string>
+</string_table>

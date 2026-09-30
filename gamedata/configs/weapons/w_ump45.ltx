@@ -1,0 +1,773 @@
+; ============================================================================
+; HK UMP45 -- Gunslinger port (GS smg\mp5\uniq.ltx). Own world/hud models (wpn_ump45),
+; hud anims come from the shared mp5 omfs. .45 ACP, semi only, its own 16-node tree
+; (upgrades\w_ump45_up.ltx) incl. a screw-on silencer node.
+; wpn_mp5_nimble = the same gun as a unique (star overlay on the inventory icon).
+; Torch geometry is inherited from wpn_mp5 ([mp5_flashlight]); the laser uses its own
+; [ump45_laser] (same bones, different dot offsets).
+; ============================================================================
+[wpn_ump45]:wpn_mp5
+bullet_material				= objects\bullet_automatic	; wallmark/impact/ricochet pair on hit
+$spawn                  = "weapons\wpn_mp5_nimble"		; option for Level Editor
+inv_name		= gunsl_wpn_ump45
+description		= gunsl_wpn_ump45_descr
+
+cost                    = 5500
+
+hit_power		= 0.85, 0.85, 0.85, 0.85
+inv_weight        = 2.45
+fire_dispersion_base    = 0.26
+rpm                     = 600
+
+ammo_elapsed      = 26
+ammo_mag_size     = 26          
+
+ammo_class		= ammo_11.43x23_fmj, ammo_11.43x23_hydro
+fire_modes		= 1, -1
+
+flame_particles		   		= ghost_particles\weapons\smoke_9mm_pistol
+smoke_particles		   		= ghost_particles\weapons\smoke_9mm_stock_smg
+silencer_smoke_particles 	= ghost_particles\weapons\suppressor_smoke_pistol_common
+
+upgrades = vartree_ump45_mag_fix, vartree_ump45_zatvor, vartree_ump45_rail, vartree_ump45_handle, vartree_ump45_sights, vartree_ump45_stock, vartree_ump45_sil
+installed_upgrades = 
+upgrade_scheme = upgrade_scheme_ump45
+allowed_upgrades = up_ump45_
+
+inv_grid_width    = 4
+inv_grid_height   = 2
+; raw rect = the shared EMPTY slot; the gun itself is drawn by element_icon_0 below, so the
+; upgrade overlays (rail / handle / torch) and the unique star can compose on top of it.
+inv_grid_x        = 21	; orig 6 (GS)
+inv_grid_y        = 0	; orig 39 (GS)
+
+element_icon_0 = icon_element_ump45_body	; GS art at 6,39
+element_icon_offset_x_0 = 0
+element_icon_offset_y_0 = 0
+; clear the mp5 part layers inherited from the parent section
+element_icon_1 =
+element_icon_2 =
+element_icon_3 =
+
+upgr_icon_x		= 1684
+upgr_icon_y		= 121
+upgr_icon_width		= 233
+upgr_icon_height   	= 128
+
+visual                  = dynamics\weapons\wpn_ump45\wpn_ump45.ogf
+
+snd_shoot		= weapons\ump45\ump45_shoot, -1.1
+snd_reload		= weapons\ump45\ump45_reload
+snd_reload_empty        = weapons\ump45\ump45_reload_empty
+snd_changecartridgetype = weapons\ump45\ump45_reload
+
+hud                     = wpn_ump45_hud
+
+; own laser params (the UMP's LAM sits differently than the mp5's): [ump45_laser] below inherits
+; [mp5_laser] and overrides only the dot offsets. Without THIS line the weapon keeps mp5_laser,
+; because laser_params_section is inherited from wpn_mp5.
+laser_params_section    = ump45_laser
+
+wanm_idle_empty = idle_empty
+wanm_idle_empty_a = idle_empty_auto
+
+wanm_shoot_last = shoot_last
+wanm_shoot_last_a = shoot_last_auto
+
+[wpn_ump45_hud_general]
+
+fire_point		   = 0,-0.016,0.359
+fire_point2		   = 0,-0.016,0.526
+
+item_position				        = 0.0,0.0045,-0.003
+
+aim_hud_offset_pos      = 0.000000,-0.003700,-0.04
+aim_hud_offset_rot      = -0.01200,0.000000,0.000000
+
+aim_hud_offset_pos_16x9 = 0.000000,-0.003700,-0.04
+aim_hud_offset_rot_16x9 = -0.01200,0.000000,0.000000
+
+item_visual             = dynamics\weapons\wpn_ump45\wpn_ump45_hud.ogf
+
+[wpn_ump45_hud]:wpn_mp5_hud, wpn_ump45_hud_general
+
+anm_show                   = mp5_draw, ump_idle
+anm_show_empty             = mp5_draw, ump_idle_empty
+anm_show_jammed            = mp5_draw, ump_idle_jammed
+
+anm_hide                   = mp5_hide, ump_idle
+anm_hide_empty             = mp5_hide, ump_idle_empty
+anm_hide_jammed            = mp5_hide, ump_idle_jammed
+
+anm_idle                            = mp5_idle, ump_idle
+anm_idle_empty                      = mp5_idle, ump_idle_empty
+anm_idle_jammed                     = mp5_idle, ump_idle_jammed
+anm_idle_slow                       = mp5_idle, ump_idle
+anm_idle_slow_empty                 = mp5_idle, ump_idle_empty
+anm_idle_slow_jammed                = mp5_idle, ump_idle_jammed
+anm_idle_crouch                     = mp5_idle, ump_idle
+anm_idle_crouch_empty               = mp5_idle, ump_idle_empty
+anm_idle_crouch_jammed              = mp5_idle, ump_idle_jammed
+anm_idle_crouch_slow                = mp5_idle, ump_idle
+anm_idle_crouch_slow_empty          = mp5_idle, ump_idle_empty
+anm_idle_crouch_slow_jammed         = mp5_idle, ump_idle_jammed
+
+anm_idle_aim_start             = mp5_aim_start, ump_aim_start
+anm_idle_aim_start_empty       = mp5_aim_start, ump_aim_start_empty
+anm_idle_aim_start_jammed      = mp5_aim_start, ump_aim_start_jammed
+
+;anm_idle_aim_empty             = mp5_aim
+anm_idle_aim_empty             = mp5_aim, ump_aim_empty
+anm_idle_aim_jammed            = mp5_aim, ump_aim_jammed
+;anm_idle_aim_scope             = mp5_aim
+anm_idle_aim_scope_empty       = mp5_aim, ump_aim_empty
+anm_idle_aim_scope_jammed      = mp5_aim, ump_aim_jammed
+
+anm_idle_aim_end               = mp5_aim_end, ump_aim_end
+anm_idle_aim_end_empty         = mp5_aim_end, ump_aim_end_empty
+anm_idle_aim_end_jammed        = mp5_aim_end, ump_aim_end_jammed
+
+anm_idle_moving 					= mp5_walk, ump_idle
+anm_idle_moving_jammed 					= mp5_walk, ump_idle_jammed
+anm_idle_moving_empty					= mp5_walk, ump_idle_empty
+
+anm_idle_moving_slow 					= mp5_walk_slow, ump_idle
+anm_idle_moving_slow_jammed 				= mp5_walk_slow, ump_idle_jammed
+anm_idle_moving_slow_empty				= mp5_walk_slow, ump_idle_empty
+
+anm_idle_moving_crouch 					= mp5_walk_slow_down, ump_idle
+anm_idle_moving_crouch_jammed 				= mp5_walk_slow_down, ump_idle_jammed
+anm_idle_moving_crouch_empty				= mp5_walk_slow_down, ump_idle_empty
+
+anm_idle_moving_crouch_slow 				= mp5_walk_slow_super, ump_idle
+anm_idle_moving_crouch_slow_jammed 			= mp5_walk_slow_super, ump_idle_jammed
+anm_idle_moving_crouch_slow_empty			= mp5_walk_slow_super, ump_idle_empty
+
+;anm_idle_aim_moving_forward                             = mp5_aim_walk, mp5_aim
+anm_idle_aim_moving_forward_empty                       = mp5_aim_walk, ump_aim_empty
+anm_idle_aim_moving_forward_jammed                      = mp5_aim_walk, ump_aim_jammed
+
+;anm_idle_aim_moving_back                                = mp5_aim_walk, mp5_aim
+anm_idle_aim_moving_back_empty                          = mp5_aim_walk, ump_aim_empty
+anm_idle_aim_moving_back_jammed                         = mp5_aim_walk, ump_aim_jammed
+
+;anm_idle_aim_moving_left                                = mp5_aim_walk_left, mp5_aim
+anm_idle_aim_moving_left_empty                          = mp5_aim_walk_left, ump_aim_empty
+anm_idle_aim_moving_left_jammed                         = mp5_aim_walk_left, ump_aim_jammed
+
+;nm_idle_aim_moving_right                               = mp5_aim_walk_right, mp5_aim
+anm_idle_aim_moving_right_empty                         = mp5_aim_walk_right, ump_aim_empty
+anm_idle_aim_moving_right_jammed                        = mp5_aim_walk_right, ump_aim_jammed
+
+;anm_idle_aim_moving_forward_left                        = mp5_aim_walk, mp5_aim
+anm_idle_aim_moving_forward_left_empty                  = mp5_aim_walk, ump_aim_empty
+anm_idle_aim_moving_forward_left_jammed                 = mp5_aim_walk, ump_aim_jammed
+
+;anm_idle_aim_moving_forward_right                       = mp5_aim_walk, mp5_aim
+anm_idle_aim_moving_forward_right_empty                 = mp5_aim_walk, ump_aim_empty
+anm_idle_aim_moving_forward_right_jammed                = mp5_aim_walk, ump_aim_jammed
+
+;anm_idle_aim_moving_back_left                           = mp5_aim_walk, mp5_aim
+anm_idle_aim_moving_back_left_empty                     = mp5_aim_walk, ump_aim_empty
+anm_idle_aim_moving_back_left_jammed                    = mp5_aim_walk, ump_aim_jammed
+
+;anm_idle_aim_moving_back_right                          = mp5_aim_walk, mp5_aim
+anm_idle_aim_moving_back_right_empty                    = mp5_aim_walk, ump_aim_empty
+anm_idle_aim_moving_back_right_jammed                   = mp5_aim_walk, ump_aim_jammed
+
+;anm_idle_aim_scope_moving	                        = mp5_aim_walk_scope, mp5_aim
+anm_idle_aim_scope_moving_empty		                = mp5_aim_walk_scope, ump_aim_empty
+anm_idle_aim_scope_moving_jammed	                = mp5_aim_walk_scope, ump_aim_jammed
+
+anm_idle_sprint_start             = mp5_sprint_start, ump_idle
+anm_idle_sprint_start_empty       = mp5_sprint_start, ump_idle_empty
+anm_idle_sprint_start_jammed      = mp5_sprint_start, ump_idle_jammed
+
+anm_idle_sprint                   = mp5_sprint, ump_idle
+anm_idle_sprint_empty             = mp5_sprint, ump_idle_empty
+anm_idle_sprint_jammed            = mp5_sprint, ump_idle_jammed
+
+anm_idle_sprint_end              = mp5_sprint_end, ump_idle
+anm_idle_sprint_end_empty        = mp5_sprint_end, ump_idle_empty
+anm_idle_sprint_end_jammed       = mp5_sprint_end, ump_idle_jammed
+
+anm_bore                   = mp5_draw, ump_idle
+anm_bore_empty             = mp5_draw, ump_idle_empty
+anm_bore_jammed            = mp5_draw, ump_idle_jammed
+
+anm_shoot                      = ump_shoot
+anm_shoot_sil                  = ump_shoot
+anm_shoot_jammed	       = ump_shoot, ump_idle_jammed
+anm_shoot_jammed_sil	       = ump_shoot, ump_idle_jammed
+anm_shoot_last                 = ump_shoot, ump_shoot_last
+anm_shoot_last_sil             = ump_shoot, ump_shoot_last
+;anm_shoot_aim                  = mp5_aim_shoot
+;anm_shoot_aim_sil              = mp5_aim_shoot
+anm_shoot_aim_jammed	       = mp5_aim_shoot, ump_aim_jammed
+anm_shoot_aim_jammed_sil       = mp5_aim_shoot, ump_aim_jammed
+;anm_shoot_aim_last             = mp5_aim_shoot
+;anm_shoot_aim_last_sil         = mp5_aim_shoot
+;anm_shoot_aim_scope            = mp5_aim_shoot_scope, mp5_aim_shoot
+;anm_shoot_aim_scope_sil        = mp5_aim_shoot_scope, mp5_aim_shoot
+;anm_shoot_aim_scope_last       = mp5_aim_shoot_scope, mp5_aim_shoot
+;anm_shoot_aim_scope_last_sil   = mp5_aim_shoot_scope, mp5_aim_shoot
+anm_shoot_aim_scope_jammed     = mp5_aim_shoot_scope, ump_aim_jammed
+anm_shoot_aim_scope_jammed_sil = mp5_aim_shoot_scope, ump_aim_jammed
+
+anm_fakeshoot_empty                = mp5_dry_empty, ump_idle_empty
+;anm_fakeshoot_aim_empty            = mp5_aim_dry, ump_aim_empty
+anm_fakeshoot_jammed               = mp5_dry, ump_idle_jammed
+anm_fakeshoot_aim_jammed           = mp5_aim_dry, ump_aim_jammed
+
+anm_reload                           = ump_reload
+anm_reload_empty                     = ump_reload_empty
+anm_reload_jammed                    = mp5_revival, ump_revival
+anm_reload_jammed_last               = mp5_revival, ump_revival_last
+anm_reload_ammochange                = ump_reload
+
+;a-1
+lock_time_anm_changefiremode_from_a_to_1 = 1.17
+lock_time_anm_changefiremode_from_a_to_1_jammed = 1.17
+lock_time_anm_changefiremode_from_a_to_1_empty = 1.17
+anm_changefiremode_from_a_to_1			             = mp5_firemode_a_to_1, ump_firemode_a_to_1
+anm_changefiremode_from_a_to_1_jammed		             = mp5_firemode_a_to_1, ump_firemode_a_to_1
+anm_changefiremode_from_a_to_1_empty		             = mp5_firemode_a_to_1, ump_firemode_a_to_1_empty
+
+;1-a
+anm_changefiremode_from_1_to_a			             = mp5_firemode_1_to_a, ump_firemode_1_to_a
+anm_changefiremode_from_1_to_a_jammed		             = mp5_firemode_1_to_a, ump_firemode_1_to_a
+anm_changefiremode_from_1_to_a_empty		             = mp5_firemode_1_to_a, ump_firemode_1_to_a_empty
+
+anm_unload_mag                               = mp5_draw, ump_idle_empty
+anm_unload_mag_jammed                        = mp5_draw, ump_idle_jammed  
+anm_unload_mag_empty                         = mp5_draw, ump_idle_empty
+
+anm_headlamp_on                             = mp5_headflash, ump_idle
+anm_headlamp_on_empty                       = mp5_headflash, ump_idle_empty
+anm_headlamp_on_jammed                      = mp5_headflash, ump_idle_jammed
+
+anm_headlamp_off                            = mp5_headflash, ump_idle
+anm_headlamp_off_empty                      = mp5_headflash, ump_idle_empty
+anm_headlamp_off_jammed                     = mp5_headflash, ump_idle_jammed
+
+anm_nv_on                                   = mp5_headflash, ump_idle
+anm_nv_on_empty                             = mp5_headflash, ump_idle_empty
+anm_nv_on_jammed                            = mp5_headflash, ump_idle_jammed
+
+anm_nv_off                                  = mp5_headflash, ump_idle
+anm_nv_off_empty                            = mp5_headflash, ump_idle_empty
+anm_nv_off_jammed                           = mp5_headflash, ump_idle_jammed
+
+
+anm_show_auto_empty             = mp5_draw, ump_idle_empty_auto
+anm_show_auto_jammed            = mp5_draw, ump_idle_jammed_auto
+
+anm_hide_auto_empty             = mp5_hide, ump_idle_empty_auto
+anm_hide_auto_jammed            = mp5_hide, ump_idle_jammed_auto
+
+anm_idle_auto_empty                      = mp5_idle, ump_idle_empty_auto
+anm_idle_auto_jammed                     = mp5_idle, ump_idle_jammed_auto
+anm_idle_slow_auto_empty                 = mp5_idle, ump_idle_empty_auto
+anm_idle_crouch_auto_empty               = mp5_idle, ump_idle_empty_auto
+anm_idle_crouch_slow_auto_empty          = mp5_idle, ump_idle_empty_auto
+anm_idle_slow_auto_jammed                = mp5_idle, ump_idle_jammed_auto
+anm_idle_crouch_auto_jammed              = mp5_idle, ump_idle_jammed_auto
+anm_idle_crouch_slow_auto_jammed         = mp5_idle, ump_idle_jammed_auto
+
+
+anm_idle_aim_start_auto_empty       = mp5_aim_start, ump_aim_start_empty_auto
+anm_idle_aim_start_auto_jammed      = mp5_aim_start, mp5_aim_start_jammed_auto
+
+anm_idle_aim_auto_empty             = mp5_aim, ump_aim_empty_auto
+anm_idle_aim_auto_jammed            = mp5_aim, ump_aim_jammed_auto
+anm_idle_aim_scope_auto_empty       = mp5_aim, ump_aim_empty_auto
+anm_idle_aim_scope_auto_jammed      = mp5_aim, ump_aim_jammed_auto
+
+anm_idle_aim_end_auto_empty         = mp5_aim_end, ump_aim_end_empty_auto
+anm_idle_aim_end_auto_jammed        = mp5_aim_end, ump_aim_end_jammed_auto
+
+anm_idle_moving_auto_jammed 			        = mp5_walk, ump_idle_jammed_auto
+anm_idle_moving_auto_empty				= mp5_walk, ump_idle_empty_auto
+
+anm_idle_moving_slow_auto_jammed 			= mp5_walk_slow, ump_idle_jammed_auto
+anm_idle_moving_slow_auto_empty				= mp5_walk_slow, ump_idle_empty_auto
+
+anm_idle_moving_crouch_auto_jammed 				= mp5_walk_slow_down, ump_idle_jammed_auto
+anm_idle_moving_crouch_auto_empty				= mp5_walk_slow_down, ump_idle_empty_auto
+
+anm_idle_moving_crouch_slow_auto_jammed 			= mp5_walk_slow_super, ump_idle_jammed_auto
+anm_idle_moving_crouch_slow_auto_empty				= mp5_walk_slow_super, ump_idle_empty_auto
+
+
+anm_idle_aim_moving_forward_auto_empty             = mp5_aim_walk, ump_aim_empty_auto
+anm_idle_aim_moving_forward_auto_jammed            = mp5_aim_walk, ump_aim_jammed_auto
+
+anm_idle_aim_moving_back_auto_empty             = mp5_aim_walk, ump_aim_empty_auto
+anm_idle_aim_moving_back_auto_jammed            = mp5_aim_walk, ump_aim_jammed_auto
+
+anm_idle_aim_moving_left_auto_empty             = mp5_aim_walk_left, ump_aim_empty_auto
+anm_idle_aim_moving_left_auto_jammed            = mp5_aim_walk_left, ump_aim_jammed_auto
+
+anm_idle_aim_moving_right_auto_empty             = mp5_aim_walk_right, ump_aim_empty_auto
+anm_idle_aim_moving_right_auto_jammed            = mp5_aim_walk_right, ump_aim_jammed_auto
+ 
+anm_idle_aim_moving_forward_left_auto_empty             = mp5_aim_walk, ump_aim_empty_auto
+anm_idle_aim_moving_forward_left_auto_jammed            = mp5_aim_walk, ump_aim_jammed_auto
+
+anm_idle_aim_moving_forward_right_auto_empty             = mp5_aim_walk, ump_aim_empty_auto
+anm_idle_aim_moving_forward_right_auto_jammed            = mp5_aim_walk, ump_aim_jammed_auto
+
+anm_idle_aim_moving_back_left_auto_empty             = mp5_aim_walk, ump_aim_empty_auto
+anm_idle_aim_moving_back_left_auto_jammed            = mp5_aim_walk, ump_aim_jammed_auto
+
+anm_idle_aim_moving_back_right_auto_empty             = mp5_aim_walk, ump_aim_empty_auto
+anm_idle_aim_moving_back_right_auto_jammed            = mp5_aim_walk, ump_aim_jammed_auto
+
+anm_idle_aim_scope_moving_auto_empty		      = mp5_aim_walk_scope, ump_aim_empty_auto
+anm_idle_aim_scope_moving_auto_jammed	              = mp5_aim_walk_scope, ump_aim_jammed_auto
+
+anm_idle_sprint_start_auto_empty       = mp5_sprint_start, ump_idle_empty_auto
+anm_idle_sprint_start_auto_jammed      = mp5_sprint_start, ump_idle_jammed_auto
+
+anm_idle_sprint_auto_empty             = mp5_sprint, ump_idle_empty_auto
+anm_idle_sprint_auto_jammed            = mp5_sprint, ump_idle_jammed_auto
+
+anm_idle_sprint_end_auto_empty       = mp5_sprint_end, ump_idle_empty_auto
+anm_idle_sprint_end_auto_jammed      = mp5_sprint_end, ump_idle_jammed_auto
+
+anm_bore_auto_empty             = mp5_draw, ump_idle_empty_auto
+anm_bore_auto_jammed            = mp5_draw, ump_idle_jammed_auto
+
+anm_shoot_auto_jammed	            = mp5_shoot_auto, ump_idle_jammed_auto
+anm_shoot_auto_jammed_sil           = mp5_shoot_auto, ump_idle_jammed_auto
+anm_shoot_auto_last                 = mp5_shoot_auto, ump_shoot_last_auto
+anm_shoot_auto_last_sil             = mp5_shoot_auto, ump_shoot_last_auto
+anm_shoot_aim_auto_jammed           = mp5_aim_shoot, ump_aim_jammed_auto
+anm_shoot_aim_auto_jammed_sil       = mp5_aim_shoot, ump_aim_jammed_auto
+
+anm_fakeshoot_auto_empty          = mp5_dry_empty, ump_idle_empty_auto
+anm_fakeshoot_auto_jammed         = mp5_dry, ump_idle_jammed_auto
+anm_fakeshoot_aim_auto_empty      = mp5_aim_dry, ump_aim_empty_auto
+anm_fakeshoot_aim_auto_jammed     = mp5_aim_dry, ump_aim_jammed_auto
+
+anm_reload_auto                           = ump_reload, ump_reload_auto
+anm_reload_auto_empty                     = ump_reload_empty, ump_reload_empty_auto
+anm_reload_auto_jammed                    = mp5_revival, ump_revival_auto
+anm_reload_auto_jammed_last               = mp5_revival, ump_revival_last_auto
+anm_reload_auto_ammochange                = ump_reload, ump_reload_auto
+anm_reload_auto_empty_ammochange          = ump_reload_empty, ump_reload_empty_auto
+
+anm_unload_mag_auto                               = mp5_draw, ump_idle_empty_auto
+anm_unload_mag_auto_jammed                        = mp5_draw, ump_idle_jammed_auto
+anm_unload_mag_auto_empty                         = mp5_draw, ump_idle_empty_auto
+
+anm_headlamp_on_auto_empty = mp5_headflash, ump_idle_empty_auto
+anm_headlamp_on_auto_jammed = mp5_headflash, ump_idle_jammed_auto
+
+anm_headlamp_off_auto_empty = mp5_headflash, ump_idle_empty_auto
+anm_headlamp_off_auto_jammed = mp5_headflash, ump_idle_jammed_auto
+
+anm_nv_on_auto_empty = mp5_headflash, ump_idle_empty_auto
+anm_nv_on_auto_jammed = mp5_headflash, ump_idle_jammed_auto
+
+anm_nv_off_auto_empty = mp5_headflash, ump_idle_empty_auto
+anm_nv_off_auto_jammed = mp5_headflash, ump_idle_jammed_auto
+; --- lock_time values copied verbatim from GS wpn_mp5_hud (audit 2026-08-07) ---
+lock_time_anm_changefiremode_from_1_to_a = 1.17
+lock_time_anm_changefiremode_from_1_to_a_empty = 1.17
+lock_time_anm_changefiremode_from_1_to_a_jammed = 1.17
+lock_time_anm_fakeshoot_aim_auto_empty = 0.20
+lock_time_anm_fakeshoot_aim_auto_jammed = 0.20
+lock_time_anm_fakeshoot_aim_jammed = 0.20
+lock_time_anm_fakeshoot_auto_empty = 0.20
+lock_time_anm_fakeshoot_auto_jammed = 0.90
+lock_time_anm_fakeshoot_empty = 0.20
+lock_time_anm_fakeshoot_jammed = 0.90
+lock_time_anm_idle_aim_end = 0.25
+lock_time_anm_idle_aim_end_auto_empty = 0.25
+lock_time_anm_idle_aim_end_auto_jammed = 0.25
+lock_time_anm_idle_aim_end_empty = 0.25
+lock_time_anm_idle_aim_end_jammed = 0.25
+lock_time_anm_idle_aim_start = 0.2
+lock_time_anm_idle_aim_start_auto_empty = 0.2
+lock_time_anm_idle_aim_start_auto_jammed = 0.2
+lock_time_anm_idle_aim_start_empty = 0.2
+lock_time_anm_idle_aim_start_jammed = 0.2
+lock_time_anm_idle_sprint_end = 0.35
+lock_time_anm_idle_sprint_end_auto_empty = 0.35
+lock_time_anm_idle_sprint_end_auto_jammed = 0.35
+lock_time_anm_idle_sprint_end_empty = 0.35
+lock_time_anm_idle_sprint_end_jammed = 0.35
+lock_time_anm_idle_sprint_start = 0.15
+lock_time_anm_idle_sprint_start_auto_empty = 0.15
+lock_time_anm_idle_sprint_start_auto_jammed = 0.15
+lock_time_anm_idle_sprint_start_empty = 0.15
+lock_time_anm_idle_sprint_start_jammed = 0.15
+lock_time_anm_unload_mag = 0.8
+lock_time_anm_unload_mag_auto = 0.8
+lock_time_anm_unload_mag_auto_empty = 0.8
+lock_time_anm_unload_mag_auto_jammed = 0.8
+lock_time_anm_unload_mag_empty = 0.8
+lock_time_anm_unload_mag_jammed = 0.8
+lock_time_end_anm_headlamp_off = 0.5
+lock_time_end_anm_headlamp_off_auto_empty = 0.5
+lock_time_end_anm_headlamp_off_auto_jammed = 0.5
+lock_time_end_anm_headlamp_off_empty = 0.5
+lock_time_end_anm_headlamp_off_jammed = 0.5
+lock_time_end_anm_headlamp_on = 0.5
+lock_time_end_anm_headlamp_on_auto_empty = 0.5
+lock_time_end_anm_headlamp_on_auto_jammed = 0.5
+lock_time_end_anm_headlamp_on_empty = 0.5
+lock_time_end_anm_headlamp_on_jammed = 0.5
+lock_time_start_anm_headlamp_off = 0.58
+lock_time_start_anm_headlamp_off_auto_empty = 0.58
+lock_time_start_anm_headlamp_off_auto_jammed = 0.58
+lock_time_start_anm_headlamp_off_empty = 0.58
+lock_time_start_anm_headlamp_off_jammed = 0.58
+lock_time_start_anm_headlamp_on = 0.58
+lock_time_start_anm_headlamp_on_auto_empty = 0.58
+lock_time_start_anm_headlamp_on_auto_jammed = 0.58
+lock_time_start_anm_headlamp_on_empty = 0.58
+lock_time_start_anm_headlamp_on_jammed = 0.58
+
+[wpn_ump45_handler_hud]:wpn_mp5_handler_hud, wpn_ump45_hud_general
+
+anm_suicide			= mp5_tac_suicide, ump_idle
+anm_stop_suicide 		= mp5_tac_suicide_end, ump_idle
+
+anm_show                   = mp5_tac_draw, ump_idle
+anm_show_empty             = mp5_tac_draw, ump_idle_empty
+anm_show_jammed            = mp5_tac_draw, ump_idle_jammed
+
+anm_hide                   = mp5_tac_hide, ump_idle
+anm_hide_empty             = mp5_tac_hide, ump_idle_empty
+anm_hide_jammed            = mp5_tac_hide, ump_idle_jammed
+
+anm_idle                            = mp5_tac_idle, ump_idle
+anm_idle_empty                      = mp5_tac_idle, ump_idle_empty
+anm_idle_jammed                     = mp5_tac_idle, ump_idle_jammed
+anm_idle_slow                       = mp5_tac_idle, ump_idle
+anm_idle_slow_empty                 = mp5_tac_idle, ump_idle_empty
+anm_idle_slow_jammed                = mp5_tac_idle, ump_idle_jammed
+anm_idle_crouch                     = mp5_tac_idle, ump_idle
+anm_idle_crouch_empty               = mp5_tac_idle, ump_idle_empty
+anm_idle_crouch_jammed              = mp5_tac_idle, ump_idle_jammed
+anm_idle_crouch_slow                = mp5_tac_idle, ump_idle
+anm_idle_crouch_slow_empty          = mp5_tac_idle, ump_idle_empty
+anm_idle_crouch_slow_jammed         = mp5_tac_idle, ump_idle_jammed
+
+anm_idle_aim_start             = mp5_tac_aim_start, ump_aim_start
+anm_idle_aim_start_empty       = mp5_tac_aim_start, ump_aim_start_empty
+anm_idle_aim_start_jammed      = mp5_tac_aim_start, ump_aim_start_jammed
+;anm_idle_aim                   = mp5_tac_aim, mp5_aim
+anm_idle_aim_empty             = mp5_tac_aim, ump_aim_empty
+anm_idle_aim_jammed            = mp5_tac_aim, ump_aim_jammed
+;anm_idle_aim_scope             = mp5_tac_aim, mp5_aim
+anm_idle_aim_scope_empty       = mp5_tac_aim, ump_aim_empty
+anm_idle_aim_scope_jammed      = mp5_tac_aim, ump_aim_jammed
+anm_idle_aim_end               = mp5_tac_aim_end, ump_aim_end
+anm_idle_aim_end_empty         = mp5_tac_aim_end, ump_aim_end_empty
+anm_idle_aim_end_jammed        = mp5_tac_aim_end, ump_aim_end_jammed
+
+anm_idle_moving 					= mp5_tac_walk, ump_idle
+anm_idle_moving_jammed 					= mp5_tac_walk, ump_idle_jammed
+anm_idle_moving_empty					= mp5_tac_walk, ump_idle_empty
+
+anm_idle_moving_slow 					= mp5_tac_walk_slow, ump_idle
+anm_idle_moving_slow_jammed 				= mp5_tac_walk_slow, ump_idle_jammed
+anm_idle_moving_slow_empty				= mp5_tac_walk_slow, ump_idle_empty
+
+anm_idle_moving_crouch 					= mp5_tac_walk_slow_down, ump_idle
+anm_idle_moving_crouch_jammed 				= mp5_tac_walk_slow_down, ump_idle_jammed
+anm_idle_moving_crouch_empty				= mp5_tac_walk_slow_down, ump_idle_empty
+
+anm_idle_moving_crouch_slow 				= mp5_tac_walk_slow_super, ump_idle
+anm_idle_moving_crouch_slow_jammed 			= mp5_tac_walk_slow_super, ump_idle_jammed
+anm_idle_moving_crouch_slow_empty			= mp5_tac_walk_slow_super, ump_idle_empty
+
+anm_idle_aim_moving_forward_empty                       = mp5_tac_aim_walk, ump_aim_empty
+anm_idle_aim_moving_forward_jammed                      = mp5_tac_aim_walk, ump_aim_jammed
+
+anm_idle_aim_moving_back_empty                          = mp5_tac_aim_walk, ump_aim_empty
+anm_idle_aim_moving_back_jammed                         = mp5_tac_aim_walk, ump_aim_jammed
+
+anm_idle_aim_moving_left_empty                          = mp5_tac_aim_walk_left, ump_aim_empty
+anm_idle_aim_moving_left_jammed                         = mp5_tac_aim_walk_left, ump_aim_jammed
+
+anm_idle_aim_moving_right_empty                         = mp5_tac_aim_walk_right, ump_aim_empty
+anm_idle_aim_moving_right_jammed                        = mp5_tac_aim_walk_right, ump_aim_jammed
+
+anm_idle_aim_moving_forward_left_empty                  = mp5_tac_aim_walk, ump_aim_empty
+anm_idle_aim_moving_forward_left_jammed                 = mp5_tac_aim_walk, ump_aim_jammed
+
+anm_idle_aim_moving_forward_right_empty                 = mp5_tac_aim_walk, ump_aim_empty
+anm_idle_aim_moving_forward_right_jammed                = mp5_tac_aim_walk, ump_aim_jammed
+
+anm_idle_aim_moving_back_left_empty                     = mp5_tac_aim_walk, ump_aim_empty
+anm_idle_aim_moving_back_left_jammed                    = mp5_tac_aim_walk, ump_aim_jammed
+
+anm_idle_aim_moving_back_right_empty                    = mp5_tac_aim_walk, ump_aim_empty
+anm_idle_aim_moving_back_right_jammed                   = mp5_tac_aim_walk, ump_aim_jammed
+
+anm_idle_aim_scope_moving_empty		                = mp5_tac_aim_walk_scope, ump_aim_empty
+anm_idle_aim_scope_moving_jammed	                = mp5_tac_aim_walk_scope, ump_aim_jammed
+
+
+anm_idle_sprint_start             = mp5_tac_sprint_start, ump_idle
+anm_idle_sprint_start_empty       = mp5_tac_sprint_start, ump_idle_empty
+anm_idle_sprint_start_jammed      = mp5_tac_sprint_start, ump_idle_jammed
+anm_idle_sprint                   = mp5_tac_sprint, ump_idle
+anm_idle_sprint_empty             = mp5_tac_sprint, ump_idle_empty
+anm_idle_sprint_jammed            = mp5_tac_sprint, ump_idle_jammed
+anm_idle_sprint_end               = mp5_tac_sprint_end, ump_idle
+anm_idle_sprint_end_empty         = mp5_tac_sprint_end, ump_idle_empty
+anm_idle_sprint_end_jammed        = mp5_tac_sprint_end, ump_idle_jammed
+
+anm_bore                   = mp5_tac_draw, ump_idle
+anm_bore_empty             = mp5_tac_draw, ump_idle_empty
+anm_bore_jammed            = mp5_tac_draw, ump_idle_jammed
+
+anm_shoot                      = ump_tac_shoot
+anm_shoot_sil                  = ump_tac_shoot
+anm_shoot_jammed	       = ump_tac_shoot, ump_idle_jammed
+anm_shoot_jammed_sil	       = ump_tac_shoot, ump_idle_jammed
+anm_shoot_last                 = ump_tac_shoot, ump_shoot_last
+anm_shoot_last_sil             = ump_tac_shoot, ump_shoot_last
+anm_shoot_aim_jammed	       = mp5_tac_aim_shoot, ump_aim_jammed
+anm_shoot_aim_jammed_sil       = mp5_tac_aim_shoot, ump_aim_jammed
+
+anm_fakeshoot_empty                = mp5_tac_dry_empty, ump_idle_empty
+anm_fakeshoot_aim_empty            = mp5_tac_aim_dry, ump_aim_empty
+anm_fakeshoot_jammed               = mp5_tac_dry, ump_idle_jammed
+anm_fakeshoot_aim_jammed           = mp5_tac_aim_dry, ump_aim_jammed
+
+anm_reload                           = ump_tac_reload, ump_reload
+anm_reload_empty                     = ump_tac_reload_empty, ump_reload_empty
+anm_reload_jammed                    = mp5_tac_revival, ump_revival
+anm_reload_jammed_last               = mp5_tac_revival, ump_revival_last
+anm_reload_ammochange                = ump_tac_reload, ump_reload
+
+;a-1
+lock_time_anm_changefiremode_from_a_to_1 = 1.17
+lock_time_anm_changefiremode_from_a_to_1_jammed = 1.17
+lock_time_anm_changefiremode_from_a_to_1_empty = 1.17
+anm_changefiremode_from_a_to_1			             = mp5_tac_firemode_a_to_1, ump_firemode_a_to_1
+anm_changefiremode_from_a_to_1_jammed		             = mp5_tac_firemode_a_to_1, ump_firemode_a_to_1
+anm_changefiremode_from_a_to_1_empty		             = mp5_tac_firemode_a_to_1, ump_firemode_a_to_1_empty
+
+;1-a
+anm_changefiremode_from_1_to_a			             = mp5_tac_firemode_1_to_a, ump_firemode_1_to_a
+anm_changefiremode_from_1_to_a_jammed		             = mp5_tac_firemode_1_to_a, ump_firemode_1_to_a
+anm_changefiremode_from_1_to_a_empty		             = mp5_tac_firemode_1_to_a, ump_firemode_1_to_a_empty
+
+anm_unload_mag                               = mp5_tac_draw, ump_idle_empty
+anm_unload_mag_jammed                        = mp5_tac_draw, ump_idle_jammed  
+anm_unload_mag_empty                         = mp5_tac_draw, ump_idle_empty
+
+anm_headlamp_on                             = mp5_tac_headflash, ump_idle
+anm_headlamp_on_empty                       = mp5_tac_headflash, ump_idle_empty
+anm_headlamp_on_jammed                      = mp5_tac_headflash, ump_idle_jammed
+
+anm_headlamp_off                            = mp5_tac_headflash, ump_idle
+anm_headlamp_off_empty                      = mp5_tac_headflash, ump_idle_empty
+anm_headlamp_off_jammed                     = mp5_tac_headflash, ump_idle_jammed
+
+anm_nv_on                                   = mp5_tac_headflash, ump_idle
+anm_nv_on_empty                             = mp5_tac_headflash, ump_idle_empty
+anm_nv_on_jammed                            = mp5_tac_headflash, ump_idle_jammed
+
+anm_nv_off                                  = mp5_tac_headflash, ump_idle
+anm_nv_off_empty                            = mp5_tac_headflash, ump_idle_empty 
+anm_nv_off_jammed                           = mp5_tac_headflash, ump_idle_jammed
+
+anm_laser_on                                = mp5_tac_lam, ump_idle
+anm_laser_on_empty                          = mp5_tac_lam, ump_idle_empty
+anm_laser_on_jammed                         = mp5_tac_lam, ump_idle_jammed
+
+anm_laser_off                               = mp5_tac_lam, ump_idle
+anm_laser_off_empty                         = mp5_tac_lam, ump_idle_empty
+anm_laser_off_jammed                        = mp5_tac_lam, ump_idle_jammed
+
+anm_torch_on                                = mp5_tac_lam, ump_idle
+anm_torch_on_empty                          = mp5_tac_lam, ump_idle_empty
+anm_torch_on_jammed                         = mp5_tac_lam, ump_idle_jammed
+
+anm_torch_off                               = mp5_tac_lam, ump_idle
+anm_torch_off_empty                         = mp5_tac_lam, ump_idle_empty
+anm_torch_off_jammed                        = mp5_tac_lam, ump_idle_jammed
+
+anm_show_auto_empty             = mp5_tac_draw, ump_idle_empty_auto
+anm_show_auto_jammed            = mp5_tac_draw, ump_idle_jammed_auto
+
+anm_hide_auto_empty             = mp5_tac_hide, ump_idle_empty_auto
+anm_hide_auto_jammed            = mp5_tac_hide, ump_idle_jammed_auto
+
+anm_idle_auto_empty                      = mp5_tac_idle, ump_idle_empty_auto
+anm_idle_auto_jammed                     = mp5_tac_idle, ump_idle_jammed_auto
+anm_idle_slow_auto_empty                 = mp5_tac_idle, ump_idle_empty_auto
+anm_idle_crouch_auto_empty               = mp5_tac_idle, ump_idle_empty_auto
+anm_idle_crouch_slow_auto_empty          = mp5_tac_idle, ump_idle_empty_auto
+anm_idle_slow_auto_jammed                = mp5_tac_idle, ump_idle_jammed_auto
+anm_idle_crouch_auto_jammed              = mp5_tac_idle, ump_idle_jammed_auto
+anm_idle_crouch_slow_auto_jammed         = mp5_tac_idle, ump_idle_jammed_auto
+
+
+anm_idle_aim_start_auto_empty       = mp5_tac_aim_start, ump_aim_start_empty_auto
+anm_idle_aim_start_auto_jammed      = mp5_tac_aim_start, ump_aim_start_jammed_auto
+anm_idle_aim_auto_empty             = mp5_tac_aim, ump_aim_empty_auto
+anm_idle_aim_auto_jammed            = mp5_tac_aim, ump_aim_jammed_auto
+anm_idle_aim_scope_auto_empty       = mp5_tac_aim, ump_aim_empty_auto
+anm_idle_aim_scope_auto_jammed      = mp5_tac_aim, ump_aim_jammed_auto
+anm_idle_aim_end_auto_empty         = mp5_tac_aim_end, ump_aim_end_empty_auto
+anm_idle_aim_end_auto_jammed        = mp5_tac_aim_end, ump_aim_end_jammed_auto
+
+
+anm_idle_moving_auto_jammed 			        = mp5_tac_walk, ump_idle_jammed_auto
+anm_idle_moving_auto_empty				= mp5_tac_walk, ump_idle_empty_auto
+
+anm_idle_moving_slow_auto_jammed 			= mp5_tac_walk_slow, ump_idle_jammed_auto
+anm_idle_moving_slow_auto_empty				= mp5_tac_walk_slow, ump_idle_empty_auto
+
+anm_idle_moving_crouch_auto_jammed 				= mp5_tac_walk_slow_down, ump_idle_jammed_auto
+anm_idle_moving_crouch_auto_empty				= mp5_tac_walk_slow_down, ump_idle_empty_auto
+
+anm_idle_moving_crouch_slow_auto_jammed 			= mp5_tac_walk_slow_super, ump_idle_jammed_auto
+anm_idle_moving_crouch_slow_auto_empty				= mp5_tac_walk_slow_super, ump_idle_empty_auto
+
+
+anm_idle_aim_moving_forward_auto_empty             = mp5_tac_aim_walk, ump_aim_empty_auto
+anm_idle_aim_moving_forward_auto_jammed            = mp5_tac_aim_walk, ump_aim_jammed_auto
+
+anm_idle_aim_moving_back_auto_empty             = mp5_tac_aim_walk, ump_aim_empty_auto
+anm_idle_aim_moving_back_auto_jammed            = mp5_tac_aim_walk, ump_aim_jammed_auto
+
+anm_idle_aim_moving_left_auto_empty             = mp5_tac_aim_walk_left, ump_aim_empty_auto
+anm_idle_aim_moving_left_auto_jammed            = mp5_tac_aim_walk_left, ump_aim_jammed_auto
+
+anm_idle_aim_moving_right_auto_empty             = mp5_tac_aim_walk_right, ump_aim_empty_auto
+anm_idle_aim_moving_right_auto_jammed            = mp5_tac_aim_walk_right, ump_aim_jammed_auto
+ 
+anm_idle_aim_moving_forward_left_auto_empty             = mp5_tac_aim_walk, ump_aim_empty_auto
+anm_idle_aim_moving_forward_left_auto_jammed            = mp5_tac_aim_walk, ump_aim_jammed_auto
+
+anm_idle_aim_moving_forward_right_auto_empty             = mp5_tac_aim_walk, ump_aim_empty_auto
+anm_idle_aim_moving_forward_right_auto_jammed            = mp5_tac_aim_walk, ump_aim_jammed_auto
+
+anm_idle_aim_moving_back_left_auto_empty             = mp5_tac_aim_walk, ump_aim_empty_auto
+anm_idle_aim_moving_back_left_auto_jammed            = mp5_tac_aim_walk, ump_aim_jammed_auto
+
+anm_idle_aim_moving_back_right_auto_empty             = mp5_tac_aim_walk, ump_aim_empty_auto
+anm_idle_aim_moving_back_right_auto_jammed            = mp5_tac_aim_walk, ump_aim_jammed_auto
+
+anm_idle_aim_scope_moving_auto_empty		      = mp5_tac_aim_walk_scope, ump_aim_empty_auto
+anm_idle_aim_scope_moving_auto_jammed	              = mp5_tac_aim_walk_scope, ump_aim_jammed_auto
+
+anm_idle_sprint_start_auto_empty       = mp5_tac_sprint_start, ump_idle_empty_auto
+anm_idle_sprint_start_auto_jammed      = mp5_tac_sprint_start, ump_idle_jammed_auto
+anm_idle_sprint_auto_empty             = mp5_tac_sprint, ump_idle_empty_auto
+anm_idle_sprint_auto_jammed            = mp5_tac_sprint, ump_idle_jammed_auto
+anm_idle_sprint_end_auto_empty         = mp5_tac_sprint_end, ump_idle_empty_auto
+anm_idle_sprint_end_auto_jammed        = mp5_tac_sprint_end, ump_idle_jammed_auto
+
+anm_bore_auto_empty             = mp5_tac_draw, ump_idle_empty_auto
+anm_bore_auto_jammed            = mp5_tac_draw, ump_idle_jammed_auto
+
+anm_shoot_auto_jammed	            = mp5_tac_shoot_auto, ump_idle_jammed_auto
+anm_shoot_auto_jammed_sil           = mp5_tac_shoot_auto, ump_idle_jammed_auto
+anm_shoot_auto_last                 = mp5_tac_shoot_auto, ump_shoot_last_auto
+anm_shoot_auto_last_sil             = mp5_tac_shoot_auto, ump_shoot_last_auto
+anm_shoot_aim_auto_jammed           = mp5_tac_aim_shoot, ump_aim_jammed_auto
+anm_shoot_aim_auto_jammed_sil       = mp5_tac_aim_shoot, ump_aim_jammed_auto
+anm_shoot_aim_scope_auto_jammed     = mp5_tac_aim_shoot_scope, ump_aim_jammed_auto
+anm_shoot_aim_scope_auto_jammed_sil = mp5_tac_aim_shoot_scope, ump_aim_jammed_auto
+
+anm_fakeshoot_auto_empty            = mp5_tac_dry_empty, ump_idle_empty_auto
+anm_fakeshoot_aim_auto_empty        = mp5_tac_aim_dry, ump_aim_empty_auto
+anm_fakeshoot_auto_jammed           = mp5_tac_dry, ump_idle_jammed_auto
+anm_fakeshoot_aim_auto_jammed       = mp5_tac_aim_dry, ump_aim_jammed_auto
+
+anm_reload_auto                           = ump_tac_reload, ump_reload_auto
+anm_reload_auto_empty                     = ump_tac_reload_empty, ump_reload_empty_auto
+anm_reload_auto_jammed                    = mp5_tac_revival, ump_revival_auto
+anm_reload_auto_jammed_last               = mp5_tac_revival, ump_revival_last_auto
+anm_reload_auto_ammochange                = ump_tac_reload, ump_reload_auto
+anm_reload_auto_empty_ammochange          = ump_tac_reload_empty, ump_reload_empty_auto
+
+anm_unload_mag_auto                               = mp5_tac_draw, ump_idle_empty_auto
+anm_unload_mag_auto_jammed                        = mp5_tac_draw, ump_idle_jammed_auto
+anm_unload_mag_auto_empty                         = mp5_tac_draw, ump_idle_empty_auto
+
+anm_headlamp_on_auto_empty = mp5_tac_headflash, ump_idle_empty_auto
+anm_headlamp_on_auto_jammed = mp5_tac_headflash, ump_idle_jammed_auto
+
+anm_headlamp_off_auto_empty = mp5_tac_headflash, ump_idle_empty_auto
+anm_headlamp_off_auto_jammed = mp5_tac_headflash, ump_idle_jammed_auto
+
+anm_nv_on_auto_empty = mp5_tac_headflash, ump_idle_empty_auto
+anm_nv_on_auto_jammed = mp5_tac_headflash, ump_idle_jammed_auto
+
+anm_nv_off_auto_empty = mp5_tac_headflash, ump_idle_empty_auto
+anm_nv_off_auto_jammed = mp5_tac_headflash, ump_idle_jammed_auto
+
+anm_laser_on_auto_empty = mp5_tac_lam, ump_idle_empty_auto
+anm_laser_on_auto_jammed = mp5_tac_lam, ump_idle_jammed_auto
+
+anm_laser_off_auto_empty = mp5_tac_lam, ump_idle_empty_auto
+anm_laser_off_auto_jammed = mp5_tac_lam, ump_idle_jammed_auto
+
+anm_torch_on_auto_empty = mp5_tac_lam, ump_idle_empty_auto
+anm_torch_on_auto_jammed = mp5_tac_lam, ump_idle_jammed_auto
+
+anm_torch_off_auto_empty = mp5_tac_lam, ump_idle_empty_auto
+anm_torch_off_auto_jammed = mp5_tac_lam, ump_idle_jammed_auto
+; --- lock_time values copied verbatim from GS wpn_mp5_handler_hud (audit 2026-08-07) ---
+lock_time_end_anm_laser_off = 0.55
+lock_time_end_anm_laser_off_auto_empty = 0.55
+lock_time_end_anm_laser_off_auto_jammed = 0.55
+lock_time_end_anm_laser_off_empty = 0.55
+lock_time_end_anm_laser_off_jammed = 0.55
+lock_time_end_anm_laser_on = 0.55
+lock_time_end_anm_laser_on_auto_empty = 0.55
+lock_time_end_anm_laser_on_auto_jammed = 0.55
+lock_time_end_anm_laser_on_empty = 0.55
+lock_time_end_anm_laser_on_jammed = 0.55
+lock_time_end_anm_torch_off = 0.55
+lock_time_end_anm_torch_off_auto_empty = 0.55
+lock_time_end_anm_torch_off_auto_jammed = 0.55
+lock_time_end_anm_torch_off_empty = 0.55
+lock_time_end_anm_torch_off_jammed = 0.55
+lock_time_end_anm_torch_on = 0.55
+lock_time_end_anm_torch_on_auto_empty = 0.55
+lock_time_end_anm_torch_on_auto_jammed = 0.55
+lock_time_end_anm_torch_on_empty = 0.55
+lock_time_end_anm_torch_on_jammed = 0.55
+lock_time_start_anm_laser_off = 0.35
+lock_time_start_anm_laser_off_auto_empty = 0.35
+lock_time_start_anm_laser_off_auto_jammed = 0.35
+lock_time_start_anm_laser_off_empty = 0.35
+lock_time_start_anm_laser_off_jammed = 0.35
+lock_time_start_anm_laser_on = 0.35
+lock_time_start_anm_laser_on_auto_empty = 0.35
+lock_time_start_anm_laser_on_auto_jammed = 0.35
+lock_time_start_anm_laser_on_empty = 0.35
+lock_time_start_anm_laser_on_jammed = 0.35
+lock_time_start_anm_torch_off = 0.35
+lock_time_start_anm_torch_off_auto_empty = 0.35
+lock_time_start_anm_torch_off_auto_jammed = 0.35
+lock_time_start_anm_torch_off_empty = 0.35
+lock_time_start_anm_torch_off_jammed = 0.35
+lock_time_start_anm_torch_on = 0.35
+lock_time_start_anm_torch_on_auto_empty = 0.35
+lock_time_start_anm_torch_on_auto_jammed = 0.35
+lock_time_start_anm_torch_on_empty = 0.35
+lock_time_start_anm_torch_on_jammed = 0.35
+
+[wpn_mp5_nimble]:wpn_ump45
+
+uniq_icon = upgrade_addon_icon_uniq_item
+uniq_icon_offset_x = 150
+uniq_icon_offset_y = 50 
+
+[ump45_laser]:mp5_laser
+laserdot_attach_offset_x       = -0.05273
+laserdot_attach_offset_y       = -0.017

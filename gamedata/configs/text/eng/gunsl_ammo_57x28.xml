@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_ammo_5.7x28">
+		<text>5,7x28 FN rounds</text>
+	</string>
+	<string id="gunsl_ammo_5.7x28_short">
+		<text>5,7x28 FN</text>
+	</string>
+	<string id="gunsl_ammo_5.7x28_descr">
+		<text>5,7x28 FN (SS190) round was specifically developed for FN P90 submachine gun in mid-1980s. Later a companion pistol for P90 "Five-seveN" was developed. The bullet possesses high stopping power and can penetrate most armor vests.</text>
+	</string>
+</string_table>

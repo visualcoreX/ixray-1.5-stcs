@@ -1,10 +1,10 @@
 ;;; Freedom attackers soldiers ;;;
 
-;;; Soldier 1 ;;;
+;;; ===== Soldier 1 ===== ;;;
 
 [logic@freedom_soldier_1]
 active = camper@freedom_soldier_1
-suitable = {=check_npc_name(mil_freedom_attacker) -mil_actor_attack_house} true
+suitable = {=check_npc_name(mil_freedom_attacker) -mil_actor_attack_house -mil_mil_eliminated} true
 prior = 41
 
 [camper@freedom_soldier_1]
@@ -12,11 +12,11 @@ path_walk = mil_freedom_soldier_1_walk
 path_look = mil_freedom_soldier_1_look
 combat_ignore_cond = true
 
-;;; Soldier 2 ;;;
+;;; ===== Soldier 2 ===== ;;;
 
 [logic@freedom_soldier_2]
 active = camper@freedom_soldier_2
-suitable = {=check_npc_name(mil_freedom_attacker) -mil_actor_attack_house} true
+suitable = {=check_npc_name(mil_freedom_attacker) -mil_actor_attack_house -mil_mil_eliminated} true
 prior = 41
 
 [camper@freedom_soldier_2]
@@ -24,11 +24,11 @@ path_walk = mil_freedom_soldier_2_walk
 path_look = mil_freedom_soldier_2_look
 combat_ignore_cond = true
 
-;;; Soldier 3 ;;;
+;;; ===== Soldier 3 ===== ;;;
 
 [logic@freedom_soldier_3]
 active = camper@freedom_soldier_3
-suitable = {=check_npc_name(mil_freedom_attacker) -mil_actor_attack_house} true
+suitable = {=check_npc_name(mil_freedom_attacker) -mil_actor_attack_house -mil_mil_eliminated} true
 prior = 41
 
 [camper@freedom_soldier_3]
@@ -36,11 +36,11 @@ path_walk = mil_freedom_soldier_3_walk
 path_look = mil_freedom_soldier_3_look
 combat_ignore_cond = true
 
-;;; Soldier 4 ;;;
+;;; ===== Soldier 4 ===== ;;;
 
 [logic@freedom_soldier_4]
 active = camper@freedom_soldier_4
-suitable = {=check_npc_name(mil_freedom_attacker) -mil_actor_attack_house} true
+suitable = {=check_npc_name(mil_freedom_attacker) -mil_actor_attack_house -mil_mil_eliminated} true
 prior = 41
 
 [camper@freedom_soldier_4]
@@ -48,22 +48,22 @@ path_walk = mil_freedom_soldier_4_walk
 path_look = mil_freedom_soldier_4_look
 combat_ignore_cond = true
 
-;;; Commander ;;;
+;;; ===== Commander ===== ;;;
 
 [logic@freedom_commander]
 active = camper@freedom_commander
-suitable = {=check_npc_name(mil_kostiuk) -mil_actor_attack_house} true
+suitable = {=check_npc_name(mil_kostiuk) -mil_actor_attack_house -mil_mil_eliminated} true
 prior = 42
 
 [camper@freedom_commander]
 path_walk = mil_freedom_soldier_5_walk
-path_look = mil_freedom_soldier_5_look 
+path_look = mil_freedom_soldier_5_look
 combat_ignore_cond = true
 meet = no_meet
 
 [logic@freedom_commander2]
 active = camper@freedom_commander2
-suitable = {=check_npc_name(mil_kostiuk) +mil_actor_attack_house} true
+suitable = {=check_npc_name(mil_kostiuk) +mil_actor_attack_house -mil_mil_eliminated} true
 prior = 60
 
 [camper@freedom_commander2]

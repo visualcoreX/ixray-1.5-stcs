@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_wpn_svd_up_bayonet_name">
+     <text>Bayonet</text>
+</string>
+<string id="gunsl_wpn_svd_up_bayonet_descr">
+     <text>Standard 6x5 bayonet allows to use the weapon in melee combat. Due to constructional characteristics of the weapon, suppressors cannot be attached with the bayonet installed.</text>
+</string>
+<string id="gunsl_wpn_svd_up_usm_reliability_name">
+     <text>Wear-resistant trigger</text>
+</string>
+<string id="gunsl_wpn_svd_up_usm_reliability_descr">
+     <text>Improves reliability of the firearm by replacing standard parts of the trigger group with their reinforced counterparts.</text>
+</string>
+<string id="gunsl_wpn_svd_up_usm_accuracy_name">
+     <text>Trigger calibration</text>
+</string>
+<string id="gunsl_wpn_svd_up_usm_accuracy_descr">
+     <text>Individual adjustment and balancing of the standard parts of the trigger mechanism improve accuracy, while simultaneously lowering recoil.</text>
+</string>
+<string id="gunsl_wpn_svd_up_usm_rpm_name">
+     <text>Trigger tuning</text>
+</string>
+<string id="gunsl_wpn_svd_up_usm_rpm_descr">
+     <text>Significantly increases rate of fire.</text>
+</string>
+<string id="gunsl_wpn_svd_up_kompensator_name">
+     <text>Muzzle brake replacement</text>
+</string>
+<string id="gunsl_wpn_svd_up_kompensator_descr">
+     <text>Modern muzzle brake Significantly reduces muzzle climb and felt recoil, which improves accuracy.</text>
+</string>
+<string id="gunsl_wpn_svd_up_zatvor_balanser_name">
+     <text>Balanced bolt</text>
+</string>
+<string id="gunsl_wpn_svd_up_zatvor_balanser_descr">
+     <text>Balanced bolt carrier group decreases muzzle climb.</text>
+</string>
+<string id="gunsl_wpn_svd_up_zatvor_reliability_name">
+     <text>More durable bolt</text>
+</string>
+<string id="gunsl_wpn_svd_up_zatvor_reliability_descr">
+     <text>Reinforced steel bolt carrier significantly increases the number of times the bolt can cycle without maintenance.</text>
+</string>
+<string id="gunsl_wpn_svd_up_plastic_mag_name">
+     <text>Lightweight magazine</text>
+</string>
+<string id="gunsl_wpn_svd_up_plastic_mag_descr">
+     <text>maintenance magazine reduces overall weight of the firearm.</text>
+</string>
+<string id="gunsl_wpn_svd_up_podavatel_name">
+     <text>Improved feeding mechanism</text>
+</string>
+<string id="gunsl_wpn_svd_up_podavatel_descr">
+     <text>Individual adjustment of the standard parts of the feeding mechanism decreases the probability of malfunctions related to feeding issues.</text>
+</string>
+<string id="gunsl_wpn_svd_up_gascam_name">
+     <text>Improved gas block</text>
+</string>
+<string id="gunsl_wpn_svd_up_gascam_descr">
+     <text>Modified gas block is more effective at redirecting gas from the barrel. Increases muzzle velocity while simultaneously reducing recoil.</text>
+</string>
+<string id="gunsl_wpn_svd_up_light_priklad_name">
+     <text>Lightweight stock</text>
+</string>
+<string id="gunsl_wpn_svd_up_light_priklad_descr">
+     <text>Lighter stock allows to reduce overall weight of the firearm.</text>
+</string>
+<string id="gunsl_wpn_svd_up_tilnik_name">
+     <text>Recoil pad</text>
+</string>
+<string id="gunsl_wpn_svd_up_tilnik_descr">
+     <text>Anatomical rubberized recoil pad reduced felt recoil.</text>
+</string>
+<string id="gunsl_wpn_svd_up_light_tsevie_name">
+     <text>Lightweight handguard</text>
+</string>
+<string id="gunsl_wpn_svd_up_light_tsevie_descr">
+     <text>Reduces overall weight of the weapon.</text>
+</string>
+<string id="gunsl_wpn_svd_up_pokritie_name">
+     <text>Special coating</text>
+</string>
+<string id="gunsl_wpn_svd_up_pokritie_descr">
+     <text>Application of a protective coating reduces wear of the mechanisms.</text>
+</string>
+<string id="gunsl_wpn_svd_up_sights_name">
+     <text>Tritium sights</text>
+</string>
+<string id="gunsl_wpn_svd_up_sights_descr">
+     <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+</string>
+<string id="gunsl_wpn_svd_up_sheka_name">
+     <text>Cheek riser</text>
+</string>
+<string id="gunsl_wpn_svd_up_sheka_descr">
+     <text>Special pad installed on the stock reduces felt recoil.</text>
+</string>
+<string id="gunsl_wpn_svd_up_barrel_reliability_name">
+     <text>More durable barrel</text>
+</string>
+<string id="gunsl_wpn_svd_up_barrel_reliability_descr">
+     <text>Reinforced barrel is more wear-resistant. Improves durability of the firearm.</text>
+</string>
+<string id="gunsl_wpn_svd_up_barrel_accuracy_name">
+     <text>320mm twist rate barrel</text>
+</string>
+<string id="gunsl_wpn_svd_up_barrel_accuracy_descr">
+     <text>Improves accuracy with sniper cartridges, which are more common in the Zone than other variants of 7.62x54mmR ammunition. (Since the 1970s standard twist rate of SVD barrels has been 240mm (1:9.4 in), which was adopted to facilitate the use of tracer and AP incendiary ammunition, at the cost of accuracy with the sniper round).</text>
+</string>
+<string id="gunsl_wpn_svd_up_barrel_bullet_speed_name">
+     <text>Barrel adjustment</text>
+</string>
+<string id="gunsl_wpn_svd_up_barrel_bullet_speed_descr">
+     <text>Increases muzzle velocity and effective range.</text>
+</string>
+</string_table>

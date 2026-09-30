@@ -1,6 +1,6 @@
 [logic]
 active = remark
-post_combat_time = 0,0 
+post_combat_time = 0,0
 on_death = death
 
 [death]
@@ -12,7 +12,7 @@ meet = no_meet
 path_walk = barricade_hide_2_walk
 combat_ignore_cond = true
 anim = threat_na
-on_game_timer = 20 | smartcover@wait 
+on_game_timer = 20 | smartcover@wait
 
 [smartcover@wait]
 use_in_combat = true
@@ -57,15 +57,14 @@ on_game_timer = 50 | smartcover@runner
 
 [smartcover@runner]
 use_in_combat = true
-;invulnerable = true
 meet = no_meet
 combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
 cover_name = hosp_barricade_2_smartcover
 cover_state = idle_target
 loophole_name = br_1
-on_game_timer = 5 | %=play_sound(clear_sky_suicide)%
-on_game_timer2 = 30 | walker ;%=play_sound(clear_sky_runner_killed) =hit_npc(200:bip01_head:1000:0)%
+on_game_timer = 25 | %=play_sound(clear_sky_suicide:csky)%
+on_game_timer2 = 30 | walker
 
 [walker]
 combat_ignore_cond = true

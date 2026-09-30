@@ -405,6 +405,12 @@
 	<string id="ui_mm_detail_density">
 		<text>Плотность травы</text>
 	</string>
+	<string id="ui_mm_detail_radius">
+		<text>Дальность травы</text>
+	</string>
+	<string id="ui_mm_sun_details_radius">
+		<text>Дальность теней травы</text>
+	</string>
 	<string id="ui_mm_difficulty">
 		<text>Сложность</text>
 	</string>
@@ -426,8 +432,23 @@
 	<string id="ui_mm_eax">
 		<text>EAX</text>
 	</string>
+	<string id="ui_mm_window_mode">
+		<text>Режим окна</text>
+	</string>
+	<string id="ui_mm_wm_windowed">
+		<text>Оконный</text>
+	</string>
+	<string id="ui_mm_wm_borderless">
+		<text>Окно без рамок</text>
+	</string>
+	<string id="ui_mm_wm_fullscreen">
+		<text>Полный экран</text>
+	</string>
 	<string id="ui_mm_fullscreen">
 		<text>Полный экран</text>
+	</string>
+	<string id="ui_mm_borderless">
+		<text>Окно без рамки</text>
 	</string>
 	<string id="ui_mm_gameplay">
 		<text>Игра</text>
@@ -528,6 +549,9 @@
 	<string id="ui_mm_r2_sun_details">
 		<text>Тень травы</text>
 	</string>
+	<string id="ui_mm_smapsize">
+		<text>Размер карты теней</text>
+	</string>
 	<string id="ui_mm_r2_sun_quality">
 		<text>Качество солнца</text>
 	</string>
@@ -558,11 +582,26 @@
 	<string id="ui_mm_show_crosshair">
 		<text>Показывать прицел</text>
 	</string>
+	<string id="ui_mm_show_hud">
+		<text>Показывать интерфейс</text>
+	</string>
+	<string id="ui_mm_intoxication">
+		<text>Интоксикация от медикаментов</text>
+	</string>
+	<string id="ui_mm_sprint_on_hold">
+		<text>Бег по зажатию</text>
+	</string>
+	<string id="ui_mm_reload_in_sprint">
+		<text>Манипуляции с оружием во время спринта</text>
+	</string>
 	<string id="ui_mm_show_weapon">
 		<text>Показывать оружие</text>
 	</string>
 	<string id="ui_mm_simply">
 		<text>Базовые</text>
+	</string>
+	<string id="snd_device_default">
+		<text>Устройство по умолчанию</text>
 	</string>
 	<string id="ui_mm_snd_device">
 		<text>Звуковое устройство</text>
@@ -579,8 +618,20 @@
 	<string id="ui_mm_sound_quality">
 		<text>Качество звука</text>
 	</string>
-	<string id="ui_mm_ssao">
+	<string id="ui_mm_ssao_mode">
+		<text>Тип AO</text>
+	</string>
+	<string id="ui_mm_ssao_classic">
 		<text>SSAO</text>
+	</string>
+	<string id="ui_mm_ssao_hbao">
+		<text>HBAO</text>
+	</string>
+	<string id="ui_mm_ssao_hdao">
+		<text>HDAO</text>
+	</string>
+	<string id="ui_mm_ssao">
+		<text>Качество AO</text>
 	</string>
 	<string id="ui_mm_stalker">
 		<text>Сталкер</text>
@@ -591,8 +642,26 @@
 	<string id="ui_mm_sun_shafts">
 		<text>Солнечные лучи</text>
 	</string>
-	<string id="ui_mm_supersample">
+	<string id="ui_mm_aa_mode">
 		<text>Сглаживание</text>
+	</string>
+	<string id="ui_mm_aa_off">
+		<text>Отключено</text>
+	</string>
+	<string id="ui_mm_aa_fxaa">
+		<text>FXAA</text>
+	</string>
+	<string id="ui_mm_aa_smaa">
+		<text>SMAA</text>
+	</string>
+	<string id="ui_mm_aa_msaa">
+		<text>MSAA</text>
+	</string>
+	<string id="ui_mm_msaa_samples">
+		<text>Качество MSAA</text>
+	</string>
+	<string id="ui_mm_supersample">
+		<text>Суперсэмплинг</text>
 	</string>
 	<string id="ui_mm_switch_torch">
 		<text>Использование фонариков AI</text>
@@ -686,5 +755,49 @@
 	</string>
 	<string id="st_opt_ultra">
 		<text>Ультра</text>
+	</string>
+	<string id="ui_mm_lens_factor">
+		<text>FPS 3D-линзы</text>
+	</string>
+	<string id="ui_mm_lens_enabled">
+		<text>Включить 3D-линзу</text>
+	</string>
+	<string id="ui_mm_npc_lasers">
+		<text>ЛЦУ у NPC</text>
+	</string>
+	<string id="ui_mm_hud_shadow">
+		<text>SSS: тени оружия</text>
+	</string>
+	<string id="ui_mm_actor_shadow">
+		<text>Тень персонажа</text>
+	</string>
+	<string id="ui_mm_pda_3d">
+		<text>3D ПДА</text>
+	</string>
+	<string id="ui_mm_pda_autozoom">
+		<text>ПДА во весь экран</text>
+	</string>
+	<string id="ui_mm_pda_savezoomstate">
+		<text>Сохр. положение ПДА</text>
+	</string>
+	<string id="ui_mm_keypress_on_start">
+		<text>Пауза после загрузки</text>
+	</string>
+	<string id="ui_st_press_any_key">
+		<text>Нажмите любую клавишу, чтобы продолжить</text>
+	</string>
+	<string id="ui_mm_show_quick_slots">
+		<text>Показывать иконки быстрых слотов</text>
+	</string>
+	<string id="ui_mm_pause_on_minimize">
+		<text>Пауза при сворачивании</text>
+	</string>
+	<!-- Discord Rich Presence switch, video tab (console: discord_rpc). -->
+	<string id="ui_mm_discord_rpc">
+		<text>Статус в Discord</text>
+	</string>
+	<!-- First-person body checkbox, advanced video tab (console: g_legs). -->
+	<string id="ui_mm_legs">
+		<text>Тело от первого лица</text>
 	</string>
 </string_table>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_bm16">
+		<text>TOZ-66</text>
+	</string>
+	<string id="gunsl_wpn_bm16_descr">
+		<text>Hunting "side-by-side" rifle. Widespread among bandits and rookie stalkers. Quite effective at close range.</text>
+	</string>
+	<string id="gunsl_up_prop_short_stock">
+		<text>Sawed-off stock</text>
+	</string>
+	<string id="gunsl_up_prop_short_barrel">
+		<text>Sawed-off barrel</text>
+	</string>
+</string_table>

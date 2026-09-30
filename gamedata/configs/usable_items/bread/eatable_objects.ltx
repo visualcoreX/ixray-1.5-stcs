@@ -1,0 +1,29 @@
+; hidden object that carries the bread's real effect. gwr_eatable spawns and eats it after
+; effect_delay, so the satiety lands during the animation instead of instantly.
+; The real [bread] in misc\items.ltx has its eat_* values zeroed.
+; thirst_factor stays on the REAL item: gunsl_thirst reads the section the player used.
+
+[bread_eatable]:identity_immunities
+GroupControlSection	= spawn_group
+$spawn				= "weapons\bread_eatable"
+$prefetch			= 8
+class				= II_FOOD
+cform				= skeleton
+visual				= gwr\main\fake_object
+description			= st_bread_descr
+inv_name			= st_bread
+inv_name_short		= st_bread
+inv_weight			= 0.0
+cost				= 0
+inv_grid_width		= 1
+inv_grid_height		= 1
+inv_grid_x			= 20
+inv_grid_y			= 0
+
+; effects moved here from the real bread
+eat_health			= 0.05
+eat_satiety			= 0.2
+eat_power			= 0
+eat_radiation		= 0
+wounds_heal_perc	= 0
+eat_portions_num	= 1

@@ -1,3 +1,5 @@
+; decane 25.02.2013: fixed repeated instances of task to return to group commander if actor goes out of space restrictor zone
+
 [logic]
 active = sr_idle@wait_order
 
@@ -9,7 +11,7 @@ on_info = {+lim_final_sniper_fire_actor} sr_idle@check_actor
 on_game_timer = 600 | sr_idle@check_actor %+lim_final_sniper_fire_actor%
 
 [sr_idle@check_actor]
-on_actor_outside = sr_idle@check %=give_inited_task(storyline:lim_electro_fence_actor_come_back:csky)%
+on_actor_outside = {-lim_electro_fence_actor_come} sr_idle@check %=give_inited_task(storyline:lim_electro_fence_actor_come_back:csky)%
 on_info = {+lim_shut_transformer_task} sr_idle@nil
 
 [sr_idle@check]

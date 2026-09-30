@@ -1,8 +1,8 @@
 <w>
-  <elite x="0" y="0" width="0.0576" height="0.029">
-    <wrk_area width="0.0576" height="0.029">
-      <auto_static width="0.0576" height="0.029" stretch="1">
-        <texture shader="hud\p3d">ui_temp_ad3_radar_glow</texture>
+  <elite x="0" y="0" width="0.098" height="0.049">
+    <wrk_area width="0.098" height="0.049">
+      <auto_static width="0.098" height="0.049" stretch="1">
+        <texture shader="hud\p3d">ui_temp_ad3_radar</texture>
       </auto_static>
     </wrk_area>
 

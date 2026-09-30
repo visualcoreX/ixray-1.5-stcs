@@ -1,0 +1,67 @@
+; Custom distance attenuation for chosen sound files.
+; A file not listed below keeps the stock OpenAL rolloff (min/max distance from its ogg comment).
+;
+; The curve: full volume up to min_distance, then a decay that is linear in dB -- falloff_db decibels
+; across the whole min..max span (smaller = flatter, 0 = straight line) -- brought down to exactly zero
+; at max_distance, so there is no audible cut at the edge. shoulder = metres past min_distance over
+; which the plateau rounds off into the slope. Shape for falloff_db 20 and no shoulder, by position
+; within the min..max span:   25% -> 0.51   50% -> 0.24   75% -> 0.09   100% -> 0
+; (stock OpenAL rolloff for comparison, min 1 m: 0.25 already at 5 m)
+;
+; min_distance / max_distance are optional; when given, they replace the ogg's values for the files
+; the profile is applied to (the AI hearing range is not touched).
+
+[foley_attenuation]
+min_distance	= 1
+max_distance	= 30
+falloff_db		= 25
+shoulder		= 5
+
+[gunshot_attenuation]
+min_distance	= 3
+max_distance	= 200
+falloff_db		= 15
+shoulder		= 30
+
+[silencer_attenuation]
+min_distance	= 2
+max_distance	= 60
+falloff_db		= 30
+shoulder		= 10
+
+[explode_attenuation]
+min_distance	= 15
+max_distance	= 300
+falloff_db		= 3
+shoulder		= 40
+
+[bullet_crack_attenuation]
+min_distance	= 2
+max_distance	= 30
+falloff_db		= 25
+shoulder		= 8
+
+; path relative to gamedata\sounds, without extension = profile section.
+; The path is matched against the start of the file name: "weapons\ak74\ak74_shoot" covers
+; ak74_shoot_01, ak74_shoot_3p_02 etc., "weapons\explosions\" covers a whole folder. The longest match wins.
+[sound_attenuation]
+weapons\shared\								= gunshot_attenuation
+weapons\shared\bullet_crack_				= bullet_crack_attenuation
+weapons\ak74\ak74_shoot_					= gunshot_attenuation
+weapons\aks74u\aks74u_shoot_				= gunshot_attenuation
+weapons\g36\g36_shoot_						= gunshot_attenuation
+weapons\lr300\lr300_shoot_					= gunshot_attenuation
+weapons\pm\makarov_shoot_					= gunshot_attenuation
+weapons\p99\p99_shoot_						= gunshot_attenuation
+weapons\pkm\pkm_shoot_						= gunshot_attenuation
+weapons\gauss\gauss_shoot_					= gunshot_attenuation
+weapons\gauss\gauss_shoot_recharge			= foley_attenuation
+weapons\ak74\ak74_shoot_sil_				= silencer_attenuation
+weapons\aks74u\aks74u_shoot_sil_			= silencer_attenuation
+weapons\g36\g36_shoot_sil_					= silencer_attenuation
+weapons\lr300\lr300_shoot_sil_				= silencer_attenuation
+weapons\pm\makarov_shoot_sil_				= silencer_attenuation
+weapons\p99\p99_shoot_sil_					= silencer_attenuation
+weapons\vss\vss_shoot_						= silencer_attenuation
+weapons\grenade\grenade_explode_			= explode_attenuation
+weapons\grenade\grenade_explosion			= explode_attenuation

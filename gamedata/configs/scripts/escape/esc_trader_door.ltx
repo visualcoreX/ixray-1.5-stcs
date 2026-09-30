@@ -7,16 +7,7 @@ closed = true
 snd_open_start = metal_small_open
 snd_close_start = metal_small_close_start
 snd_close_stop = metal_small_close_stop
-on_info = {+mar_story_go_to_escape_done} ph_door@close
-
-[ph_door@close]
-locked = true
-closed = true
-snd_open_start = metal_small_open
-snd_close_start = metal_small_close_start
-snd_close_stop = metal_small_close_stop
-;on_use = ph_door@open
-on_actor_in_zone = esc_space_restrictor_trader_door_into | ph_door@near
+on_actor_in_zone = esc_space_restrictor_trader_door_into | ph_door@near %+esc_in_sid_door_zone%
 
 [ph_door@near]
 locked = false
@@ -25,6 +16,7 @@ snd_open_start = metal_small_open
 snd_close_start = metal_small_close_start
 snd_close_stop = metal_small_close_stop
 on_use = ph_door@open
+on_actor_not_in_zone = esc_space_restrictor_trader_door_into | ph_door@locked %-esc_in_sid_door_zone%
 
 [ph_door@open]
 locked = false
@@ -33,4 +25,4 @@ snd_open_start = metal_small_open
 snd_close_start = metal_small_close_start
 snd_close_stop = metal_small_close_stop
 on_use = ph_door@near
-on_actor_not_in_zone = esc_space_restrictor_trader_door_into | ph_door@close
+on_actor_not_in_zone = esc_space_restrictor_trader_door_into | ph_door@locked %-esc_in_sid_door_zone%

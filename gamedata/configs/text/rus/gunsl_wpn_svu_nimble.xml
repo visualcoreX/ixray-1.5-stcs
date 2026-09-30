@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_svu_nimble">
+		<text>СВУ-А</text>
+	</string>
+	<string id="gunsl_wpn_svu_nimble_descr">
+		<text>Снайперская Винтовка Укороченная Автоматическая - дальнейшее развитие СВУ. Может вести огонь очередями. Это редкое для Зоны оружие ранее принадлежало Максу, легендарному хранителю группировки «Свобода».</text>
+	</string>
+</string_table>

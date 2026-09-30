@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_saiga12_up_barrel_narezka_name">
+     <text>Rifled barrel</text>
+</string>
+<string id="gunsl_saiga12_up_barrel_narezka_descr">
+     <text>Barrel rifling increases muzzle velocity and accuracy, however makes the use of buckshot impossible.</text>
+</string>
+<string id="gunsl_saiga12_up_barrel_dtk_name">
+     <text>Muzzle brake</text>
+</string>
+<string id="gunsl_saiga12_up_barrel_dtk_descr">
+     <text>Reduces felt recoil.</text>
+</string>
+<string id="gunsl_saiga12_up_sights_name">
+     <text>Tritium sights</text>
+</string>
+<string id="gunsl_saiga12_up_sights_descr">
+     <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+</string>
+<string id="gunsl_saiga12_up_handle_name">
+     <text>Anatomical pistol grip</text>
+</string>
+<string id="gunsl_saiga12_up_handle_descr">
+     <text>Provides better grip for the right hand.</text>
+</string>
+<string id="gunsl_saiga12_up_titan_details_name">
+     <text>More durable parts</text>
+</string>
+<string id="gunsl_saiga12_up_titan_details_descr">
+     <text>Parts made of wear-resistant alloys improve durability and decrease the probability of malfunction.</text>
+</string>
+<string id="gunsl_saiga12_up_lightdetails_name">
+     <text>Lightweight parts</text>
+</string>
+<string id="gunsl_saiga12_up_lightdetails_descr">
+     <text>Reduces weight by replacing weapon parts with their light-alloy counterparts.</text>
+</string>
+<string id="gunsl_saiga12_up_light_stock_name">
+     <text>Lightweight stock</text>
+</string>
+<string id="gunsl_saiga12_up_light_stock_descr">
+     <text>Reduces weight by replacing the standard stock with a maintenance counterpart.</text>
+</string>
+<string id="gunsl_saiga12_up_stock_nakladka_name">
+     <text>Recoil pad</text>
+</string>
+<string id="gunsl_saiga12_up_stock_nakladka_descr">
+     <text>Recoil pad from GP-25 accessories' kit dampens felt recoil.</text>
+</string>
+<string id="gunsl_saiga12_up_mag10_name">
+     <text>10 round magazine</text>
+</string>
+<string id="gunsl_saiga12_up_mag10_descr">
+     <text>Extended magazine decreases the number of reloads in combat, thus improving the chances of staying alive.</text>
+</string>
+<string id="gunsl_saiga12_up_mag_fix_name">
+     <text>Improved feeding mechanism</text>
+</string>
+<string id="gunsl_saiga12_up_mag_fix_descr">
+     <text>Reduces the probability of malfunctions related to feeding a round into the chamber.</text>
+</string>
+<string id="gunsl_saiga12_up_patronnik_name">
+     <text>Chamber adjustment</text>
+</string>
+<string id="gunsl_saiga12_up_patronnik_descr">
+     <text>Precise adjustment of the internal parts and reduction of play in the chamber improves accuracy.</text>
+</string>
+<string id="gunsl_saiga12_up_usm_rpm_name">
+     <text>Trigger tuning</text>
+</string>
+<string id="gunsl_saiga12_up_usm_rpm_descr">
+     <text>Increases rate of fire.</text>
+</string>
+<string id="gunsl_saiga12_up_light_foregrip_name">
+     <text>Lightweight handguard</text>
+</string>
+<string id="gunsl_saiga12_up_light_foregrip_descr">
+     <text>Reduces overall weight of the firearm.</text>
+</string>
+<string id="gunsl_saiga12_up_usm_recoil_name">
+     <text>Match trigger</text>
+</string>
+<string id="gunsl_saiga12_up_usm_recoil_descr">
+     <text>Decreases recoil, thus improving accuracy.</text>
+</string>
+<string id="gunsl_saiga12_up_accurate_details_name">
+     <text>Mechanism adjustment</text>
+</string>
+<string id="gunsl_saiga12_up_accurate_details_descr">
+     <text>Tighter fit and lapping of the main moving parts reduce play, which in turn improves accuracy.</text>
+</string>
+</string_table>

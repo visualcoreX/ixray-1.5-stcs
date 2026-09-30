@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_saiga12_up_barrel_narezka_name">
+     <text>Нарезной ствол</text>
+</string>
+<string id="gunsl_saiga12_up_barrel_narezka_descr">
+     <text>Нарезка ствола позволяет значительно повысить точность стрельбы и увеличивает начальную скорость пули, но делает невозможной стрельбу дробью.</text>
+</string>
+<string id="gunsl_saiga12_up_barrel_dtk_name">
+     <text>ДТК</text>
+</string>
+<string id="gunsl_saiga12_up_barrel_dtk_descr">
+     <text>Установка дульного тормоза-компенсатора позволяет снизить ощущаемую стрелком отдачу.</text>
+</string>
+<string id="gunsl_saiga12_up_sights_name">
+     <text>Тритиевая вставка</text>
+</string>
+<string id="gunsl_saiga12_up_sights_descr">
+     <text>Установка светящейся вставки в прицельное приспособление позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_saiga12_up_handle_name">
+     <text>Анатомическая рукоять</text>
+</string>
+<string id="gunsl_saiga12_up_handle_descr">
+     <text>Обеспечивает правой руке более удобный хват.</text>
+</string>
+<string id="gunsl_saiga12_up_titan_details_name">
+     <text>Детали повышенной прочности</text>
+</string>
+<string id="gunsl_saiga12_up_titan_details_descr">
+     <text>Замена стандартных деталей из состава основных узлов оружия на аналоги из износостойких сплавов позволяет продлить срок службы оружия и снизить число возникающих при стрельбе задержек.</text>
+</string>
+<string id="gunsl_saiga12_up_lightdetails_name">
+     <text>Легкосплавные детали</text>
+</string>
+<string id="gunsl_saiga12_up_lightdetails_descr">
+     <text>Замена деталей оружия на их легкосплавные аналоги позволяет снизить массу оружия.</text>
+</string>
+<string id="gunsl_saiga12_up_light_stock_name">
+     <text>Облегченный приклад</text>
+</string>
+<string id="gunsl_saiga12_up_light_stock_descr">
+     <text>Замена стандартного приклада на более легкий снижает массу оружия.</text>
+</string>
+<string id="gunsl_saiga12_up_stock_nakladka_name">
+     <text>Накладка-тыльник</text>
+</string>
+<string id="gunsl_saiga12_up_stock_nakladka_descr">
+     <text>Снижает ощущаемую стрелком от выстрела из оружия отдачу.</text>
+</string>
+<string id="gunsl_saiga12_up_mag10_name">
+     <text>Магазин повышенной емкости</text>
+</string>
+<string id="gunsl_saiga12_up_mag10_descr">
+     <text>Позволяет сократить число перезарядок в бою, увеличивая шансы остаться в живых.</text>
+</string>
+<string id="gunsl_saiga12_up_mag_fix_name">
+     <text>Доработка механизма подачи патронов</text>
+</string>
+<string id="gunsl_saiga12_up_mag_fix_descr">
+     <text>Позволяет снизить число задержек, возникающих во время подачи очередного патрона из магазина в патронник.</text>
+</string>
+<string id="gunsl_saiga12_up_patronnik_name">
+     <text>Юстировка патронника</text>
+</string>
+<string id="gunsl_saiga12_up_patronnik_descr">
+     <text>Тщательная подгонка деталей и минимизация люфтов позволяет добиться более высокой точности стрельбы.</text>
+</string>
+<string id="gunsl_saiga12_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_saiga12_up_usm_rpm_descr">
+     <text>Позволяет стрелку добиться большей скорострельности при ведении огня из оружия.</text>
+</string>
+<string id="gunsl_saiga12_up_light_foregrip_name">
+     <text>Облегченное цевье</text>
+</string>
+<string id="gunsl_saiga12_up_light_foregrip_descr">
+     <text>Позволяет снизить общую массу оружия.</text>
+</string>
+<string id="gunsl_saiga12_up_usm_recoil_name">
+     <text>Механизм мягкого спуска</text>
+</string>
+<string id="gunsl_saiga12_up_usm_recoil_descr">
+     <text>Позволяет снизить отдачу, способствуя более точной стрельбе.</text>
+</string>
+<string id="gunsl_saiga12_up_accurate_details_name">
+     <text>Подгонка механизмов</text>
+</string>
+<string id="gunsl_saiga12_up_accurate_details_descr">
+     <text>Подгонка и тщательная притирка основных узлов способствует минимизации люфтов, что благоприятным образом сказывается на точности ведения огня.</text>
+</string>
+</string_table>

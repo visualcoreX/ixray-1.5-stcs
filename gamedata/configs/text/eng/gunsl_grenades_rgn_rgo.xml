@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_grenade_rgn">
+		<text>RGN Grenade</text>
+	</string>
+	<string id="gunsl_wpn_grenade_rgn_descr">
+		<text>Offensive anti-personnel fragmentation impact-detonated hand grenade. Equipped with an dual-action fuse, which has both impact and time delay functions. Has a lethal radius of 4 meters. Additionally equipped with protection from detonation if dropped too close to the thrower.</text>
+	</string>
+	<string id="gunsl_wpn_grenade_rgo">
+		<text>RGO Grenade</text>
+	</string>
+	<string id="gunsl_wpn_grenade_rgo_descr">
+		<text>Defensive anti-personnel fragmentation impact-detonated hand grenade. Equipped with an dual-action fuse, which has both impact and time delay functions. Has a lethal radius of 6 meters. Additionally equipped with protection from detonation if dropped too close to the thrower.</text>
+	</string>
+</string_table>

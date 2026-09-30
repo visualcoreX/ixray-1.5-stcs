@@ -3,7 +3,8 @@
 #include "ui\map_spots_mp.xml"
 #include "ui\map_spots_relations.xml"
 #include "ui\map_spots_complex.xml"
-#include "ui\map_spots_find_upgrade.xml
+#include "ui\map_spots_find_upgrade.xml"
+#include "ui\map_spots_smart_terrain_names.xml"
 
         <quest_pointer x="0" y="0" width="11" height="24" heading="1" alignment="c">
                 <texture a="255" r="255" g="240" b="0">ui_hud_map_arrow</texture>
@@ -176,6 +177,22 @@
                 <texture>ui_sm_mapQuest_gold</texture>
         </treasure_spot_mini>
 
+        <!-- stash holding an upgrade flash drive: same spot, red instead of purple.
+             la_texture="0" stops map_spot_secrets from recolouring the texture, so the
+             animation still drives the alpha pulse and the tint below decides the colour. -->
+        <treasure_upgrade>
+        	<level_map spot="treasure_upgrade_spot" pointer="quest_pointer"/>
+        	<mini_map spot="treasure_upgrade_spot_mini"/>
+        </treasure_upgrade>
+
+        <treasure_upgrade_spot x="0" y="0" width="16.4" height="16.4" alignment="c" stretch="1" scale="1" scale_min="1.1" scale_max="3.1">
+        	<texture r="255" g="48" b="32">ui_mapQuest_gold_white</texture>
+        </treasure_upgrade_spot>
+
+        <treasure_upgrade_spot_mini x="0" y="0" width="11" height="11" alignment="c" stretch="0" scale="1" scale_min="1.1" scale_max="3.1">
+        	<texture r="255" g="48" b="32">ui_mapQuest_gold_white</texture>
+        </treasure_upgrade_spot_mini>
+
 
         <alife_combat_fight>
                 <level_map spot="alife_combat_fight_spot" pointer="combat_pointer"/>
@@ -323,7 +340,7 @@
 
 
   <!-- Смарттеррейны -->
-  <alife_presentation_smart>
+  <alife_presentation_smart hint="disable_hint">
     <level_map spot="alife_presentation_smart_spot"/>
   </alife_presentation_smart>
   <alife_presentation_smart_spot x="0" y="0" width="64" height="64" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
@@ -331,20 +348,20 @@
   </alife_presentation_smart_spot>
 
 
-  <alife_presentation_smart_default_none>
+  <alife_presentation_smart_default_none hint="disable_hint">
     <level_map spot="alife_presentation_smart_default_none_spot"/>
   </alife_presentation_smart_default_none>
   <alife_presentation_smart_default_none_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
     <texture r="50" g="50" b="50">ui_pda2_pt_territory</texture>
   </alife_presentation_smart_default_none_spot>
-  <alife_presentation_smart_territory_none>
+  <alife_presentation_smart_territory_none hint="disable_hint">
     <level_map spot="alife_presentation_smart_territory_none_spot"/>
   </alife_presentation_smart_territory_none>
 
   <alife_presentation_smart_territory_none_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
     <texture r="50" g="50" b="50">ui_pda2_pt_territory</texture>
   </alife_presentation_smart_territory_none_spot>
-  <alife_presentation_smart_base_none>
+  <alife_presentation_smart_base_none hint="disable_hint">
     <level_map spot="alife_presentation_smart_base_none_spot"/>
     <mini_map  spot="alife_presentation_smart_base_none_spot_mini"/>
   </alife_presentation_smart_base_none>
@@ -355,32 +372,32 @@
                 <texture r="50" g="50" b="50">ui_mmap_base</texture>
         </alife_presentation_smart_base_none_spot_mini>
 
-  <alife_presentation_smart_science_none>
+  <alife_presentation_smart_science_none hint="disable_hint">
     <level_map spot="alife_presentation_smart_science_none_spot"/>
   </alife_presentation_smart_science_none>
   <alife_presentation_smart_science_none_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
     <texture r="50" g="50" b="50">ui_pda2_pt_science</texture>
   </alife_presentation_smart_science_none_spot>
-  <alife_presentation_smart_resource_none>
+  <alife_presentation_smart_resource_none hint="disable_hint">
     <level_map spot="alife_presentation_smart_none_resource_spot"/>
   </alife_presentation_smart_resource_none>
   <alife_presentation_smart_none_resource_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
     <texture r="50" g="50" b="50">ui_pda2_pt_resource</texture>
   </alife_presentation_smart_none_resource_spot>
 
-  <alife_presentation_smart_default_friend>
+  <alife_presentation_smart_default_friend hint="disable_hint">
     <level_map spot="alife_presentation_smart_default_friend_spot"/>
   </alife_presentation_smart_default_friend>
   <alife_presentation_smart_default_friend_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
     <texture r="0" g="255" b="0">ui_pda2_pt_territory</texture>
   </alife_presentation_smart_default_friend_spot>
-  <alife_presentation_smart_territory_friend>
+  <alife_presentation_smart_territory_friend hint="disable_hint">
     <level_map spot="alife_presentation_smart_territory_friend_spot"/>
   </alife_presentation_smart_territory_friend>
   <alife_presentation_smart_territory_friend_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
     <texture r="0" g="255" b="0">ui_pda2_pt_territory</texture>
   </alife_presentation_smart_territory_friend_spot>
-  <alife_presentation_smart_base_friend>
+  <alife_presentation_smart_base_friend hint="disable_hint">
     <level_map spot="alife_presentation_smart_base_friend_spot"/>
     <mini_map spot="alife_presentation_smart_base_friend_spot_mini"/>
   </alife_presentation_smart_base_friend>
@@ -391,32 +408,32 @@
                 <texture r="0" g="255" b="0">ui_mmap_base</texture>
         </alife_presentation_smart_base_friend_spot_mini>
 
-  <alife_presentation_smart_science_friend>
+  <alife_presentation_smart_science_friend hint="disable_hint">
     <level_map spot="alife_presentation_smart_science_friend_spot"/>
   </alife_presentation_smart_science_friend>
   <alife_presentation_smart_science_friend_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
     <texture r="0" g="255" b="0">ui_pda2_pt_science</texture>
   </alife_presentation_smart_science_friend_spot>
-  <alife_presentation_smart_resource_friend>
+  <alife_presentation_smart_resource_friend hint="disable_hint">
     <level_map spot="alife_presentation_smart_resource_friend_spot"/>
   </alife_presentation_smart_resource_friend>
   <alife_presentation_smart_resource_friend_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
     <texture r="0" g="255" b="0">ui_pda2_pt_resource</texture>
   </alife_presentation_smart_resource_friend_spot>
 
-  <alife_presentation_smart_default_enemy>
+  <alife_presentation_smart_default_enemy hint="disable_hint">
     <level_map spot="alife_presentation_smart_default_enemy_spot"/>
   </alife_presentation_smart_default_enemy>
   <alife_presentation_smart_default_enemy_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
     <texture r="237" g="28" b="36">ui_pda2_pt_territory</texture>
   </alife_presentation_smart_default_enemy_spot>
-  <alife_presentation_smart_territory_enemy>
+  <alife_presentation_smart_territory_enemy hint="disable_hint">
     <level_map spot="alife_presentation_smart_territory_enemy_spot"/>
   </alife_presentation_smart_territory_enemy>
   <alife_presentation_smart_territory_enemy_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
     <texture r="237" g="28" b="36">ui_pda2_pt_territory</texture>
   </alife_presentation_smart_territory_enemy_spot>
-  <alife_presentation_smart_base_enemy>
+  <alife_presentation_smart_base_enemy hint="disable_hint">
     <level_map spot="alife_presentation_smart_base_enemy_spot"/>
     <mini_map spot="alife_presentation_smart_base_enemy_spot_mini"/>
   </alife_presentation_smart_base_enemy>
@@ -428,13 +445,13 @@
         </alife_presentation_smart_base_enemy_spot_mini>
 
 
-  <alife_presentation_smart_science_enemy>
+  <alife_presentation_smart_science_enemy hint="disable_hint">
     <level_map spot="alife_presentation_smart_science_enemy_spot"/>
   </alife_presentation_smart_science_enemy>
   <alife_presentation_smart_science_enemy_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
     <texture r="237" g="28" b="36">ui_pda2_pt_science</texture>
   </alife_presentation_smart_science_enemy_spot>
-  <alife_presentation_smart_resource_enemy>
+  <alife_presentation_smart_resource_enemy hint="disable_hint">
     <level_map spot="alife_presentation_smart_resource_enemy_spot"/>
   </alife_presentation_smart_resource_enemy>
   <alife_presentation_smart_resource_enemy_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
@@ -442,19 +459,19 @@
   </alife_presentation_smart_resource_enemy_spot>
 
 
-  <alife_presentation_smart_default_neutral>
+  <alife_presentation_smart_default_neutral hint="disable_hint">
     <level_map spot="alife_presentation_smart_default_neutral_spot"/>
   </alife_presentation_smart_default_neutral>
   <alife_presentation_smart_default_neutral_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
     <texture r="193" g="193" b="193">ui_pda2_pt_territory</texture>
   </alife_presentation_smart_default_neutral_spot>
-  <alife_presentation_smart_territory_neutral>
+  <alife_presentation_smart_territory_neutral hint="disable_hint">
     <level_map spot="alife_presentation_smart_territory_neutral_spot"/>
   </alife_presentation_smart_territory_neutral>
   <alife_presentation_smart_territory_neutral_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
     <texture r="193" g="193" b="193">ui_pda2_pt_territory</texture>
   </alife_presentation_smart_territory_neutral_spot>
-  <alife_presentation_smart_base_neutral>
+  <alife_presentation_smart_base_neutral hint="disable_hint">
     <level_map spot="alife_presentation_smart_base_neutral_spot"/>
     <mini_map spot="alife_presentation_smart_base_neutral_spot_mini"/>
   </alife_presentation_smart_base_neutral>
@@ -466,13 +483,13 @@
         </alife_presentation_smart_base_neutral_spot_mini>
 
 
-  <alife_presentation_smart_science_neutral>
+  <alife_presentation_smart_science_neutral hint="disable_hint">
     <level_map spot="alife_presentation_smart_science_neutral_spot"/>
   </alife_presentation_smart_science_neutral>
   <alife_presentation_smart_science_neutral_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
     <texture r="193" g="193" b="193">ui_pda2_pt_science</texture>
   </alife_presentation_smart_science_neutral_spot>
-  <alife_presentation_smart_resource_neutral>
+  <alife_presentation_smart_resource_neutral hint="disable_hint">
     <level_map spot="alife_presentation_smart_resource_neutral_spot"/>
   </alife_presentation_smart_resource_neutral>
   <alife_presentation_smart_resource_neutral_spot x="0" y="0" width="27" height="27" alignment="c" stretch="1" scale_min="1" scale_max="3" scale="1" location_level="0">
@@ -484,6 +501,27 @@
 
 
         <!-- Отряды -->
+
+	<!-- SRP mini spots -->
+
+	<alife_presentation_squad_friend_mini>
+		<mini_map spot="alife_presentation_squad_friend_spot_mini"/>
+	</alife_presentation_squad_friend_mini>
+
+	<alife_presentation_squad_neutral_mini>
+		<mini_map spot="alife_presentation_squad_neutral_spot_mini"/>
+	</alife_presentation_squad_neutral_mini>
+
+	<alife_presentation_friend_squad_attack_point_mini>
+		<mini_map spot="alife_presentation_friend_squad_attack_point_spot_mini"/>
+	</alife_presentation_friend_squad_attack_point_mini>
+
+	<alife_presentation_neutral_squad_attack_point_mini>
+		<mini_map spot="alife_presentation_neutral_squad_attack_point_spot_mini"/>
+	</alife_presentation_neutral_squad_attack_point_mini>
+
+	<!-- /SRP mini spots -->
+
   <alife_presentation_squad_friend>
     <level_map spot="alife_presentation_squad_friend_spot"/>
     <mini_map spot="alife_presentation_squad_friend_spot_mini"/>

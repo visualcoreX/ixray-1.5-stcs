@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_groza_nimble">
+		<text>«Storm»</text>
+	</string>
+	<string id="gunsl_wpn_groza_nimble_descr">
+		<text>Experimental version of an assault rifle and grenade launcher system, based on the standard OTs-14 "Groza", specially designed for units operating in the Zone. This firearm is chambered in 5.45x39mm, which enables the use of standard and quite wide-spread AK-74 magazines.</text>
+	</string>
+</string_table>

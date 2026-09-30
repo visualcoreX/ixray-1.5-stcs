@@ -8,7 +8,6 @@ gar_story_chase_pda_signal
 gar_story_chase_pda_signal_cellar
 gar_story_get_pda
 
-;gar_quest_killer_pseudodogs
 gar_quest_redemption
 
 gar_quest_get_old_pda
@@ -40,7 +39,6 @@ gar_recover_item_5
 ;------------------ Storyline Quests -----------------
 ;-----------------------------------------------------
 
-; Прийти в лагерь диггеров
 [gar_story_find_diggers]
 type = storyline
 task_type = storyline
@@ -50,11 +48,9 @@ prior = 2
 name = gar_story_find_diggers_name
 text = gar_story_find_diggers_text
 condlist_0 = {+gar_story_reached_dead_diggers_camp} reversed
-;condlist_0 = {+gar_story_got_info_from_digger} complete
 target_story_ids = 702
 auto_name = false
 
-; Обыскать тело диггера
 [gar_story_search_digger_bodies]
 type = storyline
 task_type = storyline
@@ -67,7 +63,6 @@ condlist_0 = {+gar_story_searched_digger_body} complete
 target_story_ids = 701
 auto_name = false
 
-; Догнать диггера, который пошёл за Клыком
 [gar_story_chase_digger]
 type = storyline
 task_type = storyline
@@ -80,7 +75,6 @@ condlist_0 = {+gar_story_got_info_from_digger} complete
 target_story_ids = logic@work1, gar_smart_terrain_8_5
 auto_name = false
 
-; Убить собак
 [gar_story_kill_dogs]
 type = defend_smart_delay
 task_type = storyline
@@ -97,7 +91,6 @@ wait_time = 0
 auto_name = false
 community_relation_delta_complete = 50
 
-; Догнать Клыка в Тёмной Долине
 [gar_story_go_to_freedom]
 type = storyline
 task_type = storyline
@@ -110,7 +103,6 @@ condlist_0 = {+val_temp_start_quest_complete} complete
 target_story_ids = 1199
 auto_name = false
 
-; Догнать Клыка (до подвала)
 [gar_story_chase_pda_signal]
 type = storyline
 task_type = storyline
@@ -123,7 +115,6 @@ condlist_0 = {+gar_story_came_to_ambush_door} reversed
 target_story_ids = 706
 auto_name = false
 
-; Найти Клыка в подвале
 [gar_story_chase_pda_signal_cellar]
 type = storyline
 task_type = storyline
@@ -136,7 +127,6 @@ condlist_0 = {+gar_story_cannot_find_fang} reversed
 target_story_ids = 703
 auto_name = false
 
-; Взять ПДА Клыка
 [gar_story_get_pda]
 type = storyline
 task_type = storyline
@@ -150,30 +140,15 @@ condlist_0 = {+gar_story_got_fang_pda} complete
 target_story_ids = 703
 auto_name = false
 
-
 ;-----------------------------------------------------
 ;------------------ Secondary Quests -----------------
 ;-----------------------------------------------------
-
-; Убить Ночных Охотников
-;[gar_quest_killer_pseudodogs]
-;type = storyline
-;task_type = additional
-;icon = ui_mt_image_attack_tower
-;spot = mar_defend_tower_location
-;target_cond = true
-;name = gar_quest_killer_pseudodogs_name
-;text = gar_quest_killer_pseudodogs_text
-;condlist_0 = {+gar_quest_killer_pseudodogs_done} complete
-;condlist_1 = {+gar_flea_market_stop_quest_line} fail
-;target_story_ids = 708
 
 [gar_quest_redemption]
 type = storyline
 task_type = additional
 prior = 12
 ;icon = ui_mt_image_attack_tower
-;spot = mar_defend_tower_location
 target_cond = true
 name = gar_quest_redemption_name
 text = gar_quest_redemption_text
@@ -181,13 +156,11 @@ condlist_0 = {+gar_quest_redemption_done} complete
 target_story_ids = 727
 auto_name = false
 
-; Взять старый ПДА
 [gar_quest_get_old_pda]
 type = storyline
 task_type = additional
 prior = 10
 ;icon = ui_mt_image_attack_tower
-;spot = mar_defend_tower_location
 target_cond = true
 name = gar_quest_get_old_pda_name
 text = gar_quest_get_old_pda_text
@@ -197,13 +170,11 @@ target_story_ids = 702
 auto_name = false
 auto_faction = true
 
-; Взять старый ПДА в ящике
 [gar_quest_get_old_pda_box]
 type = storyline
 task_type = additional
 prior = 10
 ;icon = ui_mt_image_attack_tower
-;spot = mar_defend_tower_location
 target_cond = true
 name = gar_quest_get_old_pda_box_name
 text = gar_quest_get_old_pda_box_text
@@ -213,13 +184,11 @@ target_story_ids = 715
 auto_name = false
 auto_faction = true
 
-; Принести Напру старый ПДА
 [gar_quest_bring_old_pda]
 type = storyline
 task_type = additional
 prior = 10
 ;icon = ui_mt_image_attack_tower
-;spot = mar_defend_tower_location
 target_cond = true
 name = gar_quest_bring_old_pda_name
 text = gar_quest_bring_old_pda_text
@@ -230,13 +199,11 @@ auto_name = false
 auto_faction = true
 community_relation_delta_complete = 50
 
-; Принести Напру деньги на медкомплект
 [gar_quest_bring_money]
 type = storyline
 task_type = additional
 prior = 10
 ;icon = ui_mt_image_attack_tower
-;spot = mar_defend_tower_location
 target_cond = true
 name = gar_quest_bring_money_name
 text = gar_quest_bring_money_text
@@ -247,13 +214,11 @@ auto_name = false
 auto_faction = true
 community_relation_delta_complete = 50
 
-; Отнести деньги Авоське
 [gar_quest_get_weapons]
 type = storyline
 task_type = additional
 prior = 10
 ;icon = ui_mt_image_attack_tower
-;spot = mar_defend_tower_location
 target_cond = true
 name = gar_quest_get_weapons_name
 text = gar_quest_get_weapons_text
@@ -263,13 +228,11 @@ target_story_ids = 709
 auto_name = false
 auto_faction = true
 
-; Убить предателя
 [gar_quest_destroy_ambush]
 type = storyline
 task_type = additional
 prior = 10
 ;icon = ui_mt_image_attack_tower
-;spot = mar_defend_tower_location
 target_cond = true
 name = gar_quest_destroy_ambush_name
 text = gar_quest_destroy_ambush_text
@@ -280,13 +243,11 @@ auto_name = false
 auto_faction = true
 community_relation_delta_complete = 100
 
-; Взглянуть на ПДА предателя
 [gar_quest_get_traitor_pda]
 type = storyline
 task_type = additional
 prior = 10
 ;icon = ui_mt_image_attack_tower
-;spot = mar_defend_tower_location
 target_cond = true
 name = gar_quest_get_traitor_pda_name
 text = gar_quest_get_traitor_pda_text
@@ -296,13 +257,11 @@ target_story_ids = 709
 auto_name = false
 auto_faction = true
 
-; Поговорить с Напром
 [gar_quest_speak_with_quester]
 type = storyline
 task_type = additional
 prior = 10
 ;icon = ui_mt_image_attack_tower
-;spot = mar_defend_tower_location
 target_cond = true
 name = gar_quest_speak_with_quester_name
 text = gar_quest_speak_with_quester_text
@@ -312,13 +271,11 @@ target_story_ids = logic@work5, gar_smart_terrain_6_3
 auto_name = false
 auto_faction = true
 
-; Встретится с группой диггеров для атаки
 [gar_quest_meet_with_digger_fighters]
 type = storyline
 task_type = additional
 prior = 10
 ;icon = ui_mt_image_attack_tower
-;spot = mar_defend_tower_location
 target_cond = true
 name = gar_quest_meet_with_digger_fighters_name
 text = gar_quest_meet_with_digger_fighters_text
@@ -328,13 +285,11 @@ target_story_ids = 710
 auto_name = false
 auto_faction = true
 
-; Освободить пленников из концлагеря
 [gar_quest_liberate_conc_camp]
 type = storyline
 task_type = additional
 prior = 10
 ;icon = ui_mt_image_attack_tower
-;spot = mar_defend_tower_location
 target_cond = true
 name = gar_quest_liberate_conc_camp_name
 text = gar_quest_liberate_conc_camp_text
@@ -350,7 +305,6 @@ type = storyline
 task_type = additional
 prior = 10
 ;icon = ui_mt_image_attack_tower
-;spot = mar_defend_tower_location
 target_cond = true
 name = gar_quest_captive_reward_name
 text = gar_quest_captive_reward_text
@@ -361,7 +315,6 @@ auto_faction = true
 
 ;-----------------------------------------------------
 
-
 [gar_quest_kill_digger_traitor]
 type = storyline
 task_type = additional
@@ -371,23 +324,12 @@ target_cond = true
 name = gar_quest_kill_digger_traitor_name
 text = gar_quest_kill_digger_traitor_text
 condlist_0 = {+gar_quest_kill_digger_traitor_done} complete, {+gar_quest_kill_digger_traitor_gone} reversed
+condlist_1 = {=is_faction_enemy_to_actor(bandit)} reversed
 target_story_ids = logic@work1, gar_smart_terrain_4_5
 auto_name = false
 reward_money = 1000
 auto_faction = true
 community_relation_delta_complete = 50
-
-;type = eliminate_squad
-;task_type = additional
-;prior = 5
-;icon = ui_mt_image_attack_tower
-;target_cond = {-gar_quest_kill_digger_traitor_done -gar_quest_kill_digger_traitor_gone =target_squad_name(gar_digger_traitor)} true
-;prior = 2
-;name = gar_quest_kill_digger_traitor_name
-;text = gar_quest_kill_digger_traitor_text
-;condlist_0 = {+gar_quest_kill_digger_traitor_gone} reversed
-;on_complete = %+gar_quest_kill_digger_traitor_done%
-;play_regard = nil
 
 [gar_quest_kill_smuggler]
 type = eliminate_smart
@@ -397,6 +339,7 @@ prior = 10
 target_cond = {+gar_quest_kill_smuggler_told -gar_quest_kill_smuggler_done =target_smart_name(gar_smart_terrain_4_2)} true
 name = gar_quest_kill_smuggler_name
 text = gar_quest_kill_smuggler_text
+condlist_0 = {=is_faction_enemy_to_actor(bandit)} reversed
 on_complete = %+gar_quest_kill_smuggler_done%
 on_reversed = %+gar_quest_kill_smuggler_done%
 target_story_ids = 709
@@ -414,6 +357,7 @@ prior = 10
 target_cond = {+gar_quest_destroy_flea_market_told -gar_quest_destroy_flea_market_done =target_smart_name(gar_smart_terrain_6_3)} true
 name = gar_quest_destroy_flea_market_name
 text = gar_quest_destroy_flea_market_text
+condlist_0 = {=is_faction_enemy_to_actor(bandit)} reversed
 on_complete = %+gar_quest_destroy_flea_market_done%
 on_reversed = %+gar_quest_destroy_flea_market_done%
 auto_name = false
@@ -431,6 +375,7 @@ target_cond = true
 name = gar_quest_bandit_reward_name
 text = gar_quest_bandit_reward_text
 condlist_0 = {+gar_quest_bandit_reward_done} complete
+condlist_1 = {=is_faction_enemy_to_actor(bandit)} reversed
 target_story_ids = 725
 auto_name = false
 auto_faction = true
@@ -444,6 +389,7 @@ target_cond = true
 name = gar_quest_more_reward_name
 text = gar_quest_more_reward_text
 condlist_0 = {+gar_quest_bandit_secret_started} complete
+condlist_1 = {=is_faction_enemy_to_actor(bandit)} reversed
 target_story_ids = 724
 auto_name = false
 auto_faction = true
@@ -457,14 +403,14 @@ target_cond = true
 name = gar_quest_bandit_secret_name
 text = gar_quest_bandit_secret_text
 condlist_0 = {+gar_quest_bandit_secret_done} complete
+condlist_1 = {=is_faction_enemy_to_actor(bandit)} reversed
 target_story_ids = 717
 auto_name = false
 auto_faction = true
 
-
 ;Recover Items
 
-[gar_recover_item_1]   ;Вернуть  «Чейзер-13»
+[gar_recover_item_1]
 type = recover_item
 task_type = additional
 name = gar_recover_item_1_name
@@ -480,7 +426,7 @@ community_relation_delta_complete = 100
 reward_money = 500
 auto_faction = true
 
-[gar_recover_item_2]   ;Найти модифицированное оружие
+[gar_recover_item_2]
 type = recover_item
 task_type = additional
 name = gar_recover_item_2_name
@@ -496,7 +442,7 @@ community_relation_delta_complete = 100
 reward_money = 1500
 auto_faction = true
 
-[gar_recover_item_3]   ;Принести бутылку водки «Казаки 2»
+[gar_recover_item_3]
 type = recover_item
 task_type = additional
 name = gar_recover_item_3_name
@@ -512,7 +458,7 @@ community_relation_delta_complete = 100
 reward_money = 200
 auto_faction = true
 
-[gar_recover_item_4]   ;Вернуть  куртку новичка
+[gar_recover_item_4]
 type = recover_item
 task_type = additional
 name = gar_recover_item_4_name
@@ -528,7 +474,7 @@ community_relation_delta_complete = 100
 reward_money = 750
 auto_faction = true
 
-[gar_recover_item_5]   ;Принести именной пистолет
+[gar_recover_item_5]
 type = recover_item
 task_type = additional
 name = gar_recover_item_5_name

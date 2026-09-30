@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_sr1m_up_barrel_sil_name">
+     <text>Threaded barrel</text>
+</string>
+<string id="gunsl_sr1m_up_barrel_sil_descr">
+     <text>Extended barrel, threaded for mounting an appropriate suppressor.</text>
+</string>
+<string id="gunsl_sr1m_up_barrel_speed_name">
+     <text>Rebored barrel</text>
+</string>
+<string id="gunsl_sr1m_up_barrel_speed_descr">
+     <text>Barrel with a faster twist rate increases muzzle velocity and reduces bullet dispersion.</text>
+</string>
+<string id="gunsl_sr1m_up_barrel_accuracy_name">
+     <text>Barrel adjustment</text>
+</string>
+<string id="gunsl_sr1m_up_barrel_accuracy_descr">
+     <text>Reduces bullet dispersion, which improves accuracy.</text>
+</string>
+<string id="gunsl_sr1m_up_mag_reliability_name">
+     <text>Improved feeding mechanism</text>
+</string>
+<string id="gunsl_sr1m_up_mag_reliability_descr">
+     <text>Individual adjustment of the standard parts of the feeding mechanism decreases the probability of malfunctions related to feeding issues.</text>
+</string>
+<string id="gunsl_sr1m_up_ejector_name">
+     <text>Improved ejector</text>
+</string>
+<string id="gunsl_sr1m_up_ejector_descr">
+     <text>Reduces the probability of malfunctions related to ejecting an empty case from the firearm. Improves reliability.</text>
+</string>
+<string id="gunsl_sr1m_up_flashlaser_name">
+     <text>Tactical combo device</text>
+</string>
+<string id="gunsl_sr1m_up_flashlaser_descr">
+     <text>Combines the functions of narrow beam tactical flashlight and laser sight. Particularly useful in night conditions.</text>
+</string>
+<string id="gunsl_sr1m_up_handle_inertion_name">
+     <text>Anatomical grips</text>
+</string>
+<string id="gunsl_sr1m_up_handle_inertion_descr">
+     <text>Grip panels custom-made to fit the shooter's preferences. New panels allow for better grip and more comfortable shooting.</text>
+</string>
+<string id="gunsl_sr1m_up_handle_weight_name">
+     <text>Lightweight grip</text>
+</string>
+<string id="gunsl_sr1m_up_handle_weight_descr">
+     <text>Slightly reduces overall weight of the firearm. A trifle, but as we know, it's the little thing that make up all the comfort.</text>
+</string>
+<string id="gunsl_sr1m_up_body_name">
+     <text>Protective coating</text>
+</string>
+<string id="gunsl_sr1m_up_body_descr">
+     <text>Application of a protective coating to the weapon parts significantly reduces wear.</text>
+</string>
+<string id="gunsl_sr1m_up_rail_name">
+     <text>Rail mount</text>
+</string>
+<string id="gunsl_sr1m_up_rail_descr">
+     <text>Rail mount enables installation of additional tactical accessories.</text>
+</string>
+<string id="gunsl_sr1m_up_usm_recoil_kurok_myagkii_spusk_name">
+     <text>Match trigger</text>
+</string>
+<string id="gunsl_sr1m_up_usm_recoil_kurok_myagkii_spusk_descr">
+     <text>Reduces felt recoil, which positively affects accuracy.</text>
+</string>
+<string id="gunsl_sr1m_up_mag_name">
+     <text>Lightweight magazine</text>
+</string>
+<string id="gunsl_sr1m_up_mag_descr">
+     <text>maintenance magazine slightly reduces overall weight of the firearm.</text>
+</string>
+<string id="gunsl_sr1m_up_light_details_name">
+     <text>Lightweight parts</text>
+</string>
+<string id="gunsl_sr1m_up_light_details_descr">
+     <text>Reduces weight by replacing weapon parts with their light-alloy counterparts without any significant loss in other performance characteristics.</text>
+</string>
+<string id="gunsl_sr1m_up_patronnik_obturation_name">
+     <text>Chamber adjustment</text>
+</string>
+<string id="gunsl_sr1m_up_patronnik_obturation_descr">
+     <text>Improves obturation by removing play in the chamber, which in turn increases muzzle velocity.</text>
+</string>
+<string id="gunsl_sr1m_up_sights_name">
+     <text>Tritium sights</text>
+</string>
+<string id="gunsl_sr1m_up_sights_descr">
+     <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+</string>
+<string id="gunsl_sr1m_up_usm_rpm_name">
+     <text>Trigger tuning</text>
+</string>
+<string id="gunsl_sr1m_up_usm_rpm_descr">
+     <text>Reconfiguration of the trigger assembly with improvement of various parts gives a crisp break with a shorter, smoother trigger take-up, leading to faster follow-up shots.</text>
+</string>
+<string id="gunsl_sr1m_up_zatvor_balancer_name">
+     <text>Balanced slide</text>
+</string>
+<string id="gunsl_sr1m_up_zatvor_balancer_descr">
+     <text>Decreases muzzle climb and felt recoil.</text>
+</string>
+<string id="gunsl_sr1m_up_light_ramka_name">
+     <text>Lightweight frame</text>
+</string>
+<string id="gunsl_sr1m_up_light_ramka_descr">
+     <text>maintenance frame reduces the firearm's weight, without any loss in durability or other characteristics.</text>
+</string>
+<string id="gunsl_sr1m_up_recoil_compensation_system_name">
+     <text>Recoil reduction system</text>
+</string>
+<string id="gunsl_sr1m_up_recoil_compensation_system_descr">
+     <text>Completely overhauled trigger group significantly decreases felt recoil.</text>
+</string>
+</string_table>

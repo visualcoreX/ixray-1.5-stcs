@@ -1,4 +1,4 @@
-;Hello guard
+; hello guard
 
 [logic@work1]
 active = walker@enter_work1
@@ -8,18 +8,23 @@ prior = 41
 [walker@enter_work1]
 path_walk = grd_1_walk
 path_look = grd_1_look
-on_actor_in_zone = esc_space_restrictor_stalkerbase | {!gulag_enemy_actor(esc_smart_terrain_5_7)} remark@idle_g
+on_actor_in_zone = esc_space_restrictor_stalkerbase | {!gulag_enemy_actor(esc_smart_terrain_5_7) +esc_reach_trader_complete -esc_stalker_leader_meet} remark@idle_g
 
 [remark@idle_g]
 anim = ward
-on_info = {!gulag_enemy_actor(esc_smart_terrain_5_7) +esc_reach_trader_complete -esc_stalker_leader_meet} walker@last_g_work1 %=play_sound(esc_stalkerbase_guard_redirect:stalker)%
+on_info = remark@idle_g1 %=play_sound(esc_stalkerbase_guard_redirect:stalker:esc_smart_terrain_5_7)%
+target = actor
+
+[remark@idle_g1]
+anim = ward
+on_signal = sound_end | walker@last_g_work1
 target = actor
 
 [walker@last_g_work1]
 path_walk = grd_1_walk
 path_look = grd_1_look
 
-;Prisoner Guard
+; prisoner guard
 
 [logic@work2]
 active = walker@work2

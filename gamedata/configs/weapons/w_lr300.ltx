@@ -1,4 +1,5 @@
 [wpn_lr300]:identity_immunities,weapon_probability,default_weapon_params
+bullet_material				= objects\bullet_automatic	; wallmark/impact/ricochet pair on hit
 GroupControlSection     = spawn_group
 discovery_dependency    =
 $spawn                  = "weapons\lr-300"               ; option for Level Editor
@@ -8,28 +9,27 @@ scheduled               = off                                ; option for ALife 
 cform                   = skeleton
 class                   = WP_AK74
 min_radius              = 0
-max_radius              = 50
-description             = st_wpn_lr300_descr
+max_radius              = 100	; orig 50 (xrMPE)
+description             = gunsl_wpn_lr300_descr	; orig st_wpn_lr300_descr
 
 ef_main_weapon_type     = 2
-ef_weapon_type          = 6
+ef_weapon_type          = 6	; restored: 8 broke the AI queue length (select_queue_params keys on ef_weapon_type)
 
 default_to_ruck         = false
 sprint_allowed          = true
-control_inertion_factor = 1.0
 
 ;---DOF-------------------------------------------------------------------------
 zoom_dof             = 0.5, 1.0, 180
-reload_dof           = 0.0, 0.5, 5, 1.7
+reload_dof           = 0.0, 0.5, 5, 2	; orig 0.0, 0.5, 5, 1.7 (xrMPE)
 ;-------------------------------------------------------------------------------
 
 ;-------------------------------------------------------------------------------
 holder_range_modifier   = 1.0                       ; во сколько раз увеличивается eye_range
-holder_fov_modifier     = 0.7              ; во сколько раз увеличивается eye_fov
+holder_fov_modifier     = 1.0	; orig 0.7 (xrMPE)
 ;-------------------------------------------------------------------------------
-upgrades                = up_gr_ab_lr300, up_gr_cd_lr300, up_gr_ef_lr300, up_gr_gh_lr300, up_gr_i_lr300, up_gr_j_lr300
+upgrades                = up_gr_ab_lr300, up_gr_cd_lr300, up_gr_ef_lr300, up_gr_gh_lr300, up_gr_i_lr300
 installed_upgrades      =
-upgrade_scheme          = upgrade_scheme_u16a
+upgrade_scheme          = upgrade_scheme_u15_nolamp
 
 
 cost                 	= 6000
@@ -37,13 +37,13 @@ weapon_class            = assault_rifle
 
 ammo_limit              = 210
 ammo_current            = 30
-ammo_elapsed            = 30
+ammo_elapsed            = 31	; orig 30 (xrMPE)
 
-ammo_mag_size        	= 30           ; clip (magazine) size
-fire_modes          	= 1, 3, -1
+ammo_mag_size        	= 31	; orig 30 (xrMPE)
+fire_modes          	= 1, -1	; orig 1, 3, -1 -- burst removed
 
 ammo_class		 		= ammo_5.56x45_ss190, ammo_5.56x45_ap
-grenade_class			= ammo_m209
+grenade_class			= ammo_m209, ammo_m397a1	; orig ammo_m209 (xrMPE)
 
 launch_speed            = 0
 hand_dependence         = 1
@@ -55,8 +55,23 @@ inv_weight              = 2.7
 
 inv_grid_width			= 5
 inv_grid_height			= 2
-inv_grid_x				= 0
-inv_grid_y				= 6
+inv_grid_x				= 20
+inv_grid_y				= 0
+
+; --- layered inventory icon (GS composition) -------------------------------
+; element_icon_0 is the bare weapon body and MUST be present (the engine bails
+; out of GWR_CollectIconLayers without it); its rect equals inv_grid above, so
+; it covers the base picture exactly. Offsets are in ATLAS PIXELS (50 = 1 cell).
+element_icon_0                    = icon_element_lr300_body
+element_icon_offset_x_0           = 0
+element_icon_offset_y_0           = 0
+element_icon_1                    = icon_element_lr300_mag
+element_icon_offset_x_1           = 100
+element_icon_offset_y_1           = 50
+element_icon_2                    = icon_element_lr300_sights
+element_icon_offset_x_2           = 100
+element_icon_offset_y_2           = 0
+element_icon_banned_addons_mask_2 = 1                 ; 1 = scope: iron sights go away when an optic is on
 
 kill_msg_x				= 175
 kill_msg_y				= 0
@@ -65,33 +80,36 @@ kill_msg_height			= 28
 
 slot 			 		= 2		; // secondary
 animation_slot			= 2		; type of the animation that will be used
+actor_anim_group          = ar	; xrMPE actor (third-person) animation set from stalker_animation_new.omf
+actor_anim_group_gl_off   = ar_gloff
+actor_anim_group_gl_on    = ar_glon
 ;-------------------------------------------------------------------------------
 ;базовая дисперсия
-fire_dispersion_base		= 0.65 	;угол (в градусах) базовой дисперсии оружия (оружия зажатого в тисках)
+fire_dispersion_base		= 0.20	; orig 0.65 (xrMPE) ; balance 5.56: L85 < LR300 < G36 (was 0.25)
 control_inertion_factor		= 1.2f
 ;отдача
 cam_relax_speed            	= 5	;скорость возврата в исходное положение
 cam_relax_speed_ai      	= 360
-cam_dispersion             	= 0.2	;увеличения угла (в градусах) с каждым выстрелом
-cam_dispersion_inc      	= 0.2	;увеличениe cam_dispersion с каждым выстрелом
+cam_dispersion             	= 0.3	; orig 0.2 (xrMPE)
+cam_dispersion_inc      	= 0.15	; orig 0.2 (xrMPE)
 cam_dispersion_frac     	= 0.7	;ствол будет подыматься на cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
-cam_max_angle        		= 10.0 	;максимальный угол отдачи
+cam_max_angle        		= 50.0	; orig 10.0 (xrMPE)
 cam_max_angle_horz      	= 10.0	;(degree) maximum shot horizontal degree
-cam_step_angle_horz     	= 1.2	;(degree) size of step camera moved in horizontal position while shooting
+cam_step_angle_horz     	= 3.0	; orig 1.2 (xrMPE)
 
 zoom_cam_relax_speed        = 5    ; scope & ironsight
 zoom_cam_relax_speed_ai     = 360
-zoom_cam_dispersion         = 0.1
-zoom_cam_dispersion_inc     = 0.1
-zoom_cam_dispersion_frac    = 0.7
-zoom_cam_max_angle          = 7.0
-zoom_cam_max_angle_horz     = 7.0
-zoom_cam_step_angle_horz    = 1.0
+zoom_cam_dispersion         = 0.25	; orig 0.1 (xrMPE)
+zoom_cam_dispersion_inc     = 0.12	; orig 0.1 (xrMPE)
+zoom_cam_dispersion_frac    = 1.0	; orig 0.7 (xrMPE)
+zoom_cam_max_angle          = 50.0	; orig 7.0 (xrMPE)
+zoom_cam_max_angle_horz     = 10.0	; orig 7.0 (xrMPE)
+zoom_cam_step_angle_horz    = 2	; orig 1.0 (xrMPE)
 
-fire_dispersion_condition_factor = 5        ;увеличение дисперсии в процентах при максимальном износе
+fire_dispersion_condition_factor = 10	; orig 5 (xrMPE) ; balance 5.56: L85 < LR300 < G36 (was 17)
 misfire_probability 		= 0.005 ;вероятность осечки при максимальном износе
 misfire_condition_k			= 0.05
-condition_shot_dec         	= 0.0005 ;увеличение износа при каждом вvстреле
+condition_shot_dec         	= 0.00045	; orig 0.0005 (xrMPE) ; balance 5.56: L85 < LR300 < G36 (was 0.0014)
 ;-------------------------------------------------------------------------------
 
 position                   = -0.026, -0.130, 0.0
@@ -100,22 +118,22 @@ orientation                = 0.0, 0.0, 0.0
 fire_point              = 0.0, 0.199, 0.575
 fire_point2             = 0.0, 0.199, 0.575
 
-flame_particles         = weapons\generic_weapon05
-smoke_particles         = weapons\generic_shoot_00
-grenade_flame_particles = weapons\generic_weapon01
+flame_particles		   	= ghost_particles\weapons\flame_556_lr300
+smoke_particles		   	= ghost_particles\weapons\smoke_556_lr300
+grenade_flame_particles = ghost_particles\weapons\flame_40mm_m320
 
 shell_point             = 0.120000,0.000000,0.070000
 shell_dir               = 0.0, 0.0, 0.4
-shell_particles         = weapons\generic_shells
+;shell_particles         = weapons\generic_shells
 
-PDM_disp_base           = 1.0
-PDM_disp_vel_factor 	= 1.3
-PDM_disp_accel_factor 	= 1.3
+PDM_disp_base           = 0.5	; orig 1.0 (xrMPE)
+PDM_disp_vel_factor 	= 2.0	; orig 1.3 (xrMPE)
+PDM_disp_accel_factor 	= 2.0	; orig 1.3 (xrMPE)
 PDM_disp_crouch	 		= 1.0
 PDM_disp_crouch_no_acc 	= 1.0
 
 ; ttc
-hit_power         = 0.35, 0.35, 0.35, 0.35
+hit_power         = 0.85, 0.85, 0.85, 0.85	; orig 0.35, 0.35, 0.35, 0.35 (xrMPE)
 hit_impulse       = 100
 hit_type          = fire_wound
 
@@ -124,13 +142,13 @@ hit_probability_gd_stalker = 0.80
 hit_probability_gd_veteran = 0.80
 hit_probability_gd_master  = 0.80
 
-fire_distance        = 150
-bullet_speed         = 400 ;начальная скорость пули
-rpm                  = 700
+fire_distance        = 200	; orig 150 (xrMPE)
+bullet_speed         = 600	; orig 400 (xrMPE)
+rpm                  = 725	; orig 700 (xrMPE)
 rpm_empty_click      = 200
 ; end ttc
 
-use_aim_bullet          = true                ;Поддерживается ли первая суппер пуля
+use_aim_bullet          = false	; orig true (xrMPE)
 time_to_aim             = 2.0
 
 hud                        = wpn_lr300_hud
@@ -158,129 +176,1168 @@ ph_mass                 = 3
 ;addons
 scope_status               = 2                     ; 0 - no addon
 silencer_status            = 2                   ; 1 - permanent
-grenade_launcher_status    = 0                   ; 2 - attachable
+grenade_launcher_status    = 0	; the up_sect_e_lr300 upgrade installs the M203
 
 zoom_enabled            = true                                                ; (on,off)zoom mode (right mouse button)
 zoom_rotate_time        = 0.25
-scope_zoom_factor       = 50                                                ; fov for zoom mode
+scope_zoom_factor       = 98	; orig 100 (xrMPE)
 scope_texture				= wpn_crosshair_l85
 
-scope_name 					= wpn_addon_scope_susat
-scope_x 					= 75
-scope_y 					= -5
-silencer_name              = wpn_addon_silencer    ; section name for the attachable silencer
-silencer_x              = 210                ; offset in inventory icon
-silencer_y              = 9
+scope_name 					= wpn_addon_scope_susat_dusk	; orig wpn_addon_scope_susat (xrMPE)
+scope_x 					= 77	; orig 77 (xrMPE)
+scope_y 					= -5	; orig -5 (xrMPE)
+silencer_name               = wpn_silencer_m4_2000	; orig wpn_addon_silencer (xrMPE names it wpn_addon_silencer_m4_2000)
+silencer_x              	= 183
+silencer_y              	= 12
 grenade_launcher_name      = wpn_addon_grenade_launcher_m203; section name for the attachable grenade launcher
-grenade_launcher_x         = 128                ; offset in inventory icon
-grenade_launcher_y         = 28
+grenade_launcher_x         = 128	; orig 121 (xrMPE)
+grenade_launcher_y         = 28	; orig 26 (xrMPE)
 
-;звуки
-snd_draw                = weapons\generic_draw
-snd_holster       = weapons\generic_holster
-snd_shoot         = weapons\n_lr300_shot
-snd_shoot               = weapons\n_lr300_shot
+;firing sounds (1st person)
+snd_shoot_1p         = weapons\lr300\lr300_shoot_1p_01, -1.1
+snd_shoot_1p1         = weapons\lr300\lr300_shoot_1p_02, -1.1
+snd_shoot_1p2         = weapons\lr300\lr300_shoot_1p_03, -1.1
+snd_shoot_1p3         = weapons\lr300\lr300_shoot_1p_04, -1.1
+snd_shoot_1p4         = weapons\lr300\lr300_shoot_1p_05, -1.1
+snd_shoot_1p5         = weapons\lr300\lr300_shoot_1p_06, -1.1
+snd_shoot_1p6         = weapons\lr300\lr300_shoot_1p_07, -1.1
+snd_shoot_1p7         = weapons\lr300\lr300_shoot_1p_08, -1.1
+snd_shoot_1p8         = weapons\lr300\lr300_shoot_1p_09, -1.1
+snd_shoot_1p9         = weapons\lr300\lr300_shoot_1p_10, -1.1
+snd_shoot_1p10         = weapons\lr300\lr300_shoot_1p_11, -1.1
+snd_shoot_1p11         = weapons\lr300\lr300_shoot_1p_12, -1.1
 
-snd_empty               = weapons\gen_empty, 0.5
-snd_reload              = weapons\groza_reload, 0.7
-snd_shoot_grenade       = weapons\gen_grenshoot
-snd_reload_grenade      = weapons\gen_grenload, 1.0, 0.8
-snd_switch              = weapons\groza_switch, 1.0, 0.5
-snd_bore				= weapons\draw_silent
-snd_bore1				= weapons\mp5_bore
+snd_silncer_shot_1p         = weapons\lr300\lr300_shoot_sil_1p_01, -1.1
+snd_silncer_shot_1p1         = weapons\lr300\lr300_shoot_sil_1p_02, -1.1
+snd_silncer_shot_1p2         = weapons\lr300\lr300_shoot_sil_1p_03, -1.1
+snd_silncer_shot_1p3         = weapons\lr300\lr300_shoot_sil_1p_04, -1.1
+snd_silncer_shot_1p4         = weapons\lr300\lr300_shoot_sil_1p_05, -1.1
+snd_silncer_shot_1p5         = weapons\lr300\lr300_shoot_sil_1p_06, -1.1
+snd_silncer_shot_1p6         = weapons\lr300\lr300_shoot_sil_1p_07, -1.1
+snd_silncer_shot_1p7         = weapons\lr300\lr300_shoot_sil_1p_08, -1.1
+snd_silncer_shot_1p8         = weapons\lr300\lr300_shoot_sil_1p_09, -1.1
+snd_silncer_shot_1p9         = weapons\lr300\lr300_shoot_sil_1p_10, -1.1
+snd_silncer_shot_1p10         = weapons\lr300\lr300_shoot_sil_1p_11, -1.1
+snd_silncer_shot_1p11         = weapons\lr300\lr300_shoot_sil_1p_12, -1.1
+
+;firing sounds (3rd person)
+snd_shoot         = weapons\lr300\lr300_shoot_01, -1.1
+snd_shoot1         = weapons\lr300\lr300_shoot_02, -1.1
+snd_shoot2         = weapons\lr300\lr300_shoot_03, -1.1
+snd_shoot3         = weapons\lr300\lr300_shoot_04, -1.1
+snd_shoot4         = weapons\lr300\lr300_shoot_05, -1.1
+snd_shoot5         = weapons\lr300\lr300_shoot_06, -1.1
+snd_shoot6         = weapons\lr300\lr300_shoot_07, -1.1
+snd_shoot7         = weapons\lr300\lr300_shoot_08, -1.1
+snd_shoot8         = weapons\lr300\lr300_shoot_09, -1.1
+snd_shoot9         = weapons\lr300\lr300_shoot_10, -1.1
+snd_shoot10         = weapons\lr300\lr300_shoot_11, -1.1
+snd_shoot11         = weapons\lr300\lr300_shoot_12, -1.1
+
+snd_silncer_shot         = weapons\lr300\lr300_shoot_sil_01, -1.1
+snd_silncer_shot1         = weapons\lr300\lr300_shoot_sil_02, -1.1
+snd_silncer_shot2         = weapons\lr300\lr300_shoot_sil_03, -1.1
+snd_silncer_shot3         = weapons\lr300\lr300_shoot_sil_04, -1.1
+snd_silncer_shot4         = weapons\lr300\lr300_shoot_sil_05, -1.1
+snd_silncer_shot5         = weapons\lr300\lr300_shoot_sil_06, -1.1
+snd_silncer_shot6         = weapons\lr300\lr300_shoot_sil_07, -1.1
+snd_silncer_shot7         = weapons\lr300\lr300_shoot_sil_08, -1.1
+snd_silncer_shot8         = weapons\lr300\lr300_shoot_sil_09, -1.1
+snd_silncer_shot9         = weapons\lr300\lr300_shoot_sil_10, -1.1
+snd_silncer_shot10         = weapons\lr300\lr300_shoot_sil_11, -1.1
+snd_silncer_shot11         = weapons\lr300\lr300_shoot_sil_12, -1.1
+
+snd_draw                = weapons\sig550\sig550_draw
+snd_holster       = weapons\p90\p90_hide
+snd_empty               = weapons\lr300\ar15_dryfire
+snd_changefiremode	= weapons\vss\vss_firemode
+snd_reload              = weapons\lr300\lr300_reload
+snd_reload_empty        = weapons\lr300\lr300_reload_empty
+snd_reload_jammed        = weapons\lr300\lr300_revival
+snd_shoot_grenade       = weapons\m203\m203_shoot
+snd_reload_grenade      = weapons\m203\m203_reload
+snd_switch              = weapons\m203\m203_deactivate	; orig m203_activate -- sndSwitch is the lower-the-GL direction
+
 
 ;настройки для глушителя
-silencer_hit_power      = 0.55, 0.55, 0.55, 0.55
-silencer_hit_impulse    = 120
-silencer_fire_distance  = 250
-silencer_bullet_speed   = 600
+silencer_hit_power      = 0.9, 0.9, 0.9, 0.9	; orig 0.55, 0.55, 0.55, 0.55 (xrMPE)
+silencer_hit_impulse    = 100	; orig 120 (xrMPE)
+silencer_fire_distance  = 200	; orig 250 (xrMPE)
+silencer_bullet_speed   = 500	; orig 600 (xrMPE)
 
 ;silencer_flame_particles  = weapons\generic_weapon01
-silencer_smoke_particles   = weapons\generic_shoot_00
+silencer_smoke_particles   = ghost_particles\weapons\suppressor_smoke_ar_common
 
-snd_silncer_shot        = weapons\w_ak74_shot1
+;snd_silncer_shot        = weapons\sig552\layers\sig552_silencer_a_1
+;snd_silncer_shot1        = weapons\sig552\layers\sig552_silencer_a_2
+;snd_silncer_shot2        = weapons\sig552\layers\sig552_silencer_a_3
 
 silencer_light_color    = 0.6,0.5,0.3
 silencer_light_range    = 0.01
 silencer_light_var_color= 0.05
-silencer_light_var_range= 0.5
-silencer_light_time     = 0.2
+silencer_light_var_range= 0.01	; orig 0.5 (xrMPE)
+silencer_light_time     = 0.01	; orig 0.2 (xrMPE)
 
+; --- GS/xrMPE condition + jam model
+condition_queue_shot_dec    = 0.0007	; balance 5.56: L85 < LR300 < G36 (was 0.0015)
+misfire_start_condition     = 0.6
+misfire_end_condition       = 0.1
+misfire_start_prob          = 0.0035	; balance 5.56: L85 < LR300 < G36 (was 0.006)
+misfire_end_prob            = 0.06	; balance 5.56: L85 < LR300 < G36 (was 0.072)
+crosshair_inertion          = 5.25
+cam_return                  = 1
+ammo_in_chamber             = true
 
-[wpn_lr300_hud]
+; --- bones on the xrMPE model (only names the ogf actually carries)
+def_hide_bones              = scope1, scope2, scope3, scope4, scope5, scope6, mag40, mag40_2   ; 40-round mag parts: off unless the big-mag upgrade is installed (children ammo40_* follow)
+; mag30/mag30_2 must be listed here, not merely left unhidden: the hud model is pooled per hud
+; section, so an upgraded lr300 hiding them leaves them hidden for every other lr300 too.
+def_show_bones              = sight_iron, sight_handle, mag30, mag30_2   ; orig sight_iron, sight_handle
+scopes_sect                 = scope_aimpoint_lr300, scope_eotech_lr300, scope_elcan_lr300, scope_pn23_lr300
+
+; --- world (3rd person) animations, wpn_lr300_animation.omf
+use_world_anims             = true
+wanm_idle                   = idle
+wanm_idle_empty             = idle
+wanm_idle_jammed            = idle
+wanm_idle_g                 = idle_gl_on
+wanm_idle_empty_g           = idle_gl_on
+wanm_idle_jammed_g          = idle_gl_on
+wanm_shoot_last             = idle
+wanm_reload                 = reload
+wanm_reload_empty           = reload_half
+wanm_gl_reload              = reload_gl
+wanm_gl_activate            = gl_activate
+wanm_gl_deactivate          = gl_deactivate
+
+; --- sounds the ported anim set needs (all from our own library)
+snd_reload_jammed_last      = weapons\lr300\mechanics\lr300_revival_last
+snd_jammed_click            = weapons\glock17\glock17_dry
+snd_breechblock             = $silent
+snd_kick                    = weapons\ak74\ak74_bayonet
+snd_change_grenade          = weapons\m203\m203_changegrenade	; orig m203_reload -- that one is the RELOAD sound
+snd_switch_g                = weapons\m203\m203_activate
+snd_changecartridgetype     = weapons\lr300\lr300_reload
+snd_scope_brightness_plus   = weapons\nv_intensity
+snd_scope_brightness_minus  = weapons\nv_intensity
+
+[wpn_lr300_hud]:hud_base
 zoom_hide_crosshair        = true
 attach_place_idx        = 0
 item_visual                = dynamics\weapons\wpn_lr300\wpn_lr300_hud.ogf
+; fire_mode_bone= firemode_triple	; off: this weapon uses the GS mask_firemode _auto
+; GS firemode marks: the base aliases are the SINGLE-posed set, the _auto variants get the
+; auto-posed item motions. Existence-gated, so aliases for motions that do not exist yet
+; simply fall back to the base.
+mask_firemode_1         =
+mask_firemode_a         = _auto
+hands_position		    	= 0.0,-0.0055,-0.065
+hands_orientation	    	= 0.0,0.0,0.0
+hands_position_16x9	    	= 0.0,-0.0055,-0.065
+hands_orientation_16x9	    = 0.0,0.0,0.0
+item_position		    	= 0.0,0.0,0.0
+item_orientation	    	= 0.0,0.0,0.0
+shell_point					= 0.028,0.078,0.113
+shell_dir               	= 0.0, 1.0, 0.0
+shell_bone                	= wpn_body
+;fire_point					= 0,0.052,0.818
+;fire_bone                  = wpn_body
+;fire_point2				= 0,-0.034,0.586
+;fire_bone2                	= wpn_body
+fire_point					= 0,0.06,0.56
+fire_bone                   = wpn_body
+fire_point2					= 0,-0.034,0.586
+fire_bone2                	= wpn_body
+aim_hud_offset_pos 			= 0.000500,-0.012200,-0.024
+aim_hud_offset_rot 			= 0.000000,0.000000,0.00000
+aim_hud_offset_pos_16x9 	= 0.000500,-0.012200,-0.024
+aim_hud_offset_rot_16x9 	= 0.000000,0.000000,0.00000
+gl_hud_offset_pos 			= 0.0325,0.093289,-0.13
+gl_hud_offset_rot 			= 0.043,0.0,0.0
+gl_hud_offset_pos_16x9 		= 0.0325,0.093289,-0.13
+gl_hud_offset_rot_16x9 		= 0.043,0.0,0.0
+lean_hud_offset_pos         = 0,0,0
+lean_hud_offset_rot         = 0,0,0
 
-hands_position			= -0.041500,-0.170999,0.161000
-hands_orientation			= -0.550000,0.750001,0.599999
+; ==================== SEMI-AUTO / BASE ANIMATION SET (from Gunslinger) ====================
 
-hands_position_16x9				= -0.044000,-0.191999,0.135500
-hands_orientation_16x9			= 0.549999,2.399999,0.1499993
+; ---- show / draw ----
 
-item_position				= 0.003253,0.001161,-0.004648
-item_orientation			= 1.267092,-0.970740,360.237885
+; ---- hide / holster ----
 
-shell_point			= 0.028,0.078,0.113
-shell_dir               = 0.0, 1.0, 0.0
-shell_bone                = wpn_body
+; ---- bore ----
 
-fire_point				= 0.0,0.074,0.612
-fire_bone                            = wpn_body
-fire_point2			= 0.0,-0.009,0.601
-fire_bone2                = wpn_body
+; ---- sprint (enter / loop / exit) ----
 
-anm_show                = lr300_draw
-anm_hide                = lr300_holster
-anm_idle                = lr300_idle
-anm_idle_sprint         = lr300_idle_sprint
-anm_idle_moving         = lr300_idle_moving
-anm_shots               = lr300_shoot
-anm_reload              = lr300_reload
-anm_idle_aim            = lr300_idle_aim
+; ---- aim walk (directional) ----
 
-anm_switch              = lr300_switch_off 				;lr300_switch_off
-anm_switch_g            = lr300_switch_on 				;lr300_switch_on
-anm_bore                = lr300_idle_bore
+; ---- aim idle (in / out / hold) ----
 
-anm_hide_w_gl           = lr300_holster_w_gl
-anm_show_w_gl           = lr300_draw_w_gl
-anm_idle_w_gl           = lr300_idle_w_gl
-anm_shots_w_gl          = lr300_shoot_w_gl
-anm_reload_w_gl         = lr300_reload_w_gl
-anm_idle_w_gl_aim       = lr300_idle_aim_w_gl
-anm_idle_sprint_w_gl    = lr300_idle_sprint_w_gl
-anm_idle_moving_w_gl    = lr300_idle_moving_w_gl
-anm_bore_w_gl           = lr300_idle_bore_w_gl
+; ---- walk (fwd / slow / crouch) ----
 
-anm_show_g              = lr300_draw_grenade					;lr300_draw_grenade
-anm_hide_g              = lr300_holster_grenade				;lr300_holster_grenade
-anm_idle_g              = lr300_idle_grenade					;lr300_idle_grenade
-anm_reload_g            = lr300_reload_grenade
-anm_idle_g_aim          = lr300_idle_grenade					;lr300_idle_grenade
-anm_shots_g             = lr300_shoot_grenade
-anm_idle_sprint_g       = lr300_idle_sprint_grenade		;lr300_idle_sprint_grenade
-anm_idle_moving_g       = lr300_idle_moving_grenade		;lr300_idle_moving_grenade
-anm_bore_g              = lr300_idle_bore_grenade
+; ---- idle ----
 
-aim_hud_offset_pos				= -0.122500,0.010000,-0.022500
-aim_hud_offset_rot				= -0.010000,0.012500,0.007500
+; ---- shots ----
 
-aim_hud_offset_pos_16x9				= -0.119500,0.030000,0.029000
-aim_hud_offset_rot_16x9				= 0.012500,0.030000,-0.012504
+; ---- dry fire ----
 
-gl_hud_offset_pos       	= 0,0,0;-0.053000,-0.059000,0.000000
-gl_hud_offset_rot       	= 0,0,0;-0.145000,0.000000,0.000000
+; ---- reload ----
 
-gl_hud_offset_pos_16x9    	= 0,0,0;-0.130000,0.003500,0.000500
-gl_hud_offset_rot_16x9    	= 0,0,0;0.052500,0.045000,-0.010000
+; ---- GL switch ----
 
-lean_hud_offset_pos        = 0,0,0
-lean_hud_offset_rot        = 0,0,0
+; ---- firemode change ----
 
-;-----------------------------------------------------------------------------
-; Уникальные
-;-----------------------------------------------------------------------------
+; ---- unload magazine ----
+
+; ---- laser on / off ----
+
+; ---- flashlight on / off ----
+
+; ---- headlamp on / off ----
+
+; ---- night vision on / off ----
+
+; ---- bayonet / kick / attack ----
+
+; ==================== AUTO-FIRE MODE ANIMATION SET (mask_firemode_a = _auto) ====================
+
+; ---- show / draw ----
+
+; ---- hide / holster ----
+
+; ---- bore ----
+
+; ---- sprint (enter / loop / exit) ----
+
+; ---- aim walk (directional) ----
+
+; ---- aim idle (in / out / hold) ----
+
+; ---- walk (fwd / slow / crouch) ----
+
+; ---- idle ----
+
+; ---- shots ----
+
+; ---- dry fire ----
+
+; ---- reload ----
+
+; ---- GL switch ----
+
+; ---- unload magazine ----
+
+; ---- laser on / off ----
+
+; ---- flashlight on / off ----
+
+; ---- headlamp on / off ----
+
+; ---- night vision on / off ----
+
+; ---- bayonet / kick / attack ----
+
+; --- xrMPE / GS behaviour keys
+disable_bore                = true
+inertion_aim_origin_offset  = -0.01	; xrMPE raw 0.01 -- our inertion axes are GS's flipped
+inertion_aim_speed          = 10
+use_advanced_ammo_bones     = false
+gl_ammo_params_section_0    = wpn_lr300_ammo_bones_m209
+gl_ammo_params_section_1    = wpn_lr300_ammo_bones_m397a1
+gl_reload_insert_mark       = 0.2
+lock_time_start_anm_reload_ammochange_g = 1.2	; frame 78/104 of lr300_gl_changegrenade: the grenade bone is back in its seat
+lock_time_start_anm_reload_auto_ammochange_g = 1.2	; the same, for the alias the mask_firemode_a mark
+; produces in AUTO fire -- ArmReloadLockTimes keys off the alias PlayHUDMotion actually settled on
+
+; --- quick kick (lr300_bayonet), timings copied from the l85
+lock_time_anm_kick          = 0.9
+lock_time_start_anm_kick    = 0.17
+lock_time_end_anm_kick      = 1.0
+lock_time_anm_kick_empty    = 0.9
+lock_time_start_anm_kick_empty= 0.17
+lock_time_end_anm_kick_empty= 1.0
+lock_time_anm_kick_jammed   = 0.9
+lock_time_start_anm_kick_jammed= 0.17
+lock_time_end_anm_kick_jammed= 1.0
+lock_time_anm_kick_w_gl     = 0.9
+lock_time_start_anm_kick_w_gl= 0.17
+lock_time_end_anm_kick_w_gl = 1.0
+lock_time_anm_kick_g        = 0.9
+lock_time_start_anm_kick_g  = 0.17
+lock_time_end_anm_kick_g    = 1.0
+lock_time_anm_kick_empty_w_gl= 0.9
+lock_time_start_anm_kick_empty_w_gl= 0.17
+lock_time_end_anm_kick_empty_w_gl= 1.0
+lock_time_anm_kick_empty_g  = 0.9
+lock_time_start_anm_kick_empty_g= 0.17
+lock_time_end_anm_kick_empty_g= 1.0
+lock_time_anm_kick_jammed_w_gl= 0.9
+lock_time_start_anm_kick_jammed_w_gl= 0.17
+lock_time_end_anm_kick_jammed_w_gl= 1.0
+lock_time_anm_kick_jammed_g = 0.9
+lock_time_start_anm_kick_jammed_g= 0.17
+lock_time_end_anm_kick_jammed_g= 1.0
+
+; ======= animation aliases, rebuilt from the xrMPE lr300 set (every motion verified
+; ======= against wpn_hand_lr300_hud_animation.omf / wpn_lr300_hud_animation.omf)
+anm_bore                                      = lr300_draw
+anm_bore_empty                                = lr300_draw, idle_empty
+anm_bore_empty_g                              = lr300_glon_draw, lr300_glon_idle_empty
+anm_bore_empty_w_gl                           = lr300_gloff_draw, idle_empty
+anm_bore_g                                    = lr300_glon_draw, lr300_glon_idle
+anm_bore_jammed                               = lr300_draw, idle_jammed
+anm_bore_jammed_g                             = lr300_glon_draw, lr300_glon_idle_jammed
+anm_bore_jammed_w_gl                          = lr300_gloff_draw, idle_jammed
+anm_bore_w_gl                                 = lr300_gloff_draw
+anm_changefiremode_from_1_to_a                = lr300_firemode_1_to_a, lr300_firemode_1_to_a
+anm_changefiremode_from_1_to_a_empty          = lr300_firemode_1_to_a, lr300_firemode_1_to_a_empty
+anm_changefiremode_from_1_to_a_empty_g        = lr300_glon_firemode_1_to_a, lr300_glon_firemode_1_to_a_empty
+anm_changefiremode_from_1_to_a_empty_w_gl     = lr300_gloff_firemode_1_to_a, lr300_firemode_1_to_a_empty
+anm_changefiremode_from_1_to_a_g              = lr300_glon_firemode_1_to_a, lr300_glon_firemode_1_to_a
+anm_changefiremode_from_1_to_a_jammed         = lr300_firemode_1_to_a, lr300_firemode_1_to_a_jammed
+anm_changefiremode_from_1_to_a_jammed_g       = lr300_glon_firemode_1_to_a, lr300_glon_firemode_1_to_a_jammed
+anm_changefiremode_from_1_to_a_jammed_w_gl    = lr300_gloff_firemode_1_to_a, lr300_firemode_1_to_a_jammed
+anm_changefiremode_from_1_to_a_w_gl           = lr300_gloff_firemode_1_to_a, lr300_firemode_1_to_a
+anm_changefiremode_from_a_to_1                = lr300_firemode_a_to_1, lr300_firemode_a_to_1
+anm_changefiremode_from_a_to_1_empty          = lr300_firemode_a_to_1, lr300_firemode_a_to_1_empty
+anm_changefiremode_from_a_to_1_empty_g        = lr300_glon_firemode_a_to_1, lr300_glon_firemode_a_to_1_empty
+anm_changefiremode_from_a_to_1_empty_w_gl     = lr300_gloff_firemode_a_to_1, lr300_firemode_a_to_1_empty
+anm_changefiremode_from_a_to_1_g              = lr300_glon_firemode_a_to_1, lr300_glon_firemode_a_to_1
+anm_changefiremode_from_a_to_1_jammed         = lr300_firemode_a_to_1, lr300_firemode_a_to_1_jammed
+anm_changefiremode_from_a_to_1_jammed_g       = lr300_glon_firemode_a_to_1, lr300_glon_firemode_a_to_1_jammed
+anm_changefiremode_from_a_to_1_jammed_w_gl    = lr300_gloff_firemode_a_to_1, lr300_firemode_a_to_1_jammed
+anm_changefiremode_from_a_to_1_w_gl           = lr300_gloff_firemode_a_to_1, lr300_firemode_a_to_1
+anm_fakeshoot                                 = lr300_dry
+anm_fakeshoot_aim                             = lr300_aim_dry
+anm_fakeshoot_aim_empty                       = lr300_aim_dry, lr300_aim_empty
+anm_fakeshoot_aim_empty_g                     = lr300_glon_aim_dry, lr300_glon_idle_empty
+anm_fakeshoot_aim_empty_w_gl                  = lr300_gloff_aim_dry, lr300_aim_empty
+anm_fakeshoot_aim_g                           = lr300_glon_aim_dry, lr300_glon_idle
+anm_fakeshoot_aim_jammed                      = lr300_aim_dry, lr300_aim_jammed
+anm_fakeshoot_aim_jammed_g                    = lr300_glon_aim_dry, lr300_glon_idle_jammed
+anm_fakeshoot_aim_jammed_w_gl                 = lr300_gloff_aim_dry, lr300_aim_jammed
+anm_fakeshoot_aim_w_gl                        = lr300_gloff_aim_dry, lr300_aim
+anm_fakeshoot_empty                           = lr300_dry_empty, idle_empty
+anm_fakeshoot_empty_g                         = lr300_glon_dry_empty, lr300_glon_idle_empty
+anm_fakeshoot_empty_w_gl                      = lr300_gloff_dry_empty, idle_empty
+anm_fakeshoot_g                               = lr300_glon_dry_empty, lr300_glon_idle
+anm_fakeshoot_jammed                          = lr300_dry, idle_jammed
+anm_fakeshoot_jammed_g                        = lr300_glon_dry_empty, lr300_glon_idle_jammed
+anm_fakeshoot_jammed_w_gl                     = lr300_gloff_dry, idle_jammed
+anm_fakeshoot_w_gl                            = lr300_gloff_dry
+anm_headlamp_off                              = lr300_headflash
+anm_headlamp_off_empty                        = lr300_headflash
+anm_headlamp_off_empty_g                      = lr300_glon_headflash, lr300_glon_idle
+anm_headlamp_off_empty_w_gl                   = lr300_gloff_headflash
+anm_headlamp_off_g                            = lr300_glon_headflash, lr300_glon_idle
+anm_headlamp_off_jammed                       = lr300_headflash, idle_jammed
+anm_headlamp_off_jammed_g                     = lr300_glon_headflash, lr300_glon_idle_jammed
+anm_headlamp_off_jammed_w_gl                  = lr300_gloff_headflash
+anm_headlamp_off_w_gl                         = lr300_gloff_headflash
+anm_headlamp_on                               = lr300_headflash
+anm_headlamp_on_empty                         = lr300_headflash
+anm_headlamp_on_empty_g                       = lr300_glon_headflash, lr300_glon_idle
+anm_headlamp_on_empty_w_gl                    = lr300_gloff_headflash
+anm_headlamp_on_g                             = lr300_glon_headflash, lr300_glon_idle
+anm_headlamp_on_jammed                        = lr300_headflash, idle_jammed
+anm_headlamp_on_jammed_g                      = lr300_glon_headflash, lr300_glon_idle_jammed
+anm_headlamp_on_jammed_w_gl                   = lr300_gloff_headflash
+anm_headlamp_on_w_gl                          = lr300_gloff_headflash
+anm_hide                                      = lr300_hide
+anm_hide_empty                                = lr300_hide, idle_empty
+anm_hide_empty_g                              = lr300_glon_hide, lr300_glon_idle_empty
+anm_hide_empty_w_gl                           = lr300_gloff_hide, idle_empty
+anm_hide_g                                    = lr300_glon_hide, lr300_glon_idle
+anm_hide_jammed                               = lr300_hide, idle_jammed
+anm_hide_jammed_g                             = lr300_glon_hide, lr300_glon_idle_jammed
+anm_hide_jammed_w_gl                          = lr300_gloff_hide, idle_jammed
+anm_hide_w_gl                                 = lr300_gloff_hide
+anm_idle                                      = lr300_idle
+anm_idle_aim                                  = lr300_aim
+anm_idle_aim_empty                            = lr300_aim, lr300_aim_empty
+anm_idle_aim_empty_g                          = lr300_glon_aim, lr300_glon_idle_empty
+anm_idle_aim_empty_w_gl                       = lr300_gloff_aim, lr300_aim_empty
+anm_idle_aim_end                              = lr300_aim_end
+anm_idle_aim_end_empty                        = lr300_aim_end, lr300_aim_end_empty
+anm_idle_aim_end_empty_g                      = lr300_glon_aim_end, lr300_glon_idle_empty
+anm_idle_aim_end_empty_w_gl                   = lr300_gloff_aim_end, lr300_aim_end_empty
+anm_idle_aim_end_g                            = lr300_glon_aim_end, lr300_glon_idle
+anm_idle_aim_end_jammed                       = lr300_aim_end, lr300_aim_end_jammed
+anm_idle_aim_end_jammed_g                     = lr300_glon_aim_end, lr300_glon_idle_jammed
+anm_idle_aim_end_jammed_w_gl                  = lr300_gloff_aim_end, lr300_aim_end_jammed
+anm_idle_aim_end_w_gl                         = lr300_gloff_aim_end, lr300_aim_end
+anm_idle_aim_g                                = lr300_glon_aim, lr300_glon_idle
+anm_idle_aim_jammed                           = lr300_aim, lr300_aim_jammed
+anm_idle_aim_jammed_g                         = lr300_glon_aim, lr300_glon_idle_jammed
+anm_idle_aim_jammed_w_gl                      = lr300_gloff_aim, lr300_aim_jammed
+anm_idle_aim_moving_back                      = lr300_aim_walk, lr300_aim
+anm_idle_aim_moving_back_empty                = lr300_aim_walk, lr300_aim_empty
+anm_idle_aim_moving_back_empty_g              = lr300_glon_aim_walk, lr300_glon_idle_empty
+anm_idle_aim_moving_back_empty_w_gl           = lr300_gloff_aim_walk, lr300_aim_empty
+anm_idle_aim_moving_back_g                    = lr300_glon_aim_walk, lr300_glon_idle
+anm_idle_aim_moving_back_jammed               = lr300_aim_walk, lr300_aim_jammed
+anm_idle_aim_moving_back_jammed_g             = lr300_glon_aim_walk, lr300_glon_idle_jammed
+anm_idle_aim_moving_back_jammed_w_gl          = lr300_gloff_aim_walk, lr300_aim_jammed
+anm_idle_aim_moving_back_left                 = lr300_aim_walk, lr300_aim
+anm_idle_aim_moving_back_left_empty           = lr300_aim_walk, lr300_aim_empty
+anm_idle_aim_moving_back_left_empty_g         = lr300_glon_aim_walk, lr300_glon_idle_empty
+anm_idle_aim_moving_back_left_empty_w_gl      = lr300_gloff_aim_walk, lr300_aim_empty
+anm_idle_aim_moving_back_left_g               = lr300_glon_aim_walk, lr300_glon_idle
+anm_idle_aim_moving_back_left_jammed          = lr300_aim_walk, lr300_aim_jammed
+anm_idle_aim_moving_back_left_jammed_g        = lr300_glon_aim_walk, lr300_glon_idle_jammed
+anm_idle_aim_moving_back_left_jammed_w_gl     = lr300_gloff_aim_walk, lr300_aim_jammed
+anm_idle_aim_moving_back_left_w_gl            = lr300_gloff_aim_walk, lr300_aim
+anm_idle_aim_moving_back_right                = lr300_aim_walk, lr300_aim
+anm_idle_aim_moving_back_right_empty          = lr300_aim_walk, lr300_aim_empty
+anm_idle_aim_moving_back_right_empty_g        = lr300_glon_aim_walk, lr300_glon_idle_empty
+anm_idle_aim_moving_back_right_empty_w_gl     = lr300_gloff_aim_walk, lr300_aim_empty
+anm_idle_aim_moving_back_right_g              = lr300_glon_aim_walk, lr300_glon_idle
+anm_idle_aim_moving_back_right_jammed         = lr300_aim_walk, lr300_aim_jammed
+anm_idle_aim_moving_back_right_jammed_g       = lr300_glon_aim_walk, lr300_glon_idle_jammed
+anm_idle_aim_moving_back_right_jammed_w_gl    = lr300_gloff_aim_walk, lr300_aim_jammed
+anm_idle_aim_moving_back_right_w_gl           = lr300_gloff_aim_walk, lr300_aim
+anm_idle_aim_moving_back_w_gl                 = lr300_gloff_aim_walk, lr300_aim
+anm_idle_aim_moving_forward                   = lr300_aim_walk, lr300_aim
+anm_idle_aim_moving_forward_empty             = lr300_aim_walk, lr300_aim_empty
+anm_idle_aim_moving_forward_empty_g           = lr300_glon_aim_walk, lr300_glon_idle_empty
+anm_idle_aim_moving_forward_empty_w_gl        = lr300_gloff_aim_walk, lr300_aim_empty
+anm_idle_aim_moving_forward_g                 = lr300_glon_aim_walk, lr300_glon_idle
+anm_idle_aim_moving_forward_jammed            = lr300_aim_walk, lr300_aim_jammed
+anm_idle_aim_moving_forward_jammed_g          = lr300_glon_aim_walk, lr300_glon_idle_jammed
+anm_idle_aim_moving_forward_jammed_w_gl       = lr300_gloff_aim_walk, lr300_aim_jammed
+anm_idle_aim_moving_forward_left              = lr300_aim_walk, lr300_aim
+anm_idle_aim_moving_forward_left_empty        = lr300_aim_walk, lr300_aim_empty
+anm_idle_aim_moving_forward_left_empty_g      = lr300_glon_aim_walk, lr300_glon_idle_empty
+anm_idle_aim_moving_forward_left_empty_w_gl   = lr300_gloff_aim_walk, lr300_aim_empty
+anm_idle_aim_moving_forward_left_g            = lr300_glon_aim_walk, lr300_glon_idle
+anm_idle_aim_moving_forward_left_jammed       = lr300_aim_walk, lr300_aim_jammed
+anm_idle_aim_moving_forward_left_jammed_g     = lr300_glon_aim_walk, lr300_glon_idle_jammed
+anm_idle_aim_moving_forward_left_jammed_w_gl  = lr300_gloff_aim_walk, lr300_aim_jammed
+anm_idle_aim_moving_forward_left_w_gl         = lr300_gloff_aim_walk, lr300_aim
+anm_idle_aim_moving_forward_right             = lr300_aim_walk, lr300_aim
+anm_idle_aim_moving_forward_right_empty       = lr300_aim_walk, lr300_aim_empty
+anm_idle_aim_moving_forward_right_empty_g     = lr300_glon_aim_walk, lr300_glon_idle_empty
+anm_idle_aim_moving_forward_right_empty_w_gl  = lr300_gloff_aim_walk, lr300_aim_empty
+anm_idle_aim_moving_forward_right_g           = lr300_glon_aim_walk, lr300_glon_idle
+anm_idle_aim_moving_forward_right_jammed      = lr300_aim_walk, lr300_aim_jammed
+anm_idle_aim_moving_forward_right_jammed_g    = lr300_glon_aim_walk, lr300_glon_idle_jammed
+anm_idle_aim_moving_forward_right_jammed_w_gl = lr300_gloff_aim_walk, lr300_aim_jammed
+anm_idle_aim_moving_forward_right_w_gl        = lr300_gloff_aim_walk, lr300_aim
+anm_idle_aim_moving_forward_w_gl              = lr300_gloff_aim_walk, lr300_aim
+anm_idle_aim_moving_left                      = lr300_aim_walk_left, lr300_aim
+anm_idle_aim_moving_left_empty                = lr300_aim_walk_left, lr300_aim_empty
+anm_idle_aim_moving_left_empty_g              = lr300_glon_aim_walk_left, lr300_glon_idle_empty
+anm_idle_aim_moving_left_empty_w_gl           = lr300_gloff_aim_walk_left, lr300_aim_empty
+anm_idle_aim_moving_left_g                    = lr300_glon_aim_walk_left, lr300_glon_idle
+anm_idle_aim_moving_left_jammed               = lr300_aim_walk_left, lr300_aim_jammed
+anm_idle_aim_moving_left_jammed_g             = lr300_glon_aim_walk_left, lr300_glon_idle_jammed
+anm_idle_aim_moving_left_jammed_w_gl          = lr300_gloff_aim_walk_left, lr300_aim_jammed
+anm_idle_aim_moving_left_w_gl                 = lr300_gloff_aim_walk_left, lr300_aim
+anm_idle_aim_moving_right                     = lr300_aim_walk_right, lr300_aim
+anm_idle_aim_moving_right_empty               = lr300_aim_walk_right, lr300_aim_empty
+anm_idle_aim_moving_right_empty_g             = lr300_glon_aim_walk_right, lr300_glon_idle_empty
+anm_idle_aim_moving_right_empty_w_gl          = lr300_gloff_aim_walk_right, lr300_aim_empty
+anm_idle_aim_moving_right_g                   = lr300_glon_aim_walk_right, lr300_glon_idle
+anm_idle_aim_moving_right_jammed              = lr300_aim_walk_right, lr300_aim_jammed
+anm_idle_aim_moving_right_jammed_g            = lr300_glon_aim_walk_right, lr300_glon_idle_jammed
+anm_idle_aim_moving_right_jammed_w_gl         = lr300_gloff_aim_walk_right, lr300_aim_jammed
+anm_idle_aim_moving_right_w_gl                = lr300_gloff_aim_walk_right, lr300_aim
+anm_idle_aim_scope                            = lr300_aim
+anm_idle_aim_scope_empty                      = lr300_aim, lr300_aim_empty
+anm_idle_aim_scope_empty_g                    = lr300_glon_aim, lr300_glon_idle_empty
+anm_idle_aim_scope_empty_w_gl                 = lr300_gloff_aim, lr300_aim_empty
+anm_idle_aim_scope_g                          = lr300_glon_aim, lr300_glon_idle
+anm_idle_aim_scope_jammed                     = lr300_aim, lr300_aim_jammed
+anm_idle_aim_scope_jammed_g                   = lr300_glon_aim, lr300_glon_idle_jammed
+anm_idle_aim_scope_jammed_w_gl                = lr300_gloff_aim, lr300_aim_jammed
+anm_idle_aim_scope_moving                     = lr300_aim_walk_scope, lr300_aim
+anm_idle_aim_scope_moving_empty               = lr300_aim_walk_scope, lr300_aim_empty
+anm_idle_aim_scope_moving_empty_g             = lr300_glon_aim_walk, lr300_glon_idle
+anm_idle_aim_scope_moving_empty_w_gl          = lr300_gloff_aim_walk_scope, lr300_aim_empty
+anm_idle_aim_scope_moving_g                   = lr300_glon_aim_walk, lr300_glon_idle
+anm_idle_aim_scope_moving_jammed              = lr300_aim_walk_scope, lr300_aim_jammed
+anm_idle_aim_scope_moving_jammed_g            = lr300_glon_aim_walk, lr300_glon_idle_jammed
+anm_idle_aim_scope_moving_jammed_w_gl         = lr300_gloff_aim_walk_scope, lr300_aim_jammed
+anm_idle_aim_scope_moving_w_gl                = lr300_gloff_aim_walk_scope, lr300_aim
+anm_idle_aim_scope_w_gl                       = lr300_gloff_aim, lr300_aim
+anm_idle_aim_start                            = lr300_aim_start
+anm_idle_aim_start_empty                      = lr300_aim_start, lr300_aim_start_empty
+anm_idle_aim_start_empty_g                    = lr300_glon_aim_start, lr300_glon_idle_empty
+anm_idle_aim_start_empty_w_gl                 = lr300_gloff_aim_start, lr300_aim_start_empty
+anm_idle_aim_start_g                          = lr300_glon_aim_start, lr300_glon_idle
+anm_idle_aim_start_jammed                     = lr300_aim_start, lr300_aim_start_jammed
+anm_idle_aim_start_jammed_g                   = lr300_glon_aim_start, lr300_glon_idle_jammed
+anm_idle_aim_start_jammed_w_gl                = lr300_gloff_aim_start, lr300_aim_start_jammed
+anm_idle_aim_start_w_gl                       = lr300_gloff_aim_start, lr300_aim_start
+anm_idle_aim_w_gl                             = lr300_gloff_aim, lr300_aim
+anm_idle_crouch                               = lr300_idle
+anm_idle_crouch_empty                         = lr300_idle
+anm_idle_crouch_empty_g                       = lr300_glon_idle
+anm_idle_crouch_empty_w_gl                    = lr300_gloff_idle
+anm_idle_crouch_g                             = lr300_glon_idle
+anm_idle_crouch_jammed                        = lr300_idle, idle_jammed
+anm_idle_crouch_jammed_g                      = lr300_glon_idle, lr300_glon_idle_jammed
+anm_idle_crouch_jammed_w_gl                   = lr300_gloff_idle
+anm_idle_crouch_slow                          = lr300_idle
+anm_idle_crouch_slow_empty                    = lr300_idle
+anm_idle_crouch_slow_empty_g                  = lr300_glon_idle
+anm_idle_crouch_slow_empty_w_gl               = lr300_gloff_idle
+anm_idle_crouch_slow_g                        = lr300_glon_idle
+anm_idle_crouch_slow_jammed                   = lr300_idle, idle_jammed
+anm_idle_crouch_slow_jammed_g                 = lr300_glon_idle, lr300_glon_idle_jammed
+anm_idle_crouch_slow_jammed_w_gl              = lr300_gloff_idle
+anm_idle_crouch_slow_w_gl                     = lr300_gloff_idle
+anm_idle_crouch_w_gl                          = lr300_gloff_idle
+anm_idle_empty                                = lr300_idle, idle_empty
+anm_idle_empty_g                              = lr300_glon_idle, lr300_glon_idle_empty
+anm_idle_empty_w_gl                           = lr300_gloff_idle, idle_empty
+anm_idle_g                                    = lr300_glon_idle
+anm_idle_jammed                               = lr300_idle, idle_jammed
+anm_idle_jammed_g                             = lr300_glon_idle, lr300_glon_idle_jammed
+anm_idle_jammed_w_gl                          = lr300_gloff_idle, idle_jammed
+anm_idle_moving                               = lr300_walk
+anm_idle_moving_crouch                        = lr300_walk_slow_down
+anm_idle_moving_crouch_empty                  = lr300_walk_slow_down, idle_empty
+anm_idle_moving_crouch_empty_g                = lr300_glon_walk_slow_down, lr300_glon_idle_empty
+anm_idle_moving_crouch_empty_w_gl             = lr300_gloff_walk_slow_down, idle_empty
+anm_idle_moving_crouch_g                      = lr300_glon_walk_slow_down, lr300_glon_idle
+anm_idle_moving_crouch_jammed                 = lr300_walk_slow_down, idle_jammed
+anm_idle_moving_crouch_jammed_g               = lr300_glon_walk_slow_down, lr300_glon_idle_jammed
+anm_idle_moving_crouch_jammed_w_gl            = lr300_gloff_walk_slow_down, idle_jammed
+anm_idle_moving_crouch_slow                   = lr300_walk_slow_super
+anm_idle_moving_crouch_slow_empty             = lr300_walk_slow_super, idle_empty
+anm_idle_moving_crouch_slow_empty_g           = lr300_glon_walk_slow_super, lr300_glon_idle_empty
+anm_idle_moving_crouch_slow_empty_w_gl        = lr300_gloff_walk_slow_super, idle_empty
+anm_idle_moving_crouch_slow_g                 = lr300_glon_walk_slow_super, lr300_glon_idle
+anm_idle_moving_crouch_slow_jammed            = lr300_walk_slow_super, idle_jammed
+anm_idle_moving_crouch_slow_jammed_g          = lr300_glon_walk_slow_super, lr300_glon_idle_jammed
+anm_idle_moving_crouch_slow_jammed_w_gl       = lr300_gloff_walk_slow_super, idle_jammed
+anm_idle_moving_crouch_slow_w_gl              = lr300_gloff_walk_slow_super
+anm_idle_moving_crouch_w_gl                   = lr300_gloff_walk_slow_down
+anm_idle_moving_empty                         = lr300_walk, idle_empty
+anm_idle_moving_empty_g                       = lr300_glon_walk, lr300_glon_idle_empty
+anm_idle_moving_empty_w_gl                    = lr300_gloff_walk, idle_empty
+anm_idle_moving_g                             = lr300_glon_walk, lr300_glon_idle
+anm_idle_moving_jammed                        = lr300_walk, idle_jammed
+anm_idle_moving_jammed_g                      = lr300_glon_walk, lr300_glon_idle_jammed
+anm_idle_moving_jammed_w_gl                   = lr300_gloff_walk, idle_jammed
+anm_idle_moving_slow                          = lr300_walk_slow
+anm_idle_moving_slow_empty                    = lr300_walk_slow, idle_empty
+anm_idle_moving_slow_empty_g                  = lr300_glon_walk_slow, lr300_glon_idle_empty
+anm_idle_moving_slow_empty_w_gl               = lr300_gloff_walk_slow, idle_empty
+anm_idle_moving_slow_g                        = lr300_glon_walk_slow, lr300_glon_idle
+anm_idle_moving_slow_jammed                   = lr300_walk_slow, idle_jammed
+anm_idle_moving_slow_jammed_g                 = lr300_glon_walk_slow, lr300_glon_idle_jammed
+anm_idle_moving_slow_jammed_w_gl              = lr300_gloff_walk_slow, idle_jammed
+anm_idle_moving_slow_w_gl                     = lr300_gloff_walk_slow
+anm_idle_moving_w_gl                          = lr300_gloff_walk
+anm_idle_slow                                 = lr300_idle
+anm_idle_slow_empty                           = lr300_idle
+anm_idle_slow_empty_g                         = lr300_glon_idle
+anm_idle_slow_empty_w_gl                      = lr300_gloff_idle
+anm_idle_slow_g                               = lr300_glon_idle
+anm_idle_slow_jammed                          = lr300_idle, idle_jammed
+anm_idle_slow_jammed_g                        = lr300_glon_idle, lr300_glon_idle_jammed
+anm_idle_slow_jammed_w_gl                     = lr300_gloff_idle
+anm_idle_slow_w_gl                            = lr300_gloff_idle
+anm_idle_sprint                               = lr300_sprint
+lock_time_anm_idle_sprint_end = 0.35	; GS-style: fire is free this many seconds into the sprint-out, not at its end (this hud inherits hud_base, so it had no value)
+anm_idle_sprint_empty                         = lr300_sprint, idle_empty
+anm_idle_sprint_empty_g                       = lr300_glon_sprint, lr300_glon_idle_empty
+anm_idle_sprint_empty_w_gl                    = lr300_gloff_sprint, idle_empty
+anm_idle_sprint_end                           = lr300_sprint_end
+anm_idle_sprint_end_empty                     = lr300_sprint_end, idle_empty
+anm_idle_sprint_end_empty_g                   = lr300_glon_sprint_end, lr300_glon_idle_empty
+anm_idle_sprint_end_empty_w_gl                = lr300_gloff_sprint_end, idle_empty
+anm_idle_sprint_end_g                         = lr300_glon_sprint_end, lr300_glon_idle
+anm_idle_sprint_end_jammed                    = lr300_sprint_end, idle_jammed
+anm_idle_sprint_end_jammed_g                  = lr300_glon_sprint_end, lr300_glon_idle_jammed
+anm_idle_sprint_end_jammed_w_gl               = lr300_gloff_sprint_end, idle_jammed
+anm_idle_sprint_end_w_gl                      = lr300_gloff_sprint_end
+anm_idle_sprint_g                             = lr300_glon_sprint, lr300_glon_idle
+anm_idle_sprint_jammed                        = lr300_sprint, idle_jammed
+anm_idle_sprint_jammed_g                      = lr300_glon_sprint, lr300_glon_idle_jammed
+anm_idle_sprint_jammed_w_gl                   = lr300_gloff_sprint, idle_jammed
+anm_idle_sprint_start                         = lr300_sprint_start
+anm_idle_sprint_start_empty                   = lr300_sprint_start, idle_empty
+anm_idle_sprint_start_empty_g                 = lr300_glon_sprint_start, lr300_glon_idle_empty
+anm_idle_sprint_start_empty_w_gl              = lr300_gloff_sprint_start, idle_empty
+anm_idle_sprint_start_g                       = lr300_glon_sprint_start, lr300_glon_idle
+anm_idle_sprint_start_jammed                  = lr300_sprint_start, idle_jammed
+anm_idle_sprint_start_jammed_g                = lr300_glon_sprint_start, lr300_glon_idle_jammed
+anm_idle_sprint_start_jammed_w_gl             = lr300_gloff_sprint_start, idle_jammed
+anm_idle_sprint_start_w_gl                    = lr300_gloff_sprint_start
+anm_idle_sprint_w_gl                          = lr300_gloff_sprint
+anm_idle_w_gl                                 = lr300_gloff_idle
+anm_kick                                      = lr300_bayonet
+anm_kick_empty                                = lr300_bayonet
+anm_kick_empty_g                              = lr300_bayonet
+anm_kick_empty_w_gl                           = lr300_bayonet
+anm_kick_g                                    = lr300_bayonet
+anm_kick_jammed                               = lr300_bayonet, idle_jammed
+anm_kick_jammed_g                             = lr300_bayonet
+anm_kick_jammed_w_gl                          = lr300_bayonet
+anm_kick_w_gl                                 = lr300_bayonet
+anm_nv_off                                    = lr300_headflash
+anm_nv_off_empty                              = lr300_headflash
+anm_nv_off_empty_g                            = lr300_glon_headflash, lr300_glon_idle
+anm_nv_off_empty_w_gl                         = lr300_gloff_headflash
+anm_nv_off_g                                  = lr300_glon_headflash, lr300_glon_idle
+anm_nv_off_jammed                             = lr300_headflash, idle_jammed
+anm_nv_off_jammed_g                           = lr300_glon_headflash, lr300_glon_idle_jammed
+anm_nv_off_jammed_w_gl                        = lr300_gloff_headflash
+anm_nv_off_w_gl                               = lr300_gloff_headflash
+anm_nv_on                                     = lr300_headflash
+anm_nv_on_empty                               = lr300_headflash
+anm_nv_on_empty_g                             = lr300_glon_headflash, lr300_glon_idle
+anm_nv_on_empty_w_gl                          = lr300_gloff_headflash
+anm_nv_on_g                                   = lr300_glon_headflash, lr300_glon_idle
+anm_nv_on_jammed                              = lr300_headflash, idle_jammed
+anm_nv_on_jammed_g                            = lr300_glon_headflash, lr300_glon_idle_jammed
+anm_nv_on_jammed_w_gl                         = lr300_gloff_headflash
+anm_nv_on_w_gl                                = lr300_gloff_headflash
+anm_reload                                    = lr300_reload
+anm_reload_ammochange                         = lr300_reload
+anm_reload_ammochange_g                       = lr300_gl_changegrenade
+anm_reload_ammochange_w_gl                    = lr300_gloff_reload
+anm_reload_empty                              = lr300_reload_empty
+anm_reload_empty_ammochange_g                 = lr300_gl_changegrenade, lr300_gl_changegrenade_empty
+anm_reload_empty_g                            = lr300_gl_reload, lr300_gl_reload_empty
+anm_reload_empty_w_gl                         = lr300_gloff_reload_empty, lr300_reload_empty
+anm_reload_g                                  = lr300_gl_reload
+anm_reload_jammed                             = lr300_revival
+anm_reload_jammed_ammochange_g                = lr300_gl_changegrenade, lr300_gl_changegrenade_jammed
+anm_reload_jammed_g                           = lr300_gl_reload, lr300_gl_reload_jammed
+anm_reload_jammed_last                        = lr300_revival_last
+anm_reload_jammed_last_noscope                = lr300_revival
+anm_reload_jammed_last_w_gl                   = lr300_gloff_revival_last, lr300_revival_last
+anm_reload_jammed_last_w_gl_noscope           = lr300_gloff_revival
+anm_reload_jammed_noscope                     = lr300_revival
+anm_reload_jammed_w_gl                        = lr300_gloff_revival, lr300_revival
+anm_reload_jammed_w_gl_noscope                = lr300_gloff_revival
+anm_reload_w_gl                               = lr300_gloff_reload, lr300_reload
+anm_shoot                                     = lr300_shoot
+anm_shoot_aim                                 = lr300_aim_shoot
+anm_shoot_aim_empty_g                         = lr300_glon_aim_shoot, lr300_glon_idle_empty
+anm_shoot_aim_g                               = lr300_glon_aim_shoot, lr300_glon_idle
+anm_shoot_aim_jammed                          = lr300_aim_shoot, lr300_aim_jammed
+anm_shoot_aim_jammed_g                        = lr300_glon_aim_shoot, lr300_glon_idle_jammed
+anm_shoot_aim_jammed_sil                      = lr300_aim_shoot, lr300_aim_jammed
+anm_shoot_aim_jammed_sil_w_gl                 = lr300_gloff_aim_shoot, lr300_aim_jammed
+anm_shoot_aim_jammed_w_gl                     = lr300_gloff_aim_shoot, lr300_aim_jammed
+anm_shoot_aim_last                            = lr300_aim_shoot, lr300_aim_shoot_last
+anm_shoot_aim_last_sil                        = lr300_aim_shoot
+anm_shoot_aim_last_sil_w_gl                   = lr300_gloff_aim_shoot
+anm_shoot_aim_last_w_gl                       = lr300_gloff_aim_shoot, lr300_aim_shoot_last
+anm_shoot_aim_scope                           = lr300_aim_shoot_scope, lr300_aim_shoot
+anm_shoot_aim_scope_jammed                    = lr300_aim_shoot_scope, lr300_aim_jammed
+anm_shoot_aim_scope_jammed_sil                = lr300_aim_shoot_scope, lr300_aim_jammed
+anm_shoot_aim_scope_jammed_sil_w_gl           = lr300_gloff_aim_shoot_scope, lr300_aim_jammed
+anm_shoot_aim_scope_jammed_w_gl               = lr300_gloff_aim_shoot_scope, lr300_aim_jammed
+anm_shoot_aim_scope_last                      = lr300_aim_shoot_scope, lr300_aim_shoot_last
+anm_shoot_aim_scope_last_sil                  = lr300_aim_shoot_scope, lr300_aim_shoot
+anm_shoot_aim_scope_last_sil_w_gl             = lr300_gloff_aim_shoot_scope, lr300_gloff_aim_shoot
+anm_shoot_aim_scope_last_w_gl                 = lr300_gloff_aim_shoot_scope, lr300_aim_shoot_last
+anm_shoot_aim_scope_sil                       = lr300_aim_shoot_scope, lr300_aim_shoot
+anm_shoot_aim_scope_sil_w_gl                  = lr300_gloff_aim_shoot_scope, lr300_gloff_aim_shoot
+anm_shoot_aim_scope_w_gl                      = lr300_gloff_aim_shoot_scope, lr300_gloff_aim_shoot
+anm_shoot_aim_sil                             = lr300_aim_shoot
+anm_shoot_aim_sil_w_gl                        = lr300_gloff_aim_shoot
+anm_shoot_aim_w_gl                            = lr300_gloff_aim_shoot
+anm_shoot_empty_g                             = lr300_glon_shoot, lr300_glon_idle_empty
+anm_shoot_g                                   = lr300_glon_shoot, lr300_glon_idle
+anm_shoot_jammed                              = lr300_shoot, idle_jammed
+anm_shoot_jammed_g                            = lr300_glon_shoot, lr300_glon_idle_jammed
+anm_shoot_jammed_sil                          = lr300_shoot, idle_jammed
+anm_shoot_jammed_sil_w_gl                     = lr300_gloff_shoot
+anm_shoot_jammed_w_gl                         = lr300_gloff_shoot, idle_jammed
+anm_shoot_last                                = lr300_shoot, lr300_shoot_last
+anm_shoot_last_sil                            = lr300_shoot
+anm_shoot_last_sil_w_gl                       = lr300_gloff_shoot
+anm_shoot_last_suicide                        = lr300_suicide_shoot, lr300_shoot
+anm_shoot_last_suicide_sil                    = lr300_suicide_shoot, lr300_shoot
+anm_shoot_last_suicide_sil_w_gl               = lr300_suicide_shoot, lr300_gloff_shoot
+anm_shoot_last_suicide_w_gl                   = lr300_suicide_shoot, lr300_gloff_shoot
+anm_shoot_last_w_gl                           = lr300_gloff_shoot, lr300_shoot_last
+anm_shoot_sil                                 = lr300_shoot
+anm_shoot_sil_w_gl                            = lr300_gloff_shoot
+anm_shoot_suicide                             = lr300_suicide_shoot, lr300_shoot
+anm_shoot_suicide_empty_g                     = lr300_suicide_shoot, lr300_shoot
+anm_shoot_suicide_g                           = lr300_suicide_shoot, lr300_shoot
+anm_shoot_suicide_jammed_g                    = lr300_suicide_shoot, lr300_shoot
+anm_shoot_suicide_sil                         = lr300_suicide_shoot, lr300_shoot
+anm_shoot_suicide_sil_w_gl                    = lr300_suicide_shoot, lr300_gloff_shoot
+anm_shoot_suicide_w_gl                        = lr300_suicide_shoot, lr300_gloff_shoot
+anm_shoot_w_gl                                = lr300_gloff_shoot
+anm_show                                      = lr300_draw
+anm_show_empty                                = lr300_draw, idle_empty
+anm_show_empty_g                              = lr300_glon_draw, lr300_glon_idle_empty
+anm_show_empty_w_gl                           = lr300_gloff_draw, idle_empty
+anm_show_g                                    = lr300_glon_draw, lr300_glon_idle
+anm_show_jammed                               = lr300_draw, idle_jammed
+anm_show_jammed_g                             = lr300_glon_draw, lr300_glon_idle_jammed
+anm_show_jammed_w_gl                          = lr300_gloff_draw, idle_jammed
+anm_show_w_gl                                 = lr300_gloff_draw
+anm_stop_suicide                              = lr300_suicide_end
+anm_stop_suicide_empty_g                      = lr300_glon_suicide_end, lr300_glon_idle
+anm_stop_suicide_g                            = lr300_glon_suicide_end, lr300_glon_idle
+anm_stop_suicide_jammed_g                     = lr300_glon_suicide_end, lr300_glon_idle_jammed
+anm_stop_suicide_w_gl                         = lr300_gloff_suicide_end
+anm_suicide                                   = lr300_suicide
+anm_suicide_empty_g                           = lr300_glon_suicide, lr300_glon_idle
+anm_suicide_g                                 = lr300_glon_suicide, lr300_glon_idle
+anm_suicide_jammed_g                          = lr300_glon_suicide, lr300_glon_idle_jammed
+anm_suicide_w_gl                              = lr300_gloff_suicide
+
+; ---- GS controller-suicide timings. No GS source for this weapon (it has no Gunslinger counterpart),
+; so the sig550 values are used -- same class, same gesture length. Without lock_time_anm_suicide the
+; engine falls back to a hardcoded 3 s and the shot lands in the middle of the gesture. ----
+custom_suicide_shot                = true
+lock_time_anm_suicide              = 7.37
+lock_time_anm_stop_suicide         = 1.37
+lock_time_anm_suicide_w_gl         = 7.37
+lock_time_anm_stop_suicide_w_gl    = 1.37
+lock_time_anm_suicide_g            = 7.37
+lock_time_anm_suicide_empty_g      = 7.37
+lock_time_anm_suicide_jammed_g     = 7.37
+lock_time_anm_stop_suicide_g       = 1.37
+lock_time_anm_stop_suicide_empty_g = 1.37
+lock_time_anm_stop_suicide_jammed_g = 1.37
+suicide_delay                      = 0.25
+
+; ---- GS controller-suicide flags (defines.ltx defaults are the opposite: a weapon
+; that does not set these is dropped for the knife). Values from GS's own huds.ltx. ----
+prohibit_suicide                 = false
+suicide_by_animation             = true
+controller_can_shoot_gl          = true
+controller_shoot_gl_min_dist     = 10
+controller_can_switch_gl         = false
+anm_switch                                    = lr300_gl_deactivate
+anm_switch_empty_g                            = lr300_gl_activate, lr300_gl_activate_empty
+anm_switch_empty_w_gl                         = lr300_gl_deactivate, lr300_gl_deactivate_empty
+anm_switch_g                                  = lr300_gl_activate
+anm_switch_jammed_g                           = lr300_gl_activate, lr300_gl_activate_jammed
+anm_switch_jammed_w_gl                        = lr300_gl_deactivate, lr300_gl_deactivate_jammed
+anm_switch_w_gl                               = lr300_gl_deactivate
+anm_unload_mag                                = lr300_draw
+anm_unload_mag_empty                          = lr300_draw
+anm_unload_mag_empty_g                        = lr300_glon_draw, lr300_glon_idle
+anm_unload_mag_empty_w_gl                     = lr300_gloff_draw
+anm_unload_mag_g                              = lr300_glon_draw, lr300_glon_idle
+anm_unload_mag_jammed                         = lr300_draw
+anm_unload_mag_jammed_g                       = lr300_glon_draw, lr300_glon_idle
+anm_unload_mag_jammed_w_gl                    = lr300_gloff_draw
+anm_unload_mag_w_gl                           = lr300_gloff_draw
+
+; ==================== AUTO-FIRE MODE ANIMATION SET (mask_firemode_a = _auto) ====================
+; item motions <name>_auto were cloned into wpn_lr300_hud_animation.omf with the selector bone
+; in the AUTO position; the base set above keeps it at SINGLE.
+
+anm_auto_suicide                              = lr300_suicide, idle_auto
+anm_auto_suicide_empty_g                      = lr300_glon_suicide, lr300_glon_idle_auto
+anm_auto_suicide_g                            = lr300_glon_suicide, lr300_glon_idle_auto
+anm_auto_suicide_jammed_g                     = lr300_glon_suicide, lr300_glon_idle_jammed_auto
+anm_auto_suicide_w_gl                         = lr300_gloff_suicide, idle_auto
+anm_bore_auto                                 = lr300_draw, idle_auto
+anm_bore_auto_empty                           = lr300_draw, idle_empty_auto
+anm_bore_auto_empty_g                         = lr300_glon_draw, lr300_glon_idle_empty_auto
+anm_bore_auto_empty_w_gl                      = lr300_gloff_draw, idle_empty_auto
+anm_bore_auto_g                               = lr300_glon_draw, lr300_glon_idle_auto
+anm_bore_auto_jammed                          = lr300_draw, idle_jammed_auto
+anm_bore_auto_jammed_g                        = lr300_glon_draw, lr300_glon_idle_jammed_auto
+anm_bore_auto_jammed_w_gl                     = lr300_gloff_draw, idle_jammed_auto
+anm_bore_auto_w_gl                            = lr300_gloff_draw, idle_auto
+anm_fakeshoot_aim_auto                        = lr300_aim_dry, idle_auto
+anm_fakeshoot_aim_auto_empty                  = lr300_aim_dry, lr300_aim_empty_auto
+anm_fakeshoot_aim_auto_empty_g                = lr300_glon_aim_dry, lr300_glon_idle_empty_auto
+anm_fakeshoot_aim_auto_empty_w_gl             = lr300_gloff_aim_dry, lr300_aim_empty_auto
+anm_fakeshoot_aim_auto_g                      = lr300_glon_aim_dry, lr300_glon_idle_auto
+anm_fakeshoot_aim_auto_jammed                 = lr300_aim_dry, lr300_aim_jammed_auto
+anm_fakeshoot_aim_auto_jammed_g               = lr300_glon_aim_dry, lr300_glon_idle_jammed_auto
+anm_fakeshoot_aim_auto_jammed_w_gl            = lr300_gloff_aim_dry, lr300_aim_jammed_auto
+anm_fakeshoot_aim_auto_w_gl                   = lr300_gloff_aim_dry, lr300_aim_auto
+anm_fakeshoot_auto                            = lr300_dry, idle_auto
+anm_fakeshoot_auto_empty                      = lr300_dry_empty, idle_empty_auto
+anm_fakeshoot_auto_empty_g                    = lr300_glon_dry_empty, lr300_glon_idle_empty_auto
+anm_fakeshoot_auto_empty_w_gl                 = lr300_gloff_dry_empty, idle_empty_auto
+anm_fakeshoot_auto_g                          = lr300_glon_dry_empty, lr300_glon_idle_auto
+anm_fakeshoot_auto_jammed                     = lr300_dry, idle_jammed_auto
+anm_fakeshoot_auto_jammed_g                   = lr300_glon_dry_empty, lr300_glon_idle_jammed_auto
+anm_fakeshoot_auto_jammed_w_gl                = lr300_gloff_dry, idle_jammed_auto
+anm_fakeshoot_auto_w_gl                       = lr300_gloff_dry, idle_auto
+anm_headlamp_off_auto                         = lr300_headflash, idle_auto
+anm_headlamp_off_auto_empty                   = lr300_headflash, idle_auto
+anm_headlamp_off_auto_empty_g                 = lr300_glon_headflash, lr300_glon_idle_auto
+anm_headlamp_off_auto_empty_w_gl              = lr300_gloff_headflash, idle_auto
+anm_headlamp_off_auto_g                       = lr300_glon_headflash, lr300_glon_idle_auto
+anm_headlamp_off_auto_jammed                  = lr300_headflash, idle_jammed_auto
+anm_headlamp_off_auto_jammed_g                = lr300_glon_headflash, lr300_glon_idle_jammed_auto
+anm_headlamp_off_auto_jammed_w_gl             = lr300_gloff_headflash, idle_auto
+anm_headlamp_off_auto_w_gl                    = lr300_gloff_headflash, idle_auto
+anm_headlamp_on_auto                          = lr300_headflash, idle_auto
+anm_headlamp_on_auto_empty                    = lr300_headflash, idle_auto
+anm_headlamp_on_auto_empty_g                  = lr300_glon_headflash, lr300_glon_idle_auto
+anm_headlamp_on_auto_empty_w_gl               = lr300_gloff_headflash, idle_auto
+anm_headlamp_on_auto_g                        = lr300_glon_headflash, lr300_glon_idle_auto
+anm_headlamp_on_auto_jammed                   = lr300_headflash, idle_jammed_auto
+anm_headlamp_on_auto_jammed_g                 = lr300_glon_headflash, lr300_glon_idle_jammed_auto
+anm_headlamp_on_auto_jammed_w_gl              = lr300_gloff_headflash, idle_auto
+anm_headlamp_on_auto_w_gl                     = lr300_gloff_headflash, idle_auto
+anm_hide_auto                                 = lr300_hide, idle_auto
+anm_hide_auto_empty                           = lr300_hide, idle_empty_auto
+anm_hide_auto_empty_g                         = lr300_glon_hide, lr300_glon_idle_empty_auto
+anm_hide_auto_empty_w_gl                      = lr300_gloff_hide, idle_empty_auto
+anm_hide_auto_g                               = lr300_glon_hide, lr300_glon_idle_auto
+anm_hide_auto_jammed                          = lr300_hide, idle_jammed_auto
+anm_hide_auto_jammed_g                        = lr300_glon_hide, lr300_glon_idle_jammed_auto
+anm_hide_auto_jammed_w_gl                     = lr300_gloff_hide, idle_jammed_auto
+anm_hide_auto_w_gl                            = lr300_gloff_hide, idle_auto
+anm_idle_aim_auto                             = lr300_aim, lr300_aim_auto
+anm_idle_aim_auto_empty                       = lr300_aim, lr300_aim_empty_auto
+anm_idle_aim_auto_empty_g                     = lr300_glon_aim, lr300_glon_idle_empty_auto
+anm_idle_aim_auto_empty_w_gl                  = lr300_gloff_aim, lr300_aim_empty_auto
+anm_idle_aim_auto_g                           = lr300_glon_aim, lr300_glon_idle_auto
+anm_idle_aim_auto_jammed                      = lr300_aim, lr300_aim_jammed_auto
+anm_idle_aim_auto_jammed_g                    = lr300_glon_aim, lr300_glon_idle_jammed_auto
+anm_idle_aim_auto_jammed_w_gl                 = lr300_gloff_aim, lr300_aim_jammed_auto
+anm_idle_aim_auto_w_gl                        = lr300_gloff_aim, lr300_aim_auto
+anm_idle_aim_end_auto                         = lr300_aim_end, lr300_aim_end_auto
+anm_idle_aim_end_auto_empty                   = lr300_aim_end, lr300_aim_end_empty_auto
+anm_idle_aim_end_auto_empty_g                 = lr300_glon_aim_end, lr300_glon_idle_empty_auto
+anm_idle_aim_end_auto_empty_w_gl              = lr300_gloff_aim_end, lr300_aim_end_empty_auto
+anm_idle_aim_end_auto_g                       = lr300_glon_aim_end, lr300_glon_idle_auto
+anm_idle_aim_end_auto_jammed                  = lr300_aim_end, lr300_aim_end_jammed_auto
+anm_idle_aim_end_auto_jammed_g                = lr300_glon_aim_end, lr300_glon_idle_jammed_auto
+anm_idle_aim_end_auto_jammed_w_gl             = lr300_gloff_aim_end, lr300_aim_end_jammed_auto
+anm_idle_aim_end_auto_w_gl                    = lr300_gloff_aim_end, lr300_aim_end_auto
+anm_idle_aim_moving_back_auto                 = lr300_aim_walk, lr300_aim_auto
+anm_idle_aim_moving_back_auto_empty           = lr300_aim_walk, lr300_aim_empty_auto
+anm_idle_aim_moving_back_auto_empty_g         = lr300_glon_aim_walk, lr300_glon_idle_empty_auto
+anm_idle_aim_moving_back_auto_empty_w_gl      = lr300_gloff_aim_walk, lr300_aim_empty_auto
+anm_idle_aim_moving_back_auto_g               = lr300_glon_aim_walk, lr300_glon_idle_auto
+anm_idle_aim_moving_back_auto_jammed          = lr300_aim_walk, lr300_aim_jammed_auto
+anm_idle_aim_moving_back_auto_jammed_g        = lr300_glon_aim_walk, lr300_glon_idle_jammed_auto
+anm_idle_aim_moving_back_auto_jammed_w_gl     = lr300_gloff_aim_walk, lr300_aim_jammed_auto
+anm_idle_aim_moving_back_auto_w_gl            = lr300_gloff_aim_walk, lr300_aim_auto
+anm_idle_aim_moving_back_left_auto            = lr300_aim_walk, lr300_aim_auto
+anm_idle_aim_moving_back_left_auto_empty      = lr300_aim_walk, lr300_aim_empty_auto
+anm_idle_aim_moving_back_left_auto_empty_g    = lr300_glon_aim_walk, lr300_glon_idle_empty_auto
+anm_idle_aim_moving_back_left_auto_empty_w_gl = lr300_gloff_aim_walk, lr300_aim_empty_auto
+anm_idle_aim_moving_back_left_auto_g          = lr300_glon_aim_walk, lr300_glon_idle_auto
+anm_idle_aim_moving_back_left_auto_jammed     = lr300_aim_walk, lr300_aim_jammed_auto
+anm_idle_aim_moving_back_left_auto_jammed_g   = lr300_glon_aim_walk, lr300_glon_idle_jammed_auto
+anm_idle_aim_moving_back_left_auto_jammed_w_gl= lr300_gloff_aim_walk, lr300_aim_jammed_auto
+anm_idle_aim_moving_back_left_auto_w_gl       = lr300_gloff_aim_walk, lr300_aim_auto
+anm_idle_aim_moving_back_right_auto           = lr300_aim_walk, lr300_aim_auto
+anm_idle_aim_moving_back_right_auto_empty     = lr300_aim_walk, lr300_aim_empty_auto
+anm_idle_aim_moving_back_right_auto_empty_g   = lr300_glon_aim_walk, lr300_glon_idle_empty_auto
+anm_idle_aim_moving_back_right_auto_empty_w_gl= lr300_gloff_aim_walk, lr300_aim_empty_auto
+anm_idle_aim_moving_back_right_auto_g         = lr300_glon_aim_walk, lr300_glon_idle_auto
+anm_idle_aim_moving_back_right_auto_jammed    = lr300_aim_walk, lr300_aim_jammed_auto
+anm_idle_aim_moving_back_right_auto_jammed_g  = lr300_glon_aim_walk, lr300_glon_idle_jammed_auto
+anm_idle_aim_moving_back_right_auto_jammed_w_gl= lr300_gloff_aim_walk, lr300_aim_jammed_auto
+anm_idle_aim_moving_back_right_auto_w_gl      = lr300_gloff_aim_walk, lr300_aim_auto
+anm_idle_aim_moving_forward_auto              = lr300_aim_walk, lr300_aim_auto
+anm_idle_aim_moving_forward_auto_empty        = lr300_aim_walk, lr300_aim_empty_auto
+anm_idle_aim_moving_forward_auto_empty_g      = lr300_glon_aim_walk, lr300_glon_idle_empty_auto
+anm_idle_aim_moving_forward_auto_empty_w_gl   = lr300_gloff_aim_walk, lr300_aim_empty_auto
+anm_idle_aim_moving_forward_auto_g            = lr300_glon_aim_walk, lr300_glon_idle_auto
+anm_idle_aim_moving_forward_auto_jammed       = lr300_aim_walk, lr300_aim_jammed_auto
+anm_idle_aim_moving_forward_auto_jammed_g     = lr300_glon_aim_walk, lr300_glon_idle_jammed_auto
+anm_idle_aim_moving_forward_auto_jammed_w_gl  = lr300_gloff_aim_walk, lr300_aim_jammed_auto
+anm_idle_aim_moving_forward_auto_w_gl         = lr300_gloff_aim_walk, lr300_aim_auto
+anm_idle_aim_moving_forward_left_auto         = lr300_aim_walk, lr300_aim_auto
+anm_idle_aim_moving_forward_left_auto_empty   = lr300_aim_walk, lr300_aim_empty_auto
+anm_idle_aim_moving_forward_left_auto_empty_g = lr300_glon_aim_walk, lr300_glon_idle_empty_auto
+anm_idle_aim_moving_forward_left_auto_empty_w_gl= lr300_gloff_aim_walk, lr300_aim_empty_auto
+anm_idle_aim_moving_forward_left_auto_g       = lr300_glon_aim_walk, lr300_glon_idle_auto
+anm_idle_aim_moving_forward_left_auto_jammed  = lr300_aim_walk, lr300_aim_jammed_auto
+anm_idle_aim_moving_forward_left_auto_jammed_g= lr300_glon_aim_walk, lr300_glon_idle_jammed_auto
+anm_idle_aim_moving_forward_left_auto_jammed_w_gl= lr300_gloff_aim_walk, lr300_aim_jammed_auto
+anm_idle_aim_moving_forward_left_auto_w_gl    = lr300_gloff_aim_walk, lr300_aim_auto
+anm_idle_aim_moving_forward_right_auto        = lr300_aim_walk, lr300_aim_auto
+anm_idle_aim_moving_forward_right_auto_empty  = lr300_aim_walk, lr300_aim_empty_auto
+anm_idle_aim_moving_forward_right_auto_empty_g= lr300_glon_aim_walk, lr300_glon_idle_empty_auto
+anm_idle_aim_moving_forward_right_auto_empty_w_gl= lr300_gloff_aim_walk, lr300_aim_empty_auto
+anm_idle_aim_moving_forward_right_auto_g      = lr300_glon_aim_walk, lr300_glon_idle_auto
+anm_idle_aim_moving_forward_right_auto_jammed = lr300_aim_walk, lr300_aim_jammed_auto
+anm_idle_aim_moving_forward_right_auto_jammed_g= lr300_glon_aim_walk, lr300_glon_idle_jammed_auto
+anm_idle_aim_moving_forward_right_auto_jammed_w_gl= lr300_gloff_aim_walk, lr300_aim_jammed_auto
+anm_idle_aim_moving_forward_right_auto_w_gl   = lr300_gloff_aim_walk, lr300_aim_auto
+anm_idle_aim_moving_left_auto                 = lr300_aim_walk_left, lr300_aim_auto
+anm_idle_aim_moving_left_auto_empty           = lr300_aim_walk_left, lr300_aim_empty_auto
+anm_idle_aim_moving_left_auto_empty_g         = lr300_glon_aim_walk_left, lr300_glon_idle_empty_auto
+anm_idle_aim_moving_left_auto_empty_w_gl      = lr300_gloff_aim_walk_left, lr300_aim_empty_auto
+anm_idle_aim_moving_left_auto_g               = lr300_glon_aim_walk_left, lr300_glon_idle_auto
+anm_idle_aim_moving_left_auto_jammed          = lr300_aim_walk_left, lr300_aim_jammed_auto
+anm_idle_aim_moving_left_auto_jammed_g        = lr300_glon_aim_walk_left, lr300_glon_idle_jammed_auto
+anm_idle_aim_moving_left_auto_jammed_w_gl     = lr300_gloff_aim_walk_left, lr300_aim_jammed_auto
+anm_idle_aim_moving_left_auto_w_gl            = lr300_gloff_aim_walk_left, lr300_aim_auto
+anm_idle_aim_moving_right_auto                = lr300_aim_walk_right, lr300_aim_auto
+anm_idle_aim_moving_right_auto_empty          = lr300_aim_walk_right, lr300_aim_empty_auto
+anm_idle_aim_moving_right_auto_empty_g        = lr300_glon_aim_walk_right, lr300_glon_idle_empty_auto
+anm_idle_aim_moving_right_auto_empty_w_gl     = lr300_gloff_aim_walk_right, lr300_aim_empty_auto
+anm_idle_aim_moving_right_auto_g              = lr300_glon_aim_walk_right, lr300_glon_idle_auto
+anm_idle_aim_moving_right_auto_jammed         = lr300_aim_walk_right, lr300_aim_jammed_auto
+anm_idle_aim_moving_right_auto_jammed_g       = lr300_glon_aim_walk_right, lr300_glon_idle_jammed_auto
+anm_idle_aim_moving_right_auto_jammed_w_gl    = lr300_gloff_aim_walk_right, lr300_aim_jammed_auto
+anm_idle_aim_moving_right_auto_w_gl           = lr300_gloff_aim_walk_right, lr300_aim_auto
+anm_idle_aim_scope_auto                       = lr300_aim, lr300_aim_auto
+anm_idle_aim_scope_auto_empty                 = lr300_aim, lr300_aim_empty_auto
+anm_idle_aim_scope_auto_empty_g               = lr300_glon_aim, lr300_glon_idle_empty_auto
+anm_idle_aim_scope_auto_empty_w_gl            = lr300_gloff_aim, lr300_aim_empty_auto
+anm_idle_aim_scope_auto_g                     = lr300_glon_aim, lr300_glon_idle_auto
+anm_idle_aim_scope_auto_jammed                = lr300_aim, lr300_aim_jammed_auto
+anm_idle_aim_scope_auto_jammed_g              = lr300_glon_aim, lr300_glon_idle_jammed_auto
+anm_idle_aim_scope_auto_jammed_w_gl           = lr300_gloff_aim, lr300_aim_jammed_auto
+anm_idle_aim_scope_auto_w_gl                  = lr300_gloff_aim, lr300_aim_auto
+anm_idle_aim_scope_moving_auto                = lr300_aim_walk_scope, lr300_aim_auto
+anm_idle_aim_scope_moving_auto_empty          = lr300_aim_walk_scope, lr300_aim_empty_auto
+anm_idle_aim_scope_moving_auto_empty_g        = lr300_glon_aim_walk, lr300_glon_idle_auto
+anm_idle_aim_scope_moving_auto_empty_w_gl     = lr300_gloff_aim_walk_scope, lr300_aim_empty_auto
+anm_idle_aim_scope_moving_auto_g              = lr300_glon_aim_walk, lr300_glon_idle_auto
+anm_idle_aim_scope_moving_auto_jammed         = lr300_aim_walk_scope, lr300_aim_jammed_auto
+anm_idle_aim_scope_moving_auto_jammed_g       = lr300_glon_aim_walk, lr300_glon_idle_jammed_auto
+anm_idle_aim_scope_moving_auto_jammed_w_gl    = lr300_gloff_aim_walk_scope, lr300_aim_jammed_auto
+anm_idle_aim_scope_moving_auto_w_gl           = lr300_gloff_aim_walk_scope, lr300_aim_auto
+anm_idle_aim_start_auto                       = lr300_aim_start, lr300_aim_start_auto
+anm_idle_aim_start_auto_empty                 = lr300_aim_start, lr300_aim_start_empty_auto
+anm_idle_aim_start_auto_empty_g               = lr300_glon_aim_start, lr300_glon_idle_empty_auto
+anm_idle_aim_start_auto_empty_w_gl            = lr300_gloff_aim_start, lr300_aim_start_empty_auto
+anm_idle_aim_start_auto_g                     = lr300_glon_aim_start, lr300_glon_idle_auto
+anm_idle_aim_start_auto_jammed                = lr300_aim_start, lr300_aim_start_jammed_auto
+anm_idle_aim_start_auto_jammed_g              = lr300_glon_aim_start, lr300_glon_idle_jammed_auto
+anm_idle_aim_start_auto_jammed_w_gl           = lr300_gloff_aim_start, lr300_aim_start_jammed_auto
+anm_idle_aim_start_auto_w_gl                  = lr300_gloff_aim_start, lr300_aim_start_auto
+anm_idle_auto                                 = lr300_idle, idle_auto
+anm_idle_auto_empty                           = lr300_idle, idle_empty_auto
+anm_idle_auto_empty_g                         = lr300_glon_idle, lr300_glon_idle_empty_auto
+anm_idle_auto_empty_w_gl                      = lr300_gloff_idle, idle_empty_auto
+anm_idle_auto_g                               = lr300_glon_idle, lr300_glon_idle_auto
+anm_idle_auto_jammed                          = lr300_idle, idle_jammed_auto
+anm_idle_auto_jammed_g                        = lr300_glon_idle, lr300_glon_idle_jammed_auto
+anm_idle_auto_jammed_w_gl                     = lr300_gloff_idle, idle_jammed_auto
+anm_idle_auto_w_gl                            = lr300_gloff_idle, idle_auto
+anm_idle_crouch_auto                          = lr300_idle, idle_auto
+anm_idle_crouch_auto_empty                    = lr300_idle, idle_auto
+anm_idle_crouch_auto_empty_g                  = lr300_glon_idle, lr300_glon_idle_auto
+anm_idle_crouch_auto_empty_w_gl               = lr300_gloff_idle, idle_auto
+anm_idle_crouch_auto_g                        = lr300_glon_idle, lr300_glon_idle_auto
+anm_idle_crouch_auto_jammed                   = lr300_idle, idle_jammed_auto
+anm_idle_crouch_auto_jammed_g                 = lr300_glon_idle, lr300_glon_idle_jammed_auto
+anm_idle_crouch_auto_jammed_w_gl              = lr300_gloff_idle, idle_auto
+anm_idle_crouch_auto_w_gl                     = lr300_gloff_idle, idle_auto
+anm_idle_crouch_slow_auto                     = lr300_idle, idle_auto
+anm_idle_crouch_slow_auto_empty               = lr300_idle, idle_auto
+anm_idle_crouch_slow_auto_empty_g             = lr300_glon_idle, lr300_glon_idle_auto
+anm_idle_crouch_slow_auto_empty_w_gl          = lr300_gloff_idle, idle_auto
+anm_idle_crouch_slow_auto_g                   = lr300_glon_idle, lr300_glon_idle_auto
+anm_idle_crouch_slow_auto_jammed              = lr300_idle, idle_jammed_auto
+anm_idle_crouch_slow_auto_jammed_g            = lr300_glon_idle, lr300_glon_idle_jammed_auto
+anm_idle_crouch_slow_auto_jammed_w_gl         = lr300_gloff_idle, idle_auto
+anm_idle_crouch_slow_auto_w_gl                = lr300_gloff_idle, idle_auto
+anm_idle_moving_auto                          = lr300_walk, idle_auto
+anm_idle_moving_auto_empty                    = lr300_walk, idle_empty_auto
+anm_idle_moving_auto_empty_g                  = lr300_glon_walk, lr300_glon_idle_empty_auto
+anm_idle_moving_auto_empty_w_gl               = lr300_gloff_walk, idle_empty_auto
+anm_idle_moving_auto_g                        = lr300_glon_walk, lr300_glon_idle_auto
+anm_idle_moving_auto_jammed                   = lr300_walk, idle_jammed_auto
+anm_idle_moving_auto_jammed_g                 = lr300_glon_walk, lr300_glon_idle_jammed_auto
+anm_idle_moving_auto_jammed_w_gl              = lr300_gloff_walk, idle_jammed_auto
+anm_idle_moving_auto_w_gl                     = lr300_gloff_walk, idle_auto
+anm_idle_moving_crouch_auto                   = lr300_walk_slow_down, idle_auto
+anm_idle_moving_crouch_auto_empty             = lr300_walk_slow_down, idle_empty_auto
+anm_idle_moving_crouch_auto_empty_g           = lr300_glon_walk_slow_down, lr300_glon_idle_empty_auto
+anm_idle_moving_crouch_auto_empty_w_gl        = lr300_gloff_walk_slow_down, idle_empty_auto
+anm_idle_moving_crouch_auto_g                 = lr300_glon_walk_slow_down, lr300_glon_idle_auto
+anm_idle_moving_crouch_auto_jammed            = lr300_walk_slow_down, idle_jammed_auto
+anm_idle_moving_crouch_auto_jammed_g          = lr300_glon_walk_slow_down, lr300_glon_idle_jammed_auto
+anm_idle_moving_crouch_auto_jammed_w_gl       = lr300_gloff_walk_slow_down, idle_jammed_auto
+anm_idle_moving_crouch_auto_w_gl              = lr300_gloff_walk_slow_down, idle_auto
+anm_idle_moving_crouch_slow_auto              = lr300_walk_slow_super, idle_auto
+anm_idle_moving_crouch_slow_auto_empty        = lr300_walk_slow_super, idle_empty_auto
+anm_idle_moving_crouch_slow_auto_empty_g      = lr300_glon_walk_slow_super, lr300_glon_idle_empty_auto
+anm_idle_moving_crouch_slow_auto_empty_w_gl   = lr300_gloff_walk_slow_super, idle_empty_auto
+anm_idle_moving_crouch_slow_auto_g            = lr300_glon_walk_slow_super, lr300_glon_idle_auto
+anm_idle_moving_crouch_slow_auto_jammed       = lr300_walk_slow_super, idle_jammed_auto
+anm_idle_moving_crouch_slow_auto_jammed_g     = lr300_glon_walk_slow_super, lr300_glon_idle_jammed_auto
+anm_idle_moving_crouch_slow_auto_jammed_w_gl  = lr300_gloff_walk_slow_super, idle_jammed_auto
+anm_idle_moving_crouch_slow_auto_w_gl         = lr300_gloff_walk_slow_super, idle_auto
+anm_idle_moving_slow_auto                     = lr300_walk_slow, idle_auto
+anm_idle_moving_slow_auto_empty               = lr300_walk_slow, idle_empty_auto
+anm_idle_moving_slow_auto_empty_g             = lr300_glon_walk_slow, lr300_glon_idle_empty_auto
+anm_idle_moving_slow_auto_empty_w_gl          = lr300_gloff_walk_slow, idle_empty_auto
+anm_idle_moving_slow_auto_g                   = lr300_glon_walk_slow, lr300_glon_idle_auto
+anm_idle_moving_slow_auto_jammed              = lr300_walk_slow, idle_jammed_auto
+anm_idle_moving_slow_auto_jammed_g            = lr300_glon_walk_slow, lr300_glon_idle_jammed_auto
+anm_idle_moving_slow_auto_jammed_w_gl         = lr300_gloff_walk_slow, idle_jammed_auto
+anm_idle_moving_slow_auto_w_gl                = lr300_gloff_walk_slow, idle_auto
+anm_idle_slow_auto                            = lr300_idle, idle_auto
+anm_idle_slow_auto_empty                      = lr300_idle, idle_auto
+anm_idle_slow_auto_empty_g                    = lr300_glon_idle, lr300_glon_idle_auto
+anm_idle_slow_auto_empty_w_gl                 = lr300_gloff_idle, idle_auto
+anm_idle_slow_auto_g                          = lr300_glon_idle, lr300_glon_idle_auto
+anm_idle_slow_auto_jammed                     = lr300_idle, idle_jammed_auto
+anm_idle_slow_auto_jammed_g                   = lr300_glon_idle, lr300_glon_idle_jammed_auto
+anm_idle_slow_auto_jammed_w_gl                = lr300_gloff_idle, idle_auto
+anm_idle_slow_auto_w_gl                       = lr300_gloff_idle, idle_auto
+anm_idle_sprint_auto                          = lr300_sprint, idle_auto
+anm_idle_sprint_auto_empty                    = lr300_sprint, idle_empty_auto
+anm_idle_sprint_auto_empty_g                  = lr300_glon_sprint, lr300_glon_idle_empty_auto
+anm_idle_sprint_auto_empty_w_gl               = lr300_gloff_sprint, idle_empty_auto
+anm_idle_sprint_auto_g                        = lr300_glon_sprint, lr300_glon_idle_auto
+anm_idle_sprint_auto_jammed                   = lr300_sprint, idle_jammed_auto
+anm_idle_sprint_auto_jammed_g                 = lr300_glon_sprint, lr300_glon_idle_jammed_auto
+anm_idle_sprint_auto_jammed_w_gl              = lr300_gloff_sprint, idle_jammed_auto
+anm_idle_sprint_auto_w_gl                     = lr300_gloff_sprint, idle_auto
+anm_idle_sprint_end_auto                      = lr300_sprint_end, idle_auto
+anm_idle_sprint_end_auto_empty                = lr300_sprint_end, idle_empty_auto
+anm_idle_sprint_end_auto_empty_g              = lr300_glon_sprint_end, lr300_glon_idle_empty_auto
+anm_idle_sprint_end_auto_empty_w_gl           = lr300_gloff_sprint_end, idle_empty_auto
+anm_idle_sprint_end_auto_g                    = lr300_glon_sprint_end, lr300_glon_idle_auto
+anm_idle_sprint_end_auto_jammed               = lr300_sprint_end, idle_jammed_auto
+anm_idle_sprint_end_auto_jammed_g             = lr300_glon_sprint_end, lr300_glon_idle_jammed_auto
+anm_idle_sprint_end_auto_jammed_w_gl          = lr300_gloff_sprint_end, idle_jammed_auto
+anm_idle_sprint_end_auto_w_gl                 = lr300_gloff_sprint_end, idle_auto
+anm_idle_sprint_start_auto                    = lr300_sprint_start, idle_auto
+anm_idle_sprint_start_auto_empty              = lr300_sprint_start, idle_empty_auto
+anm_idle_sprint_start_auto_empty_g            = lr300_glon_sprint_start, lr300_glon_idle_empty_auto
+anm_idle_sprint_start_auto_empty_w_gl         = lr300_gloff_sprint_start, idle_empty_auto
+anm_idle_sprint_start_auto_g                  = lr300_glon_sprint_start, lr300_glon_idle_auto
+anm_idle_sprint_start_auto_jammed             = lr300_sprint_start, idle_jammed_auto
+anm_idle_sprint_start_auto_jammed_g           = lr300_glon_sprint_start, lr300_glon_idle_jammed_auto
+anm_idle_sprint_start_auto_jammed_w_gl        = lr300_gloff_sprint_start, idle_jammed_auto
+anm_idle_sprint_start_auto_w_gl               = lr300_gloff_sprint_start, idle_auto
+anm_kick_auto                                 = lr300_bayonet, idle_auto
+anm_kick_auto_empty                           = lr300_bayonet, idle_auto
+anm_kick_auto_empty_g                         = lr300_bayonet, idle_auto
+anm_kick_auto_empty_w_gl                      = lr300_bayonet, idle_auto
+anm_kick_auto_g                               = lr300_bayonet, idle_auto
+anm_kick_auto_jammed                          = lr300_bayonet, idle_jammed_auto
+anm_kick_auto_jammed_g                        = lr300_bayonet, idle_auto
+anm_kick_auto_jammed_w_gl                     = lr300_bayonet, idle_auto
+anm_kick_auto_w_gl                            = lr300_bayonet, idle_auto
+anm_nv_off_auto                               = lr300_headflash, idle_auto
+anm_nv_off_auto_empty                         = lr300_headflash, idle_auto
+anm_nv_off_auto_empty_g                       = lr300_glon_headflash, lr300_glon_idle_auto
+anm_nv_off_auto_empty_w_gl                    = lr300_gloff_headflash, idle_auto
+anm_nv_off_auto_g                             = lr300_glon_headflash, lr300_glon_idle_auto
+anm_nv_off_auto_jammed                        = lr300_headflash, idle_jammed_auto
+anm_nv_off_auto_jammed_g                      = lr300_glon_headflash, lr300_glon_idle_jammed_auto
+anm_nv_off_auto_jammed_w_gl                   = lr300_gloff_headflash, idle_auto
+anm_nv_off_auto_w_gl                          = lr300_gloff_headflash, idle_auto
+anm_nv_on_auto                                = lr300_headflash, idle_auto
+anm_nv_on_auto_empty                          = lr300_headflash, idle_auto
+anm_nv_on_auto_empty_g                        = lr300_glon_headflash, lr300_glon_idle_auto
+anm_nv_on_auto_empty_w_gl                     = lr300_gloff_headflash, idle_auto
+anm_nv_on_auto_g                              = lr300_glon_headflash, lr300_glon_idle_auto
+anm_nv_on_auto_jammed                         = lr300_headflash, idle_jammed_auto
+anm_nv_on_auto_jammed_g                       = lr300_glon_headflash, lr300_glon_idle_jammed_auto
+anm_nv_on_auto_jammed_w_gl                    = lr300_gloff_headflash, idle_auto
+anm_nv_on_auto_w_gl                           = lr300_gloff_headflash, idle_auto
+anm_reload_auto                               = lr300_reload, lr300_reload_auto
+anm_reload_auto_ammochange                    = lr300_reload, lr300_reload_auto
+anm_reload_auto_ammochange_g                  = lr300_gl_changegrenade, lr300_gl_changegrenade_auto
+anm_reload_auto_ammochange_w_gl               = lr300_gloff_reload, lr300_gloff_reload_auto
+anm_reload_auto_empty                         = lr300_reload_empty, lr300_reload_empty_auto
+anm_reload_auto_empty_ammochange_g            = lr300_gl_changegrenade, lr300_gl_changegrenade_empty_auto
+anm_reload_auto_empty_g                       = lr300_gl_reload, lr300_gl_reload_empty_auto
+anm_reload_auto_empty_w_gl                    = lr300_gloff_reload_empty, lr300_reload_empty_auto
+anm_reload_auto_g                             = lr300_gl_reload, lr300_gl_reload_auto
+anm_reload_auto_jammed                        = lr300_revival, lr300_revival_auto
+anm_reload_auto_jammed_ammochange_g           = lr300_gl_changegrenade, lr300_gl_changegrenade_jammed_auto
+anm_reload_auto_jammed_g                      = lr300_gl_reload, lr300_gl_reload_jammed_auto
+anm_reload_auto_jammed_last                   = lr300_revival_last, lr300_revival_last_auto
+anm_reload_auto_jammed_last_w_gl              = lr300_gloff_revival_last, lr300_revival_last_auto
+anm_reload_auto_jammed_w_gl                   = lr300_gloff_revival, lr300_revival_auto
+anm_reload_auto_w_gl                          = lr300_gloff_reload, lr300_reload_auto
+anm_reload_jammed_last_noscope_auto           = lr300_revival, lr300_revival_auto
+anm_reload_jammed_last_w_gl_noscope_auto      = lr300_gloff_revival, idle_auto
+anm_reload_jammed_noscope_auto                = lr300_revival, lr300_revival_auto
+anm_reload_jammed_w_gl_noscope_auto           = lr300_gloff_revival, idle_auto
+anm_shoot_aim_auto                            = lr300_aim_shoot, lr300_aim_shoot_auto
+anm_shoot_aim_auto_empty_g                    = lr300_glon_aim_shoot, lr300_glon_idle_empty_auto
+anm_shoot_aim_auto_g                          = lr300_glon_aim_shoot, lr300_glon_idle_auto
+anm_shoot_aim_auto_jammed                     = lr300_aim_shoot, lr300_aim_jammed_auto
+anm_shoot_aim_auto_jammed_g                   = lr300_glon_aim_shoot, lr300_glon_idle_jammed_auto
+anm_shoot_aim_auto_jammed_sil                 = lr300_aim_shoot, lr300_aim_jammed_auto
+anm_shoot_aim_auto_jammed_sil_w_gl            = lr300_gloff_aim_shoot, lr300_aim_jammed_auto
+anm_shoot_aim_auto_jammed_w_gl                = lr300_gloff_aim_shoot, lr300_aim_jammed_auto
+anm_shoot_aim_auto_last                       = lr300_aim_shoot, lr300_aim_shoot_last_auto
+anm_shoot_aim_auto_last_sil                   = lr300_aim_shoot, lr300_aim_shoot_auto
+anm_shoot_aim_auto_last_sil_w_gl              = lr300_gloff_aim_shoot, lr300_gloff_aim_shoot_auto
+anm_shoot_aim_auto_last_w_gl                  = lr300_gloff_aim_shoot, lr300_aim_shoot_last_auto
+anm_shoot_aim_auto_sil                        = lr300_aim_shoot, lr300_aim_shoot_auto
+anm_shoot_aim_auto_sil_w_gl                   = lr300_gloff_aim_shoot, lr300_gloff_aim_shoot_auto
+anm_shoot_aim_auto_w_gl                       = lr300_gloff_aim_shoot, lr300_gloff_aim_shoot_auto
+anm_shoot_aim_scope_auto                      = lr300_aim_shoot_scope, lr300_aim_shoot_auto
+anm_shoot_aim_scope_auto_jammed               = lr300_aim_shoot_scope, lr300_aim_jammed_auto
+anm_shoot_aim_scope_auto_jammed_sil           = lr300_aim_shoot_scope, lr300_aim_jammed_auto
+anm_shoot_aim_scope_auto_jammed_sil_w_gl      = lr300_gloff_aim_shoot_scope, lr300_aim_jammed_auto
+anm_shoot_aim_scope_auto_jammed_w_gl          = lr300_gloff_aim_shoot_scope, lr300_aim_jammed_auto
+anm_shoot_aim_scope_auto_last                 = lr300_aim_shoot_scope, lr300_aim_shoot_last_auto
+anm_shoot_aim_scope_auto_last_sil             = lr300_aim_shoot_scope, lr300_aim_shoot_auto
+anm_shoot_aim_scope_auto_last_sil_w_gl        = lr300_gloff_aim_shoot_scope, lr300_gloff_aim_shoot_auto
+anm_shoot_aim_scope_auto_last_w_gl            = lr300_gloff_aim_shoot_scope, lr300_aim_shoot_last_auto
+anm_shoot_aim_scope_auto_sil                  = lr300_aim_shoot_scope, lr300_aim_shoot_auto
+anm_shoot_aim_scope_auto_sil_w_gl             = lr300_gloff_aim_shoot_scope, lr300_gloff_aim_shoot_auto
+anm_shoot_aim_scope_auto_w_gl                 = lr300_gloff_aim_shoot_scope, lr300_gloff_aim_shoot_auto
+anm_shoot_auto                                = lr300_shoot, lr300_shoot_auto
+anm_shoot_auto_empty_g                        = lr300_glon_shoot, lr300_glon_idle_empty_auto
+anm_shoot_auto_g                              = lr300_glon_shoot, lr300_glon_idle_auto
+anm_shoot_auto_jammed                         = lr300_shoot, idle_jammed_auto
+anm_shoot_auto_jammed_g                       = lr300_glon_shoot, lr300_glon_idle_jammed_auto
+anm_shoot_auto_jammed_sil                     = lr300_shoot, idle_jammed_auto
+anm_shoot_auto_jammed_sil_w_gl                = lr300_gloff_shoot, lr300_gloff_shoot_auto
+anm_shoot_auto_jammed_w_gl                    = lr300_gloff_shoot, idle_jammed_auto
+anm_shoot_auto_last                           = lr300_shoot, lr300_shoot_last_auto
+anm_shoot_auto_last_sil                       = lr300_shoot, lr300_shoot_auto
+anm_shoot_auto_last_sil_w_gl                  = lr300_gloff_shoot, lr300_gloff_shoot_auto
+anm_shoot_auto_last_suicide                   = lr300_suicide_shoot, lr300_shoot_auto
+anm_shoot_auto_last_suicide_sil               = lr300_suicide_shoot, lr300_shoot_auto
+anm_shoot_auto_last_suicide_sil_w_gl          = lr300_suicide_shoot, lr300_gloff_shoot_auto
+anm_shoot_auto_last_suicide_w_gl              = lr300_suicide_shoot, lr300_gloff_shoot_auto
+anm_shoot_auto_last_w_gl                      = lr300_gloff_shoot, lr300_shoot_last_auto
+anm_shoot_auto_sil                            = lr300_shoot, lr300_shoot_auto
+anm_shoot_auto_sil_w_gl                       = lr300_gloff_shoot, lr300_gloff_shoot_auto
+anm_shoot_auto_suicide                        = lr300_suicide_shoot, lr300_shoot_auto
+anm_shoot_auto_suicide_empty_g                = lr300_suicide_shoot, lr300_shoot_auto
+anm_shoot_auto_suicide_g                      = lr300_suicide_shoot, lr300_shoot_auto
+anm_shoot_auto_suicide_jammed_g               = lr300_suicide_shoot, lr300_shoot_auto
+anm_shoot_auto_suicide_sil                    = lr300_suicide_shoot, lr300_shoot_auto
+anm_shoot_auto_suicide_sil_w_gl               = lr300_suicide_shoot, lr300_gloff_shoot_auto
+anm_shoot_auto_suicide_w_gl                   = lr300_suicide_shoot, lr300_gloff_shoot_auto
+anm_shoot_auto_w_gl                           = lr300_gloff_shoot, lr300_gloff_shoot_auto
+anm_show_auto                                 = lr300_draw, idle_auto
+anm_show_auto_empty                           = lr300_draw, idle_empty_auto
+anm_show_auto_empty_g                         = lr300_glon_draw, lr300_glon_idle_empty_auto
+anm_show_auto_empty_w_gl                      = lr300_gloff_draw, idle_empty_auto
+anm_show_auto_g                               = lr300_glon_draw, lr300_glon_idle_auto
+anm_show_auto_jammed                          = lr300_draw, idle_jammed_auto
+anm_show_auto_jammed_g                        = lr300_glon_draw, lr300_glon_idle_jammed_auto
+anm_show_auto_jammed_w_gl                     = lr300_gloff_draw, idle_jammed_auto
+anm_show_auto_w_gl                            = lr300_gloff_draw, idle_auto
+anm_stop_auto_suicide                         = lr300_suicide_end, idle_auto
+anm_stop_auto_suicide_empty_g                 = lr300_glon_suicide_end, lr300_glon_idle_auto
+anm_stop_auto_suicide_g                       = lr300_glon_suicide_end, lr300_glon_idle_auto
+anm_stop_auto_suicide_jammed_g                = lr300_glon_suicide_end, lr300_glon_idle_jammed_auto
+anm_stop_auto_suicide_w_gl                    = lr300_gloff_suicide_end, idle_auto
+anm_switch_auto                               = lr300_gl_deactivate, lr300_gl_deactivate_auto
+anm_switch_auto_empty_g                       = lr300_gl_activate, lr300_gl_activate_empty_auto
+anm_switch_auto_empty_w_gl                    = lr300_gl_deactivate, lr300_gl_deactivate_empty_auto
+anm_switch_auto_g                             = lr300_gl_activate, lr300_gl_activate_auto
+anm_switch_auto_jammed_g                      = lr300_gl_activate, lr300_gl_activate_jammed_auto
+anm_switch_auto_jammed_w_gl                   = lr300_gl_deactivate, lr300_gl_deactivate_jammed_auto
+anm_switch_auto_w_gl                          = lr300_gl_deactivate, lr300_gl_deactivate_auto
+anm_unload_mag_auto                           = lr300_draw, idle_auto
+anm_unload_mag_auto_empty                     = lr300_draw, idle_auto
+anm_unload_mag_auto_empty_g                   = lr300_glon_draw, lr300_glon_idle_auto
+anm_unload_mag_auto_empty_w_gl                = lr300_gloff_draw, idle_auto
+anm_unload_mag_auto_g                         = lr300_glon_draw, lr300_glon_idle_auto
+anm_unload_mag_auto_jammed                    = lr300_draw, idle_auto
+anm_unload_mag_auto_jammed_g                  = lr300_glon_draw, lr300_glon_idle_auto
+anm_unload_mag_auto_jammed_w_gl               = lr300_gloff_draw, idle_auto
+anm_unload_mag_auto_w_gl                      = lr300_gloff_draw, idle_auto
 
 [wpn_lr300_minigame]:wpn_lr300    ;new weapon for minigame "Shooting"
 ammo_limit      = 100
@@ -290,13 +1347,48 @@ fire_modes      = 1
 $spawn          = "weapons\wpn_lr300_minigame"
 cost            = 0
 quest_item 		= true
-upgrades                = up_gr_ab_lr300, up_gr_cd_lr300, up_gr_ef_lr300, up_gr_gh_lr300, up_gr_i_lr300, up_gr_j_lr300
+upgrades                = up_gr_ab_lr300, up_gr_cd_lr300, up_gr_ef_lr300, up_gr_gh_lr300, up_gr_i_lr300
 installed_upgrades      = up_b_lr300,up_d_lr300,up_bd_lr300
-upgrade_scheme          = upgrade_scheme_u16a
+upgrade_scheme          = upgrade_scheme_u15_nolamp
 
 [wpn_lr300_up2]:wpn_lr300	;LR300 М1
 $spawn          = "weapons\uniq\wpn_lr300_up2"
 
-upgrades                = up_gr_ab_lr300, up_gr_cd_lr300, up_gr_ef_lr300, up_gr_gh_lr300, up_gr_i_lr300, up_gr_j_lr300
-installed_upgrades      = up_b_lr300, up_d_lr300, up_f_lr300, up_h_lr300, up_i_lr300, up_j_lr300
-upgrade_scheme          = upgrade_scheme_u16a
+upgrades                = up_gr_ab_lr300, up_gr_cd_lr300, up_gr_ef_lr300, up_gr_gh_lr300, up_gr_i_lr300
+installed_upgrades      = up_b_lr300, up_d_lr300, up_f_lr300, up_h_lr300, up_i_lr300
+upgrade_scheme          = upgrade_scheme_u15_nolamp
+
+; GL grenade-type bones: the loaded grenade model shown in the launcher (blue = M209 HE,
+; red = M397A1 airburst), same pattern as the l85
+[wpn_lr300_ammo_bones_m209]
+all_bones = wpn_launcher_grenade_red, wpn_launcher_grenade_blue
+configuration_1 = wpn_launcher_grenade_blue
+
+[wpn_lr300_ammo_bones_m397a1]
+all_bones = wpn_launcher_grenade_red, wpn_launcher_grenade_blue
+configuration_1 = wpn_launcher_grenade_red
+
+; --- atlas rects for the layered icon (ui_icon_equipment) ------------------
+[icon_element_lr300_body]
+inv_grid_width     = 5
+inv_grid_height    = 2
+inv_grid_x         = 0
+inv_grid_y         = 6
+
+[icon_element_lr300_mag]
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 39
+inv_grid_y         = 21
+
+[icon_element_lr300_sights]
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 39
+inv_grid_y         = 20
+
+[upgrade_addon_icon_lr300_mag_big]
+inv_grid_width     = 1
+inv_grid_height    = 2
+inv_grid_x         = 40
+inv_grid_y         = 21

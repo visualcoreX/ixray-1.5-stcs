@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_ammo_m397a1">
+		<text>M397A1 grenade</text>
+	</string>
+<string id="gunsl_ammo_m397a1_short">
+		<text>M397A1</text>
+	</string>
+<string id="gunsl_ammo_m397a1_descr">
+		<text>Improved round for 40mm grenade launchers in NATO service. Developed for hitting targets behind cover.</text>
+	</string>
+</string_table>

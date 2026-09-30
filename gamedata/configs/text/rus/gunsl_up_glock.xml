@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+	<string id="gunsl_glock17_up_reliability_name">
+		<text>Защитное покрытие</text>
+	</string>
+	<string id="gunsl_glock17_up_reliability_descr">
+		<text>Нанесение специального напыления на внутренние детали позволяет замедлить износ оружия.</text>
+	</string>
+	<string id="gunsl_glock17_up_mag19_name">
+		<text>Увеличение емкости магазина</text>
+	</string>
+	<string id="gunsl_glock17_up_mag19_descr">
+		<text>Магазин повышенной емкости (19 патронов) увеличивает ваши шансы поразить противника без перезарядки.</text>
+	</string>	
+	<string id="gunsl_glock17_up_mag33_name">
+		<text>Замена магазина</text>
+	</string>
+	<string id="gunsl_glock17_up_mag33_descr">
+		<text>Установка магазина высокой емкости (33 патрона) позволяет значительно сократить число перезарядок в бою и тем самым увеличить шансы поразить противника.</text>
+	</string>	
+	<string id="gunsl_glock17_up_sights_name">
+		<text>Тритиевые вставки</text>
+	</string>
+	<string id="gunsl_glock17_up_sights_descr">
+		<text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+	</string>
+	<string id="gunsl_glock17_up_barrel_sil_name">
+		<text>Резьба под глушитель</text>
+	</string>
+	<string id="gunsl_glock17_up_barrel_sil_descr">
+		<text>Замена ствола на удлиненный, с резьбой, предназначенной для установки глушителя под калибр 9х19 мм.</text>
+	</string>
+	<string id="gunsl_glock17_up_barrel_kompensator_name">
+		<text>Дульный компенсатор</text>
+	</string>
+	<string id="gunsl_glock17_up_barrel_kompensator_descr">
+		<text>Замена ствола на удлиненный с интегрированным компенсатором позволяет значительно снизить отдачу.</text>
+	</string>
+	<string id="gunsl_glock17_up_usm_accuracy_name">
+		<text>Калибровка УСМ</text>
+	</string>
+	<string id="gunsl_glock17_up_usm_accuracy_descr">
+		<text>Индивидуальная подгонка и балансировка стандартных деталей ударно-спускового механизма позволяет добиться более высокой точности стрельбы при одновременном снижении отдачи.</text>
+	</string>
+	<string id="gunsl_glock17_up_usm_fullauto_name">
+		<text>Автоматический режим огня</text>
+	</string>
+	<string id="gunsl_glock17_up_usm_fullauto_descr">
+		<text>Полная замена затворной рамы и модификация деталей ударно-спускового механизма добавляет возможность ведения из пистолета автоматического огня. Из-за существенно возрастающей нагрузки на компоненты пистолета требуется замена части узлов на нестандартные, что значительно снижает точность ведения огня и надежность оружия.</text>
+	</string>
+	<string id="gunsl_glock17_up_usm_3x_name">
+		<text>Режим огня с отсечкой по три выстрела</text>
+	</string>
+	<string id="gunsl_glock17_up_usm_3x_descr">
+		<text>Компромиссный вариант между полностью автоматическим и одиночным режимами ведения огня. Добавление требует некоторых переделок оружия (например, замены затворной рамы), но из-за незначиельного возрастания нагрузки на узлы пистолета их замена в подавляющем большинстве своем не требуется. Это позволяет при гораздо меньших потерях точности и надежности получить эффективность, сравнимую с полностью автоматическим вариантом пистолета.</text>
+	</string>	
+	<string id="gunsl_glock17_up_torch_name">
+		<text>Комбинированный тактический модуль</text>
+	</string>	
+	<string id="gunsl_glock17_up_torch_descr">
+		<text>Сочетает в себе функции узконаправленного тактического фонаря и лазерного целеуказателя. Особенно полезен в ночных условиях.</text>
+	</string>	
+
+</string_table>

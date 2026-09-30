@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_sig220_up_barrel_sil_name">
+     <text>Ствол с резьбой под глушитель</text>
+</string>
+<string id="gunsl_sig220_up_barrel_sil_descr">
+     <text>Замена ствола на удлиненный, с резьбой, предназначенной для установки глушителя.</text>
+</string>
+<string id="gunsl_sig220_up_barrel_accuracy_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_sig220_up_barrel_accuracy_descr">
+     <text>Позволяет снизить разброс пуль при стрельбе из оружия, что повышает кучность и точность ведения огня.</text>
+</string>
+<string id="gunsl_sig220_up_barrel_speed_name">
+     <text>Ствол с измененным шагом нарезки</text>
+</string>
+<string id="gunsl_sig220_up_barrel_speed_descr">
+     <text>Позволяет повысить начальную скорость пули.</text>
+</string>
+<string id="gunsl_sig220_up_body_reliability_name">
+     <text>Защитное покрытие</text>
+</string>
+<string id="gunsl_sig220_up_body_reliability_descr">
+     <text>Нанесение на детали оружия защитного покрытия увеличивает срок его службы.</text>
+</string>
+<string id="gunsl_sig220_up_polymer_buffer_name">
+     <text>Полимерный буфер</text>
+</string>
+<string id="gunsl_sig220_up_polymer_buffer_descr">
+     <text>Внедрение в возвратный механизм дополнительного полимерного буфера снижает ощущаемую стрелком отдачу.</text>
+</string>
+<string id="gunsl_sig220_up_handle_name">
+     <text>Анатомическая рукоять</text>
+</string>
+<string id="gunsl_sig220_up_handle_descr">
+     <text>Подбор и установка на оружие более подходящих для конкретного стрелка накладок на рукоять позволяет добиться лучших результатов при стрельбе.</text>
+</string>
+<string id="gunsl_sig220_up_zatvor_zapiratel_name">
+     <text>Подгонка запирающего механизма</text>
+</string>
+<string id="gunsl_sig220_up_zatvor_zapiratel_descr">
+     <text>За счет более плотного запирания канала ствола улучшается обтюрация канала ствола и повышается начальная скорость пули.</text>
+</string>
+<string id="gunsl_sig220_up_usm_recoil_name">
+     <text>Мягкий спуск УСМ</text>
+</string>
+<string id="gunsl_sig220_up_usm_recoil_descr">
+     <text>Позволяет снизить отдачу, способствуя более точной стрельбе.</text>
+</string>
+<string id="gunsl_sig220_up_light_mag_name">
+     <text>Облегченный магазин</text>
+</string>
+<string id="gunsl_sig220_up_light_mag_descr">
+     <text>Пластиковый магазин позволяет немного снизить общую массу оружия.</text>
+</string>
+<string id="gunsl_sig220_up_patonnik_name">
+     <text>Юстировка патронника</text>
+</string>
+<string id="gunsl_sig220_up_patonnik_descr">
+     <text>Устранение люфтов позволяет улучшить обтюрацию и добиться более высокой точности стрельбы.</text>
+</string>
+<string id="gunsl_sig220_up_polymer_ramka_name">
+     <text>Облегченная рамка</text>
+</string>
+<string id="gunsl_sig220_up_polymer_ramka_descr">
+     <text>Замена стандартной рамки оружия на облегченный аналог позволяет выиграть в массе оружия, при этом не проигрывая в надежности и остальных характеристиках.</text>
+</string>
+<string id="gunsl_sig220_up_titan_details_name">
+     <text>Детали повышенной прочности</text>
+</string>
+<string id="gunsl_sig220_up_titan_details_descr">
+     <text>Обладают более высокой стойкостью к износу, за счет чего оружие становится более надежным.</text>
+</string>
+<string id="gunsl_sig220_up_shell_ejector_name">
+     <text>Доработка экстрактора</text>
+</string>
+<string id="gunsl_sig220_up_shell_ejector_descr">
+     <text>Позволяет уменьшить число задержек, связанных с прихватом гильз, выбрасываемых из пистолета после выстрела.</text>
+</string>
+<string id="gunsl_sig220_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_sig220_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_sig220_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_sig220_up_usm_rpm_descr">
+     <text>Перенастройка УСМ с доработкой некоторых его деталей делает ход спускового крючка более коротким, а сам спуск более мягким. Это позволяет вести огонь в более высоком темпе.</text>
+</string>
+<string id="gunsl_sig220_up_light_details_name">
+     <text>Облегченные детали</text>
+</string>
+<string id="gunsl_sig220_up_light_details_descr">
+     <text>Замена деталей в основных узлах оружия на их легкосплавные аналоги позволяет снизить массу оружия без существенного вреда для его остальных тактико-технических характеристик.</text>
+</string>
+</string_table>

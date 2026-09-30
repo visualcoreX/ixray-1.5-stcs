@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_up_prop_tactical_handle">
+		<text>Тактическая рукоять</text>
+	</string>
+	<string id="gunsl_wpn_wincheaster1300">
+		<text>Winchester 1300</text>
+	</string>
+	<string id="gunsl_wpn_wincheaster1300_descr">
+		<text>Помповый гладкоствольный дробовик западного производства, который пользуется широкой популярностью благодаря надёжности и высокой скорости перезарядки. Все детали данного оружия снабжены антикоррозионным покрытием.</text>
+	</string>
+</string_table>

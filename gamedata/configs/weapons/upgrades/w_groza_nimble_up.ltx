@@ -1,0 +1,760 @@
+; ============================================================================
+;  groza_nimble upgrade tree -- ported from Gunslinger (wpn_groza_nimble).
+;  CS adjustments applied by gsw.py: :base_bayonet rewired, prop_weight ->
+;  prop_weight_kg, snd_silncer_shot stripped from any barrel_sil node.
+; ============================================================================
+
+;------------------------------------------groza_nimble_gascam------------------------------------------
+[up_sect_groza_nimble_gascam]
+cost = 2000
+value = +10
+PDM_disp_base = -0.05
+fire_distance = +100
+bullet_speed = +60
+cam_dispersion = -0.01
+zoom_cam_dispersion = -0.007
+
+[up_groza_nimble_gascam]
+scheme_index = 0, 0
+known = 1
+effects = vartree_groza_nimble_details
+section = up_sect_groza_nimble_gascam
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_gascam_name
+description =gunsl_groza_nimble_up_gascam_descr
+icon = ui_gunsl_up_groza_nimble_gascam
+;------------------------------------------groza_nimble_barrel_accuracy------------------------------------------
+[up_sect_groza_nimble_barrel_accuracy]
+cost = 5000
+value = +30
+fire_dispersion_base = -0.07
+PDM_disp_base = -0.3
+PDM_disp_vel_factor 		= -0.1
+PDM_disp_accel_factor 		= -0.2
+PDM_disp_crouch	 		= -0.1
+PDM_disp_crouch_no_acc 		= -0.1
+
+cam_dispersion = -0.03
+zoom_cam_dispersion = -0.02
+
+hide_bones = dtc
+
+[up_groza_nimble_barrel_accuracy]
+scheme_index = 0, 1
+known = 1
+effects = 
+section = up_sect_groza_nimble_barrel_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_barrel_accuracy_name
+description =gunsl_groza_nimble_up_barrel_accuracy_descr
+icon = ui_gunsl_up_groza_nimble_barrel_accuracy
+;------------------------------------------groza_nimble_barrel_speed------------------------------------------
+[up_sect_groza_nimble_barrel_speed]
+cost = 5000
+value = +30
+bullet_speed = +200
+fire_dispersion_base = -0.02
+
+[up_groza_nimble_barrel_speed]
+scheme_index = 0, 2
+known = 1
+effects = 
+section = up_sect_groza_nimble_barrel_speed
+property = prop_bullet_speed
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_barrel_speed_name
+description =gunsl_groza_nimble_up_barrel_speed_descr
+icon = ui_gunsl_up_groza_nimble_barrel_speed
+;------------------------------------------groza_nimble_body------------------------------------------
+[up_sect_groza_nimble_body]
+cost = 4000
+value = +20
+misfire_start_condition = -0.1
+misfire_end_condition = -0.05
+condition_shot_dec = -0.00032
+condition_queue_shot_dec = -0.00025
+
+[up_groza_nimble_body]
+scheme_index = 0, 3
+known = 1
+effects = 
+section = up_sect_groza_nimble_body
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_body_name
+description =gunsl_groza_nimble_up_body_descr
+icon = ui_gunsl_up_groza_nimble_body
+;------------------------------------------groza_nimble_flash------------------------------------------
+[up_sect_groza_nimble_flash]
+torch_installed = true
+cost = 3000
+show_bones = flash, light
+inv_weight              = +0.3
+
+torch_world_attach_offset_x = 0.055
+torch_world_attach_offset_y = 0.222
+torch_world_attach_offset_z = 0.063
+
+torch_omni_world_attach_offset_x = 0.055
+torch_omni_world_attach_offset_y = 0.222
+torch_omni_world_attach_offset_z = 0.063
+
+upgrade_addon_icon = upgrade_addon_icon_flash_ak_2
+upgrade_addon_icon_offset_x = 90
+upgrade_addon_icon_offset_y = 0
+upgrade_addon_always_front = true
+
+[up_groza_nimble_flash]
+scheme_index = 0, 4
+known = 1
+effects = 
+section = up_sect_groza_nimble_flash
+property = prop_torch
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_flash_name
+description =gunsl_groza_nimble_up_flash_descr
+icon = ui_gunsl_up_groza_nimble_flash
+;------------------------------------------groza_nimble_tactical_rail------------------------------------------
+[up_sect_groza_nimble_tactical_rail]
+cost = 2000
+hide_bones = foregrip
+show_bones = foregrip_rail, scope1, scope2, scope3, scope4
+scopes_sect =  scope_eotech_groza, scope_aimpoint_groza, scope_elcan_groza, scope_pn23_groza
+scope_status = 2
+scope_name = wpn_addon_scope_susat_x1.6	; + scope_x/scope_y are read from the NODE
+scope_x = 89	; = scope_eotech_groza, the first optic in scopes_sect above
+scope_y = -6
+inv_weight = +0.05
+
+upgrade_addon_icon = icon_element_oc14_rail
+upgrade_addon_icon_offset_x = 96
+upgrade_addon_icon_offset_y = 0
+
+[up_groza_nimble_tactical_rail]
+scheme_index = 0, 5
+known = 1
+effects = vartree_groza_nimble_flash, vartree_groza_nimble_laser
+section = up_sect_groza_nimble_tactical_rail
+property = prop_scope_attach
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_tactical_rail_name
+description =gunsl_groza_nimble_up_tactical_rail_descr
+icon = ui_gunsl_up_groza_nimble_tactical_rail
+;------------------------------------------groza_nimble_handle------------------------------------------
+[up_sect_groza_nimble_handle]
+cost = 1000
+value = +10
+control_inertion_factor = -0.1
+cam_dispersion = -0.04
+zoom_cam_dispersion_inc = -0.006
+zoom_cam_dispersion = -0.01
+show_bones = handler2
+hide_bones = handler
+PDM_disp_vel_factor = -0.15
+
+upgrade_addon_icon = upgrade_addon_icon_assault_handler_2
+upgrade_addon_icon_offset_x = 78
+upgrade_addon_icon_offset_y = 0
+
+[up_groza_nimble_handle]
+scheme_index = 0, 6
+known = 1
+effects = 
+section = up_sect_groza_nimble_handle
+property = prop_inertion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_handle_name
+description =gunsl_groza_nimble_up_handle_descr
+icon = ui_gunsl_up_groza_nimble_handle
+;------------------------------------------groza_nimble_usilenie_korobki------------------------------------------
+[up_sect_groza_nimble_usilenie_korobki]
+cost = 3000
+value = +15
+condition_shot_dec = -0.0001
+condition_queue_shot_dec = -0.0001
+misfire_end_prob = -0.005
+
+[up_groza_nimble_usilenie_korobki]
+scheme_index = 0, 7
+known = 1
+effects = vartree_groza_nimble_barrel, vartree_groza_nimble_body
+section = up_sect_groza_nimble_usilenie_korobki
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_usilenie_korobki_name
+description =gunsl_groza_nimble_up_usilenie_korobki_descr
+icon = ui_gunsl_up_groza_nimble_usilenie_korobki
+;------------------------------------------groza_nimble_laser------------------------------------------
+[up_sect_groza_nimble_laser]
+laser_installed = true
+cost = 3500
+show_bones = laser, line, line2
+laser_ray_bones = line, line2
+inv_weight              = +0.2
+crosshair_inertion = -0.1
+
+laserdot_world_attach_offset_x = -0.044
+laserdot_world_attach_offset_y = 0.225
+laserdot_world_attach_offset_z = 0.057
+
+
+[up_groza_nimble_laser]
+scheme_index = 0, 8
+known = 1
+effects = 
+section = up_sect_groza_nimble_laser
+property = prop_laser
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_laser_name
+description =gunsl_groza_nimble_up_laser_descr
+icon = ui_gunsl_up_groza_nimble_laser
+;------------------------------------------groza_nimble_mag_fixator------------------------------------------
+[up_sect_groza_nimble_mag_fixator]
+cost = 1000
+value = +5
+misfire_start_condition = -0.05
+misfire_start_prob = -0.0003
+misfire_end_prob = -0.0022
+
+[up_groza_nimble_mag_fixator]
+scheme_index = 0, 9
+known = 1
+effects = vartree_groza_nimble_ejector, vartree_groza_nimble_gascam
+section = up_sect_groza_nimble_mag_fixator
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_mag_fixator_name
+description =gunsl_groza_nimble_up_mag_fixator_descr
+icon = ui_gunsl_up_groza_nimble_mag_fixator
+;------------------------------------------groza_nimble_usm_rpm_down------------------------------------------
+[up_sect_groza_nimble_usm_rpm_down]
+cost = 5000
+value = -25
+rpm = -200
+condition_queue_shot_dec     = -0.0002
+
+[up_groza_nimble_usm_rpm_down]
+scheme_index = 0, 10
+known = 1
+effects = 
+section = up_sect_groza_nimble_usm_rpm_down
+property = prop_rpm
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_usm_rpm_down_name
+description =gunsl_groza_nimble_up_usm_rpm_down_descr
+icon = ui_gunsl_up_groza_nimble_usm_rpm_down
+;------------------------------------------groza_nimble_light_details------------------------------------------
+[up_sect_groza_nimble_light_details]
+cost = 3000
+value = -0.25
+inv_weight = -0.25
+
+[up_groza_nimble_light_details]
+scheme_index = 0, 11
+known = 1
+effects = vartree_groza_nimble_barrel, vartree_groza_nimble_body
+section = up_sect_groza_nimble_light_details
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_light_details_name
+description =gunsl_groza_nimble_up_light_details_descr
+icon = ui_gunsl_up_groza_nimble_light_details
+;------------------------------------------groza_nimble_stock_inertion------------------------------------------
+[up_sect_groza_nimble_stock_inertion]
+cost = 1500
+value = +10
+control_inertion_factor = -0.12
+PDM_disp_vel_factor = -0.2
+crosshair_inertion = -1
+
+cam_dispersion = -0.014
+zoom_cam_dispersion = -0.007
+
+[up_groza_nimble_stock_inertion]
+scheme_index = 0, 12
+known = 1
+effects = vartree_groza_nimble_handle
+section = up_sect_groza_nimble_stock_inertion
+property = prop_inertion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_stock_inertion_name
+description =gunsl_groza_nimble_up_stock_inertion_descr
+icon = ui_gunsl_up_groza_nimble_stock_inertion
+;------------------------------------------groza_nimble_light_stock------------------------------------------
+[up_sect_groza_nimble_light_stock]
+cost = 1500
+value = -0.3
+inv_weight = -0.3
+
+[up_groza_nimble_light_stock]
+scheme_index = 0, 13
+known = 1
+effects = vartree_groza_nimble_handle
+section = up_sect_groza_nimble_light_stock
+property = prop_weight_kg
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_light_stock_name
+description =gunsl_groza_nimble_up_light_stock_descr
+icon = ui_gunsl_up_groza_nimble_light_stock
+;------------------------------------------groza_nimble_shell_ejector------------------------------------------
+[up_sect_groza_nimble_shell_ejector]
+cost = 2000
+value = +10
+misfire_start_prob = -0.0005
+misfire_end_prob = -0.01
+
+[up_groza_nimble_shell_ejector]
+scheme_index = 0, 14
+known = 1
+effects = vartree_groza_nimble_zatvor
+section = up_sect_groza_nimble_shell_ejector
+property = prop_reliability
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_shell_ejector_name
+description =gunsl_groza_nimble_up_shell_ejector_descr
+icon = ui_gunsl_up_groza_nimble_shell_ejector
+;------------------------------------------groza_nimble_sights------------------------------------------
+[up_sect_groza_nimble_sights]
+cost = 500
+crosshair_inertion = -0.4
+control_inertion_factor = -0.05
+show_bones = sight
+
+[up_groza_nimble_sights]
+scheme_index = 0, 15
+known = 1
+effects = 
+section = up_sect_groza_nimble_sights
+property = prop_lightingsights
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_sights_name
+description =gunsl_groza_nimble_up_sights_descr
+icon = ui_gunsl_up_groza_nimble_sights
+;------------------------------------------groza_nimble_tac_handle------------------------------------------
+[up_sect_groza_nimble_tac_handle]
+cost = 5000
+control_inertion_factor = -0.12
+inv_weight              = +0.2
+
+crosshair_inertion		= -1.0
+cam_relax_speed         = +1
+
+cam_max_angle           = -20.0      
+cam_max_angle_horz      = -20.0
+
+cam_dispersion          = -0.05 
+cam_dispersion_inc      = -0.02
+
+zoom_cam_dispersion = -0.03
+zoom_cam_dispersion_inc = -0.03
+
+PDM_disp_base = -0.2
+
+bullet_speed = +30
+
+show_bones = grip
+hide_bones = dtc
+hud = wpn_groza_handler_hud
+hud_when_silencer_is_attached = true
+hud_silencer= wpn_groza_hud
+hide_bones_override_when_silencer_attached = grip
+
+upgrade_addon_icon = icon_element_oc14_handle
+upgrade_addon_icon_offset_x = 132
+upgrade_addon_icon_offset_y = 0
+upgrade_addon_icon_banned_addons_mask = 6
+
+[up_groza_nimble_tac_handle]
+scheme_index = 0, 16
+known = 1
+effects = vartree_groza_nimble_details
+section = up_sect_groza_nimble_tac_handle
+property = prop_tacticalhandle
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_tac_handle_name
+description =gunsl_groza_nimble_up_tac_handle_descr
+icon = ui_gunsl_up_groza_nimble_tac_handle
+;------------------------------------------groza_nimble_usm_rpm------------------------------------------
+[up_sect_groza_nimble_usm_rpm]
+cost = 5000
+value = +25
+rpm = +150
+condition_queue_shot_dec     = +0.0003
+misfire_start_prob	     	= +0.0005
+misfire_end_prob	     	= +0.005
+
+[up_groza_nimble_usm_rpm]
+scheme_index = 0, 17
+known = 1
+effects = 
+section = up_sect_groza_nimble_usm_rpm
+property = prop_rpm
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_usm_rpm_name
+description =gunsl_groza_nimble_up_usm_rpm_descr
+icon = ui_gunsl_up_groza_nimble_usm_rpm
+;------------------------------------------groza_nimble_usm_accuracy------------------------------------------
+[up_sect_groza_nimble_usm_accuracy]
+cost = 5000
+value = +25
+fire_dispersion_base = -0.04
+bullet_speed = +10
+
+PDM_disp_base = -0.25
+PDM_disp_vel_factor 		= -0.05
+PDM_disp_accel_factor 		= -0.05
+PDM_disp_crouch	 		= -0.05
+PDM_disp_crouch_no_acc 		= -0.05
+
+cam_dispersion = -0.03
+zoom_cam_dispersion = -0.02
+
+cam_dispersion_inc      = -0.03
+zoom_cam_dispersion_inc     = -0.03
+
+[up_groza_nimble_usm_accuracy]
+scheme_index = 0, 18
+known = 1
+effects = 
+section = up_sect_groza_nimble_usm_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_usm_accuracy_name
+description =gunsl_groza_nimble_up_usm_accuracy_descr
+icon = ui_gunsl_up_groza_nimble_usm_accuracy
+;------------------------------------------groza_nimble_barrel_recoil------------------------------------------
+[up_sect_groza_nimble_barrel_recoil]
+cost = 5000
+value = -30
+cam_dispersion = -0.07
+cam_dispersion_inc = -0.06
+zoom_cam_dispersion = -0.05
+zoom_cam_dispersion_inc = -0.04
+PDM_disp_base = -0.1
+
+[up_groza_nimble_barrel_recoil]
+scheme_index = 0, 19
+known = 1
+effects = 
+section = up_sect_groza_nimble_barrel_recoil
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_barrel_recoil_name
+description =gunsl_groza_nimble_up_barrel_recoil_descr
+icon = ui_gunsl_up_groza_nimble_barrel_recoil
+;------------------------------------------groza_nimble_zatvor_balancer------------------------------------------
+[up_sect_groza_nimble_zatvor_balancer]
+cost = 3000
+value = -15
+zoom_cam_dispersion          = -0.03
+cam_dispersion          = -0.06
+
+misfire_start_prob	     	= -0.0002
+misfire_end_prob	     	= -0.005
+
+PDM_disp_base = -0.08
+
+[up_groza_nimble_zatvor_balancer]
+scheme_index = 0, 20
+known = 1
+effects = vartree_groza_nimble_usm, vartree_groza_nimble_body
+section = up_sect_groza_nimble_zatvor_balancer
+property = prop_recoil
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_zatvor_balancer_name
+description =gunsl_groza_nimble_up_zatvor_balancer_descr
+icon = ui_gunsl_up_groza_nimble_zatvor_balancer
+;------------------------------------------groza_nimble_patronnik_accuracy------------------------------------------
+[up_sect_groza_nimble_patronnik_accuracy]
+cost = 3000
+value = +15
+fire_dispersion_base = -0.04
+PDM_disp_base = -0.23
+
+cam_dispersion = -0.03
+zoom_cam_dispersion = -0.008
+
+[up_groza_nimble_patronnik_accuracy]
+scheme_index = 0, 21
+known = 1
+effects = vartree_groza_nimble_usm, vartree_groza_nimble_body
+section = up_sect_groza_nimble_patronnik_accuracy
+property = prop_dispersion
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_patronnik_accuracy_name
+description =gunsl_groza_nimble_up_patronnik_accuracy_descr
+icon = ui_gunsl_up_groza_nimble_patronnik_accuracy
+;------------------------------------------groza_nimble_mag45_black------------------------------------------
+[up_sect_groza_nimble_mag45_black]
+cost = 500
+value = +15
+show_bones = mag45_black
+hide_bones = mag30
+ammo_mag_size	= +15
+inv_weight              = +0.1
+
+cam_dispersion = +0.03
+cam_dispersion_inc = +0.01
+zoom_cam_dispersion = +0.015
+zoom_cam_dispersion_inc = +0.01
+
+upgrade_addon_icon = upgrade_addon_icon_mag_545_45_black_1
+upgrade_addon_icon_offset_x = 52
+upgrade_addon_icon_offset_y = 0
+upgrade_addon_icons_hide = icon_element_mag_545_bakelite_stock
+
+[up_groza_nimble_mag45_black]
+scheme_index = 0, 22
+known = 1
+effects = vartree_groza_nimble_mag60
+section = up_sect_groza_nimble_mag45_black
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_mag45_black_name
+description =gunsl_groza_nimble_up_mag45_black_descr
+icon = ui_gunsl_up_groza_nimble_mag45_black
+;------------------------------------------groza_nimble_mag45_brown------------------------------------------
+[up_sect_groza_nimble_mag45_brown]
+cost = 500
+value = +15
+show_bones = mag45
+hide_bones = mag30
+ammo_mag_size	= +15
+inv_weight              = +0.1
+
+cam_dispersion = +0.03
+cam_dispersion_inc = +0.01
+zoom_cam_dispersion = +0.015
+zoom_cam_dispersion_inc = +0.01
+
+upgrade_addon_icon = upgrade_addon_icon_mag_545_45_bakelite_1
+upgrade_addon_icon_offset_x = 52
+upgrade_addon_icon_offset_y = 0
+upgrade_addon_icons_hide = icon_element_mag_545_bakelite_stock
+
+[up_groza_nimble_mag45_brown]
+scheme_index = 0, 23
+known = 1
+effects = vartree_groza_nimble_mag60
+section = up_sect_groza_nimble_mag45_brown
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_mag45_brown_name
+description =gunsl_groza_nimble_up_mag45_brown_descr
+icon = ui_gunsl_up_groza_nimble_mag45_brown
+;------------------------------------------groza_nimble_mag60------------------------------------------
+[up_sect_groza_nimble_mag60]
+cost = 1500
+value = +15
+show_bones = mag60
+hide_bones_override =  mag45_black, mag45
+ammo_mag_size	= +15
+inv_weight              = +0.1
+
+cam_dispersion = +0.03
+cam_dispersion_inc = +0.01
+zoom_cam_dispersion = +0.015
+zoom_cam_dispersion_inc = +0.01
+
+upgrade_addon_icon = upgrade_addon_icon_mag_545_60_black_1 
+upgrade_addon_icon_offset_x = 52
+upgrade_addon_icon_offset_y = 0
+upgrade_addon_icons_hide = upgrade_addon_icon_mag_545_45_black_1, upgrade_addon_icon_mag_545_45_bakelite_1
+
+[up_groza_nimble_mag60]
+scheme_index = 0, 24
+known = 1
+effects = 
+section = up_sect_groza_nimble_mag60
+property = prop_ammo_size
+precondition_functor = inventory_upgrades.precondition_functor_a
+precondition_parameter = true
+effect_functor = inventory_upgrades.effect_functor_a
+effect_parameter  = something_here
+prereq_functor  = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params  = 
+name =gunsl_groza_nimble_up_mag60_name
+description =gunsl_groza_nimble_up_mag60_descr
+icon = ui_gunsl_up_groza_nimble_mag60
+;------------------------------------------------------------------------------------
+[vartree_groza_nimble_mag_fix]
+elements = up_groza_nimble_mag_fixator
+[vartree_groza_nimble_usm]
+elements = up_groza_nimble_usm_rpm_down, up_groza_nimble_usm_rpm, up_groza_nimble_usm_accuracy
+[vartree_groza_nimble_barrel]
+elements = up_groza_nimble_barrel_accuracy, up_groza_nimble_barrel_speed, up_groza_nimble_barrel_recoil
+[vartree_groza_nimble_ejector]
+elements = up_groza_nimble_shell_ejector
+[vartree_groza_nimble_zatvor]
+elements = up_groza_nimble_zatvor_balancer, up_groza_nimble_patronnik_accuracy
+[vartree_groza_nimble_body]
+elements = up_groza_nimble_body
+[vartree_groza_nimble_stock]
+elements = up_groza_nimble_stock_inertion, up_groza_nimble_light_stock
+[vartree_groza_nimble_gascam]
+elements = up_groza_nimble_gascam
+[vartree_groza_nimble_details]
+elements = up_groza_nimble_usilenie_korobki, up_groza_nimble_light_details
+[vartree_groza_nimble_rail]
+elements = up_groza_nimble_tactical_rail
+[vartree_groza_nimble_flash]
+elements = up_groza_nimble_flash
+[vartree_groza_nimble_laser]
+elements = up_groza_nimble_laser
+[vartree_groza_nimble_handle]
+elements = up_groza_nimble_handle
+[vartree_groza_nimble_sights]
+elements = up_groza_nimble_sights
+[vartree_groza_nimble_tac_handle]
+elements = up_groza_nimble_tac_handle
+[vartree_groza_nimble_mag45]
+elements = up_groza_nimble_mag45_black, up_groza_nimble_mag45_brown
+[vartree_groza_nimble_mag60]
+elements = up_groza_nimble_mag60

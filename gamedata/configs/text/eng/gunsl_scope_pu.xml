@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_addon_scope_pu">
+		<text>PU Optical sight</text>
+	</string>
+	<string id="gunsl_addon_scope_pu_descr">
+		<text>Hunting optical scope with a fixed 3.5x magnification. Designed for shotguns with a special mount, and is incompatible with any other firearm.</text>
+	</string>
+</string_table>

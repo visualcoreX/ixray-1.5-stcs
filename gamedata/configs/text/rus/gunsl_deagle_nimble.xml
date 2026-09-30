@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_deagle_uniq">
+		<text>«Степной орёл»</text>
+	</string>
+	<string id="gunsl_wpn_deagle_uniq_descr">
+		<text>Необычная модификация пистолета DESERT EAGLE. Изготовленная на заказ деревянная рукоятка хорошо сидит в ладони, что позволяет лучше удерживать пистолет и повышает точность стрельбы.</text>
+	</string>
+</string_table>

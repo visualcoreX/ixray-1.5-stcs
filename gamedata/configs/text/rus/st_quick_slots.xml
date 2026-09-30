@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="kb_quick_use_1">
+		<text>Быстрый слот 1</text>
+	</string>
+	<string id="kb_quick_use_2">
+		<text>Быстрый слот 2</text>
+	</string>
+	<string id="kb_quick_use_3">
+		<text>Быстрый слот 3</text>
+	</string>
+	<string id="kb_quick_use_4">
+		<text>Быстрый слот 4</text>
+	</string>
+</string_table>

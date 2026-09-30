@@ -1,22 +1,21 @@
-; «десь содержатс€ дескрипшены сквадов, которые потом можно создавать использу€ спец функции.
-
-;---------------------------LEVEL GARBAGE-----------------
-
 ;------------------ North Agroprom exit -------------------
 
 [gar_bandit_smart_terrain_1_5_squad_1]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_1, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_2, sim_default_bandit_2
-target_smart = gar_smart_terrain_1_5:nil
+target_smart = {=is_bandit_at_expansion_1} nil, gar_smart_terrain_1_5
 
 ;------------------ Military exit -------------------------
 
 [gar_bandit_smart_terrain_5_2_squad_1]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_3, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_3, sim_default_bandit_2
 target_smart = gar_smart_terrain_5_2:nil
 
 [gar_bandit_smart_terrain_5_2_squad_2]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_2, sim_default_bandit_1, sim_default_bandit_1, sim_default_bandit_2, sim_default_bandit_2
 target_smart = gar_smart_terrain_5_2:nil
@@ -24,11 +23,13 @@ target_smart = gar_smart_terrain_5_2:nil
 ;------------------ Concentration Camp --------------------
 
 [gar_bandit_smart_terrain_3_7_squad_1]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_3, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_3, sim_default_bandit_2
 target_smart = gar_smart_terrain_3_7
 
 [gar_bandit_smart_terrain_3_7_squad_2]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_2, sim_default_bandit_1, sim_default_bandit_1, sim_default_bandit_2, sim_default_bandit_2
 target_smart = gar_smart_terrain_3_7
@@ -36,30 +37,35 @@ target_smart = gar_smart_terrain_3_7
 ;------------------ North Dark Valley exit ----------------
 
 [gar_bandit_smart_terrain_8_3_squad_1]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_2, sim_default_bandit_3, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_2
-target_smart = gar_smart_terrain_8_3:nil
+target_smart = {=is_bandit_at_expansion_1} nil, gar_smart_terrain_8_3
 
 ;------------------ South Dark Valley exit ----------------
 
-[gar_bandit_smart_terrain_8_7_squad_2]
-faction = bandit
-npc = sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_3, sim_default_bandit_3, sim_default_bandit_2
-target_smart = gar_smart_terrain_8_7:nil
-
 [gar_bandit_smart_terrain_8_7_squad_1]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_2, sim_default_bandit_1, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_2
-target_smart = gar_smart_terrain_8_7:nil
+target_smart = {=is_bandit_at_expansion_1} nil, gar_smart_terrain_8_7
+
+[gar_bandit_smart_terrain_8_7_squad_2]
+;auto_id = true
+faction = bandit
+npc = sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_3, sim_default_bandit_3, sim_default_bandit_2
+target_smart = {=is_bandit_at_expansion_1} nil, gar_smart_terrain_8_7
 
 ;------------------ South Agroprom exit -------------------
 
 [gar_bandit_smart_terrain_1_7_squad_1]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_3, sim_default_bandit_3, sim_default_bandit_2
-target_smart = gar_smart_terrain_1_7:nil
+target_smart = {=is_bandit_at_expansion_1} nil, gar_smart_terrain_1_7
 
 [gar_bandit_smart_terrain_1_7_squad_2]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_2, sim_default_bandit_2, sim_default_bandit_1, sim_default_bandit_1, sim_default_bandit_2
 target_smart = gar_smart_terrain_1_7:nil
@@ -67,18 +73,21 @@ target_smart = gar_smart_terrain_1_7:nil
 ;------------------ West Escape exit ----------------------
 
 [gar_bandit_smart_terrain_3_8_squad_1]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_3, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_2, sim_default_bandit_2
-target_smart = gar_smart_terrain_3_8:nil
+target_smart = {=is_bandit_at_expansion_1} nil, gar_smart_terrain_3_8
 
 ;------------------ East Escape exit ----------------------
 
 [gar_bandit_smart_terrain_5_8_squad_1]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_2, sim_default_bandit_2, sim_default_bandit_2
-target_smart = gar_smart_terrain_5_8:nil
+target_smart = {=is_bandit_at_expansion_1} nil, gar_smart_terrain_5_8
 
 [gar_bandit_smart_terrain_5_8_squad_2]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_3, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_2, sim_default_bandit_2
 target_smart = gar_smart_terrain_5_8:nil
@@ -86,21 +95,25 @@ target_smart = gar_smart_terrain_5_8:nil
 ;------------------ Bandit base ---------------------------
 
 [gar_bandit_smart_terrain_3_5_squad_1]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_3, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_2, sim_default_bandit_2
 target_smart = gar_smart_terrain_3_5:nil
 
 [gar_bandit_smart_terrain_3_5_squad_2]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_3, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_2, sim_default_bandit_2
 target_smart = gar_smart_terrain_3_5:nil
 
 [gar_bandit_smart_terrain_3_5_squad_3]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_3, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_2, sim_default_bandit_2
 target_smart = gar_smart_terrain_3_5:nil
 
 [gar_bandit_smart_terrain_3_5_squad_4]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_3, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_2, sim_default_bandit_2
 target_smart = gar_smart_terrain_3_5:nil
@@ -125,7 +138,7 @@ target_smart = gar_smart_terrain_3_5:nil
 ;npc = sim_default_bandit_3, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_2, sim_default_bandit_2
 ;target_smart = gar_smart_terrain_3_5:nil
 
-;------------------ Bandit base quest npc's ---------------
+;------------------ Bandit base quest npcs ----------------
 
 ;[gar_bandit_base]
 ;faction = bandit
@@ -134,14 +147,15 @@ target_smart = gar_smart_terrain_3_5:nil
 
 ;------------------ Red Forest exit -----------------------
 
-[gar_dog_smart_terrain_2_3_squad_1]
-faction = monster
-npc = dog_normal, dog_normal, dog_normal, dog_normal, dog_normal
-target_smart = gar_smart_terrain_2_3:nil
+;[gar_dog_smart_terrain_2_3_squad_1]
+;faction = monster
+;npc = dog_normal, dog_normal, dog_normal, dog_normal, dog_normal
+;target_smart = gar_smart_terrain_2_3:nil
 
 ;------------------ North West excavation -----------------
 
 [gar_dog_smart_terrain_3_2_squad_1]
+;auto_id = true
 faction = monster
 npc = dog_normal, dog_normal, dog_normal, dog_normal, dog_normal
 target_smart = gar_smart_terrain_3_2
@@ -149,6 +163,7 @@ target_smart = gar_smart_terrain_3_2
 ;------------------ Marsh near Flea market ----------------
 
 [gar_boar_smart_terrain_7_3_squad_1]
+;auto_id = true
 faction = monster
 npc = boar_normal, boar_normal, boar_normal, boar_normal, boar_normal
 target_smart = gar_smart_terrain_7_3
@@ -156,12 +171,14 @@ target_smart = gar_smart_terrain_7_3
 ;------------------ Digger messenger ----------------------
 
 [gar_digger_messenger_man]
+;auto_id = true
 faction = stalker
 npc = gar_digger_messenger_man
 target_smart = {-gar_story_stalkers_to_darkvalley} gar_smart_terrain_8_5, nil
 spawn_point = gar_smart_terrain_8_5_digger_messenger_safe_place_walk
 relationship = friend
 sympathy = 0
+attack_power = 400
 
 ;------------------ Dogs attacking digger messenger -------
 
@@ -175,6 +192,7 @@ attack_power = 400
 ;------------------ Stalkers going to Dark Valley ---------
 
 [gar_stalkers_to_darkvalley]
+;auto_id = true
 faction = stalker
 npc = sim_default_stalker_1, sim_default_stalker_1, sim_default_stalker_2, sim_default_stalker_2, sim_default_stalker_0
 target_smart = gar_smart_terrain_8_7
@@ -184,49 +202,53 @@ attack_power = 400
 ;------------------ Flea market first squad ---------------
 
 [gar_stalkers_flea_market_squad_1]
+;auto_id = true
 faction = stalker
 npc = sim_default_digger_2, sim_default_digger_2, sim_default_digger_2, sim_default_digger_1, sim_default_digger_1
 target_smart = gar_smart_terrain_6_3
 sympathy = 0
 
-;------------------ Flea market second squad with quest npc's
+;------------------ Flea market second squad --------------
 
 [gar_stalkers_flea_market_squad_2]
+;auto_id = true
 faction = stalker
 npc = gar_digger_quester, gar_digger_traitor, gar_digger_fixer, sim_default_digger_1, sim_default_digger_1
 target_smart = gar_smart_terrain_6_3
 sympathy = 0
 
-;------------------ Flea market second squad for empty smart
+;------------------ Flea market replacement squad ---------
 
 [gar_stalkers_flea_market_squad_2_destroy]
+;auto_id = true
 faction = stalker
 npc = sim_default_digger_1, sim_default_digger_1, sim_default_digger_2, sim_default_digger_1, sim_default_digger_1
 target_smart = gar_smart_terrain_6_3
 sympathy = 0
 
-;------------------ Killer pseudodogs ---------------
+;------------------ Killer pseudodogs ---------------------
 
-[gar_killer_pseudodogs_on_smart]
-faction = monster
-npc = pseudodog_normal_fearless_garbage, pseudodog_normal_fearless_garbage, pseudodog_normal_fearless_garbage
-target_smart = gar_smart_terrain_5_6
+;[gar_killer_pseudodogs_on_smart]
+;faction = monster
+;npc = pseudodog_normal_fearless_garbage, pseudodog_normal_fearless_garbage, pseudodog_normal_fearless_garbage
+;target_smart = gar_smart_terrain_5_6
 
-[gar_killer_pseudodogs_in_forest]
-faction = monster
-npc = pseudodog_normal_fearless_garbage, pseudodog_normal_fearless_garbage, pseudodog_normal_fearless_garbage
-target_smart = gar_smart_terrain_5_6
-spawn_point = gar_smart_terrain_5_6_killer_pseudodogs_forest_spawn_point
+;[gar_killer_pseudodogs_in_forest]
+;faction = monster
+;npc = pseudodog_normal_fearless_garbage, pseudodog_normal_fearless_garbage, pseudodog_normal_fearless_garbage
+;target_smart = gar_smart_terrain_5_6
+;spawn_point = gar_smart_terrain_5_6_killer_pseudodogs_forest_spawn_point
 
-[gar_killer_pseudodogs_by_garbage]
-faction = monster
-npc = pseudodog_normal_fearless_garbage, pseudodog_normal_fearless_garbage, pseudodog_normal_fearless_garbage
-target_smart = gar_smart_terrain_5_6
-spawn_point = gar_smart_terrain_5_6_killer_pseudodogs_garbage_spawn_point
+;[gar_killer_pseudodogs_by_garbage]
+;faction = monster
+;npc = pseudodog_normal_fearless_garbage, pseudodog_normal_fearless_garbage, pseudodog_normal_fearless_garbage
+;target_smart = gar_smart_terrain_5_6
+;spawn_point = gar_smart_terrain_5_6_killer_pseudodogs_garbage_spawn_point
 
-;------------------ Killer pseudodogs ---------------
+;------------------ Treasure hunter camp snork ------------
 
 [gar_dead_camp_snork]
+;auto_id = true
 faction = monster
 npc = gar_dead_camp_snork
 target_smart = gar_smart_terrain_5_5
@@ -270,6 +292,7 @@ sympathy = 0
 ;------------------ Bandits attacking Flea market ---------
 
 [gar_bandit_brigade]
+;auto_id = true
 faction = bandit
 npc = sim_default_bandit_3, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_2, sim_default_bandit_2
 target_smart = gar_smart_terrain_6_3
@@ -277,21 +300,22 @@ attack_power = 400
 
 ;------------------ Bandits on the way to Dark Valley -----
 
-[gar_bandit_to_darkvalley_1]
-faction = bandit
-npc = sim_default_bandit_2, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_2
-target_smart = gar_smart_terrain_8_7
-sympathy = 0
+;[gar_bandit_to_darkvalley_1]
+;faction = bandit
+;npc = sim_default_bandit_2, sim_default_bandit_3, sim_default_bandit_2, sim_default_bandit_2
+;target_smart = gar_smart_terrain_8_7
+;sympathy = 0
 
-[gar_bandit_to_darkvalley_2]
-faction = bandit
-npc = sim_default_bandit_1, sim_default_bandit_3, sim_default_bandit_1, sim_default_bandit_2
-target_smart = gar_smart_terrain_8_7
-sympathy = 0
+;[gar_bandit_to_darkvalley_2]
+;faction = bandit
+;npc = sim_default_bandit_1, sim_default_bandit_3, sim_default_bandit_1, sim_default_bandit_2
+;target_smart = gar_smart_terrain_8_7
+;sympathy = 0
 
 ;------------------ Bandit robbers ------------------------
 
 [gar_bandit_robbers]
+;auto_id = true
 faction = bandit
 npc = gar_bandit_robber_1, gar_bandit_robber_2
 target_smart = gar_smart_terrain_5_6

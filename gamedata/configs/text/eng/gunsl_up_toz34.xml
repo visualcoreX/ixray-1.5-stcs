@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+	<string id="gunsl_toz34_up_reliability_name">
+		<text>Protective coating</text>
+	</string>
+	<string id="gunsl_toz34_up_reliability_descr">
+		<text>Application of a special coating decreases barrel wear.</text>
+	</string>
+	
+	<string id="gunsl_toz34_up_sights_name">
+		<text>Tritium sights</text>
+	</string>
+	<string id="gunsl_toz34_up_sights_descr">
+		<text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+	</string>
+
+	<string id="gunsl_toz34_up_calibration_name">
+		<text>Trigger calibration</text>
+	</string>
+	<string id="gunsl_toz34_up_calibration_descr">
+		<text>Individual adjustment and balancing of the standard parts of the trigger mechanism improve accuracy, while simultaneously lowering recoil.</text>
+	</string>
+	
+	<string id="gunsl_toz34_up_barrel_name">
+		<text>Sawed-off barrel</text>
+	</string>
+	<string id="gunsl_toz34_up_barrel_descr">
+		<text>Significantly shortened barrel cuts weight, increases mobility and pellet spread, reduces effective range and accuracy.</text>
+	</string>
+	
+	<string id="gunsl_toz34_up_stock_name">
+		<text>Sawed-off stock</text>
+	</string>
+	<string id="gunsl_toz34_up_stock_descr">
+		<text>Without a stock the rifle is noticeably maintenance, increasing mobility, at the expense of higher recoil.</text>
+	</string>
+	
+	<string id="gunsl_toz34_up_plate_name">
+		<text>Improved recoil pad</text>
+	</string>
+	<string id="gunsl_toz34_up_plate_descr">
+		<text>Softer recoil pad with better shock-absorption improves handling.</text>
+	</string>
+	
+	<string id="gunsl_toz34_up_weaver_name">
+		<text>Weaver rail</text>
+	</string>
+	<string id="gunsl_toz34_up_weaver_descr">
+		<text>Weaver rail allows installation of a scope with the right mounting bracket.</text>
+	</string>
+	
+	<string id="gunsl_toz34_up_usm_name">
+		<text>Reinforced parts</text>
+	</string>
+	<string id="gunsl_toz34_up_usm_descr">
+		<text>More durable parts reduce weapon wear.</text>
+	</string>
+
+	<string id="gunsl_toz34_up_barrel_narezka_name">
+		 <text>Rifled barrel</text>
+	</string>
+	<string id="gunsl_toz34_up_barrel_narezka_descr">
+		 <text>Barrel rifling increases muzzle velocity and accuracy, however makes the use of buckshot impossible.</text>
+	</string>	
+	
+</string_table>

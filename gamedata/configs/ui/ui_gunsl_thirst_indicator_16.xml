@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+
+<!-- Widescreen. The state column in maingame_16.xml lives inside hud_states (x=802 y=647). Each
+     entry there is TWO statics: a round plate (resist_back_*, ui_hud2_res_back, 23x28 at x=198) and
+     the glyph on top of it (indik_*, 18x22 at x=200), 30 apart vertically. The circle you actually
+     see is the plate -- a glyph on its own reads as a smaller icon than its neighbours.
+     The last pair is the food one at y=-145/-142, so thirst takes the slot above: -175/-172,
+     i.e. absolute (1000, 472) for the plate and (1002, 475) for the glyph.
+     back_static is declared FIRST so it is attached first and drawn underneath. -->
+<gunsl_thirst_indicator>
+	<back_static x="1000" y="472" width="23" height="28" stretch="1">
+		<texture>ui_hud2_res_back</texture>
+	</back_static>
+	<main_static x="1002" y="475" width="18" height="22" stretch="1">
+		<texture>ui_gunsl_thirst_indicator</texture>
+	</main_static>
+	<!-- Medicine intoxication (gunsl_peredoz.script) takes the next slot up, on the same 30 px
+	     pitch: -205/-202, i.e. (1000, 442) and (1002, 445). Shown only while the trip runs. -->
+	<back_static_intox x="1000" y="442" width="23" height="28" stretch="1">
+		<texture>ui_hud2_res_back</texture>
+	</back_static_intox>
+	<main_static_intox x="1002" y="445" width="18" height="22" stretch="1">
+		<texture>ui_gunsl_peredoz_indicator</texture>
+	</main_static_intox>
+
+</gunsl_thirst_indicator>

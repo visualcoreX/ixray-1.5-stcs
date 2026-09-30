@@ -1,0 +1,39 @@
+; hidden object that carries the vodka's real effect. gwr_eatable spawns and
+; eats it after effect_delay, so the drink effect lands during the animation
+; instead of instantly. The real [vodka] in items.ltx has its eat_* values zeroed.
+; II_BOTTL (like the real vodka) so db.actor:eat() also applies eat_alcohol
+; (CBottleItem::UseBy -> ChangeAlcohol, on top of CEatableItem's health/etc).
+
+[vodka_eatable]:identity_immunities
+GroupControlSection = spawn_group
+$spawn              = "weapons\vodka_eatable"
+$prefetch           = 8
+class               = II_BOTTL
+cform               = skeleton
+visual              = gwr\main\fake_object
+description         = st_vodka_descr
+inv_name            = st_vodka
+inv_name_short      = st_vodka
+inv_weight          = 0.0
+cost                = 0
+inv_grid_width      = 1
+inv_grid_height     = 1
+inv_grid_x          = 20
+inv_grid_y          = 0
+
+; effects moved here from the real vodka. Eaten ONCE PER SIP, and the vanilla values are what a SIP
+; is worth -- a full bottle is therefore four vanilla drinks. Deliberate (user's call): a swig that
+; barely moves the alcohol bar reads as broken.
+eat_health          = 0.01
+eat_satiety         = 0.01
+eat_power           = 0
+eat_radiation       = -0.3
+eat_alcohol         = 0.1
+wounds_heal_perc    = 0
+eat_portions_num    = 1
+
+; GS medicine intoxication, read by gunsl_peredoz.script (GS vodka -- NO flat dose at all: sober it costs nothing, on top of medicine it is a disaster).
+; sqprop is proportional to what is already in the blood, mul multiplies it, the flat
+; lsd_factor is the dose itself; _master replaces it from veteran up.
+lsd_factor_sqprop   = 1.55
+lsd_factor_mul      = 1.6

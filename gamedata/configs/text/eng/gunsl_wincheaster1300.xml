@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_up_prop_tactical_handle">
+		<text>Tactical foregrip</text>
+	</string>
+	<string id="gunsl_wpn_wincheaster1300">
+		<text>Winchester 1300</text>
+	</string>
+	<string id="gunsl_wpn_wincheaster1300_descr">
+		<text>Western pump-action shotgun, quite popular thanks to its reliability and high reloading speed. Has an anti-corrosion finish.</text>
+	</string>
+</string_table>

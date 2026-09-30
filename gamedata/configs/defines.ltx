@@ -1,4 +1,216 @@
 [hud_base]
+
+; Reload pressed while AIMING lowers the sights first (GS forbids the reload outright instead).
+; The reload does not wait for anm_idle_aim_end to finish -- it starts this fraction of that
+; animation BEFORE its end and blends over the rest. Bigger = the reload starts earlier and the
+; two overlap more; 0 = wait for the aim-out to run out completely.
+reload_aim_out_blend = 0.5
+; How fast that reload mixes IN (blendAccrue, a rate -- higher = snappier handover). With the
+; animation's own value the ramp is about as long as the rest of the aim-out, so the switch is only
+; visible near its end no matter where it starts. 0 = keep the animation's own blend.
+reload_aim_out_accrue = 8
+
+; ============= GS Dynamic DOF (VERBATIM from GS weapons/base.ltx, its base hud section) =============
+; Aim-DOF blend speeds, in 1/seconds. These OVERRIDE the [gunslinger_base] fallbacks (3/1) and are
+; what GS actually ships: in over ~0.2s, out over ~0.5s.
+zoom_in_dof_speed = 5
+zoom_out_dof_speed = 2
+
+; DOF while aiming through a 3D PiP scope: focus sits at ~1m with the far plane at 2m, so the world
+; around the scope body blurs and the magnified image in the lens stays sharp. The section of the
+; scope actually attached may override any of the three.
+lens_dof_near = -10000
+lens_dof_focus = 1
+lens_dof_far = 2
+
+; Shotgun shell loading: offset 0 means "do not release the DOF early" -- these anims are short and
+; repeat, so pulling focus out before each one ends would flicker.
+dof_time_offset_anm_open = 0
+dof_time_offset_anm_open_empty = 0
+dof_time_offset_anm_add_cartridge = 0
+dof_time_offset_anm_add_cartridge_empty = 0
+dof_time_offset_anm_add_cartridge_first = 0
+dof_time_offset_anm_add_cartridge_preloaded = 0
+dof_time_offset_anm_add_cartridge_empty_preloaded = 0
+dof_time_offset_anm_add_cartridge_first_preloaded = 0
+
+; the one action outside the reload family GS blurs by default: the dry-fire click on a jam
+use_dof_anm_fakeshoot_jammed = true
+; GS shot-animation mixing (WeaponAnims.pas NeedShootMix). A shot normally CUTS to its pose, which
+; is what recoil wants -- but not when the hands are mid-way through something else, and the aim
+; in/out transitions (anm_idle_aim_start / anm_idle_aim_end) are exactly that case: firing during
+; them used to snap. Values are GS's own defaults from weapons/base.ltx. Queue mixing stays off
+; here and is opted into per weapon, as GS does for its automatics.
+mix_shoot_after_idle           = true
+mix_shoot_after_reload         = true
+mix_shoot_after_shoot_in_queue = false
+; ---- GS controller-suicide defaults for a weapon with NO suicide animation (verbatim GS defines.ltx
+; [hud_base]; GS lists an earlier pos/rot pair and overrides it right below, so this is the live one).
+; The weapon is walked to this pose at suicide_speed_* and fires when it ARRIVES -- without the offset
+; the target equals the normal pose and the shot goes off on the first frame. Weapons that do have an
+; animation set suicide_by_animation = true and never reach this path. ----
+suicide_speed_pos = 0.00205
+suicide_speed_rot = 0.0901
+no_other_hud_moving_while_suicide = true
+; hands shake for the whole grab and fade out over jitter_stop_time after it lets go (GS IsHandJitter)
+jitter_pos_amplitude = 0.002
+jitter_rot_amplitude = 0.09
+jitter_stop_time = 3
+hud_move_suicide_offset_pos = 0.74, -0.18, 0.4
+hud_move_suicide_offset_rot = 130, 15, -2
+hud_move_suicide_offset_pos_16x9 = 0.74, -0.18, 0.4
+hud_move_suicide_offset_rot_16x9 = 130, 15, -2
+
+; ---- GS hud_move speeds/factors (verbatim GS defines.ltx; the engine code defaults 0.4/0.1 are
+; glacial -- these are what make the offsets feel snappy) ----
+hud_move_speed_rot = 3
+hud_move_speed_pos = 2
+hud_move_stabilize_factor = 3.5
+hud_move_weaponhide_factor = 3.5
+hud_move_unzoom_factor = 2.0
+hud_move_slow_factor = 0.5
+hud_move_crouch_factor = 0.5
+hud_move_slow_crouch_factor = 0.3
+; ============= GS hud_move defaults (VERBATIM from GS configs/defines.ltx [hud_base]) =============
+; hands shift toward these offsets per actor state; inherited by every [wpn_*_hud]:hud_base section,
+; a weapon can override any key (GS bm16/toz34 override the jump/fall/landing _pos, see w_bm16/w_toz34)
+; walk left
+hud_move_left_offset_pos = -0.03,-0.018,0
+hud_move_left_offset_rot = 0,0,-3.5
+hud_move_left_offset_pos_16x9 = -0.03,-0.018,0
+hud_move_left_offset_rot_16x9 = 0,0,-3.5
+; walk right
+hud_move_right_offset_pos = 0.03,-0.005,0
+hud_move_right_offset_rot = 0,0,5
+hud_move_right_offset_pos_16x9 = 0.03,-0.005,0
+hud_move_right_offset_rot_16x9 = 0,0,5
+; walk forward
+hud_move_forward_offset_pos = 0,-0.005,-0.035
+hud_move_forward_offset_rot = 0,0,0
+hud_move_forward_offset_pos_16x9 = 0,-0.005,-0.035
+hud_move_forward_offset_rot_16x9 = 0,0,0
+; walk back
+hud_move_back_offset_pos = 0,-0.005,0.045
+hud_move_back_offset_rot = 0,0,0
+hud_move_back_offset_pos_16x9 = 0,-0.005,0.045
+hud_move_back_offset_rot_16x9 = 0,0,0
+; jump
+hud_move_jump_offset_pos = 0,0.05,0.03
+hud_move_jump_offset_rot = 0,-10,-10
+hud_move_jump_offset_pos_16x9 = 0,0.05,0.03
+hud_move_jump_offset_rot_16x9 = 0,-10,-10
+; fall
+hud_move_fall_offset_pos = 0,-0.05,0.06
+hud_move_fall_offset_rot = 0,5,0
+hud_move_fall_offset_pos_16x9 = 0,-0.05,0.06
+hud_move_fall_offset_rot_16x9 = 0,5,0
+; landing (soft)
+hud_move_landing_offset_pos = 0,-0.2,0.03
+hud_move_landing_offset_rot = 0,-5,10
+hud_move_landing_offset_pos_16x9 = 0,-0.2,0.03
+hud_move_landing_offset_rot_16x9 = 0,-5,10
+; landing2 (hard)
+hud_move_landing2_offset_pos = 0,-0.3,0.03
+hud_move_landing2_offset_rot = 0,-13,20
+hud_move_landing2_offset_pos_16x9 = 0,-0.3,0.03
+hud_move_landing2_offset_rot_16x9 = 0,-13,20
+; stand -> crouch
+to_crouch_time = 0.15
+hud_move_to_crouch_offset_pos = 0,-0.02, 0
+hud_move_to_crouch_offset_rot = 0,1.5,-4
+hud_move_to_crouch_offset_pos_16x9 = 0,-0.02, 0
+hud_move_to_crouch_offset_rot_16x9 = 0,1.5,-4
+; crouch -> stand
+from_crouch_time = 0.15
+hud_move_from_crouch_offset_pos = 0,-0.008,0
+hud_move_from_crouch_offset_rot = 0,-0.8,3
+hud_move_from_crouch_offset_pos_16x9 = 0,-0.008,0
+hud_move_from_crouch_offset_rot_16x9 = 0,-0.8,3
+; crouch -> slow crouch
+to_slow_crouch_time = 0.15
+hud_move_to_slow_crouch_offset_pos = 0,-0.05, 0
+hud_move_to_slow_crouch_offset_rot = 0,1,-2
+hud_move_to_slow_crouch_offset_pos_16x9 = 0,-0.05, 0
+hud_move_to_slow_crouch_offset_rot_16x9 = 0,1,-2
+; slow crouch -> crouch
+from_slow_crouch_time = 0.15
+hud_move_from_slow_crouch_offset_pos = 0,0.02,0
+hud_move_from_slow_crouch_offset_rot = 0,-1,2
+hud_move_from_slow_crouch_offset_pos_16x9 = 0,0.02,0
+hud_move_from_slow_crouch_offset_rot_16x9 = 0,-1,2
+; lean left transitions
+to_llookout_time = 0.15
+hud_move_to_llookout_offset_pos 	= -0.01, 0, 0
+hud_move_to_llookout_offset_rot		= 0,0,0
+hud_move_to_llookout_offset_pos_16x9 	= -0.01, 0, 0
+hud_move_to_llookout_offset_rot_16x9	= 0,0,0
+from_llookout_time = 0.15
+hud_move_from_llookout_offset_pos 	= -0.01, 0, 0
+hud_move_from_llookout_offset_rot	= 0,0,0
+hud_move_from_llookout_offset_pos_16x9 	= -0.01, 0, 0
+hud_move_from_llookout_offset_rot_16x9	= 0,0,0
+; lean right transitions
+to_rlookout_time = 0.15
+hud_move_to_rlookout_offset_pos 	= 0.01, 0, 0
+hud_move_to_rlookout_offset_rot		= 0,0,0
+hud_move_to_rlookout_offset_pos_16x9 	= 0.01, 0, 0
+hud_move_to_rlookout_offset_rot_16x9	= 0,0,0
+from_rlookout_time = 0.15
+hud_move_from_rlookout_offset_pos 	= 0.01, 0, 0
+hud_move_from_rlookout_offset_rot	= 0,0,0
+hud_move_from_rlookout_offset_pos_16x9 	= 0.01, 0, 0
+hud_move_from_rlookout_offset_rot_16x9	= 0,0,0
+; held lean left
+hud_move_llookout_offset_speed_factor = 2.8
+hud_move_llookout_offset_pos 		= -0.045, -0.03, 0
+hud_move_llookout_offset_pos_16x9 	= -0.045, -0.03, 0
+hud_move_llookout_offset_rot 		= 0, 0, -9
+hud_move_llookout_offset_rot_16x9 	= 0, 0, -9
+; held lean right
+hud_move_rlookout_offset_speed_factor = 2.8
+hud_move_rlookout_offset_pos 		= 0.04, -0.01, 0
+hud_move_rlookout_offset_pos_16x9 	= 0.04, -0.01, 0
+hud_move_rlookout_offset_rot 		= 0, 0, 10
+hud_move_rlookout_offset_rot_16x9 	= 0, 0, 10
+; ---- aim variants ----
+hud_aim_move_to_crouch_offset_pos = 0,0.003, 0
+hud_aim_move_to_crouch_offset_rot = 0,0.3,-0.5
+hud_aim_move_to_crouch_offset_pos_16x9 = 0,0.003, 0
+hud_aim_move_to_crouch_offset_rot_16x9 = 0,0.3,-0.5
+hud_aim_move_from_crouch_offset_pos = 0,-0.003,0
+hud_aim_move_from_crouch_offset_rot = 0,-0.3,0.5
+hud_aim_move_from_crouch_offset_pos_16x9 = 0,-0.003,0
+hud_aim_move_from_crouch_offset_rot_16x9 = 0,-0.3,0.5
+hud_aim_move_to_slow_crouch_offset_pos = 0,0.001, 0
+hud_aim_move_to_slow_crouch_offset_rot = 0,0.3,-0.5
+hud_aim_move_to_slow_crouch_offset_pos_16x9 = 0,0.002, 0
+hud_aim_move_to_slow_crouch_offset_rot_16x9 = 0,0.3,-0.5
+hud_aim_move_from_slow_crouch_offset_pos = 0,-0.001,0
+hud_aim_move_from_slow_crouch_offset_rot = 0,-0.3,0.5
+hud_aim_move_from_slow_crouch_offset_pos_16x9 = 0,-0.001,0
+hud_aim_move_from_slow_crouch_offset_rot_16x9 = 0,-0.3,0.5
+hud_aim_move_to_llookout_offset_pos 	        = -0.003, 0, 0
+hud_aim_move_to_llookout_offset_rot		= 0,0,-0.6
+hud_aim_move_to_llookout_offset_pos_16x9 	= -0.003, 0, 0
+hud_aim_move_to_llookout_offset_rot_16x9	= 0,0,-0.6
+hud_aim_move_from_llookout_offset_pos 	        = 0, 0, 0
+hud_aim_move_from_llookout_offset_rot	        = 0,0,-1
+hud_aim_move_from_llookout_offset_pos_16x9 	= 0, 0, 0
+hud_aim_move_from_llookout_offset_rot_16x9	= 0,0,-1
+hud_aim_move_to_rlookout_offset_pos 	        = 0.003, 0, 0
+hud_aim_move_to_rlookout_offset_rot		= 0,0,0.6
+hud_aim_move_to_rlookout_offset_pos_16x9 	= 0.003, 0, 0
+hud_aim_move_to_rlookout_offset_rot_16x9	= 0,0,0.6
+hud_aim_move_from_rlookout_offset_pos 	        = 0, 0, 0
+hud_aim_move_from_rlookout_offset_rot	        = 0,0,1
+hud_aim_move_from_rlookout_offset_pos_16x9 	= 0, 0, 0
+hud_aim_move_from_rlookout_offset_rot_16x9	= 0,0,1
+; ============= end GS hud_move defaults =============
+; GS default_hud_nodraw flags: turn-inertion on. zoom_inertion=false keeps the AIM inertion set
+; (origin -0.04, speed 7) active in ADS like GS feels in-game (true would kill ADS sway entirely)
+hud_inertion = true
+zoom_inertion = false
+
 aim_hud_offset_pos				= 0,0,0
 aim_hud_offset_rot				= 0,0,0
 
@@ -13,6 +225,77 @@ gl_hud_offset_rot				= 0,0,0
 
 lean_hud_offset_pos		= 0,0,0
 lean_hud_offset_rot		= 0,0,0
+
+; ---- night-vision blackout (Gunslinger keeps these in its own defines.ltx, same idea) ----
+; The goggles gesture plays on whatever HUD is out: with a weapon in hand it's the weapon's own
+; anm_nv_on/off (CActor::SwitchNightVision routes it there and skips the empty-hands animator), so
+; the keys have to live on every weapon -- hence hud_base. The engine looks up
+; use_ppe_effector_<alias> / ppe_effector_<alias> / ppe_start_<alias> / ppe_end_<alias> for whatever
+; alias it just played, so the _empty/_jammed twins need their own copies.
+; NOTE: ppe_effector_* names an effector SECTION (ours takes a section, GS names the .ppe directly);
+; gwr_effector_black lives in usable_items\action_animators\hud_objects.ltx.
+; Windows are placed around OUR switch moment (g_torch_switch_delay), not GS's mark_anm_show.
+use_ppe_effector_anm_nv_on				= true
+ppe_effector_anm_nv_on					= gwr_effector_black
+ppe_start_anm_nv_on						= 0.35
+ppe_end_anm_nv_on						= 0.6
+
+use_ppe_effector_anm_nv_on_empty		= true
+ppe_effector_anm_nv_on_empty			= gwr_effector_black
+ppe_start_anm_nv_on_empty				= 0.35
+ppe_end_anm_nv_on_empty					= 0.6
+
+use_ppe_effector_anm_nv_on_jammed		= true
+ppe_effector_anm_nv_on_jammed			= gwr_effector_black
+ppe_start_anm_nv_on_jammed				= 0.35
+ppe_end_anm_nv_on_jammed				= 0.6
+
+use_ppe_effector_anm_nv_off				= true
+ppe_effector_anm_nv_off					= gwr_effector_black
+ppe_start_anm_nv_off					= 0.355
+ppe_end_anm_nv_off						= 0.655
+
+use_ppe_effector_anm_nv_off_empty		= true
+ppe_effector_anm_nv_off_empty			= gwr_effector_black
+ppe_start_anm_nv_off_empty				= 0.355
+ppe_end_anm_nv_off_empty				= 0.655
+
+use_ppe_effector_anm_nv_off_jammed		= true
+ppe_effector_anm_nv_off_jammed			= gwr_effector_black
+ppe_start_anm_nv_off_jammed				= 0.355
+ppe_end_anm_nv_off_jammed				= 0.655
+
+; The double-barrels (CWeaponBM16) don't use _empty/_jammed -- they pick _0/_1/_2 by how many shells
+; are loaded, so those aliases need their own keys or the gesture plays with no blackout.
+use_ppe_effector_anm_nv_on_0			= true
+ppe_effector_anm_nv_on_0				= gwr_effector_black
+ppe_start_anm_nv_on_0					= 0.35
+ppe_end_anm_nv_on_0						= 0.6
+
+use_ppe_effector_anm_nv_on_1			= true
+ppe_effector_anm_nv_on_1				= gwr_effector_black
+ppe_start_anm_nv_on_1					= 0.35
+ppe_end_anm_nv_on_1						= 0.6
+
+use_ppe_effector_anm_nv_on_2			= true
+ppe_effector_anm_nv_on_2				= gwr_effector_black
+ppe_start_anm_nv_on_2					= 0.35
+ppe_end_anm_nv_on_2						= 0.6
+
+use_ppe_effector_anm_nv_off_0			= true
+ppe_effector_anm_nv_off_0				= gwr_effector_black
+ppe_start_anm_nv_off_0					= 0.355
+ppe_end_anm_nv_off_0					= 0.655
+
+use_ppe_effector_anm_nv_off_1			= true
+ppe_effector_anm_nv_off_1				= gwr_effector_black
+ppe_start_anm_nv_off_1					= 0.355
+ppe_end_anm_nv_off_1					= 0.655
+
+use_ppe_effector_anm_nv_off_2			= true
+ppe_effector_anm_nv_off_2				= gwr_effector_black
+ppe_start_anm_nv_off_2					= 0.355
+ppe_end_anm_nv_off_2					= 0.655
 
 [sect_identity_immunities]
 burn_immunity			= 1.0
@@ -72,14 +355,17 @@ control_inertion_factor     = 1.0
 zoom_rotate_time            = 0.25
 use_first_bullet			= false
 
+cam_return                       = 0
+zoom_cam_return                  = 0
 
 
-[common_ph_friction_params_on_npc_death] ;Параметры для задания изменения трения в момент смерти персонажа
 
-ph_skeleton_airr_lin_factor   = 2.0 ;550.0 (изменно из-за того, что убрано домножение коэффициент 0.002 из кода)
-ph_skeleton_airr_ang_factor   = 0.0 ;0.0 (изменно из-за того, что убрано домножение на коэффициент 0.3 из кода (0.0*0.3=0.0))
-ph_skeleton_hinger_factor1    = 1.0 ;1.0 (изменно из-за того, что убрано домножение на коэффициент 5.0 из кода)
-ph_skeleton_ddelay	     	  = 15.0 ;Время изменения значения трения в суставе с момента создания шелла, сек
+[common_ph_friction_params_on_npc_death] ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+
+ph_skeleton_airr_lin_factor   = 2.0 ;550.0 (пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 0.002 пїЅпїЅ пїЅпїЅпїЅпїЅ)
+ph_skeleton_airr_ang_factor   = 0.0 ;0.0 (пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 0.3 пїЅпїЅ пїЅпїЅпїЅпїЅ (0.0*0.3=0.0))
+ph_skeleton_hinger_factor1    = 1.0 ;1.0 (пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ-пїЅпїЅ пїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 5.0 пїЅпїЅ пїЅпїЅпїЅпїЅ)
+ph_skeleton_ddelay	     	  = 15.0 ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ
 
 ph_skel_fatal_impulse_factor  = 6.0
 ph_after_death_velocity_factor= 0.75
@@ -87,14 +373,14 @@ ph_skel_shot_up_factor        = 0.25
 
 
 
-ph_skeleton_skin_friction_start	= 0.0   ;Стартовое значение трения для оболочки
-ph_skeleton_skin_friction_end	= 2.0   ;Финальное значение трения для оболочки
-ph_skeleton_skin_ddelay			= 6.0		;Время изменения значения трения с момента создания шелла, сек.
-ph_skeleton_skin_ddelay_after_wound = 2.0 ;Время изменения значения трения с момента создания шелла, сек.(для персонажа после ранения)
-ph_pelvis_factor_low_pose_detect =0.3	;длинна луча на коллизию с землёй из центра пелвиса
-										;если коллизиться, то персонаж находиться в нижней позе(или ранен)(в этом случае для него задаються другие параметры 
-										;трения и отсутствует домножение импульса для первого хита)
-ph_character_have_wounded_state = false; имеет ли персонаж состояние раненый
+ph_skeleton_skin_friction_start	= 0.0   ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+ph_skeleton_skin_friction_end	= 2.0   ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+ph_skeleton_skin_ddelay			= 6.0		;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ.
+ph_skeleton_skin_ddelay_after_wound = 2.0 ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ.(пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
+ph_pelvis_factor_low_pose_detect =0.3	;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+										;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ(пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ)(пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 
+										;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ)
+ph_character_have_wounded_state = false; пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
 [monster_base]:common_ph_friction_params_on_npc_death
 actor_hit_effect = effector_monster_hit

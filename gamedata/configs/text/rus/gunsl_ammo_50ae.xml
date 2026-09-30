@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_ammo_50ae">
+		<text>Патроны .50 AE</text>
+	</string>
+	<string id="gunsl_ammo_50ae_short">
+		<text>.50 AE</text>
+	</string>
+	<string id="gunsl_ammo_50ae_descr">
+		<text>Патрон .50 Action Express является самым мощным пистолетным патроном в мире. Оружие под него не пользуется широкой популярностью среди сталкеров, из-за чего такие патроны достаточно редко встречаются в Зоне. Главным образом используются для охоты на крупную и особо крупную дичь.</text>
+	</string>
+</string_table>

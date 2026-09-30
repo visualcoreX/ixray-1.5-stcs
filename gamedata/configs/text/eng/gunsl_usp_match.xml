@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="gunsl_wpn_usp_match">
+		<text>HK USP Match</text>
+	</string>
+	<string id="gunsl_wpn_usp_match_descr">
+		<text>%c[01,255,128,0] Competitive shooting variant of USP. Most distinctive feature - special compensator, that decreases muzzle climb. USP Match production stopped in 1999. This gun allegedly belonged to a mercenary under the name Wolfhound. %c[01,255,255,255]</text>
+	</string>
+</string_table>

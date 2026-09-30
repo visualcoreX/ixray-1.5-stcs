@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_wpn_svd_up_bayonet_name">
+     <text>Штык-нож</text>
+</string>
+<string id="gunsl_wpn_svd_up_bayonet_descr">
+     <text>Установка на оружие стандартного штык-ножа 6х5 позволяет использовать винтовку в качестве оружия ближнего боя. Из-за конструктивных особенностей оружия использование штык-ножа одновременно с глушителем невозможно.</text>
+</string>
+<string id="gunsl_wpn_svd_up_usm_reliability_name">
+     <text>Износостойкий УСМ</text>
+</string>
+<string id="gunsl_wpn_svd_up_usm_reliability_descr">
+     <text>Замена деталей стандартного УСМ на аналоги повышенной прочности позволяет продлить срок службы оружия и обеспечить его безотказную работу в суровых условиях Зоны.</text>
+</string>
+<string id="gunsl_wpn_svd_up_usm_accuracy_name">
+     <text>Калибровка УСМ</text>
+</string>
+<string id="gunsl_wpn_svd_up_usm_accuracy_descr">
+     <text>Индивидуальная подгонка и балансировка стандартных деталей ударно-спускового механизма позволяет добиться более высокой точности стрельбы при одновременном снижении отдачи.</text>
+</string>
+<string id="gunsl_wpn_svd_up_usm_rpm_name">
+     <text>Форсирование УСМ</text>
+</string>
+<string id="gunsl_wpn_svd_up_usm_rpm_descr">
+     <text>Позволяет значительно повысить скорострельность оружия.</text>
+</string>
+<string id="gunsl_wpn_svd_up_kompensator_name">
+     <text>Замена ДТК</text>
+</string>
+<string id="gunsl_wpn_svd_up_kompensator_descr">
+     <text>Замена дульного тормоза-компенсатора на более современный аналог позволяет снизить ощущаемую отдачу, что благотворным образом сказывается на точности стрельбы.</text>
+</string>
+<string id="gunsl_wpn_svd_up_zatvor_balanser_name">
+     <text>Сбалансированная затворная рама</text>
+</string>
+<string id="gunsl_wpn_svd_up_zatvor_balanser_descr">
+     <text>Балансировка затворной рамы позволяет уменьшить увод оружия с линии прицеливания во время выстрела.</text>
+</string>
+<string id="gunsl_wpn_svd_up_zatvor_reliability_name">
+     <text>Затворная рама повышенной прочности.</text>
+</string>
+<string id="gunsl_wpn_svd_up_zatvor_reliability_descr">
+     <text>Замена стандартной затворной рамы на аналогичную из высокопрочного сплава позволяет выполнить значительно большее число циклов выстрела и перезарядки оружия без необходимости обслуживания детали.</text>
+</string>
+<string id="gunsl_wpn_svd_up_plastic_mag_name">
+     <text>Легковесный магазин</text>
+</string>
+<string id="gunsl_wpn_svd_up_plastic_mag_descr">
+     <text>Замена стандартного металлического магазина на легкосплавный аналог позволяет снизить общую массу оружия.</text>
+</string>
+<string id="gunsl_wpn_svd_up_podavatel_name">
+     <text>Доработка узла подачи патронов</text>
+</string>
+<string id="gunsl_wpn_svd_up_podavatel_descr">
+     <text>Точная подгонка деталей механизма подачи патронов позволяет минимизировать число задержек, связанных с неподачей нового патрона после выстрела.</text>
+</string>
+<string id="gunsl_wpn_svd_up_gascam_name">
+     <text>Модификация газоотвода</text>
+</string>
+<string id="gunsl_wpn_svd_up_gascam_descr">
+     <text>Измененный газоотвод позволяет добиться увеличения начальной скорости пули при одновременном снижении отдачи.</text>
+</string>
+<string id="gunsl_wpn_svd_up_light_priklad_name">
+     <text>Облегченный приклад</text>
+</string>
+<string id="gunsl_wpn_svd_up_light_priklad_descr">
+     <text>Замена стандартного приклада на облегченный полый аналог позволяет снизить общую массу оружия.</text>
+</string>
+<string id="gunsl_wpn_svd_up_tilnik_name">
+     <text>Улучшенный тыльник</text>
+</string>
+<string id="gunsl_wpn_svd_up_tilnik_descr">
+     <text>Анатомический резиновый тыльник позволяет смягчить ощущаемую от выстрела из оружия отдачу.</text>
+</string>
+<string id="gunsl_wpn_svd_up_light_tsevie_name">
+     <text>Облегченное цевье</text>
+</string>
+<string id="gunsl_wpn_svd_up_light_tsevie_descr">
+     <text>Позволяет снизить массу оружия</text>
+</string>
+<string id="gunsl_wpn_svd_up_pokritie_name">
+     <text>Спецпокрытие</text>
+</string>
+<string id="gunsl_wpn_svd_up_pokritie_descr">
+     <text>Нанесение защитного напыления позволяет замедлить износ механизмов оружия.</text>
+</string>
+<string id="gunsl_wpn_svd_up_sights_name">
+     <text>Тритиевые вставки</text>
+</string>
+<string id="gunsl_wpn_svd_up_sights_descr">
+     <text>Установка светящихся вставок в прицельные приспособления позволяет повысить скорость прицеливания и удобство ведения огня в темноте.</text>
+</string>
+<string id="gunsl_wpn_svd_up_sheka_name">
+     <text>Накладка типа "щека"</text>
+</string>
+<string id="gunsl_wpn_svd_up_sheka_descr">
+     <text>Установка на приклад специальной накладки позволяет снизить ощущаемую отдачу оружия.</text>
+</string>
+<string id="gunsl_wpn_svd_up_barrel_reliability_name">
+     <text>Высокопрочный ствол</text>
+</string>
+<string id="gunsl_wpn_svd_up_barrel_reliability_descr">
+     <text>Замена ствола на высокопрочный аналог благоприятным образом сказывается на надежности оружия, замедляя скорость износа от произведенных выстрелов.</text>
+</string>
+<string id="gunsl_wpn_svd_up_barrel_accuracy_name">
+     <text>Ствол с шагом нарезов 320мм</text>
+</string>
+<string id="gunsl_wpn_svd_up_barrel_accuracy_descr">
+     <text>Стандартный ствол имеет шаг нарезки 240мм, что позволяет стрелять любыми типами боеприпасов (включая бронебойно-зажигательные), но негативно сказывается на точности ведения огня. В связи с тем, что из всех боеприпасов для СВД на территории Зоны распространение получил лишь только специальный снайперский вариант патронов, представляется разумной замена ствола на имеющий шаг нарезов 320мм. Благодаря этой замене при использовании снайперских патронов становится возможным вести более точную стрельбу.</text>
+</string>
+<string id="gunsl_wpn_svd_up_barrel_bullet_speed_name">
+     <text>Юстировка ствола</text>
+</string>
+<string id="gunsl_wpn_svd_up_barrel_bullet_speed_descr">
+     <text>Увеличивает начальную скорость вылета пули и убойное расстояние.</text>
+</string>
+</string_table>

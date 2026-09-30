@@ -1,0 +1,78 @@
+; Burning actor: hands beat the flames out. Ported from Gunslinger's action_animators\burn.ltx.
+;
+; Burning itself is NOT a flag -- it's a wound of hit type "burn" (GS's IsActorBurned() just asks
+; whether one exists). Clear Sky already carries that: CWound stores sizes per hit type and
+; [entity_fire_particles] already sets the actor's body alight (damage_fx\burn_creatures). All this
+; section adds is the first-person half: the hands, and a faster way out than standing still.
+;
+; A WP_BINOC phantom rather than a WP_ACTAN action animator (which is what the torch/NV gestures
+; use): only the phantom is a CShootingObject, so flame_particles/fire_point work with no new code.
+; GS's burn_animator is likewise a weapon -- it calls CShootingObject::StartFlameParticles on it.
+
+; How fast the fire dies down on its own, with your hands doing nothing. GS: 0.000002 -- a tenth of
+; burn_restore below, which is what makes beating it out worth the trouble.
+[gwr_burning]
+actor_burn_restore_speed				= 0.000002
+; Stock CS gives burn hits no wound at all (CEntityCondition::ConditionHit forces bAddWound=false),
+; so nothing was ever left burning. This turns them back on and scales the wound they leave;
+; 0 = stock behaviour, i.e. the whole feature off. GS's equivalent is wound_factor_for_hit_type_0.
+burn_wound_factor						= 1.0
+; Multiplier on the GRADUAL damage the fire deals while you're alight (the burn wound's share of
+; BleedingSpeed). Does NOT touch the anomaly's own hit -- that still costs what it always did.
+burn_damage_factor						= 2.0
+; How hard the burn hit has to land before it sets the actor ALIGHT (raw zone power, before
+; outfit and immunities). An anomaly hits everything inside its radius with
+;   power = max_start_power * (1 - attenuation*(dist/radius)^2)
+; so this is the distance gate, and it is a SHARE OF THAT ANOMALY'S OWN max_start_power: 0.5 = the
+; inner ~70% of the radius whether it is a full-strength jarka or one of the _weak thermal mines,
+; 0 = ignite anywhere in the aura (old behaviour), 1 = only dead centre.
+burn_wound_min_power					= 0.5
+; Same gate for fire that touches the actor DIRECTLY rather than as an area effect -- a fire
+; poltergeist aiming its flame column. That attack ray-tests the actor before every hit, so the
+; contact is already proven and there is no aura to gate against; it is also much weaker than an
+; anomaly (flame_hit_value 0.3 normal / 0.7 strong in m_poltergeist.ltx, falling off along the
+; column), so the anomaly threshold above kept it from ever setting the actor alight. Raise this
+; to demand a hit nearer the flame, or put it above flame_hit_value to switch that ignition off.
+burn_wound_min_power_direct				= 0.05
+; Share of a burn hit that comes out of STAMINA. Stock CS spends power_hit_part (0.1) of every
+; hit; inside a fire anomaly the repeated hits pin stamina at zero and the engine then refuses
+; to move the actor at all (cant_walk_power_begin), which reads as stopping on every step.
+; 0 = burning costs no stamina, -1 = stock behaviour. Actor only, NPCs keep the stock drain.
+burn_power_part							= -1
+
+[gwr_burn_animator]:gwr_base_usable
+$spawn									= "weapons\gwr_burn_animator"
+hud										= gwr_burn_animator_hud
+; The engine owns this phantom's lifetime (gwr_update_burning -> finish_burn brings the hands down at
+; a clean animation boundary), so the binder's own timer must never fire first -- keep it huge. The
+; net_destroy safety net still releases the anti-spam lock if the object dies some other way.
+timing									= 3600000
+snd_using								= interface\inv_nosound
+; how fast beating the flames drains the burn wound while these hands are out.
+; GS: 0.00002 -- 10x the actor_burn_restore_speed it decays at on its own.
+burn_restore							= 0.00002
+; Gunslinger's own effect, ported into our particles.xr (it was the last PGD in its library). It's
+; a group of just body_glow + body_burn_01, both of which Clear Sky already had -- CS's own
+; burn_creatures pulls in more and reads far too hot on the hands. Read from THIS section by
+; CShootingObject::LoadFlameParticles.
+flame_particles							= damage_fx\burn_actor
+
+[gwr_burn_animator_hud]:gwr_base_usable_hud
+item_visual								= gwr\food\burn\burn_hud
+hands_position							= 0.0,-0.01,-0.05
+hands_orientation						= 0.0,0.0,0.0
+hands_position_16x9						= 0.0,-0.01,-0.05
+hands_orientation_16x9					= 0.0,0.0,0.0
+
+; Where the flame particles hang. hud_item_measures::load asserts these two come as a PAIR -- one
+; without the other is a hard error, which is why GS's burn.ltx carries both. fire_bone is a real
+; bone of burn_hud.ogf (it also has fire_bone2/fire_bone3).
+fire_point								= 0,0,0
+fire_bone								= fire_bone
+
+anm_show								= fire_on_the_hand
+anm_hide								= fire_on_the_hand
+anm_idle								= fire_on_the_hand
+anm_idle_moving							= fire_on_the_hand
+anm_idle_sprint							= fire_on_the_hand
+anm_bore								= fire_on_the_hand

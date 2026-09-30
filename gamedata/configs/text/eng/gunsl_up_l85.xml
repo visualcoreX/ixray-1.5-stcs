@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<string_table>
+<string id="gunsl_wpn_l85_up_mag40_name">
+     <text>40 round magazine</text>
+</string>
+<string id="gunsl_wpn_l85_up_mag40_descr">
+     <text>Extended PMAG 40 AR magazine decreases the number of reloads in combat.</text>
+</string>
+<string id="gunsl_wpn_l85_up_mag60_name">
+     <text>60 round magazine</text>
+</string>
+<string id="gunsl_wpn_l85_up_mag60_descr">
+     <text>High capacity SureFire MAG5-60 significantly facilitates fighting against superior enemy forces.</text>
+</string>
+<string id="gunsl_wpn_l85_up_tac_handle_name">
+     <text>Tactical foregrip</text>
+</string>
+<string id="gunsl_wpn_l85_up_tac_handle_descr">
+     <text>Handguard replacement and the addition of a tactical foregrip improves handling of the firearm. Moreover, new handguard is equipped with multiple Picatinny rails, which enables the installation of additional tactical devices.</text>
+</string>
+<string id="gunsl_wpn_l85_up_flashlaser_name">
+     <text>Tactical device</text>
+</string>
+<string id="gunsl_wpn_l85_up_flashlaser_descr">
+     <text>Insight AN/PEQ-16a tactical block combines the functions of a laser sight and a tactical flashlight. Particularly useful in night conditions.</text>
+</string>
+<string id="gunsl_wpn_l85_up_sights_name">
+     <text>Tritium sights</text>
+</string>
+<string id="gunsl_wpn_l85_up_sights_descr">
+     <text>Tritium-illuminated sights increase speed and comfort of aiming in poorly-lit environments.</text>
+</string>
+<string id="gunsl_wpn_l85_up_grip_name">
+     <text>Anatomical pistol grip</text>
+</string>
+<string id="gunsl_wpn_l85_up_grip_descr">
+     <text>Provides better grip for the right hand.</text>
+</string>
+<string id="gunsl_wpn_l85_up_bayonet_name">
+     <text>Bayonet</text>
+</string>
+<string id="gunsl_wpn_l85_up_bayonet_descr">
+     <text>Standard L3A1 bayonet allows to use the weapon in melee combat. Due to constructional characteristics of the weapon, suppressors and underbarrel grenade launchers cannot be used with the bayonet installed.</text>
+</string>
+<string id="gunsl_wpn_l85_up_usm_accuracy_name">
+     <text>Trigger calibration</text>
+</string>
+<string id="gunsl_wpn_l85_up_usm_accuracy_descr">
+     <text>Individual adjustment and balancing of the standard parts of the trigger mechanism improve accuracy, while simultaneously lowering recoil.</text>
+</string>
+<string id="gunsl_wpn_l85_up_usm_rpm_name">
+     <text>Trigger tuning</text>
+</string>
+<string id="gunsl_wpn_l85_up_usm_rpm_descr">
+     <text>Modification of the trigger mechanism increases rate of fire, at the cost of durability.</text>
+</string>
+<string id="gunsl_wpn_l85_up_mag_fixator_name">
+     <text>Improved feeding mechanism</text>
+</string>
+<string id="gunsl_wpn_l85_up_mag_fixator_descr">
+     <text>Decreases the probability of malfunctions related to feeding issues.</text>
+</string>
+<string id="gunsl_wpn_l85_up_barrel_kompensator_name">
+     <text>Improved muzzle brake</text>
+</string>
+<string id="gunsl_wpn_l85_up_barrel_kompensator_descr">
+     <text>Significantly reduces muzzle climb and felt recoil.</text>
+</string>
+<string id="gunsl_wpn_l85_up_barrel_accuracy_name">
+     <text>Barrel adjustment</text>
+</string>
+<string id="gunsl_wpn_l85_up_barrel_accuracy_descr">
+     <text>Reduces bullet dispersion, which in turn improves accuracy.</text>
+</string>
+<string id="gunsl_wpn_l85_up_barrel_bullet_speed_name">
+     <text>Faster twist rate</text>
+</string>
+<string id="gunsl_wpn_l85_up_barrel_bullet_speed_descr">
+     <text>Increases muzzle velocity, thus improving the flatness of the trajectory. Useful for long range fire.</text>
+</string>
+<string id="gunsl_wpn_l85_up_priklad_name">
+     <text>Improved recoil pad</text>
+</string>
+<string id="gunsl_wpn_l85_up_priklad_descr">
+     <text>Anatomical rubberized recoil pad reduces felt recoil.</text>
+</string>
+<string id="gunsl_wpn_l85_up_zatvor_balancer_name">
+     <text>Balanced bolt</text>
+</string>
+<string id="gunsl_wpn_l85_up_zatvor_balancer_descr">
+     <text>Balanced bolt carrier group reduces the muzzle climb, as well as reduces the probability of malfunctions.</text>
+</string>
+<string id="gunsl_wpn_l85_up_body_reliability_name">
+     <text>More durable parts</text>
+</string>
+<string id="gunsl_wpn_l85_up_body_reliability_descr">
+     <text>Improves durability of the gun by replacing weapon parts with their strengthened counterparts.</text>
+</string>
+<string id="gunsl_wpn_l85_up_body_weight_name">
+     <text>Lightweight parts</text>
+</string>
+<string id="gunsl_wpn_l85_up_body_weight_descr">
+     <text>Noticeably reduces weight by replacing weapon parts with their light-alloy counterparts.</text>
+</string>
+<string id="gunsl_wpn_l85_up_firemode_name">
+     <text>Improved fire selector</text>
+</string>
+<string id="gunsl_wpn_l85_up_firemode_descr">
+     <text>Decreases the probability of malfunctions related to fire selector issues.</text>
+</string>
+</string_table>
