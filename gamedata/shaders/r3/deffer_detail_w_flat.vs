@@ -28,7 +28,12 @@ v2p_flat 	main (v_detail v)
 
 	// 
 	float 	base 	= m1.w;
-	float 	dp	= calc_cyclic   (dot(pos,wave));
+	// Every tuft on its own: a hash of its origin (m0.w/m2.w = instance centre) shifts the phase and
+	// scales the swing, and a second, faster wave rides on the main one -- the stock field moved as one
+	// sheet, the same stroke sliding across the ground.
+	float	hash	= frac(sin(dot(float2(m0.w, m2.w), float2(12.9898f, 78.233f))) * 43758.5453f);
+	float	x		= dot(pos,wave) + hash;
+	float 	dp	= (0.75f * calc_cyclic(x) + 0.25f * calc_cyclic(x * 2.37f + hash * 0.5f)) * (0.7f + 0.6f * hash);
 	float 	H 	= pos.y - base;			// height of vertex (scaled)
 	float 	frac 	= v.misc.z*consts.x;		// fractional
 	float 	inten 	= H * dp;
