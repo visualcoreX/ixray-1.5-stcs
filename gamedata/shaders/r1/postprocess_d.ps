@@ -14,16 +14,29 @@ uniform sampler2D 	s_base1;
 uniform sampler2D 	s_noise;
 uniform sampler2D 	s_distort;
 uniform float4 		c_brightness;
+#include "pp_scope.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Pixel
 float4 	main	( v2p I )	: COLOR
 {
-	float4 	distort	= tex2D		(s_distort, I.tc0);
+	float2	z_0		= pp_zoom_uv(pp_warp_uv(I.tc0));	// intoxication fisheye first, then the eyepiece
+	float2	z_1		= pp_zoom_uv(pp_warp_uv(I.tc1));
+	float4 	distort	= tex2D		(s_distort, z_0);
 	float2	offset	= (distort.xy-.5h)*def_distort;
-	float3	t_0 	= tex2D		(s_base0,I.tc0+ offset);
-	float3	t_1 	= tex2D		(s_base1,I.tc1+ offset);	
+		z_0	+= offset;
+		z_1	+= offset;
+	float	soft	= pp_zoom_soft(z_0);			// only inside a magnified eyepiece
+	float3	t_0 	= pp_cubic0(z_0, soft);
+	float3	t_1 	= pp_cubic1(z_1, soft);
 	float3 	image	= (t_0+t_1)*0.5f;					// add_d2
+	{	float2 ab = pp_abber_offset(z_0);			// the glass splits the colours towards its rim
+		if (ab.x > 0.0f)
+		{
+			image   = pp_abber_rgb(z_0, z_1, ab);
+			image   = pp_purple_fringe(z_0, z_1, image);
+		}	}
+	float3	plain	= image;						// the scene with no grading at all
 
 	float	gray 	= dot		(image,I.gray);			// dp3
 		image 	= lerp 		(gray,image,I.gray.w);		// mul/mad
@@ -32,7 +45,19 @@ float4 	main	( v2p I )	: COLOR
 	float3 	noised 	= image*t_noise*2.0f;                     		// mul_2x
 		image	= lerp 		(noised,image,I.color.w); 	// lrp ?
 			image	= (image * I.color + c_brightness)*2.0f;		// mad
+	// the intoxication's colour swim, through the edge mask (m_pp_warp.y, see pp_intox_colour)
+	// .x too: the colour only ever runs with the intoxication itself (a stray default lit it in the menu)
+	if (m_pp_warp.y > 0.0f && m_pp_warp.x > 0.0001f)	image += 2.0f * pp_intox_colour() * pp_warp_mask(I.tc0);
 //		image	= (image + c_brightness) * I.color;		// mad ?
 
+	float3	graded	= image;					// the effectors' grading, before the scope's own gain
+	image	= pp_nv_gain(image);				// the night scope's brightness step
+	float	sh		= pp_scope_shadow(I.tc0);		// the eye off the optic's axis
+	image	*= sh;
+	graded	*= sh;
+	// Outside the eyepiece: the scene untouched -- the scope's tint belongs inside the optic. Unless the
+	// suit's night vision is on (m_pp_nv.z, chained): the scope's own tint is then off, what the effectors
+	// grade is the GOGGLES, and those cover the whole screen -- the mask only bounds the scope's gain.
+	image	= lerp((m_pp_nv.z > 0.5f) ? graded : plain, image, pp_mask_factor(I.tc0));
 	return  float4	(image, 1.0f);					// +mov
 }
