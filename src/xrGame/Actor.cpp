@@ -1191,7 +1191,24 @@ void CActor::UpdateCL	()
 		else
 		{
 			g_pGamePersistent->hud_scope_params.set(aspect, 0.f, 0.f, 0.f);
-			g_pGamePersistent->hud_zoom_deviation.set(0.f, 0.f, 0.f, 0.f);
+			// A 2D night scope has no lens shader to take the brightness -- its tint is a full-screen PPE whose
+			// green gain is a u32 colour, clamped at 1.0 from the lowest step up, so the brightness keys only
+			// changed the noise. Hand the pp pass what the step means instead: .z = a gain for the picture
+			// inside the eyepiece mask (x1 at the bottom step), .w = the gauss lens tint (its lens formula).
+			if (wpn && wpn->ScopeNV2DOn())
+				// .x = chained with the suit's NV: the goggles' grading then covers the whole screen and the mask
+				// only bounds the scope's gain (x/y are the lens sway, read on lens frames only -- none in 2D)
+			{
+				if (wpn->ScopeNVChain())
+					// chained with the suit's NV: the pp pass draws the 3D lens's own night picture inside the
+					// eyepiece (postprocess.ps pp_nv_chain_lens) -- it wants the scope's brightness itself, as the
+					// lens shader gets it, and which lens formula (the gauss's lift or the NV lens)
+					g_pGamePersistent->hud_zoom_deviation.set(1.f, 0.f, wpn->ScopeIllumValue(), wpn->ScopeNV2DIsLensTint() ? 1.f : 0.f);
+				else
+					g_pGamePersistent->hud_zoom_deviation.set(0.f, 0.f, wpn->ScopeNV2DGain(), wpn->ScopeNV2DLensTint());
+			}
+			else
+				g_pGamePersistent->hud_zoom_deviation.set(0.f, 0.f, 0.f, 0.f);
 		}
 	}
 

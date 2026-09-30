@@ -321,6 +321,10 @@ void CRenderTarget::End		()
 		RCache.set_c		(s_pp_mask,		m.x,  m.y,  m.z,  m.w);
 		RCache.set_c		(s_pp_zoom,		zc.x, zc.y, zc.z, zc.w);
 		RCache.set_c		(s_pp_shadow,	sh.x, sh.y, sh.z, sh.w);
+		// the 2D night scope's brightness step, as on R2/R3
+		static	shared_str	s_pp_nv			= "m_pp_nv";
+		const Fvector4 nv = g_pGamePersistent ? g_pGamePersistent->hud_zoom_deviation : Fvector4().set(0.f,0.f,0.f,0.f);
+		RCache.set_c		(s_pp_nv,		nv.z, nv.w, nv.x, 0.f);
 	}
 	static	shared_str	s_brightness	= "c_brightness";
 	RCache.set_c		(s_brightness,p_brightness.x,p_brightness.y,p_brightness.z,0);

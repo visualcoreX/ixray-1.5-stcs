@@ -56,6 +56,10 @@ CWeapon::CWeapon()
 	m_bZoomToggleWanted		= false;
 	m_scope_illum_value		= 0.f;
 	m_scope_illum_jitter	= 0.f;
+	m_scope_nv_2d_lens_tint	= false;
+	m_scope_nv_2d_max_gain	= 2.5f;
+	m_bScopeNVChain			= false;
+	m_scope_nv_2d_chain_gain= 2.0f;
 	m_scope_illum_step		= 0;
 	m_scope_illum_steps		= 0;
 	m_scope_illum_min		= 0.f;
@@ -3018,6 +3022,10 @@ void CWeapon::OnZoomIn()
 	// magnification across as soon as ChangeLensStep re-read them.
 	LoadLensFactorParams				();
 	clamp								(m_lens_step, 0, m_lens_steps);
+	// the brightness block too, for the same reason: the gauss buys it with an upgrade, and after a save
+	// load it was read before the upgrades were back (see LoadScopeIllumParams)
+	LoadScopeIllumParams				();
+	ApplyScopeIllumUI					();
 	// ...and START the aim at the step the player actually picked. m_fLensPos is the TRAVELLING position
 	// (GS lens_speed); raising the sights must show that power at once -- only a wheel change mid-aim is
 	// worth ramping. A stale position left over from the old step count was what made the very first aim
@@ -3640,6 +3648,15 @@ void CWeapon::LoadScopeIllumParams()
 	m_scope_illum_jitter= upgraded_float("jitter_brightness",    m_scope_illum_jitter);
 	m_scope_illum_max	/= 3.f;		// GS divides the configured brightness by 3
 	m_scope_illum_min	/= 3.f;
+	// The step the player picked for this optic is remembered per scope, and THAT is the truth -- the
+	// working step is only a clamped copy. On a save load CWeapon::load restores it and calls this at once,
+	// but the upgrades are installed only afterwards: the gauss, whose whole brightness block comes with
+	// its `nv` upgrade, then saw 0 steps and clamped the step to 0 for good, while its night-vision noise
+	// (resolved live from the upgrades) came back as before. Re-take the remembered step every time.
+	{
+		const int idx = (m_cur_scope < 16) ? (int)m_cur_scope : 0;
+		if (m_scope_illum_step_by_scope[idx] >= 0)	m_scope_illum_step = m_scope_illum_step_by_scope[idx];
+	}
 	clamp(m_scope_illum_step, 0, m_scope_illum_steps);
 	const int denom = (m_scope_illum_steps > 0) ? m_scope_illum_steps : 1;
 	m_scope_illum_value = m_scope_illum_min + (m_scope_illum_max - m_scope_illum_min) * (float(m_scope_illum_step) / denom);
@@ -3690,6 +3707,38 @@ float CWeapon::ScopeNVFactor() const
 	return min_f + (1.0f - min_f) * v;
 }
 
+// The flat night picture's brightness. The PPE cannot carry it: its green gain is a u32 colour and is
+// already clamped at 1.0 on the lowest step, so on its own the steps only ever changed the noise.
+// Step 0 is x1 -- exactly what the PPE leaves -- and the top step is pp_nv_2d_max_gain, linear between.
+// Never below 1: a night scope at its dimmest must not show the world darker than no night scope does.
+// CHAINED with the suit's night vision (the goggles look through the scope): the scope's own tint is off,
+// so its amplification has to come from here instead -- pp_nv_2d_chain_gain (x2, what the tint's green gain
+// was worth) on top of the step's gain. The gauss's lift becomes a gain the same way: for a grey pixel its
+// formula is L*(1-z) + 3L*7z = L*(1 + 20z).
+float CWeapon::ScopeNV2DGain() const
+{
+	float g = 1.f;
+	if (m_scope_nv_2d_lens_tint)
+		g = m_bScopeNVChain ? (1.f + 20.f * ScopeIllumValue()) : 1.f;
+	else
+	{
+		const float t = (m_scope_illum_steps > 0)
+						? (float(m_scope_illum_step) / float(m_scope_illum_steps))
+						: 1.0f;
+		g = 1.f + (_max(m_scope_nv_2d_max_gain, 1.f) - 1.f) * t;
+	}
+	if (m_bScopeNVChain)	g *= _max(m_scope_nv_2d_chain_gain, 1.f);
+	return g;
+}
+
+// The gauss has no gain of its own: its night picture is the lens shader's grey-blue lift
+// (model_scope_gauss.ps, strength m_zoom_deviation.z = the brightness value). With the 3D lens off the
+// pp pass applies the same formula, so both modes brighten alike -- and 0 at the bottom step = untouched.
+float CWeapon::ScopeNV2DLensTint() const
+{
+	return (m_scope_nv_2d_lens_tint && !m_bScopeNVChain) ? ScopeIllumValue() : 0.f;
+}
+
 void CWeapon::UpdateScopeNV()
 {
 	CActor* act = smart_cast<CActor*>(H_Parent());
@@ -3706,26 +3755,49 @@ void CWeapon::UpdateScopeNV()
 		// has finished (CActor: IsZoomed() && !IsRotatingToZoom() && ZoomTexture()), so tying the
 		// effector to exactly that puts the tint on screen with the scope picture and takes it off
 		// with it -- and keeps it off entirely while the 3D lens is doing the night vision itself.
-		if (!nv_sect.size() && ZoomTexture() && Scope2DReady() && !IsAlterZoom())
-			{ nv_sect = ScopeNV2DSection(); nv_2d = nv_sect.size() > 0; }
+		const bool pic2d = ZoomTexture() && Scope2DReady() && !IsAlterZoom();
+		if (!nv_sect.size() && pic2d)
+			nv_sect = ScopeNV2DSection();
+		// EITHER key gets the eyepiece mask and the brightness while the flat picture is up. The always-on
+		// one is the gauss: its whole night picture lived in the lens shader, so with the 3D lens off it
+		// was reduced to the PPE's noise smeared over the entire screen.
+		nv_2d = pic2d && nv_sect.size() > 0;
 	}
 	if (!nv_sect.size())
 	{
+		m_bScopeNVChain = false;
 		StopScopeNV();
 		return;
 	}
 
-	CPostprocessAnimator* pp = smart_cast<CPostprocessAnimator*>(
-			act->Cameras().GetPPEffector((EEffectorPPType)effScopeNightvision));
-	if (!pp)
+	// The suit's night vision is on as well: the goggles are looking THROUGH the scope. Two tints summed
+	// in the PPE only clamp into one green mush (every gain sits at the same u32 ceiling), which is why the
+	// goggles looked switched off. So chain them instead: the scope drops its own tint and just amplifies
+	// (ScopeNV2DGain, applied inside the eyepiece), the goggles' effector grades the result -- colour, noise,
+	// mask and stripes. Only for the flat picture; a 3D lens does its night vision in its own shader.
+	m_bScopeNVChain = nv_2d && act->Cameras().GetPPEffector((EEffectorPPType)effNightvision) != NULL;
+	if (m_bScopeNVChain)
 	{
-		AddEffector	(act, effScopeNightvision, nv_sect);
-		pp = smart_cast<CPostprocessAnimator*>(
-				act->Cameras().GetPPEffector((EEffectorPPType)effScopeNightvision));
-		m_bScopeNVActive = (pp != NULL);
+		if (m_bScopeNVActive)
+		{
+			m_bScopeNVActive = false;
+			act->Cameras().RemovePPEffector((EEffectorPPType)effScopeNightvision);	// the goggles take over at once
+		}
 	}
-	// re-applied every frame: the brightness keys change it live, exactly as in GS
-	if (pp)	pp->SetCurrentFactor(ScopeNVFactor());
+	else
+	{
+		CPostprocessAnimator* pp = smart_cast<CPostprocessAnimator*>(
+				act->Cameras().GetPPEffector((EEffectorPPType)effScopeNightvision));
+		if (!pp)
+		{
+			AddEffector	(act, effScopeNightvision, nv_sect);
+			pp = smart_cast<CPostprocessAnimator*>(
+					act->Cameras().GetPPEffector((EEffectorPPType)effScopeNightvision));
+			m_bScopeNVActive = (pp != NULL);
+		}
+		// re-applied every frame: the brightness keys change it live, exactly as in GS
+		if (pp)	pp->SetCurrentFactor(ScopeNVFactor());
+	}
 
 	// The tint belongs INSIDE the optic. A 2D scope paints a round eyepiece over the middle of the
 	// screen and the world is only visible through it, so the full-screen effector used to smear the
@@ -3744,6 +3816,9 @@ void CWeapon::UpdateScopeNV()
 		const float aspect = (Device.fHeight_2 > 0.f) ? (Device.fWidth_2 / Device.fHeight_2) : 1.f;
 		g_pGamePersistent->pp_mask_circle.set(0.5f, 0.5f, r / aspect, r);
 		m_bScopeNVMaskSet = true;
+		m_scope_nv_2d_lens_tint = !!READ_IF_EXISTS(pSettings, r_bool,  *nv_sect, "pp_nv_2d_lens_tint", FALSE);
+		m_scope_nv_2d_max_gain  =   READ_IF_EXISTS(pSettings, r_float, *nv_sect, "pp_nv_2d_max_gain",  2.5f);
+		m_scope_nv_2d_chain_gain=   READ_IF_EXISTS(pSettings, r_float, *nv_sect, "pp_nv_2d_chain_gain", 2.0f);
 	}
 	else
 		ClearScopeNVMask();
@@ -4312,12 +4387,19 @@ void CWeapon::ClearScopeNVMask()
 
 void CWeapon::StopScopeNV()
 {
+	// A 2D picture was up: its tint was confined to the eyepiece by the mask, which goes away right here.
+	// Faded out over a second as before, the effector spent that second on the WHOLE screen -- a green
+	// flash dying away after every aim-out (the gauss hid it: its ppe is only noise). The picture leaves
+	// at once, so its night vision does too. Without a flat picture (the 3D lens) the fade stays.
+	const bool was_2d = m_bScopeNVMaskSet;
 	ClearScopeNVMask();
 	if (!m_bScopeNVActive)	return;
 	m_bScopeNVActive = false;
 	CActor* act = Actor();
 	if (!act)	return;
-	if (CEffectorPP* pp = act->Cameras().GetPPEffector((EEffectorPPType)effScopeNightvision))
+	if (was_2d)
+		act->Cameras().RemovePPEffector((EEffectorPPType)effScopeNightvision);
+	else if (CEffectorPP* pp = act->Cameras().GetPPEffector((EEffectorPPType)effScopeNightvision))
 		pp->Stop(1.0f);
 }
 
@@ -4905,6 +4987,14 @@ void CWeapon::modify_holder_params		(float &range, float &fov) const
 	}
 	range	*= m_addon_holder_range_modifier;
 	fov		*= m_addon_holder_fov_modifier;
+}
+
+// The flat scope picture is on screen: the very condition render_item_ui_query draws it under, minus the
+// alive-detector frames that share that hook.
+bool CWeapon::Scope2DPictureOn()
+{
+	return m_pInventory && m_pInventory->ActiveItem() == this && !IsAlterZoom()
+		&& IsZoomed() && ZoomHideCrosshair() && ZoomTexture() && Scope2DReady();
 }
 
 bool CWeapon::render_item_ui_query()

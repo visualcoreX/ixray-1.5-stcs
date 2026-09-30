@@ -218,6 +218,15 @@ private:
 	shared_str m_sScopeDetector;					// scope_alive_detector -> a params section ([scope_detector])
 	float m_fScopeNVMinFactor;						// scope_nightvision_min_factor: PPE strength at brightness step 0
 	bool  m_bScopeNVActive;
+	// the 2D night picture's brightness, from the effector section while the flat scope is up:
+	// pp_nv_2d_lens_tint = the gauss's lens formula instead of a plain gain, pp_nv_2d_max_gain = the gain
+	// at the top brightness step (step 0 is always x1 -- the picture as the PPE alone leaves it)
+	bool  m_scope_nv_2d_lens_tint;
+	float m_scope_nv_2d_max_gain;
+	// the suit's night vision is on too: the goggles look through the scope. The scope drops its own tint
+	// and only amplifies (pp_nv_2d_chain_gain = what its tint's gain was worth), the goggles grade the rest
+	bool  m_bScopeNVChain;
+	float m_scope_nv_2d_chain_gain;
 	// scope_alive_detector = the VANILLA binoculars vision (CBinocularsVision) hung on an optic: a frame
 	// crawls onto every living creature the actor can see, with a beep. Lives only while aiming.
 	CBinocularsVision* m_pScopeVision;
@@ -248,6 +257,14 @@ public:
 	void			UpdateScopeNV		();
 	void			StopScopeNV			();
 	void			ClearScopeNVMask	();
+	// the 2D night scope is up and owns the pp eyepiece mask: the pp pass multiplies the picture inside it
+	// by ScopeNV2DGain / tints it by ScopeNV2DLensTint (CActor feeds both to hud_zoom_deviation.zw)
+	bool			ScopeNV2DOn		() const	{ return m_bScopeNVMaskSet; }
+	bool			ScopeNVChain		() const	{ return m_bScopeNVChain; }	// the suit's NV grades, the scope only amplifies
+	bool			ScopeNV2DIsLensTint	() const	{ return m_scope_nv_2d_lens_tint; }	// the gauss: its lens lift, not the NV lens
+	float			ScopeNV2DGain		() const;	// multiplier for the picture inside the eyepiece (>= 1)
+	float			ScopeNV2DLensTint	() const;	// the gauss lens tint strength (m_zoom_deviation.z there), 0 = none
+	bool			Scope2DPictureOn	();			// the flat scope picture is on screen this frame (render_item_ui draws it)
 	void			UpdateScopePPZoom	();
 	// The eye-relief crescent: drift from the swing/walk/shot, lag-filtered, into pp_scope_shadow.
 	// Shared by the flat picture (read by the pp pass) and the 3D lens (read by model_scope_lense.ps).

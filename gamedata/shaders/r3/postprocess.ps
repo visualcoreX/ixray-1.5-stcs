@@ -234,6 +234,52 @@ float pp_mask_factor(float2 uv)
 	return 1.0f - smoothstep(0.95f, 1.0f, length(d));	// the fade lands under the scope body
 }
 
+// 2D NIGHT SCOPE BRIGHTNESS. The tint comes from the scope's PPE, whose green gain is a u32 colour and
+// clamps at 1.0 from the lowest brightness step up -- so the steps used to change only its noise. The
+// game fills m_pp_nv only while a night scope's flat picture owns m_pp_mask:
+//   x = a gain for the picture inside the eyepiece: 1 at the bottom step, pp_nv_2d_max_gain at the top
+//       (never below 1 -- the dimmest setting is the picture the PPE alone gives);
+//   y = the gauss's lens tint (model_scope_gauss.ps, m_zoom_deviation.z there): its night picture has no
+//       gain, it lifts the image to a grey-blue by this much -- 0 at the bottom step leaves it untouched.
+uniform float4 m_pp_nv;
+float3 pp_nv_gain(float3 image)
+{
+	if (m_pp_mask.z <= 0.0f)	return image;
+	if (m_pp_nv.z > 0.5f)	return image;	// chained: .x is the brightness there, see pp_nv_chain_lens
+	if (m_pp_nv.y > 0.0f)
+	{
+		float gray	= (image.r + image.g + image.b) * m_pp_nv.y * 7.0f;
+		image		= image * (1.0f - m_pp_nv.y) + gray;
+		image.b	   += 0.4f * m_pp_nv.y;
+	}
+	if (m_pp_nv.x > 1.0f)		image *= m_pp_nv.x;
+	return image;
+}
+
+// CHAINED 2D (the suit's night vision looking through a 2D night scope, m_pp_nv.z): the same picture the 3D lens
+// makes -- model_scope_lense_night (pnv.h calc_night_vision_effect: z*(1,2,1)*lum, plus its scanlines, noise and
+// flicker), or the gauss lens's grey-blue lift (m_pp_nv.y) -- over the UNGRADED scene, with z = the scope's own
+// brightness (m_pp_nv.x). main() then grades it with the goggles' effectors, as the 3D frame's grading lands on the
+// lens. It used to be the goggles' grading times a flat gain (2..5x) -- far weaker than the lens (9*z on green).
+float3 pp_nv_chain_lens(float3 plain, float2 tc)
+{
+	float z = m_pp_nv.x;
+	if (m_pp_nv.y > 0.5f)
+	{
+		float gray	= (plain.r + plain.g + plain.b) * z * 7.0f;
+		float3 c	= plain * (1.0f - z) + gray;
+		c.b		   += 0.4f * z;
+		return c;
+	}
+	float	lum		= dot(plain, float3(0.3f, 0.38f, 0.22f) * 5.0f);
+	float3	c		= z * float3(1.0f, 2.0f, 1.0f) * lum;
+	float	noise	= frac(sin(dot(tc, float2(12.0f, 78.0f) + (timers.x * 1.17f))) * 43758.0f);
+	c += 0.015f * sin(tc.y * screen_res.y * 2.0f);	// scanlines
+	c += noise * 0.13f;								// noise
+	c += 0.003f * sin(timers.x * 60.0f);			// flicker
+	return c;
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////
 // Pixel
 float4 main( p_postpr I ) : SV_Target
@@ -264,7 +310,22 @@ float4 main( p_postpr I ) : SV_Target
 //		image	= (image + c_brightness) * I.Color;		// mad ?
 
 	// out
-	image	*= pp_scope_shadow(I.Tex0);			// the eye off the optic's axis
-	image	= lerp(plain, image, pp_mask_factor(I.Tex0));	// outside the eyepiece: the scene, untouched
+	float3	graded	= image;					// the effectors' grading, before the scope's own gain
+	image	= pp_nv_gain(image);				// the night scope's brightness step
+	if (m_pp_nv.z > 0.5f && m_pp_mask.z > 0.0f)
+	{
+		// chained with the suit's NV: the lens picture, then the very same grading as above
+		float3	lens	= pp_nv_chain_lens(plain, I.Tex0);
+		lens	= lerp(dot(lens, I.Gray), lens, I.Gray.w);
+		lens	= lerp(lens * t_noise * 2, lens, I.Color.w);
+		image	= (lens * I.Color + c_brightness) * 2;
+	}
+	float	sh		= pp_scope_shadow(I.Tex0);		// the eye off the optic's axis
+	image	*= sh;
+	graded	*= sh;
+	// Outside the eyepiece: the scene untouched -- the scope's tint belongs inside the optic. Unless the
+	// suit's night vision is on (m_pp_nv.z, chained): the scope's own tint is then off, what the effectors
+	// grade is the GOGGLES, and those cover the whole screen -- the mask only bounds the scope's gain.
+	image	= lerp((m_pp_nv.z > 0.5f) ? graded : plain, image, pp_mask_factor(I.Tex0));
 	return  float4( image, 1.0h);					// +mov
 }
