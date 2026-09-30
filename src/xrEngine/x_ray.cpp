@@ -552,11 +552,43 @@ void foo	()
 
 ENGINE_API	bool g_dedicated_server	= false;
 
+// Started straight from bin\ (double-clicking xrEngine.exe) the working folder is bin\ itself, and fsgame.ltx --
+// it lives in the game's root -- is not there: "Cannot open file fsgame.ltx. Check your working folder". Unless
+// -fsltx names one, look for it next to the exe and one folder up, and make that folder the working one: exactly
+// what a shortcut with "Start in" set to the game root does, so every relative path in fsgame.ltx means the same.
+// A launch that already finds it (shortcut, launcher) is left alone.
+static void find_game_root_folder(LPCSTR cmd_line)
+{
+	if (cmd_line && strstr(cmd_line, "-fsltx "))
+		return;
+	if (GetFileAttributes("fsgame.ltx") != INVALID_FILE_ATTRIBUTES)
+		return;
+	string_path		dir;
+	const DWORD		len = GetModuleFileName(NULL, dir, sizeof(dir));
+	if (!len || len >= sizeof(dir))
+		return;
+	for (int up = 0; up < 2; ++up)	// the exe's own folder, then its parent
+	{
+		char* slash = strrchr(dir, '\\');
+		if (!slash)
+			return;
+		*slash = 0;
+		string_path	probe;
+		xr_sprintf	(probe, "%s\\fsgame.ltx", dir);
+		if (GetFileAttributes(probe) != INVALID_FILE_ATTRIBUTES)
+		{
+			SetCurrentDirectory(dir);
+			return;
+		}
+	}
+}
+
 int APIENTRY WinMain_impl(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
                      char *    lpCmdLine,
                      int       nCmdShow)
 {
+	find_game_root_folder		(lpCmdLine);	// before anything opens a file by a relative path
 #ifdef DEDICATED_SERVER
 	Debug._initialize			(true);
 #else // DEDICATED_SERVER
