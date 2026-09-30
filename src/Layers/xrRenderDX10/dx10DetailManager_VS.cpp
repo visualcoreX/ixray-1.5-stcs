@@ -114,7 +114,9 @@ void CDetailManager::hw_Render_dump(const Fvector4 &consts, const Fvector4 &wave
 	u32		vOffset	=	0;
 	u32		iOffset	=	0;
 
-	vis_list& list	=	m_visibles	[var_id];
+	vis_list& list	=	m_render_visibles	[var_id];
+	// RenderShadow: per slot, how much of the blades to keep (fades the shadows in at the radius)
+	const xr_vector<xr_vector<float> >* shadow_fade = (m_render_visibles == m_visibles) ? nullptr : &m_visibles_shadow_fade[var_id];
 
 	CEnvDescriptor&	desc	= *g_pGamePersistent->Environment().CurrentEnv;
 	Fvector					c_sun,c_ambient,c_hemi;
@@ -127,6 +129,7 @@ void CDetailManager::hw_Render_dump(const Fvector4 &consts, const Fvector4 &wave
 	{
 		CDetail&	Object				= *objects	[O];
 		xr_vector <SlotItemVec* >& vis	= list		[O];
+		const float*	fades			= shadow_fade ? (*shadow_fade)[O].data() : nullptr;
 		if (!vis.empty())
 		{
 			for ( u32 iPass=0; iPass<Object.shader->E[lod_id]->passes.size(); ++iPass)
@@ -165,6 +168,7 @@ void CDetailManager::hw_Render_dump(const Fvector4 &consts, const Fvector4 &wave
 				xr_vector <SlotItemVec* >::iterator _vE = vis.end();
 				for (; _vI!=_vE; _vI++){
 					SlotItemVec*	items		= *_vI;
+					const float		slot_k		= fades ? fades[_vI - vis.begin()] : 1.f;
 					SlotItemVecIt _iI			= items->begin();
 					SlotItemVecIt _iE			= items->end();
 					for (; _iI!=_iE; _iI++){
@@ -172,7 +176,7 @@ void CDetailManager::hw_Render_dump(const Fvector4 &consts, const Fvector4 &wave
 						u32			base		= dwBatch*4;
 
 						// Build matrix ( 3x4 matrix, last row - color )
-						float		scale		= Instance.scale_calculated;
+						float		scale		= Instance.scale_calculated * slot_k;
 						Fmatrix&	M			= Instance.mRotY;
 						c_storage[base+0].set	(M._11*scale,	M._21*scale,	M._31*scale,	M._41	);
 						c_storage[base+1].set	(M._12*scale,	M._22*scale,	M._32*scale,	M._42	);
