@@ -1367,13 +1367,17 @@ void CHudItem::OnMovementChanged(ACTOR_DEFS::EMoveCommand cmd)
 		// ...with ONE exception: the sprint ENTER, when the sprint it starts has already ended. This
 		// notification is a single edge (player_hud::OnMovementChanged), so returning here dropped the
 		// only chance to react -- the enter ran to its last frame and the exit followed afterwards,
-		// which is what tapping aim right after starting to run looked like. Blend the exit in now.
+		// which is what tapping aim right after starting to run looked like. Blend the exit in now --
+		// but only for THAT: an aim or a shot waiting on the sprint (SprintActionPending). A sprint that is
+		// merely let go lets its enter play out, as Gunslinger does (its anm_idle_selector picks the _end
+		// only when the idle is asked for again, and a one-shot is never re-asked mid-way): the start ends,
+		// its OnAnimationEnd lands in TryPlayAnimIdle and the owed exit plays from there.
 		if(m_bSprintStartRunning && m_bSprintStarted)
 		{
 			CActor* pA = smart_cast<CActor*>(object().H_Parent());
 			CEntity::SEntityState st;
 			if(pA)	pA->g_State(st);
-			if(pA && !st.bSprint)
+			if(pA && !st.bSprint && SprintActionPending())
 			{
 				m_bSprintStarted = false;
 				if(PlaySprintExitAnim())
