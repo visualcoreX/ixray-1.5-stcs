@@ -321,6 +321,16 @@ void CDetailManager::Render	()
 #else
 	float factor			= 0.3f;
 #endif
+	// The wind factor picks the sway between the calm and the windy set, and anything that makes it step
+	// (a weather ambient effect handing the wind back, say) moved every blade to a new pose in one frame.
+	// Follow it with a short lag instead (~0.3 s) -- a real change of wind still comes through at once
+	// to the eye, a step no longer does.
+	{
+		static float s_factor	= -1.f;
+		if (s_factor < 0.f)		s_factor = factor;
+		else					s_factor += (factor - s_factor) * _min(1.f, Device.fTimeDelta * 3.f);
+		factor					= s_factor;
+	}
 	swing_current.lerp		(swing_desc[0],swing_desc[1],factor);
 
 	RCache.set_CullMode		(CULL_NONE);

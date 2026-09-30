@@ -417,6 +417,14 @@ void CGamePersistent::WeathersUpdate()
 			Environment().wind_blast_direction.set(Environment().wind_blast_current.x,Environment().wind_blast_current.y,Environment().wind_blast_current.z);
 			Environment().wind_strength_factor=Environment().wind_blast_strength_start_value+t*(Environment().wind_blast_strength_stop_value-Environment().wind_blast_strength_start_value);
 		}
+		// ...and HOLD the blast between blowing in and blowing out. Stock let go here, so the frame after
+		// the blow-in the strength fell straight back to the environment's noise (1.0 -> 0.3, say) --
+		// and the grass, whose sway is mixed from the calm and the windy set by this very factor, jumped
+		// to a new pose all at once. The blow-out below then starts from the held blast, not the noise.
+		if (ambient_effect_wind_on && Device.fTimeGlobal>ambient_effect_wind_in_time && Device.fTimeGlobal<ambient_effect_wind_end)
+		{
+			Environment().wind_strength_factor=Environment().wind_blast_strength_stop_value;
+		}
 
 		// stop if time exceed or indoor
 		if (bIndoor || Device.dwTimeGlobal>=ambient_effect_stop_time){
