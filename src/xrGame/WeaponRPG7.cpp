@@ -250,6 +250,7 @@ void CWeaponRPG7::switch2_Fire()
 		const bool muzzle_ok = GetHUDmode() && HudItemData() && p1.distance_to(ref) < 3.0f;
 
 		CEntity* E = smart_cast<CEntity*>	(H_Parent());
+		bool suicide_down = false;
 		if(E)
 		{
 			// GS CWeaponRPG7__FireStart_need_skip_g_fireParams (WeaponEvents.pas:2211): for the ACTOR the
@@ -262,6 +263,7 @@ void CWeaponRPG7::switch2_Fire()
 			// still true and the launch fell back to the camera (log: hip=0 muzzle_ok=1 zoom=0, the
 			// rocket flew along the look direction instead of the tube).
 			const bool suicide_shot = ParentIsActor() && Actor() && Actor()->IsSuicideInProgress() && muzzle_ok;
+			suicide_down = suicide_shot;
 			const bool actor_hip = suicide_shot ||
 								   (ParentIsActor() && !IsZoomed() && !IsRotatingToZoom() && muzzle_ok);
 			if (!actor_hip)
@@ -272,6 +274,12 @@ void CWeaponRPG7::switch2_Fire()
 			}
 		}
 
+		// Under a controller the rocket goes STRAIGHT DOWN at the victim's feet, whatever the tube is doing --
+		// the same thing GS forces on the grenade launcher (LaunchGrenade_controller_Correct, (0,-2,0)).
+		// A rocket has a motor that pushes it along its own axis, so the launch ORIENTATION is turned down
+		// as well, not only the velocity: along the tube it flew off and the victim survived.
+		if (suicide_down)					d.set(0.f, -1.f, 0.f);
+
 		Fmatrix								launch_matrix;
 		launch_matrix.identity				();
 		launch_matrix.k.set					(d);
@@ -281,6 +289,7 @@ void CWeaponRPG7::switch2_Fire()
 
 		d.normalize							();
 		d.mul								(m_fLaunchSpeed);
+		if (suicide_down)					d.set(0.f, -2.f, 0.f);		// dropped, not fired
 
 		ReactiveHit							();		// GS: the backblast goes off with the shot
 

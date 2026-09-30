@@ -1778,22 +1778,61 @@ bool CActor::StartControllerSuicide()
 		return true;
 	}
 
-	// GRENADE in hand: GS makes the victim pull the pin and let go at minimal force -- it lands at his
-	// own feet (PrepareGrenadeForSuicideThrow + SetImmediateThrowStatus). Only when the controller is
-	// farther than controller_g_attack_min_dist, so it does not blow the controller up as well.
+	// THROWABLE in hand -- GS ControllerMonster.pas PsiEffects, the IsThrowable branch, verbatim:
+	//  - already cocked (eReady): let it go now at suicide_ready_force -- it lands at the victim's feet;
+	//  - caught mid-pin-pull (eThrowStart): the suicide gesture carries on by itself; any other pin-pull
+	//    is turned into one (ready force, thrown the moment the animation ends);
+	//  - a GRENADE at rest, controller farther than controller_g_attack_min_dist, not prohibit_suicide:
+	//    start the suicide pin-pull (CMissile::OnStateSwitch swaps in anm_suicide_begin with allow_suicide);
+	//  - anything else (too close -- the blast would take the controller too -- or not idle yet): the
+	//    KNIFE, and the grenade is only put away, never thrown on the ground (GS ActivateActorSlot, no
+	//    PerformDrop). No knife: the stock psi attack.
+	// This used to be one branch, and it pulled the pin by faking a fire-button press; a grenade that was
+	// already cocked, or being cocked, fell straight through to the knife.
+	if (CMissile* ms = smart_cast<CMissile*>(it))
 	{
-		CGrenade* gr = smart_cast<CGrenade*>(it);
-		if (gr && !READ_IF_EXISTS(pSettings, r_bool, gr->HudSection().c_str(), "prohibit_suicide", FALSE))
+		const u32 st = ms->GetState();
+		CDBG("~ctrl BRANCH: throwable sect=%s state=%u dist=%.1f", ms->cNameSect().c_str(), st, m_fCtrlDist);
+		// The scene has to HOLD the victim the way a firearm's gesture does: the controller keeps its grab
+		// only while IsSuicideInProgress() (controller_psy_hit.cpp), and without a state of its own the
+		// grenade let the grab run out on the psi timer -- by the throw it was gone, so it always went the
+		// "broken free" way and was hurled off harmlessly.
+		auto hold = [this]()
 		{
-			const float mind = READ_IF_EXISTS(pSettings, r_float, gr->HudSection().c_str(),
-											  "controller_g_attack_min_dist", 10.f);
-			if (m_fCtrlDist > mind)
-			{
-				gr->Action(kWPN_FIRE, CMD_START);		// pin out
-				gr->Action(kWPN_FIRE, CMD_STOP);		// released instantly -> minimum force
-				return true;							// the explosion finishes the job
-			}
+			m_eSuicideState		= eSuicideGrenade;
+			m_dwSuicideNextTm	= Device.dwTimeGlobal + 700;	// the state switch lands next frame
+			m_bSuicideBroken	= false;
+			m_bControllerSees	= true;
+		};
+		if (st == CMissile::eReady)
+		{
+			ms->SuicidePrepareForce	("suicide_ready_force", 8.f);
+			ms->SwitchState			(CMissile::eThrow);
+			hold();
+			return true;
 		}
+		if (st == CMissile::eThrowStart)
+		{
+			if (!ms->IsSuicideThrow())	ms->SuicideReleaseNow();
+			hold();
+			return true;
+		}
+		CGrenade* gr = smart_cast<CGrenade*>(it);
+		if (gr && st == CMissile::eIdle &&
+			!READ_IF_EXISTS(pSettings, r_bool, gr->HudSection().c_str(), "prohibit_suicide", FALSE) &&
+			m_fCtrlDist > READ_IF_EXISTS(pSettings, r_float, gr->HudSection().c_str(), "controller_g_attack_min_dist", 10.f))
+		{
+			hold();						// BEFORE the switch: SuicideAllowed() in OnStateSwitch asks for it
+			gr->SwitchState(CMissile::eThrowStart);
+			return true;
+		}
+		if (!inventory().ItemFromSlot(KNIFE_SLOT))	return false;
+		m_eSuicideState		= eSuicidePlanning;
+		m_dwSuicideNextTm	= 0;
+		m_bSuicideBroken	= false;
+		m_bControllerSees	= true;
+		m_bSuicideDropped	= true;				// put away, never dropped
+		return true;
 	}
 
 	// GRENADE-LAUNCHER mode: GS turns the launcher off first (controller_can_switch_gl), and drops the
@@ -2044,7 +2083,7 @@ void CActor::UpdateControllerSuicide()
 			// selector is what plays anm_stop_suicide when the grab turns out to be gone. Clearing the
 			// state from here instead pulled the selector out from under a running animation, which is
 			// why the knife suddenly ended early.
-			if (m_eSuicideState == eSuicideAnim ||
+			if (m_eSuicideState == eSuicideAnim || m_eSuicideState == eSuicideGrenade ||
 				m_eSuicideState == eSuicideKnifePrep || m_eSuicideState == eSuicideKnifeKill)
 				m_bSuicideBroken	= true;		// let it play out; the end decides
 			else if (m_eSuicideState != eSuicideNone)
@@ -2072,6 +2111,29 @@ void CActor::UpdateControllerSuicide()
 	{
 		CCustomDetector* det = smart_cast<CCustomDetector*>(inventory().ItemFromSlot(DETECTOR_SLOT));
 		if (det && det->IsWorking())	det->HideDetector(true);
+	}
+
+	// the grenade scene lasts while its grenade is in the pin-pull -> ready -> throw chain; then it is over
+	// (the throw itself decides between the drop at the feet and the escape -- CMissile::OnStateSwitch)
+	if (m_eSuicideState == eSuicideGrenade)
+	{
+		CMissile*	ms	= smart_cast<CMissile*>(inventory().ActiveItem());
+		const u32	st	= ms ? ms->GetState() : u32(-1);
+		const bool	run	= ms && (st == CMissile::eThrowStart || st == CMissile::eReady || st == CMissile::eThrow);
+		// GS eReady branch: a grenade with no suicide animation (no allow_suicide) is wound up by its plain
+		// throw_begin and parks in eReady -- nothing sets the immediate throw for it, so let it go from here
+		if (ms && st == CMissile::eReady && !ms->IsSuicideThrow())
+		{
+			ms->SuicidePrepareForce	("suicide_ready_force", 8.f);
+			ms->SwitchState			(CMissile::eThrow);
+			return;
+		}
+		if (!run && Device.dwTimeGlobal >= m_dwSuicideNextTm)
+		{
+			m_eSuicideState		= eSuicideNone;
+			m_dwSuicideNextTm	= 0;
+		}
+		return;
 	}
 
 	CInventoryItem*   it = inventory().ActiveItem();

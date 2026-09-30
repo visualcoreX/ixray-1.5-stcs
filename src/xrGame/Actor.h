@@ -775,7 +775,8 @@ public:
 	// actor put his own weapon to his head (anm_suicide), fire (anm_shoot_suicide) and die
 	// `suicide_delay` seconds later. Breaking the grab before the shot plays anm_stop_suicide instead.
 	enum ESuicideState { eSuicideNone = 0, eSuicidePlanning, eSuicideAnim, eSuicideShot,
-						 eSuicideKnifePrep, eSuicideKnifeKill, eSuicideNoAnim };
+						 eSuicideKnifePrep, eSuicideKnifeKill, eSuicideNoAnim,
+						 eSuicideGrenade };	// the grenade scene: pin-pull -> dropped at the feet (holds the grab)
 			bool				StartControllerSuicide			();	// false = this weapon cannot be used
 			void				StopControllerSuicide			();	// grab broken (flag only -- GS decides at the END of the gesture)
 			void				UpdateControllerSuicide			();
@@ -786,6 +787,7 @@ public:
 			void				NotifyControllerSees			(bool sees, bool mandatory_check);
 			bool				IsSuicideInProgress				() const { return m_eSuicideState != eSuicideNone; }
 			bool				IsSuicideIrreversible			() const { return m_eSuicideState == eSuicideShot; }
+			bool				IsSuicideBroken					() const { return m_bSuicideBroken; }
 			// GS AddSuicideOffset / the DoSuicideShot check at the end of the hud_move update: a weapon
 			// with no suicide animation is aimed at the head by the HUD offset alone, and fires when the
 			// hands have arrived. player_hud drives both through these two.
