@@ -678,6 +678,60 @@ BOOL CRenderDevice::may_render() const
 	return (b_is_Active || (!b_is_Minimized && !psDeviceFlags.test(rsPauseOnMinimize)));
 }
 
+// THE RECTANGLE THE PICTURE OCCUPIES, IN THE COORDINATES GetCursorPos REPORTS.
+//
+// Those are not back buffer pixels, and nothing guarantees they match them. In a window the
+// picture is the client area, wherever it sits and whatever size it is (a back buffer larger than
+// the desktop is stretched into it). In exclusive fullscreen it is the whole monitor -- and the
+// monitor, as this process sees it, can be SMALLER than the mode: at a DSR / DLDSR resolution
+// Windows may run that mode at a different scale, and a process that is not per-monitor aware
+// is then handed scaled coordinates (3840 wide comes back as 2560). Dividing the pointer by the
+// back buffer width, as CUICursor did, stopped the cursor two thirds of the way across.
+// Both the confinement below and the UI cursor take their rectangle from here.
+bool pointer_screen_rect(RECT& r)
+{
+	HWND hWnd			= Device.m_hWnd;
+	if (!hWnd)			return false;
+
+	bool ok				= false;
+	if (psDeviceFlags.is(rsFullscreen))
+	{
+		MONITORINFO		mi;
+		mi.cbSize		= sizeof(mi);
+		if (GetMonitorInfo(MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY), &mi))
+		{
+			r			= mi.rcMonitor;
+			ok			= true;
+		}
+	}
+	if (!ok)
+	{
+		RECT			rc;
+		if (!GetClientRect(hWnd, &rc))	return false;
+		POINT			tl = { rc.left,  rc.top    };
+		POINT			br = { rc.right, rc.bottom };
+		ClientToScreen	(hWnd, &tl);
+		ClientToScreen	(hWnd, &br);
+		SetRect			(&r, tl.x, tl.y, br.x, br.y);
+	}
+	if ((r.right <= r.left) || (r.bottom <= r.top))	return false;
+
+	// one line whenever it changes: the first thing to look at if the cursor and the picture
+	// disagree again
+	static RECT			s_last	= { 0, 0, 0, 0 };
+	static u32			s_w		= 0, s_h = 0;
+	if (!EqualRect(&s_last, &r) || (s_w != Device.dwWidth) || (s_h != Device.dwHeight))
+	{
+		s_last			= r;
+		s_w				= Device.dwWidth;
+		s_h				= Device.dwHeight;
+		Msg				("* pointer space: %dx%d at (%d,%d), back buffer %dx%d, %s",
+						r.right - r.left, r.bottom - r.top, r.left, r.top, s_w, s_h,
+						psDeviceFlags.is(rsFullscreen) ? "fullscreen" : "window");
+	}
+	return				true;
+}
+
 // Pointer confinement. The exclusive DirectInput mouse used to do this implicitly; in a window
 // it is no longer exclusive (that is what stopped Windows eating the first click after alt-tab),
 // so without a clip the pointer walks off onto a second monitor mid-game. Recomputed from the
@@ -687,14 +741,8 @@ void CRenderDevice::UpdateCursorClip()
 {
 #ifndef DEDICATED_SERVER
 	if (!b_is_Active || b_is_Minimized || !m_hWnd)	{ ClipCursor(NULL); return; }
-	RECT rc;
-	if (!GetClientRect(m_hWnd, &rc) || rc.right <= rc.left || rc.bottom <= rc.top)
-		{ ClipCursor(NULL); return; }
-	POINT tl = { rc.left,  rc.top    };
-	POINT br = { rc.right, rc.bottom };
-	ClientToScreen(m_hWnd, &tl);
-	ClientToScreen(m_hWnd, &br);
-	RECT scr = { tl.x, tl.y, br.x, br.y };
+	RECT scr;
+	if (!pointer_screen_rect(scr))					{ ClipCursor(NULL); return; }
 	ClipCursor(&scr);
 #endif
 }

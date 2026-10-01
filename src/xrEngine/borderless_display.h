@@ -11,3 +11,7 @@ ENGINE_API void	borderless_sync_display		(HWND hWnd);
 ENGINE_API void	borderless_place_window		(HWND hWnd, u32 w, u32 h);
 // Give the desktop back if it was switched. Safe to call at any time.
 ENGINE_API void	borderless_restore_display	();
+
+// The rectangle the picture occupies on screen, in the coordinates GetCursorPos reports (the
+// client area in a window, the whole monitor in exclusive fullscreen). False if there is none.
+ENGINE_API bool	pointer_screen_rect			(RECT& r);

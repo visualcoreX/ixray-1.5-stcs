@@ -54,6 +54,18 @@ bool CRenderDevice::on_message	(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			Device.UpdateCursorClip();
 			return			(false);
 		}
+		// The display mode changed under the window -- going exclusive, coming back from alt-tab,
+		// or the borderless window taking the desktop to its own resolution. None of those is
+		// guaranteed to move the window afterwards, and the confinement has to follow the new
+		// screen, not the one it was measured on.
+		case WM_DISPLAYCHANGE : {
+#ifdef INGAME_EDITOR
+			if (editor())
+				break;
+#endif // #ifdef INGAME_EDITOR
+			Device.UpdateCursorClip();
+			return			(false);
+		}
 		case WM_CLOSE : {
 			Engine.Event.Defer("KERNEL:disconnect");
 			Engine.Event.Defer("KERNEL:quit");

@@ -5,6 +5,7 @@
 #include "UI.h"
 #include "HUDManager.h"
 #include "ui/UIStatic.h"
+#include "../xrEngine/borderless_display.h"
 
 constexpr auto C_DEFAULT = color_xrgb(0xff, 0xff, 0xff);
 
@@ -100,8 +101,20 @@ void CUICursor::UpdateCursorPosition()
 
 	vPrevPos = vPos;
 
-	vPos.x			= (float)p.x * (UI_BASE_WIDTH/(float)Device.dwWidth);
-	vPos.y			= (float)p.y * (UI_BASE_HEIGHT/(float)Device.dwHeight);
+	// Across the rectangle the picture really occupies, not across the back buffer: the two are
+	// in different units whenever the window is stretched, sits away from the corner of the
+	// screen, or Windows scales the mode (DSR / DLDSR) -- see pointer_screen_rect.
+	RECT		rc;
+	if (pointer_screen_rect(rc))
+	{
+		vPos.x		= float(p.x - rc.left) * (UI_BASE_WIDTH /float(rc.right  - rc.left));
+		vPos.y		= float(p.y - rc.top ) * (UI_BASE_HEIGHT/float(rc.bottom - rc.top ));
+	}
+	else
+	{
+		vPos.x		= (float)p.x * (UI_BASE_WIDTH/(float)Device.dwWidth);
+		vPos.y		= (float)p.y * (UI_BASE_HEIGHT/(float)Device.dwHeight);
+	}
 	clamp			(vPos.x, 0.f, UI_BASE_WIDTH);
 	clamp			(vPos.y, 0.f, UI_BASE_HEIGHT);
 }
@@ -110,8 +123,17 @@ void CUICursor::SetUICursorPosition(Fvector2 pos)
 {
 	vPos		= pos;
 	POINT		p;
-	p.x			= iFloor(vPos.x / (UI_BASE_WIDTH/(float)Device.dwWidth));
-	p.y			= iFloor(vPos.y / (UI_BASE_HEIGHT/(float)Device.dwHeight));
+	RECT		rc;
+	if (pointer_screen_rect(rc))
+	{
+		p.x		= rc.left + iFloor(vPos.x * float(rc.right  - rc.left) / UI_BASE_WIDTH );
+		p.y		= rc.top  + iFloor(vPos.y * float(rc.bottom - rc.top ) / UI_BASE_HEIGHT);
+	}
+	else
+	{
+		p.x		= iFloor(vPos.x / (UI_BASE_WIDTH/(float)Device.dwWidth));
+		p.y		= iFloor(vPos.y / (UI_BASE_HEIGHT/(float)Device.dwHeight));
+	}
 
 	SetCursorPos(p.x, p.y);
 }
