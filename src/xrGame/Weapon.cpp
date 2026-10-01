@@ -136,6 +136,7 @@ CWeapon::CWeapon()
 	m_scope_kick_zoom							= 0.f;
 	m_scope_ui_base_for							= NULL;
 	m_bScope2DZoomSet							= false;
+	m_bScope2DDofSet							= false;
 
 	m_pAmmo					= NULL;
 
@@ -3142,6 +3143,10 @@ Fvector CWeapon::LensDof() const
 //   * plain 2D scope / alter pose (lens faded out) -> nothing, so whatever is applied eases back out
 // Called on aim-in and whenever the answer can change mid-aim (the alter-pose toggle turns the lens
 // off and on, see [alter zoom]).
+// Speed for the flat (2D) scope's DOF: UpdateDof moves by td*speed of the whole distance per frame,
+// so anything this large lands in a single frame.
+static const float SCOPE_2D_DOF_SNAP = 1000.f;
+
 void CWeapon::RefreshZoomDOF()
 {
 	if (!IsZoomed())	return;
@@ -3157,7 +3162,9 @@ void CWeapon::RefreshZoomDOF()
 		return;
 	}
 	// no-op when nothing was applied (RestoreEffectorDOF checks m_dof_changed)
-	GamePersistent().RestoreEffectorDOF	(m_zoom_params.m_fZoomOutDofSpeed);
+	// ...and snapped when what is being taken away is the flat scope's DOF (the alter pose drops the
+	// picture at once): see UpdateScopePPZoom.
+	GamePersistent().RestoreEffectorDOF	(m_bScope2DDofSet ? SCOPE_2D_DOF_SNAP : m_zoom_params.m_fZoomOutDofSpeed);
 }
 
 void CWeapon::OnZoomOut()
@@ -3179,7 +3186,7 @@ void CWeapon::OnZoomOut()
 
 	// GS WeaponEvents.pas:1895 -- leaving aim eases the DOF back out over its OWN (slower) speed,
 	// which is most of what made vanilla's flat 0.2s in/out feel wrong next to GS.
-	GamePersistent().RestoreEffectorDOF	(m_zoom_params.m_fZoomOutDofSpeed);
+	GamePersistent().RestoreEffectorDOF	(m_bScope2DDofSet ? SCOPE_2D_DOF_SNAP : m_zoom_params.m_fZoomOutDofSpeed);	// the flat scope's DOF leaves with its picture
 	ResetSubStateTime					();
 }
 
@@ -4286,6 +4293,20 @@ void CWeapon::UpdateScopePPZoom()
 	// and put the eyepiece mask over the ladder sight.
 	const bool on_2d = act && act == Actor() && IsZoomed() && Scope2DReady()
 					&& ZoomTexture() && !IsAlterZoom();
+	// The flat scope takes the lens DOF too (lens_dof_*: the world around the tube blurs) and the
+	// renderer cuts the glass out of it -- dof_scope_hole, fed from the pp_zoom_circle published
+	// below. Armed HERE and not in RefreshZoomDOF because the picture arrives late (Scope2DReady):
+	// blurring from the keypress would smear the whole view before there is a tube to look through.
+	// OnZoomOut restores the DOF on its own; the second restore from here is then a no-op.
+	// SNAPPED both ways (SCOPE_2D_DOF_SNAP), not eased like the aim DOF: the flat picture itself
+	// cuts in and out in one frame, and a blur that eases in behind it reads as arriving late --
+	// while one that eases out after it leaves the whole view soft with no tube on screen.
+	if (on_2d != m_bScope2DDofSet)
+	{
+		if (on_2d)	GamePersistent().SetEffectorDOF		(LensDof(), SCOPE_2D_DOF_SNAP);
+		else		GamePersistent().RestoreEffectorDOF	(SCOPE_2D_DOF_SNAP);
+		m_bScope2DDofSet						= on_2d;
+	}
 	// The eye leaves the optic's axis whether the picture is a flat texture or the 3D lens, so the
 	// crescent belongs to both. The LENS gets the drift only -- there is no eyepiece circle to publish
 	// (the pp pass has nothing to draw inside; model_scope_lense.ps shades the glass itself, in its own
