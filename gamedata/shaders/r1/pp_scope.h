@@ -265,6 +265,42 @@ float pp_mask_factor(float2 uv)
 	return 1.0f - smoothstep(0.95f, 1.0f, length(d));	// the fade lands under the scope body
 }
 
+// FATIGUE (CActor, from the stamina), as on R2/R3 but without the sharpening (49 taps a pixel is no
+// price for the renderer the weak machines pick): m_pp_fatigue.x = desaturation towards the edges (and
+// the sepia riding it), y = vignette (pulsing), w = brightening in the middle; z (the sharpening) is
+// not read here.
+uniform float4 m_pp_fatigue;
+// the colour drained towards grey through pp_warp_mask (the middle keeps it, the edges lose
+// m_pp_fatigue.x of it) and a touch of sepia, riding the same amount (PP_FATIGUE_SEPIA x the
+// desaturation: 0.4 x 0.35 = 0.14 of sepia at full). PP_FATIGUE_SEPIA_CENTRE picks where: 1 = the
+// middle (the inverse mask: the eye's own area warms while the edges go grey), 0 = the edges with the
+// desaturation (the faded colour turns warm instead of just grey). Then the light moved outwards-in:
+// the middle lifted by m_pp_fatigue.w and the corners darkened by m_pp_fatigue.y, through ONE mask --
+// the lift fades out exactly where the vignette comes in, so the two never fight over the same pixels.
+// The vignette rides the same screen-shaped ellipse (1 = the middle of an edge, 1.41 = a corner):
+// nothing inside PP_VIGNETTE_R0, m_pp_fatigue.y of the light gone at the corners -- never black, the
+// game keeps that below 1.
+#define PP_FATIGUE_SEPIA	0.4f	// sepia mixed in, as a share of the desaturation
+#define PP_FATIGUE_SEPIA_CENTRE	1	// 1 = sepia in the middle, 0 = at the edges
+#define PP_FATIGUE_SEPIA_TINT	float3(1.25f, 1.0f, 0.72f) / 1.043f	// warm, keeping the luma
+#define PP_VIGNETTE_R0		0.45f
+#define PP_VIGNETTE_R1		1.41f
+float3 pp_fatigue_grade(float3 c, float2 uv)
+{
+	float l	= dot(c, float3(0.299f, 0.587f, 0.114f));
+	float e	= pp_warp_mask(uv);
+	c	= lerp(c, float3(l, l, l), m_pp_fatigue.x * e);
+#if PP_FATIGUE_SEPIA_CENTRE
+	e	= 1.0f - e;
+#endif
+	c	= lerp(c, l * (PP_FATIGUE_SEPIA_TINT), m_pp_fatigue.x * e * PP_FATIGUE_SEPIA);
+	float r	= length((uv - 0.5f) / 0.5f);
+	float v	= saturate((r - PP_VIGNETTE_R0) / (PP_VIGNETTE_R1 - PP_VIGNETTE_R0));
+	v	= v * v * (3.0f - 2.0f * v);
+	c	*= (1.0f + m_pp_fatigue.w * (1.0f - v)) * (1.0f - m_pp_fatigue.y * v);
+	return c;
+}
+
 // 2D NIGHT SCOPE BRIGHTNESS. The tint comes from the scope's PPE, whose green gain is a u32 colour and
 // clamps at 1.0 from the lowest brightness step up -- so the steps used to change only its noise. The
 // game fills m_pp_nv only while a night scope's flat picture owns m_pp_mask:

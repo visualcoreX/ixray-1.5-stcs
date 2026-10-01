@@ -42,6 +42,8 @@ float4 	main	( v2p I )	: COLOR
 	// the intoxication's colour swim, through the edge mask (m_pp_warp.y, see pp_intox_colour)
 	// .x too: the colour only ever runs with the intoxication itself (a stray default lit it in the menu)
 	if (m_pp_warp.y > 0.0f && m_pp_warp.x > 0.0001f)	image += 2.0f * pp_intox_colour() * pp_warp_mask(I.tc0);
+	// the fatigue: the colour drains and the corners darken (m_pp_fatigue, see pp_fatigue_grade)
+	if (m_pp_fatigue.x > 0.0f)	image = pp_fatigue_grade(image, I.tc0);
 //		image	= (image + c_brightness) * I.color;		// mad ?
 
 	// out

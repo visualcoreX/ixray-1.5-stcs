@@ -719,6 +719,7 @@ void CActor::net_Destroy	()
 	if (g_pGamePersistent)	g_pGamePersistent->pp_screen_warp.set(0.f, 1.f, 0.f, 0.f);
 	if (CGamePersistent* gp = smart_cast<CGamePersistent*>(g_pGamePersistent))	gp->m_intox_dof = 0.f;
 	if (g_pGamePersistent)	g_pGamePersistent->pp_blur = 0.f;
+	if (g_pGamePersistent)	g_pGamePersistent->pp_fatigue.set(0.f, 0.f, 0.f, 0.f);	// ...nor the fatigue grading
 	inherited::net_Destroy	();
 
 	if (m_holder_id != ALife::_OBJECT_ID(-1))
