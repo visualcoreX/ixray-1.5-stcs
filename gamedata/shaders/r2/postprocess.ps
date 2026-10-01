@@ -357,11 +357,12 @@ float3 pp_fatigue_sharp1(float2 uv, float3 c, float w)
 // m_pp_fatigue.x of it) and a touch of sepia, riding the same amount (PP_FATIGUE_SEPIA x the
 // desaturation: 0.4 x 0.35 = 0.14 of sepia at full). PP_FATIGUE_SEPIA_CENTRE picks where: 1 = the
 // middle (the inverse mask: the eye's own area warms while the edges go grey), 0 = the edges with the
-// desaturation (the faded colour turns warm instead of just grey). Then the light moved outwards-in: the middle lifted by m_pp_fatigue.w and the
-// corners darkened by m_pp_fatigue.y, through ONE mask -- the lift fades out exactly where the vignette
-// comes in, so the two never fight over the same pixels. The vignette rides the same screen-shaped ellipse
-// (1 = the middle of an edge, 1.41 = a corner): nothing inside PP_VIGNETTE_R0, m_pp_fatigue.y of the
-// light gone at the corners -- never black, the game keeps that below 1.
+// desaturation (the faded colour turns warm instead of just grey). Then the light moved outwards-in:
+// the middle lifted by m_pp_fatigue.w and the corners darkened by m_pp_fatigue.y, through ONE mask --
+// the lift fades out exactly where the vignette comes in, so the two never fight over the same pixels.
+// The vignette rides the same screen-shaped ellipse (1 = the middle of an edge, 1.41 = a corner):
+// nothing inside PP_VIGNETTE_R0, m_pp_fatigue.y of the light gone at the corners -- never black, the
+// game keeps that below 1.
 #define PP_FATIGUE_SEPIA	0.4f	// sepia mixed in, as a share of the desaturation
 #define PP_FATIGUE_SEPIA_CENTRE	1	// 1 = sepia in the middle, 0 = at the edges
 #define PP_FATIGUE_SEPIA_TINT	float3(1.25f, 1.0f, 0.72f) / 1.043f	// warm, keeping the luma
