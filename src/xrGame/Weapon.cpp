@@ -5218,14 +5218,17 @@ BOOL CWeapon::ParentMayHaveAimBullet	()
 {
 	CObject* O=H_Parent();
 	CEntityAlive* EA=smart_cast<CEntityAlive*>(O);
-	return EA->cast_actor()!=0;
+	return EA && EA->cast_actor()!=0;
 }
 
+// A weapon lying in the world has no parent, and one in a stash has a parent that is no entity:
+// neither is the actor's. The fire state asks this every frame once the magazine is empty, and a
+// weapon dropped mid-burst comes back online still in that state (wpn_state is saved).
 BOOL CWeapon::ParentIsActor	()
 {
 	CObject* O=H_Parent();
 	CEntityAlive* EA=smart_cast<CEntityAlive*>(O);
-	return EA->cast_actor()!=0;
+	return EA && EA->cast_actor()!=0;
 }
 
 extern u32 hud_adj_mode;
