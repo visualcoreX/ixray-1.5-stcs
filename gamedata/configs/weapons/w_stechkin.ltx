@@ -301,9 +301,12 @@ wanm_reload_jammed_a = idle_auto
 
 [wpn_stechkin_hud]:hud_base	; orig :autopistol_hud (GS base section)
 ; when the reloaded magazine STARTS SHOWING full, as a fraction of the reload anim.
-; _1 = TACTICAL reload (a round kept in the chamber): the engine default 0.4 refilled it too
-; early, so use the PM value. The reload from empty is fine as-is, so no _2 / fallback here.
+; _1 = exactly ONE round left in the magazine, _2 = any other count (empty, or two and more),
+; plain = fallback (ammo type change). All three are the PM values: the engine default 0.4
+; refilled it too early.
 ammo_reload_insert_mark_1 = 0.6
+ammo_reload_insert_mark_2 = 0.5	; orig absent (engine default 0.4)
+ammo_reload_insert_mark   = 0.5	; orig absent (engine default 0.4)
 zoom_hide_crosshair			= true
 zoom_dof_near = 0.48
 zoom_dof_focus = 0.53
