@@ -6,6 +6,9 @@
 
 #include "../xrRender/HW.h"
 #include "../../xrEngine/XR_IOConsole.h"
+#ifndef _EDITOR
+#	include "../../xrEngine/borderless_display.h"
+#endif
 #include "../../Include/xrAPI/xrAPI.h"
 
 #include "StateManager\dx10SamplerStateCache.h"
@@ -479,6 +482,10 @@ void CHW::Reset (HWND hwnd)
 
 	cd.Windowed = bWindowed;
 
+	// the desktop mode first, so exclusive mode never starts on a desktop the borderless window
+	// has switched: see borderless_display.h
+	borderless_sync_display	(hwnd);
+
 	m_pSwapChain->SetFullscreenState(!bWindowed, NULL);
 
 	DXGI_MODE_DESC	&desc = m_ChainDesc.BufferDesc;
@@ -749,16 +756,9 @@ void CHW::updateWindowProps(HWND m_hWnd)
 		SetWindowLong			( m_hWnd, GWL_STYLE, dwWindowStyle=(WS_POPUP|WS_VISIBLE) );
 		SetWindowLong			( m_hWnd, GWL_EXSTYLE, 0 );
 
-		RECT	desktop;
-		GetClientRect			(GetDesktopWindow(), &desktop);
-		const int w	= int(m_ChainDesc.BufferDesc.Width);
-		const int h	= int(m_ChainDesc.BufferDesc.Height);
-
-		SetWindowPos			(	m_hWnd, HWND_NOTOPMOST,
-									(desktop.right  - w) / 2,
-									(desktop.bottom - h) / 2,
-									w, h,
-									SWP_SHOWWINDOW|SWP_NOCOPYBITS|SWP_FRAMECHANGED );
+		// A resolution LARGER than the desktop (DSR / DLDSR) takes the desktop with it instead of
+		// hanging off the screen -- borderless_display.h.
+		borderless_place_window	(m_hWnd, m_ChainDesc.BufferDesc.Width, m_ChainDesc.BufferDesc.Height);
 	}
 	else if (bWindowed)		{
 		if (m_move_window) {

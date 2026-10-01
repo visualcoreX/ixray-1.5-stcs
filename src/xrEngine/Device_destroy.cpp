@@ -4,6 +4,7 @@
 #include "render.h"
 #include "IGame_Persistent.h"
 #include "xr_IOConsole.h"
+#include "borderless_display.h"
 
 void CRenderDevice::_Destroy	(BOOL bKeepTextures)
 {
@@ -32,6 +33,7 @@ void CRenderDevice::Destroy	(void) {
 
 	// real destroy
 	m_pRender->DestroyHW();
+	borderless_restore_display	();
 
 	//xr_delete					(Resources);
 	//HW.DestroyDevice			();
