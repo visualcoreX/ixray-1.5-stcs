@@ -86,7 +86,8 @@ BOOL CRenderTarget::u_need_PP	()
 	bool	_scope	= g_pGamePersistent && (g_pGamePersistent->pp_zoom_circle.x > 0.f
 					|| g_pGamePersistent->pp_mask_circle.z > 0.f
 					|| g_pGamePersistent->pp_screen_warp.x > 0.f
-					|| g_pGamePersistent->pp_blur > 0.f);	// the intoxication fisheye lives here too
+					|| g_pGamePersistent->pp_blur > 0.f	// the intoxication fisheye lives here too
+					|| g_pGamePersistent->pp_fatigue.x > 0.f);	// ...and the fatigue grading (x leads y and z)
 	return _blur || _gray || _noise || _dual || _cbase || _cadd || _scope;
 }
 
@@ -168,6 +169,10 @@ void CRenderTarget::phase_pp		()
 		static	shared_str	s_pp_blur		= "m_pp_blur";
 		RCache.set_c		(s_pp_blur, g_pGamePersistent ? g_pGamePersistent->pp_blur : 0.f,
 							 Device.dwWidth ? float(Device.dwHeight) / float(Device.dwWidth) : 1.f, 0.f, 0.f);
+		// the fatigue grading (pp_fatigue, CActor): x = desaturation, y = vignette, z = sharpening, w = brightening
+		static	shared_str	s_pp_fatigue	= "m_pp_fatigue";
+		const Fvector4 fa = g_pGamePersistent ? g_pGamePersistent->pp_fatigue : Fvector4().set(0.f,0.f,0.f,0.f);
+		RCache.set_c		(s_pp_fatigue, fa.x, fa.y, fa.z, fa.w);
 	}
 	static	shared_str	s_brightness	= "c_brightness";
 	RCache.set_c		(s_brightness,p_brightness.x,p_brightness.y,p_brightness.z,0);

@@ -1298,6 +1298,70 @@ void CActor::UpdateCL	()
 		}
 	}
 
+	// FATIGUE GRADING, from the stamina (conditions().GetPower(), 0..1). Below FATIGUE_FROM the colour starts to
+	// drain towards the edges, the middle of the picture to lighten and the corners to darken (a vignette; the
+	// lift fades out where it comes in), all full at FATIGUE_FULL. Below FATIGUE_SHARP_FROM the whole picture also sharpens into
+	// soft halos (wide unsharp mask, see pp_fatigue_sharp), full at FATIGUE_SHARP_FULL. The vignette breathes
+	// with the intoxication's DOF pulse shape (short in/out around the peak) at twice its rate, its swing
+	// growing with the fatigue, so it is most noticeable at FATIGUE_FULL. Smooth ramps (smoothstep) so no threshold
+	// shows as a step. Coming in it follows the stamina closely; going out (rested, a drink) it can fall no
+	// faster than a full fade over FATIGUE_FADE_OUT seconds.
+	if (g_pGamePersistent)
+	{
+		const float		FATIGUE_FROM			= 0.75f;	// stamina where the colour drains, the picture lightens, the corners darken...
+		const float		FATIGUE_FULL			= 0.2f;		// ...and where that is at full strength
+		const float		FATIGUE_SHARP_FROM		= 0.5f;		// stamina where the sharpening starts...
+		const float		FATIGUE_SHARP_FULL		= 0.1f;		// ...and where it is at full strength
+		const float		FATIGUE_DESAT			= 0.35f;	// share of the colour gone at full, at the edges (0.35 = 0.65 saturation)
+		const float		FATIGUE_BRIGHTEN		= 0.15f;	// the middle lifted this much at full (0.15 = x1.15), gone where the vignette is
+		const float		FATIGUE_VIGNETTE		= 0.5625f;	// how much the corners darken at full, steady part
+		// (steady + pulse must stay well under 1: the corners would go black at a beat's peak)
+		const float		FATIGUE_VIGNETTE_PULSE	= 0.25f;	// ...and what a pulse's peak adds on top at full
+		const float		FATIGUE_SHARP			= 1.0f;		// edge sharpening at full (unsharp mask amount)
+		const float		FATIGUE_FADE_OUT		= 3.5f;		// seconds for a full fade back out
+		const float		FATIGUE_FADE_IN			= 4.f;		// 1/seconds: the low-pass following the stamina down
+		// the pulse: the intoxication's DOF one (see INTOX_PERIOD_*, INTOX_SURGE, INTOX_DOF_IN/OUT above)
+		const float		FATIGUE_PERIOD_SLOW		= 1.6f;		// seconds per pulse as it just shows (half the intoxication's)...
+		const float		FATIGUE_PERIOD_FAST		= 1.2f;		// ...and at full fatigue
+		const float		FATIGUE_PULSE_PEAK		= 0.18f;	// share of the period where the pulse peaks
+		const float		FATIGUE_PULSE_IN		= 0.13f;	// share of the period to come in, ending at the peak
+		const float		FATIGUE_PULSE_OUT		= 0.26f;	// ...and to go back out after it
+		static float	s_low = 0.f, s_sharp = 0.f, s_phase = 0.f, s_pulse = 0.f;
+		auto ramp = [](float p, float from, float to) { float x = (from - p) / (from - to); clamp(x, 0.f, 1.f); return x * x * (3.f - 2.f * x); };
+		auto follow = [&](float& v, float target)
+		{
+			if (target > v)	v += (target - v) * _min(1.f, Device.fTimeDelta * FATIGUE_FADE_IN);
+			else			v = _max(target, v - Device.fTimeDelta / FATIGUE_FADE_OUT);
+		};
+		const float		power = g_Alive() ? conditions().GetPower() : 1.f;
+		follow(s_low,	ramp(power, FATIGUE_FROM,		FATIGUE_FULL));
+		follow(s_sharp,	ramp(power, FATIGUE_SHARP_FROM,	FATIGUE_SHARP_FULL));
+		if (s_low < 0.001f)		s_low = 0.f;
+		if (s_sharp < 0.001f)	s_sharp = 0.f;
+		{
+			const float period = FATIGUE_PERIOD_SLOW + (FATIGUE_PERIOD_FAST - FATIGUE_PERIOD_SLOW) * s_low;
+			s_phase += Device.fTimeDelta / period;
+			s_phase -= floorf(s_phase);
+			// quintic ramps (smootherstep), as the intoxication's DOF: no perceptible start or stop
+			auto ease = [](float x) { clamp(x, 0.f, 1.f); return x * x * x * (x * (x * 6.f - 15.f) + 10.f); };
+			const float from = FATIGUE_PULSE_PEAK - FATIGUE_PULSE_IN, to = FATIGUE_PULSE_PEAK + FATIGUE_PULSE_OUT;
+			float pulse_raw = 0.f;
+			if (s_phase >= from && s_phase < FATIGUE_PULSE_PEAK)
+				pulse_raw = ease((s_phase - from) / FATIGUE_PULSE_IN);
+			else if (s_phase >= FATIGUE_PULSE_PEAK && s_phase < to)
+				pulse_raw = 1.f - ease((s_phase - FATIGUE_PULSE_PEAK) / FATIGUE_PULSE_OUT);
+			s_pulse += (pulse_raw - s_pulse) * _min(1.f, Device.fTimeDelta * 12.f);	// a light low-pass on top
+			if (s_low <= 0.f)	{ s_phase = 0.f; s_pulse = 0.f; }
+		}
+		// the swing grows with the fatigue squared: barely there at the start, plain at FATIGUE_FULL
+		const float		vignette = s_low * FATIGUE_VIGNETTE + s_low * s_low * FATIGUE_VIGNETTE_PULSE * s_pulse;
+		// x leads (the render only runs the pass on x, R2)
+		g_pGamePersistent->pp_fatigue.set(_max(s_low, s_sharp) > 0.f ? _max(FATIGUE_DESAT * s_low, 0.0001f) : 0.f,
+										  vignette,
+										  FATIGUE_SHARP * s_sharp,
+										  FATIGUE_BRIGHTEN * s_low);
+	}
+
 	UpdatePlannedMonsterKick	();
 	UpdateDelayedDeviceSwitch	();		// fire any pending delayed torch/NV toggle
 	UpdateElectronicsProblems	();		// GS blowout: glitch/disable devices during a surge

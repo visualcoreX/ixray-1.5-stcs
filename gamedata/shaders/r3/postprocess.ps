@@ -301,6 +301,91 @@ float3 pp_blur1(float2 uv, float3 c)
 	return sum / 13.0f;
 }
 
+// FATIGUE (CActor, from the stamina): m_pp_fatigue.x = desaturation (share of the colour gone, towards the
+// edges), y = vignette (how much the corners darken, pulsing), z = sharpening (over the whole screen),
+// w = brightening in the middle (0.15 = x1.15), so the vignette does not sink the whole picture.
+// The sharpening is not meant to make the picture clearer: it is a flaw to read as the body giving out.
+// An unsharp mask against a WIDE blur (four poisson rings out to PP_FATIGUE_R of the screen height) -- broad, soft
+// halos along the shapes rather than single-pixel grain -- on luma only, so no colour fringes.
+// PP_FATIGUE_CLAMP caps how far one pixel is pushed, so the halos stay a haze and never burn out.
+// The whole push (cap included) is then scaled from PP_FATIGUE_CENTRE in the middle to PP_FATIGUE_EDGE
+// at the edges, through pp_warp_mask: the halos weigh most where the eye is not looking.
+uniform float4 m_pp_fatigue;
+#define PP_FATIGUE_R		0.015f	// radius of the blur the sharpening works against, share of the screen height
+							// (16 px at 1080p; was 8 px fixed -- too fine to survive a video recording)
+#define PP_FATIGUE_CLAMP	0.25f	// the most one pixel's brightness may be pushed (before the scale below)
+#define PP_FATIGUE_CENTRE	0.25f	// share of it in the middle of the screen...
+#define PP_FATIGUE_EDGE		1.0f	// ...and at the edges
+float pp_fatigue_sharp_weight(float2 uv)
+{
+	return lerp(PP_FATIGUE_CENTRE, PP_FATIGUE_EDGE, pp_warp_mask(uv));
+}
+
+float3 pp_fatigue_sharp_mix(float3 c, float3 blur, float w)
+{
+	float d = dot(c - blur, float3(0.299f, 0.587f, 0.114f));
+	return c + w * clamp(d * m_pp_fatigue.z, -PP_FATIGUE_CLAMP, PP_FATIGUE_CLAMP);
+}
+
+// (lod 0 sampling: pp_fatigue_sharp1 runs in a branch that differs per pixel)
+float3 pp_fatigue_sharp0(float2 uv, float3 c, float w)
+{
+	float2 rad	= screen_res.zw * (screen_res.y * PP_FATIGUE_R);	// round, and the same share of the frame at any resolution
+	float3 sum	= c;
+	for (int i = 0; i < 12; i++)
+	{
+		sum += s_base0.SampleLevel(smp_rtlinear, uv + PP_BLUR_TAPS[i] * rad, 0.0f).rgb;
+		sum += s_base0.SampleLevel(smp_rtlinear, uv - PP_BLUR_TAPS[i] * (rad * 0.74f), 0.0f).rgb;	// the next ring, turned round
+		sum += s_base0.SampleLevel(smp_rtlinear, uv + PP_BLUR_TAPS[i].yx * (rad * 0.49f), 0.0f).rgb;	// ...mirrored
+		sum += s_base0.SampleLevel(smp_rtlinear, uv - PP_BLUR_TAPS[i].yx * (rad * 0.24f), 0.0f).rgb;	// ...and both
+	}
+	return pp_fatigue_sharp_mix(c, sum / 49.0f, w);
+}
+
+float3 pp_fatigue_sharp1(float2 uv, float3 c, float w)
+{
+	float2 rad	= screen_res.zw * (screen_res.y * PP_FATIGUE_R);	// round, and the same share of the frame at any resolution
+	float3 sum	= c;
+	for (int i = 0; i < 12; i++)
+	{
+		sum += s_base1.SampleLevel(smp_rtlinear, uv + PP_BLUR_TAPS[i] * rad, 0.0f).rgb;
+		sum += s_base1.SampleLevel(smp_rtlinear, uv - PP_BLUR_TAPS[i] * (rad * 0.74f), 0.0f).rgb;	// the next ring, turned round
+		sum += s_base1.SampleLevel(smp_rtlinear, uv + PP_BLUR_TAPS[i].yx * (rad * 0.49f), 0.0f).rgb;	// ...mirrored
+		sum += s_base1.SampleLevel(smp_rtlinear, uv - PP_BLUR_TAPS[i].yx * (rad * 0.24f), 0.0f).rgb;	// ...and both
+	}
+	return pp_fatigue_sharp_mix(c, sum / 49.0f, w);
+}
+
+// the colour drained towards grey through pp_warp_mask (the middle keeps it, the edges lose
+// m_pp_fatigue.x of it) and a touch of sepia, riding the same amount (PP_FATIGUE_SEPIA x the
+// desaturation: 0.4 x 0.35 = 0.14 of sepia at full). PP_FATIGUE_SEPIA_CENTRE picks where: 1 = the
+// middle (the inverse mask: the eye's own area warms while the edges go grey), 0 = the edges with the
+// desaturation (the faded colour turns warm instead of just grey). Then the light moved outwards-in: the middle lifted by m_pp_fatigue.w and the
+// corners darkened by m_pp_fatigue.y, through ONE mask -- the lift fades out exactly where the vignette
+// comes in, so the two never fight over the same pixels. The vignette rides the same screen-shaped ellipse
+// (1 = the middle of an edge, 1.41 = a corner): nothing inside PP_VIGNETTE_R0, m_pp_fatigue.y of the
+// light gone at the corners -- never black, the game keeps that below 1.
+#define PP_FATIGUE_SEPIA	0.4f	// sepia mixed in, as a share of the desaturation
+#define PP_FATIGUE_SEPIA_CENTRE	1	// 1 = sepia in the middle, 0 = at the edges
+#define PP_FATIGUE_SEPIA_TINT	float3(1.25f, 1.0f, 0.72f) / 1.043f	// warm, keeping the luma
+#define PP_VIGNETTE_R0		0.45f
+#define PP_VIGNETTE_R1		1.41f
+float3 pp_fatigue_grade(float3 c, float2 uv)
+{
+	float l	= dot(c, float3(0.299f, 0.587f, 0.114f));
+	float e	= pp_warp_mask(uv);
+	c	= lerp(c, float3(l, l, l), m_pp_fatigue.x * e);
+#if PP_FATIGUE_SEPIA_CENTRE
+	e	= 1.0f - e;
+#endif
+	c	= lerp(c, l * (PP_FATIGUE_SEPIA_TINT), m_pp_fatigue.x * e * PP_FATIGUE_SEPIA);
+	float r	= length((uv - 0.5f) / 0.5f);
+	float v	= saturate((r - PP_VIGNETTE_R0) / (PP_VIGNETTE_R1 - PP_VIGNETTE_R0));
+	v	= v * v * (3.0f - 2.0f * v);
+	c	*= (1.0f + m_pp_fatigue.w * (1.0f - v)) * (1.0f - m_pp_fatigue.y * v);
+	return c;
+}
+
 float pp_mask_factor(float2 uv)
 {
 	if (m_pp_mask.z <= 0.0f)	return 1.0f;
@@ -366,7 +451,15 @@ float4 main( p_postpr I ) : SV_Target
 	float3	t_0 	= pp_cubic0(z_0, soft);
 	float3	t_1 	= pp_cubic1(z_1, soft);
 	t_0		= pp_blur0(z_0, t_0);				// the intoxication blur while a 3D lens is aimed
-	t_1		= pp_blur1(z_1, t_1);	
+	t_1		= pp_blur1(z_1, t_1);
+	if (m_pp_fatigue.z > 0.0f)						// the fatigue: the whole picture sharpens, the edges more
+	{
+		float	fw	= pp_fatigue_sharp_weight(I.Tex0);
+		t_0		= pp_fatigue_sharp0(z_0, t_0, fw);
+		// both bases are the same target: with no duality split the second one is the same picture
+		if (any(z_1 != z_0))	t_1 = pp_fatigue_sharp1(z_1, t_1, fw);
+		else					t_1 = t_0;
+	}
 	float3 	image	= (t_0+t_1)*.5;					// add_d2
 	{	float2 ab = pp_abber_offset(z_0);			// the glass splits the colours towards its rim
 		if (ab.x > 0.0f)
@@ -386,6 +479,8 @@ float4 main( p_postpr I ) : SV_Target
 	// the intoxication's colour swim, through the edge mask (m_pp_warp.y, see pp_intox_colour)
 	// .x too: the colour only ever runs with the intoxication itself (a stray default lit it in the menu)
 	if (m_pp_warp.y > 0.0f && m_pp_warp.x > 0.0001f)	image += 2.0f * pp_intox_colour() * pp_warp_mask(I.Tex0);
+	// the fatigue: the colour drains and the corners darken (m_pp_fatigue, see pp_fatigue_grade)
+	if (m_pp_fatigue.x > 0.0f)	image = pp_fatigue_grade(image, I.Tex0);
 //		image	= (image + c_brightness) * I.Color;		// mad ?
 
 	// out

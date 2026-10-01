@@ -43,6 +43,7 @@ IGame_Persistent::IGame_Persistent	()
 	pp_screen_warp.set				(0.f, 1.f, 0.f, 0.f);	// no fisheye, fov untouched, no colour (z was the aspect once -- 1 here lit the colour swim in the menu)
 	dof_kernel_mul					= 1.f;					// the DOF blur exactly as r2_dof_kernel says
 	pp_blur							= 0.f;					// no blur over the final picture
+	pp_fatigue.set					(0.f, 0.f, 0.f, 0.f);	// no fatigue grading
 	m_bLensFrameNow					= false;
 	m_bLensAimActive				= false;
 	m_bLensSaveValid				= false;

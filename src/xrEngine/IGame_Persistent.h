@@ -89,6 +89,11 @@ public:
 	// lens samples a capture taken before DOF happens and the aim owns the DOF anyway, so the blur is laid
 	// over everything instead -- lens and weapon alike. Set by CActor.
 	float							pp_blur;
+	// Fatigue grading over the finished picture (pp pass), filled by CActor from the stamina:
+	// x = desaturation at the edges (0 = full colour, 0.5 = half of it gone), y = vignette (share of the light
+	// gone in the corners, pulsing), z = sharpening amount over the whole screen (0 = off), w = brightening
+	// in the middle (0.15 = x1.15), fading out where the vignette comes in. All zero = the pass leaves the picture alone.
+	Fvector4						pp_fatigue;
 
 	// Gunslinger 3D PiP double-render: true on a "lens frame" -- the whole scene is rendered at the
 	// magnified scope FOV with the first-person HUD suppressed, captured into $user$scope, and NOT
