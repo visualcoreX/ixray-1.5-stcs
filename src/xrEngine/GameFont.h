@@ -98,6 +98,8 @@ public:
 	float					SizeOf_			( const char cChar );  // only ANSII 
 
 	float					CurrentHeight_	();
+	// How many times larger than its texture this font is drawn (GameFont.cpp, font_resolution_scale).
+	float					ResScale		() const;
 
 	void					OutSetI			(float x, float y);
 	void					OutSet			(float x, float y);
