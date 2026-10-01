@@ -236,7 +236,8 @@ scope_y = 2
 scope_name				= wpn_addon_scope_kashtan
 scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
 bones					= scope_kashtan
-scope_lens_factor		= 2.0
+; x the glass share of the screen (2 x scope_nv_mask_radius = 0.8) = 2.8x, the real 1P78's power
+scope_lens_factor		= 3.5	; orig 2.0 (= 1.6x; GS min/max_lens_factor is 5)
 scope_hud_fov_aim		= 0.20	; GS 0.45
 zoom_mouse_sense_koef	= 0.5
 aim_hud_offset_pos		= 0.002500,-0.005800,0.05
@@ -2687,6 +2688,7 @@ scope_name 					= wpn_addon_scope_kashtan
 scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
 scope_x              	= 66                ; offset in inventory icon
 scope_y                 = 0
+scope_lens_factor		= 3.5	; orig absent (4.0 from scope_ak74m_base) -- 2.8x, same as scope_kashtan_ak74m
 scope_hud_fov_aim		= 0.20	; = scope_kashtan_ak74m (GS gives both weapons the same hud_fov_zoom_factor); orig 0.253 from the 0.5625x conversion
 use_scope_anims = true ;говорит, что надо использовать анимации с суффиксом _scope в прицеливании с данным прицелом
 
@@ -2931,7 +2933,7 @@ inertion_aim_origin_offset = 0.01
 inertion_aim_speed = 10 
 ; engine-only optic keys, copied from scope_kashtan_ak74m (GS does not ship them)
 zoom_mouse_sense_koef     = 0.5
-scope_lens_factor         = 2.0
+scope_lens_factor         = 3.5	; orig 2.0 -- 2.8x, same as scope_kashtan_ak74m
 
 ; ==============================================================================
 ; PKM "Nimble" optics -- the same three collimator/ELCAN sections the mp5 and the
