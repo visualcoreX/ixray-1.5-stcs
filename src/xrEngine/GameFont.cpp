@@ -13,6 +13,29 @@ unsigned short int mbhMulti2Wide
 extern ENGINE_API BOOL g_bRendering; 
 ENGINE_API Fvector2		g_current_font_scale={1.0f,1.0f};
 
+// TEXT THAT KEEPS ITS SIZE ON THE SCREEN.
+//
+// The fonts ship as three bitmap sets -- for 800x600, 1024x768 and 1600x1200 (texture800 /
+// texture / texture1600, picked by screen height in CFontManager::GetFontTexName) -- and the
+// glyphs are drawn texel for pixel. The window layout scales with the resolution; the text does
+// not. Up to 1200 lines the sets keep it roughly in proportion, past that there is no larger set
+// and every further line of resolution makes the text smaller against everything around it: at
+// 2160 it is little more than half its intended size.
+// So above the last set's own resolution the glyphs are scaled by the same ratio the layout is.
+// Below it nothing changes. The device-independent fonts (console, statistics) are left alone:
+// their height is already given as a share of the screen.
+static const float FONT_LAST_SET_HEIGHT = 1200.f;		// what texture1600 was drawn for
+ENGINE_API float font_resolution_scale()
+{
+	const float h = float(Device.dwHeight);
+	return (h > FONT_LAST_SET_HEIGHT) ? (h / FONT_LAST_SET_HEIGHT) : 1.f;
+}
+
+float CGameFont::ResScale() const
+{
+	return (uFlags & fsDeviceIndependent) ? 1.f : font_resolution_scale();
+}
+
 #include "../Include/xrAPI/xrAPI.h"
 #include "../Include/xrRender/RenderFactory.h"
 #include "../Include/xrRender/FontRender.h"
@@ -154,7 +177,7 @@ void CGameFont::Initialize		(LPCSTR cShader, LPCSTR cTextureName)
 		}
 	}
 
-	fCurrentHeight				= fHeight;
+	fCurrentHeight				= fHeight * ResScale();	// re-run on every device reset (CFontManager::OnDeviceReset)
 
 	CInifile::Destroy			(ini);
 
@@ -212,6 +235,7 @@ u16 CGameFont::GetCutLengthPos( float fTargetWidth , const char * pszText )
 
 		if ( IsNeedSpaceCharacter( wsStr[ i ] ) )
 			fDelta += fXStep;
+		fDelta *= ResScale();
 
 		if ( ( fCurWidth + fDelta ) > fTargetWidth )
 			break;
@@ -238,6 +262,7 @@ u16 CGameFont::SplitByWidth( u16 * puBuffer , u16 uBufferSize , float fTargetWid
 
 		if ( IsNeedSpaceCharacter( wsStr[ i ] ) )
 			fDelta += fXStep;
+		fDelta *= ResScale();
 
 		if ( 
 				( ( fCurWidth + fDelta ) > fTargetWidth ) && // overlength
@@ -325,7 +350,7 @@ void CGameFont::OutSkip( float val )
 
 float CGameFont::SizeOf_( const char cChar )
 {
-	return ( GetCharTC( ( u16 ) ( u8 ) ( ( ( IsMultibyte() && cChar == ' ' ) ) ? 0 : cChar) ).z * vInterval.x );
+	return ( GetCharTC( ( u16 ) ( u8 ) ( ( ( IsMultibyte() && cChar == ' ' ) ) ? 0 : cChar) ).z * vInterval.x * ResScale() );
 }
 
 float CGameFont::SizeOf_( LPCSTR s )
@@ -347,7 +372,7 @@ float CGameFont::SizeOf_( LPCSTR s )
 		for (int j=0; j<len; j++)
 			X			+= GetCharTC( ( u16 ) ( u8 ) s[ j ] ).z;
 
-	return				(X*vInterval.x);
+	return				(X*vInterval.x*ResScale());
 }
 
 float CGameFont::SizeOf_( const wide_char *wsStr )
@@ -366,7 +391,7 @@ float CGameFont::SizeOf_( const wide_char *wsStr )
 			X += fDelta;
 		}
 
-	return ( X * vInterval.x );
+	return ( X * vInterval.x * ResScale() );
 }
 
 float CGameFont::CurrentHeight_	()

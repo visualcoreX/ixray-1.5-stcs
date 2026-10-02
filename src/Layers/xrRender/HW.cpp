@@ -6,6 +6,9 @@
 
 #include "HW.h"
 #include "../../xrEngine/XR_IOConsole.h"
+#ifndef _EDITOR
+#	include "../../xrEngine/borderless_display.h"
+#endif
 
 #ifndef _EDITOR
 	void	fill_vid_mode_list			(CHW* _hw);
@@ -64,6 +67,8 @@ void CHW::Reset		(HWND hwnd)
 		bWindowed		= !psDeviceFlags.is	(rsFullscreen);
 
 	selectResolution		(DevPP.BackBufferWidth, DevPP.BackBufferHeight, bWindowed);
+	// the desktop mode first: see borderless_display.h
+	borderless_sync_display	(hwnd);
 	// Windoze
 	DevPP.SwapEffect			= bWindowed?D3DSWAPEFFECT_COPY:D3DSWAPEFFECT_DISCARD;
 	DevPP.Windowed				= bWindowed;
@@ -501,16 +506,11 @@ void	CHW::updateWindowProps	(HWND m_hWnd)
 		SetWindowLong			( m_hWnd, GWL_STYLE, dwWindowStyle=(WS_POPUP|WS_VISIBLE) );
 		SetWindowLong			( m_hWnd, GWL_EXSTYLE, 0 );
 
-		RECT	desktop;
-		GetClientRect			(GetDesktopWindow(), &desktop);
-		const int w	= int(DevPP.BackBufferWidth);
-		const int h	= int(DevPP.BackBufferHeight);
-
-		SetWindowPos			(	m_hWnd, HWND_NOTOPMOST,
-									(desktop.right  - w) / 2,
-									(desktop.bottom - h) / 2,
-									w, h,
-									SWP_SHOWWINDOW|SWP_NOCOPYBITS|SWP_FRAMECHANGED );
+		// A resolution LARGER than the desktop (DSR / DLDSR) takes the desktop with it instead of
+		// hanging off the screen -- borderless_display.h.
+#ifndef _EDITOR
+		borderless_place_window	(m_hWnd, DevPP.BackBufferWidth, DevPP.BackBufferHeight);
+#endif
 	}
 	else if (bWindowed)		{
 		if (m_move_window) {

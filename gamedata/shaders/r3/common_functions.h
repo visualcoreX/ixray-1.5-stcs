@@ -357,6 +357,16 @@ uint alpha_to_coverage ( float alpha, float2 pos2d )
 	  mask = 0xf;
  }
 
+	// WHICH samples, not only how many. The masks above always start at sample 0, so a pixel with
+	// ANY coverage has sample 0 covered -- and everything that reads one sample per pixel (the
+	// half-res depth the ambient occlusion works from, the depth of field, ...) saw foliage as solid
+	// wherever it was a quarter there. 4x and 8x came out visibly thicker and darker than no AA,
+	// while 2x, whose mask already alternates with the pixel, did not. Rotate the mask by the
+	// pixel position so each sample is covered in proportion to the coverage -- the rotations the
+	// comments above list and never applied.
+	uint rot = ( uint(pos2d.x) & 1 ) | ( ( uint(pos2d.y) & 1 ) << 1 );
+	mask = ( ( mask << rot ) | ( mask >> ( 4 - rot ) ) ) & 0xf;
+
 	return mask;
 }
 #endif
@@ -439,6 +449,10 @@ uint alpha_to_coverage ( float alpha, float2 pos2d )
 			mask = 0xFF;
 	 }
   }
+
+	// the same rotation as the 4x mask above
+	uint rot = ( uint(pos2d.x) & 3 ) | ( ( uint(pos2d.y) & 1 ) << 2 );
+	mask = ( ( mask << rot ) | ( mask >> ( 8 - rot ) ) ) & 0xff;
 
 	return mask;
 }

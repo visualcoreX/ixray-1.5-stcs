@@ -65,9 +65,14 @@ void CRenderDevice::Initialize			()
         SetRect			( &rc, 0, 0, 640, 480 );
         AdjustWindowRect( &rc, m_dwWindowStyle, FALSE );
 
-        // Create the render window
+        // Create the render window -- on the PRIMARY monitor, always. CW_USEDEFAULT lets Windows
+        // open it wherever the game was launched from, and everything downstream follows the
+        // window: DXGI takes the output it sits on for exclusive fullscreen, so starting the game
+        // from the second monitor ran it there -- in a mode list read from the first one
+        // (EnumOutputs(0)) -- and left the primary black. The windowed and borderless placements
+        // already assume the primary desktop. (0,0) is its origin by definition.
 		m_hWnd = CreateWindow( wndclass, "S.T.A.L.K.E.R.: Clear Sky", m_dwWindowStyle,
-                               /*rc.left, rc.top, */CW_USEDEFAULT, CW_USEDEFAULT,
+                               /*rc.left, rc.top, CW_USEDEFAULT, CW_USEDEFAULT,*/ 0, 0,
                                (rc.right-rc.left), (rc.bottom-rc.top), 0L,
                                0, hInstance, 0L );
     }

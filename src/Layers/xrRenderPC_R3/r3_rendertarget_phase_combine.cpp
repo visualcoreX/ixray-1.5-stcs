@@ -410,6 +410,9 @@ void	CRenderTarget::phase_combine	()
 		RCache.set_c				("dof_params",	dof.x, dof.y, dof.z, ps_r2_dof_sky);
 //.		RCache.set_c				("dof_params",	ps_r2_dof.x, ps_r2_dof.y, ps_r2_dof.z, ps_r2_dof_sky);
 		RCache.set_c				("dof_kernel",	vDofKernel.x, vDofKernel.y, ps_r2_dof_kernel_size * g_pGamePersistent->dof_kernel_mul, 0);
+		// the glass of a flat scope is cut out of the DOF (dof.h, DOFHole): the eyepiece circle the
+		// weapon publishes for the post-process pass, 0 while there is no 2D picture
+		RCache.set_c				("dof_scope_hole",	g_pGamePersistent->pp_zoom_circle.x, g_pGamePersistent->pp_zoom_circle.y, 0, 0);
 		
 		RCache.set_Geometry			(g_aa_AA);
 		RCache.Render				(D3DPT_TRIANGLELIST,Offset,0,4,0,2);

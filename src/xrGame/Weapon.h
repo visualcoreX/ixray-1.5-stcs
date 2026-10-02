@@ -566,6 +566,7 @@ protected:
 	xr_vector<Frect>		m_scope_ui_base;		// the picture's rects before any jolt
 	CUIWindow*				m_scope_ui_base_for;	// which window those rects belong to
 	bool					m_bScope2DZoomSet;	// ...and the digital-zoom circle
+	bool					m_bScope2DDofSet;	// the lens DOF is armed for a flat scope picture
 
 	InertionData	m_base_inertion;
 	InertionData	m_zoom_inertion;

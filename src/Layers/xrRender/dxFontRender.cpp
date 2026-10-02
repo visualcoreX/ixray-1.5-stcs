@@ -108,7 +108,8 @@ void dxFontRender::OnRender(CGameFont &owner)
 
 					l = owner.IsMultibyte() ? owner.GetCharTC( wsStr[ 1 + j ] ) : owner.GetCharTC( ( u16 ) ( u8 ) PS.string[j] );
 
-					float scw		= l.z * g_current_font_scale.x * PS.width_scale;
+					// x ResScale: the height already carries it (fCurrentHeight), the width has to follow
+					float scw		= l.z * g_current_font_scale.x * PS.width_scale * owner.ResScale();
 
 					float fTCWidth	= l.z/owner.vTS.x;
 
@@ -131,9 +132,9 @@ void dxFontRender::OnRender(CGameFont &owner)
 					}
 					X += scw * owner.vInterval.x;
 					if ( owner.IsMultibyte() ) {
-						X -= 2;
+						X -= 2 * owner.ResScale();
 						if ( IsNeedSpaceCharacter( wsStr[ 1 + j ] ) )
-							X += owner.fXStep;
+							X += owner.fXStep * owner.ResScale();
 					}
 				}
 			}

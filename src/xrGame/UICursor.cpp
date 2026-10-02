@@ -5,6 +5,7 @@
 #include "UI.h"
 #include "HUDManager.h"
 #include "ui/UIStatic.h"
+#include "../xrEngine/borderless_display.h"
 
 constexpr auto C_DEFAULT = color_xrgb(0xff, 0xff, 0xff);
 
@@ -48,14 +49,14 @@ void CUICursor::InitInternal()
 //--------------------------------------------------------------------
 u32 last_render_frame = 0;
 extern bool g_pda_rt_pass;			// true only while the PDA window is drawn into $user$ui
-extern bool gwr_pda_screen_active();	// the 3D PDA is in hand -> the UI lives on its screen
+extern bool gwr_pda_owns_cursor();		// the 3D PDA window is open -> the cursor lives on its screen
 
 void CUICursor::OnRender	()
 {
 	if( !IsVisible() ) return;
 	// 3D PDA: the cursor is already drawn into the PDA's screen texture; drawing it again in the
 	// normal pass is what put a second cursor over the whole viewport.
-	if( !g_pda_rt_pass && gwr_pda_screen_active() ) return;
+	if( !g_pda_rt_pass && gwr_pda_owns_cursor() ) return;
 #ifdef DEBUG
 	VERIFY(last_render_frame != Device.dwFrame);
 	last_render_frame = Device.dwFrame;
@@ -100,8 +101,20 @@ void CUICursor::UpdateCursorPosition()
 
 	vPrevPos = vPos;
 
-	vPos.x			= (float)p.x * (UI_BASE_WIDTH/(float)Device.dwWidth);
-	vPos.y			= (float)p.y * (UI_BASE_HEIGHT/(float)Device.dwHeight);
+	// Across the rectangle the picture really occupies, not across the back buffer: the two are
+	// in different units whenever the window is stretched, sits away from the corner of the
+	// screen, or Windows scales the mode (DSR / DLDSR) -- see pointer_screen_rect.
+	RECT		rc;
+	if (pointer_screen_rect(rc))
+	{
+		vPos.x		= float(p.x - rc.left) * (UI_BASE_WIDTH /float(rc.right  - rc.left));
+		vPos.y		= float(p.y - rc.top ) * (UI_BASE_HEIGHT/float(rc.bottom - rc.top ));
+	}
+	else
+	{
+		vPos.x		= (float)p.x * (UI_BASE_WIDTH/(float)Device.dwWidth);
+		vPos.y		= (float)p.y * (UI_BASE_HEIGHT/(float)Device.dwHeight);
+	}
 	clamp			(vPos.x, 0.f, UI_BASE_WIDTH);
 	clamp			(vPos.y, 0.f, UI_BASE_HEIGHT);
 }
@@ -110,8 +123,17 @@ void CUICursor::SetUICursorPosition(Fvector2 pos)
 {
 	vPos		= pos;
 	POINT		p;
-	p.x			= iFloor(vPos.x / (UI_BASE_WIDTH/(float)Device.dwWidth));
-	p.y			= iFloor(vPos.y / (UI_BASE_HEIGHT/(float)Device.dwHeight));
+	RECT		rc;
+	if (pointer_screen_rect(rc))
+	{
+		p.x		= rc.left + iFloor(vPos.x * float(rc.right  - rc.left) / UI_BASE_WIDTH );
+		p.y		= rc.top  + iFloor(vPos.y * float(rc.bottom - rc.top ) / UI_BASE_HEIGHT);
+	}
+	else
+	{
+		p.x		= iFloor(vPos.x / (UI_BASE_WIDTH/(float)Device.dwWidth));
+		p.y		= iFloor(vPos.y / (UI_BASE_HEIGHT/(float)Device.dwHeight));
+	}
 
 	SetCursorPos(p.x, p.y);
 }

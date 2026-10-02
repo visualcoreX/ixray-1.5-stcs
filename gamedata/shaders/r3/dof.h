@@ -18,6 +18,18 @@ float3	dof(float2 center)
 float4	dof_params;
 float3	dof_kernel;	// x,y - resolution pre-scaled z - just kernel size
 
+// The glass of a flat (2D) scope: radii in screen uv around the centre, x = 0 when there is none.
+// What is seen inside it is the eyepiece's picture, magnified in the post-process pass from THIS
+// image, so it must stay sharp while the world around the tube takes the lens DOF -- what the 3D
+// lens gets for free by being drawn at hud depth. 1 = blur as usual, 0 = inside the glass.
+float4	dof_scope_hole;
+float DOFHole( float2 tc )
+{
+	float2	d	= (tc - float2(0.5f, 0.5f)) / max( dof_scope_hole.xy, float2(0.0001f, 0.0001f) );
+	float	h	= smoothstep( 1.0f, 1.12f, length(d) );
+	return	(dof_scope_hole.x > 0.0f) ? h : 1.0f;
+}
+
 float DOFFactor( float depth)
 {
 	float	dist_to_focus	= depth-dof_params.y;
@@ -44,7 +56,7 @@ float3	dof(float2 center)
    float 	depth		= s_position.Load( int3( center * pos_decompression_params2.xy ,0),0 ).z;
 #endif
 	if (depth <= EPSDEPTH)	depth = dof_params.w;
-	float	blur 		= DOFFactor(depth);
+	float	blur 		= DOFFactor(depth) * DOFHole(center);
 
 	//float blur = 1;
 	//	const amount of blur: define controlled
@@ -89,7 +101,7 @@ float3	dof(float2 center)
       float 	tap_depth 	= s_position.Load( int3( tap* pos_decompression_params2.xy,0),0).z;
 #endif
 		[flatten] if (tap_depth <= EPSDEPTH)	tap_depth = dof_params.w;
-		float 	tap_contrib	= DOFFactor(tap_depth);
+		float 	tap_contrib	= DOFFactor(tap_depth) * DOFHole(tap);
 		sum 		+= tap_color	* tap_contrib;
 		contrib		+= tap_contrib;
 	}

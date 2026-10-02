@@ -19,6 +19,7 @@
 #include "../Weapon.h"
 #include "../WeaponMagazined.h"
 #include "../UICursor.h"
+#include "../MainMenu.h"
 
 #include "UIStatic.h"
 #include "UIFrameWindow.h"
@@ -429,6 +430,20 @@ bool gwr_pda_screen_active()
 	if (!gwr_pda_3d_enabled())	return false;
 	if (pda_hud_item())	return true;
 	return s_pda_shown && (Device.dwTimeGlobal - s_pda_open_tm < PDA_SPAWN_GRACE);
+}
+
+// Is the UI cursor the PDA SCREEN's right now -- drawn into its texture and nowhere else?
+// Narrower than gwr_pda_screen_active(), and it has to be: that one stays true for as long as the
+// device is in the hand, which includes the whole put-away animation AFTER its window has closed.
+// Open the main menu in that stretch and the level stops ticking, so the device never finishes
+// leaving -- and the menu's cursor, which is this same CUICursor, was withheld from the normal
+// pass for good (there is no PDA window left to draw it on the screen texture either).
+bool gwr_pda_owns_cursor()
+{
+	if (!gwr_pda_screen_active())						return false;
+	if (!s_pda_shown)									return false;	// in hand, but its window is closed
+	if (MainMenu() && MainMenu()->IsActive())			return false;	// the menu is drawn over everything
+	return												true;
 }
 
 static void pda_reset_cursor(u32 click_tm)

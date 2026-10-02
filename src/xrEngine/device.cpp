@@ -27,6 +27,7 @@ using namespace DirectX;
 #endif // #ifdef INGAME_EDITOR
 
 #include "igame_persistent.h"
+#include "borderless_display.h"
 
 ENGINE_API CRenderDevice Device;
 ENGINE_API BOOL g_bRendering = FALSE; 
@@ -677,6 +678,60 @@ BOOL CRenderDevice::may_render() const
 	return (b_is_Active || (!b_is_Minimized && !psDeviceFlags.test(rsPauseOnMinimize)));
 }
 
+// THE RECTANGLE THE PICTURE OCCUPIES, IN THE COORDINATES GetCursorPos REPORTS.
+//
+// Those are not back buffer pixels, and nothing guarantees they match them. In a window the
+// picture is the client area, wherever it sits and whatever size it is (a back buffer larger than
+// the desktop is stretched into it). In exclusive fullscreen it is the whole monitor -- and the
+// monitor, as this process sees it, can be SMALLER than the mode: at a DSR / DLDSR resolution
+// Windows may run that mode at a different scale, and a process that is not per-monitor aware
+// is then handed scaled coordinates (3840 wide comes back as 2560). Dividing the pointer by the
+// back buffer width, as CUICursor did, stopped the cursor two thirds of the way across.
+// Both the confinement below and the UI cursor take their rectangle from here.
+bool pointer_screen_rect(RECT& r)
+{
+	HWND hWnd			= Device.m_hWnd;
+	if (!hWnd)			return false;
+
+	bool ok				= false;
+	if (psDeviceFlags.is(rsFullscreen))
+	{
+		MONITORINFO		mi;
+		mi.cbSize		= sizeof(mi);
+		if (GetMonitorInfo(MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY), &mi))
+		{
+			r			= mi.rcMonitor;
+			ok			= true;
+		}
+	}
+	if (!ok)
+	{
+		RECT			rc;
+		if (!GetClientRect(hWnd, &rc))	return false;
+		POINT			tl = { rc.left,  rc.top    };
+		POINT			br = { rc.right, rc.bottom };
+		ClientToScreen	(hWnd, &tl);
+		ClientToScreen	(hWnd, &br);
+		SetRect			(&r, tl.x, tl.y, br.x, br.y);
+	}
+	if ((r.right <= r.left) || (r.bottom <= r.top))	return false;
+
+	// one line whenever it changes: the first thing to look at if the cursor and the picture
+	// disagree again
+	static RECT			s_last	= { 0, 0, 0, 0 };
+	static u32			s_w		= 0, s_h = 0;
+	if (!EqualRect(&s_last, &r) || (s_w != Device.dwWidth) || (s_h != Device.dwHeight))
+	{
+		s_last			= r;
+		s_w				= Device.dwWidth;
+		s_h				= Device.dwHeight;
+		Msg				("* pointer space: %dx%d at (%d,%d), back buffer %dx%d, %s",
+						r.right - r.left, r.bottom - r.top, r.left, r.top, s_w, s_h,
+						psDeviceFlags.is(rsFullscreen) ? "fullscreen" : "window");
+	}
+	return				true;
+}
+
 // Pointer confinement. The exclusive DirectInput mouse used to do this implicitly; in a window
 // it is no longer exclusive (that is what stopped Windows eating the first click after alt-tab),
 // so without a clip the pointer walks off onto a second monitor mid-game. Recomputed from the
@@ -686,16 +741,148 @@ void CRenderDevice::UpdateCursorClip()
 {
 #ifndef DEDICATED_SERVER
 	if (!b_is_Active || b_is_Minimized || !m_hWnd)	{ ClipCursor(NULL); return; }
-	RECT rc;
-	if (!GetClientRect(m_hWnd, &rc) || rc.right <= rc.left || rc.bottom <= rc.top)
-		{ ClipCursor(NULL); return; }
-	POINT tl = { rc.left,  rc.top    };
-	POINT br = { rc.right, rc.bottom };
-	ClientToScreen(m_hWnd, &tl);
-	ClientToScreen(m_hWnd, &br);
-	RECT scr = { tl.x, tl.y, br.x, br.y };
+	RECT scr;
+	if (!pointer_screen_rect(scr))					{ ClipCursor(NULL); return; }
 	ClipCursor(&scr);
 #endif
+}
+
+// A BORDERLESS WINDOW AT A RESOLUTION THE DESKTOP DOES NOT HAVE.
+//
+// That is a DSR / DLDSR mode: the driver lists it like any other, but it is larger than the panel.
+// A window of that size simply hangs off the screen, and the driver's downscale -- the whole point
+// of DLDSR -- only runs while the DESKTOP is in that mode. So for as long as the game has the focus
+// the desktop is switched to it (CDS_FULLSCREEN: temporary, never written to the registry, undone
+// by Windows itself if the process dies) and it is given back on alt-tab and on exit. There is
+// still no exclusive mode; the device stays windowed throughout.
+// A resolution that fits the desktop is left exactly as it was: a window of that size, centred,
+// and the desktop untouched.
+// If the switch is refused, the window is fitted to the desktop instead and the present stretches
+// the picture into it -- plain downsampling, but never a window larger than the screen.
+static bool	s_display_switched	= false;
+
+static bool desktop_mode(DWORD which, DEVMODE& dm)
+{
+	ZeroMemory			(&dm, sizeof(dm));
+	dm.dmSize			= sizeof(dm);
+	return				!!EnumDisplaySettings(NULL, which, &dm);
+}
+
+static bool borderless_wanted()
+{
+	return				!g_dedicated_server && !psDeviceFlags.is(rsFullscreen) && psDeviceFlags.test(rsBorderless);
+}
+
+// Larger than the desktop the user actually runs -- which, once it has been switched, is the
+// registry mode, the one ChangeDisplaySettingsEx(NULL) goes back to.
+static bool exceeds_desktop(u32 w, u32 h)
+{
+	DEVMODE				dm;
+	if (!desktop_mode(s_display_switched ? ENUM_REGISTRY_SETTINGS : ENUM_CURRENT_SETTINGS, dm))
+		return			false;
+	return				(w > dm.dmPelsWidth) || (h > dm.dmPelsHeight);
+}
+
+void borderless_restore_display()
+{
+	if (!s_display_switched)	return;
+	s_display_switched	= false;
+	ChangeDisplaySettingsEx	(NULL, NULL, NULL, 0, NULL);
+}
+
+static bool switch_display(u32 w, u32 h)
+{
+	DEVMODE				cur;
+	const bool			have_cur = desktop_mode(ENUM_CURRENT_SETTINGS, cur);
+	if (have_cur && (cur.dmPelsWidth == w) && (cur.dmPelsHeight == h))
+		return			true;			// already there
+
+	DEVMODE				dm;
+	ZeroMemory			(&dm, sizeof(dm));
+	dm.dmSize			= sizeof(dm);
+	dm.dmPelsWidth		= w;
+	dm.dmPelsHeight		= h;
+	dm.dmFields			= DM_PELSWIDTH | DM_PELSHEIGHT;
+	// Keep the refresh rate: left out, Windows is free to pick the mode's default and a 144 Hz
+	// desktop comes back as 60. Only if the new mode has that rate at all.
+	if (have_cur && (cur.dmDisplayFrequency > 1))
+	{
+		dm.dmDisplayFrequency	= cur.dmDisplayFrequency;
+		dm.dmFields				|= DM_DISPLAYFREQUENCY;
+		if (DISP_CHANGE_SUCCESSFUL != ChangeDisplaySettingsEx(NULL, &dm, NULL, CDS_FULLSCREEN | CDS_TEST, NULL))
+			dm.dmFields			&= ~DM_DISPLAYFREQUENCY;
+	}
+
+	const LONG			r = ChangeDisplaySettingsEx(NULL, &dm, NULL, CDS_FULLSCREEN, NULL);
+	if (DISP_CHANGE_SUCCESSFUL != r)
+	{
+		Msg				("! borderless: the desktop refused %dx%d (%d) -- fitting the window to it instead", w, h, r);
+		return			false;
+	}
+	Msg					("* borderless: desktop switched to %dx%d", w, h);
+	s_display_switched	= true;
+	return				true;
+}
+
+static void sync_display(u32 w, u32 h, bool active)
+{
+	// ChangeDisplaySettingsEx sends messages to our own window before it returns
+	static bool			busy = false;
+	if (busy)			return;
+	busy				= true;
+	if (borderless_wanted() && active && exceeds_desktop(w, h))
+		switch_display				(w, h);
+	else
+		borderless_restore_display	();
+	busy				= false;
+}
+
+static bool window_has_focus(HWND hWnd)
+{
+	return				Device.b_is_Active || (GetForegroundWindow() == hWnd);
+}
+
+void borderless_sync_display(HWND hWnd)
+{
+	sync_display		(psCurrentVidMode[0], psCurrentVidMode[1], window_has_focus(hWnd));
+}
+
+// Centred on the primary screen and never larger than it, the picture's proportions kept.
+static void place_window(HWND hWnd, u32 w, u32 h, UINT flags)
+{
+	RECT				desktop;
+	GetClientRect		(GetDesktopWindow(), &desktop);
+	const int			dw = desktop.right;
+	const int			dh = desktop.bottom;
+	int					ww = int(w);
+	int					wh = int(h);
+	if ((dw > 0) && (dh > 0) && ((ww > dw) || (wh > dh)))
+	{
+		const float		k = _min(float(dw) / float(ww), float(dh) / float(wh));
+		ww				= _min(dw, iFloor(float(ww) * k + .5f));
+		wh				= _min(dh, iFloor(float(wh) * k + .5f));
+	}
+	SetWindowPos		(hWnd, HWND_NOTOPMOST, (dw - ww) / 2, (dh - wh) / 2, ww, wh, flags);
+}
+
+void borderless_place_window(HWND hWnd, u32 w, u32 h)
+{
+	sync_display		(w, h, window_has_focus(hWnd));
+	place_window		(hWnd, w, h, SWP_SHOWWINDOW | SWP_NOCOPYBITS | SWP_FRAMECHANGED);
+}
+
+// Focus gained or lost. An ordinary borderless window -- one that fits the desktop -- is not
+// touched here at all; only the oversized one takes the desktop with it and hands it back.
+static void borderless_on_activation(HWND hWnd, bool active)
+{
+	if (!Device.b_is_Ready || !hWnd || !borderless_wanted())	return;
+	const u32			w = Device.dwWidth;
+	const u32			h = Device.dwHeight;
+	if (active ? !exceeds_desktop(w, h) : !s_display_switched)	return;
+
+	sync_display		(w, h, active);
+	if (!IsIconic(hWnd))
+		place_window	(hWnd, w, h, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
 }
 
 void CRenderDevice::OnWM_Activate(WPARAM wParam, LPARAM lParam)
@@ -729,10 +916,12 @@ void CRenderDevice::OnWM_Activate(WPARAM wParam, LPARAM lParam)
 #	endif // #ifdef INGAME_EDITOR
 				win_cursor::show	(false);
 #endif // #ifndef DEDICATED_SERVER
+			borderless_on_activation(m_hWnd, true);
 			Device.UpdateCursorClip	();
 		}else	
 		{
 			Device.seqAppDeactivate.Process(rp_AppDeactivate);
+			borderless_on_activation(m_hWnd, false);
 			ClipCursor				(NULL);
 			win_cursor::show		(true);
 		}
