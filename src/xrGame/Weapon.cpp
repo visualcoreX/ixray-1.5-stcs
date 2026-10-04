@@ -100,6 +100,7 @@ CWeapon::CWeapon()
 		m_shell_track[sc].by_hand		= false;
 		m_shell_track[sc].ammo_bone		= false;
 		m_shell_track[sc].drop			= false;
+		m_shell_track[sc].gl			= false;
 		m_shell_track[sc].far_max		= 0.f;
 		m_shell_track[sc].vA.set		(0.f, 0.f, 0.f);
 		m_shell_track[sc].sA			= 0.f;

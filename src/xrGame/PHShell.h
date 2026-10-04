@@ -192,6 +192,7 @@ public:
 	virtual		void				DisableCollision				();
 	virtual		void				EnableCollision					();
 	virtual		void				DisableCharacterCollision		();
+	virtual		void				EnableCharacterCollision		();
 	virtual		void				SetRemoveCharacterCollLADisable	(){m_flags.set(flRemoveCharacterCollisionAfterDisable,TRUE);}
 	virtual		bool				isEnabled						()const {return CPHObject::is_active();}
 	virtual		bool				isActive						()const {return !!m_flags.test(flActive);}

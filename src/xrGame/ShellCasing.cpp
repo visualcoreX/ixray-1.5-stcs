@@ -9,6 +9,7 @@
 #include "level.h"
 #include "xrserver_objects.h"
 #include "xrmessages.h"
+#include "Hit.h"
 #include "../Include/xrRender/Kinematics.h"
 
 extern ENGINE_API float psHUD_FOV;	// hud fov as a fraction of the world fov
@@ -40,6 +41,9 @@ CShellCasing::CShellCasing()
 	m_launch_linear.set	(0.f, 0.f, 0.f);
 	m_launch_angular.set(0.f, 0.f, 0.f);
 	m_launch_time		= 0;
+	m_char_collide_delay= 750;
+	m_char_collide_at	= 0;
+	m_hit_max_speed		= 8.f;
 	m_processing		= false;
 }
 
@@ -67,6 +71,11 @@ void CShellCasing::Load(LPCSTR section)
 	// out, nor the other way round); none = the cases' shared one
 	m_count_group		= READ_IF_EXISTS(pSettings, r_string, section, "count_group", "shell_casings");
 	m_max_count			= (u32)READ_IF_EXISTS(pSettings, r_s32, section, "max_count", 0);
+	// it is kept out of the characters' way while it leaves the gun (the shooter it appears next to would
+	// shove it about), then they kick it about when they walk into it; < 0 = never
+	const float ccd		= READ_IF_EXISTS(pSettings, r_float, section, "character_collide_delay", 0.75f);
+	m_char_collide_delay= (ccd < 0.f) ? u32(-1) : u32(iFloor(1000.f * ccd));
+	m_hit_max_speed		= READ_IF_EXISTS(pSettings, r_float, section, "hit_max_speed", 8.f);
 }
 
 u32 CShellCasing::Count()
@@ -162,8 +171,9 @@ BOOL CShellCasing::net_Spawn(CSE_Abstract* DC)
 	m_pPhysicsShell			= P_build_Shell(this, false);
 	if (m_mass > 0.f)
 		m_pPhysicsShell->setMass		(m_mass);
-	// a case must neither be shoved out of the shooter it appears next to nor trip anybody up
+	// a case must not be shoved out of the shooter it appears next to: no characters until it is clear (UpdateCL)
 	m_pPhysicsShell->DisableCharacterCollision	();
+	m_char_collide_at		= (m_char_collide_delay == u32(-1)) ? 0 : Device.dwTimeGlobal + m_char_collide_delay;
 	// The stock "air resistance" is a torque of -w*k per step whatever the body weighs. Sized for crates
 	// and barrels, on a body with the inertia of a cartridge case it overshoots hundreds of times over:
 	// every step throws the spin to the other side, the limiter below cuts it, and the case neither
@@ -235,6 +245,12 @@ void CShellCasing::UpdateCL()
 
 	inherited::UpdateCL		();
 
+	if (m_char_collide_at && (Device.dwTimeGlobal >= m_char_collide_at))
+	{
+		m_char_collide_at	= 0;
+		if (m_pPhysicsShell)	m_pPhysicsShell->EnableCharacterCollision();
+	}
+
 	// A case thrown out of a gun in the hands is seen next to that gun, and the gun is drawn with the
 	// narrower hud projection: at its real size the case would look a good third smaller than the shell
 	// of the hud model it has just replaced. So it starts out drawn larger by the ratio of the two
@@ -274,6 +290,19 @@ void CShellCasing::UpdateCL()
 
 	if (Device.dwTimeGlobal >= m_destroy_time)
 		DestroyObject		();		// once: it flags the object as removed itself
+}
+
+// A bullet's impulse is sized for crates and bodies: on a 20 g case it would be thousands of m/s, the speed
+// limit would cut it, and the case would just vanish. As a real one would, it is flicked away -- at up to
+// hit_max_speed (cform = skeleton in the section is what lets the bullets and the blasts find it at all).
+void CShellCasing::Hit(SHit* pHDS)
+{
+	if (!pHDS || !m_pPhysicsShell)	return;
+	SHit H				= *pHDS;
+	const float cap		= m_pPhysicsShell->getMass() * m_hit_max_speed;
+	if (H.impulse > cap)
+		H.impulse		= cap;
+	inherited::Hit		(&H);
 }
 
 bool CShellCasing::in_hud_phase() const

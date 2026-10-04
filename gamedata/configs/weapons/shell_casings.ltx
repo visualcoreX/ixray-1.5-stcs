@@ -46,6 +46,9 @@ spin            = 15, 40        ; rad/s of tumbling
 
 [shell_casing_base]
 class           = SHELL_CS
+cform           = skeleton      ; the bone shape is its collision form: bullets and blasts find it and throw it about
+hit_max_speed   = 8             ; m/s, the fastest a hit sends it off (a bullet's impulse would be thousands of m/s on 20 g)
+character_collide_delay = 0.75  ; s it stays out of the characters' way after the throw, then they kick it about (< 0 = never)
 lifetime        = 30            ; real seconds before a case is removed
 hud_draw_time   = 0.3           ; s a case thrown in first person is drawn in the hud pass, like the gun: over the world,
                                 ; with the hud projection -- or the gun's own picture would cover a case thrown across it
@@ -103,3 +106,7 @@ visual          = dynamics\weapons\shells\holder_pkm.ogf
 
 [shell_casing_762x39]:shell_casing_base
 visual          = dynamics\weapons\shells\shell_762x39.ogf
+
+[shell_casing_40x46]:shell_casing_base	; the M203's spent grenade case, out of the tube in its reload (gl_drop_bones)
+visual          = dynamics\weapons\shells\shell_40x46.ogf
+ph_mass         = 0.04          ; kg

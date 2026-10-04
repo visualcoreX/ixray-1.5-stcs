@@ -1,4 +1,6 @@
 [wpn_l85]:identity_immunities,weapon_probability,default_weapon_params
+gl_drop_bones	= wpn_launcher_shell:shell_casing_40x46	; the launcher's reload lets the spent case fall (gl_drop_frame / _speed / _forward / _side / _spin like reload_drop_*)
+gl_drop_frame	= 23	; ...let go on this frame of the launcher's reload (30 a second)
 bullet_material				= objects\bullet_automatic	; wallmark/impact/ricochet pair on hit
 GroupControlSection     = spawn_group
 discovery_dependency    =
