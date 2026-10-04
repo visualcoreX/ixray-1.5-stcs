@@ -224,16 +224,6 @@ end
 -- Deferred version of what update_actor used to do inline the moment the sighting record expired.
 -- last_actor_seen_time is deliberately not in the save packet (an extra field would change the save
 -- format), so after a load update_actor seeds it from the saved see_actor_enemy_time instead.
--- True while the last sighting of the actor is younger than SQUAD_LOSE_ACTOR_TIME.
--- actor_combat used to drop on the SHORT clock (SQUAD_IN_ACTOR_ATTACK_TIME, 5 real seconds): a squad in
--- "combat" then went to "post_combat", is_enemy wiped the actor from every fighter's memory (any stage
--- but "combat" does), and the garrison walked back to its posts or stood there ignoring him -- no matter
--- how long SQUAD_LOSE_ACTOR_TIME held the stages. Vanilla ran both on 500.
-function CCombat_manager:actor_recently_seen()
-	local seen = self.last_actor_seen_time
-	return seen ~= nil and game.get_game_time():diffSec(seen) <= SQUAD_LOSE_ACTOR_TIME
-end
-
 function CCombat_manager:reset_stages_when_actor_lost()
 
 	local self_squads = self.squads
@@ -423,7 +413,7 @@ function CCombat_manager:update_actor()
 	local enemy_who_saw_actor = self.see_actor_enemy
 
 	if enemy_who_saw_actor == nil then
-		self.actor_combat = self.actor_combat and self:actor_recently_seen()
+		self.actor_combat = false
 		self:reset_stages_when_actor_lost()
 		return
 	end
@@ -435,7 +425,7 @@ function CCombat_manager:update_actor()
 		self.last_actor_seen_time = self.last_actor_seen_time or self.see_actor_enemy_time
 		self.see_actor_enemy = nil
 		self.see_actor_enemy_time = nil
-		self.actor_combat = self.actor_combat and self:actor_recently_seen()
+		self.actor_combat = false
 		self:reset_stages_when_actor_lost()
 		return
 	end

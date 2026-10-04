@@ -16,6 +16,13 @@ large_image                     = csga_dirt_skull
 ; MUST be quoted if it contains spaces: the ini reader drops every blank outside quotes.
 large_text                      = "Clear Sky Gunslinger Mod"
 
+; The button under the presence card. The label takes up to 32 characters and MUST be quoted if it
+; has spaces. The address is written WITHOUT "https:" and the two slashes -- the ini reader takes a
+; double slash for the start of a comment -- the engine puts them back. Empty button_url = no button.
+; (Discord does not let you click your own buttons: check it from another account.)
+button_label                    = "CSGM Discord"
+button_url                      = discord.com/invite/jQJ8rgfSbY
+
 ; faction patch shown as the small icon, one key per actor community
 ; (creatures\game_relations.ltx, [actor_communities]).
 actor                           = stalker_patch_killer

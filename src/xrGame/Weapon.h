@@ -333,6 +333,52 @@ public:
 			// parse a comma-separated bone list without touching any model (so callers can tell which bones
 			// an upgrade explicitly named and undo the recursive show_bones collateral)
 	static	void gwr_CollectBoneNames	(LPCSTR csv, xr_vector<shared_str>& out);
+	// ---- real cartridge cases thrown out on a shot (WeaponShellCasing.cpp) ----
+public:
+	// Called on a shot. true = this weapon throws real cases, so the old shell particle must not be
+	// started on top of them.
+			bool gwr_ShellCasingOnShot	(const Fvector& owner_vel);
+			void gwr_ShellCasingOnUnjam	(LPCSTR ammo);	// the jam-clear animation has just been started
+			void gwr_ShellCasingOnReloadAnim	();	// a reload animation has just been started
+			void gwr_ShellCasingArmReloadBones	();	// break-action guns: the shells the full reload throws
+			void gwr_ShellCasingArmReloadDrop	();	// a full reload: the old magazine falls
+			void gwr_ShellCasingCancel	();				// the shot jammed: its case stays in the port
+			void gwr_ShellCasingUpdate	(bool force = false);
+			bool gwr_ShellCasingHidesBone	(u16 bone) const;
+			void gwr_ShellCasingKeepHidden	();	// after the ammo-bones pass: it would show the animated shell again
+			// idx: 0 = the cartridge case, 1 = the extra thing a belt-fed gun throws (the link)
+			void gwr_ShellCasingArm		(u32 idx, const shared_str& sect, const Fvector& owner_vel);
+			void gwr_ShellCasingFollow	(u32 idx, bool force);
+			void gwr_ShellCasingThrow	(u32 idx, const Fvector& pos, const Fmatrix& basis, const Fvector* dir, float speed, bool hud);
+	// first person: the shot being followed until the hud model's animated shell leaves the port
+	struct SShellCasingTrack
+	{
+		bool		active;
+		u8			stage;			// 0 = no sample of the bone yet, 1 = last sample was parked far away, 2 = was at the gun
+		u16			bone;			// hud model bone of the animated shell (kept after the throw: it is the hidden one)
+		u32			frame;
+		u32			deadline;		// Device.dwTimeGlobal to stop waiting at
+		u32			reshow_time;	// !=0: the hud shell is hidden...
+		u32			motion;			// ...until the hud animation that started at this time is replaced
+		u32			shot_time;
+		float		speed_scale;	// of the throw: a case racked out by hand leaves slower than a fired one
+		bool		by_hand;		// ...and this is one (clearing a jam, the open of a shotgun's reload)
+		bool		ammo_bone;		// ...a reload's spent shell: any direction counts, and its visibility is the ammo-bones pass's
+		bool		drop;			// ...a magazine let fall in a full reload: shown again when the bone comes back
+		float		far_max;		// (how far from its rest the dropped bone has got so far)
+		Fvector		vA;				// the last step (parent-bone space), its speed, and the bone's model transform
+		float		sA;				// a frame ago: a dropped magazine leaves with these
+		Fmatrix		mA;
+		Fvector		wA;				// ...and how fast it was turning then (model space; a dropped magazine keeps it)
+		u32			launch_time;	// the time that pose was the bone's (a dropped magazine's spawn catches up from it)
+		u32			hold_mark;		// CShellCasing::Spawned() at the throw: the bone stays on until that changes
+		u32			hold_until;		// ...or until then; 0 = not held
+		Fvector		p0, pA;			// parent-bone space: p0 where the shell rests (the chamber), pA a frame ago
+		Fvector		owner_vel;		// of whoever holds the gun, added to the throw
+		shared_str	section;		// the case to spawn
+	};
+	SShellCasingTrack	m_shell_track[2];
+
 	u32			 m_gwr_world_bones_sig;	// last applied attachment-state signature (u32(-1) = never)
 
 	// ---- laser designator (Gunslinger LAM port) --------------------------------------------------

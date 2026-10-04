@@ -1,0 +1,105 @@
+; Magazines a full (empty) reload lets fall -- see WeaponShellCasing.cpp, gwr_ShellCasingArmReloadDrop.
+; Same object as a spent case (class SHELL_CS), heavier. Models: meshes\dynamics\weapons\mags\*.ogf, cut
+; out of the hud models by tools\make_mags.py (bone mag, box shape, material objects\small_weapon).
+
+[mag_drop_base]:shell_casing_base
+ph_mass         = 0.3           ; kg
+lifetime        = 120           ; real seconds before a magazine is removed (orig 30, from shell_casing_base)
+count_group     = magazines     ; capped apart from the cases...
+max_count       = 30            ; ...at this many alive at once; over that the oldest go first
+scale_time      = 0.2           ; s to come down to the model's size (orig 0.4, from shell_casing_base)
+model_scale     = 0.7           ; the models are cut at 0.7 of the hud ones (make_mags.py --scale 0.7): taken over at
+                                ; the hud's size, they come down to that over scale_time
+
+[mag_drop_ak74_30]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_ak74_30.ogf
+
+[mag_drop_ak74_45]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_ak74_45.ogf
+
+[mag_drop_ak74_45_black]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_ak74_45_black.ogf
+
+[mag_drop_ak74_60]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_ak74_60.ogf
+
+[mag_drop_ak101_30]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_ak101_30.ogf
+
+[mag_drop_ak101_45]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_ak101_45.ogf
+
+[mag_drop_ak101_45_black]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_ak101_45_black.ogf
+
+[mag_drop_ak101_60]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_ak101_60.ogf
+
+[mag_drop_abakan_30]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_abakan_30.ogf
+
+[mag_drop_abakan_45]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_abakan_45.ogf
+
+[mag_drop_abakan_45_black]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_abakan_45_black.ogf
+
+[mag_drop_abakan_60]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_abakan_60.ogf
+
+[mag_drop_sig220]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_sig220.ogf
+
+[mag_drop_sig220_big]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_sig220_big.ogf
+
+[mag_drop_sig220r]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_sig220r.ogf
+
+[mag_drop_sig220r_big]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_sig220r_big.ogf
+
+[mag_drop_deagle]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_deagle.ogf
+
+[mag_drop_deagle_silver]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_deagle_silver.ogf
+
+[mag_drop_beretta]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_beretta.ogf
+scale_time      = 0.1           ; comes down to its size faster (default 0.4)
+
+[mag_drop_colt1911]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_colt1911.ogf
+scale_time      = 0.2           ; comes down to its size faster (default 0.4)
+
+[mag_drop_fort12]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_fort12.ogf
+
+[mag_drop_fort17]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_fort17.ogf
+
+[mag_drop_usp45]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_usp45.ogf
+
+[mag_drop_usp_match]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_usp_match.ogf
+
+[mag_drop_hpsa]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_hpsa.ogf
+
+[mag_drop_glock17]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_glock17.ogf
+
+[mag_drop_glock17_big]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_glock17_big.ogf
+
+[mag_drop_fiveseven]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_fiveseven.ogf
+
+[mag_drop_tt33]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_tt33.ogf
+
+[mag_drop_akm_30]:mag_drop_base
+visual          = dynamics\weapons\mags\mag_akm_30.ogf
+

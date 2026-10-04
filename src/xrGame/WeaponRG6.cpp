@@ -105,6 +105,11 @@ void CWeaponRG6::FireStart ()
 			}
 			E->g_fireParams (this, p1,d);
 		}
+		// g_fireParams puts p1 at the CAMERA for the actor: the grenades left from the middle of the screen.
+		// The direction stays the crosshair's, the point goes back to the muzzle -- exactly what the
+		// underbarrel launcher does (CWeaponMagazinedWGrenade::LaunchGrenade, the Groza's included).
+		if (IsGameTypeSingle())
+			p1.set(get_LastFP());
 
 		Fmatrix launch_matrix;
 		launch_matrix.identity();

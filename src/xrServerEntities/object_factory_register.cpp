@@ -119,6 +119,7 @@
 #	include "rgd5.h"
 
 #	include "explosiverocket.h"
+#	include "ShellCasing.h"
 
 #	include "MPPlayersBag.h"
 
@@ -338,6 +339,7 @@ void CObjectFactory::register_classes	()
 	// Rockets
 	ADD(CExplosiveRocket		,CSE_Temporary					,CLSID_OBJECT_G_RPG7			,"wpn_grenade_rpg7");
 	ADD(CExplosiveRocket		,CSE_Temporary					,CLSID_OBJECT_G_FAKE			,"wpn_grenade_fake");
+	ADD(CShellCasing			,CSE_Temporary					,CLSID_OBJECT_SHELL_CASING		,"obj_shell_casing");
 
 	//-----------------------------------------------------------------------------------------------------------------
 	ADD(CMPPlayersBag			,CSE_ALifeItem					,CLSID_OBJECT_PLAYERS_BAG		,"mp_players_bag");

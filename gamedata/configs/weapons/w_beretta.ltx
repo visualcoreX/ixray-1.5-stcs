@@ -1,4 +1,6 @@
 [wpn_beretta]:identity_immunities,weapon_probability,default_weapon_params
+reload_drop_bones	= mag:mag_drop_beretta	; a full reload lets the magazine fall: <hud bone>:<object>, the shown one counts
+reload_drop_frame	= 19	; ...let go on this frame of the full reload (30 a second)
 bullet_material				= objects\bullet	; wallmark/impact/ricochet pair on hit
 
 ; GS use_light_misfire: per-shot light strike (click, no bang) -- plays anm_shoot_lightmisfire,
@@ -517,6 +519,7 @@ lock_time_start_anm_laser_on_empty = 0.58
 lock_time_start_anm_laser_on_jammed = 0.58
 
 [wpn_beretta_minigame]:wpn_beretta    ;new weapon for minigame "Shooting"
+shell_casing_override	= shell_casing_9x19	; the case of the real gun, not of the stand-in ammo_minigame round
 ammo_limit      = 100
 ;ammo_mag_size   = 10
 ammo_class      = ammo_minigame

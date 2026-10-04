@@ -381,10 +381,21 @@ bool CWeaponMagazined::IsActorSprinting()
 // launch goes around FireStart entirely, and it fired straight through the transition until it did too.
 bool CWeaponMagazined::DeferFireForSprint()
 {
-	if ((m_dwSprintExitEndTm && Device.dwTimeGlobal < m_dwSprintExitEndTm)
-		|| (IsActorSprinting() && HasSprintExitAnim()))
+	// SprintTransitionNow(), not IsActorSprinting(): the sprint ENTER one-shot plays out after the sprint
+	// key is let go (and the input handler drops the actor's flag the moment an action key is pressed),
+	// so with the flag alone a shot went straight through the enter animation.
+	const bool exit_running = (m_dwSprintExitEndTm && Device.dwTimeGlobal < m_dwSprintExitEndTm);
+	if (exit_running || (SprintTransitionNow() && HasSprintExitAnim()))
 	{
 		m_bFirePendingSprint = true;
+		// The enter still on screen with the sprint itself already over: no movement edge is coming to
+		// blend the exit in (CHudItem::OnMovementChanged), so ask for it here -- its lock is what
+		// releases the shot. Otherwise the shot would wait for the whole enter and the exit after it.
+		if (!exit_running && !IsActorSprinting() && m_bSprintStartRunning)
+		{
+			m_bSprintStarted = false;
+			PlaySprintExitAnim	();
+		}
 		return true;
 	}
 	return false;
@@ -1111,7 +1122,9 @@ void CWeaponMagazined::gwr_SetBones(LPCSTR csv, BOOL show)
 		if (n && n < sizeof(name))
 		{
 			strncpy_s(name, sizeof(name), s, n);  name[n] = 0;
-			if (hi)	hi->set_bone_visible(name, show, TRUE);
+			// (not the animated shell a real cartridge case has just taken over from: see WeaponShellCasing.cpp)
+			if (hi && !(show && hi->m_model && gwr_ShellCasingHidesBone(hi->m_model->LL_BoneID(name))))
+				hi->set_bone_visible(name, show, TRUE);
 			gwr_SetWorldBone(K, name, show);
 		}
 	}
@@ -1738,6 +1751,7 @@ void CWeaponMagazined::UpdateCL			()
 	float dt = Device.fTimeDelta;
 
 	gwr_UpdateBones();		// show/hide HUD-model bones for ammo count / type / firemode (on change)
+	gwr_ShellCasingKeepHidden();	// ...except the animated shell a real case has just taken over from
 	gwr_UpdateWorldAnims();	// GS ReassignWorldAnims: drive the world model from wpn_*_animation.omf (opt-in)
 
 	// The idle animation is chosen ONCE, when the idle starts, so a magazine emptied from the outside
@@ -2475,7 +2489,7 @@ void CWeaponMagazined::state_Fire(float dt)
 			// "jammed AND empty" was a dead end -- it no longer is: that state has its own revival
 			// (anm_reload_jammed_last + snd_reload_jammed_last), the stuck case keeps the fired round's
 			// colour, and a reload while jammed clears the jam without loading anything.
-			if( !m_bNoJamFire && CheckForMisfire() )
+			if( !m_bNoJamFire && JamAllowedAfterShot() && CheckForMisfire() )
 			{
 				// GS OnWeaponJam + anm_shots_selector's "_jammed" modifier: the shot that jams has its OWN
 				// animation (the case caught in the ejection port) and it plays to the END -- the jammed
@@ -2490,6 +2504,8 @@ void CWeaponMagazined::state_Fire(float dt)
 				// anm_shots_selector always plays out. Zeroing the deadline here cut it dead mid-swing.
 				if (PlayJammedShootAnim())
 				{
+					// the case is caught in the port: no real one from this shot, the animated one stays
+					gwr_ShellCasingCancel	();
 					m_dwShootAnimEndTm	= m_dwMotionEndTm;
 					if (m_sounds.FindSoundItem("sndJam", false))
 						PlaySound("sndJam", get_LastFP());
@@ -2602,7 +2618,8 @@ void CWeaponMagazined::OnShot()
 	// Shell Drop
 	Fvector vel; 
 	PHGetLinearVell				(vel);
-	OnShellDrop					(get_LastSP(), vel);
+	if (!gwr_ShellCasingOnShot(vel))		// a real case, or the old particle
+		OnShellDrop				(get_LastSP(), vel);
 	
 	// Огонь из ствола
 	StartFlameParticles			();
@@ -2983,6 +3000,7 @@ void CWeaponMagazined::switch2_Reload()
 
 	PlayAnimReload		();
 	ArmReloadLockTimes	();		// must follow PlayAnimReload: it reads the alias that was played
+	gwr_ShellCasingOnReloadAnim	();	// the PKM's full reload throws its belt link (WeaponShellCasing.cpp)
 	PlayReloadSound		();
 	SetPending			(TRUE);
 }
@@ -4022,6 +4040,8 @@ void CWeaponMagazined::PlayAnimReload()
 		else
 			PlayHUDMotion("anm_reload_jammed", TRUE, this, GetState());
 		bMisfireReload = true;
+		// the stuck case, where this animation racks it out, becomes a real one (WeaponShellCasing.cpp)
+		gwr_ShellCasingOnUnjam	((m_gwr_last_fired_type < m_ammoTypes.size()) ? m_ammoTypes[m_gwr_last_fired_type].c_str() : NULL);
 	}
 	// GS anm_reload selector (WeaponAnims.pas:1035): with rounds still loaded and an ammo-type change
 	// pending, the reload is a CHANGE -- its own motion (pull the old round out, put the new one in).
@@ -4170,11 +4190,16 @@ void CWeaponMagazined::SelectShootAnim(string_path& result)
 	// magazined weapon gets it; existence-gated, so anything without those aliases is unchanged.
 	bool last = (iAmmoElapsed <= 1);
 	// GS modifier precedence is jammed > empty > first, so `_first` loses to the last-round take.
+	// ...unless the take for BOTH exists (GS token order: anm_shoot_last_first): the single round loaded
+	// into an empty gun is the last one and the first one at once, and it is the _first behaviour that
+	// shows -- the Protecta's drum turns and throws nothing.
 	const bool first = NeedFirstShootAnim();
 	if (IsZoomed() && isHUDAnimationExist("anm_shoot_aim"))
 	{
 		if (UseScopeAnims())
 		{
+			if (last && first && isHUDAnimationExist("anm_shoot_aim_scope_last_first"))
+				{ xr_strcpy(result, "anm_shoot_aim_scope_last_first"); return; }
 			if (last && isHUDAnimationExist("anm_shoot_aim_scope_last"))
 				{ xr_strcpy(result, "anm_shoot_aim_scope_last"); return; }
 			if (first && isHUDAnimationExist("anm_shoot_aim_scope_first"))
@@ -4182,6 +4207,8 @@ void CWeaponMagazined::SelectShootAnim(string_path& result)
 			if (isHUDAnimationExist("anm_shoot_aim_scope"))
 				{ xr_strcpy(result, "anm_shoot_aim_scope"); return; }
 		}
+		if (last && first && isHUDAnimationExist("anm_shoot_aim_last_first"))
+			{ xr_strcpy(result, "anm_shoot_aim_last_first"); return; }
 		if (last && isHUDAnimationExist("anm_shoot_aim_last"))
 			{ xr_strcpy(result, "anm_shoot_aim_last"); return; }
 		if (first && isHUDAnimationExist("anm_shoot_aim_first"))
@@ -4189,6 +4216,8 @@ void CWeaponMagazined::SelectShootAnim(string_path& result)
 		xr_strcpy(result, "anm_shoot_aim");
 		return;
 	}
+	if (last && first && isHUDAnimationExist("anm_shoot_last_first"))
+		{ xr_strcpy(result, "anm_shoot_last_first"); return; }
 	if (last && isHUDAnimationExist("anm_shoot_last"))
 		{ xr_strcpy(result, "anm_shoot_last"); return; }
 	if (first && isHUDAnimationExist("anm_shoot_first"))

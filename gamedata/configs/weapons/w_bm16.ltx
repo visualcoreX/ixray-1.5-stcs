@@ -1,4 +1,12 @@
 [wpn_bm16]:identity_immunities,weapon_probability,default_weapon_params
+shell_casing			= false	; break-action: the fired shells stay in the barrels until the reload
+; ...and the FULL reload (toz66_reload_full) throws both straight back out of the opened breech: real cases there.
+; The partial one (toz66_reload) has the hand pull the shell out -- left animated.
+shell_casing_reload_anims	= anm_reload, anm_reload_0, anm_reload_2
+shell_casing_reload_bones	= shell_red, shell_blue, shell_green	; the left barrel's spent shell
+shell_casing_reload_bones2	= shell_red2, shell_blue2, shell_green2	; the right one's
+shell_casing_hand_side	= 0.13
+shell_casing_unjam_speed	= 1.0, 1.6	; m/s: the ejectors' push, as the animation shows it (1.0-1.3)
 GroupControlSection		= spawn_group
 discovery_dependency 	=
 $spawn                  = "weapons\bm16"		; option for Level Editor

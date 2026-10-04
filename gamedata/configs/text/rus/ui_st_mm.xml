@@ -586,13 +586,13 @@
 		<text>Показывать интерфейс</text>
 	</string>
 	<string id="ui_mm_intoxication">
-		<text>Интоксикация от медикаментов</text>
+		<text>Интокс. от медикаментов</text>
 	</string>
 	<string id="ui_mm_sprint_on_hold">
 		<text>Бег по зажатию</text>
 	</string>
 	<string id="ui_mm_reload_in_sprint">
-		<text>Манипуляции с оружием во время спринта</text>
+		<text>Манипуляции с оруж. при спринте</text>
 	</string>
 	<string id="ui_mm_show_weapon">
 		<text>Показывать оружие</text>
@@ -787,7 +787,7 @@
 		<text>Нажмите любую клавишу, чтобы продолжить</text>
 	</string>
 	<string id="ui_mm_show_quick_slots">
-		<text>Показывать иконки быстрых слотов</text>
+		<text>Отображение быстр. слотов</text>
 	</string>
 	<string id="ui_mm_pause_on_minimize">
 		<text>Пауза при сворачивании</text>

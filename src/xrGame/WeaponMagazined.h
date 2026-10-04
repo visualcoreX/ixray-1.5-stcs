@@ -128,6 +128,8 @@ protected:
 	// Protecta alone. JustAfterReload is what the weapon class knows -- only the shotguns track it.
 	bool			NeedFirstShootAnim		() const { return m_bNeedFirstShootAnims && JustAfterReload(); }
 	virtual bool	JustAfterReload			() const { return false; }
+	// The jam is rolled after the shot (state_Fire): may THIS shot jam the gun at all?
+	virtual bool	JamAllowedAfterShot		() const { return true; }
 	// May a trigger held through an aim in/out transition auto-resume firing at the handoff?
 	// Only genuine continuous-auto weapons. NOTE: pistols/shotguns/SVD keep the default
 	// m_iQueueSize == WEAPON_ININITE_QUEUE (they gate semi-auto via bWorking in switch2_Fire),

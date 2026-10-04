@@ -190,6 +190,8 @@
 #define CLSID_OBJECT_G_RPG7			MK_CLSID('G','_','R','P','G','7',' ',' ')
 #define CLSID_GRENADE_RGD5			MK_CLSID('G','_','R','G','D','5',' ',' ')
 #define CLSID_OBJECT_G_FAKE			MK_CLSID('G','_','F','A','K','E',' ',' ')
+// a spent cartridge case thrown out on a shot (CShellCasing)
+#define CLSID_OBJECT_SHELL_CASING	MK_CLSID('S','H','E','L','L','_','C','S')
 
 //---------------------------------------------------------------------------------
 #define CLSID_OBJECT_PLAYERS_BAG	MK_CLSID('M','P','_','P','L','B','A','G')

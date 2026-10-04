@@ -1,4 +1,6 @@
 [wpn_sig220]:identity_immunities,weapon_probability,default_weapon_params
+reload_drop_bones	= mag:mag_drop_sig220, mag2:mag_drop_sig220_big	; a full reload lets the magazine fall: <hud bone>:<object>, the shown one counts
+reload_drop_frame	= 15	; ...let go on this frame of the full reload (30 a second)
 bullet_material				= objects\bullet	; wallmark/impact/ricochet pair on hit
 
 ; GS use_light_misfire: per-shot light strike (click, no bang) -- plays anm_shoot_lightmisfire,
@@ -577,6 +579,7 @@ configuration_12 = bullet2,bullet3,bullet4,bullet5,bullet6,bullet7,bullet8,bulle
 ; star icon overlay. Inherits everything else from [wpn_sig220]. Spawn: `wpn_sig220_nimble`.
 ; =====================================================================================
 [wpn_sig220_nimble]:wpn_sig220
+reload_drop_bones	= mag:mag_drop_sig220r, mag2:mag_drop_sig220r_big	; a full reload lets the magazine fall: <hud bone>:<object>, the shown one counts
 $spawn               = "weapons\wpn_sig220_nimble"
 description          = gunsl_wpn_sig220_nimble_descr
 cost                 = 6000	; orig 3400

@@ -157,6 +157,10 @@ void CWeaponRPG7::ReactiveHit()
 	Fvector pos = get_LastFP();
 	Fvector dir = get_LastFD();
 	dir.mul		(-1.f);					// out the back of the tube
+	// ...which is NOT where the fire point is: that is the muzzle, the very spot the rocket is launched from. The
+	// pellets started there and flew back through the rocket -- the bullet manager hit it on the next frame,
+	// once it was free, and every shot that caught it was thrown backwards at ~130 m/s. Out of the rear end.
+	pos.mad		(dir, READ_IF_EXISTS(pSettings, r_float, sect, "reactive_hit_offset", 1.f));
 
 	CCartridge c;
 	c.param_s.kDist = c.param_s.kHit = c.param_s.kCritical = c.param_s.kImpulse = c.param_s.kAP = 1.f;

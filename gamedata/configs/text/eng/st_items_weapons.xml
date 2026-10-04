@@ -63,6 +63,15 @@
 	<string id="ammo-5.45x39-fmj_descr">
 		<text>A standard round for automatic rifles of Warsaw Pact countries. Suitable for the AK-74M, AKS-74U and AN-94 Abakan assault rifles.</text>
 	</string>
+	<string id="ammo-7.62x39-fmj">
+		<text>7.62x39 mm rounds</text>
+	</string>
+	<string id="ammo-7.62x39-fmj_s">
+		<text>7.62x39</text>
+	</string>
+	<string id="ammo_7.62x39_fmj_descr">
+		<text>7,62x39mm ammo 57-N-231 with a steel-core bullet was the standard round of the first-generation Kalashnikov rifles, used by the armies of many Warsaw pact countries until the move to the 5,45mm calibre. The heavy bullet keeps its energy well and punches through cover, but the stronger recoil and the curved trajectory cost accuracy at long range. Suitable for the AKM assault rifle.</text>
+	</string>
 	<string id="ammo-5.45x39-ap">
 		<text>5.45x39 mm BP rounds</text>
 	</string>

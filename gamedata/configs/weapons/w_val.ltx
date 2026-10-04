@@ -1,4 +1,5 @@
 [wpn_val]:identity_immunities,weapon_probability,default_weapon_params
+shell_casing_hip_offset	= -0.05, -0.04, 0.0	; out of the sights the case appears 5 cm further left and 4 cm lower (right, up, forward; m)
 bullet_material				= objects\bullet_automatic	; wallmark/impact/ricochet pair on hit
 GroupControlSection     = spawn_group
 discovery_dependency    =
@@ -946,6 +947,7 @@ lock_time_anm_changefiremode_from_a_to_3 = 1.17
 lock_time_anm_changefiremode_from_a_to_3_jammed = 1.17
 lock_time_anm_changefiremode_from_a_to_3_empty = 1.17
 [wpn_val_minigame]:wpn_val    ;new weapon for minigame "Shooting"
+shell_casing_override	= shell_casing_9x39	; the case of the real gun, not of the stand-in ammo_minigame round
 ammo_limit      = 100
 ;ammo_mag_size   = 10
 ammo_class      = ammo_minigame

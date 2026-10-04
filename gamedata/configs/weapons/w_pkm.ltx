@@ -1,4 +1,14 @@
 [wpn_pkm]:identity_immunities,weapon_probability,default_weapon_params
+shell_casing_bone	= gilza	; the hud model names its animated case this way
+shell_casing_dir		= -1.0, 0.0, 0.0	; third person / NPC: a PKM throws its cases to the LEFT
+shell_casing_up_bias	= -0.2	; ...and a little DOWN, the link too (the common up_bias, 0.25, lifts the direction instead)
+shell_casing_speed	= 4.5, 6.5	; m/s (the common range is 3.75-6.75)
+shell_casing_extra		= shell_casing_pkm_link	; ...and a belt link with every round
+shell_casing_extra_bone	= holder	; the hud bone that carries the link
+shell_casing_extra_dir	= -1.0, 0.0, 0.0	; third person / NPC: the links go out to the LEFT as well, like the cases (orig 1.0, 0.1, 0.0)
+shell_casing_extra_world_offset	= 0.0, -0.03, 0.0	; third person: the link leaves a little under the case
+shell_casing_extra_speed	= 3.5, 5.5	; m/s
+shell_casing_hand_side	= 0.06	; the reloads push the link about by up to 4 cm before the full one throws it out: take over only past that
 bullet_material				= objects\bullet	; wallmark/impact/ricochet pair on hit
 GroupControlSection     = spawn_group
 discovery_dependency    =
@@ -96,7 +106,7 @@ flame_particles               = ghost_particles\weapons\flame_762_stock_rifles
 smoke_particles               = ghost_particles\weapons\smoke_762_stock_rifles
 grenade_flame_particles = weapons\generic_weapon01
 
-shell_point             = 0,-0.15,-0.15
+shell_point             = -0.025, 0.13, 0.02	; orig 0,-0.15,-0.15 (never even read: see WeaponShellCasing.cpp, the casings sat at the grip, 0,0,0). Measured on the world model: the receiver at z 0..0.05 spans y 0.08..0.21 and x +-0.024 -- this is its left wall, mid-height
 shell_dir               = 0.0, 1.0, 0.0
 ;shell_particles         = weapons\generic_shells
 

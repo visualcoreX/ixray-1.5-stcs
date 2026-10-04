@@ -4,6 +4,8 @@
 #include "gunsl_silencers.ltx"		; Gunslinger per-caliber silencers (2026-07-24)
 #include "laser_beams.ltx"		; laser designator volumetric beams (R3)
 #include "actor_wpn_pos.ltx"		; actor-only world-model hand offsets (NPCs keep the vanilla ones)
+#include "shell_casings.ltx"		; real cartridge cases thrown out on a shot
+#include "mag_drops.ltx"		; magazines a full reload lets fall
 
 #include "upgrades\w_abakan_up.ltx"
 #include "upgrades\w_ak74_up.ltx"
@@ -182,6 +184,7 @@ slot				= -1
 explosive			= false
 
 [ammo_9x18_fmj]:ammo_base
+shell_casing		= shell_casing_9x18
 whine_sounds	= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -220,6 +223,7 @@ k_air_resistance = 1.5
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_9x18_pbp]:ammo_base
+shell_casing		= shell_casing_9x18
 whine_sounds	= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -257,6 +261,7 @@ k_air_resistance = 1.5
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_9x18_pmm]:ammo_base
+shell_casing		= shell_casing_9x18
 whine_sounds	= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -294,6 +299,7 @@ k_air_resistance = 1.4	; orig 1.5 (GS)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_9x19_fmj]:ammo_base
+shell_casing		= shell_casing_9x19
 whine_sounds	= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -332,6 +338,7 @@ k_air_resistance = 1.45	; orig 1.5 (GS)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_9x19_pbp]:ammo_base
+shell_casing		= shell_casing_9x19
 whine_sounds	= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -369,6 +376,7 @@ k_air_resistance = 1.35	; orig 1.5 (GS)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_11.43x23_fmj]:ammo_base
+shell_casing		= shell_casing_1143x23
 whine_sounds	= weapons\shared\bullet_crack_45acp_01, weapons\shared\bullet_crack_45acp_02, weapons\shared\bullet_crack_45acp_03, weapons\shared\bullet_crack_45acp_04, weapons\shared\bullet_crack_45acp_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -406,6 +414,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_11.43x23_hydro]:ammo_base
+shell_casing		= shell_casing_1143x23
 whine_sounds	= weapons\shared\bullet_crack_45acp_01, weapons\shared\bullet_crack_45acp_02, weapons\shared\bullet_crack_45acp_03, weapons\shared\bullet_crack_45acp_04, weapons\shared\bullet_crack_45acp_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -443,6 +452,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_5.45x39_fmj]:ammo_base
+shell_casing		= shell_casing_545x39
 whine_sounds	= weapons\shared\bullet_crack_545_01, weapons\shared\bullet_crack_545_02, weapons\shared\bullet_crack_545_03, weapons\shared\bullet_crack_545_04, weapons\shared\bullet_crack_545_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -482,6 +492,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_5.45x39_ap]:ammo_base
+shell_casing		= shell_casing_545x39
 whine_sounds	= weapons\shared\bullet_crack_545_01, weapons\shared\bullet_crack_545_02, weapons\shared\bullet_crack_545_03, weapons\shared\bullet_crack_545_04, weapons\shared\bullet_crack_545_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -519,6 +530,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_5.56x45_ss190]:ammo_base
+shell_casing		= shell_casing_556x45
 whine_sounds	= weapons\shared\bullet_crack_556_01, weapons\shared\bullet_crack_556_02, weapons\shared\bullet_crack_556_03, weapons\shared\bullet_crack_556_04, weapons\shared\bullet_crack_556_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -557,6 +569,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_5.56x45_ap]:ammo_base
+shell_casing		= shell_casing_556x45
 whine_sounds	= weapons\shared\bullet_crack_556_01, weapons\shared\bullet_crack_556_02, weapons\shared\bullet_crack_556_03, weapons\shared\bullet_crack_556_04, weapons\shared\bullet_crack_556_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -594,6 +607,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_pkm_100]:ammo_base
+shell_casing		= shell_casing_762x54
 whine_sounds	= weapons\shared\bullet_crack_762_01, weapons\shared\bullet_crack_762_02, weapons\shared\bullet_crack_762_03, weapons\shared\bullet_crack_762_04, weapons\shared\bullet_crack_762_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -632,6 +646,7 @@ tracer			= on
 wm_size         = 0.07
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_7.62x54_7h1]:ammo_base
+shell_casing		= shell_casing_762x54
 whine_sounds	= weapons\shared\bullet_crack_762_01, weapons\shared\bullet_crack_762_02, weapons\shared\bullet_crack_762_03, weapons\shared\bullet_crack_762_04, weapons\shared\bullet_crack_762_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -669,6 +684,7 @@ wm_size         = 0.05
 explosive		= off
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_7.62x54_ap]:ammo_base
+shell_casing		= shell_casing_762x54
 whine_sounds	= weapons\shared\bullet_crack_762_01, weapons\shared\bullet_crack_762_02, weapons\shared\bullet_crack_762_03, weapons\shared\bullet_crack_762_04, weapons\shared\bullet_crack_762_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -705,6 +721,7 @@ wm_size         = 0.05
 explosive		= on
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_7.62x54_7h14]:ammo_base
+shell_casing		= shell_casing_762x54
 whine_sounds	= weapons\shared\bullet_crack_762_01, weapons\shared\bullet_crack_762_02, weapons\shared\bullet_crack_762_03, weapons\shared\bullet_crack_762_04, weapons\shared\bullet_crack_762_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -742,6 +759,7 @@ explosive		= on
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_223_fmj]:ammo_base
+shell_casing		= shell_casing_556x45
 whine_sounds	= weapons\shared\bullet_crack_556_01, weapons\shared\bullet_crack_556_02, weapons\shared\bullet_crack_556_03, weapons\shared\bullet_crack_556_04, weapons\shared\bullet_crack_556_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -837,6 +855,7 @@ impair			= 1.5	; GS: the home-made cell accelerates the slug less -> worse accur
 k_air_resistance = 1.0	; GS (ours does not set it on [ammo_gauss] at all)
 
 [ammo_9x39_pab9]:ammo_base
+shell_casing		= shell_casing_9x39
 whine_sounds	= weapons\shared\bullet_crack_939_01, weapons\shared\bullet_crack_939_02, weapons\shared\bullet_crack_939_03, weapons\shared\bullet_crack_939_04, weapons\shared\bullet_crack_939_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -874,6 +893,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_9x39_ap]:ammo_base
+shell_casing		= shell_casing_9x39
 whine_sounds	= weapons\shared\bullet_crack_939_01, weapons\shared\bullet_crack_939_02, weapons\shared\bullet_crack_939_03, weapons\shared\bullet_crack_939_04, weapons\shared\bullet_crack_939_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -911,6 +931,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_9x39_sp5]:ammo_base
+shell_casing		= shell_casing_9x39
 whine_sounds	= weapons\shared\bullet_crack_939_01, weapons\shared\bullet_crack_939_02, weapons\shared\bullet_crack_939_03, weapons\shared\bullet_crack_939_04, weapons\shared\bullet_crack_939_05
 GroupControlSection	= spawn_group
 discovery_dependency =
@@ -947,6 +968,7 @@ wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_12x70_buck]:ammo_base
+shell_casing		= shell_casing_12x70_buck
 whine_sounds	= weapons\shared\bullet_crack_12g_buck_01, weapons\shared\bullet_crack_12g_buck_02, weapons\shared\bullet_crack_12g_buck_03, weapons\shared\bullet_crack_12g_buck_04, weapons\shared\bullet_crack_12g_buck_05
 bullet_material				= objects\bullet_shotgun	; buckshot -- the material belongs to the projectile, not the barrel
 GroupControlSection	= spawn_group
@@ -984,6 +1006,7 @@ wm_size         = 0.05
 k_air_resistance = 3
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_12x76_zhekan]:ammo_base
+shell_casing		= shell_casing_12x76_zhekan
 whine_sounds	= weapons\shared\bullet_crack_12g_slug_01, weapons\shared\bullet_crack_12g_slug_02, weapons\shared\bullet_crack_12g_slug_03, weapons\shared\bullet_crack_12g_slug_04, weapons\shared\bullet_crack_12g_slug_05
 bullet_material				= objects\bullet_large	; slug -- the material belongs to the projectile, not the barrel
 GroupControlSection	= spawn_group
@@ -1027,6 +1050,7 @@ k_air_resistance = 1.1	; orig 2 (GS)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 [ammo_12x76_dart]:ammo_base
+shell_casing		= shell_casing_12x76_dart
 whine_sounds	= weapons\shared\bullet_crack_12g_slug_01, weapons\shared\bullet_crack_12g_slug_02, weapons\shared\bullet_crack_12g_slug_03, weapons\shared\bullet_crack_12g_slug_04, weapons\shared\bullet_crack_12g_slug_05
 bullet_material				= objects\bullet_large	; slug -- the material belongs to the projectile, not the barrel
 GroupControlSection	= spawn_group
@@ -1336,6 +1360,46 @@ detonation_threshold_hit = 0.4
 can_be_unlimited = true ;false
 
 ; the flying/exploding body of the M397A1 (GS ammo/fake_missiles.ltx:334)
+
+[ammo_7.62x39_fmj]:ammo_base
+shell_casing		= shell_casing_762x39
+whine_sounds	= weapons\shared\bullet_crack_545_01, weapons\shared\bullet_crack_545_02, weapons\shared\bullet_crack_545_03, weapons\shared\bullet_crack_545_04, weapons\shared\bullet_crack_545_05
+GroupControlSection	= spawn_group
+discovery_dependency =
+$spawn			= "weapons\ammo\ammo_7.62x39_fmj" ; option for Level Editor
+class			= AMMO
+cform           = skeleton
+visual          = dynamics\weapons\wpn_ammo\ammo_762x39_fmj.ogf
+description		= ammo_7.62x39_fmj_descr	; orig ammo-5.45x39-fmj_descr
+$prefetch 		= 64
+
+cost			= 400
+
+box_size		= 30
+
+inv_name		= ammo-7.62x39-fmj
+inv_name_short	= ammo-7.62x39-fmj_s
+inv_weight		= .4
+
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 17
+inv_grid_y         = 6
+
+;;inv_icon = ui_hud2_res_back
+
+k_dist			= 1
+k_air_resistance = 1.4
+k_disp			= 1
+k_hit			= 0.33
+k_impulse		= 1
+k_pierce		= 0.6
+k_ap			= 0.45
+impair			= 1
+buck_shot		= 1
+tracer			= on
+wm_size         = 0.05
+
 [wpn_fake_missile3]:identity_immunities,default_weapon_params
 ; our fake missiles carry these two (GS's does not; identity_immunities gives slot -1 / no_description
 ; anyway, but keep the shape identical to wpn_fake_missile2 so nothing reads a stale inherited value)
@@ -2509,6 +2573,7 @@ grenade_vel 		= 70
 
 ; --- 5.7x28 (GS ammo/5.7x28.ltx), fed by the Five-seveN ---
 [ammo_5.7x28]:ammo_base
+shell_casing		= shell_casing_57x28
 whine_sounds	= weapons\shared\bullet_crack_57_01, weapons\shared\bullet_crack_57_02, weapons\shared\bullet_crack_57_03, weapons\shared\bullet_crack_57_04, weapons\shared\bullet_crack_57_05
 $spawn			= "weapons\ammo\ammo_5.7x28" ; option for Level Editor
 visual          = dynamics\weapons\wpn_ammo\ammo_57x28.ogf
@@ -2549,6 +2614,7 @@ wm_size          = 0.05
 
 ; --- 7.62x25 TT (GS ammo/7.62x25.ltx), fed by the TT-33 ---
 [ammo_9x21_sp10]:ammo_base
+shell_casing		= shell_casing_9x21
 whine_sounds	= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
 ; keys our [ammo_base] does not carry but GS's does -- values from the working
 ; [ammo_762x25mm_tt] / GS base.ltx [ammo_base] (missing k_dist = r_string fatal)
@@ -2585,6 +2651,7 @@ k_ap			= 0.35
 k_air_resistance = 1.3
 
 [ammo_762x25mm_tt]:ammo_base
+shell_casing		= shell_casing_762x25
 whine_sounds	= weapons\shared\bullet_crack_9mm_01, weapons\shared\bullet_crack_9mm_02, weapons\shared\bullet_crack_9mm_03, weapons\shared\bullet_crack_9mm_04, weapons\shared\bullet_crack_9mm_05
 $spawn			= "weapons\ammo\ammo_762x25mm_tt" ; option for Level Editor
 visual          = dynamics\weapons\wpn_ammo\ammo_tt33.ogf
@@ -2621,6 +2688,7 @@ wm_size           = 0.05
 
 ; ---- .50 Action Express (GS deagle caliber), ported from GS ammo\.50ae.ltx ----
 [ammo_50ae]:ammo_base
+shell_casing		= shell_casing_50ae
 whine_sounds	= weapons\shared\bullet_crack_45acp_01, weapons\shared\bullet_crack_45acp_02, weapons\shared\bullet_crack_45acp_03, weapons\shared\bullet_crack_45acp_04, weapons\shared\bullet_crack_45acp_05
 $spawn			= "weapons\ammo\ammo_50ae" ; option for Level Editor
 visual          = dynamics\weapons\wpn_ammo\ammo_50ae.ogf

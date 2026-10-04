@@ -612,6 +612,8 @@ lock_time_anm_fakeshoot_jammed     = 0.90
 anm_fakeshoot_jammed               = sg550_dry, idle_jammed
 lock_time_anm_fakeshoot_aim_jammed = 0.20
 anm_fakeshoot_aim_jammed           = sg550_aim_dry, sg550_aim_jammed
+anm_fakeshoot = sg550_dry	; base alias the engine looks up before adding _jammed (not in GS set)
+anm_fakeshoot_aim = sg550_aim_dry, sg550_aim	; base alias the engine looks up before adding _jammed (not in GS set)
 
 anm_reload                           = sg550_reload
 anm_reload_empty                     = sg550_reload_empty
@@ -831,6 +833,8 @@ anm_fakeshoot_empty                = sg550_tac_dry_empty, idle_empty
 anm_fakeshoot_aim_empty            = sg550_tac_aim_dry, sg550_aim_empty
 anm_fakeshoot_jammed               = sg550_tac_dry, idle_jammed
 anm_fakeshoot_aim_jammed           = sg550_tac_aim_dry, sg550_aim_jammed
+anm_fakeshoot = sg550_tac_dry	; base alias the engine looks up before adding _jammed (not in GS set)
+anm_fakeshoot_aim = sg550_tac_aim_dry, sg550_aim	; base alias the engine looks up before adding _jammed (not in GS set)
 
 anm_reload                           = sg550_tac_reload, sg550_reload
 anm_reload_empty                     = sg550_tac_reload_empty, sg550_reload_empty

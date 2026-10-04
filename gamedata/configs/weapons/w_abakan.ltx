@@ -1,4 +1,9 @@
 [wpn_abakan]:identity_immunities,weapon_probability,default_weapon_params
+reload_drop_bones	= mag30:mag_drop_abakan_30, mag45:mag_drop_abakan_45, mag45_black:mag_drop_abakan_45_black, mag60:mag_drop_abakan_60	; a full reload lets the magazine fall: <hud bone>:<object>, the shown one counts
+reload_drop_frame	= 35	; ...let go on this frame of the full reload (30 a second)
+reload_drop_speed	= 0.3, 1.5	; m/s the magazine may leave at (default 0.3, 8): capped, as on the AK-74
+reload_drop_forward	= 0.3	; share of its speed along the line of sight it keeps (default 1): it went a little too far forward
+shell_casing_world_offset	= 0.0, 0.0, 0.03	; third person: the case a little further forward than the world model's shell bone
 bullet_material				= objects\bullet_automatic	; wallmark/impact/ricochet pair on hit
 GroupControlSection     = spawn_group
 discovery_dependency    =
@@ -822,10 +827,14 @@ anm_fakeshoot_empty = ak74_dry_empty
 anm_fakeshoot_aim_empty = ak74_aim_dry, an94_aim
 anm_fakeshoot_jammed = ak74_dry, idle_jammed
 anm_fakeshoot_aim_jammed = ak74_aim_dry, an94_aim_jammed
+anm_fakeshoot = ak74_dry	; base alias the engine looks up before adding _jammed (not in GS set)
+anm_fakeshoot_aim = ak74_aim_dry, an94_aim	; base alias the engine looks up before adding _jammed (not in GS set)
 anm_fakeshoot_empty_w_gl = an94_dry_empty_gl_off
 anm_fakeshoot_aim_empty_w_gl = an94_aim_dry_gl_off, an94_aim
 anm_fakeshoot_jammed_w_gl = an94_dry_gl_off, idle_jammed
 anm_fakeshoot_aim_jammed_w_gl = an94_aim_dry_gl_off, an94_aim_jammed
+anm_fakeshoot_w_gl = an94_dry_gl_off	; base alias the engine looks up before adding _jammed (not in GS set)
+anm_fakeshoot_aim_w_gl = an94_aim_dry_gl_off, an94_aim	; base alias the engine looks up before adding _jammed (not in GS set)
 anm_fakeshoot_g = an94_dry_empty_gl_on, idle_gl_on
 anm_fakeshoot_aim_g = an94_aim_dry_gl_on, idle_gl_on
 anm_fakeshoot_jammed_g = an94_dry_empty_gl_on, idle_jammed_gl_on

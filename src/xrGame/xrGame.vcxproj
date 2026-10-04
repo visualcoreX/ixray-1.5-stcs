@@ -888,7 +888,6 @@
     <ClInclude Include="detail_path_manager_inline.h" />
     <ClInclude Include="detail_path_manager_space.h" />
     <ClInclude Include="dijkstra.h" />
-    <ClInclude Include="discord_game_sdk.h" />
     <ClInclude Include="discord_rpc.h" />
     <ClInclude Include="dijkstra_inline.h" />
     <ClInclude Include="DisablingParams.h" />
@@ -928,6 +927,7 @@
     </CustomBuild>
     <ClInclude Include="ExplosiveItem.h" />
     <ClInclude Include="ExplosiveRocket.h" />
+    <ClInclude Include="ShellCasing.h" />
     <ClInclude Include="ExtendedGeom.h" />
     <ClInclude Include="F1.h" />
     <ClInclude Include="FadedBall.h" />
@@ -3076,6 +3076,8 @@
     <ClCompile Include="Explosive.cpp" />
     <ClCompile Include="ExplosiveItem.cpp" />
     <ClCompile Include="ExplosiveRocket.cpp" />
+    <ClCompile Include="ShellCasing.cpp" />
+    <ClCompile Include="WeaponShellCasing.cpp" />
     <ClCompile Include="ExplosiveScript.cpp">
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">pch_script.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)$(ProjectName)_script.pch</PrecompiledHeaderOutputFile>
