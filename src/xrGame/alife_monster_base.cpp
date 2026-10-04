@@ -21,7 +21,10 @@ void CSE_ALifeMonsterBase::on_spawn				()
 
 	LPCSTR						item_section = pSettings->r_string(s_name,"Spawn_Inventory_Item_Section");
 	float						spawn_probability = pSettings->r_float(s_name,"Spawn_Inventory_Item_Probability");
-	float						probability = randF();
+	// NOT this object's own randF(): CSE_ALifeObject seeds its generator with the QPC at construction,
+	// and a squad's monsters are built microseconds apart -- their first draws came out all but equal,
+	// so the parts dropped for the whole squad or for nobody in it. The shared generator moves on.
+	float						probability = ::Random.randF();
 	if ((probability >= spawn_probability) && !fsimilar(spawn_probability,1.f))
 		return;
 
