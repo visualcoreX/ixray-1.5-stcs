@@ -1,0 +1,102 @@
+; Real cartridge cases thrown out on a shot (engine: CShellCasing, WeaponShellCasing.cpp).
+; Which case a shot throws is named by the fired round: shell_casing = <section> in its ammo section.
+; First person: the case takes over from the hud model's animated shell as it leaves the port, so the
+; place, the direction and the speed come from that gun's own shot animation. Third person and NPCs:
+; from the weapon's shell_point, in the direction below.
+;
+; Per weapon, in the weapon section:
+;   shell_casing         = false    no cases from this weapon
+;   shell_casing_window  = <sec>    how long to wait for the hud shell to start moving (pump guns)
+;   shell_casing_no_anim = true     the hud model does not animate its shell: throw at once
+;   shell_casing_bone    = <bone>   the hud shell bone, when it is not "shell"
+;   shell_casing_dir     = x,y,z    direction without an animation: right, up, along the barrel
+;   shell_casing_speed   = min,max  m/s, same case
+
+[shell_casings]
+enabled         = true
+spawn_distance  = 25            ; m from the camera; shots further away throw nothing
+max_count       = 150           ; cases alive at once; over that the oldest go first
+hud_window      = 0.35          ; s to wait for the hud shell to fly out (a pump gun needs longer)
+unjam           = true          ; a case racked out by hand is a real one too, where the animation throws its shell:
+                                ; clearing a jam, and the open of a shotgun's reload (SPAS-12 after a shot)
+hud_unjam_window = 8            ; s to wait for it (the wait ends with the animation anyway)
+hud_unjam_skip  = 0.3           ; s into that animation before the shell is looked at: it is still blending in from the last pose
+unjam_speed_scale = 0.75        ; of the usual throw speed, for such a case
+hud_track_speed = 0.4, 30       ; m/s: a step of the hud shell inside this range, at the gun, is the flight
+hud_track_side  = 0.015         ; m: the case takes over once the hud shell is this far off the barrel line, i.e. leaving the gun
+                                ; (per weapon: shell_casing_side -- a pump gun needs more, its slide drags the shell back first)
+hud_track_near  = 1.2           ; m from the camera that still counts as 'at the gun' (the idle pose parks the shell far away)
+debug           = false          ; one line in the log per case thrown in first person: where from, which way, how fast
+hud_scale       = 1.0           ; first person: a case starts out drawn as large as the hud model's own shell
+                                ; (the ratio of the world and hud projections, about 1.7 at fov 75 / hud_fov 0.66)
+                                ; times this, and shrinks to its real size in flight -- see scale_time below
+dir             = 1.0, 0.6, -0.1
+speed           = 3.75, 6.75    ; m/s; the animation's own speed is used when it falls inside this range
+forward_scale   = 0.3           ; share of the throw direction kept along the barrel: the animations throw their
+                                ; shells well forward or back, the real case goes mostly up and to the side
+up_bias         = 0.25          ; extra lift added to the direction
+up_range        = 0.4, 0.75     ; how upward the throw is (its share along the gun's up axis): from here on it counts
+                                ; as thrown upwards, and from the second value fully so
+up_forward_scale = 0.08         ; forward_scale of a case thrown upwards: it flies the longest, so it must keep next
+                                ; to nothing along the barrel to go up and land by the feet
+up_forward_scatter = 0.3        ; share of the random scatter kept along the barrel for such a case
+speed_jitter    = 0.2           ; share of the animation's own speed, either way
+dispersion      = 14            ; deg, the cone the direction is scattered in
+spin            = 15, 40        ; rad/s of tumbling
+
+[shell_casing_base]
+class           = SHELL_CS
+lifetime        = 30            ; real seconds before a case is removed
+hud_draw_time   = 0.3           ; s a case thrown in first person is drawn in the hud pass, like the gun: over the world,
+                                ; with the hud projection -- or the gun's own picture would cover a case thrown across it
+scale_time      = 0.4           ; s a case thrown in first person takes to come down to its real size
+ph_mass         = 0.02          ; kg
+ph_linear_scale = 1.002         ; velocity is divided by this every physics step (100 a second); 1 = no damping
+ph_angular_scale= 1.01          ; same for the spin: this is what lets a case come to rest instead of rolling on
+ph_angular_limit= 60            ; rad/s, the fastest a case may spin
+
+[shell_casing_9x18]:shell_casing_base
+visual          = dynamics\weapons\shells\shell_9x18.ogf
+
+[shell_casing_9x19]:shell_casing_base
+visual          = dynamics\weapons\shells\shell_9x19.ogf
+
+[shell_casing_9x21]:shell_casing_base
+visual          = dynamics\weapons\shells\shell_9x21.ogf
+
+[shell_casing_1143x23]:shell_casing_base
+visual          = dynamics\weapons\shells\shell_1143x23.ogf
+
+[shell_casing_50ae]:shell_casing_base
+visual          = dynamics\weapons\shells\shell_50ae.ogf
+
+[shell_casing_57x28]:shell_casing_base
+visual          = dynamics\weapons\shells\shell_57x28.ogf
+
+[shell_casing_762x25]:shell_casing_base
+visual          = dynamics\weapons\shells\shell_762x25.ogf
+
+[shell_casing_545x39]:shell_casing_base
+visual          = dynamics\weapons\shells\shell_545x39.ogf
+
+[shell_casing_556x45]:shell_casing_base
+visual          = dynamics\weapons\shells\shell_556x45.ogf
+
+[shell_casing_762x54]:shell_casing_base
+visual          = dynamics\weapons\shells\shell_762x54.ogf
+
+[shell_casing_9x39]:shell_casing_base
+visual          = dynamics\weapons\shells\shell_9x39.ogf
+
+[shell_casing_12x70_buck]:shell_casing_base
+visual          = dynamics\weapons\shells\shell_12x70_buck.ogf
+
+[shell_casing_12x76_zhekan]:shell_casing_base
+visual          = dynamics\weapons\shells\shell_12x76_zhekan.ogf
+
+[shell_casing_12x76_dart]:shell_casing_base
+visual          = dynamics\weapons\shells\shell_12x76_dart.ogf
+
+; the PKM belt link: thrown with every round next to the case (shell_casing_extra in the weapon section)
+[shell_casing_pkm_link]:shell_casing_base
+visual          = dynamics\weapons\shells\holder_pkm.ogf

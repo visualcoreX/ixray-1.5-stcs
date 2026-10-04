@@ -2,6 +2,10 @@
 ; GS values verbatim; every deviation is annotated "; orig <old> (GS)".
 
 [wpn_p90]:identity_immunities,weapon_probability,default_weapon_params	; orig also :red_laser -- GS wires the built-in laser by inheritance, we wire it via laser_params_section = p90_laser	; orig also :pistol_slot_blocker (GS-only section)
+shell_casing_no_anim	= true	; the hud model keeps its shell still (parked): throw at once, from the point below
+shell_casing_point	= 0.0, -0.105, -0.141	; in the space of the hud model's wpn_body bone: bottom of the receiver behind the grip, where the P90 drops its cases
+shell_casing_dir		= 0.05, -1.0, 0.0	; straight down
+shell_casing_speed	= 2.25, 3.75
 bullet_material				= objects\bullet_automatic	; wallmark/impact/ricochet pair on hit
 
 GroupControlSection     = spawn_group
