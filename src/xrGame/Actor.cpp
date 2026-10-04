@@ -580,6 +580,85 @@ struct playing_pred
 	}
 };
 
+// The HEARTBEAT (heavy_blood_snd): decided in UpdateCL's injury grading -- a bleeding past
+// HEARTBEAT_BLEED, or the health under HEARTBEAT_HEALTH_ON until it climbs back past HEARTBEAT_HEALTH_OFF --
+// and played in shedule_Update. One flag, one sound: the two causes never play it twice.
+static bool		s_heartbeat			= false;
+static float	s_heartbeat_volume	= 0.f;
+
+// The HIT SHAKE: on a one-off hit the camera flinches, added on top of everything else the way the weapon's
+// shot shake is. Each hit is a shake of its own, summed: a short sine that loses both height and pace as it
+// dies out (HIT_SHAKE_TIME long), in PITCH and -- a quarter turn ahead and twice as large -- in ROLL, the roll
+// to a random side. Its size follows the health the hit took: full (HIT_SHAKE_ROLL in roll, half that in pitch)
+// from HIT_SHAKE_FULL of health up.
+class CActorHitShake : public CEffectorCam
+{
+	struct SShake	{ float age, amp, side; };
+	xr_vector<SShake>	m_shakes;
+public:
+	enum			{ HIT_SHAKE_MAX = 8 };
+					CActorHitShake	() : CEffectorCam(eCEActorHitShake, 100000.f)	{}
+	void			Add				(float amp)
+	{
+		if (m_shakes.size() >= HIT_SHAKE_MAX)	m_shakes.erase(m_shakes.begin());	// a burst of hits: the oldest goes
+		SShake s	= { 0.f, amp, ::Random.randI(2) ? 1.f : -1.f };
+		m_shakes.push_back(s);
+	}
+	// the shape, u = 0..1 over the shake: a sine whose pace slows (u^0.7 for its phase, 1.75 turns in all),
+	// under an exponential fade normalised to 1 at the first peak, snapped in over the first 5% and closed
+	// smoothly at the end
+	static float	wave			(float u, float phase)
+	{
+		float		att		= _min(u / 0.05f, 1.f);
+		att					= att * att * (3.f - 2.f * att);
+		const float	env		= expf(-2.15f * u) / expf(-0.215f);
+		const float	tail	= 1.f - u * u * u * u;
+		return _sin(PI_MUL_2 * 1.75f * powf(u, 0.7f) + phase) * env * att * tail;
+	}
+	virtual BOOL	ProcessCam		(SCamEffectorInfo& info)
+	{
+		const float	HIT_SHAKE_TIME	= 0.6f;					// seconds a shake lasts
+		const float	HIT_SHAKE_ROLL	= deg2rad(2.f);			// roll at full; the pitch gets half of it
+		float		pitch = 0.f, roll = 0.f;
+		for (u32 i = 0; i < m_shakes.size(); )
+		{
+			SShake&	s	= m_shakes[i];
+			s.age		+= Device.fTimeDelta;
+			const float u = s.age / HIT_SHAKE_TIME;
+			if (u >= 1.f)	{ m_shakes.erase(m_shakes.begin() + i); continue; }
+			pitch		+= 0.5f * HIT_SHAKE_ROLL * s.amp * wave(u, 0.f);
+			roll		+= HIT_SHAKE_ROLL * s.amp * s.side * wave(u, PI_DIV_2);
+			++i;
+		}
+		if (m_shakes.empty())	{ fLifeTime = -1.f; return TRUE; }	// done: the manager drops it
+
+		Fmatrix		M;
+		M.identity	();
+		M.j.set		(info.n);
+		M.k.set		(info.d);
+		M.i.crossproduct(info.n, info.d);
+		M.c.set		(info.p);
+		Fmatrix		R;
+		R.setHPB	(0.f, pitch, roll);
+		Fmatrix		mR;
+		mR.mul		(M, R);
+		info.d.set	(mR.k);
+		info.n.set	(mR.j);
+		return TRUE;
+	}
+};
+
+// The HIT FLASH (see UpdateCL): CActor::Hit leaves the strength of a fresh one-off hit here, 0..1; UpdateCL
+// takes it and plays the flash. Only for what the screen should flinch at -- see hit_flash_type.
+static float s_hit_flash_pending = 0.f;
+static bool hit_flash_type(ALife::EHitType t)
+{
+	// one-off blows: a bullet, a bite or a cut, a strike, a blast. Not the steady drains (fire, radiation,
+	// psy, chemicals, shock fields): an anomaly hits every few hundred ms, and the screen would never settle.
+	return t == ALife::eHitTypeWound || t == ALife::eHitTypeWound_2 || t == ALife::eHitTypeFireWound
+		|| t == ALife::eHitTypeStrike || t == ALife::eHitTypeExplosion;
+}
+
 void	CActor::Hit							(SHit* pHDS)
 {
 	pHDS->aim_bullet = false;
@@ -698,6 +777,32 @@ void	CActor::Hit							(SHit* pHDS)
 			HDS.power				= hit_power;
 			HDS.add_wound			= true;
 			inherited::Hit			(&HDS);
+			// the hit flash: by the health this blow takes (armour and all -- ConditionHit leaves it in
+			// HealthLost; the health itself only drops on the next UpdateCondition), the smallest still
+			// HIT_FLASH_MIN of a full one, full from HIT_FLASH_FULL of the health up
+			const float	HIT_FLASH_MIN	= 0.5f;
+			const float	HIT_FLASH_FULL	= 0.25f;
+			const float	lost			= conditions().GetHealthLost();
+			if (lost > EPS_L && hit_flash_type(HDS.hit_type) && g_Alive() && Level().CurrentViewEntity() == this)
+			{
+				s_hit_flash_pending	= _max(s_hit_flash_pending, HIT_FLASH_MIN + (1.f - HIT_FLASH_MIN) * _min(1.f, lost / HIT_FLASH_FULL));
+				// ...and the camera's flinch (CActorHitShake), its size straight by the health taken
+				const float	HIT_SHAKE_FULL	= 0.5f;
+				// (AddCamEffector only takes it in on the next update, and then drops any of the same type: a
+				// second hit in the same frame has to find the one just made, not make another)
+				static CActorHitShake*	s_made			= NULL;
+				static u32				s_made_frame	= u32(-1);
+				CActorHitShake* shake = static_cast<CActorHitShake*>(Cameras().GetCamEffector(eCEActorHitShake));
+				if (!shake && s_made_frame == Device.dwFrame)	shake = s_made;
+				if (!shake)
+				{
+					shake			= xr_new<CActorHitShake>();
+					Cameras().AddCamEffector(shake);
+					s_made			= shake;
+					s_made_frame	= Device.dwFrame;
+				}
+				shake->Add			(_min(1.f, lost / HIT_SHAKE_FULL));
+			}
 		}
 	}else
 	{
@@ -1111,6 +1216,28 @@ float CActor::currentFOV()
 // (CActorCondition::GetAlcoholEffector) so intoxication also sways like 0.15 of alcohol at full power.
 float g_intox_fx_level = 0.f;
 
+// The fatigue and injury pulse (the stamina vignette, the red edges): the intoxication DOF pulse's shape
+// -- a short quintic ease in ending at the peak, a longer one out, then a rest -- its period sliding from
+// period_slow as the effect just shows to period_fast at level 1. Advances phase, low-passes the shape into
+// pulse (a frame-time hitch never shows as a step); both reset while the level is 0. Returns pulse, 0..1.
+static float pp_pulse_update(float& phase, float& pulse, float level, float period_slow, float period_fast)
+{
+	const float		PULSE_PEAK	= 0.18f;	// share of the period where the pulse peaks
+	const float		PULSE_IN	= 0.13f;	// share of the period to come in, ending at the peak
+	const float		PULSE_OUT	= 0.26f;	// ...and to go back out after it
+	if (level <= 0.f)	{ phase = 0.f; pulse = 0.f; return 0.f; }
+	phase += Device.fTimeDelta / (period_slow + (period_fast - period_slow) * level);
+	phase -= floorf(phase);
+	auto ease = [](float x) { clamp(x, 0.f, 1.f); return x * x * x * (x * (x * 6.f - 15.f) + 10.f); };
+	float raw = 0.f;
+	if (phase >= PULSE_PEAK - PULSE_IN && phase < PULSE_PEAK)
+		raw = ease((phase - (PULSE_PEAK - PULSE_IN)) / PULSE_IN);
+	else if (phase >= PULSE_PEAK && phase < PULSE_PEAK + PULSE_OUT)
+		raw = 1.f - ease((phase - PULSE_PEAK) / PULSE_OUT);
+	pulse += (raw - pulse) * _min(1.f, Device.fTimeDelta * 12.f);
+	return pulse;
+}
+
 void CActor::UpdateCL	()
 {
 	UpdateInventoryOwner			(Device.dwTimeDelta);
@@ -1309,23 +1436,24 @@ void CActor::UpdateCL	()
 	if (g_pGamePersistent)
 	{
 		const float		FATIGUE_FROM			= 0.75f;	// stamina where the colour drains, the picture lightens, the corners darken...
-		const float		FATIGUE_FULL			= 0.2f;		// ...and where that is at full strength
+		const float		FATIGUE_FULL			= 0.f;		// ...and where that is at full strength (empty)
 		const float		FATIGUE_SHARP_FROM		= 0.5f;		// stamina where the sharpening starts...
-		const float		FATIGUE_SHARP_FULL		= 0.1f;		// ...and where it is at full strength
-		const float		FATIGUE_DESAT			= 0.35f;	// share of the colour gone at full, at the edges (0.35 = 0.65 saturation)
+		const float		FATIGUE_SHARP_FULL		= 0.f;		// ...and where it is at full strength (empty)
+		const float		FATIGUE_DESAT			= 0.175f;	// share of the colour gone at full, at the edges (0.175 = 0.825 saturation; the sepia rides it)
 		const float		FATIGUE_BRIGHTEN		= 0.15f;	// the middle lifted this much at full (0.15 = x1.15), gone where the vignette is
-		const float		FATIGUE_VIGNETTE		= 0.5625f;	// how much the corners darken at full, steady part
-		// (steady + pulse must stay well under 1: the corners would go black at a beat's peak)
-		const float		FATIGUE_VIGNETTE_PULSE	= 0.25f;	// ...and what a pulse's peak adds on top at full
-		const float		FATIGUE_SHARP			= 1.0f;		// edge sharpening at full (unsharp mask amount)
+		const float		FATIGUE_VIGNETTE		= 0.84375f;	// how much the corners darken at full, steady part...
+		const float		FATIGUE_VIGNETTE_PULSE	= 0.375f;	// ...and what a pulse's peak adds on top at full
+		// Together they pass 1 near empty stamina -- the corners would go black on the beat -- so the sum goes
+		// through a soft knee: as it is up to FATIGUE_VIGNETTE_KNEE, then easing towards FATIGUE_VIGNETTE_MAX
+		// (the beat still shows, only flatter).
+		const float		FATIGUE_VIGNETTE_KNEE	= 0.7f;
+		const float		FATIGUE_VIGNETTE_MAX	= 0.9f;
+		const float		FATIGUE_SHARP			= 0.5f;		// edge sharpening at full (unsharp mask amount)
 		const float		FATIGUE_FADE_OUT		= 3.5f;		// seconds for a full fade back out
 		const float		FATIGUE_FADE_IN			= 4.f;		// 1/seconds: the low-pass following the stamina down
-		// the pulse: the intoxication's DOF one (see INTOX_PERIOD_*, INTOX_SURGE, INTOX_DOF_IN/OUT above)
+		// the pulse (pp_pulse_update): the intoxication DOF one's shape
 		const float		FATIGUE_PERIOD_SLOW		= 1.6f;		// seconds per pulse as it just shows (half the intoxication's)...
-		const float		FATIGUE_PERIOD_FAST		= 1.2f;		// ...and at full fatigue
-		const float		FATIGUE_PULSE_PEAK		= 0.18f;	// share of the period where the pulse peaks
-		const float		FATIGUE_PULSE_IN		= 0.13f;	// share of the period to come in, ending at the peak
-		const float		FATIGUE_PULSE_OUT		= 0.26f;	// ...and to go back out after it
+		const float		FATIGUE_PERIOD_FAST		= 1.1f;		// ...and at full fatigue: the actor's panting, one breath in 1.1 s
 		static float	s_low = 0.f, s_sharp = 0.f, s_phase = 0.f, s_pulse = 0.f;
 		auto ramp = [](float p, float from, float to) { float x = (from - p) / (from - to); clamp(x, 0.f, 1.f); return x * x * (3.f - 2.f * x); };
 		auto follow = [&](float& v, float target)
@@ -1338,28 +1466,282 @@ void CActor::UpdateCL	()
 		follow(s_sharp,	ramp(power, FATIGUE_SHARP_FROM,	FATIGUE_SHARP_FULL));
 		if (s_low < 0.001f)		s_low = 0.f;
 		if (s_sharp < 0.001f)	s_sharp = 0.f;
-		{
-			const float period = FATIGUE_PERIOD_SLOW + (FATIGUE_PERIOD_FAST - FATIGUE_PERIOD_SLOW) * s_low;
-			s_phase += Device.fTimeDelta / period;
-			s_phase -= floorf(s_phase);
-			// quintic ramps (smootherstep), as the intoxication's DOF: no perceptible start or stop
-			auto ease = [](float x) { clamp(x, 0.f, 1.f); return x * x * x * (x * (x * 6.f - 15.f) + 10.f); };
-			const float from = FATIGUE_PULSE_PEAK - FATIGUE_PULSE_IN, to = FATIGUE_PULSE_PEAK + FATIGUE_PULSE_OUT;
-			float pulse_raw = 0.f;
-			if (s_phase >= from && s_phase < FATIGUE_PULSE_PEAK)
-				pulse_raw = ease((s_phase - from) / FATIGUE_PULSE_IN);
-			else if (s_phase >= FATIGUE_PULSE_PEAK && s_phase < to)
-				pulse_raw = 1.f - ease((s_phase - FATIGUE_PULSE_PEAK) / FATIGUE_PULSE_OUT);
-			s_pulse += (pulse_raw - s_pulse) * _min(1.f, Device.fTimeDelta * 12.f);	// a light low-pass on top
-			if (s_low <= 0.f)	{ s_phase = 0.f; s_pulse = 0.f; }
-		}
+		pp_pulse_update(s_phase, s_pulse, s_low, FATIGUE_PERIOD_SLOW, FATIGUE_PERIOD_FAST);
 		// the swing grows with the fatigue squared: barely there at the start, plain at FATIGUE_FULL
-		const float		vignette = s_low * FATIGUE_VIGNETTE + s_low * s_low * FATIGUE_VIGNETTE_PULSE * s_pulse;
+		float			vignette = s_low * FATIGUE_VIGNETTE + s_low * s_low * FATIGUE_VIGNETTE_PULSE * s_pulse;
+		if (vignette > FATIGUE_VIGNETTE_KNEE)
+			vignette = FATIGUE_VIGNETTE_KNEE + (FATIGUE_VIGNETTE_MAX - FATIGUE_VIGNETTE_KNEE)
+					 * (1.f - expf(-(vignette - FATIGUE_VIGNETTE_KNEE) / (FATIGUE_VIGNETTE_MAX - FATIGUE_VIGNETTE_KNEE)));
 		// x leads (the render only runs the pass on x, R2)
 		g_pGamePersistent->pp_fatigue.set(_max(s_low, s_sharp) > 0.f ? _max(FATIGUE_DESAT * s_low, 0.0001f) : 0.f,
 										  vignette,
 										  FATIGUE_SHARP * s_sharp,
 										  FATIGUE_BRIGHTEN * s_low);
+	}
+
+	// INJURY GRADING, from the health (conditions().GetHealth(), 0..1) and the bleeding (BleedingSpeed()). It
+	// replaces GS's bloodscreen overlay (CActorCondition::UpdateBloodScreen, no longer called).
+	//  - The RED: the edges of the picture dyed red (see pp_injury_tint), pulsing like the stamina vignette
+	//    with the swing growing with its strength. Health: from INJURY_TINT_FROM, full at INJURY_TINT_FULL.
+	//  - The DROPS on the lens, creeping in from the corners towards the middle and catching a glare where the
+	//    scene behind is bright (see pp_injury_drops). Health: from INJURY_DROPS_FROM, furthest in at
+	//    INJURY_DROPS_FULL.
+	//  - The BLEEDING drives both: any at all shows INJURY_BLEED_MIN of each, rising in a straight line to full
+	//    at INJURY_BLEED_FULL. The red takes whichever of health and bleeding is stronger right now. The drops,
+	//    while bleeding, PULSE on the red's beat: up to the stronger of the two, down to INJURY_DROPS_TROUGH of
+	//    that -- or, with low health too, to INJURY_DROPS_HEALTH_DIP of the health's reach if that is more, so
+	//    the health's drops stay as a ground the beat swells over. With low health alone they stay put.
+	//  - The RADIAL BLUR of the edges (as an optic's rim smears): a small steady one from INJURY_BLUR_FROM of
+	//    health down, full at INJURY_BLUR_FULL; and one beating with the pulse (from INJURY_BLUR_TROUGH to
+	//    INJURY_BLUR_PULSE on top) from INJURY_BLUR_BLEED_FROM of bleeding up, full at INJURY_BLEED_FULL.
+	//  - The VESSELS (fx_blood_vessels_00, overlay): from INJURY_VESSELS_FROM of bleeding up, full at
+	//    INJURY_BLEED_FULL -- and from INJURY_VESSELS_HEALTH_FROM of health down too, up to
+	//    INJURY_VESSELS_HEALTH_MAX of that at INJURY_VESSELS_HEALTH_FULL; the stronger wins. They creep in from
+	//    the corners like the drops and beat the same way, only deeper: down to INJURY_VESSELS_TROUGH of their
+	//    reach between the beats.
+	// A hit or a fresh wound comes in fast; healing/bandaging fades it no faster than INJURY_FADE_OUT seconds.
+	if (g_pGamePersistent)
+	{
+		const float		INJURY_TINT_FROM		= 0.75f;	// health where the edges start to redden...
+		const float		INJURY_TINT_FULL		= 0.2f;		// ...and where it is at full strength
+		const float		INJURY_DROPS_FROM		= 0.75f;	// health where the drops start to gather...
+		const float		INJURY_DROPS_FULL		= 0.2f;		// ...and where they have crept furthest in
+		const float		INJURY_BLEED_MIN		= 0.25f;	// the red and the drops the slightest bleeding shows (share of full)...
+		const float		INJURY_BLEED_FULL		= 1.f;		// ...and the bleeding where they are full
+		const float		INJURY_DROPS_TROUGH		= 0.75f;		// a beat's trough while bleeding, as a share of its peak...
+		const float		INJURY_DROPS_HEALTH_DIP	= 0.5f;		// ...or this share of the health's drops, if that is more
+		// the red's strength, 0..1 -- the shader's PP_INJURY_MIX_* say how much colour that is
+		const float		INJURY_TINT				= 1.f / 3.f;	// at full, steady part...
+		const float		INJURY_TINT_PULSE		= 1.f / 6.f;	// ...and what a pulse's peak adds on top (0.5 in all; was 1)
+		const float		INJURY_PERIOD_SLOW		= 1.6f;		// seconds per pulse as it just shows...
+		const float		INJURY_PERIOD_FAST		= 1.1f;		// ...and at full injury
+		const float		INJURY_FADE_OUT			= 3.5f;		// seconds for a full fade back out
+		const float		INJURY_FADE_IN			= 4.f;		// 1/seconds: the low-pass following it in
+		const float		INJURY_BLUR_FROM		= 0.25f;	// health where the steady edge blur starts...
+		const float		INJURY_BLUR_FULL		= 0.05f;	// ...and where it is full
+		const float		INJURY_BLUR				= 0.01f;	// ...how far it smears (share of the distance from the middle)
+		const float		INJURY_BLUR_BLEED_FROM	= 0.75f;	// bleeding where the beating blur starts (full at INJURY_BLEED_FULL)
+		const float		INJURY_BLUR_PULSE		= 0.0125f;	// ...how far it smears at a beat's peak, on top...
+		const float		INJURY_BLUR_TROUGH		= 0.0025f;	// ...and between the beats
+		const float		INJURY_VESSELS_FROM		= 0.5f;		// bleeding where the vessels start to beat (full at INJURY_BLEED_FULL)...
+		const float		INJURY_VESSELS_TROUGH	= 0.5f;		// ...and a beat's trough, as a share of their reach
+		const float		INJURY_VESSELS_HEALTH_FROM	= 0.25f;	// health where the vessels start to beat as well...
+		const float		INJURY_VESSELS_HEALTH_FULL	= 0.05f;	// ...and where they are as strong as the health makes them...
+		const float		INJURY_VESSELS_HEALTH_MAX	= 0.67f;	// ...which is this share of a heavy bleeding's (was 0.5)
+		static float	s_tint = 0.f, s_health_drops = 0.f, s_bleeding = 0.f, s_phase = 0.f, s_pulse = 0.f;
+		static float	s_blur = 0.f, s_blur_bleed = 0.f, s_vessels = 0.f;
+		auto ramp = [](float p, float from, float to) { float x = (from - p) / (from - to); clamp(x, 0.f, 1.f); return x * x * (3.f - 2.f * x); };
+		auto follow = [&](float& v, float target)
+		{
+			if (target > v)	v += (target - v) * _min(1.f, Device.fTimeDelta * INJURY_FADE_IN);
+			else			v = _max(target, v - Device.fTimeDelta / INJURY_FADE_OUT);
+			if (v < 0.001f)	v = 0.f;
+		};
+		const bool		alive	= !!g_Alive();
+		const float		health	= alive ? conditions().GetHealth() : 1.f;
+		const float		bleed	= alive ? conditions().BleedingSpeed() : 0.f;
+		const float		bleeding	= (bleed > EPS) ? _min(1.f, INJURY_BLEED_MIN + (1.f - INJURY_BLEED_MIN) * bleed / INJURY_BLEED_FULL) : 0.f;
+		follow(s_tint,			_max(ramp(health, INJURY_TINT_FROM, INJURY_TINT_FULL), bleeding));
+		follow(s_health_drops,	ramp(health, INJURY_DROPS_FROM, INJURY_DROPS_FULL));
+		follow(s_bleeding,		bleeding);
+		follow(s_blur,			ramp(health, INJURY_BLUR_FROM, INJURY_BLUR_FULL));
+		follow(s_blur_bleed,	ramp(-bleed, -INJURY_BLUR_BLEED_FROM, -INJURY_BLEED_FULL));	// (rising: negated)
+		follow(s_vessels,		_max(ramp(-bleed, -INJURY_VESSELS_FROM, -INJURY_BLEED_FULL),
+									 INJURY_VESSELS_HEALTH_MAX * ramp(health, INJURY_VESSELS_HEALTH_FROM, INJURY_VESSELS_HEALTH_FULL)));
+		// THE HEARTBEAT: while it plays the pulse beats with the sound -- its period eased over HEART_EASE seconds
+		// to exactly HEART_PERIOD, and its phase set on the beat when the sound starts (HEART_SYNC: when the first
+		// thump comes in the sound, past its start). Without it the pulse keeps to the breathing's pace above.
+		const float		HEARTBEAT_BLEED			= 0.6f;		// bleeding past which the heart is heard (stock)...
+		const float		HEARTBEAT_HEALTH_ON		= 0.1f;		// ...or health under which it starts...
+		const float		HEARTBEAT_HEALTH_OFF	= 0.2f;		// ...and over which it stops again
+		const float		HEART_PERIOD			= 0.6752f;	// seconds a beat in heavy_blood_snd
+		const float		HEART_EASE				= 1.f;		// seconds for the pulse to settle onto it, or off it
+		const float		HEART_SYNC				= 0.f;		// seconds from the sound's start to its first thump
+		static float	s_heart = 0.f;
+		static bool		s_heart_health = false;		// the health's cause: on under _ON, held until past _OFF
+		if (!alive || health > HEARTBEAT_HEALTH_OFF)	s_heart_health = false;
+		else if (health < HEARTBEAT_HEALTH_ON)			s_heart_health = true;
+		const bool		heart_bleed	= alive && bleed > HEARTBEAT_BLEED;
+		const bool		was		= s_heartbeat;
+		s_heartbeat		= heart_bleed || s_heart_health;
+		// the sound's volume: the stock bleeding one (bs + 0.25); for the health, what the bleeding's threshold
+		// gives (0.85), growing towards nothing left. The louder of the two.
+		s_heartbeat_volume	= _max(heart_bleed ? bleed + 0.25f : 0.f,
+								   s_heart_health ? HEARTBEAT_BLEED + 0.25f + 2.5f * _max(0.f, HEARTBEAT_HEALTH_ON - health) : 0.f);
+		s_heart	+= ((s_heartbeat ? 1.f : 0.f) - s_heart) * _min(1.f, Device.fTimeDelta / HEART_EASE * 3.f);
+		if (s_heartbeat && !was)
+			s_phase	= 0.18f - HEART_SYNC / HEART_PERIOD;		// on the beat (pp_pulse_update's peak is at 0.18)
+		s_phase -= floorf(s_phase);
+		// the breathing's pace for this strength, then pulled onto the heart's
+		const float		breath	= INJURY_PERIOD_SLOW + (INJURY_PERIOD_FAST - INJURY_PERIOD_SLOW) * s_tint;
+		const float		period	= breath + (HEART_PERIOD - breath) * s_heart;
+		const float		phase_was	= s_phase;
+		pp_pulse_update(s_phase, s_pulse, s_tint, period, period);
+		// a beat's peak passed this frame (pp_pulse_update peaks at 0.18 of the period) -- the droplets spawn on it
+		const bool		beat_peak	= s_tint > 0.f && ((phase_was < 0.18f) ? (s_phase >= 0.18f || s_phase < phase_was)
+																	   : (s_phase < phase_was && s_phase >= 0.18f));
+		// the drops: from a beat's trough to its peak (the stronger of the two). Without bleeding the trough IS the
+		// health's reach; as the bleeding comes in it eases down to the deeper-but-not-empty one (and back up
+		// with a bandage, without a jump)
+		const float		dip		= _min(1.f, s_bleeding / INJURY_BLEED_MIN);
+		const float		high	= _max(s_health_drops, s_bleeding);
+		const float		trough	= _max(INJURY_DROPS_TROUGH * high, INJURY_DROPS_HEALTH_DIP * s_health_drops);
+		const float		low		= s_health_drops + (trough - s_health_drops) * dip;
+		g_pGamePersistent->pp_injury.set(s_tint * INJURY_TINT + s_tint * s_tint * INJURY_TINT_PULSE * s_pulse,
+										 low + (high - low) * s_pulse,
+										 INJURY_BLUR * s_blur + s_blur_bleed * (INJURY_BLUR_TROUGH + (INJURY_BLUR_PULSE - INJURY_BLUR_TROUGH) * s_pulse),
+										 s_vessels * (INJURY_VESSELS_TROUGH + (1.f - INJURY_VESSELS_TROUGH) * s_pulse));
+
+		// LENS DROPLETS while bleeding -- blood running down off the brows. Single drops land at random in the band
+		// AROUND a big ellipse standing on the middle of the screen's bottom edge (DROPLET_RX wide, DROPLET_RY high,
+		// in screen uv): the top of the screen and down its sides, never in the middle, a little thicker the further
+		// out of it (DROPLET_SPAWN_SOFT). They appear at DROPLET_RATE_MIN a second for the lightest bleeding, up to
+		// DROPLET_RATE_MAX at INJURY_BLEED_FULL, never more than DROPLET_COUNT_MAX at once -- and only on the beat:
+		// the rate fills a budget all the time, but it is let out only in a window DROPLET_WINDOW long opened at a
+		// beat's peak, up to DROPLET_BEAT_MAX of them in one. Not on every beat once they come fast: a window
+		// opens only DROPLET_BEAT_GAP after the last one -- every beat at the breathing's pace, every other one at
+		// the heart's -- and as the pace eases from one to the other it simply starts skipping. (The window was
+		// the pulse past 0.7 once; at the heart's pace the smoothed pulse no longer got that high.) Each one lives
+		// DROPLET_LIFE: shows up over DROPLET_FADE_IN and fades out over the rest, all the while running
+		// DROPLET_TRAVEL along the ellipse's outline -- down and away from the middle (flat across the top, steeper
+		// down the sides), tipped DROPLET_DOWN towards straight down, gathering speed. The shader refracts the
+		// picture through it, tints it and lights its glare from the bloom (pp_droplets_*).
+		{
+			const int		DROPLETS				= IGame_Persistent::PP_DROPLETS;
+			const float		DROPLET_RATE_MIN		= 0.4f;		// new ones a second for the slightest bleeding...
+			const float		DROPLET_RATE_MAX		= 2.8f;		// ...and at full (life 3.25 s: ~9 alive, so the cap below is reached)
+			const float		DROPLET_WINDOW			= 0.2f;		// seconds a beat's spawn window stays open...
+			const float		DROPLET_BEAT_GAP		= 1.f;		// ...no sooner than this after the last one opened...
+			const float		DROPLET_BEAT_MAX		= 5.f;		// ...and the most one window may let out
+			const int		DROPLET_COUNT_MAX		= 8;		// never more at once (and never more than PP_DROPLETS)
+			const float		DROPLET_FADE_IN			= 0.25f;	// seconds to show up...
+			const float		DROPLET_FADE_OUT		= 3.f;		// ...and to fade out after that
+			const float		DROPLET_LIFE			= DROPLET_FADE_IN + DROPLET_FADE_OUT;
+			const float		DROPLET_SIZE_MIN		= 128.f / 1080.f;	// diameter, share of the screen height (128 px at 1080p)...
+			const float		DROPLET_SIZE_MAX		= 192.f / 1080.f;	// ...up to 192 px
+			const float		DROPLET_RX				= 0.5f;		// the clear ellipse in the middle: half-width (screen uv)...
+			const float		DROPLET_RY				= 0.8f;		// ...and height up from the bottom edge
+			const float		DROPLET_SPAWN_SOFT		= 0.2f;		// how far out of it (its own radii) they reach full density
+			const float		DROPLET_TRAVEL			= 0.055f;	// how far it runs over its life, share of the height
+			const float		DROPLET_DOWN			= 0.6f;		// how much the run is tipped towards straight down
+			struct SDroplet	{ float x, y, dx, dy, size, age; bool flip, live; };
+			static SDroplet	s_droplets[DROPLETS] = {};
+			static float	s_spawn = 0.f;
+			const float		aspect	= Device.dwWidth ? float(Device.dwHeight) / float(Device.dwWidth) : 9.f / 16.f;	// h / w
+			const float		bleed_k	= (bleed > EPS) ? _min(1.f, bleed / INJURY_BLEED_FULL) : 0.f;
+			if (bleed_k > 0.f)
+				s_spawn += Device.fTimeDelta * (DROPLET_RATE_MIN + (DROPLET_RATE_MAX - DROPLET_RATE_MIN) * bleed_k)
+						 * ::Random.randF(0.5f, 1.5f);		// jittered, so they do not tick
+			else
+				s_spawn = 0.f;
+			int live = 0;
+			for (int i = 0; i < DROPLETS; ++i)	live += s_droplets[i].live ? 1 : 0;
+			s_spawn = _min(s_spawn, DROPLET_BEAT_MAX);			// waiting for the beat: a beat's worth, no more
+			static float	s_window = 0.f, s_since = 1000.f;
+			s_since		+= Device.fTimeDelta;
+			if (beat_peak && s_since >= DROPLET_BEAT_GAP)	{ s_window = DROPLET_WINDOW; s_since = 0.f; }
+			const bool		beat	= s_window > 0.f;
+			s_window	-= Device.fTimeDelta;
+			bool			one		= false;	// one a frame: a beat's several spread over its window, not all at once
+			for (int i = 0; i < DROPLETS && beat && !one && s_spawn >= 1.f && live < DROPLET_COUNT_MAX; ++i)
+			{
+				if (s_droplets[i].live)	continue;
+				// a place in the band: tried at random over the upper part of the screen, kept by how far out of
+				// the ellipse it is (a soft edge, not a line)
+				float x = 0.f, y = 0.f;
+				bool found = false;
+				for (int k = 0; k < 16 && !found; ++k)
+				{
+					x = ::Random.randF(0.f, 1.f);
+					y = ::Random.randF(0.f, DROPLET_RY + 0.05f);
+					const float	ex	= (x - 0.5f) / DROPLET_RX, ey = (y - 1.f) / DROPLET_RY;
+					float		e	= (_sqrt(ex * ex + ey * ey) - 1.f) / DROPLET_SPAWN_SOFT;
+					clamp		(e, 0.f, 1.f);
+					found = ::Random.randF(0.f, 1.f) < e * e * (3.f - 2.f * e);
+				}
+				if (!found)	break;		// try again next frame
+				s_spawn -= 1.f;
+				++live;
+				one = true;
+				// its run: the ellipse's tangent here (worked out in height units, so it is round on any screen),
+				// the branch heading down and away from the middle, tipped towards straight down
+				const float	hx	= (x - 0.5f) / aspect, hy = y - 1.f;
+				const float	rx	= DROPLET_RX / aspect, ry = DROPLET_RY;
+				const float	nx	= hx / (rx * rx), ny = hy / (ry * ry);
+				float		tx	= (hx < 0.f) ? ny : -ny;
+				float		ty	= (hx < 0.f) ? -nx : nx;
+				ty			+= DROPLET_DOWN * _sqrt(tx * tx + ty * ty);
+				const float	tl	= _sqrt(tx * tx + ty * ty);
+				SDroplet&	d	= s_droplets[i];
+				d.x		= x;
+				d.y		= y;
+				d.dx	= (tl > EPS) ? tx / tl * aspect : 0.f;		// back to uv across
+				d.dy	= (tl > EPS) ? ty / tl : 1.f;
+				d.size	= ::Random.randF(DROPLET_SIZE_MIN, DROPLET_SIZE_MAX);
+				d.age	= 0.f;
+				d.flip	= ::Random.randI(2) != 0;
+				d.live	= true;
+			}
+			for (int i = 0; i < DROPLETS; ++i)
+			{
+				SDroplet& d = s_droplets[i];
+				if (d.live)
+				{
+					d.age += Device.fTimeDelta;
+					if (d.age >= DROPLET_LIFE)	d.live = false;
+				}
+				if (!d.live)
+				{
+					g_pGamePersistent->pp_droplets[i].set(0.f, 0.f, 0.f, 0.f);
+					continue;
+				}
+				const float	t		= _min(1.f, d.age / DROPLET_LIFE);
+				float		in		= d.age / DROPLET_FADE_IN;
+				float		out		= (DROPLET_LIFE - d.age) / DROPLET_FADE_OUT;
+				clamp		(in, 0.f, 1.f);
+				clamp		(out, 0.f, 1.f);
+				const float	alpha	= in * in * (3.f - 2.f * in) * out * out * (3.f - 2.f * out);
+				const float	run		= DROPLET_TRAVEL * t * _sqrt(t);		// gathering speed
+				g_pGamePersistent->pp_droplets[i].set(d.x + d.dx * run, d.y + d.dy * run,
+													  (d.flip ? -0.5f : 0.5f) * d.size, alpha);
+			}
+		}
+	}
+
+	// HIT FLASH: a one-off hit (CActor::Hit -> s_hit_flash_pending) blurs the whole picture for a moment, flushes
+	// its edges dark red and darkens its corners, all snapping in over HIT_FLASH_IN and dropping away over
+	// HIT_FLASH_OUT. The blur is the pp pass's blur over the finished picture (pp_blur: PP_BLUR_R of the screen
+	// height a unit, 12 taps); the red (the injury's radial mask, a darker colour of its own) and the vignette go
+	// through pp_hit (pp_hit_flash). A hit during a flash swells it again from where it is, never dips it.
+	if (g_pGamePersistent)
+	{
+		const float		HIT_FLASH_IN		= 0.05f;	// seconds to snap in...
+		const float		HIT_FLASH_OUT		= 0.25f;	// ...and to drop back to nothing
+		const float		HIT_FLASH_BLUR		= 0.0025f / 0.006f;	// pp_blur units: 0.25% of the screen height (PP_BLUR_R = 0.006)
+		const float		HIT_FLASH_RED		= 0.6f;		// the dark red at the edges (the injury red's 0..1 scale)
+		const float		HIT_FLASH_VIGNETTE	= 0.4f;		// the light leaving the corners
+		static float	s_from = 0.f, s_peak = 0.f, s_t = 1000.f, s_flash = 0.f;
+		if (s_hit_flash_pending > 0.f)
+		{
+			s_from	= s_flash;
+			s_peak	= _max(s_hit_flash_pending, s_flash);
+			s_t		= 0.f;
+			s_hit_flash_pending = 0.f;
+		}
+		s_t += Device.fTimeDelta;
+		auto ease = [](float x) { clamp(x, 0.f, 1.f); return x * x * (3.f - 2.f * x); };
+		if (s_t < HIT_FLASH_IN)
+			s_flash = s_from + (s_peak - s_from) * ease(s_t / HIT_FLASH_IN);
+		else
+			s_flash = s_peak * (1.f - ease((s_t - HIT_FLASH_IN) / HIT_FLASH_OUT));
+		if (!g_Alive())		s_flash = 0.f;
+		if (s_flash > 0.001f)
+		{
+			g_pGamePersistent->pp_blur	= _max(g_pGamePersistent->pp_blur, HIT_FLASH_BLUR * s_flash);
+			g_pGamePersistent->pp_hit.set(HIT_FLASH_RED * s_flash, HIT_FLASH_VIGNETTE * s_flash, 0.f, 0.f);
+		}
+		else
+			g_pGamePersistent->pp_hit.set(0.f, 0.f, 0.f, 0.f);
 	}
 
 	UpdatePlannedMonsterKick	();
@@ -1707,8 +2089,10 @@ void CActor::shedule_Update	(u32 DT)
 		}
 
 		// -------------------------------
-		float bs = conditions().BleedingSpeed();
-		if(bs>0.6f)
+		// the heartbeat: a heavy bleeding or a nearly spent health -- decided in UpdateCL (s_heartbeat), where the
+		// screen's pulse locks onto it; one sound for both, so it never plays twice
+		float bs;
+		if(s_heartbeat)
 		{
 			Fvector snd_pos;
 			snd_pos.set(0,ACTOR_HEIGHT,0);
@@ -1717,9 +2101,7 @@ void CActor::shedule_Update	(u32 DT)
 			else
 				m_BloodSnd.set_position(snd_pos);
 
-			float v = bs+0.25f;
-
-			m_BloodSnd.set_volume	(v);
+			m_BloodSnd.set_volume	(s_heartbeat_volume);
 		}else{
 			if(m_BloodSnd._feedback())
 				m_BloodSnd.stop();

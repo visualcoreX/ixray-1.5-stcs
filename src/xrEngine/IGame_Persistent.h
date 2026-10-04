@@ -94,6 +94,19 @@ public:
 	// gone in the corners, pulsing), z = sharpening amount over the whole screen (0 = off), w = brightening
 	// in the middle (0.15 = x1.15), fading out where the vignette comes in. All zero = the pass leaves the picture alone.
 	Fvector4						pp_fatigue;
+	// Injury grading over the finished picture (pp pass), filled by CActor from the health and the bleeding:
+	// x = how strongly the edges are dyed red (0..1, pulsing), y = the blood drops on the lens, 0..1 -- both how
+	// far in towards the middle they have crept and the glare they catch from bright light (pulsing while
+	// bleeding) -- z = the radial blur of the edges (share of the distance from the middle), w = how far in
+	// the blood vessels have crept, 0..1 (beating).
+	Fvector4						pp_injury;
+	// The bleeding's lens droplets (CActor): x, y = the centre in screen uv, z = the radius as a share of the
+	// screen height (negative = the texture mirrored), w = its opacity, 0 = the slot is empty.
+	enum							{ PP_DROPLETS = 8 };
+	// The hit flash (CActor): x = how strongly the edges are flushed dark red (the injury's mask), y = the
+	// vignette, how much of the light leaves the corners. Both 0 = nothing.
+	Fvector4						pp_hit;
+	Fvector4						pp_droplets[PP_DROPLETS];
 
 	// Gunslinger 3D PiP double-render: true on a "lens frame" -- the whole scene is rendered at the
 	// magnified scope FOV with the first-person HUD suppressed, captured into $user$scope, and NOT

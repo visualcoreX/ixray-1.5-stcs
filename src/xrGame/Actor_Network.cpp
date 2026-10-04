@@ -720,6 +720,9 @@ void CActor::net_Destroy	()
 	if (CGamePersistent* gp = smart_cast<CGamePersistent*>(g_pGamePersistent))	gp->m_intox_dof = 0.f;
 	if (g_pGamePersistent)	g_pGamePersistent->pp_blur = 0.f;
 	if (g_pGamePersistent)	g_pGamePersistent->pp_fatigue.set(0.f, 0.f, 0.f, 0.f);	// ...nor the fatigue grading
+	if (g_pGamePersistent)	g_pGamePersistent->pp_injury.set(0.f, 0.f, 0.f, 0.f);	// ...nor the injury one
+	if (g_pGamePersistent)	g_pGamePersistent->pp_hit.set(0.f, 0.f, 0.f, 0.f);		// ...nor a hit flash
+	if (g_pGamePersistent)	for (int i = 0; i < IGame_Persistent::PP_DROPLETS; ++i)	g_pGamePersistent->pp_droplets[i].set(0.f, 0.f, 0.f, 0.f);
 	inherited::net_Destroy	();
 
 	if (m_holder_id != ALife::_OBJECT_ID(-1))

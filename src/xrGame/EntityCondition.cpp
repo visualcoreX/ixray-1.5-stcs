@@ -142,6 +142,16 @@ CEntityCondition::~CEntityCondition(void)
 	ClearWounds				();
 }
 
+void CEntityCondition::SetBleedingSpeed(float value)
+{
+	ClearWounds();
+	if (value <= 0.f)	return;
+	CWound* w = xr_new<CWound>(BI_NONE);
+	w->AddHit(value, ALife::eHitTypeWound);		// no AddWound: it randomises the size by 0.5..1.5
+	m_WoundVector.push_back(w);
+	m_bIsBleeding = true;
+}
+
 void CEntityCondition::ClearWounds()
 {
 	for(WOUND_VECTOR_IT it = m_WoundVector.begin(); m_WoundVector.end() != it; ++it)

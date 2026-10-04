@@ -168,6 +168,20 @@ void CRenderTarget::phase_pp		()
 		static	shared_str	s_pp_fatigue	= "m_pp_fatigue";
 		const Fvector4 fa = g_pGamePersistent ? g_pGamePersistent->pp_fatigue : Fvector4().set(0.f,0.f,0.f,0.f);
 		RCache.set_c		(s_pp_fatigue, fa.x, fa.y, fa.z, fa.w);
+		// the injury grading (pp_injury, CActor): x = red edges, y = blood drops on the lens
+		static	shared_str	s_pp_injury		= "m_pp_injury";
+		const Fvector4 ij = g_pGamePersistent ? g_pGamePersistent->pp_injury : Fvector4().set(0.f,0.f,0.f,0.f);
+		RCache.set_c		(s_pp_injury, ij.x, ij.y, ij.z, ij.w);
+		// the hit flash (pp_hit, CActor): x = dark red edges, y = vignette
+		static	shared_str	s_pp_hit		= "m_pp_hit";
+		const Fvector4 ht = g_pGamePersistent ? g_pGamePersistent->pp_hit : Fvector4().set(0.f,0.f,0.f,0.f);
+		RCache.set_c		(s_pp_hit, ht.x, ht.y, ht.z, ht.w);
+		// the bleeding's lens droplets (pp_droplets, CActor): centre, radius (signed: mirrored), opacity
+		for (int i = 0; i < IGame_Persistent::PP_DROPLETS; ++i)
+		{
+			const Fvector4 dr = g_pGamePersistent ? g_pGamePersistent->pp_droplets[i] : Fvector4().set(0.f,0.f,0.f,0.f);
+			RCache.set_ca	("m_pp_droplets", i, dr.x, dr.y, dr.z, dr.w);
+		}
 	}
 	static	shared_str	s_brightness	= "c_brightness";
 	RCache.set_c		( s_brightness, p_brightness.x, p_brightness.y, p_brightness.z, 0 );
