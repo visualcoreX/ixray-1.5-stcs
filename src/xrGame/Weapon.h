@@ -341,7 +341,7 @@ public:
 			void gwr_ShellCasingOnUnjam	(LPCSTR ammo);	// the jam-clear animation has just been started
 			void gwr_ShellCasingOnReloadAnim	();	// a reload animation has just been started
 			void gwr_ShellCasingArmReloadBones	();	// break-action guns: the shells the full reload throws
-			void gwr_ShellCasingArmReloadDrop	();	// a full reload: the old magazine falls
+			void gwr_ShellCasingArmReloadDrop	(bool gl = false);	// a full reload: the old magazine falls
 			void gwr_ShellCasingCancel	();				// the shot jammed: its case stays in the port
 			void gwr_ShellCasingUpdate	(bool force = false);
 			bool gwr_ShellCasingHidesBone	(u16 bone) const;
@@ -365,6 +365,7 @@ public:
 		bool		by_hand;		// ...and this is one (clearing a jam, the open of a shotgun's reload)
 		bool		ammo_bone;		// ...a reload's spent shell: any direction counts, and its visibility is the ammo-bones pass's
 		bool		drop;			// ...a magazine let fall in a full reload: shown again when the bone comes back
+		bool		gl;				// ...or the launcher's spent case in its reload (gl_drop_* keys, not reload_drop_*)
 		float		far_max;		// (how far from its rest the dropped bone has got so far)
 		Fvector		vA;				// the last step (parent-bone space), its speed, and the bone's model transform
 		float		sA;				// a frame ago: a dropped magazine leaves with these

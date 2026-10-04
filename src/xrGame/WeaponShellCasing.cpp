@@ -141,6 +141,15 @@ static Fvector casing_spin(const Fmatrix& from, const Fmatrix& to, float dt)
 	return w;
 }
 
+// The keys of a dropped thing: reload_drop_<name> for a magazine, gl_drop_<name> for the grenade launcher's
+// spent case (one buffer: use the result right away).
+static LPCSTR drop_key(bool gl, LPCSTR name)
+{
+	static string64 k;
+	xr_sprintf		(k, "%s_drop_%s", gl ? "gl" : "reload", name);
+	return			k;
+}
+
 // Bone visibility is a 64-bit mask in the engine: a bone id past it would alias another bone's bit.
 static void casing_show_hud_bone(IKinematics* K, u16 bone, BOOL show)
 {
@@ -449,12 +458,15 @@ void CWeapon::gwr_ShellCasingArmReloadBones()
 // (default anm_reload_empty; the partial reload keeps the magazine in the hand). The animation re-uses the
 // bone for the NEW magazine afterwards -- by a jump or by bringing it back up -- so it is shown again the
 // moment it heads back towards the gun (see the watch in gwr_ShellCasingFollow).
-void CWeapon::gwr_ShellCasingArmReloadDrop()
+// gl = the grenade launcher's reload (CWeaponMagazinedWGrenade::switch2_Reload): its spent case falls the same
+// way, by gl_drop_bones / _frame / _speed / ... -- and any of its reloads counts but the grenade change.
+void CWeapon::gwr_ShellCasingArmReloadDrop(bool gl)
 {
 	LPCSTR ws = cNameSect().c_str();
 	if (!IsGameTypeSingle() || !pSettings->section_exist(SC_SECT))		return;
 	if (!READ_IF_EXISTS(pSettings, r_bool, SC_SECT, "enabled", TRUE))	return;
-	if (!READ_IF_EXISTS(pSettings, r_bool, SC_SECT, "reload_drop", TRUE))	return;
+	if (!READ_IF_EXISTS(pSettings, r_bool, SC_SECT, gl ? "gl_drop" : "reload_drop", TRUE))	return;
+	if (!pSettings->line_exist(ws, drop_key(gl, "bones")))	return;
 
 	attachable_hud_item* hi = GetHUDmode() ? HudItemData() : NULL;
 	if (!hi || !hi->m_model)	return;
@@ -465,8 +477,10 @@ void CWeapon::gwr_ShellCasingArmReloadDrop()
 	// Which reloads: by default every EMPTY one -- an anm_reload alias carrying the _empty token, whatever
 	// firemode mark sits in front of it (the AKs play anm_reload_auto_empty) and not the launcher's (_g).
 	// reload_drop_anims = <prefix>, ... replaces that with a list of alias prefixes.
-	bool listed			= false;
-	if (pSettings->line_exist(ws, "reload_drop_anims"))
+	bool listed			= gl;		// (the launcher's: the caller has picked the reload already)
+	if (gl)
+		;
+	else if (pSettings->line_exist(ws, "reload_drop_anims"))
 	{
 		LPCSTR anims	= pSettings->r_string(ws, "reload_drop_anims");
 		for (int i = 0, n = _GetItemCount(anims); (i < n) && !listed; ++i)
@@ -489,7 +503,7 @@ void CWeapon::gwr_ShellCasingArmReloadDrop()
 		return;
 	}
 
-	LPCSTR list			= pSettings->r_string(ws, "reload_drop_bones");
+	LPCSTR list			= pSettings->r_string(ws, drop_key(gl, "bones"));
 	u16 bone			= BI_NONE;
 	string128		sect;	sect[0] = 0;
 	u16 spare			= BI_NONE;				// the first that merely exists: a magazine the animation only shows
@@ -538,6 +552,7 @@ void CWeapon::gwr_ShellCasingArmReloadDrop()
 	T.by_hand			= true;
 	T.ammo_bone			= false;
 	T.drop				= true;
+	T.gl				= gl;
 	T.far_max			= 0.f;
 	T.vA.set			(0.f, 0.f, 0.f);
 	T.sA				= 0.f;
@@ -785,7 +800,7 @@ void CWeapon::gwr_ShellCasingFollow(u32 idx, bool force)
 	if (T.by_hand)
 		side			= READ_IF_EXISTS(pSettings, r_float, cNameSect().c_str(), "shell_casing_hand_side", side);
 	if (T.drop)				// a magazine: once clear of the well
-		side			= READ_IF_EXISTS(pSettings, r_float, cNameSect().c_str(), "reload_drop_side",
+		side			= READ_IF_EXISTS(pSettings, r_float, cNameSect().c_str(), drop_key(T.gl, "side"),
 						  READ_IF_EXISTS(pSettings, r_float, SC_SECT, "hud_drop_side", 0.1f));
 
 	// The bone is followed in the space of its PARENT bone (the gun's body): in model space it moves with
@@ -899,7 +914,7 @@ void CWeapon::gwr_ShellCasingFollow(u32 idx, bool force)
 		// the way it was going then -- the first threshold took it over while the hand still held it.
 		// reload_drop_frame = <frame of the reload animation, 30 a second>: the moment is given by hand instead --
 		// let go right there, from where the bone is, the way it went over this last frame.
-		const float drop_frame	= T.drop ? READ_IF_EXISTS(pSettings, r_float, cNameSect().c_str(), "reload_drop_frame", -1.f) : -1.f;
+		const float drop_frame	= T.drop ? READ_IF_EXISTS(pSettings, r_float, cNameSect().c_str(), drop_key(T.gl, "frame"), -1.f) : -1.f;
 		if (drop_frame >= 0.f)
 		{
 			flies				= casing_hud_motion_time(K) >= drop_frame / 30.f;
@@ -1002,7 +1017,7 @@ void CWeapon::gwr_ShellCasingFollow(u32 idx, bool force)
 			speed			*= (1.f - up);
 		}
 		// reload_drop_forward = <share>: how much of what it has along the line of sight it keeps (1 = all)
-		const float keep	= READ_IF_EXISTS(pSettings, r_float, cNameSect().c_str(), "reload_drop_forward", 1.f);
+		const float keep	= READ_IF_EXISTS(pSettings, r_float, cNameSect().c_str(), drop_key(T.gl, "forward"), 1.f);
 		const float fwd		= dir_world.dotproduct(Device.vCameraDirection);
 		if ((keep < 1.f) && (fwd > 0.f))
 		{
@@ -1094,7 +1109,7 @@ void CWeapon::gwr_ShellCasingThrow(u32 idx, const Fvector& pos, const Fmatrix& b
 	if (m_shell_track[idx].drop)
 	{
 		range			= READ_IF_EXISTS(pSettings, r_fvector2, SC_SECT, "drop_speed", Fvector2().set(0.3f, 8.f));
-		range			= READ_IF_EXISTS(pSettings, r_fvector2, ws, "reload_drop_speed", range);
+		range			= READ_IF_EXISTS(pSettings, r_fvector2, ws, drop_key(m_shell_track[idx].gl, "speed"), range);
 		scale			= 1.f;
 	}
 	else if (m_shell_track[idx].by_hand && pSettings->line_exist(ws, "shell_casing_unjam_speed"))
@@ -1190,7 +1205,7 @@ void CWeapon::gwr_ShellCasingThrow(u32 idx, const Fvector& pos, const Fmatrix& b
 		// slowed down as much as the flight was (reload_drop_speed caps it: the AKs' 3.7 m/s swing leaves at 1.5,
 		// and at the hand's full 8 rad/s it whirled off), times reload_drop_spin per weapon
 		angular.set		(m_shell_track[idx].wA);
-		float k			= READ_IF_EXISTS(pSettings, r_float, ws, "reload_drop_spin", 1.f);
+		float k			= READ_IF_EXISTS(pSettings, r_float, ws, drop_key(m_shell_track[idx].gl, "spin"), 1.f);
 		if ((speed > EPS) && (v < speed))
 			k			*= v / speed;
 		angular.mul		(k);

@@ -295,6 +295,8 @@ void CWeaponMagazinedWGrenade::switch2_Reload()
 			PlaySound("sndReloadG", get_LastFP2());
 
 		PlayHUDMotion(anim, TRUE, this, GetState());	// blend in, like every other reload
+		if (!ammochange)
+			gwr_ShellCasingArmReloadDrop	(true);	// the spent case out of the tube falls for real (gl_drop_bones)
 		ArmReloadLockTimes	();		// honour lock_time_start_/end_<alias> on GL reloads too
 		SetPending			(TRUE);
 	}
