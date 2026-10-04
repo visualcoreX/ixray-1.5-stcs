@@ -381,10 +381,21 @@ bool CWeaponMagazined::IsActorSprinting()
 // launch goes around FireStart entirely, and it fired straight through the transition until it did too.
 bool CWeaponMagazined::DeferFireForSprint()
 {
-	if ((m_dwSprintExitEndTm && Device.dwTimeGlobal < m_dwSprintExitEndTm)
-		|| (IsActorSprinting() && HasSprintExitAnim()))
+	// SprintTransitionNow(), not IsActorSprinting(): the sprint ENTER one-shot plays out after the sprint
+	// key is let go (and the input handler drops the actor's flag the moment an action key is pressed),
+	// so with the flag alone a shot went straight through the enter animation.
+	const bool exit_running = (m_dwSprintExitEndTm && Device.dwTimeGlobal < m_dwSprintExitEndTm);
+	if (exit_running || (SprintTransitionNow() && HasSprintExitAnim()))
 	{
 		m_bFirePendingSprint = true;
+		// The enter still on screen with the sprint itself already over: no movement edge is coming to
+		// blend the exit in (CHudItem::OnMovementChanged), so ask for it here -- its lock is what
+		// releases the shot. Otherwise the shot would wait for the whole enter and the exit after it.
+		if (!exit_running && !IsActorSprinting() && m_bSprintStartRunning)
+		{
+			m_bSprintStarted = false;
+			PlaySprintExitAnim	();
+		}
 		return true;
 	}
 	return false;
