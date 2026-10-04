@@ -655,6 +655,14 @@ void CUIMapWnd::ResetToDefaultView()
 
 	m_prev_actor_pos.set		(0.0f, 0.0f);	// so ViewActor/Activated treat this as a first look
 	ViewActor					();
+
+	// ViewActor only zooms in when the map sits EXACTLY at its min zoom (fsimilar, EPS_L) -- and that min
+	// was measured once, in Init, while OptimalFit above measures again now, through GetAspectKX, which
+	// the 3D PDA changes. The two land a hair apart, the test fails, and a map the player had zoomed all
+	// the way out stayed that way through the whole tutorial. The tutorial always wants the zoomed-in
+	// view of the actor's level, so ask for it outright.
+	if (m_tgtMap && (m_tgtMap != GlobalMap()))
+		SetZoom					(GlobalMap()->GetMaxZoom());
 }
 
 void CUIMapWnd::ViewGlobalMap()
