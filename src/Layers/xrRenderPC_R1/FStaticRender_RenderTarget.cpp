@@ -141,6 +141,15 @@ void CRenderTarget::calc_tc_duality_ss	(Fvector2& r0, Fvector2& r1, Fvector2& l0
 	l0.set(p0.x+shift_u,p0.y+shift_v);	l1.set(p1.x,p1.y);
 }
 
+// any of the bleeding's lens droplets on screen (pp_droplets, CActor)
+static bool NeedDroplets()
+{
+	if (!g_pGamePersistent)	return false;
+	for (int i = 0; i < IGame_Persistent::PP_DROPLETS; ++i)
+		if (g_pGamePersistent->pp_droplets[i].w > 0.f)	return true;
+	return false;
+}
+
 BOOL CRenderTarget::NeedPostProcess()
 {
 	bool	_blur	= (param_blur>0.001f);
@@ -173,7 +182,15 @@ BOOL CRenderTarget::NeedPostProcess()
 	bool	_scope	= g_pGamePersistent && (g_pGamePersistent->pp_zoom_circle.x > 0.f
 					|| g_pGamePersistent->pp_mask_circle.z > 0.f
 					|| g_pGamePersistent->pp_screen_warp.x > 0.f	// the intoxication fisheye lives here too
-					|| g_pGamePersistent->pp_fatigue.x > 0.f);	// ...and the fatigue grading (x leads y and w)
+					|| g_pGamePersistent->pp_fatigue.x > 0.f	// ...and the fatigue grading (x leads y and w)
+					|| g_pGamePersistent->pp_injury.x > 0.f		// ...and the injury's (its red, the drops,
+					|| g_pGamePersistent->pp_injury.y > 0.f		//    the edge blur, the vessels)
+					|| g_pGamePersistent->pp_injury.z > 0.f
+					|| g_pGamePersistent->pp_injury.w > 0.f
+					|| g_pGamePersistent->pp_hit.x > 0.f		// ...and a hit's flash
+					|| g_pGamePersistent->pp_hit.y > 0.f
+					|| g_pGamePersistent->pp_blur > 0.f
+					|| NeedDroplets());							// ...and the bleeding's droplets
 	return _blur || _gray || _noise || _dual || _cbase || _cadd || _menu_pp || _scope;
 }
 
@@ -282,11 +299,18 @@ void CRenderTarget::End		()
 
 	RCache.set_Shader	(bDistort ? s_postprocess_D : s_postprocess );
 
-	int		gblend		= clampr		(iFloor((1-param_gray)*255.f),0,255);
-	int		nblend		= clampr		(iFloor((1-param_noise)*255.f),0,255);
-	u32					p_color			= subst_alpha		(param_color_base,nblend);
+	// The main menu over a running game, with its post-processed backdrop (OnRenderPPUI_query): R2/R3 render
+	// that on a path of their own (render_menu) with no scene and no grading at all. R1 has drawn the menu
+	// into this very RT (OnRenderPPUI_main above) and runs this pass over it -- so the game's grading (the
+	// effectors' colour, noise, gray and duality, the scope, the intoxication, the fatigue, the injury, a hit)
+	// landed on the menu. While it is up, the pass runs neutral: it is the menu's own, not the game's.
+	IGame_Persistent*	gp				= _menu_pp ? NULL : g_pGamePersistent;	// NULL: every uniform's neutral default
+
+	int		gblend		= _menu_pp ? 255 : clampr	(iFloor((1-param_gray)*255.f),0,255);
+	int		nblend		= _menu_pp ? 255 : clampr	(iFloor((1-param_noise)*255.f),0,255);
+	u32					p_color			= subst_alpha		(_menu_pp ? color_rgba(127,127,127,0) : param_color_base,nblend);
 	u32					p_gray			= subst_alpha		(param_color_gray,gblend);
-	Fvector				p_brightness	= param_color_add	;
+	Fvector				p_brightness	= _menu_pp ? Fvector().set(0.f,0.f,0.f) : param_color_add;
 	// Msg				("param_gray:%f(%d),param_noise:%f(%d)",param_gray,gblend,param_noise,nblend);
 	// Msg				("base: %d,%d,%d",	color_get_R(p_color),		color_get_G(p_color),		color_get_B(p_color));
 	// Msg				("gray: %d,%d,%d",	color_get_R(p_gray),		color_get_G(p_gray),		color_get_B(p_gray));
@@ -299,6 +323,7 @@ void CRenderTarget::End		()
 	
 	Fvector2			n0,n1,r0,r1,l0,l1;
 	calc_tc_duality_ss	(r0,r1,l0,l1);
+	if (_menu_pp)		{ r1.set(l1); l0.set(r0); }		// no duality split under the menu
 	calc_tc_noise		(n0,n1);
 
 	// Fill vertex buffer
@@ -317,24 +342,42 @@ void CRenderTarget::End		()
 		static	shared_str	s_pp_mask		= "m_pp_mask";
 		static	shared_str	s_pp_zoom		= "m_pp_zoom";
 		static	shared_str	s_pp_shadow		= "m_pp_shadow";
-		Fvector4 m	= g_pGamePersistent ? g_pGamePersistent->pp_mask_circle	: Fvector4().set(0.5f,0.5f,0.f,0.f);
-		Fvector4 zc	= g_pGamePersistent ? g_pGamePersistent->pp_zoom_circle	: Fvector4().set(0.f,0.f,1.f,0.f);
-		Fvector4 sh	= g_pGamePersistent ? g_pGamePersistent->pp_scope_shadow	: Fvector4().set(0.f,0.f,0.f,0.f);
+		Fvector4 m	= gp ? gp->pp_mask_circle	: Fvector4().set(0.5f,0.5f,0.f,0.f);
+		Fvector4 zc	= gp ? gp->pp_zoom_circle	: Fvector4().set(0.f,0.f,1.f,0.f);
+		Fvector4 sh	= gp ? gp->pp_scope_shadow	: Fvector4().set(0.f,0.f,0.f,0.f);
 		RCache.set_c		(s_pp_mask,		m.x,  m.y,  m.z,  m.w);
 		RCache.set_c		(s_pp_zoom,		zc.x, zc.y, zc.z, zc.w);
 		RCache.set_c		(s_pp_shadow,	sh.x, sh.y, sh.z, sh.w);
 		// the 2D night scope's brightness step, as on R2/R3
 		static	shared_str	s_pp_nv			= "m_pp_nv";
-		const Fvector4 nv = g_pGamePersistent ? g_pGamePersistent->hud_zoom_deviation : Fvector4().set(0.f,0.f,0.f,0.f);
+		const Fvector4 nv = gp ? gp->hud_zoom_deviation : Fvector4().set(0.f,0.f,0.f,0.f);
 		RCache.set_c		(s_pp_nv,		nv.z, nv.w, nv.x, 0.f);
 		// the intoxication: x = fisheye strength at the edges, y = colour swim, z = edge wave, w = time (s)
 		static	shared_str	s_pp_warp		= "m_pp_warp";
-		const Fvector4 sw = g_pGamePersistent ? g_pGamePersistent->pp_screen_warp : Fvector4().set(0.f,1.f,0.f,0.f);
+		const Fvector4 sw = gp ? gp->pp_screen_warp : Fvector4().set(0.f,1.f,0.f,0.f);
 		RCache.set_c		(s_pp_warp, sw.x, sw.z, sw.w, Device.fTimeGlobal);
 		// the fatigue grading (pp_fatigue, CActor): x = desaturation, y = vignette, w = brightening (no sharpening on R1)
 		static	shared_str	s_pp_fatigue	= "m_pp_fatigue";
-		const Fvector4 fa = g_pGamePersistent ? g_pGamePersistent->pp_fatigue : Fvector4().set(0.f,0.f,0.f,0.f);
+		const Fvector4 fa = gp ? gp->pp_fatigue : Fvector4().set(0.f,0.f,0.f,0.f);
 		RCache.set_c		(s_pp_fatigue, fa.x, fa.y, 0.f, fa.w);
+		// the injury grading (pp_injury, CActor): x = red edges, y = blood drops, z = edge blur, w = vessels
+		static	shared_str	s_pp_injury		= "m_pp_injury";
+		const Fvector4 ij = gp ? gp->pp_injury : Fvector4().set(0.f,0.f,0.f,0.f);
+		RCache.set_c		(s_pp_injury, ij.x, ij.y, ij.z, ij.w);
+		// the hit flash (pp_hit, CActor): x = dark red edges, y = vignette
+		static	shared_str	s_pp_hit		= "m_pp_hit";
+		const Fvector4 ht = gp ? gp->pp_hit : Fvector4().set(0.f,0.f,0.f,0.f);
+		RCache.set_c		(s_pp_hit, ht.x, ht.y, ht.z, ht.w);
+		// blur over the finished picture (pp_blur: the hit flash's): x = amount, y = h/w so the kernel is round
+		static	shared_str	s_pp_blur		= "m_pp_blur";
+		RCache.set_c		(s_pp_blur, gp ? gp->pp_blur : 0.f,
+							 Device.dwWidth ? float(Device.dwHeight) / float(Device.dwWidth) : 1.f, 0.f, 0.f);
+		// the bleeding's lens droplets (pp_droplets, CActor): centre, radius (signed: mirrored), opacity
+		for (int i = 0; i < IGame_Persistent::PP_DROPLETS; ++i)
+		{
+			const Fvector4 dr = gp ? gp->pp_droplets[i] : Fvector4().set(0.f,0.f,0.f,0.f);
+			RCache.set_ca	("m_pp_droplets", i, dr.x, dr.y, dr.z, dr.w);
+		}
 	}
 	static	shared_str	s_brightness	= "c_brightness";
 	RCache.set_c		(s_brightness,p_brightness.x,p_brightness.y,p_brightness.z,0);

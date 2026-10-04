@@ -26,9 +26,18 @@ float4 	main	( v2p I )	: COLOR
 	float2	offset	= (distort.xy-.5h)*def_distort;
 		z_0	+= offset;
 		z_1	+= offset;
+	{	float2 dro = pp_droplets_refract(I.tc0);		// the bleeding's droplets bend what they cover
+		z_0 += dro;	z_1 += dro;	}
 	float	soft	= pp_zoom_soft(z_0);			// only inside a magnified eyepiece
 	float3	t_0 	= pp_cubic0(z_0, soft);
 	float3	t_1 	= pp_cubic1(z_1, soft);
+	t_0		= pp_blur0(z_0, t_0);				// a hit's flash of blur
+	t_1		= pp_blur1(z_1, t_1);
+	if (m_pp_injury.z > 0.0f)						// the injury: the edges smear radially
+	{
+		t_0		= pp_injury_rblur0(z_0, t_0, I.tc0);
+		t_1		= pp_injury_rblur1(z_1, t_1, I.tc0);
+	}
 	float3 	image	= (t_0+t_1)*0.5f;					// add_d2
 	{	float2 ab = pp_abber_offset(z_0);			// the glass splits the colours towards its rim
 		if (ab.x > 0.0f)
@@ -50,6 +59,12 @@ float4 	main	( v2p I )	: COLOR
 	if (m_pp_warp.y > 0.0f && m_pp_warp.x > 0.0001f)	image += 2.0f * pp_intox_colour() * pp_warp_mask(I.tc0);
 	// the fatigue: the colour drains and the corners darken (m_pp_fatigue, see pp_fatigue_grade)
 	if (m_pp_fatigue.x > 0.0f)	image = pp_fatigue_grade(image, I.tc0);
+	// the injury: the edges dyed red, a hit's flash, the vessels, then the blood on the lens (m_pp_injury)
+	if (PP_INJURY_TINT_ON && m_pp_injury.x > 0.0f)	image = pp_injury_tint(image, I.tc0);
+	if (m_pp_hit.x > 0.0f || m_pp_hit.y > 0.0f)	image = pp_hit_flash(image, I.tc0);
+	if (m_pp_injury.w > 0.0f)	image = pp_injury_vessels(image, I.tc0);
+	if (m_pp_injury.y > 0.0f)	image = pp_injury_drops(image, I.tc0);
+	image	= pp_droplets_colour(image, I.tc0);
 //		image	= (image + c_brightness) * I.color;		// mad ?
 
 	float3	graded	= image;					// the effectors' grading, before the scope's own gain

@@ -272,7 +272,7 @@ float pp_mask_factor(float2 uv)
 uniform float4 m_pp_fatigue;
 // the colour drained towards grey through pp_warp_mask (the middle keeps it, the edges lose
 // m_pp_fatigue.x of it) and a touch of sepia, riding the same amount (PP_FATIGUE_SEPIA x the
-// desaturation: 0.4 x 0.35 = 0.14 of sepia at full). PP_FATIGUE_SEPIA_CENTRE picks where: 1 = the
+// desaturation: 0.4 x 0.175 = 0.07 of sepia at full). PP_FATIGUE_SEPIA_CENTRE picks where: 1 = the
 // middle (the inverse mask: the eye's own area warms while the edges go grey), 0 = the edges with the
 // desaturation (the faded colour turns warm instead of just grey). Then the light moved outwards-in:
 // the middle lifted by m_pp_fatigue.w and the corners darkened by m_pp_fatigue.y, through ONE mask --
@@ -299,6 +299,209 @@ float3 pp_fatigue_grade(float3 c, float2 uv)
 	v	= v * v * (3.0f - 2.0f * v);
 	c	*= (1.0f + m_pp_fatigue.w * (1.0f - v)) * (1.0f - m_pp_fatigue.y * v);
 	return c;
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// The HEALTH / BLEEDING / HIT effects, as on R2/R3 (shaders\r2\postprocess.ps), minus what R1 cannot afford or
+// has no source for: no glare on the big drops (no bloom), the edge blur at 2 taps a side instead of 4, the
+// droplets' glare lit from the picture instead of the bloom.
+// ---------------------------------------------------------------------------------------------------------
+// BLUR over the finished picture (m_pp_blur.x = amount, y = h/w so the kernel is round), as on R2/R3 --
+// where it also carries the intoxication's pulse under a 3D lens; on R1 it is the hit flash's. The same
+// poisson pattern as dof.h; PP_BLUR_R is the radius at amount 1, in screen uv.
+uniform float4 m_pp_blur;
+#define PP_BLUR_R 0.006f
+static const float2 PP_BLUR_TAPS[12] = {
+	float2(-0.326212f, -0.405810f), float2(-0.840144f, -0.073580f), float2(-0.695914f,  0.457137f),
+	float2(-0.203345f,  0.620716f), float2( 0.962340f, -0.194983f), float2( 0.473434f, -0.480026f),
+	float2( 0.519456f,  0.767022f), float2( 0.185461f, -0.893124f), float2( 0.507431f,  0.064425f),
+	float2( 0.896420f,  0.412458f), float2(-0.321940f, -0.932615f), float2(-0.791559f, -0.597710f) };
+float3 pp_blur0(float2 uv, float3 c)
+{
+	if (m_pp_blur.x <= 0.001f)	return c;
+	float2 rad	= float2(m_pp_blur.y, 1.0f) * (PP_BLUR_R * m_pp_blur.x);
+	float3 sum	= c;
+	for (int i = 0; i < 12; i++)
+		sum += tex2D(s_base0, uv + PP_BLUR_TAPS[i] * rad).rgb;
+	return sum / 13.0f;
+}
+
+float3 pp_blur1(float2 uv, float3 c)
+{
+	if (m_pp_blur.x <= 0.001f)	return c;
+	float2 rad	= float2(m_pp_blur.y, 1.0f) * (PP_BLUR_R * m_pp_blur.x);
+	float3 sum	= c;
+	for (int i = 0; i < 12; i++)
+		sum += tex2D(s_base1, uv + PP_BLUR_TAPS[i] * rad).rgb;
+	return sum / 13.0f;
+}
+
+// INJURY (CActor, from the health and the bleeding): m_pp_injury.x = how strongly the edges are dyed
+// red (0..1, pulsing), y = the blood drops on the lens, 0..1 (pulsing while bleeding), z = the radial blur
+// of the edges, w = how far in the blood vessels have crept, 0..1 (beating). PP_INJURY_TINT_ON 0 switches the red off.
+// The red goes through its own radial mask (below) in two parts: PP_INJURY_MIX_BLEND of it by PP_INJURY_OVERLAY (1 = overlay:
+// the picture's own light and shade stay, the hue turns red; 0 = multiply), then PP_INJURY_MIX_PLAIN of the
+// colour itself laid plainly over that -- so the edges take the hue without going garishly saturated.
+// Both are the share at x = 1 (full injury, a pulse's peak).
+uniform float4 m_pp_injury;
+uniform sampler2D	s_blood_drops;
+#define PP_INJURY_TINT_ON	1	// 0 = the red off, the drops alone
+#define PP_INJURY_TINT		float3(160.0f, 60.0f, 50.0f) / 255.0f	// a muted blood red
+#define PP_INJURY_OVERLAY	1
+#define PP_INJURY_MIX_BLEND	0.9f
+#define PP_INJURY_MIX_PLAIN	0.45f	// 0.75 leaned too far off the overlay
+// Its mask: the screen-shaped ellipse (1 = the middle of an edge, 1.41 = a corner), a plain smoothstep from
+// PP_INJURY_TINT_R0 to PP_INJURY_TINT_R1 -- softer than pp_warp_mask (0.25..1.45, quintic), which held the
+// red to the very rim; this lets it reach in towards the middle.
+#define PP_INJURY_TINT_R0	0.1f
+#define PP_INJURY_TINT_R1	1.3f
+// The DROPS: fx_blood_lowhealth_00 is a grey (~0.5) plate with the drops darker/redder on it, laid on by
+// overlay -- grey changes nothing, only what is darker or lighter than it shows. They gather from the corners
+// in: nothing past PP_DROPS_R_OUT as they start, everything outside PP_DROPS_R_IN at y = 1, with a soft
+// band PP_DROPS_SOFT wide (radii on the screen-shaped ellipse: 1 = the middle of an edge, 1.41 = a corner).
+// No GLARE on R1: R2/R3 light fx_blood_lowhealth_02 from the bloom, and R1 has none (probing the picture
+// itself drew the scene's silhouettes into it).
+#define PP_DROPS_R_OUT		1.5f
+#define PP_DROPS_R_IN		0.25f
+#define PP_DROPS_SOFT		0.45f
+float3 pp_overlay(float3 a, float3 b)
+{
+	a = saturate(a);
+	return lerp(2.0f * a * b, 1.0f - 2.0f * (1.0f - a) * (1.0f - b), step(0.5f, a));
+}
+
+float3 pp_injury_tint(float3 c, float2 uv)
+{
+#if PP_INJURY_OVERLAY
+	float3 t = pp_overlay(c, PP_INJURY_TINT);
+#else
+	float3 t = c * PP_INJURY_TINT;
+#endif
+	float  k = saturate((length((uv - 0.5f) / 0.5f) - PP_INJURY_TINT_R0) / (PP_INJURY_TINT_R1 - PP_INJURY_TINT_R0));
+	float  m = m_pp_injury.x * k * k * (3.0f - 2.0f * k);
+	c	= lerp(c, t, m * PP_INJURY_MIX_BLEND);
+	return lerp(c, PP_INJURY_TINT, m * PP_INJURY_MIX_PLAIN);
+}
+
+float3 pp_injury_drops(float3 c, float2 uv)
+{
+	float  r	= length((uv - 0.5f) / 0.5f);
+	float  e	= lerp(PP_DROPS_R_OUT, PP_DROPS_R_IN, m_pp_injury.y);
+	float  m	= smoothstep(e, e + PP_DROPS_SOFT, r);
+	return lerp(c, pp_overlay(c, tex2D(s_blood_drops, uv).rgb), m);
+}
+
+// The VESSELS: fx_blood_vessels_00, a grey (0.5) plate with the vessels darker/redder towards the rim, laid
+// on by overlay like the drops -- grey changes nothing -- and gathering in from the corners the same way:
+// nothing past PP_VESSELS_R_OUT as they start, everything outside PP_VESSELS_R_IN at w = 1.
+#define PP_VESSELS_R_OUT	1.5f
+#define PP_VESSELS_R_IN		0.25f
+#define PP_VESSELS_SOFT		0.45f
+uniform sampler2D	s_blood_vessels;
+float3 pp_injury_vessels(float3 c, float2 uv)
+{
+	float  r	= length((uv - 0.5f) / 0.5f);
+	float  e	= lerp(PP_VESSELS_R_OUT, PP_VESSELS_R_IN, m_pp_injury.w);
+	return lerp(c, pp_overlay(c, tex2D(s_blood_vessels, uv).rgb), smoothstep(e, e + PP_VESSELS_SOFT, r));
+}
+
+// The RADIAL BLUR of the edges, as an optic's rim smears: the picture averaged along the line through the
+// middle, PP_RBLUR_TAPS each way, the streak m_pp_injury.z of the distance from the middle long (so it grows
+// towards the rim on its own) and faded in through pp_warp_mask -- the middle stays sharp.
+#define PP_RBLUR_TAPS		2		// 4 a side on R2/R3; 2 here, R1's budget
+float3 pp_injury_rblur0(float2 uv, float3 c, float2 at)
+{
+	float  a	= m_pp_injury.z * pp_warp_mask(at);
+	if (a <= 0.0001f)	return c;			// (lod 0 below: the branch differs per pixel)
+	float2 d	= (uv - 0.5f) * (a / PP_RBLUR_TAPS);
+	float3 sum	= c;
+	for (int i = 1; i <= PP_RBLUR_TAPS; i++)
+		sum += tex2Dlod(s_base0, float4(uv - d * i, 0.0f, 0.0f)).rgb + tex2Dlod(s_base0, float4(uv + d * i, 0.0f, 0.0f)).rgb;
+	return sum / (2.0f * PP_RBLUR_TAPS + 1.0f);
+}
+
+float3 pp_injury_rblur1(float2 uv, float3 c, float2 at)
+{
+	float  a	= m_pp_injury.z * pp_warp_mask(at);
+	if (a <= 0.0001f)	return c;
+	float2 d	= (uv - 0.5f) * (a / PP_RBLUR_TAPS);
+	float3 sum	= c;
+	for (int i = 1; i <= PP_RBLUR_TAPS; i++)
+		sum += tex2Dlod(s_base1, float4(uv - d * i, 0.0f, 0.0f)).rgb + tex2Dlod(s_base1, float4(uv + d * i, 0.0f, 0.0f)).rgb;
+	return sum / (2.0f * PP_RBLUR_TAPS + 1.0f);
+}
+
+// The bleeding's LENS DROPLETS (CActor, pp_droplets): up to PP_DROPLETS single drops, m_pp_droplets[i] =
+// centre (screen uv), radius (share of the screen height; negative = mirrored), opacity (0 = none).
+// The texture packs a drop into its channels: R = its diffuse mask, tinted here; G, B = the refraction
+// offset in units of the drop's radius (0.5 + offset / 4); A = its glare, a bokeh of its own shape.
+// pp_droplets_refract bends the scene's sampling through them (before everything else -- the drop refracts
+// the plain picture); pp_droplets_colour tints them and adds the glare over everything, on the lens. R2/R3
+// light the glare from the bloom; R1 has none, so it reads the picture itself once, at the droplet's centre,
+// from PP_DROPLET_GLARE_LO to PP_DROPLET_GLARE_HI of luma -- the whole droplet lights up or dims at once.
+#define PP_DROPLETS			8
+#define PP_DROPLET_REFRACT	1.0f	// how strongly a drop bends what is behind it
+#define PP_DROPLET_TINT		float3(70.0f, 7.0f, 5.0f) / 255.0f	// was (140, 15, 10), halved
+#define PP_DROPLET_MIX		0.7f	// the tint, by overlay
+#define PP_DROPLET_GLARE	1.0f	// the glare, added (x the light behind it)
+#define PP_DROPLET_GLARE_LO	0.6f	// the picture's luma where the glare starts to light...
+#define PP_DROPLET_GLARE_HI	1.0f	// ...and where it is full
+uniform float4 m_pp_droplets[PP_DROPLETS];
+uniform sampler2D	s_blood_droplet;
+// the drop's own -1..1 square at this pixel; false outside it
+bool pp_droplet_local(float4 dr, float2 uv, out float2 p)
+{
+	p	= (uv - dr.xy) / (abs(dr.z) * float2(screen_res.y * screen_res.z, 1.0f));
+	if (dr.z < 0.0f)	p.x = -p.x;
+	return dr.w > 0.0f && all(abs(p) < 1.0f);
+}
+
+float2 pp_droplets_refract(float2 uv)
+{
+	float2 off = float2(0.0f, 0.0f);
+	for (int i = 0; i < PP_DROPLETS; i++)
+	{
+		float4 dr = m_pp_droplets[i];
+		float2 p;
+		if (!pp_droplet_local(dr, uv, p))	continue;		// (lod 0 below: the branch differs per pixel)
+		float4 t	= tex2Dlod(s_blood_droplet, float4(p * 0.5f + 0.5f, 0.0f, 0.0f));
+		float2 o	= (t.gb - 0.5f) * 4.0f;
+		if (dr.z < 0.0f)	o.x = -o.x;
+		off += o * abs(dr.z) * float2(screen_res.y * screen_res.z, 1.0f) * (t.r * dr.w * PP_DROPLET_REFRACT);
+	}
+	return off;
+}
+
+float3 pp_droplets_colour(float3 c, float2 uv)
+{
+	for (int i = 0; i < PP_DROPLETS; i++)
+	{
+		float4 dr = m_pp_droplets[i];
+		float2 p;
+		if (!pp_droplet_local(dr, uv, p))	continue;
+		float4 t	= tex2Dlod(s_blood_droplet, float4(p * 0.5f + 0.5f, 0.0f, 0.0f));
+		c	= lerp(c, pp_overlay(c, PP_DROPLET_TINT), t.r * dr.w * PP_DROPLET_MIX);
+		float3 bl	= tex2Dlod(s_base0, float4(dr.xy, 0.0f, 0.0f)).rgb;
+		float  lit	= sqrt(saturate((dot(bl, float3(0.299f, 0.587f, 0.114f)) - PP_DROPLET_GLARE_LO) / (PP_DROPLET_GLARE_HI - PP_DROPLET_GLARE_LO)));
+		c	+= t.a * dr.w * lit * PP_DROPLET_GLARE;
+	}
+	return c;
+}
+
+// The HIT FLASH (CActor, pp_hit): m_pp_hit.x = the edges flushed red -- the injury's mask and its two-part
+// blend, in a colour half as bright (PP_HIT_TINT) -- and m_pp_hit.y = a vignette, the fatigue one's shape
+// (PP_VIGNETTE_R0..R1), that much of the light gone in the corners. Both flash in and out with the blur.
+uniform float4 m_pp_hit;
+#define PP_HIT_TINT			float3(80.0f, 30.0f, 25.0f) / 255.0f	// the injury red (160, 60, 50), halved
+float3 pp_hit_flash(float3 c, float2 uv)
+{
+	float  r	= length((uv - 0.5f) / 0.5f);
+	float  k	= saturate((r - PP_INJURY_TINT_R0) / (PP_INJURY_TINT_R1 - PP_INJURY_TINT_R0));
+	float  m	= m_pp_hit.x * k * k * (3.0f - 2.0f * k);
+	c	= lerp(c, pp_overlay(c, PP_HIT_TINT), m * PP_INJURY_MIX_BLEND);
+	c	= lerp(c, PP_HIT_TINT, m * PP_INJURY_MIX_PLAIN);
+	float  v	= saturate((r - PP_VIGNETTE_R0) / (PP_VIGNETTE_R1 - PP_VIGNETTE_R0));
+	return c * (1.0f - m_pp_hit.y * v * v * (3.0f - 2.0f * v));
 }
 
 // 2D NIGHT SCOPE BRIGHTNESS. The tint comes from the scope's PPE, whose green gain is a u32 colour and
