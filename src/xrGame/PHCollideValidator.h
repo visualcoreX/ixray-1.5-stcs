@@ -43,6 +43,7 @@ static		void			SetNonDynamicObject			(CPHObject& obj)										;
 static		void			SetDynamicNotCollide		(CPHObject& obj)										;
 static		void			SetCharacterClass			(CPHObject& obj)										;
 static		void			SetCharacterClassNotCollide	(CPHObject& obj)										;
+static		void			SetCharacterClassCollide	(CPHObject& obj)										;	// undoes the above
 static		void			SetRagDollClass				(CPHObject& obj)										;
 static		void			SetRagDollClassNotCollide	(CPHObject& obj)										;
 static		void			SetAnimatedClass			(CPHObject& obj)										;

@@ -28,6 +28,8 @@ public:
 	virtual BOOL			net_Relevant		()				{ return FALSE; }
 	virtual void			UpdateCL			();
 	virtual void			renderable_Render	();
+	// a bullet or a blast throws it about -- as fast as hit_max_speed at most (see the .cpp)
+	virtual void			Hit					(SHit* pHDS);
 
 	// a case is not something the AI walks around, stands on a level vertex or gets snapped to the ground
 	virtual BOOL			UsedAI_Locations	()				{ return FALSE; }
@@ -73,5 +75,8 @@ private:
 	Fvector					m_launch_linear;
 	Fvector					m_launch_angular;
 	u32						m_launch_time;		// see Spawn; 0 = none
+	u32						m_char_collide_delay;	// ms after the spawn it starts to collide with characters...
+	u32						m_char_collide_at;		// ...i.e. then (0 = done, or never)
+	float					m_hit_max_speed;		// m/s, the fastest a hit may send it off
 	bool					m_processing;
 };
