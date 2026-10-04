@@ -154,7 +154,8 @@ void CWeaponPistol::OnShot		()
 	// Shell Drop
 	Fvector vel; 
 	PHGetLinearVell(vel);
-	OnShellDrop					(get_LastSP(),  vel);
+	if (!gwr_ShellCasingOnShot(vel))		// a real case, or the old particle
+		OnShellDrop				(get_LastSP(),  vel);
 
 	// ����� �� ������
 	

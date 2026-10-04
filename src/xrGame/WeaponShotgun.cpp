@@ -486,6 +486,20 @@ void CWeaponShotgun::PlayAnimOpenWeapon()
 	// cycle, where the hard cut is what keeps the shell-by-shell loop crisp.
 	PlayHUDMotion(anim,TRUE,this,GetState());
 	m_sTriCurAnim = anim;
+
+	// Where this animation has the hands rack a spent shell out (the Protecta / SPAS-12 opened after a
+	// shot), a real one takes over -- by the rule of the jam clear, see WeaponShellCasing.cpp; an open
+	// that throws nothing gives nothing. Which shell: the one the model shows -- the last fired on a gun
+	// that keeps it in the chamber, else the one on top of the magazine.
+	{
+		LPCSTR ammo		= NULL;
+		const bool prev	= !!READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "ammo_params_use_previous_shot_type", FALSE);
+		if ((prev || m_magazine.empty()) && m_gwr_last_fired_type < m_ammoTypes.size())
+			ammo		= m_ammoTypes[m_gwr_last_fired_type].c_str();
+		else if (!m_magazine.empty())
+			ammo		= m_magazine.back().m_ammoSect.c_str();
+		gwr_ShellCasingOnUnjam	(ammo);
+	}
 }
 void CWeaponShotgun::PlayAnimAddOneCartridgeWeapon()
 {
@@ -513,6 +527,9 @@ u32 CWeaponShotgun::PlayAnimUnjamWeapon()
 
 	u32 t = PlayHUDMotion(anim, TRUE, this, GetState());
 	m_sTriCurAnim = anim;
+	// the stuck shell, where this animation racks it out, becomes a real one (WeaponShellCasing.cpp)
+	if (t)
+		gwr_ShellCasingOnUnjam	((m_gwr_last_fired_type < m_ammoTypes.size()) ? m_ammoTypes[m_gwr_last_fired_type].c_str() : NULL);
 
 	// per-anim sound first (snd_anm_reload_jammed...), else the fixed jam-clear label; a weapon that defines
 	// neither stays silent rather than borrowing sndOpen (which is the pump/drum sound, wrong for a revival).

@@ -1122,7 +1122,9 @@ void CWeaponMagazined::gwr_SetBones(LPCSTR csv, BOOL show)
 		if (n && n < sizeof(name))
 		{
 			strncpy_s(name, sizeof(name), s, n);  name[n] = 0;
-			if (hi)	hi->set_bone_visible(name, show, TRUE);
+			// (not the animated shell a real cartridge case has just taken over from: see WeaponShellCasing.cpp)
+			if (hi && !(show && hi->m_model && gwr_ShellCasingHidesBone(hi->m_model->LL_BoneID(name))))
+				hi->set_bone_visible(name, show, TRUE);
 			gwr_SetWorldBone(K, name, show);
 		}
 	}
@@ -1749,6 +1751,7 @@ void CWeaponMagazined::UpdateCL			()
 	float dt = Device.fTimeDelta;
 
 	gwr_UpdateBones();		// show/hide HUD-model bones for ammo count / type / firemode (on change)
+	gwr_ShellCasingKeepHidden();	// ...except the animated shell a real case has just taken over from
 	gwr_UpdateWorldAnims();	// GS ReassignWorldAnims: drive the world model from wpn_*_animation.omf (opt-in)
 
 	// The idle animation is chosen ONCE, when the idle starts, so a magazine emptied from the outside
@@ -2501,6 +2504,8 @@ void CWeaponMagazined::state_Fire(float dt)
 				// anm_shots_selector always plays out. Zeroing the deadline here cut it dead mid-swing.
 				if (PlayJammedShootAnim())
 				{
+					// the case is caught in the port: no real one from this shot, the animated one stays
+					gwr_ShellCasingCancel	();
 					m_dwShootAnimEndTm	= m_dwMotionEndTm;
 					if (m_sounds.FindSoundItem("sndJam", false))
 						PlaySound("sndJam", get_LastFP());
@@ -2613,7 +2618,8 @@ void CWeaponMagazined::OnShot()
 	// Shell Drop
 	Fvector vel; 
 	PHGetLinearVell				(vel);
-	OnShellDrop					(get_LastSP(), vel);
+	if (!gwr_ShellCasingOnShot(vel))		// a real case, or the old particle
+		OnShellDrop				(get_LastSP(), vel);
 	
 	// Огонь из ствола
 	StartFlameParticles			();
@@ -2994,6 +3000,7 @@ void CWeaponMagazined::switch2_Reload()
 
 	PlayAnimReload		();
 	ArmReloadLockTimes	();		// must follow PlayAnimReload: it reads the alias that was played
+	gwr_ShellCasingOnReloadAnim	();	// the PKM's full reload throws its belt link (WeaponShellCasing.cpp)
 	PlayReloadSound		();
 	SetPending			(TRUE);
 }
@@ -4033,6 +4040,8 @@ void CWeaponMagazined::PlayAnimReload()
 		else
 			PlayHUDMotion("anm_reload_jammed", TRUE, this, GetState());
 		bMisfireReload = true;
+		// the stuck case, where this animation racks it out, becomes a real one (WeaponShellCasing.cpp)
+		gwr_ShellCasingOnUnjam	((m_gwr_last_fired_type < m_ammoTypes.size()) ? m_ammoTypes[m_gwr_last_fired_type].c_str() : NULL);
 	}
 	// GS anm_reload selector (WeaponAnims.pas:1035): with rounds still loaded and an ammo-type change
 	// pending, the reload is a CHANGE -- its own motion (pull the old round out, put the new one in).

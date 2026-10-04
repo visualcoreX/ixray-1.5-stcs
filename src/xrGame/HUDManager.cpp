@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "HUDManager.h"
+#include "ShellCasing.h"
 #include "hudtarget.h"
 #include "actor.h"
 #include "../xrEngine/igame_level.h"
@@ -211,6 +212,7 @@ void CHUDManager::Render_Last()
 	::Render->set_HUD				(TRUE);
 	::Render->set_Object			(O->H_Root());
 	O->OnHUDDraw					(this);
+	CShellCasing::RenderHud			();	// cartridge cases still in their first moments after leaving the gun
 	::Render->set_HUD				(FALSE);
 }
 

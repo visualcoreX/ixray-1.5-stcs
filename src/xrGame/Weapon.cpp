@@ -86,6 +86,32 @@ CWeapon::CWeapon()
 
 	m_bLaserInstalled		= false;
 	m_gwr_world_bones_sig	= u32(-1);
+	for (u32 sc = 0; sc < 2; ++sc)
+	{
+		m_shell_track[sc].active	= false;
+		m_shell_track[sc].stage		= 0;
+		m_shell_track[sc].bone		= u16(-1);
+		m_shell_track[sc].frame		= 0;
+		m_shell_track[sc].deadline	= 0;
+		m_shell_track[sc].reshow_time = 0;
+		m_shell_track[sc].motion	= 0;
+		m_shell_track[sc].shot_time	= 0;
+		m_shell_track[sc].speed_scale	= 1.f;
+		m_shell_track[sc].by_hand		= false;
+		m_shell_track[sc].ammo_bone		= false;
+		m_shell_track[sc].drop			= false;
+		m_shell_track[sc].far_max		= 0.f;
+		m_shell_track[sc].vA.set		(0.f, 0.f, 0.f);
+		m_shell_track[sc].sA			= 0.f;
+		m_shell_track[sc].mA.identity	();
+		m_shell_track[sc].wA.set		(0.f, 0.f, 0.f);
+		m_shell_track[sc].launch_time	= 0;
+		m_shell_track[sc].hold_mark		= 0;
+		m_shell_track[sc].hold_until	= 0;
+		m_shell_track[sc].p0.set	(0.f, 0.f, 0.f);
+		m_shell_track[sc].pA.set	(0.f, 0.f, 0.f);
+		m_shell_track[sc].owner_vel.set(0.f, 0.f, 0.f);
+	}
 	m_bLaserEnabled			= false;
 	m_bBayonetInstalled		= false;
 	m_bBayonetBlockedBySilencer	= true;
@@ -1900,6 +1926,7 @@ extern u32 hud_adj_mode;
 void CWeapon::UpdateCL		()
 {
 	inherited::UpdateCL		();
+	gwr_ShellCasingUpdate	();	// a real case waiting for the hud shell animation to leave the port
 	UpdateHUDAddonsVisibility();
 	UpdateAlterZoomBlend	(Device.fTimeDelta);	// GS alter zoom: eased ramp between the two aim poses
 	UpdateScopeFade		();		// arms/disarms the zoom-in/out easing (ScopeFadeFactor)
