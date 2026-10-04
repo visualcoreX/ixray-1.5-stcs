@@ -1,4 +1,6 @@
 [wpn_desert_eagle]:identity_immunities,weapon_probability,default_weapon_params
+reload_drop_bones	= mag2:mag_drop_deagle	; a full reload lets the magazine fall: <hud bone>:<object>, the shown one counts
+reload_drop_frame	= 43	; ...let go on this frame of the full reload (30 a second)
 shell_casing_speed	= 4.5, 7.25	; m/s: the .50 throws its case a little harder than the common range (3.75-6.75)
 bullet_material				= objects\bullet	; wallmark/impact/ricochet pair on hit
 
@@ -673,6 +675,7 @@ configuration_11 = bullet1,bullet2,bullet3,bullet4,bullet5,bullet6,bullet7, bash
 ; UNIQUE Desert Eagle "Silver Lion" (GS wpn_desert_eagle_nimble). Inherits base.
 ;================================================================================
 [wpn_desert_eagle_nimble]:wpn_desert_eagle
+reload_drop_bones	= mag2:mag_drop_deagle_silver	; a full reload lets the magazine fall: <hud bone>:<object>, the shown one counts
 $spawn                  = "weapons\wpn_desert_eagle_nimble"
 description             = gunsl_wpn_deagle_uniq_descr
 

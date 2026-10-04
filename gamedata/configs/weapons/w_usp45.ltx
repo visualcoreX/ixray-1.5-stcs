@@ -1,4 +1,6 @@
 [wpn_usp]:identity_immunities,weapon_probability,default_weapon_params
+reload_drop_bones	= mag:mag_drop_usp45	; a full reload lets the magazine fall: <hud bone>:<object>, the shown one counts
+reload_drop_frame	= 18	; ...let go on this frame of the full reload (30 a second)
 bullet_material				= objects\bullet	; wallmark/impact/ricochet pair on hit
 
 ; GS use_light_misfire: per-shot light strike (click, no bang) -- plays anm_shoot_lightmisfire,
@@ -692,6 +694,7 @@ scope_zoom_factor	    = 100
 ; Own model (wpn_usp_match) + hud + 16-node tree (upgrade_scheme_wpn_usp_nimble).
 ; ============================================================================
 [wpn_usp_nimble]:wpn_usp
+reload_drop_bones	= mag:mag_drop_usp_match	; a full reload lets the magazine fall: <hud bone>:<object>, the shown one counts
 $spawn                  	= "weapons\usp_nimble"
 description             	= gunsl_wpn_usp_match_descr
 cost                    	= 3600

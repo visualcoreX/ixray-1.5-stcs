@@ -1,4 +1,8 @@
 [wpn_abakan]:identity_immunities,weapon_probability,default_weapon_params
+reload_drop_bones	= mag30:mag_drop_abakan_30, mag45:mag_drop_abakan_45, mag45_black:mag_drop_abakan_45_black, mag60:mag_drop_abakan_60	; a full reload lets the magazine fall: <hud bone>:<object>, the shown one counts
+reload_drop_frame	= 35	; ...let go on this frame of the full reload (30 a second)
+reload_drop_speed	= 0.3, 1.5	; m/s the magazine may leave at (default 0.3, 8): capped, as on the AK-74
+reload_drop_forward	= 0.3	; share of its speed along the line of sight it keeps (default 1): it went a little too far forward
 shell_casing_world_offset	= 0.0, 0.0, 0.03	; third person: the case a little further forward than the world model's shell bone
 bullet_material				= objects\bullet_automatic	; wallmark/impact/ricochet pair on hit
 GroupControlSection     = spawn_group
