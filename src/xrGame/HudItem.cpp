@@ -787,9 +787,16 @@ u32 CHudItem::PlayHUDMotion(const shared_str& M, BOOL bMixIn, CHudItem*  W, u32 
 	// has anm_fakeshoot_auto_jammed but no anm_fakeshoot_auto, so the jammed dry-fire fell back to the
 	// unmarked anm_fakeshoot_jammed -- the single-fire motion, which snaps the model's selector to "1".
 	// Precedence of the state token is GS's: jammed > empty > first.
-	LPCSTR st_tok = nullptr;
+	// One exception: empty AND first at once (a shotgun whose jam on the last round has been cleared --
+	// empty, but with no spent shell in the chamber). There the _first take is tried, and the _empty one
+	// (st_alt) is what it falls back to.
+	LPCSTR st_tok = nullptr, st_alt = nullptr;
 	if		(NeedJammedAnim())	st_tok = "_jammed";
-	else if	(NeedEmptyAnim())	st_tok = "_empty";
+	else if	(NeedEmptyAnim())
+	{
+		if (NeedFirstAnim())	{ st_tok = "_first"; st_alt = "_empty"; }
+		else					st_tok = "_empty";
+	}
 	else if	(NeedFirstAnim())	st_tok = "_first";
 
 	string_path stem, tail;
@@ -797,6 +804,8 @@ u32 CHudItem::PlayHUDMotion(const shared_str& M, BOOL bMixIn, CHudItem*  W, u32 
 	LPCSTR mark			= GetFireModeMark(M.c_str());		// "" when the weapon/mode has no mark
 	// don't duplicate a state token the alias already carries (anm_reload_empty + "_empty")
 	if (st_tok && strstr(tail, st_tok))	st_tok = nullptr;
+	if (st_alt && strstr(tail, st_alt))	st_alt = nullptr;
+	if (!st_tok)						{ st_tok = st_alt; st_alt = nullptr; }
 
 	string_path cand;
 	shared_str playM	= M;								// fallback: exactly what the caller asked for
@@ -804,6 +813,11 @@ u32 CHudItem::PlayHUDMotion(const shared_str& M, BOOL bMixIn, CHudItem*  W, u32 
 	if (mark[0] && st_tok)									// base + mark + state + tail
 	{
 		strconcat(sizeof(cand), cand, stem, mark, st_tok, tail);
+		if (isHUDAnimationExist(cand))	{ playM = cand; got = true; }
+	}
+	if (!got && mark[0] && st_alt)							// base + mark + fallback state + tail
+	{
+		strconcat(sizeof(cand), cand, stem, mark, st_alt, tail);
 		if (isHUDAnimationExist(cand))	{ playM = cand; got = true; }
 	}
 	if (!got && mark[0])									// base + mark + tail
@@ -814,6 +828,11 @@ u32 CHudItem::PlayHUDMotion(const shared_str& M, BOOL bMixIn, CHudItem*  W, u32 
 	if (!got && st_tok)										// base + state + tail (no firemode variants)
 	{
 		strconcat(sizeof(cand), cand, stem, st_tok, tail);
+		if (isHUDAnimationExist(cand))	{ playM = cand; got = true; }
+	}
+	if (!got && st_alt)										// base + fallback state + tail
+	{
+		strconcat(sizeof(cand), cand, stem, st_alt, tail);
 		if (isHUDAnimationExist(cand))	{ playM = cand; got = true; }
 	}
 	// ...and finally GS's outermost "_noscope" token, applied to whatever the above settled on: with no

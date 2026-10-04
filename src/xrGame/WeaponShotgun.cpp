@@ -15,6 +15,7 @@ CWeaponShotgun::CWeaponShotgun()
 	bStopReloadSignal		= false;
 	m_bReloadEmpty			= false;
 	m_bJustAfterReload		= false;
+	m_bShotWasFirst			= false;
 	m_bPreloaded			= false;
 	m_bAddCartridgeInOpen	= false;
 	m_bEmptyPreloadMode		= false;
@@ -117,9 +118,12 @@ void CWeaponShotgun::SelectTriReloadAnim(LPCSTR base, bool final_close, string_p
 	// GS ModifierStd order: an EMPTY mag -> "_empty"; a non-empty mag that was just reloaded with no shot
 	// since -> "_first" (the drum's fresh-round start, replayed every top-off until you fire). Mutually
 	// exclusive. Falls through to no emptiness infix when neither applies.
-	const char* emps[2]; int ne = 0;
+	// OUR EXCEPTION: empty AND just handled (the jam on the last round has been cleared, or the gun was
+	// unloaded with no shot since the reload) -- there is no spent shell in the chamber to rack out, so
+	// "_first" is tried before "_empty" (SPAS-12: reload_noshell_start, not reload_start).
+	const char* emps[3]; int ne = 0;
+	if (m_bJustAfterReload)			emps[ne++] = "_first";
 	if (iAmmoElapsed == 0)			emps[ne++] = "_empty";
-	else if (m_bJustAfterReload)	emps[ne++] = "_first";
 	emps[ne++] = "";
 	const char* pres[2]; int np = 0;
 	if (m_bPreloaded)		pres[np++] = "_preloaded";
@@ -177,7 +181,26 @@ void CWeaponShotgun::switch2_Fire	()
 {
 	inherited::switch2_Fire	();
 	bWorking = false;
-	m_bJustAfterReload = false;	// a shot was fired -> the drum is no longer "just reloaded" (clears _first)
+}
+
+// The shot ends "just reloaded" -- AFTER it has picked its animation. The flag used to be cleared in
+// switch2_Fire, i.e. before the first round left, so the _first take of the shot (anm_shoot_first: the
+// drum turns, nothing is thrown) never played, after any reload.
+void CWeaponShotgun::OnShot()
+{
+	m_bShotWasFirst			= m_bJustAfterReload;
+	inherited::OnShot		();
+	m_bJustAfterReload		= false;
+}
+
+// A gun with first-shot takes (need_first_shoot_anims: the Protecta / SPAS-12) throws nothing on the
+// first shot after a reload -- the fired shell rides in the chamber until the next shot pushes it out.
+// A jam is a case that failed to eject, so the LAST round can only jam the gun when a round was fired
+// before it with no reload in between: a round that is the last and the first at once cannot.
+// (Asked after the round has left: iAmmoElapsed is already the count that remains.)
+bool CWeaponShotgun::JamAllowedAfterShot() const
+{
+	return !(m_bNeedFirstShootAnims && m_bShotWasFirst && iAmmoElapsed == 0);
 }
 
 bool CWeaponShotgun::SwitchAmmoType(u32 flags)
@@ -227,6 +250,12 @@ void CWeaponShotgun::OnAnimationEnd(u32 state)
 // The tri-state phase transition (open -> add x N -> close -> idle). Called either from the UpdateCL
 // lock_time timer or, when no lock_time is set, from OnAnimationEnd. Does NOT itself seat a round unless
 // the insert timer never fired (no lock_time_start), matching the legacy add-at-anim-end behaviour.
+// Whether the cycle ends here: stopped with the fire key, full, or nothing left to load.
+bool CWeaponShotgun::TriReloadMustStop()
+{
+	return bStopReloadSignal || m_magazine.size() >= (u32)iMagazineSize || !HaveCartridgeInInventory(1);
+}
+
 void CWeaponShotgun::AdvanceTriReload()
 {
 	// GS CWeaponMagazined__OnAnimationEnd_anm_open, jammed branch (WeaponAmmoCounter.pas:372): the jam-clear
@@ -256,7 +285,7 @@ void CWeaponShotgun::AdvanceTriReload()
 		case eSubstateReloadBegin:
 		{
 			// open finished. add_cartridge_in_open already seated a shell (at the insert timer).
-			if (bStopReloadSignal || m_magazine.size() >= (u32)iMagazineSize || !HaveCartridgeInInventory(1))
+			if (TriReloadMustStop())
 				m_sub_state = eSubstateReloadEnd;
 			else
 				m_sub_state = eSubstateReloadInProcess;
@@ -270,7 +299,7 @@ void CWeaponShotgun::AdvanceTriReload()
 				AddCartridge(1);
 				m_bTriInsertDone = true;
 			}
-			if (bStopReloadSignal || m_magazine.size() >= (u32)iMagazineSize || !HaveCartridgeInInventory(1))
+			if (TriReloadMustStop())
 				m_sub_state = eSubstateReloadEnd;
 			SwitchState(eReload);
 		}break;
@@ -344,6 +373,7 @@ void CWeaponShotgun::TriStateReload()
 	m_bReloadEmpty		= (iAmmoElapsed == 0);	// remember for the whole reload (the _empty family)
 	m_bPreloaded		= false;
 	m_bTriUnjamming		= false;
+	bStopReloadSignal	= false;	// a new cycle: a stop asked of the last one (fire key during its close) is not for this one
 	m_dwTriInsertTm		= 0;
 	m_dwTriPhaseTm		= 0;
 	m_sub_state			= eSubstateReloadBegin;
@@ -437,6 +467,10 @@ void CWeaponShotgun::switch2_EndReload	()
 	PlayAnimCloseWeapon	();
 	PlayReloadPhaseSound(m_sTriCurAnim.c_str(), "sndClose");
 	ArmTriReloadPhase	(m_sTriCurAnim.c_str(), false);	// close seats nothing; timer (or anim end) -> idle
+	// Reloaded, no shot since -- from the moment the close begins, not only once it has run to its end:
+	// the close can be cut by a new reload (it is not pending), and that one must open as the _first
+	// family does. It used to replay the plain open, racking out the spent shell a second time.
+	m_bJustAfterReload	= true;
 }
 
 void CWeaponShotgun::PlayAnimOpenWeapon()

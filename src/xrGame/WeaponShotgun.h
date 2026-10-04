@@ -22,6 +22,7 @@ public:
 
 	virtual void	Reload				();
 	virtual void	switch2_Fire		();
+	virtual void	OnShot				();	// the shot is what ends "just reloaded"
 	void			switch2_StartReload ();
 	void			switch2_AddCartgidge();
 	void			switch2_EndReload	();
@@ -36,15 +37,19 @@ public:
 	virtual bool	Action(s32 cmd, u32 flags);
 	virtual bool	SwitchAmmoType(u32 flags);
 	virtual void	UpdateCL			();
-	// reloaded & no shot since & mag not empty -> the "_first" anim family (idle/gestures), like the
-	// _first reload variant. PlayHUDMotion rewrites <anim> -> <anim>_first when this is true.
-	virtual bool	NeedFirstAnim		() { return m_bJustAfterReload && iAmmoElapsed > 0; }
+	// reloaded (or un-jammed) & no shot since -> the "_first" anim family (idle/gestures), like the
+	// _first reload variant. PlayHUDMotion rewrites <anim> -> <anim>_first when this is true. An EMPTY
+	// magazine does not rule it out: a jam on the last round, cleared, leaves the gun empty with no spent
+	// shell in the chamber -- PlayHUDMotion then tries _first and falls back to _empty.
+	virtual bool	NeedFirstAnim		() { return m_bJustAfterReload; }
 	virtual bool	JustAfterReload		() const { return m_bJustAfterReload; }	// feeds the shot's _first take
+	virtual bool	JamAllowedAfterShot	() const;
 	// chamber-first pumps pin the chambered (fires-next) round at m_magazine.back(); the display must read
 	// the newest LOADED round (size-2) instead. See CWeaponShotgun::AddCartridge chamber-first insert.
 	virtual bool	GwrChamberAtBack	() const { return m_bChamberFirstRound; }
 
 	bool			bStopReloadSignal;
+	bool			TriReloadMustStop	();			// stop key / full / nothing to load
 
 protected:
 	virtual void	OnAnimationEnd		(u32 state);
@@ -66,6 +71,7 @@ protected:
 
 	bool			m_bReloadEmpty;			// mag was empty when this reload started (_empty family)
 	bool			m_bJustAfterReload;		// reloaded and NO shot fired since -> the "_first" reload family
+	bool			m_bShotWasFirst;		// the shot just fired was that first one (latched in OnShot)
 											// (GS IsJustAfterReload: set on reload end, cleared on the next shot)
 	bool			m_bPreloaded;			// a shell got preloaded during the empty open (empty_preload_mode)
 	bool			m_bAddCartridgeInOpen;	// config add_cartridge_in_open: a shell is seated during anm_open

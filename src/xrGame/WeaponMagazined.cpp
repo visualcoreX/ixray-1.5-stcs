@@ -2486,7 +2486,7 @@ void CWeaponMagazined::state_Fire(float dt)
 			// "jammed AND empty" was a dead end -- it no longer is: that state has its own revival
 			// (anm_reload_jammed_last + snd_reload_jammed_last), the stuck case keeps the fired round's
 			// colour, and a reload while jammed clears the jam without loading anything.
-			if( !m_bNoJamFire && CheckForMisfire() )
+			if( !m_bNoJamFire && JamAllowedAfterShot() && CheckForMisfire() )
 			{
 				// GS OnWeaponJam + anm_shots_selector's "_jammed" modifier: the shot that jams has its OWN
 				// animation (the case caught in the ejection port) and it plays to the END -- the jammed
@@ -4181,11 +4181,16 @@ void CWeaponMagazined::SelectShootAnim(string_path& result)
 	// magazined weapon gets it; existence-gated, so anything without those aliases is unchanged.
 	bool last = (iAmmoElapsed <= 1);
 	// GS modifier precedence is jammed > empty > first, so `_first` loses to the last-round take.
+	// ...unless the take for BOTH exists (GS token order: anm_shoot_last_first): the single round loaded
+	// into an empty gun is the last one and the first one at once, and it is the _first behaviour that
+	// shows -- the Protecta's drum turns and throws nothing.
 	const bool first = NeedFirstShootAnim();
 	if (IsZoomed() && isHUDAnimationExist("anm_shoot_aim"))
 	{
 		if (UseScopeAnims())
 		{
+			if (last && first && isHUDAnimationExist("anm_shoot_aim_scope_last_first"))
+				{ xr_strcpy(result, "anm_shoot_aim_scope_last_first"); return; }
 			if (last && isHUDAnimationExist("anm_shoot_aim_scope_last"))
 				{ xr_strcpy(result, "anm_shoot_aim_scope_last"); return; }
 			if (first && isHUDAnimationExist("anm_shoot_aim_scope_first"))
@@ -4193,6 +4198,8 @@ void CWeaponMagazined::SelectShootAnim(string_path& result)
 			if (isHUDAnimationExist("anm_shoot_aim_scope"))
 				{ xr_strcpy(result, "anm_shoot_aim_scope"); return; }
 		}
+		if (last && first && isHUDAnimationExist("anm_shoot_aim_last_first"))
+			{ xr_strcpy(result, "anm_shoot_aim_last_first"); return; }
 		if (last && isHUDAnimationExist("anm_shoot_aim_last"))
 			{ xr_strcpy(result, "anm_shoot_aim_last"); return; }
 		if (first && isHUDAnimationExist("anm_shoot_aim_first"))
@@ -4200,6 +4207,8 @@ void CWeaponMagazined::SelectShootAnim(string_path& result)
 		xr_strcpy(result, "anm_shoot_aim");
 		return;
 	}
+	if (last && first && isHUDAnimationExist("anm_shoot_last_first"))
+		{ xr_strcpy(result, "anm_shoot_last_first"); return; }
 	if (last && isHUDAnimationExist("anm_shoot_last"))
 		{ xr_strcpy(result, "anm_shoot_last"); return; }
 	if (first && isHUDAnimationExist("anm_shoot_first"))
