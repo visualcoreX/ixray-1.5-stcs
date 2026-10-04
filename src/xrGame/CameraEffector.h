@@ -50,3 +50,4 @@
 #define	eCEActorLLookoutStart	((ECamEffectorType)(cefNext+31))
 #define	eCEActorRLookoutEnd		((ECamEffectorType)(cefNext+32))
 #define	eCEActorLLookoutEnd		((ECamEffectorType)(cefNext+33))
+#define	eCEActorHitShake		((ECamEffectorType)(cefNext+34))	// the camera's flinch on a one-off hit (Actor.cpp)

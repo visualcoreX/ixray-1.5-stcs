@@ -308,7 +308,9 @@ void CActorCondition::UpdateCondition()
 
 	AffectDamage_InjuriousMaterial();
 
-	UpdateBloodScreen();
+	// GS's bloodscreen overlay is replaced by the injury grading of the pp pass (CActor::UpdateCL, the red
+	// edges and the blood drops, for the low health and the bleeding alike) -- kept below, not called.
+//	UpdateBloodScreen();
 
 	/*if(m_fDeltaTime > 0.0f)
 	{

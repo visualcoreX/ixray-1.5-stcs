@@ -100,6 +100,8 @@ public:
 	IC bool					CanBeHarmed				() const					{return OnServer() && m_bCanBeHarmed;};
 	
 	void					ClearWounds();
+	// Debug (g_set_bleed): replace every wound with one of this size, so BleedingSpeed() reads it back.
+	void					SetBleedingSpeed		(float value);
 protected:
 	void					UpdateHealth			();
 	void					UpdatePower				();

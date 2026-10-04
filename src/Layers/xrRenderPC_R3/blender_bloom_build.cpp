@@ -111,6 +111,13 @@ void	CBlender_postprocess_msaa::Compile			(CBlender_Compile& C)
       C.r_dx10Texture		("s_base0",	r2_RT_generic);
       C.r_dx10Texture		("s_base1",	r2_RT_generic);
       C.r_dx10Texture		("s_noise", "fx\\fx_noise2");
+      // the injury's blood drops and their glare: shaders\r3\postprocess.s binds them for the non-MSAA
+      // path -- without them here the shader read black and the drops' overlay crushed the edges
+      C.r_dx10Texture		("s_blood_drops", "fx\\fx_blood_lowhealth_00");
+      C.r_dx10Texture		("s_blood_glare", "fx\\fx_blood_lowhealth_02");
+      C.r_dx10Texture		("s_blood_vessels", "fx\\fx_blood_vessels_00");
+      C.r_dx10Texture		("s_blood_droplet", "fx\\fx_blood_droplet");
+      C.r_dx10Texture		("s_bloom",		r2_RT_bloom1);		// what the glare lights up from
 
       C.r_dx10Sampler		("smp_rtlinear");
       C.r_dx10Sampler		("smp_linear");

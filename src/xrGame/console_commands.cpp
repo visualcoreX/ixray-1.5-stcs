@@ -16,6 +16,7 @@
 #include "hit.h"
 #include "PHDestroyable.h"
 #include "actor.h"
+#include "ActorCondition.h"
 #include "Actor_Flags.h"
 #include "customzone.h"
 #include "script_engine.h"
@@ -1922,6 +1923,47 @@ public:
 	}
 };
 
+// Testing the actor's condition and the screen effects that follow it: g_set_health / g_set_stamina /
+// g_set_bleed <value> set the health, the stamina and the bleeding (the BleedingSpeed() scale: one wound of
+// that size) outright. No argument prints the current value.
+class CCC_SetActorCondition : public IConsole_Command {
+public:
+	enum EWhat { eHealth, eStamina, eBleed };
+	CCC_SetActorCondition(LPCSTR N, EWhat what) : IConsole_Command(N), m_what(what) {
+		bEmptyArgsHandled = true;
+	}
+
+	virtual void Execute(LPCSTR args) override {
+		CActor* actor = g_pGameLevel ? smart_cast<CActor*>(Level().CurrentEntity()) : nullptr;
+		if (!actor) {
+			Msg("! %s: no actor", cName);
+			return;
+		}
+		CActorCondition& c = actor->conditions();
+		if (!args || !*args) {
+			Msg("%s = %.3f", cName, current(c));
+			return;
+		}
+		float v = (float)atof(args);
+		switch (m_what) {
+		case eHealth:	clamp(v, 0.f, c.GetMaxHealth());	c.SetHealth(v);				break;
+		case eStamina:	clamp(v, 0.f, 1.f);					c.ChangePower(v - c.GetPower());	break;
+		case eBleed:	clamp(v, 0.f, 10.f);				c.SetBleedingSpeed(v);		break;
+		}
+		Msg("%s = %.3f", cName, current(c));
+	}
+
+	virtual void Info(TInfo& I) override {
+		xr_strcpy(I, m_what == eBleed ? "bleeding speed, 0 = none (0.75 = the full screen effect)" : "0..1");
+	}
+
+private:
+	float current(CActorCondition& c) const {
+		return m_what == eHealth ? c.GetHealth() : m_what == eStamina ? c.GetPower() : c.BleedingSpeed();
+	}
+	EWhat m_what;
+};
+
 class CCC_GSpawn : public IConsole_Command {
 public:
 	CCC_GSpawn(LPCSTR N) : IConsole_Command(N) {
@@ -2083,6 +2125,9 @@ void CCC_RegisterCommands()
 	CMD1(CCC_ReceiveInfo, "g_info");
 	CMD1(CCC_DisableInfo, "d_info");
 	CMD1(CCC_GiveMoney, "g_money");
+	CMD2(CCC_SetActorCondition, "g_set_health",	CCC_SetActorCondition::eHealth);
+	CMD2(CCC_SetActorCondition, "g_set_stamina",	CCC_SetActorCondition::eStamina);
+	CMD2(CCC_SetActorCondition, "g_set_bleed",	CCC_SetActorCondition::eBleed);
 
 	CMD1(CCC_GSpawn, "g_spawn");
 	CMD1(CCC_GSpawnToInventory, "g_spawn_inv");
