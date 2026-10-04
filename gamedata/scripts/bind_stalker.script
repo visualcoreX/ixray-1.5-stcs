@@ -99,6 +99,11 @@ function actor_binder:net_spawn(se_abstract)
 
 	local level_name = level.name()
 
+	-- the first arrival on the Cordon: until then the Swamps spawn no veterans (sim_faction.get_spawn_section)
+	if level_name == "escape" and not has_alife_info("cs_actor_reached_escape") then
+		actor:give_info_portion("cs_actor_reached_escape")
+	end
+
 	gwr_agr_psy_blockade.spawn_once()		-- one psi blockade at the Agroprom underground entrance, once per game
 
 	if last_level_name ~= level_name then

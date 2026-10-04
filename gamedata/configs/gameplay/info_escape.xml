@@ -4,6 +4,8 @@
 
 <!--	Decane start	-->
 
+	<!-- the player has set foot on the Cordon (bind_stalker): the Swamps stop holding back their veterans -->
+	<info_portion id="cs_actor_reached_escape"/>
 	<info_portion id="esc_wolf_brother_4"/>
 	<info_portion id="esc_warnings_off"/>
 	<info_portion id="esc_warning_squads_hostile"/>

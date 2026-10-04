@@ -301,6 +301,35 @@ function se_sim_faction:get_spawn_section(level_name, custom_resource)
 		end
 	end
 
+	-- Until the player has been to the Cordon, the Swamps spawn no one above rank 1 (sim_default_<x>_0 and
+	-- _1: novice, experienced). The marsh lists run up to _4 and Clear Sky's resource level climbs as it
+	-- takes the Swamps, so veterans and masters turned up long before the story leaves the starting level.
+	-- Should no low rank survive the resource x level intersection (Clear Sky's resource 2+ lists start at
+	-- _2), the level's own low ranks are taken instead.
+	if level_name == "marsh" and not has_alife_info("cs_actor_reached_escape") then
+		local function rank_of(section)
+			return tonumber(string.match(section, "_(%d+)$") or "0") or 0
+		end
+		local low, n = {}, 0
+		for _, v in pairs (spawn_data) do
+			if rank_of(v.section) <= 1 then
+				n = n + 1
+				low[n] = v
+			end
+		end
+		if n == 0 then
+			for _, vv in pairs (level_spawn_data) do
+				if rank_of(vv.section) <= 1 then
+					n = n + 1
+					low[n] = {section = vv.section, prob = vv.prob}
+				end
+			end
+		end
+		if n > 0 then
+			spawn_data = low
+		end
+	end
+
 	local sum = 0
 
 	for k, v in pairs (spawn_data) do
