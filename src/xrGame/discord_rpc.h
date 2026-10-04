@@ -12,15 +12,14 @@
 //   state      = the side task, on a line of its own (empty when there is none)
 //   small icon = the faction patch, its tooltip = "<community> | <rank>", both localized
 //
-// discord_game_sdk.dll is loaded lazily with LoadLibrary and every entry point is resolved by hand:
-// a missing or broken dll must never keep xrGame.dll itself from loading, and a player without
-// Discord installed must not pay for any of this.
+//   button     = one link under the card ([discord_rpc] button_label / button_url)
+//
+// It talks to Discord over its local RPC pipe (\\.\pipe\discord-ipc-N) directly: no dll to ship,
+// nothing to load, and -- unlike the Game SDK this started on -- the protocol can carry buttons.
+// A player without Discord running pays for one failed CreateFile every 15 seconds.
 //
 // The whole thing is gated by AF_DISCORD_RPC (console: discord_rpc, checkbox in the video options,
 // ON by default). Clearing the bit tears the connection down, not just the updates.
-
-struct IDiscordCore;
-struct IDiscordActivityManager;
 
 class CDiscordRPC
 {
@@ -37,18 +36,20 @@ private:
 	void			Disconnect			();
 	void			BuildPresence		();
 	void			PushPresence		(LPCSTR details, LPCSTR state, LPCSTR small_image, LPCSTR small_text);
+	bool			SendFrame			(u32 opcode, LPCSTR json, u32 len);
+	bool			SendActivity		(LPCSTR activity);	// NULL clears the presence
+	bool			Pump				();					// read what Discord sent; false = the pipe is gone
 
-	HMODULE					m_dll;
-	void*					m_create_fn;		// EDiscordResult (__stdcall*)(DiscordVersion, DiscordCreateParams*, IDiscordCore**)
-	IDiscordCore*			m_core;
-	IDiscordActivityManager* m_activity;
-
-	bool					m_dll_missing;		// LoadLibrary already failed once -- do not retry it every frame
+	HANDLE					m_pipe;				// Discord's RPC pipe, INVALID_HANDLE_VALUE while not connected
+	bool					m_ready;			// the handshake has been answered: commands are accepted
+	u32						m_ready_deadline;	// ...or it has not, and this is when to give up on it
+	u32						m_nonce;
+	bool					m_pushed;			// something has been sent over THIS connection
 	s64						m_started_at;		// unix time of the session, for the "elapsed" counter
 	u32						m_next_connect;		// Device.dwTimeGlobal gate for the reconnect attempts
 	u32						m_next_refresh;		// ...and for rebuilding the strings
 
-	// last pushed values -- update_activity is a network round trip, so it only happens on a change
+	// last pushed values -- the activity is sent only when one of them changes
 	string256				m_details;
 	string256				m_state;
 	string128				m_small_image;

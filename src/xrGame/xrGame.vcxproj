@@ -888,7 +888,6 @@
     <ClInclude Include="detail_path_manager_inline.h" />
     <ClInclude Include="detail_path_manager_space.h" />
     <ClInclude Include="dijkstra.h" />
-    <ClInclude Include="discord_game_sdk.h" />
     <ClInclude Include="discord_rpc.h" />
     <ClInclude Include="dijkstra_inline.h" />
     <ClInclude Include="DisablingParams.h" />

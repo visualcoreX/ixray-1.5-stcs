@@ -11,8 +11,6 @@
 #include "string_table.h"
 #include "ui/UIInventoryUtilities.h"
 
-#include "discord_game_sdk.h"
-
 #include <ctime>
 
 namespace
@@ -46,11 +44,49 @@ const community_patch COMMUNITY_TABLE[] =
 const u32		CONNECT_RETRY_MS	= 15000;	// Discord is not running (or not running yet)
 const u32		REFRESH_MS			= 2000;		// how often the strings are rebuilt and compared
 
-typedef enum EDiscordResult (DISCORD_API *discord_create_fn)(DiscordVersion, struct DiscordCreateParams*, struct IDiscordCore**);
+// ---- transport ---------------------------------------------------------------------------------
+// Discord's local RPC socket, spoken directly: \\.\pipe\discord-ipc-N, frames of
+// [u32 opcode][u32 length][JSON, UTF-8]. This used to go through the Game SDK
+// (discord_game_sdk.dll), but its DiscordActivity has no BUTTONS at all -- the field does not exist
+// there -- while the RPC protocol carries them. It also takes the extra dll out of the picture.
+enum { OP_HANDSHAKE = 0, OP_FRAME = 1, OP_CLOSE = 2, OP_PING = 3, OP_PONG = 4 };
 
-void DISCORD_API activity_callback(void* /*data*/, enum EDiscordResult /*result*/)
+const u32		MAX_FRAME			= 64 * 1024;	// the READY answer is a couple of KB; anything past this is not ours
+const u32		READY_TIMEOUT_MS	= 10000;		// handshake sent, no READY: drop the pipe and start over
+const u32		FIELD_SIZE			= 128;			// every text field of an activity, bytes with the terminator
+
+// The button under the presence card. Discord shows at most two, a label of up to 32 characters
+// each; the link opens in the viewer's browser. (Discord does not let you click your OWN buttons --
+// look at the profile from another account to try it.)
+LPCSTR			DEFAULT_BUTTON_LABEL = "CSGM Discord";
+LPCSTR			DEFAULT_BUTTON_URL	= "discord.com/invite/jQJ8rgfSbY";
+
+void json_string(xr_string& out, LPCSTR s)
 {
-	// Nothing to do: a failed presence update is not worth a log line every two seconds.
+	out				+= '"';
+	for (; s && *s; ++s)
+	{
+		const unsigned char c = (unsigned char)*s;
+		if (('"' == c) || ('\\' == c))	{ out += '\\'; out += (char)c; }
+		else if (c < 0x20)				{ string16 u; xr_sprintf(u, "\\u%04x", (unsigned)c); out += u; }
+		else							out += (char)c;		// UTF-8 goes through as it is
+	}
+	out				+= '"';
+}
+
+// "name":"value", with the comma the previous member needs. Empty values are left out altogether:
+// Discord rejects the whole activity over a text field shorter than two characters.
+void json_member(xr_string& out, LPCSTR name, LPCSTR value, bool& first)
+{
+	if (!value || !value[0] || !value[1])
+		return;
+
+	if (!first)		out += ',';
+	first			= false;
+	out				+= '"';
+	out				+= name;
+	out				+= "\":";
+	json_string		(out, value);
 }
 
 // The string table is stored in the code page of the localization the game runs in; Discord wants
@@ -179,11 +215,11 @@ CDiscordRPC& DiscordRPC()
 
 CDiscordRPC::CDiscordRPC()
 {
-	m_dll			= NULL;
-	m_create_fn		= NULL;
-	m_core			= NULL;
-	m_activity		= NULL;
-	m_dll_missing	= false;
+	m_pipe			= INVALID_HANDLE_VALUE;
+	m_ready			= false;
+	m_ready_deadline= 0;
+	m_nonce			= 0;
+	m_pushed		= false;
 	m_started_at	= (s64)time(NULL);
 	m_next_connect	= 0;
 	m_next_refresh	= 0;
@@ -195,88 +231,164 @@ CDiscordRPC::CDiscordRPC()
 
 bool CDiscordRPC::Connect()
 {
-	if (m_dll_missing)
-		return		false;
-
-	if (!m_dll)
+	// Discord listens on the first free one of ten pipes (a second client, PTB or Canary, takes the next)
+	for (int i = 0; i < 10; ++i)
 	{
-		m_dll		= LoadLibraryA("discord_game_sdk.dll");
-		if (!m_dll)
-		{
-			// Not an error: the dll simply is not deployed. Say it once and never look again.
-			Msg		("~ [discord] discord_game_sdk.dll not found, rich presence disabled");
-			m_dll_missing = true;
-			return	false;
-		}
+		string64	name;
+		xr_sprintf	(name, "\\\\.\\pipe\\discord-ipc-%d", i);
+		HANDLE h	= CreateFileA(name, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+		if (INVALID_HANDLE_VALUE == h)
+			continue;
 
-		m_create_fn	= (void*)GetProcAddress(m_dll, "DiscordCreate");
-		if (!m_create_fn)
-		{
-			Msg		("! [discord] discord_game_sdk.dll has no DiscordCreate, rich presence disabled");
-			FreeLibrary(m_dll);
-			m_dll	= NULL;
-			m_dll_missing = true;
-			return	false;
-		}
+		// NOWAIT: neither a read nor a write may ever stall the game's frame on a busy Discord
+		DWORD mode	= PIPE_READMODE_BYTE | PIPE_NOWAIT;
+		SetNamedPipeHandleState(h, &mode, NULL, NULL);
+		m_pipe		= h;
+		break;
 	}
+	if (INVALID_HANDLE_VALUE == m_pipe)
+		return		false;		// Discord is not running
 
-	DiscordCreateParams	params;
-	DiscordCreateParamsSetDefault(&params);
-	params.client_id	= (DiscordClientId)_atoi64(cfg_string("client_id", "1541182300086345779"));
-	if (0 == params.client_id)
-		params.client_id = (DiscordClientId)DEFAULT_CLIENT_ID;
-	// NoRequireDiscord: with the client absent DiscordCreate still succeeds and run_callbacks
-	// answers NotRunning, which is how the reconnect below notices Discord starting up later.
-	params.flags		= DiscordCreateFlags_NoRequireDiscord;
+	// the id travels as a string; keep the digits only so a stray blank or quote cannot break the JSON
+	string64		id;
+	u32 n			= 0;
+	for (LPCSTR p = cfg_string("client_id", ""); *p && (n < sizeof(id) - 1); ++p)
+		if ((*p >= '0') && (*p <= '9'))
+			id[n++]	= *p;
+	id[n]			= 0;
+	if (!n)
+		xr_sprintf	(id, "%I64d", DEFAULT_CLIENT_ID);
 
-	IDiscordCore*	core = NULL;
-	const enum EDiscordResult res = ((discord_create_fn)m_create_fn)(DISCORD_VERSION, &params, &core);
-	if ((DiscordResult_Ok != res) || !core)
-		return		false;
-
-	m_core			= core;
-	m_activity		= m_core->get_activity_manager(m_core);
-	if (!m_activity)
+	xr_string		hello = "{\"v\":1,\"client_id\":\"";
+	hello			+= id;
+	hello			+= "\"}";
+	if (!SendFrame(OP_HANDSHAKE, hello.c_str(), (u32)hello.size()))
 	{
 		Disconnect	();
 		return		false;
 	}
+
+	m_ready			= false;
+	m_ready_deadline= Device.dwTimeGlobal + READY_TIMEOUT_MS;
 
 	// force the first push through the "did anything change" filter below
 	m_details[0]	= 0;
 	m_state[0]		= 0;
 	m_small_image[0]= 0;
 	m_small_text[0]	= 0;
-
-	Msg				("* [discord] rich presence connected");
+	m_pushed		= false;
 	return			true;
 }
 
 void CDiscordRPC::Disconnect()
 {
-	if (m_core)
+	if (INVALID_HANDLE_VALUE != m_pipe)
 	{
-		m_core->destroy(m_core);
-		m_core		= NULL;
+		CloseHandle	(m_pipe);
+		m_pipe		= INVALID_HANDLE_VALUE;
 	}
-	m_activity		= NULL;
+	m_ready			= false;
 }
 
 void CDiscordRPC::Shutdown()
 {
+	if (INVALID_HANDLE_VALUE != m_pipe)
+		SendActivity(NULL);		// take the card down rather than leave it to Discord's own timeout
 	Disconnect		();
+}
 
-	if (m_dll)
+// One frame, header and payload in a single write so it can never be split by another writer.
+bool CDiscordRPC::SendFrame(u32 opcode, LPCSTR json, u32 len)
+{
+	if (INVALID_HANDLE_VALUE == m_pipe)
+		return		false;
+
+	xr_string		frame;
+	frame.reserve	(8 + len);
+	frame.append	((const char*)&opcode, 4);
+	frame.append	((const char*)&len, 4);
+	frame.append	(json, len);
+
+	DWORD written	= 0;
+	return			WriteFile(m_pipe, frame.data(), (DWORD)frame.size(), &written, NULL) && (written == frame.size());
+}
+
+// SET_ACTIVITY; activity == NULL clears the presence.
+bool CDiscordRPC::SendActivity(LPCSTR activity)
+{
+	string64		tail;
+	xr_sprintf		(tail, "},\"nonce\":\"%u\"}", ++m_nonce);
+
+	string64		head;
+	xr_sprintf		(head, "{\"cmd\":\"SET_ACTIVITY\",\"args\":{\"pid\":%u", (u32)GetCurrentProcessId());
+
+	xr_string		msg = head;
+	if (activity)
 	{
-		FreeLibrary	(m_dll);
-		m_dll		= NULL;
-		m_create_fn	= NULL;
+		msg			+= ",\"activity\":";
+		msg			+= activity;
+	}
+	msg				+= tail;
+	return			SendFrame(OP_FRAME, msg.c_str(), (u32)msg.size());
+}
+
+// Whatever Discord has sent: the READY that follows the handshake, the answer to every command, a ping
+// now and then. All of it is read and dropped -- an unread pipe fills up and the writes start failing.
+// false = the pipe is gone (Discord closed) or Discord turned the handshake down.
+bool CDiscordRPC::Pump()
+{
+	for (;;)
+	{
+		DWORD avail	= 0;
+		if (!PeekNamedPipe(m_pipe, NULL, 0, NULL, &avail, NULL))
+			return	false;
+		if (avail < 8)
+			return	true;
+
+		u32 header[2];
+		DWORD got	= 0;
+		if (!PeekNamedPipe(m_pipe, header, 8, &got, NULL, NULL) || (got < 8))
+			return	false;
+
+		const u32 opcode	= header[0];
+		const u32 len		= header[1];
+		if (len > MAX_FRAME)
+			return	false;
+		if (avail < 8 + len)
+			return	true;		// the rest of the frame is still on its way
+
+		xr_string	frame;
+		frame.resize(8 + len);
+		if (!ReadFile(m_pipe, &frame[0], 8 + len, &got, NULL) || (got != 8 + len))
+			return	false;
+
+		switch (opcode)
+		{
+		case OP_FRAME:
+			if (!m_ready)
+			{
+				m_ready	= true;
+				Msg		("* [discord] rich presence connected");
+			}
+			// a command Discord turned down (a button address it does not like, a field too long):
+			// say so, with its own words -- otherwise the card just silently fails to change
+			if (strstr(frame.c_str() + 8, "\"evt\":\"ERROR\""))
+				Msg		("! [discord] %.300s", frame.c_str() + 8);
+			break;
+		case OP_PING:
+			if (!SendFrame(OP_PONG, frame.c_str() + 8, len))
+				return	false;
+			break;
+		case OP_CLOSE:
+			return	false;		// e.g. an application id Discord does not know
+		}
 	}
 }
 
 void CDiscordRPC::PushPresence(LPCSTR details, LPCSTR state, LPCSTR small_image, LPCSTR small_text)
 {
-	const bool changed	= (0 != xr_strcmp(m_details, details)) ||
+	const bool changed	= !m_pushed ||
+						  (0 != xr_strcmp(m_details, details)) ||
 						  (0 != xr_strcmp(m_state, state)) ||
 						  (0 != xr_strcmp(m_small_image, small_image)) ||
 						  (0 != xr_strcmp(m_small_text, small_text));
@@ -287,26 +399,71 @@ void CDiscordRPC::PushPresence(LPCSTR details, LPCSTR state, LPCSTR small_image,
 	xr_strcpy		(m_state, state);
 	xr_strcpy		(m_small_image, small_image);
 	xr_strcpy		(m_small_text, small_text);
+	m_pushed		= true;
 
-	DiscordActivity	activity;
-	ZeroMemory		(&activity, sizeof(activity));
-	activity.type	= DiscordActivityType_Playing;
-	activity.instance = false;
-	activity.timestamps.start = (DiscordTimestamp)m_started_at;
+	// every text field is cut to Discord's 128 bytes on whole characters (copy_field)
+	char			f_details[FIELD_SIZE], f_state[FIELD_SIZE];
+	char			f_large_image[FIELD_SIZE], f_large_text[FIELD_SIZE];
+	char			f_small_image[FIELD_SIZE], f_small_text[FIELD_SIZE];
+	copy_field		(f_details, sizeof(f_details), details);
+	copy_field		(f_state, sizeof(f_state), state);
+	copy_field		(f_large_image, sizeof(f_large_image), cfg_string("large_image", DEFAULT_LARGE_IMAGE));
+	// config captions can carry blanks and non-ASCII: they are text, not asset keys
+	string256		raw;
+	string256		utf;
+	unquote			(cfg_string("large_text", DEFAULT_LARGE_TEXT), raw, sizeof(raw));
+	to_utf8			(raw, utf, sizeof(utf));
+	copy_field		(f_large_text, sizeof(f_large_text), utf);
+	copy_field		(f_small_image, sizeof(f_small_image), small_image);
+	copy_field		(f_small_text, sizeof(f_small_text), small_text);
 
-	copy_field		(activity.details, sizeof(activity.details), details);
-	copy_field		(activity.state, sizeof(activity.state), state);
-	copy_field		(activity.assets.large_image, sizeof(activity.assets.large_image), cfg_string("large_image", DEFAULT_LARGE_IMAGE));
-	// the only config string that can carry blanks and non-ASCII: it is a caption, not an asset key
-	string256		large_text_raw;
-	string256		large_text;
-	unquote			(cfg_string("large_text", DEFAULT_LARGE_TEXT), large_text_raw, sizeof(large_text_raw));
-	to_utf8			(large_text_raw, large_text, sizeof(large_text));
-	copy_field		(activity.assets.large_text, sizeof(activity.assets.large_text), large_text);
-	copy_field		(activity.assets.small_image, sizeof(activity.assets.small_image), small_image);
-	copy_field		(activity.assets.small_text, sizeof(activity.assets.small_text), small_text);
+	xr_string		a = "{";
+	bool first		= true;
+	json_member		(a, "details", f_details, first);
+	json_member		(a, "state", f_state, first);
 
-	m_activity->update_activity(m_activity, &activity, NULL, activity_callback);
+	string64		ts;
+	xr_sprintf		(ts, "%s\"timestamps\":{\"start\":%I64d}", first ? "" : ",", m_started_at);
+	a				+= ts;
+
+	a				+= ",\"assets\":{";
+	first			= true;
+	json_member		(a, "large_image", f_large_image, first);
+	json_member		(a, "large_text", f_large_text, first);
+	json_member		(a, "small_image", f_small_image, first);
+	json_member		(a, "small_text", f_small_text, first);
+	a				+= "}";
+
+	// ---- the button --------------------------------------------------------------------------
+	// [discord_rpc] button_label / button_url; an empty url (or label) = no button. The config
+	// keeps the address WITHOUT its scheme: the ini reader takes "//" for the start of a comment
+	// and would cut "https://..." down to "https:".
+	string256		label;
+	unquote			(cfg_string("button_label", DEFAULT_BUTTON_LABEL), raw, sizeof(raw));
+	to_utf8			(raw, utf, sizeof(utf));
+	copy_field		(label, 33, utf);				// 32 bytes is the most Discord takes
+
+	string512		url;
+	unquote			(cfg_string("button_url", DEFAULT_BUTTON_URL), raw, sizeof(raw));
+	if (raw[0] && !strstr(raw, "://"))	strconcat((int)sizeof(url), url, "https://", raw);
+	else								xr_strcpy(url, raw);
+
+	if (label[0] && label[1] && url[0])
+	{
+		a			+= ",\"buttons\":[{\"label\":";
+		json_string	(a, label);
+		a			+= ",\"url\":";
+		json_string	(a, url);
+		a			+= "}]";
+	}
+
+	a				+= ",\"instance\":false}";
+
+	if (!SendActivity(a.c_str()))
+	{
+		Disconnect	();
+		m_next_connect = Device.dwTimeGlobal + CONNECT_RETRY_MS;
+	}
 }
 
 void CDiscordRPC::BuildPresence()
@@ -412,16 +569,15 @@ void CDiscordRPC::OnFrame()
 	if (!psActorFlags.test(AF_DISCORD_RPC))
 	{
 		// Unticking the checkbox has to actually take the presence down, not just freeze it.
-		if (m_core)
+		if (INVALID_HANDLE_VALUE != m_pipe)
 		{
-			m_activity->clear_activity(m_activity, NULL, activity_callback);
-			m_core->run_callbacks(m_core);
-			Disconnect();
+			SendActivity(NULL);
+			Disconnect	();
 		}
 		return;
 	}
 
-	if (!m_core)
+	if (INVALID_HANDLE_VALUE == m_pipe)
 	{
 		if (Device.dwTimeGlobal < m_next_connect)
 			return;
@@ -433,14 +589,17 @@ void CDiscordRPC::OnFrame()
 		}
 	}
 
-	const enum EDiscordResult res = m_core->run_callbacks(m_core);
-	if (DiscordResult_Ok != res)
+	// Discord was closed, turned the handshake down, or never answered it: drop the pipe and try
+	// again in a while.
+	if (!Pump() || (!m_ready && (Device.dwTimeGlobal > m_ready_deadline)))
 	{
-		// Discord was closed (or never started). Drop the core and try again in a while.
 		Disconnect	();
 		m_next_connect = Device.dwTimeGlobal + CONNECT_RETRY_MS;
 		return;
 	}
+
+	if (!m_ready)
+		return;		// the handshake is still on its way back
 
 	if (Device.dwTimeGlobal < m_next_refresh)
 		return;
