@@ -518,6 +518,25 @@ zone_freq_6		= 0.1, 40 ; min,max
 ; idle at 45.0 -- 17 deg, which on screen is the torso swinging left as the reload starts. Every
 ; other set has reload == idle and needs no line here.
 machinegun      = -12.8
+; ---- crouched ------------------------------------------------------------------------------------
+; A "cr_<key>[_<action>]" line wins over "<key>[_<action>]" while the actor is crouched. The pack
+; bakes its crouch sets on other angles: the compact family (slots 3 / 8 / 9) against the rifle set
+; (cr_torso_2) is 31.9 / 31.9 / 34.6 against 37.9 / 46.3 / 26.0 for idle / walk / run -- 6 deg left,
+; 14 left, and 9 to the RIGHT -- so the standing -17.2 over-turned it there (11 deg at rest, 26 in
+; the crouch run). value = baked - target, the target being the rifle set in the same state.
+; Aimed (aim_0, suffix _zoom): 40.7 against 37.9.
+cr_3            = -6.0
+cr_3_walk       = -14.4
+cr_3_run        = 8.6
+cr_3_zoom       = 2.8
+cr_8            = -6.0
+cr_8_walk       = -14.4
+cr_8_run        = 8.6
+cr_8_zoom       = 2.8
+cr_9            = -6.0
+cr_9_walk       = -14.4
+cr_9_run        = 8.6
+cr_9_zoom       = 2.8
 8_mini_reload   = -17.2
                                     ; so the correction adds to the baked angle, not subtracts
 

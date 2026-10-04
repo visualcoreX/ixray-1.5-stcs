@@ -175,34 +175,35 @@ static void ensure_larm_partition(IKinematicsAnimated* KA, IKinematics* K)
 	else					Msg("! actor l_arm partition: no left-arm bones on this visual");
 }
 
-static float yaw_fix_from(LPCSTR sect, LPCSTR key, LPCSTR action)
+// "<prefix><key><action>", then "<prefix><key>"
+static bool yaw_fix_find(LPCSTR sect, LPCSTR prefix, LPCSTR key, LPCSTR action, float& v)
+{
+	string128	k;
+	if (action && action[0])
+	{
+		strconcat	(sizeof(k), k, prefix, key, action);
+		if (pSettings->line_exist(sect, k))	{ v = pSettings->r_float(sect, k); return true; }
+	}
+	strconcat		(sizeof(k), k, prefix, key);
+	if (pSettings->line_exist(sect, k))		{ v = pSettings->r_float(sect, k); return true; }
+	return			false;
+}
+
+// CROUCHED, the same key is tried with a "cr_" prefix first: the pack bakes its crouch sets on angles
+// of their own (the compact family -- slots 3/8/9 -- sits 17 deg left of the rifles standing, but only
+// 6 crouched, and to the RIGHT of them in the crouch run), so the standing value over-turned the chest
+// there. No "cr_" line = the standing one, as before.
+static float yaw_fix_from(LPCSTR sect, LPCSTR key, LPCSTR action, bool crouch)
 {
 	if (!key || !key[0])						return 0.f;
 	if (!pSettings->section_exist(sect))		return 0.f;
-	if (action && action[0])
-	{
-		string128	k;
-		strconcat	(sizeof(k), k, key, action);
-		if (pSettings->line_exist(sect, k))		return pSettings->r_float(sect, k);
-	}
-	if (!pSettings->line_exist(sect, key))		return 0.f;
-	return pSettings->r_float(sect, key);
+	float v				= 0.f;
+	if (crouch && yaw_fix_find(sect, "cr_", key, action, v))	return v;
+	yaw_fix_find		(sect, "", key, action, v);
+	return				v;
 }
-static float neck_yaw_fix(LPCSTR key, LPCSTR action = NULL)	{ return yaw_fix_from(ACTOR_NECK_YAW_SECT, key, action); }
-
-static float torso_yaw_fix(LPCSTR key, LPCSTR action = NULL)
-{
-	if (!key || !key[0])									return 0.f;
-	if (!pSettings->section_exist(ACTOR_TORSO_YAW_SECT))	return 0.f;
-	if (action && action[0])
-	{
-		string128	k;
-		strconcat	(sizeof(k), k, key, action);
-		if (pSettings->line_exist(ACTOR_TORSO_YAW_SECT, k))	return pSettings->r_float(ACTOR_TORSO_YAW_SECT, k);
-	}
-	if (!pSettings->line_exist(ACTOR_TORSO_YAW_SECT, key))	return 0.f;
-	return pSettings->r_float(ACTOR_TORSO_YAW_SECT, key);
-}
+static float neck_yaw_fix(LPCSTR key, LPCSTR action = NULL, bool crouch = false)	{ return yaw_fix_from(ACTOR_NECK_YAW_SECT, key, action, crouch); }
+static float torso_yaw_fix(LPCSTR key, LPCSTR action = NULL, bool crouch = false)	{ return yaw_fix_from(ACTOR_TORSO_YAW_SECT, key, action, crouch); }
 
 void  CActor::Spin0Callback(CBoneInstance* B)
 {
@@ -768,8 +769,9 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 	//-----------------------------------------------------------------------
 	// Torso
 	// Nothing in hand plays the slot-0 set; the branch below overrides this once it knows better.
-	float	yaw_fix_target	= deg2rad(torso_yaw_fix("0") + g_actor_torso_yaw);
-	float	neck_fix_target	= deg2rad(neck_yaw_fix("0"));
+	const bool bCrouchYaw	= 0 != (mstate_rl & mcCrouch);	// the "cr_" lines of the yaw tables
+	float	yaw_fix_target	= deg2rad(torso_yaw_fix("0", NULL, bCrouchYaw) + g_actor_torso_yaw);
+	float	neck_fix_target	= deg2rad(neck_yaw_fix("0", NULL, bCrouchYaw));
 	// The set and key that won, so the correction can be keyed off the MOTION that ends up playing
 	// rather than off the weapon's state. The two are not the same thing: our reload finishes on a
 	// TIMER while the torso motion runs on, so a state-keyed correction switched off mid-animation
@@ -834,9 +836,9 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 	if (det_group)
 	{
 		LPCSTR det_action = det_showing ? "_drawdevice" : det_hiding ? "_holsterdevice" : NULL;
-		yaw_fix_target = deg2rad(torso_yaw_fix(det_group, det_action) + g_actor_torso_yaw
+		yaw_fix_target = deg2rad(torso_yaw_fix(det_group, det_action, bCrouchYaw) + g_actor_torso_yaw
 								 + g_actor_detector_yaw);
-		neck_fix_target = deg2rad(neck_yaw_fix(det_group, det_action));
+		neck_fix_target = deg2rad(neck_yaw_fix(det_group, det_action, bCrouchYaw));
 	}
 
 	if(!M_torso)
@@ -1157,13 +1159,14 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 		else if (M_torso == TW_used->holster_all)					act = "_holsterall";
 		else if (M_torso == TW_used->draw)							act = "_draw";
 		else if (M_torso == TW_used->holster)						act = "_holster";
+		else if (M_torso == TW_used->zoom)								act = "_zoom";
 		else if (M_torso == TW_used->Moving(STorsoWpn::eWalk,   bRelaxed))	act = "_walk";
 		else if (M_torso == TW_used->Moving(STorsoWpn::eRun,    bRelaxed))	act = "_run";
 		else if (M_torso == TW_used->Moving(STorsoWpn::eSprint, bRelaxed))	act = "_sprint";
 
-		yaw_fix_target	= deg2rad(torso_yaw_fix(yaw_key_used, act) + g_actor_torso_yaw
+		yaw_fix_target	= deg2rad(torso_yaw_fix(yaw_key_used, act, bCrouchYaw) + g_actor_torso_yaw
 							+ (det_group ? g_actor_detector_yaw : 0.f));
-		neck_fix_target	= deg2rad(neck_yaw_fix(yaw_key_used, act));
+		neck_fix_target	= deg2rad(neck_yaw_fix(yaw_key_used, act, bCrouchYaw));
 
 	}
 
