@@ -1360,6 +1360,46 @@ detonation_threshold_hit = 0.4
 can_be_unlimited = true ;false
 
 ; the flying/exploding body of the M397A1 (GS ammo/fake_missiles.ltx:334)
+
+[ammo_7.62x39_fmj]:ammo_base
+shell_casing		= shell_casing_762x39
+whine_sounds	= weapons\shared\bullet_crack_545_01, weapons\shared\bullet_crack_545_02, weapons\shared\bullet_crack_545_03, weapons\shared\bullet_crack_545_04, weapons\shared\bullet_crack_545_05
+GroupControlSection	= spawn_group
+discovery_dependency =
+$spawn			= "weapons\ammo\ammo_7.62x39_fmj" ; option for Level Editor
+class			= AMMO
+cform           = skeleton
+visual          = dynamics\weapons\wpn_ammo\ammo_762x39_fmj.ogf
+description		= ammo_7.62x39_fmj_descr	; orig ammo-5.45x39-fmj_descr
+$prefetch 		= 64
+
+cost			= 400
+
+box_size		= 30
+
+inv_name		= ammo-7.62x39-fmj
+inv_name_short	= ammo-7.62x39-fmj_s
+inv_weight		= .4
+
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 17
+inv_grid_y         = 6
+
+;;inv_icon = ui_hud2_res_back
+
+k_dist			= 1
+k_air_resistance = 1.4
+k_disp			= 1
+k_hit			= 0.33
+k_impulse		= 1
+k_pierce		= 0.6
+k_ap			= 0.45
+impair			= 1
+buck_shot		= 1
+tracer			= on
+wm_size         = 0.05
+
 [wpn_fake_missile3]:identity_immunities,default_weapon_params
 ; our fake missiles carry these two (GS's does not; identity_immunities gives slot -1 / no_description
 ; anyway, but keep the shape identical to wpn_fake_missile2 so nothing reads a stale inherited value)
