@@ -5,6 +5,7 @@
 #include "../xrEngine/gamemtllib.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "profiler.h"
+#include "../xrCore/hitch_trace.h"
 #include "MainMenu.h"
 #include "UICursor.h"
 #include "ui/UIBtnHint.h"
@@ -607,14 +608,23 @@ void CGamePersistent::OnFrame	()
 		}
 #endif // MASTER_GOLD
 	}
-	__super::OnFrame			();
+	{
+		hitch::zone					hz("persistent/base_onframe");
+		__super::OnFrame			();
+	}
 
 	if(!Device.Paused())
+	{
+		hitch::zone					hz("persistent/sheduler");
 		Engine.Sheduler.Update		();
+	}
 
 	// update weathers ambient
 	if(!Device.Paused())
+	{
+		hitch::zone					hz("persistent/weathers");
 		WeathersUpdate				();
+	}
 
 	if	(0!=pDemoFile)
 	{

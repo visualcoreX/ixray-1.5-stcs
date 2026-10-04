@@ -9,6 +9,7 @@
 #include "client_spawn_manager.h"
 #include "../xrEngine/xr_object.h"
 #include "../xrEngine/IGame_Persistent.h"
+#include "../xrCore/hitch_trace.h"
 
 void CLevel::cl_Process_Spawn(NET_Packet& P)
 {
@@ -76,6 +77,7 @@ void CLevel::g_cl_Spawn		(LPCSTR name, u8 rp, u16 flags, Fvector pos)
 
 void CLevel::g_sv_Spawn		(CSE_Abstract* E)
 {
+	hitch::load					hitch_load("spawn", E->s_name.c_str());
 #ifdef DEBUG_MEMORY_MANAGER
 	u32							E_mem = 0;
 	if (g_bMEMO)	{

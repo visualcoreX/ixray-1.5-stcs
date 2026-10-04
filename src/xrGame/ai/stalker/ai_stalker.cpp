@@ -62,6 +62,7 @@
 #include "smart_cover_animation_selector.h"
 #include "smart_cover_animation_planner.h"
 #include "smart_cover_planner_target_selector.h"
+#include "../../../xrCore/hitch_trace.h"
 
 #ifdef DEBUG
 #	include "../../alife_simulator.h"
@@ -350,8 +351,17 @@ BOOL CAI_Stalker::net_Spawn			(CSE_Abstract* DC)
 	R_ASSERT						(tpHuman);
 	m_group_behaviour				= !!tpHuman->m_flags.test(CSE_ALifeObject::flGroupBehaviour);
 
-	if (!CObjectHandler::net_Spawn(DC) || !inherited::net_Spawn(DC))
-		return						(FALSE);
+	{
+		hitch::zone					hz("stalker/object_handler");
+		if (!CObjectHandler::net_Spawn(DC))
+			return					(FALSE);
+	}
+	{
+		hitch::zone					hz("stalker/inherited");
+		if (!inherited::net_Spawn(DC))
+			return					(FALSE);
+	}
+	hitch::zone						hz_rest("stalker/rest");
 	
 	set_money						(tpHuman->m_dwMoney, false);
 
@@ -361,7 +371,10 @@ BOOL CAI_Stalker::net_Spawn			(CSE_Abstract* DC)
 		_start							= Memory.mem_usage();
 #endif // DEBUG_MEMORY_MANAGER
 
-	animation().reload				();
+	{
+		hitch::zone					hz("stalker/anim_reload");
+		animation().reload			();
+	}
 
 #ifdef DEBUG_MEMORY_MANAGER
 	if (g_bMEMO)

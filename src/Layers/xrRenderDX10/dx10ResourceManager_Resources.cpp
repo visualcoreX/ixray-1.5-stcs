@@ -6,6 +6,7 @@
 #include "../../xrEngine/render.h"
 #endif
 #pragma warning(default:4995)
+#include "../../xrCore/hitch_trace.h"
 
 #include <D3DX10Core.h>
 
@@ -141,6 +142,7 @@ SVS*	CResourceManager::_CreateVS		(LPCSTR _name)
 	if (I!=m_vs.end())	return I->second;
 	else
 	{
+		hitch::load					hitch_load("shader_vs", name);
 		SVS*	_vs					= xr_new<SVS>	();
 		_vs->dwFlags				|= xr_resource_flagged::RF_REGISTERED;
 		m_vs.insert					(std::make_pair(_vs->set_name(name),_vs));
@@ -286,6 +288,7 @@ SPS*	CResourceManager::_CreatePS			(LPCSTR _name)
 	if (I!=m_ps.end())	return		I->second;
 	else
 	{
+		hitch::load					hitch_load("shader_ps", name);
 		SPS*	_ps					=	xr_new<SPS>	();
 		_ps->dwFlags				|=	xr_resource_flagged::RF_REGISTERED;
 		m_ps.insert					(std::make_pair(_ps->set_name(name),_ps));
@@ -411,6 +414,7 @@ SGS*	CResourceManager::_CreateGS			(LPCSTR name)
 	if (I!=m_gs.end())	return		I->second;
 	else
 	{
+		hitch::load					hitch_load("shader_gs", name);
 		SGS*	_gs					=	xr_new<SGS>	();
 		_gs->dwFlags				|=	xr_resource_flagged::RF_REGISTERED;
 		m_gs.insert					(std::make_pair(_gs->set_name(name),_gs));

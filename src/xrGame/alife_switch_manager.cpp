@@ -10,6 +10,7 @@
 #include "alife_switch_manager.h"
 #include "xrServer_Objects_ALife.h"
 #include "alife_graph_registry.h"
+#include "../xrCore/hitch_trace.h"
 #include "alife_object_registry.h"
 #include "alife_schedule_registry.h"
 #include "game_level_cross_table.h"
@@ -108,6 +109,7 @@ void CALifeSwitchManager::remove_online(CSE_ALifeDynamicObject *object, bool upd
 void CALifeSwitchManager::switch_online(CSE_ALifeDynamicObject *object)
 {
 	START_PROFILE("ALife/switch/switch_online")
+	hitch::load					hitch_load("alife_online", object->name_replace());
 #ifdef DEBUG
 //	if (psAI_Flags.test(aiALife))
 		Msg						("[LSS][%d] Going online [%d][%s][%d] ([%f][%f][%f] : [%f][%f][%f]), on '%s'",Device.dwFrame,Device.dwTimeGlobal,object->name_replace(), object->ID,VPUSH(graph().actor()->o_Position),VPUSH(object->o_Position), "*SERVER*");
@@ -119,6 +121,7 @@ void CALifeSwitchManager::switch_online(CSE_ALifeDynamicObject *object)
 void CALifeSwitchManager::switch_offline(CSE_ALifeDynamicObject *object)
 {
 	START_PROFILE("ALife/switch/switch_offline")
+	hitch::load					hitch_load("alife_offline", object->name_replace());
 #ifdef DEBUG
 //	if (psAI_Flags.test(aiALife))
 		Msg							("[LSS][%d] Going offline [%d][%s][%d] ([%f][%f][%f] : [%f][%f][%f]), on '%s'",Device.dwFrame,Device.dwTimeGlobal,object->name_replace(), object->ID,VPUSH(graph().actor()->o_Position),VPUSH(object->o_Position), "*SERVER*");

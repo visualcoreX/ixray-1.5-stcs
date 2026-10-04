@@ -14,6 +14,7 @@
 #include "..\xrRenderDX10\3DFluid\dx103DFluidManager.h"
 
 #include "D3D10shader.h"
+#include "r3_shader_cache.h"
 
 CRender										RImplementation;
 
@@ -1061,16 +1062,8 @@ HRESULT	CRender::shader_compile			(
 	
 	//HRESULT		_result	= D3D10CompileShader(pSrcData,SrcDataLen,NULL, defines,pInclude,pFunctionName,pTarget,Flags,ppShader,ppErrorMsgs,ppConstantTable);
 
-	HRESULT		_result	= D3DX10CompileFromMemory( 
-		pSrcData, 
-		SrcDataLen,
-		"",//NULL, //LPCSTR pFileName,	//	NVPerfHUD bug workaround.
-		defines, pInclude, pFunctionName,
-		pTarget,
-      Flags, 0, NULL, 
-		ppShader,
-		ppErrorMsgs,NULL
-		);
+	HRESULT		_result	= r3_compile_shader_cached(name, pSrcData, SrcDataLen, defines, pInclude,
+		pFunctionName, pTarget, Flags, ppShader, ppErrorMsgs);
 
 	if (SUCCEEDED(_result) && o.disasm)
 	{

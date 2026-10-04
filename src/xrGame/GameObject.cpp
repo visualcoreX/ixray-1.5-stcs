@@ -18,6 +18,7 @@
 #include "object_factory.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "ai_object_location_impl.h"
+#include "../xrCore/hitch_trace.h"
 #include "game_graph.h"
 #include "ai_debug.h"
 #include "../xrEngine/igame_level.h"
@@ -335,13 +336,19 @@ BOOL CGameObject::net_Spawn		(CSE_Abstract*	DC)
 			spatial.type				= (spatial.type | STYPE_VISIBLEFORAI) ^ STYPE_VISIBLEFORAI;
 	}
 
-	reload						(*cNameSect());
-	if(!g_dedicated_server)
-		CScriptBinder::reload	(*cNameSect());
+	{
+		hitch::zone				hz("spawn/reload");
+		reload					(*cNameSect());
+		if(!g_dedicated_server)
+			CScriptBinder::reload	(*cNameSect());
+	}
 	
-	reinit						();
-	if(!g_dedicated_server)
-		CScriptBinder::reinit	();
+	{
+		hitch::zone				hz("spawn/reinit");
+		reinit					();
+		if(!g_dedicated_server)
+			CScriptBinder::reinit	();
+	}
 #ifdef DEBUG
 	if(ph_dbg_draw_mask1.test(ph_m1_DbgTrackObject)&&_stricmp(PH_DBG_ObjectTrackName(),*cName())==0)
 	{
@@ -353,6 +360,7 @@ BOOL CGameObject::net_Spawn		(CSE_Abstract*	DC)
 	{	
 //		Msg				("client data is present for object [%d][%s], load is processed",ID(),*cName());
 		IReader			ireader = IReader(&*E->client_data.begin(), E->client_data.size());
+		hitch::zone		hz("spawn/net_load");
 		net_Load		(ireader);
 	}
 	else {
@@ -395,11 +403,17 @@ BOOL CGameObject::net_Spawn		(CSE_Abstract*	DC)
 			}
 		}
 	}
-	inherited::net_Spawn		(DC);
+	{
+		hitch::zone				hz("spawn/cobject_visual");
+		inherited::net_Spawn	(DC);
+	}
 
 	m_bObjectRemoved			= false;
 
-	spawn_supplies				();
+	{
+		hitch::zone				hz("spawn/supplies");
+		spawn_supplies			();
+	}
 #ifdef DEBUG
 	if(ph_dbg_draw_mask1.test(ph_m1_DbgTrackObject)&&_stricmp(PH_DBG_ObjectTrackName(),*cName())==0)
 	{
@@ -407,6 +421,7 @@ BOOL CGameObject::net_Spawn		(CSE_Abstract*	DC)
 	}
 	BOOL ret =CScriptBinder::net_Spawn(DC);
 #else
+	hitch::zone					hz("spawn/script_binder");
 	return						(CScriptBinder::net_Spawn(DC));
 #endif
 

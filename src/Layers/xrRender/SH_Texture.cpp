@@ -2,6 +2,7 @@
 #pragma hdrstop
 
 #include "ResourceManager.h"
+#include "../../xrCore/hitch_trace.h"
 
 #ifndef _EDITOR
 #include "../../xrEngine/render.h"
@@ -151,6 +152,7 @@ void CTexture::Load		()
 	flags.bLoaded					= true;
 	desc_cache						= 0;
 	if (pSurface)					return;
+	hitch::load						hitch_load("texture", cName.c_str());
 
 	flags.bUser						= false;
 	flags.MemoryUsage				= 0;

@@ -10,6 +10,7 @@
 #include "xrLevel.h"
 #include "CameraManager.h"
 #include "xr_object.h"
+#include "../xrCore/hitch_trace.h"
 #include "feel_sound.h"
 
 ENGINE_API	IGame_Level*	g_pGameLevel	= NULL;
@@ -168,8 +169,14 @@ void	IGame_Level::OnFrame		( )
 
 	// Update all objects
 	VERIFY						(bReady);
-	Objects.Update				( false );
-	pHUD->OnFrame				( );
+	{
+		hitch::zone				hz("level/objects_updateCL");
+		Objects.Update			( false );
+	}
+	{
+		hitch::zone				hz("level/hud");
+		pHUD->OnFrame			( );
+	}
 
 	// Ambience
 	if (Sounds_Random.size() && (Device.dwTimeGlobal > Sounds_Random_dwNextTime))

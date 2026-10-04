@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "xrSheduler.h"
 #include "xr_object.h"
+#include "../xrCore/hitch_trace.h"
 
 //#define DEBUG_SCHEDULER
 
@@ -326,7 +327,9 @@ void CSheduler::ProcessStep			()
 
 
 //			try {
+			const u64 hitch_t0		= hitch::item_begin();
 			T.Object->shedule_Update	(clampr(Elapsed,u32(1),u32(_max(u32(T.Object->shedule.t_max),u32(1000)))) );
+			hitch::item_end			("shedule", hitch_t0, T.scheduled_name.c_str());
 //			} catch (...) {
 #ifdef DEBUG
 //				Msg		("! xrSheduler: object '%s' raised an exception", _obj_name);
@@ -422,7 +425,9 @@ void CSheduler::Update				()
 		VERIFY						(T.Object->dbg_startframe != Device.dwFrame);
 		T.Object->dbg_startframe	= Device.dwFrame;
 #endif
+		const u64 hitch_t0			= hitch::item_begin();
 		T.Object->shedule_Update	(Elapsed);
+		hitch::item_end				("shedule_rt", hitch_t0, T.scheduled_name.c_str());
 		T.dwTimeOfLastExecute		= dwTime;
 	}
 

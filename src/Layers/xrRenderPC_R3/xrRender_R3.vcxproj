@@ -350,6 +350,7 @@
     <ClInclude Include="light_smapvis.h" />
     <ClInclude Include="r2_types.h" />
     <ClInclude Include="r3.h" />
+    <ClInclude Include="r3_shader_cache.h" />
     <ClInclude Include="r3_rendertarget.h" />
     <ClInclude Include="r3_rendertarget_wallmarks.h" />
     <ClInclude Include="SMAP_Allocator.h" />
@@ -543,6 +544,7 @@
     <ClCompile Include="r2_sector_detect.cpp" />
     <ClCompile Include="r2_test_hw.cpp" />
     <ClCompile Include="r3.cpp" />
+    <ClCompile Include="r3_shader_cache.cpp" />
     <ClCompile Include="r3_loader.cpp" />
     <ClCompile Include="r3_rendertarget.cpp" />
     <ClCompile Include="r3_rendertarget_accum_direct.cpp" />

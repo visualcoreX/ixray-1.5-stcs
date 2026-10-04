@@ -6,6 +6,7 @@
 #include "SoundRender_Core.h"
 #include "SoundRender_Source.h"
 #include "ogg_utils.h"
+#include "../xrCore/hitch_trace.h"
 
 void CSoundRender_Source::decompress(u32 line, OggVorbis_File* ovf)
 {
@@ -31,45 +32,63 @@ void CSoundRender_Source::LoadWave	(LPCSTR pName)
 	pname					= pName;
 	ZeroMemory				(&m_wformat, sizeof(WAVEFORMATEX));
 
-	// Load file into memory and parse WAV-format
-	m_wave					= FS.r_open(pname.c_str());
-	R_ASSERT3				(m_wave && m_wave->length(),"Can't open wave file:",pname.c_str());
+	// Only the description is read here. Playing a sound opens the file again with its own decoder
+	// (CSoundRender_Target::attach), so the source used to keep a mapped file and a live decoder per
+	// sound for nothing -- thousands of them by mid-game, in a 32-bit process. Read and let go.
+	m_wave					= 0;
+	IReader* wave			= FS.r_open(pname.c_str());
+	R_ASSERT3				(wave && wave->length(),"Can't open wave file:",pname.c_str());
 
-	ov_callbacks			ovc;
-	ovc.read_func			= ov_read_func;
-	ovc.seek_func			= ov_seek_func;
-	ovc.close_func			= ov_close_func;
-	ovc.tell_func			= ov_tell_func;
-	ov_open_callbacks		(m_wave, &m_ovf, NULL, 0, ovc);
+	ogg_quick_info			info;
+	if (!ogg_quick_read((const u8*)wave->pointer(), wave->length(), info))
+	{
+		// Anything the page reader does not expect goes through the full decoder, as it always did.
+		ov_callbacks			ovc;
+		ovc.read_func			= ov_read_func;
+		ovc.seek_func			= ov_seek_func;
+		ovc.close_func			= ov_close_func;
+		ovc.tell_func			= ov_tell_func;
+		OggVorbis_File			ovf;
+		ov_open_callbacks		(wave, &ovf, NULL, 0, ovc);
 
-	vorbis_info* ovi		= ov_info(&m_ovf, -1);
+		vorbis_info* ovi		= ov_info(&ovf, -1);
+		R_ASSERT3				(ovi, "Invalid source info:", pname.c_str());
+		info.channels			= ovi->channels;
+		info.rate				= ovi->rate;
+		info.pcm_total			= ov_pcm_total(&ovf,-1);
+		vorbis_comment*	ovm		= ov_comment(&ovf,-1);
+		info.has_comment		= ovm->comments > 0;
+		info.comment_len		= info.has_comment ? _min(u32(ovm->comment_lengths[0]), u32(sizeof(info.comment))) : 0;
+		if (info.comment_len)	CopyMemory(info.comment, ovm->user_comments[0], info.comment_len);
+		ov_clear				(&ovf);
+	}
+	FS.r_close				(wave);
+
 	// verify
-	R_ASSERT3				(ovi, "Invalid source info:", pname.c_str());
-	R_ASSERT3				(ovi->rate==44100, "Invalid source rate:", pname.c_str());
+	R_ASSERT3				(info.rate==44100, "Invalid source rate:", pname.c_str());
 
 #ifdef DEBUG
-	if(ovi->channels==2)
+	if(info.channels==2)
 	{
 		Msg("stereo sound source [%s]", pname.c_str());
 	}
 #endif // #ifdef DEBUG
 
-	m_wformat.nSamplesPerSec	= (ovi->rate); //44100;
+	m_wformat.nSamplesPerSec	= (info.rate); //44100;
 	m_wformat.wFormatTag		= WAVE_FORMAT_PCM;
-	m_wformat.nChannels			= u16(ovi->channels);
+	m_wformat.nChannels			= u16(info.channels);
 	m_wformat.wBitsPerSample	= 16;
 
 	m_wformat.nBlockAlign		= (m_wformat.nChannels * m_wformat.wBitsPerSample) / 8;
 	m_wformat.nAvgBytesPerSec	= m_wformat.nSamplesPerSec * m_wformat.nBlockAlign;
 
-	s64 pcm_total				= ov_pcm_total(&m_ovf,-1);
+	s64 pcm_total				= info.pcm_total;
 	dwBytesTotal				= u32(pcm_total*m_wformat.nBlockAlign); 
 	fTimeTotal					= s_f_def_source_footer + dwBytesTotal/float(m_wformat.nAvgBytesPerSec);
 
-	vorbis_comment*	ovm		= ov_comment(&m_ovf,-1);
-	if (ovm->comments)
+	if (info.has_comment)
 	{
-		IReader F			(ovm->user_comments[0],ovm->comment_lengths[0]);
+		IReader F			(info.comment,info.comment_len);
 		u32 vers			= F.r_u32	();
         if (vers==0x0001){
 			m_fMinDist		= F.r_float	();
@@ -100,6 +119,7 @@ void CSoundRender_Source::LoadWave	(LPCSTR pName)
 
 void CSoundRender_Source::load(LPCSTR name)
 {
+	hitch::load			hitch_load("sound", name);
 	string_path			fn,N;
 	xr_strcpy				(N,name);
 	_strlwr				(N);

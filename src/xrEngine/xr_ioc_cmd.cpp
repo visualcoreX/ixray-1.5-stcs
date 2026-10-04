@@ -14,6 +14,7 @@
 #include "../Include/xrRender/RenderDeviceRender.h"
 
 #include "xr_object.h"
+#include "../xrCore/hitch_trace.h"
 
 xr_token*							vid_quality_token = NULL;
 
@@ -796,6 +797,8 @@ void CCC_Register()
 
 	// Texture manager	
 	CMD4(CCC_Integer,	"texture_lod",			&psTextureLOD,				0,	4	);
+	// Frames longer than this many ms are logged with what took them (xrCore/hitch_trace.h); 0 = off.
+	CMD4(CCC_Integer,	"dbg_hitch_ms",			(int*)&hitch::threshold_ms,	0,	10000	);
 	CMD4(CCC_Integer,	"net_dedicated_sleep",	&psNET_DedicatedSleep,		0,	64	);
 
 	// General video control

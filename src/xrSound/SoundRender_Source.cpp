@@ -13,6 +13,7 @@ CSoundRender_Source::CSoundRender_Source	()
 	m_uGameType		= 0;
 	m_bCustomAttenuation	= false;
 	fname			= 0;
+	m_wave			= 0;
     CAT.table		= 0;
 	CAT.size		= 0;
 }

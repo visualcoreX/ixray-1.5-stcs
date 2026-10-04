@@ -271,7 +271,9 @@ public:
 	virtual void				OnRender				( );
 	void						cl_Process_Event		(u16 dest, u16 type, NET_Packet& P);
 	void						cl_Process_Spawn		(NET_Packet& P);
-	void						ProcessGameEvents		( );
+	// budget_ms > 0: stop once that much time has gone on events this call (at least one is always
+	// handled); the rest stay queued, in order, for the next frame. 0 = drain the queue.
+	void						ProcessGameEvents		( u32 budget_ms = 0 );
 	void						ProcessGameSpawns		( );
 
 	// Input

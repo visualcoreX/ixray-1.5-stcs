@@ -3,6 +3,7 @@
 #pragma hdrstop
 
 #include 	"SkeletonMotions.h"
+#include	"../xrCore/hitch_trace.h"
 //#include 	"SkeletonAnimated.h"
 #include	"Fmesh.h"
 #include	"motion.h"
@@ -74,6 +75,7 @@ u16 find_bone_id(vecBones* bones, shared_str nm)
 //-----------------------------------------------------------------------
 BOOL motions_value::load		(LPCSTR N, IReader *data, vecBones* bones)
 {
+	hitch::load					hitch_load("omf", N);
 
 	m_id						= N;
 

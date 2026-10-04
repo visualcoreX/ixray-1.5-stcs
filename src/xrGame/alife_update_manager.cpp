@@ -10,6 +10,7 @@
 #include "alife_update_manager.h"
 #include "alife_simulator_header.h"
 #include "alife_time_manager.h"
+#include "../xrCore/hitch_trace.h"
 #include "alife_graph_registry.h"
 #include "alife_schedule_registry.h"
 #include "alife_spawn_registry.h"
@@ -88,6 +89,7 @@ void CALifeUpdateManager::update_switch	()
 	init_ef_storage						();
 
 	START_PROFILE("ALife/switch");
+	hitch::zone							hz("alife/switch");
 	graph().level().update				(CSwitchPredicate(this));
 	STOP_PROFILE
 }
@@ -98,6 +100,7 @@ void CALifeUpdateManager::update_scheduled	(bool init_ef)
 		init_ef_storage					();
 
 	START_PROFILE("ALife/scheduled");
+	hitch::zone							hz("alife/scheduled");
 	scheduled().update					();
 	STOP_PROFILE
 }

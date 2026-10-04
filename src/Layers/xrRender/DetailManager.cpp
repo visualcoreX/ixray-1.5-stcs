@@ -7,6 +7,7 @@
 
 #include "DetailManager.h"
 #include "cl_intersect.h"
+#include "../../xrCore/hitch_trace.h"
 
 #ifdef _EDITOR
 #	include "ESceneClassList.h"
@@ -431,11 +432,19 @@ void __stdcall	CDetailManager::MT_CALC		()
 			int s_x	= iFloor			(EYE.x/dm_slot_size+.5f);
 			int s_z	= iFloor			(EYE.z/dm_slot_size+.5f);
 
-			Device.Statistic->RenderDUMP_DT_Cache.Begin	();
-			cache_Update				(s_x,s_z,EYE,dm_max_decompress);
-			Device.Statistic->RenderDUMP_DT_Cache.End	();
+			hitch::zone					hz("details/cache_and_visible");
+			{
+				hitch::zone				hz_cache("details/cache_update");
+				Device.Statistic->RenderDUMP_DT_Cache.Begin	();
+				cache_Update			(s_x,s_z,EYE,dm_max_decompress);
+				Device.Statistic->RenderDUMP_DT_Cache.End	();
+			}
 
-			UpdateVisibleM				();
+			{
+				// split by the lens: aiming a lensed scope sizes the grass at the lens fov (see UpdateVisibleM)
+				hitch::zone				hz_vis(g_pGamePersistent->m_bLensAimActive ? "details/visible_lens_aim" : "details/visible");
+				UpdateVisibleM			();
+			}
 			m_frame_calc				= Device.dwFrame;
 		}
 	MT.Leave					        ();

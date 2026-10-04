@@ -2,6 +2,7 @@
 #pragma hdrstop
 
 #include "fs_internal.h"
+#include "hitch_trace.h"
 
 XRCORE_API CInifile *pSettings	= NULL;
 
@@ -111,6 +112,7 @@ CInifile::CInifile(LPCSTR szFileName, BOOL ReadOnly, BOOL bLoad, BOOL SaveAtEnd)
 
 	if (bLoad)
 	{	
+		hitch::load	hitch_load("ltx", szFileName);
     	string_path	path,folder; 
 		_splitpath	(m_file_name, path, folder, 0, 0 );
         strcat		(path,folder);

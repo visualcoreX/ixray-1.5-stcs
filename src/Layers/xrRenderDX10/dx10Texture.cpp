@@ -8,6 +8,7 @@
 #include <D3DX10Tex.h>
 
 #include "../xrRender/dxRenderDeviceRender.h"
+#include "../../xrCore/hitch_trace.h"
 
 // #include "std_classes.h"
 // #include "xr_avi.h"
@@ -278,6 +279,106 @@ IC u32 it_height_rev_base(u32 d, u32 s)	{	return	color_rgba	(
 	(color_get_R(s)+color_get_G(s)+color_get_B(s))/3	);	// height
 }
 */
+// Direct upload of a plain .dds: header parsed here, every mip handed to CreateTexture2D as-is.
+// Measured in game: D3DX10 + the staging copy cost ~1.5 ms a texture (41 ms for an uncompressed
+// 8 MB bump, which D3DX converts BGRA->RGBA texel by texel), and lazy textures come in bursts of
+// 20-40 when an NPC with a fully kitted weapon walks into view. Only the cases that are a straight
+// copy are handled -- DXT1/3/5 and 32-bit A8R8G8B8 -- anything else (cubes, volumes, DX10 headers,
+// other formats, a LOD-reduced load, sizes D3D10 rejects) returns 0 and takes the D3DX path as before.
+namespace
+{
+#pragma pack(push,1)
+	struct dds_pixelformat	{ u32 size, flags, fourcc, rgb_bits, r_mask, g_mask, b_mask, a_mask; };
+	struct dds_header		{ u32 size, flags, height, width, pitch, depth, mips, reserved1[11];
+							  dds_pixelformat pf; u32 caps, caps2, caps3, caps4, reserved2; };
+#pragma pack(pop)
+
+	bool bgra_sampling_supported()
+	{
+		static int	s_state	= -1;
+		if (s_state < 0)
+		{
+			UINT	support	= 0;
+			s_state			= SUCCEEDED(HW.pDevice->CheckFormatSupport(DXGI_FORMAT_B8G8R8A8_UNORM, &support))
+				&& (support & D3D10_FORMAT_SUPPORT_TEXTURE2D) && (support & D3D10_FORMAT_SUPPORT_SHADER_SAMPLE) ? 1 : 0;
+		}
+		return s_state == 1;
+	}
+
+	ID3DBaseTexture* dds_create_direct(const void* data, u32 size)
+	{
+		if (size < 4 + sizeof(dds_header))							return 0;
+		const u8*			p	= (const u8*)data;
+		if (*(const u32*)p != MAKEFOURCC('D','D','S',' '))			return 0;
+		const dds_header&	h	= *(const dds_header*)(p + 4);
+		if (h.size != 124 || h.pf.size != 32)						return 0;
+		if (h.caps2 & (0x200 | 0x200000))							return 0;	// cubemap / volume
+
+		DXGI_FORMAT			fmt;
+		u32					block	= 0;	// bytes per 4x4 block, compressed formats
+		u32					texel	= 0;	// bytes per texel, uncompressed
+		if (h.pf.flags & 0x4)										// DDPF_FOURCC
+		{
+			switch (h.pf.fourcc)
+			{
+			case MAKEFOURCC('D','X','T','1'):	fmt = DXGI_FORMAT_BC1_UNORM;	block = 8;	break;
+			case MAKEFOURCC('D','X','T','3'):	fmt = DXGI_FORMAT_BC2_UNORM;	block = 16;	break;
+			case MAKEFOURCC('D','X','T','5'):	fmt = DXGI_FORMAT_BC3_UNORM;	block = 16;	break;
+			default:							return 0;
+			}
+		}
+		else if ((h.pf.flags & 0x40) && (h.pf.flags & 0x1) && h.pf.rgb_bits == 32	// DDPF_RGB | DDPF_ALPHAPIXELS
+			&& h.pf.r_mask == 0x00ff0000 && h.pf.g_mask == 0x0000ff00 && h.pf.b_mask == 0x000000ff
+			&& h.pf.a_mask == 0xff000000)
+		{
+			if (!bgra_sampling_supported())							return 0;
+			fmt		= DXGI_FORMAT_B8G8R8A8_UNORM;
+			texel	= 4;
+		}
+		else														return 0;
+
+		const u32	width	= h.width, height = h.height;
+		if (!width || !height)										return 0;
+		if (block && ((width & 3) || (height & 3)))					return 0;	// D3D10 wants BC tops in 4x4 blocks
+		const u32	mips	= ((h.flags & 0x20000) && h.mips) ? h.mips : 1;	// DDSD_MIPMAPCOUNT
+		if (mips > 16)												return 0;
+
+		D3D10_SUBRESOURCE_DATA	sub[16];
+		const u8*	cur		= p + 4 + sizeof(dds_header);
+		const u8*	end		= p + size;
+		u32			mw		= width, mh = height;
+		for (u32 i = 0; i < mips; ++i)
+		{
+			const u32 pitch	= block ? _max(1u, (mw + 3) / 4) * block : mw * texel;
+			const u32 rows	= block ? _max(1u, (mh + 3) / 4) : mh;
+			const u32 bytes	= pitch * rows;
+			if (u32(end - cur) < bytes)								return 0;	// truncated file: let D3DX judge it
+			sub[i].pSysMem			= cur;
+			sub[i].SysMemPitch		= pitch;
+			sub[i].SysMemSlicePitch	= bytes;
+			cur				+= bytes;
+			mw				= _max(1u, mw / 2);
+			mh				= _max(1u, mh / 2);
+		}
+
+		D3D10_TEXTURE2D_DESC	desc;
+		desc.Width				= width;
+		desc.Height				= height;
+		desc.MipLevels			= mips;
+		desc.ArraySize			= 1;
+		desc.Format				= fmt;
+		desc.SampleDesc.Count	= 1;
+		desc.SampleDesc.Quality	= 0;
+		desc.Usage				= D3D10_USAGE_DEFAULT;
+		desc.BindFlags			= D3D10_BIND_SHADER_RESOURCE;
+		desc.CPUAccessFlags		= 0;
+		desc.MiscFlags			= 0;
+		ID3DTexture2D*			T	= 0;
+		if (FAILED(HW.pDevice->CreateTexture2D(&desc, sub, &T)))	return 0;
+		return					T;
+	}
+}
+
 ID3DBaseTexture*	CRender::texture_load(LPCSTR fRName, u32& ret_msize, bool bStaging)
 {
 	//	Moved here just to avoid warning
@@ -305,10 +406,18 @@ ID3DBaseTexture*	CRender::texture_load(LPCSTR fRName, u32& ret_msize, bool bStag
 	xr_strcpy(fname,fRName); //. andy if (strext(fname)) *strext(fname)=0;
 	fix_texture_name		(fname);
 	IReader* S				= NULL;
-	if (!FS.exist(fn,"$game_textures$",	fname,	".dds")	&& strstr(fname,"_bump"))	goto _BUMP_from_base;
-	if (FS.exist(fn,"$level$",			fname,	".dds"))							goto _DDS;
-	if (FS.exist(fn,"$game_saves$",		fname,	".dds"))							goto _DDS;
-	if (FS.exist(fn,"$game_textures$",	fname,	".dds"))							goto _DDS;
+	// The hitch tracer splits a load into these zones (an in-game load measured 5-10 ms where the
+	// same file takes ~1 ms in a bare D3D10 program -- this says which part is the difference).
+	int		where			= 0;
+	{
+		hitch::zone			hz("tex/fs_exist");
+		if (!FS.exist(fn,"$game_textures$",	fname,	".dds")	&& strstr(fname,"_bump"))	where = 1;
+		else if (FS.exist(fn,"$level$",			fname,	".dds"))					where = 2;
+		else if (FS.exist(fn,"$game_saves$",		fname,	".dds"))				where = 2;
+		else if (FS.exist(fn,"$game_textures$",	fname,	".dds"))					where = 2;
+	}
+	if (where==1)			goto _BUMP_from_base;
+	if (where==2)			goto _DDS;
 
 
 #ifdef _EDITOR
@@ -328,14 +437,20 @@ _DDS:
 	{
 		// Load and get header
 
-		S						= FS.r_open	(fn);
+		{
+			hitch::zone			hz("tex/r_open");
+			S					= FS.r_open	(fn);
+		}
 #ifdef DEBUG
 		Msg						("* Loaded: %s[%d]b",fn,S->length());
 #endif // DEBUG
 		img_size				= S->length	();
 		R_ASSERT				(S);
 		//R_CHK2					(D3DXGetImageInfoFromFileInMemory	(S->pointer(),S->length(),&IMG), fn);
-		R_CHK2 (D3DX10GetImageInfoFromMemory(S->pointer(),S->length(), 0, &IMG, 0), fn);
+		{
+			hitch::zone			hz("tex/d3dx_info");
+			R_CHK2 (D3DX10GetImageInfoFromMemory(S->pointer(),S->length(), 0, &IMG, 0), fn);
+		}
 		//if (IMG.ResourceType	== D3DRTYPE_CUBETEXTURE)			goto _DDS_CUBE;
 		if (IMG.MiscFlags & D3D10_RESOURCE_MISC_TEXTURECUBE)			goto _DDS_CUBE;
 		else														goto _DDS_2D;
@@ -409,7 +524,26 @@ _DDS_2D:
 			//	&T_sysmem
 			//	), fn);
 
-			img_loaded_lod			= get_texture_load_lod(fn);
+			{
+				hitch::zone			hz("tex/load_lod");
+				img_loaded_lod		= get_texture_load_lod(fn);
+			}
+
+			if (!img_loaded_lod)
+			{
+				{
+					hitch::zone		hz("tex/direct_create");
+					pTexture2D		= dds_create_direct(S->pointer(), S->length());
+				}
+				if (pTexture2D)
+				{
+					hitch::zone		hz("tex/r_close");
+					FS.r_close		(S);
+					mip_cnt			= IMG.MipLevels;
+					ret_msize		= calc_texture_size(img_loaded_lod, mip_cnt, img_size);
+					return			pTexture2D;
+				}
+			}
 
 			//	Inited to default by provided default constructor
 			D3DX10_IMAGE_LOAD_INFO LoadInfo;
@@ -445,15 +579,21 @@ _DDS_2D:
 			}
 			LoadInfo.pSrcInfo = &IMG;
 
-			R_CHK2(D3DX10CreateTextureFromMemory
-				(
-				HW.pDevice,S->pointer(),S->length(),
-				&LoadInfo,
-				0,
-				&pTexture2D,
-				0
-				), fn);
-			FS.r_close				(S);
+			{
+				hitch::zone			hz(bStaging ? "tex/d3dx_create_staging" : "tex/d3dx_create");
+				R_CHK2(D3DX10CreateTextureFromMemory
+					(
+					HW.pDevice,S->pointer(),S->length(),
+					&LoadInfo,
+					0,
+					&pTexture2D,
+					0
+					), fn);
+			}
+			{
+				hitch::zone			hz("tex/r_close");
+				FS.r_close			(S);
+			}
 			mip_cnt					= IMG.MipLevels;
 			// OK
 			ret_msize				= calc_texture_size(img_loaded_lod, mip_cnt, img_size);

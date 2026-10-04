@@ -28,6 +28,7 @@
 #include "seniority_hierarchy_holder.h"
 #include "space_restrictor.h"
 #include "client_spawn_manager.h"
+#include "../xrCore/hitch_trace.h"
 #include "autosave_manager.h"
 #include "ClimableObject.h"
 #include "level_graph.h"
@@ -438,12 +439,19 @@ void CLevel::cl_Process_Event				(u16 dest, u16 type, NET_Packet& P)
 	}
 };
 
-void CLevel::ProcessGameEvents		()
+// Time per frame for spawns and other game events once the level is running (see CLevel::OnFrame).
+// A stalker costs ~5 ms to spawn, an item under 1 ms, so this is about one NPC or a handful of items.
+static const u32	game_events_frame_budget_ms	= 4;
+
+void CLevel::ProcessGameEvents		(u32 budget_ms)
 {
 	// Game events
 	{
 		NET_Packet			P;
 		u32 svT				= timeServer()-NET_Latency;
+		const u64 t_start	= CPU::QPC();
+		const u64 t_budget	= CPU::qpc_freq * budget_ms / 1000;
+		bool processed		= false;
 
 		/*
 		if (!game_events->queue.empty())	
@@ -452,6 +460,10 @@ void CLevel::ProcessGameEvents		()
 
 		while	(game_events->available(svT))
 		{
+			if (budget_ms && processed && CPU::QPC() - t_start >= t_budget)
+				break;
+			processed			= true;
+
 			u16 ID,dest,type;
 			game_events->get	(ID,dest,type,P);
 
@@ -592,12 +604,21 @@ void CLevel::OnFrame	()
 
 		Device.Statistic->netClient1.Begin();
 
+		hitch::zone						hz("level/net_receive");
 		ClientReceive					();
 
 		Device.Statistic->netClient1.End	();
 	}
 
-	ProcessGameEvents	();
+	{
+		// Spawns land here: an object coming online builds its model, motions, sounds and logic.
+		// A squad switching online used to arrive as one burst -- 100-280 spawns (NPCs, then every
+		// binocular, torch and weapon they carry) in a single frame, 70-460 ms. Spread it: a few ms
+		// of events per frame, the rest in order on the following frames. Not during the precache
+		// that ends a level load, where nothing is on screen yet and the whole level is spawning.
+		hitch::zone			hz("level/game_events");
+		ProcessGameEvents	(Device.dwPrecacheFrame ? 0 : game_events_frame_budget_ms);
+	}
 
 
 	if (m_bNeed_CrPr)					make_NetCorrectionPrediction();
@@ -717,10 +738,16 @@ void CLevel::OnFrame	()
 
 	//Device.Statistic->cripting.Begin	();
 	if (!g_dedicated_server)
+	{
+		hitch::zone							hz("level/scripts");
 		ai().script_engine().script_process	(ScriptEngine::eScriptProcessorLevel)->update();
+	}
 	//Device.Statistic->Scripting.End	();
-	m_ph_commander->update				();
-	m_ph_commander_scripts->update		();
+	{
+		hitch::zone							hz("level/ph_commander");
+		m_ph_commander->update				();
+		m_ph_commander_scripts->update		();
+	}
 //	autosave_manager().update			();
 
 	//���������� ����� ����
@@ -734,7 +761,10 @@ void CLevel::OnFrame	()
 		if (g_mt_config.test(mtLevelSounds)) 
 			Device.seqParallel.push_back	(fastdelegate::FastDelegate0<>(m_level_sound_manager,&CLevelSoundManager::Update));
 		else								
+		{
+			hitch::zone						hz("level/level_sounds");
 			m_level_sound_manager->Update	();
+		}
 	}
 	// deffer LUA-GC-STEP
 	if (!g_dedicated_server)
@@ -756,6 +786,7 @@ void CLevel::OnFrame	()
 int		psLUA_GCSTEP					= 10			;
 void	CLevel::script_gc				()
 {
+	hitch::zone	hz("lua_gc");
 	lua_gc	(ai().script_engine().lua(), LUA_GCSTEP, psLUA_GCSTEP);
 }
 

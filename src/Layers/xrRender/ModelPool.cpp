@@ -2,6 +2,7 @@
 #pragma hdrstop
 
 #include "ModelPool.h"
+#include "../../xrCore/hitch_trace.h"
 
 #ifndef _EDITOR
 	#include "../../xrEngine/IGame_Persistent.h"
@@ -94,6 +95,7 @@ dxRender_Visual*	CModelPool::Instance_Duplicate	(dxRender_Visual* V)
 
 dxRender_Visual*	CModelPool::Instance_Load		(const char* N, BOOL allow_register)
 {
+	hitch::load		hitch_load("ogf", N);
 	dxRender_Visual	*V;
 	string_path		fn;
 	string_path		name;

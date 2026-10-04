@@ -2,6 +2,7 @@
 #pragma hdrstop
 
 #include "../xrRender/ResourceManager.h"
+#include "../../xrCore/hitch_trace.h"
 
 #ifndef _EDITOR
 #include "../../xrEngine/render.h"
@@ -229,7 +230,10 @@ void CTexture::ProcessStaging()
 void CTexture::Apply(u32 dwStage)
 {
 	if (flags.bLoadedAsStaging)
-		ProcessStaging();
+	{
+		hitch::zone		hz("tex/staging_copy");
+		ProcessStaging	();
+	}
 
    //if( !RImplementation.o.dx10_msaa )
    //   VERIFY( !((!pSurface)^(!m_pSRView)) );	//	Both present or both missing
@@ -340,6 +344,7 @@ void CTexture::Load		()
 	flags.bLoaded					= true;
 	desc_cache						= 0;
 	if (pSurface)					return;
+	hitch::load						hitch_load("texture", cName.c_str());
 
 	flags.bUser						= false;
 	flags.MemoryUsage				= 0;
@@ -349,7 +354,10 @@ void CTexture::Load		()
 		return;
 	}
 
-	Preload							();
+	{
+		hitch::zone					hz("tex/preload_desc");
+		Preload						();
+	}
 
 	bool	bCreateView = true;
 
@@ -510,7 +518,10 @@ void CTexture::Load		()
 			}
 
 			if (pSurface && bCreateView)
+			{
+				hitch::zone			hz("tex/srv");
 				CHK_DX(HW.pDevice->CreateShaderResourceView(pSurface, NULL, &m_pSRView));
+			}
 			PostLoad	()		;
 }
 

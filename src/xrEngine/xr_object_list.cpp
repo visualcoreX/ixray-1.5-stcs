@@ -10,6 +10,7 @@
 #include "../xrCore/net_utils.h"
 
 #include "CustomHUD.h"
+#include "../xrCore/hitch_trace.h"
 
 class fClassEQ {
 	CLASS_ID cls;
@@ -118,7 +119,9 @@ void	CObjectList::SingleUpdate	(CObject* O)
 
 //	Msg							("[%d][0x%08x]IAmNotACrowAnyMore (CObjectList::SingleUpdate)", Device.dwFrame, dynamic_cast<void*>(O));
 
+	const u64 hitch_t0			= hitch::item_begin();
 	O->UpdateCL					();
+	hitch::item_end				("updateCL", hitch_t0, O->cNameSect().c_str(), O->cName().c_str());
 
 	VERIFY3						(O->dbg_update_cl == Device.dwFrame, "Broken sequence of calls to 'UpdateCL'",*O->cName());
 #if 0//ndef DEBUG
@@ -260,6 +263,13 @@ void CObjectList::Update		(bool bForce)
 	// Destroy
 	if (!destroy_queue.empty()) 
 	{
+		// For the hitch tracer: the whole batch as one record -- how many go at once and how many
+		// objects each one is announced to (net_Relcase below is every object x every destroyed one).
+		string64		hitch_what;
+		_snprintf_s		(hitch_what, sizeof(hitch_what), _TRUNCATE, "%u objects x %u listeners",
+			u32(destroy_queue.size()), u32(objects_active.size() + objects_sleeping.size()));
+		hitch::load		hitch_batch("destroy_batch", hitch_what);
+		const u64		hitch_relcase_t0	= hitch::item_begin();
 		// Info
 		for (Objects::iterator oit=objects_active.begin(); oit!=objects_active.end(); oit++)
 			for (int it = destroy_queue.size()-1; it>=0; it--){	
@@ -283,6 +293,8 @@ void CObjectList::Update		(bool bForce)
 			}
 		}
 
+		hitch::item_end		("destroy_relcase", hitch_relcase_t0, hitch_what);
+
 		// Destroy
 		for (int it = destroy_queue.size()-1; it>=0; it--)
 		{
@@ -292,7 +304,9 @@ void CObjectList::Update		(bool bForce)
 			if( debug_destroy )
 				Msg			("Destroying object[%x][%x] [%d][%s] frame[%d]",dynamic_cast<void*>(O), O, O->ID(),*O->cName(), Device.dwFrame);
 #endif // DEBUG
+			const u64		hitch_t0	= hitch::item_begin();
 			O->net_Destroy	( );
+			hitch::item_end	("net_destroy", hitch_t0, O->cNameSect().c_str(), O->cName().c_str());
 			Destroy			(O);
 		}
 		destroy_queue.clear	();

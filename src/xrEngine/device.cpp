@@ -28,6 +28,7 @@ using namespace DirectX;
 
 #include "igame_persistent.h"
 #include "borderless_display.h"
+#include "../xrCore/hitch_trace.h"
 
 ENGINE_API CRenderDevice Device;
 ENGINE_API BOOL g_bRendering = FALSE; 
@@ -277,10 +278,16 @@ void 			mt_Thread	(void *ptr)	{
 		// we has granted permission to execute
 		mt_Thread_marker			= Device.dwFrame;
  
-		for (u32 pit=0; pit<Device.seqParallel.size(); pit++)
-			Device.seqParallel[pit]	();
-		Device.seqParallel.clear();
-		Device.seqFrameMT.Process	(rp_Frame);
+		{
+			hitch::zone			hz("mt/parallel");
+			for (u32 pit=0; pit<Device.seqParallel.size(); pit++)
+				Device.seqParallel[pit]	();
+			Device.seqParallel.clear();
+		}
+		{
+			hitch::zone			hz("mt/seqFrameMT");
+			Device.seqFrameMT.Process	(rp_Frame);
+		}
 
 		// now we give control to device - signals that we are ended our work
 		Device.mt_csEnter.Leave	();
@@ -341,9 +348,11 @@ void CRenderDevice::on_idle		()
 		if( g_loading_events.front()() )
 			g_loading_events.pop_front();
 		pApp->LoadDraw				();
+		hitch_frame_end				(false);
 		return;
 	}else 
 	{
+		hitch::zone					hz("frame/move");
 		FrameMove						( );
 	}
 
@@ -376,7 +385,10 @@ void CRenderDevice::on_idle		()
 	// Release start point - allow thread to run
 	mt_csLeave.Enter			();
 	mt_csEnter.Leave			();
-	Sleep						(0);
+	{
+		hitch::zone				hz("frame/sleep0");
+		Sleep					(0);
+	}
 
 #ifndef DEDICATED_SERVER
 	Statistic->RenderTOTAL_Real.FrameStart	();
@@ -385,12 +397,16 @@ void CRenderDevice::on_idle		()
 	if (b_render)							{
 		if (Begin())				{
 
-			seqRender.Process						(rp_Render);
+			{
+				hitch::zone						hz("frame/render");
+				seqRender.Process					(rp_Render);
+			}
 			if (psDeviceFlags.test(rsCameraPos) || psDeviceFlags.test(rsStatistic) || Statistic->errors.size())	
 				Statistic->Show						();
 			//	TEST!!!
 			//Statistic->RenderTOTAL_Real.End			();
 			//	Present goes here
+			hitch::zone							hz("frame/end+present");
 			End										();
 		}
 	}
@@ -401,11 +417,16 @@ void CRenderDevice::on_idle		()
 	// *** Suspend threads
 	// Capture startup point
 	// Release end point - allow thread to wait for startup point
-	mt_csEnter.Enter						();
+	{
+		// The secondary thread runs A-Life and the parallel jobs; a long one shows here as a wait.
+		hitch::zone							hz("frame/wait_secondary_thread");
+		mt_csEnter.Enter					();
+	}
 	mt_csLeave.Leave						();
 
 	// Ensure, that second thread gets chance to execute anyway
 	if (dwFrame!=mt_Thread_marker)			{
+		hitch::zone							hz("frame/secondary_jobs_on_main");
 		for (u32 pit=0; pit<Device.seqParallel.size(); pit++)
 			Device.seqParallel[pit]			();
 		Device.seqParallel.clear();
@@ -429,6 +450,22 @@ void CRenderDevice::on_idle		()
 
 	if (!b_is_Active)
 		Sleep		(1);
+
+#ifndef DEDICATED_SERVER
+	hitch_frame_end(g_pGameLevel && g_pGameLevel->bReady && !g_pGamePersistent->m_pMainMenu->IsActive()
+		&& !Paused() && !dwPrecacheFrame && b_is_Active);
+#else
+	hitch_frame_end(false);
+#endif
+}
+
+// Frame-to-frame, not on_idle alone: the window message pump between two frames counts as well.
+void CRenderDevice::hitch_frame_end(bool report)
+{
+	static u64		s_last	= 0;
+	const u64		now		= CPU::QPC();
+	hitch::frame_end		(dwFrame, s_last ? now - s_last : 0, report);
+	s_last					= now;
 }
 
 // The game kept playing at full volume behind another window: with "pause on minimise" off the whole
@@ -602,7 +639,26 @@ void CRenderDevice::FrameMove()
 
 void ProcessLoading				(RP_FUNC *f)
 {
-	Device.seqFrame.Process				(rp_Frame);
+	// Device.seqFrame.Process(rp_Frame), with every subscriber timed under its class name for the
+	// hitch tracer. Mirrors CRegistrator::Process exactly, including its early return.
+	CRegistrator<pureFrame>& S			= Device.seqFrame;
+	S.in_process						= true;
+	if (!S.R.empty())
+	{
+		if (S.R[0].Prio==REG_PRIORITY_CAPTURE)	rp_Frame(S.R[0].Object);
+		else
+		{
+			for (u32 i=0; i<S.R.size(); i++)
+			{
+				if (S.R[i].Prio==REG_PRIORITY_INVALID)	continue;
+				pureFrame*		obj		= (pureFrame*)S.R[i].Object;
+				hitch::zone		hz		(typeid(*obj).name());
+				obj->OnFrame			();
+			}
+		}
+		if (S.changed)	S.Resort		();
+		S.in_process					= false;
+	}
 	g_bLoaded							= TRUE;
 }
 

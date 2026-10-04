@@ -72,6 +72,8 @@ public:
 	BOOL									may_render() const;
 	// Fades the sound out while the window is inactive and g_pause_on_minimize is off (device.cpp).
 	void									UpdateFocusSoundFade();
+	// Closes the frame for the hitch tracer (xrCore/hitch_trace.h); report=false only resets it.
+	void									hitch_frame_end(bool report);
 public:
 	//ref_shader								m_WireShader;
 	//ref_shader								m_SelectionShader;
