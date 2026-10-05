@@ -13,6 +13,7 @@
 #include "ui/UIPdaWnd.h"
 
 #include "../xrEngine/x_ray.h"
+#include "../xrCore/hitch_trace.h"
 EGameIDs ParseStringToGameType(LPCSTR str);
 struct predicate_remove_stat {
 	bool	operator() (SDrawStaticStruct& s) {
@@ -234,9 +235,11 @@ bool CUIGameCustom::ShowActorMenu()
 //			CInventoryOwner* pIOActor	= smart_cast<CInventoryOwner*>( Level().CurrentControlEntity() );
 			CInventoryOwner* pIOActor	= smart_cast<CInventoryOwner*>( Level().CurrentViewEntity() );
 			VERIFY						(pIOActor);
+			hitch::zone					hz("inv_open/set_mode");
 			m_ActorMenu->SetActor		(pIOActor);
 			m_ActorMenu->SetMenuMode	(mmInventory);
 		}
+		hitch::zone						hz("inv_open/start_stop_menu");
 		HUD().GetUI()->StartStopMenu( m_ActorMenu, true );
 		return true;
 	}

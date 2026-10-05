@@ -28,6 +28,7 @@
 #include "../Weapon.h"
 #include "../WeaponPistol.h"
 #include "../WeaponBinoculars.h"
+#include "../../xrCore/hitch_trace.h"
 #include "../WeaponKnife.h"
 #include "../CustomOutfit.h"
 #include "../WeaponMagazinedWGrenade.h"
@@ -113,7 +114,10 @@ void CUIActorMenu::SetMenuMode(EMenuMode mode)
 		case mmUndefined:
 			break;
 		case mmInventory:
-			DeInitInventoryMode();
+			{
+				hitch::zone	hz("inv_open/deinit_inventory");
+				DeInitInventoryMode();
+			}
 			break;
 		case mmTrade:
 			DeInitTradeMode();
@@ -141,7 +145,10 @@ void CUIActorMenu::SetMenuMode(EMenuMode mode)
 			ResetMode();
 			break;
 		case mmInventory:
-			InitInventoryMode();
+			{
+				hitch::zone	hz("inv_open/init_inventory");
+				InitInventoryMode();
+			}
 #ifdef DEBUG
 			Msg("* now is Inventory mode");
 #endif // #ifdef DEBUG
@@ -168,14 +175,20 @@ void CUIActorMenu::SetMenuMode(EMenuMode mode)
 			R_ASSERT(0);
 			break;
 		}
+		hitch::zone	hz("inv_open/mode_to_script");
 		CurModeToScript();
 	}//if
 
 	if ( m_pActorInvOwner )
 	{
-		UpdateOutfit();
+		{
+			hitch::zone	hz("inv_open/update_outfit");
+			UpdateOutfit();
+		}
+		hitch::zone	hz("inv_open/update_actor");
 		UpdateActor();
 	}
+	hitch::zone	hz("inv_open/buttons_layout");
 	UpdateButtonsLayout();
 }
 
@@ -192,11 +205,18 @@ void CUIActorMenu::SendMessage(CUIWindow* pWnd, s16 msg, void* pData)
 
 void CUIActorMenu::Show()
 {
-	SetMenuMode							(m_currMenuMode);
-	inherited::Show						();
-	PlaySnd								(eSndOpen);
-	m_ActorStateInfo->Show				(true);
-	clear_highlight_lists				();
+	{
+		hitch::zone						hz("inv_open/show_set_mode");
+		SetMenuMode						(m_currMenuMode);
+	}
+	{
+		hitch::zone						hz("inv_open/show_window");
+		inherited::Show					();
+		PlaySnd							(eSndOpen);
+		m_ActorStateInfo->Show			(true);
+		clear_highlight_lists			();
+	}
+	hitch::zone							hz("inv_open/actor_state_info");
 	m_ActorStateInfo->UpdateActorInfo	(m_pActorInvOwner);
 }
 

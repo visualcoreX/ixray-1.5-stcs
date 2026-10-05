@@ -31,6 +31,7 @@
 #include "../MPPlayersBag.h"
 #include "../HUDManager.h"
 #include "../player_hud.h"
+#include "../../xrCore/hitch_trace.h"
 
 
 void move_item_from_to(u16 from_id, u16 to_id, u16 what_id);
@@ -391,6 +392,7 @@ void CUIActorMenu::InitCellForSlot( u32 slot_idx )
 
 void CUIActorMenu::InitInventoryContents(CUIDragDropListEx* pBagList) 
 {
+	hitch::zone				hz("inv_open/fill_lists");
 	ClearAllLists				();
 	m_pMouseCapturer			= NULL;
 	m_UIPropertiesBox->Hide		();

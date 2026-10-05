@@ -708,7 +708,11 @@ CTexture* CResourceManager::_CreateTexture	(LPCSTR _Name)
 		T->dwFlags			|=	xr_resource_flagged::RF_REGISTERED;
 		m_textures.insert	(std::make_pair(T->set_name(Name),T));
 		T->Preload			();
-		if (Device.b_is_Ready && !bDeferredLoad) T->Load();
+		// Interface textures are exempt from the lazy upload (r__texture_lazy): they are few, small and certain
+		// to be drawn, and left lazy they all came in on the frame a window first opened -- six of them,
+		// 9 ms, on the first look into the inventory.
+		const bool ui_texture	= 0==_strnicmp(Name, "ui\\", 3);
+		if (Device.b_is_Ready && (!bDeferredLoad || ui_texture)) T->Load();
 		return		T;
 	}
 }
