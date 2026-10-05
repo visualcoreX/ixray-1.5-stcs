@@ -10,6 +10,9 @@ max_count       = 30            ; ...at this many alive at once; over that the o
 scale_time      = 0.2           ; s to come down to the model's size (orig 0.4, from shell_casing_base)
 model_scale     = 0.7           ; the models are cut at 0.7 of the hud ones (make_mags.py --scale 0.7): taken over at
                                 ; the hud's size, they come down to that over scale_time
+collide_sound_speed      = 1.0    ; m/s into the surface: slower hits make no sound (the case material pairs' collide sounds)
+collide_sound_full_speed = 4.0    ; m/s: from this fast on it is at its loudest
+collide_sound_volume     = 0.5, 1.0 ; volume at those two speeds, linear in between
 
 [mag_drop_ak74_30]:mag_drop_base
 visual          = dynamics\weapons\mags\mag_ak74_30.ogf

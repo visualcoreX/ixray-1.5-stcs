@@ -53,6 +53,18 @@ max_distance	= 30
 falloff_db		= 25
 shoulder		= 8
 
+[shell_drop_attenuation]
+min_distance	= 0.1
+max_distance	= 10
+falloff_db		= 60
+shoulder		= 0.25
+
+[mag_drop_attenuation]
+min_distance	= 0.25
+max_distance	= 12.5
+falloff_db		= 60
+shoulder		= 0.5
+
 ; path relative to gamedata\sounds, without extension = profile section.
 ; The path is matched against the start of the file name: "weapons\ak74\ak74_shoot" covers
 ; ak74_shoot_01, ak74_shoot_3p_02 etc., "weapons\explosions\" covers a whole folder. The longest match wins.
@@ -81,4 +93,6 @@ weapons\grenade\grenade_explosion			= explode_attenuation
 weapons\rpg7\rpg7_shoot_					= gunshot_attenuation
 weapons\rpg7\rpg7_explode_					= explode_attenuation
 weapons\rpg7\rpg7_grenade_engine			= engine_attenuation
+weapons\shells\								= shell_drop_attenuation
+weapons\mag_drops\							= mag_drop_attenuation
 
