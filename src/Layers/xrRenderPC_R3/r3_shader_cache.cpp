@@ -4,7 +4,7 @@
 namespace
 {
 	const u32	cache_magic		= 0x43535258;	// "XRSC"
-	const u32	cache_version	= 1;
+	const u32	cache_version	= 2;		// 2: bytecode hash after the size (a damaged entry is recompiled, not created)
 
 	u64 fnv(const void* data, size_t size, u64 h = 0xcbf29ce484222325ull)
 	{
@@ -116,7 +116,11 @@ namespace
 				return false;										// an include changed: recompile
 		}
 		u32		blob_size;
-		if (!r.get(&blob_size, 4) || !blob_size || size_t(r.end - r.p) != size_t(blob_size))	return false;
+		u64		blob_hash;
+		if (!r.get(&blob_size, 4) || !r.get(&blob_hash, 8))	return false;
+		if (!blob_size || size_t(r.end - r.p) != size_t(blob_size))	return false;
+		// A file damaged on disk would otherwise go straight to CreateVertexShader as garbage.
+		if (fnv(r.p, blob_size) != blob_hash)					return false;
 
 		ID3DBlob*	blob	= 0;
 		if (FAILED(D3D10CreateBlob(blob_size, &blob)) || !blob)	return false;
@@ -141,7 +145,9 @@ namespace
 			put				(&rec.opened[i].second, 8);
 		}
 		const u32 blob_size	= u32(blob->GetBufferSize());
+		const u64 blob_hash	= fnv(blob->GetBufferPointer(), blob_size);
 		put				(&blob_size, 4);
+		put				(&blob_hash, 8);
 		put				(blob->GetBufferPointer(), blob_size);
 
 		// Write aside and swap in, so a crash mid-write never leaves a torn entry under the real name.
@@ -160,8 +166,9 @@ namespace
 HRESULT	r3_compile_shader_cached(LPCSTR name, LPCSTR src, UINT src_len, const D3D_SHADER_MACRO* defines,
 	ID3DInclude* includer, LPCSTR entry, LPCSTR target, DWORD flags, ID3DBlob** ppShader, ID3DBlob** ppErrorMsgs)
 {
-	u64 key		= fnv(&cache_version, sizeof(cache_version));
-	key			= fnv_str(name, key);
+	// The format version is checked inside the entry, not hashed into the name: a newer format then
+	// overwrites the old entry in place instead of leaving it behind.
+	u64 key		= fnv_str(name, 0xcbf29ce484222325ull);
 	key			= fnv_str(entry, key);
 	key			= fnv_str(target, key);
 	key			= fnv(&flags, sizeof(flags), key);
