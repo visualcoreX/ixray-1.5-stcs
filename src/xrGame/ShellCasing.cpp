@@ -10,6 +10,10 @@
 #include "xrserver_objects.h"
 #include "xrmessages.h"
 #include "Hit.h"
+#include "ExtendedGeom.h"
+#include "PHSoundPlayer.h"
+#include "MathUtils.h"
+#include "../xrEngine/gamemtllib.h"
 #include "../Include/xrRender/Kinematics.h"
 
 extern ENGINE_API float psHUD_FOV;	// hud fov as a fraction of the world fov
@@ -44,6 +48,9 @@ CShellCasing::CShellCasing()
 	m_char_collide_delay= 750;
 	m_char_collide_at	= 0;
 	m_hit_max_speed		= 8.f;
+	m_snd_speed			= 1.f;
+	m_snd_full_speed	= 6.f;
+	m_snd_volume.set	(0.15f, 1.f);
 	m_processing		= false;
 }
 
@@ -76,6 +83,10 @@ void CShellCasing::Load(LPCSTR section)
 	const float ccd		= READ_IF_EXISTS(pSettings, r_float, section, "character_collide_delay", 0.75f);
 	m_char_collide_delay= (ccd < 0.f) ? u32(-1) : u32(iFloor(1000.f * ccd));
 	m_hit_max_speed		= READ_IF_EXISTS(pSettings, r_float, section, "hit_max_speed", 8.f);
+	// the collide sound, by how fast the case hits the surface (see ContactSound)
+	m_snd_speed			= READ_IF_EXISTS(pSettings, r_float, section, "collide_sound_speed", 1.f);
+	m_snd_full_speed	= READ_IF_EXISTS(pSettings, r_float, section, "collide_sound_full_speed", 6.f);
+	m_snd_volume		= READ_IF_EXISTS(pSettings, r_fvector2, section, "collide_sound_volume", Fvector2().set(0.15f, 1.f));
 }
 
 u32 CShellCasing::Count()
@@ -193,6 +204,7 @@ BOOL CShellCasing::net_Spawn(CSE_Abstract* DC)
 	K->CalculateBones		(TRUE);
 	m_pPhysicsShell->set_LinearVel	(m_launch_linear);
 	m_pPhysicsShell->set_AngularVel	(m_launch_angular);
+	m_pPhysicsShell->set_ContactCallback(ContactSound);
 
 	setVisible				(TRUE);
 	setEnabled				(TRUE);
@@ -303,6 +315,49 @@ void CShellCasing::Hit(SHit* pHDS)
 	if (H.impulse > cap)
 		H.impulse		= cap;
 	inherited::Hit		(&H);
+}
+
+// The stock contact callback (ContactShotMark) weighs a hit as speed * sqrt(mass) against a threshold sized
+// for crates and bodies: on a 20 g case that takes some 70 m/s into the floor, so a case never made a sound.
+// This one goes by the speed alone -- collide_sound_speed .. collide_sound_full_speed m/s along the surface
+// normal, at collide_sound_volume x .. y -- and leaves the rest as it was: the sound comes from the case's
+// material pair with the level's surface, through the case's own sound player (one at a time). The same
+// threshold holds for a passable surface (water): a case resting in it is not splashing all the time.
+// No particles and no wallmarks: the case pairs carry none.
+void CShellCasing::ContactSound(CDB::TRI* T, dContactGeom* c)
+{
+	dBodyID b				= dGeomGetBody(c->g1);
+	dxGeomUserData* data	= NULL;
+	if (b)
+		data				= dGeomGetUserData(c->g1);
+	else
+	{
+		b					= dGeomGetBody(c->g2);
+		data				= dGeomGetUserData(c->g2);
+	}
+	if (!b || !data)	return;
+
+	CShellCasing* self		= smart_cast<CShellCasing*>(data->ph_ref_object);
+	if (!self)			return;
+
+	static const float SOUND_DIST = 70.f;		// as for any other object (physics_game.cpp)
+	if (Device.vCameraPosition.distance_to_sqr(cast_fv(c->pos)) > SOUND_DIST * SOUND_DIST)	return;
+
+	dVector3 vel;
+	dBodyGetPointVel		(b, c->pos[0], c->pos[1], c->pos[2], vel);
+	const float speed		= dFabs(dDOT(vel, c->normal));
+	if (speed <= self->m_snd_speed)	return;
+
+	SGameMtlPair* mtl_pair	= GMLib.GetMaterialPair(T->material, data->material);
+	if (!mtl_pair || mtl_pair->CollideSounds.empty())	return;
+
+	float k					= (self->m_snd_full_speed > self->m_snd_speed) ?
+							  (speed - self->m_snd_speed) / (self->m_snd_full_speed - self->m_snd_speed) : 1.f;
+	clamp					(k, 0.f, 1.f);
+	const float volume		= self->m_snd_volume.x + k * (self->m_snd_volume.y - self->m_snd_volume.x);
+	if (volume <= 0.f)	return;
+
+	self->ph_sound_player()->Play(mtl_pair, cast_fv(c->pos), volume);
 }
 
 bool CShellCasing::in_hud_phase() const

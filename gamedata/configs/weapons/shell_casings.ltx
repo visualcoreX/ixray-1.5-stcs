@@ -54,9 +54,14 @@ hud_draw_time   = 0.3           ; s a case thrown in first person is drawn in th
                                 ; with the hud projection -- or the gun's own picture would cover a case thrown across it
 scale_time      = 0.4           ; s a case thrown in first person takes to come down to its real size
 ph_mass         = 0.02          ; kg
+
 ph_linear_scale = 1.002         ; velocity is divided by this every physics step (100 a second); 1 = no damping
 ph_angular_scale= 1.01          ; same for the spin: this is what lets a case come to rest instead of rolling on
 ph_angular_limit= 60            ; rad/s, the fastest a case may spin
+
+collide_sound_speed      = 1.0    ; m/s into the surface: slower hits make no sound (the case material pairs' collide sounds)
+collide_sound_full_speed = 6.0    ; m/s: from this fast on it is at its loudest
+collide_sound_volume     = 0.10, 0.6 ; volume at those two speeds, linear in between
 
 [shell_casing_9x18]:shell_casing_base
 visual          = dynamics\weapons\shells\shell_9x18.ogf
@@ -110,3 +115,4 @@ visual          = dynamics\weapons\shells\shell_762x39.ogf
 [shell_casing_40x46]:shell_casing_base	; the M203's spent grenade case, out of the tube in its reload (gl_drop_bones)
 visual          = dynamics\weapons\shells\shell_40x46.ogf
 ph_mass         = 0.04          ; kg
+collide_sound_volume     = 0.20, 1.0 ; volume at those two speeds, linear in between
