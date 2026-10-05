@@ -49,6 +49,15 @@ void CDetailManager::hw_Load_Geom()
 	// Analyze batch-size
 	hw_BatchSize	= (u32(HW.Caps.geometry.dwRegisters)-c_hdr)/c_size;
 	clamp			(hw_BatchSize,(u32)0,(u32)64);
+#ifndef USE_DX10
+	// The DX9 detail shaders (r1\detail_still/detail_wave.vs, r2\deffer_detail_s_flat/w_flat.vs) declare
+	// `array[200]`: room for 50 tufts, not the 61 the register count allows. Past the array the compiler is
+	// free to put the shader's own literals, and a `def` overrides whatever the engine sets in that register.
+	// Once deffer_detail_w_flat got its per-tuft sway it had two (c212/c213), so the 51st tuft of every
+	// batch read them as its matrix and vanished -- a different one with every turn of the camera.
+	// R3 sizes its array for 61 (`array[61*4]`), so this is DX9 only.
+	clamp			(hw_BatchSize,(u32)0,(u32)(200/c_size));
+#endif
 	Msg				("* [DETAILS] VertexConsts(%d), Batch(%d)",u32(HW.Caps.geometry.dwRegisters),hw_BatchSize);
 
 	// Pre-process objects
