@@ -3,10 +3,21 @@
 
 void	CRenderTarget::u_calc_tc_noise		(Fvector2& p0, Fvector2& p1)
 {
-	CTexture*	T					= RCache.get_ActiveTexture	(2);
-	VERIFY2		(T, "Texture #3 in noise shader should be setted up");
-	u32			tw					= iCeil(float(T->get_Width	())*param_noise_scale+EPS_S);
-	u32			th					= iCeil(float(T->get_Height ())*param_noise_scale+EPS_S);
+	// The noise texture, found by its NAME. This took "texture #3" (stage 2) for granted, which held while the
+	// pp shader sampled only base0, base1 and the noise; with the injury's textures added the compiler dealt
+	// the stages out anew -- s_bloom, declared in common.h, took stage 0 and pushed the noise to 3 -- and stage
+	// 2 became the screen itself: one noise tile stretched over the whole screen, coarse and blurred.
+	CTexture*	T					= NULL;
+	for (u32 s = 0; s < 16 && !T; ++s)
+	{
+		CTexture*	t	= RCache.get_ActiveTexture(s);
+		if (t && t->cName.size() && strstr(*t->cName, "fx_noise"))	T = t;
+	}
+	VERIFY2		(T, "No noise texture in the pp shader");
+	const float	nw					= T ? float(T->get_Width ()) : 256.f;	// R1's fixed guess if it ever goes missing
+	const float	nh					= T ? float(T->get_Height()) : 256.f;
+	u32			tw					= iCeil(nw*param_noise_scale+EPS_S);
+	u32			th					= iCeil(nh*param_noise_scale+EPS_S);
 	VERIFY2		(tw && th, "Noise scale can't be zero in any way");
 
 	// calculate shift from FPSes
