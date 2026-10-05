@@ -23,6 +23,7 @@ path_look = esc_wolf_brother_look_1
 on_info = {+esc_wolf_brother_3} walker@death ; if escorted hound, go directly to idle logic
 on_info2 = {-esc_wolf_brother_info =squad_exist(esc_smart_terrain_9_10_bandit_other_squad)} walker@prisoner %=set_squad_goodwill_to_npc(esc_smart_terrain_9_10_bandit_other_squad:friend) +esc_wolf_brother_info% ; set bandit squad to befriend hound once
 on_info3 = {+esc_wolf_brother_2} walker@timer;walker@run ; if not escorted hound but gave weapon
+on_info4 = {+esc_wolf_brother_info =squad_exist(esc_smart_terrain_9_10_bandit_other_squad)} %=set_squad_goodwill_to_npc(esc_smart_terrain_9_10_bandit_other_squad:friend)% ; new: on_info2 befriends the bandits only once, so members that spawn after it stayed hostile -- re-applied on every update
 def_state_standing = prisoner
 meet = meet
 combat_ignore_cond = true
