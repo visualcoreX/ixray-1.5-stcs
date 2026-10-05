@@ -1,6 +1,6 @@
 function normal		(shader, t_base, t_second, t_detail)
 	shader:begin	("particle",	"particle")
-			: sorting	(3, false)
+			: sorting	(3, true)
 			: blend		(true,blend.one,blend.one)
 			: aref 		(false,0)
 			: zb 		(true,false)
@@ -12,7 +12,7 @@ end
 
 function l_special	(shader, t_base, t_second, t_detail)
 	shader:begin	("particle",	"particle_distort")
-			: sorting	(3, false)
+			: sorting	(3, true)
 			: blend		(true,blend.srcalpha,blend.invsrcalpha)
 			: zb 		(true,false)
 			: fog		(false)
