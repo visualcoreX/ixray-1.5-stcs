@@ -5,6 +5,7 @@
 #pragma once
 
 #include "PhysicsShellHolder.h"
+#include "PhysicsCommon.h"		// ContactCallbackFun's arguments
 
 // The server half is CSE_Temporary, the same one the rockets use: it is not an ALife object, so a case
 // never reaches a save and never outlives the level. Everything a case needs to start flying travels in
@@ -53,6 +54,8 @@ public:
 
 private:
 			bool			in_hud_phase		() const;
+	// the contact callback of its body: the collide sound of a case that hits the level (see the .cpp)
+	static	void			ContactSound		(CDB::TRI* T, dContactGeom* c);
 
 	u32						m_life_time;		// ms, from the section
 	u32						m_destroy_time;		// Device.dwTimeGlobal when it goes
@@ -78,5 +81,8 @@ private:
 	u32						m_char_collide_delay;	// ms after the spawn it starts to collide with characters...
 	u32						m_char_collide_at;		// ...i.e. then (0 = done, or never)
 	float					m_hit_max_speed;		// m/s, the fastest a hit may send it off
+	float					m_snd_speed;			// m/s into the surface a hit is heard from...
+	float					m_snd_full_speed;		// ...and is at its loudest from
+	Fvector2				m_snd_volume;			// the volume at those two speeds
 	bool					m_processing;
 };
