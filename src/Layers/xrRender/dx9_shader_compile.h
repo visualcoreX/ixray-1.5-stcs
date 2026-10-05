@@ -19,6 +19,27 @@
 //
 // Falls back to D3DXCompileShader if the DLL is missing, so nothing depends on it being there.
 
+typedef HRESULT (WINAPI *PFN_XR_D3DCOMPILE)(
+	LPCVOID, SIZE_T, LPCSTR, LPCVOID, LPVOID, LPCSTR, LPCSTR, UINT, UINT, LPVOID*, LPVOID*);
+
+// D3DCompile from d3dcompiler_47, or NULL when the DLL is not there (then D3DX9 compiles).
+inline PFN_XR_D3DCOMPILE	xr_dx9_d3dcompile()
+{
+	static PFN_XR_D3DCOMPILE	s_compile	= NULL;
+	static bool					s_probed	= false;
+	if (!s_probed)
+	{
+		s_probed		= true;
+		HMODULE	hDll	= LoadLibraryA("d3dcompiler_47.dll");
+		if (hDll)	s_compile = (PFN_XR_D3DCOMPILE)GetProcAddress(hDll, "D3DCompile");
+		Msg			("* shader compiler: %s", s_compile ? "d3dcompiler_47" : "d3dx9 (D3DCompiler_43)");
+	}
+	return		s_compile;
+}
+
+// For the shader disk cache key: the two compilers produce different bytecode.
+inline LPCSTR	xr_dx9_shader_compiler_name()	{ return xr_dx9_d3dcompile() ? "d3dcompiler_47" : "d3dx9_43"; }
+
 inline HRESULT	xr_dx9_shader_compile(
 	LPCSTR				pSrcData,
 	UINT				SrcDataLen,
@@ -30,20 +51,7 @@ inline HRESULT	xr_dx9_shader_compile(
 	LPD3DXBUFFER*		ppShader,
 	LPD3DXBUFFER*		ppErrorMsgs)
 {
-	typedef HRESULT (WINAPI *PFN_D3DCOMPILE)(
-		LPCVOID, SIZE_T, LPCSTR, LPCVOID, LPVOID, LPCSTR, LPCSTR, UINT, UINT, LPVOID*, LPVOID*);
-
-	static PFN_D3DCOMPILE	s_compile	= NULL;
-	static bool				s_probed	= false;
-
-	if (!s_probed)
-	{
-		s_probed		= true;
-		HMODULE	hDll	= LoadLibraryA("d3dcompiler_47.dll");
-		if (hDll)	s_compile = (PFN_D3DCOMPILE)GetProcAddress(hDll, "D3DCompile");
-		Msg			("* shader compiler: %s", s_compile ? "d3dcompiler_47" : "d3dx9 (D3DCompiler_43)");
-	}
-
+	PFN_XR_D3DCOMPILE	s_compile	= xr_dx9_d3dcompile();
 	if (s_compile)
 		return s_compile(
 			pSrcData, SrcDataLen, NULL, (LPCVOID)pDefines, (LPVOID)pInclude,

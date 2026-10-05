@@ -1,8 +1,19 @@
 #include "stdafx.h"
-#include "r3_shader_cache.h"
+#pragma hdrstop
+
+#include "shader_disk_cache.h"
 
 namespace
 {
+#ifdef USE_DX10
+	typedef D3D10_INCLUDE_TYPE		include_type;
+	const include_type				include_local	= D3D10_INCLUDE_LOCAL;
+	HRESULT create_blob(u32 size, ID3DBlob** out)	{ return D3D10CreateBlob(size, out); }
+#else
+	typedef D3DXINCLUDE_TYPE		include_type;
+	const include_type				include_local	= D3DXINC_LOCAL;
+	HRESULT create_blob(u32 size, ID3DBlob** out)	{ return D3DXCreateBuffer(size, out); }
+#endif
 	const u32	cache_magic		= 0x43535258;	// "XRSC"
 	const u32	cache_version	= 2;		// 2: bytecode hash after the size (a damaged entry is recompiled, not created)
 
@@ -31,7 +42,7 @@ namespace
 		LPCVOID data	= 0;
 		UINT	bytes	= 0;
 		include_hash	ih;
-		ih.ok			= SUCCEEDED(includer->Open(D3D10_INCLUDE_LOCAL, name, 0, &data, &bytes));
+		ih.ok			= SUCCEEDED(includer->Open(include_local, name, 0, &data, &bytes));
 		ih.hash			= ih.ok ? fnv(data, bytes) : 0;
 		ih.time			= now;
 		if (ih.ok)		includer->Close(data);
@@ -49,7 +60,7 @@ namespace
 
 		recording_includer(ID3DInclude* inner) : m_inner(inner) {}
 
-		HRESULT __stdcall Open(D3D10_INCLUDE_TYPE type, LPCSTR name, LPCVOID parent, LPCVOID* ppData, UINT* pBytes)
+		HRESULT __stdcall Open(include_type type, LPCSTR name, LPCVOID parent, LPCVOID* ppData, UINT* pBytes)
 		{
 			HRESULT hr	= m_inner->Open(type, name, parent, ppData, pBytes);
 			if (SUCCEEDED(hr))
@@ -64,10 +75,11 @@ namespace
 		HRESULT __stdcall Close(LPCVOID data)	{ return m_inner->Close(data); }
 	};
 
-	void cache_path(u64 key, string_path& out)
+	void cache_path(LPCSTR cache_dir, u64 key, string_path& out)
 	{
-		string_path	dir;
-		FS.update_path	(dir, "$app_data_root$", "shader_cache_r3\\");
+		string_path	sub, dir;
+		xr_sprintf		(sub, "%s\\", cache_dir);
+		FS.update_path	(dir, "$app_data_root$", sub);
 		CreateDirectoryA(dir, 0);
 		xr_sprintf		(out, "%s%016I64x.bin", dir, key);
 	}
@@ -123,7 +135,7 @@ namespace
 		if (fnv(r.p, blob_size) != blob_hash)					return false;
 
 		ID3DBlob*	blob	= 0;
-		if (FAILED(D3D10CreateBlob(blob_size, &blob)) || !blob)	return false;
+		if (FAILED(create_blob(blob_size, &blob)) || !blob)	return false;
 		CopyMemory		(blob->GetBufferPointer(), r.p, blob_size);
 		*ppShader		= blob;
 		return			true;
@@ -163,12 +175,14 @@ namespace
 	}
 }
 
-HRESULT	r3_compile_shader_cached(LPCSTR name, LPCSTR src, UINT src_len, const D3D_SHADER_MACRO* defines,
-	ID3DInclude* includer, LPCSTR entry, LPCSTR target, DWORD flags, ID3DBlob** ppShader, ID3DBlob** ppErrorMsgs)
+HRESULT	shader_compile_cached(LPCSTR cache_dir, LPCSTR compiler_id, shader_compile_fn compile, LPCSTR name,
+	LPCSTR src, UINT src_len, const D3D_SHADER_MACRO* defines, ID3DInclude* includer, LPCSTR entry, LPCSTR target,
+	DWORD flags, ID3DBlob** ppShader, ID3DBlob** ppErrorMsgs)
 {
 	// The format version is checked inside the entry, not hashed into the name: a newer format then
 	// overwrites the old entry in place instead of leaving it behind.
 	u64 key		= fnv_str(name, 0xcbf29ce484222325ull);
+	key			= fnv_str(compiler_id, key);
 	key			= fnv_str(entry, key);
 	key			= fnv_str(target, key);
 	key			= fnv(&flags, sizeof(flags), key);
@@ -180,7 +194,7 @@ HRESULT	r3_compile_shader_cached(LPCSTR name, LPCSTR src, UINT src_len, const D3
 	key			= fnv(src, src_len, key);
 
 	string_path	path;
-	cache_path	(key, path);
+	cache_path	(cache_dir, key, path);
 
 	if (try_load(path, includer, ppShader))
 	{
@@ -189,9 +203,7 @@ HRESULT	r3_compile_shader_cached(LPCSTR name, LPCSTR src, UINT src_len, const D3
 	}
 
 	recording_includer	rec(includer);
-	HRESULT hr	= D3DX10CompileFromMemory(src, src_len,
-		"",		// NVPerfHUD bug workaround.
-		defines, includer ? &rec : 0, entry, target, flags, 0, NULL, ppShader, ppErrorMsgs, NULL);
+	HRESULT hr	= compile(src, src_len, defines, includer ? &rec : 0, entry, target, flags, ppShader, ppErrorMsgs);
 
 	if (SUCCEEDED(hr) && ppShader && *ppShader)
 		store	(path, rec, *ppShader);

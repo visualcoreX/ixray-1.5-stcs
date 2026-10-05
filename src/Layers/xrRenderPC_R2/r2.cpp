@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "r2.h"
+#include "../xrRender/shader_disk_cache.h"
 #include "../xrRender/dx9_shader_compile.h"	// startup: use D3DCompiler_47 when present
 #include "../xrRender/fbasicvisual.h"
 #include "../../xrEngine/xr_object.h"
@@ -781,7 +782,8 @@ HRESULT	CRender::shader_compile			(
 	// D3DCompiler_47 when the system has it -- D3DX9's built-in 2010 compiler needs 26 s for one
 	// SSAO/HBAO shader. See dx9_shader_compile.h. ppConstantTable is unused by both callers
 	// (they read the CTAB chunk out of the blob instead), so nothing is lost by not filling it.
-	HRESULT _result = xr_dx9_shader_compile(pSrcData, SrcDataLen, defines, pInclude, pFunctionName, pTarget, Flags, ppShader, ppErrorMsgs);
+	HRESULT _result = shader_compile_cached("shader_cache_r2", xr_dx9_shader_compiler_name(), &xr_dx9_shader_compile,
+		name, pSrcData, SrcDataLen, defines, pInclude, pFunctionName, pTarget, Flags, ppShader, ppErrorMsgs);
 	if (SUCCEEDED(_result) && o.disasm)
 	{
 		ID3DXBuffer*		code	= *((LPD3DXBUFFER*)_ppShader);

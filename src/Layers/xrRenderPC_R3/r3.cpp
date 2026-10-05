@@ -14,7 +14,7 @@
 #include "..\xrRenderDX10\3DFluid\dx103DFluidManager.h"
 
 #include "D3D10shader.h"
-#include "r3_shader_cache.h"
+#include "../xrRender/shader_disk_cache.h"
 
 CRender										RImplementation;
 
@@ -707,6 +707,14 @@ void	CRender::Statistics	(CGameFont* _F)
 #endif
 }
 
+static HRESULT r3_d3dx10_compile(LPCSTR src, UINT src_len, const D3D_SHADER_MACRO* defines, ID3DInclude* includer,
+	LPCSTR entry, LPCSTR target, DWORD flags, ID3DBlob** ppShader, ID3DBlob** ppErrorMsgs)
+{
+	return D3DX10CompileFromMemory(src, src_len,
+		"",		// NVPerfHUD bug workaround.
+		defines, includer, entry, target, flags, 0, NULL, ppShader, ppErrorMsgs, NULL);
+}
+
 HRESULT	CRender::shader_compile			(
 	LPCSTR							name,
 	LPCSTR                          pSrcData,
@@ -1062,8 +1070,8 @@ HRESULT	CRender::shader_compile			(
 	
 	//HRESULT		_result	= D3D10CompileShader(pSrcData,SrcDataLen,NULL, defines,pInclude,pFunctionName,pTarget,Flags,ppShader,ppErrorMsgs,ppConstantTable);
 
-	HRESULT		_result	= r3_compile_shader_cached(name, pSrcData, SrcDataLen, defines, pInclude,
-		pFunctionName, pTarget, Flags, ppShader, ppErrorMsgs);
+	HRESULT		_result	= shader_compile_cached("shader_cache_r3", "d3dx10_43", &r3_d3dx10_compile, name,
+		pSrcData, SrcDataLen, defines, pInclude, pFunctionName, pTarget, Flags, ppShader, ppErrorMsgs);
 
 	if (SUCCEEDED(_result) && o.disasm)
 	{
