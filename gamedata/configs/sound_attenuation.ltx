@@ -12,19 +12,19 @@
 ; the profile is applied to (the AI hearing range is not touched).
 
 [foley_attenuation]
-min_distance	= 1
+min_distance	= 0.5
 max_distance	= 30
 falloff_db		= 25
 shoulder		= 5
 
 [gunshot_attenuation]
-min_distance	= 3
+min_distance	= 1
 max_distance	= 200
 falloff_db		= 15
 shoulder		= 30
 
 [silencer_attenuation]
-min_distance	= 2
+min_distance	= 1
 max_distance	= 60
 falloff_db		= 30
 shoulder		= 10
@@ -36,21 +36,21 @@ falloff_db		= 12
 shoulder		= 40
 
 [launcher_attenuation]
-min_distance	= 2
+min_distance	= 1
 max_distance	= 100
 falloff_db		= 15
 shoulder		= 20
 
 [engine_attenuation]
-min_distance	= 2
+min_distance	= 1
 max_distance	= 75
 falloff_db		= 25
 shoulder		= 15
 
 [bullet_crack_attenuation]
-min_distance	= 2
+min_distance	= 1
 max_distance	= 30
-falloff_db		= 25
+falloff_db		= 30
 shoulder		= 8
 
 [shell_drop_attenuation]
@@ -94,6 +94,8 @@ weapons\grenade\grenade_explosion			= explode_attenuation
 weapons\rpg7\rpg7_shoot_					= gunshot_attenuation
 weapons\rpg7\rpg7_explode_					= explode_attenuation
 weapons\rpg7\rpg7_grenade_engine			= engine_attenuation
+weapons\saiga12\saiga12_shoot_				= gunshot_attenuation
+weapons\saiga12\saiga12_shoot_sil_			= silencer_attenuation
 weapons\shells\								= shell_drop_attenuation
 weapons\mag_drops\							= mag_drop_attenuation
 
