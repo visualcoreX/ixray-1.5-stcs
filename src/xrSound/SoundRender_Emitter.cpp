@@ -37,6 +37,9 @@ CSoundRender_Emitter::CSoundRender_Emitter(void)
 	fade_out.start				= 0.f;
 	fade_out.end				= 0.f;
 	fade_out.db					= 0.f;
+	cut.start					= 0.f;
+	cut.end						= 0.f;
+	cut.db						= 0.f;
 	occluder[0].set				(0,0,0);
 	occluder[1].set				(0,0,0);
 	occluder[2].set				(0,0,0);
@@ -103,11 +106,57 @@ void CSoundRender_Emitter::set_fade_out(const sound_fade_out& fade)
 		fade_out.start			= _max(fade_out.end, 0.f);
 }
 
+// Fades the instance out from <delay> seconds from now over <length>. Kept apart from fade_out so a shot
+// that already fades by its config (the indoor fade) goes on doing so, the cut merely multiplying in.
+void CSoundRender_Emitter::cut_out(float delay, float length)
+{
+	if (!_valid(delay) || !_valid(length))	return;
+
+	float		now;			// own play time at this moment, as update_fade_out counts it
+	switch (m_current_state)
+	{
+	case stPlaying: case stPlayingLooped: case stSimulating: case stSimulatingLooped:
+		now						= SoundRender->fTimer_Value-fTimeStarted;	break;
+	case stStartingDelayed: case stStartingLoopedDelayed:
+		now						= -starting_delay;							break;
+	case stStarting: case stStartingLooped:
+		now						= 0.f;										break;
+	default:					return;		// over already
+	}
+
+	const float	start			= now+_max(delay, 0.f);
+	const float	end				= start+_max(length, 0.f);
+	if (end<=0.f)				{ i_stop(); return; }		// would be over before it is ever heard
+	if (cut.end>0.f && cut.end<=end)		return;			// an earlier cut stands
+
+	cut.start					= _max(start, 0.f);
+	cut.end						= end;
+}
+
+// How much of a sound one fade leaves at play time <t>: 1 before <start>, 0 from <end> on.
+static float fade_gain(const sound_fade_out& f, float t)
+{
+	if (t>=f.end)				return 0.f;
+	if (t<=f.start)				return 1.f;
+
+	const float	x				= (t-f.start)/(f.end-f.start);
+	float		g;
+	if (f.db<=0.f)
+		g						= 1.f-x;
+	else
+	{
+		const float	floor_g		= powf(10.f, -f.db/20.f);
+		g						= (powf(10.f, -f.db*x/20.f)-floor_g)/(1.f-floor_g);
+	}
+	clamp						(g, 0.f, 1.f);
+	return						g;
+}
+
 // Seconds are the instance's own play time, so a delayed or paused sound fades from where it really is.
 bool CSoundRender_Emitter::update_fade_out()
 {
 	envelope_volume				= 1.f;
-	if (fade_out.end<=0.f)		return true;
+	if (fade_out.end<=0.f && cut.end<=0.f)	return true;
 
 	switch (m_current_state)
 	{
@@ -116,18 +165,13 @@ bool CSoundRender_Emitter::update_fade_out()
 	}
 
 	const float	t				= SoundRender->fTimer_Value-fTimeStarted;
-	if (t>=fade_out.end)		{ envelope_volume = 0.f; return false; }
-	if (t<=fade_out.start)		return true;
-
-	const float	x				= (t-fade_out.start)/(fade_out.end-fade_out.start);
-	if (fade_out.db<=0.f)
-		envelope_volume			= 1.f-x;
-	else
+	if ((fade_out.end>0.f && t>=fade_out.end) || (cut.end>0.f && t>=cut.end))
 	{
-		const float	floor_g		= powf(10.f, -fade_out.db/20.f);
-		envelope_volume			= (powf(10.f, -fade_out.db*x/20.f)-floor_g)/(1.f-floor_g);
+		envelope_volume			= 0.f;
+		return					false;
 	}
-	clamp						(envelope_volume, 0.f, 1.f);
+	if (fade_out.end>0.f)		envelope_volume *= fade_gain(fade_out, t);
+	if (cut.end>0.f)			envelope_volume *= fade_gain(cut, t);
 	return						true;
 }
 

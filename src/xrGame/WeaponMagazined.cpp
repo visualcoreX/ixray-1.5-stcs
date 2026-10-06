@@ -164,7 +164,7 @@ bool CWeaponMagazined::WeaponSoundExist(LPCSTR section, LPCSTR sound_name)
 // Force every shot sound to overlap, whether or not its config line asks for it with a negative
 // number (see HUD_SOUND_ITEM::PlaySound). Off, like GS's equivalent global switch (snd_unlock): the
 // weapon config decides. Console: snd_shot_overlap -- turning it on holds a voice per ringing shot,
-// so snd_targets has to be able to take it.
+// up to snd_overlap_voices of them (HudSound.h), so snd_targets has to be able to take it.
 BOOL	g_snd_shot_overlap	= FALSE;
 
 void CWeaponMagazined::Load	(LPCSTR section)
