@@ -199,6 +199,8 @@ u32 ACTOR_DEFS::quick_use_count(CInventory& inv, LPCSTR section)
 
 CActor::CActor() : CEntityAlive()
 {
+	m_bWeaponLowered		= false;
+	m_wpn_lowered_id		= u16(-1);
 	m_dwBayonetHitTm		= 0;
 	m_eSuicideState			= eSuicideNone;
 	m_dwLastShotTime		= 0;
@@ -1241,6 +1243,7 @@ static float pp_pulse_update(float& phase, float& pulse, float level, float peri
 void CActor::UpdateCL	()
 {
 	UpdateInventoryOwner			(Device.dwTimeDelta);
+	UpdateWeaponLowered				();
 
 	// Actor self-shadow suppression, decided in ONE place and read by the renderer through
 	// IGame_Persistent (it cannot see game state itself). Two cases, both of them "the actor is not a

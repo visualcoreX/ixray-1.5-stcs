@@ -109,7 +109,6 @@ void calc_cam_diff_rot(Fmatrix item_transform, Fvector diff, Fvector& res)
 
 void attachable_hud_item::tune(Ivector values)
 {
-#ifndef MASTER_GOLD
 	if(!is_attachable_item_tuning_mode() )
 		return;
 
@@ -180,7 +179,6 @@ void attachable_hud_item::tune(Ivector values)
 			Log("-----------");
 		}
 	}
-#endif // #ifndef MASTER_GOLD
 }
 
 void attachable_hud_item::debug_draw_firedeps()
@@ -243,9 +241,42 @@ static bool world_item_tune(const Ivector& values)
 	return true;			// input consumed even on an idle frame, so the hud is left alone
 }
 
+// Weapon down (CActor::IsWeaponLowered): SHIFT+Numpad 1 / 2 move the LOWERED pose of the weapon in hand
+// instead of hands_position -- starting from where it is drawn now -- and CWeapon::TuneLoweredPose writes it
+// into that weapon's hud section by itself (lowered_hud_offset_pos / _rot). Rotation steps like the aim
+// offsets do (dR / 20): the pose is in radians, hands_orientation in degrees.
+static bool lowered_pose_tune(const Ivector& values)
+{
+	if (hud_adj_mode != 1 && hud_adj_mode != 2)		return false;
+	if (!g_pGameLevel || !g_pGameLevel->bReady)		return false;
+	CActor* a = Actor();
+	if (!a || !a->IsWeaponLowered())				return false;
+	CWeapon* w = smart_cast<CWeapon*>(a->inventory().ActiveItem());
+	if (!w)											return false;
+
+	Fvector dpos, drot;
+	dpos.set(0.f,0.f,0.f);
+	drot.set(0.f,0.f,0.f);
+	const float dr = _delta_rot / 20.f;
+	if (hud_adj_mode == 1)
+	{
+		if (values.x)	dpos.x = (values.x<0)? _delta_pos : -_delta_pos;
+		if (values.y)	dpos.y = (values.y>0)? _delta_pos : -_delta_pos;
+		if (values.z)	dpos.z = (values.z>0)? _delta_pos : -_delta_pos;
+	}
+	else
+	{
+		if (values.x)	drot.x = (values.x>0)? dr : -dr;
+		if (values.y)	drot.y = (values.y>0)? dr : -dr;
+		if (values.z)	drot.z = (values.z>0)? dr : -dr;
+	}
+	if (values.x || values.y || values.z)
+		w->TuneLoweredPose(dpos, drot);
+	return true;			// input consumed: with the weapon down the hands pose is left alone
+}
+
 void player_hud::tune(Ivector _values)
 {
-#ifndef MASTER_GOLD
 	Ivector				values;
 	tune_remap			(_values,values);
 
@@ -257,6 +288,8 @@ void player_hud::tune(Ivector _values)
 	// 0..9 are all taken, and in cam_3 the hud is not what you are looking at anyway.
 	// Must come BEFORE the "no attached hud item" bail-out below, which would otherwise skip it.
 	if (world_item_tune(values))
+		return;
+	if (lowered_pose_tune(values))
 		return;
 
 	auto is_attached = m_attached_items[hud_adj_item_idx];
@@ -333,7 +366,6 @@ void player_hud::tune(Ivector _values)
 		if(!hi)	return;
 		hi->tune(values);
 	}
-#endif // #ifndef MASTER_GOLD
 }
 
 void hud_draw_adjust_mode()
@@ -345,13 +377,14 @@ void hud_draw_adjust_mode()
 	if(pInput->iGetAsyncKeyState(DIK_LSHIFT) && hud_adj_mode)
 		_text = "press SHIFT+NUM 0-return 1-hud_pos 2-hud_rot 3-itm_pos 4-itm_rot 5-fire_point 6-fire_2_point 7-shell_point 8-pos_step 9-rot_step";
 
+	const bool lowered = (hud_adj_mode == 1 || hud_adj_mode == 2) && Actor() && Actor()->IsWeaponLowered();
 	switch (hud_adj_mode)
 		{
 		case 1:
-			_text = "adjusting HUD POSITION";
+			_text = lowered ? "adjusting LOWERED POSITION (saved to the weapon's config)" : "adjusting HUD POSITION";
 			break;
 		case 2:
-			_text = "adjusting HUD ROTATION";
+			_text = lowered ? "adjusting LOWERED ROTATION (saved to the weapon's config)" : "adjusting HUD ROTATION";
 			break;
 		case 3:
 			_text = "adjusting ITEM POSITION";

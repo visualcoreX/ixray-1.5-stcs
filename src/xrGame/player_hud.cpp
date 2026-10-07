@@ -952,6 +952,16 @@ static bool hud_is_sprint_loop(const shared_str& m)
 	return s && strstr(s, "sprint") && !strstr(s, "_start") && !strstr(s, "_end");
 }
 
+bool player_hud::hands_bone_frame(LPCSTR bone, Fmatrix& out) const
+{
+	if (!m_model)							return false;
+	IKinematics* K	= m_model->dcast_PKinematics();
+	const u16 id	= K->LL_BoneID(bone);
+	if (id == BI_NONE)						return false;
+	out.mul_43		(m_attach_offset, K->LL_GetTransform(id));
+	return			true;
+}
+
 void player_hud::update(const Fmatrix& cam_trans)
 {
 	Fmatrix	trans					= cam_trans;

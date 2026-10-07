@@ -302,6 +302,11 @@ public:
 	// eased 0..1 blend toward the alter pose (cubic ease-in-out, i.e. cubic-bezier(.42,0,.58,1)); the
 	// aim offset and hud fov interpolate with it instead of snapping.
 	float			AlterZoomBlend		() const;
+	// Weapon down (CActor::ToggleWeaponLowered): 0 = up, 1 = all the way down, eased in UpdateLoweredPose.
+	float			LoweredFactor		() const	{ return m_fLoweredFactor; }
+	void			UpdateLoweredPose	(Fmatrix& trans, CActor* pActor);
+	void			TuneLoweredPose		(const Fvector& dpos, const Fvector& drot);	// hud tuner, weapon down
+	float			m_fLoweredFactor;
 	// GS GetZoomLensVisibilityFactor: 1 = PiP lens fully visible, 0 = off (alter pose / no lensed scope);
 	// cross-fades with the alter-pose ramp. Drives the lens shader alpha and the $user$scope capture.
 	float			LensVisibility		() const;

@@ -138,6 +138,10 @@ public:
 	u32				motion_length		(const MotionID& M, const CMotionDef*& md, float speed);
 	u32				motion_length		(const shared_str& anim_name, const shared_str& hud_name, const CMotionDef*& md);
 	void			OnMovementChanged	(ACTOR_DEFS::EMoveCommand cmd)	;
+	// A hands bone's frame as seen from the transform the hud items' UpdateHudAdditonal receives: the hands
+	// attach offset times the bone's model-space matrix (last calculated pose). For layering a motion on top
+	// of that bone (CWeapon::UpdateLoweredPose). False if there is no hands model or no such bone.
+	bool			hands_bone_frame	(LPCSTR bone, Fmatrix& out) const;
 private:
 	void			update_inertion		(Fmatrix& trans);
 	void			update_additional	(Fmatrix& trans);
