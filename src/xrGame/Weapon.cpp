@@ -4969,132 +4969,13 @@ static void apply_hud_offset(Fmatrix& trans, const Fvector& offs, const Fvector&
 	trans.mulB_43(m);
 }
 
-// Weapon down: the pose. lowered_hud_offset_pos / _rot (+_16x9) in the hud section -- the names Anomaly
-// uses for the same thing -- or the [weapon_lowered] defaults (weapons\weapon_lowered.ltx); same units and
-// order as the aim offsets (rot in radians: x pitches the muzzle down, y turns it, z rolls). Eased in and
-// out over [weapon_lowered] time, and held off during a sprint, whose own animation carries the weapon low.
-// dbg_weapon_lowered_pose overrides the pose live, for tuning.
-bool	g_wpn_lowered_dbg		= false;
-Fvector	g_wpn_lowered_dbg_pos	= {0.f, 0.f, 0.f};
-Fvector	g_wpn_lowered_dbg_rot	= {0.f, 0.f, 0.f};
-
-// CSS-style cubic-bezier(x1, y1, x2, y2) easing: the curve runs (0,0) -> (1,1) with those two control
-// points; x is the time fraction, the answer is the progress. x(s) is solved for s by Newton steps with a
-// bisection fallback (x(s) is monotonic for x1, x2 in 0..1), then y(s) is returned.
-static float cubic_bezier_ease(float x, float x1, float y1, float x2, float y2)
-{
-	if (x <= 0.f)	return 0.f;
-	if (x >= 1.f)	return 1.f;
-	const float cx = 3.f * x1, bx = 3.f * (x2 - x1) - cx, ax = 1.f - cx - bx;
-	const float cy = 3.f * y1, by = 3.f * (y2 - y1) - cy, ay = 1.f - cy - by;
-	float s = x;
-	for (int i = 0; i < 8; ++i)
-	{
-		const float xs = ((ax * s + bx) * s + cx) * s - x;
-		if (_abs(xs) < 1e-5f)	return ((ay * s + by) * s + cy) * s;
-		const float d = (3.f * ax * s + 2.f * bx) * s + cx;
-		if (_abs(d) < 1e-6f)	break;
-		s -= xs / d;
-	}
-	float lo = 0.f, hi = 1.f;
-	s = x;
-	for (int i = 0; i < 30; ++i)
-	{
-		const float xs = ((ax * s + bx) * s + cx) * s;
-		if (_abs(xs - x) < 1e-5f)	break;
-		if (xs < x)	lo = s;	else hi = s;
-		s = 0.5f * (lo + hi);
-	}
-	return ((ay * s + by) * s + cy) * s;
-}
-
-// Poses moved with the hud tuner (TuneLoweredPose), per hud section -- i.e. per weapon -- for the rest of
-// the session; each is written into the config file that declares its section shortly after the last step.
-struct SLoweredPoseTuned
-{
-	Fvector		pos, rot;
-	bool		dirty;
-	u32			changed;
-	xr_string	file;		// where the section lives (found on the first save)
-};
-static xr_map<shared_str, SLoweredPoseTuned>	s_lowered_tuned;
-
-// Per-channel shape of the move: [weapon_lowered] curve_pos_x .. curve_rot_z = t0,v0, t1,v1, ... -- keys
-// in normalised time (0..1 over `time`) and normalised value (1 = the pose's own value, so a key below 0 or
-// above 1 swings past the start or the end: a wind-up, an overshoot). Between keys a cubic Hermite with the
-// tangents Maya's "auto" gives: flat at the ends and at every turning key, the weighted harmonic mean of the
-// two slopes elsewhere (monotone PCHIP), so nothing overshoots between keys. A channel without a curve uses
-// the bezier. Coming back up runs the same curves backwards.
-struct SLowerCurve
-{
-	xr_vector<Fvector2>	k;		// x = time, y = value
-	xr_vector<float>	d;		// tangents
-	bool				valid;
-};
-static SLowerCurve	s_lower_curves[6];
-static bool			s_lower_curves_loaded = false;
-
-static void load_lower_curves()
-{
-	if (s_lower_curves_loaded)	return;
-	s_lower_curves_loaded = true;
-	static LPCSTR keys[6] = { "curve_pos_x", "curve_pos_y", "curve_pos_z", "curve_rot_x", "curve_rot_y", "curve_rot_z" };
-	for (int c = 0; c < 6; ++c)
-	{
-		SLowerCurve& C = s_lower_curves[c];
-		C.valid = false;
-		if (!pSettings->line_exist("weapon_lowered", keys[c]))	continue;
-		LPCSTR s = pSettings->r_string("weapon_lowered", keys[c]);
-		const int n = _GetItemCount(s);
-		string64 a, b;
-		for (int i = 0; i + 1 < n; i += 2)
-		{
-			Fvector2 p;
-			p.x = (float)atof(_GetItem(s, i, a));
-			p.y = (float)atof(_GetItem(s, i + 1, b));
-			C.k.push_back(p);
-		}
-		const int m = (int)C.k.size();
-		if (m < 2)	{ C.k.clear(); continue; }
-		C.d.assign(m, 0.f);
-		for (int i = 1; i + 1 < m; ++i)
-		{
-			const float h0 = C.k[i].x - C.k[i-1].x, h1 = C.k[i+1].x - C.k[i].x;
-			if (h0 <= 0.f || h1 <= 0.f)	continue;
-			const float s0 = (C.k[i].y - C.k[i-1].y) / h0, s1 = (C.k[i+1].y - C.k[i].y) / h1;
-			if (s0 * s1 <= 0.f)			continue;		// a turning key: flat
-			const float w1 = 2.f * h1 + h0, w2 = h1 + 2.f * h0;
-			C.d[i] = (w1 + w2) / (w1 / s0 + w2 / s1);
-		}
-		C.valid = true;
-	}
-}
-
-static float eval_lower_curve(const SLowerCurve& C, float t)
-{
-	const int m = (int)C.k.size();
-	if (t <= C.k[0].x)		return C.k[0].y;
-	if (t >= C.k[m-1].x)	return C.k[m-1].y;
-	for (int i = 0; i + 1 < m; ++i)
-	{
-		if (t > C.k[i+1].x)	continue;
-		const float h = C.k[i+1].x - C.k[i].x;
-		if (h <= 0.f)		return C.k[i+1].y;
-		const float u = (t - C.k[i].x) / h, u2 = u * u, u3 = u2 * u;
-		return	(2.f*u3 - 3.f*u2 + 1.f) * C.k[i].y + (u3 - 2.f*u2 + u) * h * C.d[i] +
-				(-2.f*u3 + 3.f*u2) * C.k[i+1].y + (u3 - u2) * h * C.d[i+1];
-	}
-	return C.k[m-1].y;
-}
-
-// The move as animations (weapons\weapon_lowered_anim.ltx / weapon_raised_anim.ltx, baked from the hands-rig
-// OMFs by tools/omf_to_lowered.py) -- per frame the root bone's transform as a delta from the normal pose, i.e.
-// the key the engine itself turns into a bone matrix with mk_xform; frames slerped / lerped.
-//   [weapon_lowered_anim]	going down: frame 0 = up (the delta is 0 there), last frame = down.
-//   [weapon_raised_anim]	coming back up: frame 0 = down, last frame = up (the delta is 0 there). Without it
-//							the way down is played backwards.
-// With them the [weapon_lowered] pose and curves are not used; a weapon's lowered_hud_offset_* (the hud
-// tuner's) still adds on top.
+// The move as animations: hands-rig OMFs read straight from $game_meshes$ ([weapon_lowered] anim_down /
+// anim_up, without .omf), in which only the root bone (bip01, track 0) moves. Per frame the bone's transform
+// is kept as a delta from the normal (weapon up) pose in the bone's own frame -- the key the engine itself
+// turns into a bone matrix with mk_xform -- frames slerped / lerped, 30 per second (the OMF sample rate).
+//   anim_down	going down: frame 0 = up, last frame = down.
+//   anim_up		coming back up: frame 0 = down, last frame = up. Without it the way down plays backwards.
+// Without the way down the weapon does not move on the hud (a warning in the log); the mode itself still works.
 struct SLowerAnim
 {
 	float					fps;
@@ -5117,213 +4998,138 @@ struct SLowerAnim
 static SLowerAnim	s_lower_anim, s_raise_anim;
 static bool			s_lower_anim_loaded = false;
 
-static void load_anim_section(SLowerAnim& A, LPCSTR S)
+// quaternions as (x, y, z, w) with the Hamilton product -- the OMF key's own layout; kept apart from
+// Fquaternion so the delta is exactly what the key holds, converted only at the end
+struct SQ { float x, y, z, w; };
+static SQ	sq_mul	(const SQ& a, const SQ& b)
+{
+	SQ r;
+	r.x = a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y;
+	r.y = a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x;
+	r.z = a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w;
+	r.w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z;
+	return r;
+}
+static SQ	sq_norm	(const SQ& a)
+{
+	float l = _sqrt(a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w);
+	if (l <= 0.f)	l = 1.f;
+	SQ r = { a.x / l, a.y / l, a.z / l, a.w / l };
+	return r;
+}
+static SQ	sq_conj	(const SQ& a)		{ SQ r = { -a.x, -a.y, -a.z, a.w }; return r; }
+static Fvector sq_rot	(const SQ& q, const Fvector& v)
+{
+	SQ p = { v.x, v.y, v.z, 0.f };
+	p = sq_mul(sq_mul(q, p), sq_conj(q));
+	Fvector r;	r.set(p.x, p.y, p.z);
+	return r;
+}
+
+// Track 0 of the first motion of an OMF ($game_meshes$\<name>.omf), as deltas from frame `ref` (the weapon-up
+// pose): inverse(M(ref)) * M(i), i.e. rotation q(ref)^-1 q(i), translation q(ref)^-1 (T(i) - T(ref)).
+// Key layout as the engine's motion loader reads it: a flags byte (1 = has translation keys, 2 = one constant
+// rotation key, 4 = 16-bit translation keys), rotation keys s16 x,y,z,w / 32767 after a crc, translation keys
+// s8 / s16 x,y,z times sizeT plus initT after a crc. Both parameter layouts of the motion-params chunk are
+// irrelevant here -- only OGF_S_MOTIONS is read.
+static void load_anim_omf(SLowerAnim& A, LPCSTR name, bool ref_last)
 {
 	A.valid		= false;
-	if (!pSettings->section_exist(S) || !pSettings->line_exist(S, "frames"))	return;
-	A.fps		= READ_IF_EXISTS(pSettings, r_float, S, "fps", 30.f);
-	const int n	= pSettings->r_s32(S, "frames");
-	for (int i = 0; i < n; ++i)
+	string_path	fn;
+	xr_sprintf	(fn, "%s.omf", name);
+	if (!FS.exist("$game_meshes$", fn))	{ Msg("! [weapon_lowered] no animation file %s", fn); return; }
+	IReader* F	= FS.r_open("$game_meshes$", fn);
+	if (!F)		return;
+	IReader* MS	= F->open_chunk(14);				// OGF_S_MOTIONS
+	IReader* M	= MS ? MS->open_chunk(1) : 0;		// chunk 0 = the motion count, 1 = the first motion
+	if (M)
 	{
-		string32 k;	xr_sprintf(k, "f%d", i);
-		if (!pSettings->line_exist(S, k))	break;
-		LPCSTR v = pSettings->r_string(S, k);
-		float t[7] = { 0, 0, 0, 0, 0, 0, 1 };
-		string64 a;
-		for (int j = 0; j < 7 && j < _GetItemCount(v); ++j)	t[j] = (float)atof(_GetItem(v, j, a));
-		Fvector		tt;	tt.set(t[0], t[1], t[2]);
-		Fquaternion	qq;	qq.set(t[6], t[3], t[4], t[5]);		// Fquaternion::set takes (w, x, y, z)
-		A.T.push_back(tt);
-		A.Q.push_back(qq);
+		shared_str	mname;
+		M->r_stringZ(mname);
+		const u32	n	= M->r_u32();
+		const u8	fl	= M->r_u8();
+		xr_vector<SQ>		q(n);
+		xr_vector<Fvector>	t(n);
+		if (!(fl & 2))	M->r_u32();						// crc
+		for (u32 i = 0; i < n; ++i)
+		{
+			if (i && (fl & 2))	{ q[i] = q[0]; continue; }	// one constant key
+			q[i].x = M->r_s16() / 32767.f;
+			q[i].y = M->r_s16() / 32767.f;
+			q[i].z = M->r_s16() / 32767.f;
+			q[i].w = M->r_s16() / 32767.f;
+		}
+		xr_vector<Fvector>	keys;
+		Fvector				size;	size.set(0, 0, 0);
+		if (fl & 1)
+		{
+			M->r_u32();									// crc
+			keys.resize	(n);
+			for (u32 i = 0; i < n; ++i)
+			{
+				for (int c = 0; c < 3; ++c)				// one read per statement: the order matters
+					keys[i][c] = (fl & 4) ? float(M->r_s16()) : float(s8(M->r_u8()));
+			}
+			M->r_fvector3(size);
+		}
+		Fvector init;	M->r_fvector3(init);
+		for (u32 i = 0; i < n; ++i)
+		{
+			if (keys.empty())	t[i] = init;
+			else				t[i].set(keys[i].x * size.x + init.x, keys[i].y * size.y + init.y, keys[i].z * size.z + init.z);
+		}
+		if (n >= 2)
+		{
+			const u32	r	= ref_last ? n - 1 : 0;
+			const SQ	q0i	= sq_conj(sq_norm(q[r]));
+			A.fps			= 30.f;
+			for (u32 i = 0; i < n; ++i)
+			{
+				const SQ	d	= sq_norm(sq_mul(q0i, q[i]));
+				Fvector		dt;	dt.sub(t[i], t[r]);
+				A.T.push_back	(sq_rot(q0i, dt));
+				Fquaternion	qq;	qq.set(d.w, d.x, d.y, d.z);		// Fquaternion::set takes (w, x, y, z)
+				A.Q.push_back	(qq);
+			}
+			A.valid			= true;
+		}
+		Msg("* [weapon_lowered] %s: motion \"%s\", %d frames%s", fn, *mname, n, A.valid ? "" : " -- too short, not used");
+		M->close();
 	}
-	A.valid = A.T.size() >= 2 && A.fps > 0.f;
+	else
+		Msg("! [weapon_lowered] %s: no motion in it", fn);
+	if (MS)		MS->close();
+	FS.r_close	(F);
 }
 
 static void load_lower_anim()
 {
 	if (s_lower_anim_loaded)	return;
 	s_lower_anim_loaded		= true;
-	load_anim_section		(s_lower_anim, "weapon_lowered_anim");
-	load_anim_section		(s_raise_anim, "weapon_raised_anim");
-	if (!s_lower_anim.valid)	s_raise_anim.valid = false;		// the way up only goes with a way down
-}
-
-static void read_lowered_pose(LPCSTR hud_sect, bool wide, Fvector& pos, Fvector& rot)
-{
-	if (g_wpn_lowered_dbg)	{ pos = g_wpn_lowered_dbg_pos; rot = g_wpn_lowered_dbg_rot; return; }
-	load_lower_anim();
-	xr_map<shared_str, SLoweredPoseTuned>::const_iterator tuned = s_lowered_tuned.find(shared_str(hud_sect));
-	if (tuned != s_lowered_tuned.end())	{ pos = tuned->second.pos; rot = tuned->second.rot; return; }
-	pos.set(0.f, 0.f, 0.f);	rot.set(0.f, 0.f, 0.f);
-	LPCSTR pk = (wide && pSettings->line_exist(hud_sect, "lowered_hud_offset_pos_16x9")) ? "lowered_hud_offset_pos_16x9" : "lowered_hud_offset_pos";
-	LPCSTR rk = (wide && pSettings->line_exist(hud_sect, "lowered_hud_offset_rot_16x9")) ? "lowered_hud_offset_rot_16x9" : "lowered_hud_offset_rot";
-	const bool defaults = !s_lower_anim.valid;		// the animation replaces the shared pose
-	if (pSettings->line_exist(hud_sect, pk))				pos = pSettings->r_fvector3(hud_sect, pk);
-	else if (defaults && pSettings->line_exist("weapon_lowered", "hud_offset_pos"))	pos = pSettings->r_fvector3("weapon_lowered", "hud_offset_pos");
-	if (pSettings->line_exist(hud_sect, rk))				rot = pSettings->r_fvector3(hud_sect, rk);
-	else if (defaults && pSettings->line_exist("weapon_lowered", "hud_offset_rot"))	rot = pSettings->r_fvector3("weapon_lowered", "hud_offset_rot");
-}
-
-// --- writing a tuned pose back -------------------------------------------------------------------------
-// The section is looked up among the loose config files (*.ltx under $game_config$): one whose line starts
-// with "[<section>]". Packed configs cannot be written, and are skipped by the fopen. In it, the section's
-// lowered_hud_offset_pos / _rot lines are replaced, or added after its last line. Line endings are kept;
-// the file is backed up once (.bak_lowerpose) before the first write.
-static bool read_file_bytes(LPCSTR fn, xr_string& out)
-{
-	FILE* f = fopen(fn, "rb");
-	if (!f)		return false;
-	fseek(f, 0, SEEK_END);	long n = ftell(f);	fseek(f, 0, SEEK_SET);
-	out.resize(n > 0 ? n : 0);
-	if (n > 0 && fread(&out[0], 1, n, f) != (size_t)n)	{ fclose(f); return false; }
-	fclose(f);
-	return true;
-}
-
-static size_t find_section_header(const xr_string& text, LPCSTR sect)
-{
-	string256 hdr;	xr_sprintf(hdr, "[%s]", sect);
-	const size_t hl = xr_strlen(hdr);
-	size_t at = 0;
-	while ((at = text.find(hdr, at)) != xr_string::npos)
+	s_lower_anim.valid		= false;
+	s_raise_anim.valid		= false;
+	if (pSettings->line_exist("weapon_lowered", "anim_down"))
+		load_anim_omf		(s_lower_anim, pSettings->r_string("weapon_lowered", "anim_down"), false);
+	if (!s_lower_anim.valid)
 	{
-		if (at == 0 || text[at - 1] == '\n')	return at;
-		at += hl;
+		Msg("! [weapon_lowered] no way-down animation ([weapon_lowered] anim_down): the weapon does not move on the hud when lowered");
+		return;										// the way up only goes with a way down
 	}
-	return xr_string::npos;
-}
-
-static bool find_section_file(LPCSTR sect, xr_string& path)
-{
-	FS_FileSet	fset;
-	FS.file_list(fset, "$game_config$", FS_ListFiles, "*.ltx");
-	for (FS_FileSetIt it = fset.begin(); it != fset.end(); ++it)
-	{
-		string_path fn;
-		FS.update_path(fn, "$game_config$", it->name.c_str());
-		xr_string text;
-		if (!read_file_bytes(fn, text))								continue;
-		if (find_section_header(text, sect) == xr_string::npos)		continue;
-		path = fn;
-		return true;
-	}
-	return false;
-}
-
-static void set_section_line(xr_string& text, size_t hdr_at, LPCSTR key, const Fvector& v, LPCSTR nl)
-{
-	string256 line;	xr_sprintf(line, "%s\t= %.4f, %.4f, %.4f", key, v.x, v.y, v.z);
-	// section body: from the line after the header up to the next line that opens a section
-	size_t body = text.find('\n', hdr_at);
-	body = (body == xr_string::npos) ? text.size() : body + 1;
-	size_t end = body;
-	while (end < text.size())
-	{
-		if (text[end] == '[')	break;
-		size_t nx = text.find('\n', end);
-		end = (nx == xr_string::npos) ? text.size() : nx + 1;
-	}
-	// an existing line for the key: replace it whole
-	const size_t kl = xr_strlen(key);
-	for (size_t ls = body; ls < end; )
-	{
-		size_t le = text.find('\n', ls);	le = (le == xr_string::npos) ? text.size() : le;
-		size_t p = ls;
-		while (p < le && (text[p] == ' ' || text[p] == '\t'))	++p;
-		if (le - p > kl && 0 == strncmp(text.c_str() + p, key, kl) &&
-			(text[p + kl] == ' ' || text[p + kl] == '\t' || text[p + kl] == '='))
-		{
-			size_t cut = (le > ls && text[le - 1] == '\r') ? le - 1 : le;
-			text.replace(ls, cut - ls, line);
-			return;
-		}
-		ls = (le < text.size()) ? le + 1 : le;
-	}
-	// none: after the section's last line that is not blank
-	size_t ins = end;
-	while (ins > body)
-	{
-		size_t prev = text.rfind('\n', ins - 2 < ins ? ins - 2 : 0);
-		size_t ls = (prev == xr_string::npos || prev < body) ? body : prev + 1;
-		bool blank = true;
-		for (size_t q = ls; q < ins; ++q)	if (!isspace((unsigned char)text[q]))	{ blank = false; break; }
-		if (!blank)	break;
-		ins = ls;
-	}
-	if (ins > 0 && text[ins - 1] != '\n')	{ text.insert(ins, nl); ins += xr_strlen(nl); }
-	xr_string add = line;	add += nl;
-	text.insert(ins, add);
-}
-
-static void save_lowered_pose(const shared_str& sect, SLoweredPoseTuned& t)
-{
-	if (t.file.empty() && !find_section_file(*sect, t.file))
-	{
-		Msg("! [hud_adj] lowered pose of [%s]: its section is in no loose config file -- not saved", *sect);
-		t.dirty = false;
-		return;
-	}
-	xr_string text;
-	if (!read_file_bytes(t.file.c_str(), text))	{ Msg("! [hud_adj] cannot read %s", t.file.c_str()); return; }
-	const size_t hdr = find_section_header(text, *sect);
-	if (hdr == xr_string::npos)		{ Msg("! [hud_adj] [%s] is no longer in %s", *sect, t.file.c_str()); t.file.clear(); return; }
-
-	string_path bak;	xr_sprintf(bak, "%s.bak_lowerpose", t.file.c_str());
-	FILE* have = fopen(bak, "rb");			// not FS.exist: it only knows the files found at start
-	if (have)	fclose(have);
-	else
-	{
-		FILE* b = fopen(bak, "wb");
-		if (b)	{ fwrite(text.data(), 1, text.size(), b); fclose(b); }
-	}
-	LPCSTR nl = (text.find("\r\n") != xr_string::npos) ? "\r\n" : "\n";
-	set_section_line(text, hdr, "lowered_hud_offset_pos", t.pos, nl);
-	set_section_line(text, find_section_header(text, *sect), "lowered_hud_offset_rot", t.rot, nl);
-	FILE* f = fopen(t.file.c_str(), "wb");
-	if (!f)		{ Msg("! [hud_adj] cannot write %s", t.file.c_str()); return; }
-	fwrite(text.data(), 1, text.size(), f);
-	fclose(f);
-	t.dirty = false;
-	Msg("~ [hud_adj] [%s] lowered_hud_offset_pos = %.4f, %.4f, %.4f / _rot = %.4f, %.4f, %.4f -> %s", *sect,
-		t.pos.x, t.pos.y, t.pos.z, t.rot.x, t.rot.y, t.rot.z, t.file.c_str());
-}
-
-void CWeapon::TuneLoweredPose(const Fvector& dpos, const Fvector& drot)
-{
-	const shared_str& sect = HudSection();
-	if (!sect.size())	return;
-	xr_map<shared_str, SLoweredPoseTuned>::iterator it = s_lowered_tuned.find(sect);
-	if (it == s_lowered_tuned.end())
-	{
-		// start from the pose drawn now, so switching the tuner on moves nothing
-		SLoweredPoseTuned t;
-		attachable_hud_item* hi = HudItemData();
-		const bool wide = hi && hi->m_measures.m_prop_flags.test(hud_item_measures::e_16x9_mode_now);
-		read_lowered_pose(*sect, wide, t.pos, t.rot);
-		t.dirty = false;	t.changed = 0;
-		it = s_lowered_tuned.insert(std::make_pair(sect, t)).first;
-	}
-	it->second.pos.add(dpos);
-	it->second.rot.add(drot);
-	it->second.dirty	= true;
-	it->second.changed	= Device.dwTimeContinual;
+	if (pSettings->line_exist("weapon_lowered", "anim_up"))
+		load_anim_omf		(s_raise_anim, pSettings->r_string("weapon_lowered", "anim_up"), true);
 }
 
 void CWeapon::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 {
-	// a tuned pose goes to the config half a second after its last step
-	for (xr_map<shared_str, SLoweredPoseTuned>::iterator it = s_lowered_tuned.begin(); it != s_lowered_tuned.end(); ++it)
-		if (it->second.dirty && Device.dwTimeContinual - it->second.changed > 500)
-			save_lowered_pose(it->first, it->second);
-
 	const bool down	= pActor->IsWeaponLowered() && pActor->inventory().ActiveItem() == this &&
 					  !(pActor->MovingState() & mcSprint);
 	load_lower_anim();
 	const SLowerAnim& A	= s_lower_anim;
 	const SLowerAnim& U	= s_raise_anim;
 	// the weapon-down factor runs at the length of the animation of the way it is going
-	const float t	= !A.valid	? READ_IF_EXISTS(pSettings, r_float, "weapon_lowered", "time", 0.35f)
-					: (!down && U.valid) ? U.length() : A.length();
+	// (no animation: the weapon stays where it is on the hud, the mode itself still works -- a short ramp
+	// for what goes by the factor: the crosshair, the blocked actions)
+	const float t	= !A.valid ? 0.3f : (!down && U.valid) ? U.length() : A.length();
 	if (down != m_bLowerGoingDown)
 	{
 		// a change of direction: the other animation does not start where this one stands (a change of mind
@@ -5379,21 +5185,6 @@ void CWeapon::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 		else
 			trans.mulB_43	(d);
 	}
-	const bool wide = hi->m_measures.m_prop_flags.test(hud_item_measures::e_16x9_mode_now);
-	Fvector pos, rot;
-	read_lowered_pose(*hi->m_sect_name, wide, pos, rot);
-	// [weapon_lowered] bezier = x1, y1, x2, y2 shapes the move (both ways -- coming back up runs the same
-	// curve in reverse, so a change of mind halfway carries on smoothly from where the weapon is)
-	Fvector4 bz;	bz.set(0.4f, 0.f, 0.2f, 1.f);
-	if (pSettings->line_exist("weapon_lowered", "bezier"))	bz = pSettings->r_fvector4("weapon_lowered", "bezier");
-	const float k = cubic_bezier_ease(m_fLoweredFactor, bz.x, bz.y, bz.z, bz.w);
-	load_lower_curves();
-	float kc[6];
-	for (int c = 0; c < 6; ++c)		// with the animation the per-channel curves are its business, not the pose's
-		kc[c] = (!A.valid && s_lower_curves[c].valid) ? eval_lower_curve(s_lower_curves[c], m_fLoweredFactor) : k;
-	pos.x *= kc[0];	pos.y *= kc[1];	pos.z *= kc[2];
-	rot.x *= kc[3];	rot.y *= kc[4];	rot.z *= kc[5];
-	apply_hud_offset(trans, pos, rot);
 }
 
 void CWeapon::UpdateHudAdditonal		(Fmatrix& trans)

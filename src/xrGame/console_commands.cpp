@@ -2100,37 +2100,6 @@ public:
 	virtual void Info(TInfo& I)	{ xr_strcpy(I, "show a tutorial from game_tutorials.xml, e.g. squad_order_hint"); }
 };
 
-extern bool		g_wpn_lowered_dbg;
-extern Fvector	g_wpn_lowered_dbg_pos;
-extern Fvector	g_wpn_lowered_dbg_rot;
-
-// dbg_weapon_lowered_pose <px py pz rx ry rz> | off: try a weapon-down HUD pose live (Weapon.cpp
-// read_lowered_pose) instead of the config's; prints what it set so it can be copied into the config.
-class CCC_DbgWeaponLoweredPose : public IConsole_Command
-{
-public:
-	CCC_DbgWeaponLoweredPose(LPCSTR N) : IConsole_Command(N) { bEmptyArgsHandled = true; }
-	virtual void Save(IWriter*)	{}
-	virtual void Execute(LPCSTR args)
-	{
-		if (!args || !args[0] || 0 == _stricmp(args, "off"))
-		{
-			g_wpn_lowered_dbg = false;
-			Msg("~ dbg_weapon_lowered_pose: off, the config pose is used");
-			return;
-		}
-		Fvector p, r;
-		if (6 != sscanf(args, "%f %f %f %f %f %f", &p.x, &p.y, &p.z, &r.x, &r.y, &r.z))
-		{
-			Msg("~ dbg_weapon_lowered_pose: px py pz rx ry rz (metres, radians) or off");
-			return;
-		}
-		g_wpn_lowered_dbg_pos = p;	g_wpn_lowered_dbg_rot = r;	g_wpn_lowered_dbg = true;
-		Msg("~ dbg_weapon_lowered_pose: hud_offset_pos = %.3f, %.3f, %.3f / hud_offset_rot = %.3f, %.3f, %.3f", p.x, p.y, p.z, r.x, r.y, r.z);
-	}
-	virtual void Info(TInfo& I)	{ xr_strcpy(I, "px py pz rx ry rz | off -- weapon-down HUD pose, live"); }
-};
-
 class CCC_LookAt : public IConsole_Command
 {
 public:
@@ -2174,7 +2143,6 @@ void CCC_RegisterCommands()
 
 	CMD1(CCC_LookAt,	"look_at");
 	CMD1(CCC_DbgTutorial,	"dbg_tutorial");
-	CMD1(CCC_DbgWeaponLoweredPose,	"dbg_weapon_lowered_pose");
 
 	CMD1(CCC_SetWeather, "set_weather");
 	CMD1(CCC_ReceiveInfo, "g_info");
