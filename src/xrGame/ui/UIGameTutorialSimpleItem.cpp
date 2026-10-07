@@ -2,6 +2,7 @@
 #include "UIGameTutorial.h"
 #include "UIWindow.h"
 #include "UIStatic.h"
+#include "UIFrameWindow.h"
 #include "UIXmlInit.h"
 #include "object_broker.h"
 #include "../../xrEngine/xr_input.h"
@@ -101,6 +102,35 @@ void CUISequenceSimpleItem::Load(CUIXml* xml, int idx)
 	m_UIWindow->SetAutoDelete		(false);
 	XML_NODE* _lsr					= xml->GetLocalRoot();
 	CUIXmlInit xml_init;
+
+	// <frame> nodes in main_wnd: a 9-slice frame (CUIFrameWindow -- the texture is a base name, its pieces
+	// are <name>_lt/_t/_rt/_l/_back/_r/_lb/_b/_rb, e.g. ui_icons_PDA_tooltips, the PDA map tooltip box).
+	// Shown for the whole item, under the statics: attached before InitWindow creates those. x/y are the
+	// top-left corner (no alignment); on a wide screen the frame narrows like the statics below (/1.2),
+	// around its own centre, so a box centred on x=512 stays centred.
+	{
+		XML_NODE* _fr				= xml->GetLocalRoot();
+		xml->SetLocalRoot			(xml->NavigateToNode("main_wnd",0));
+		int fcnt					= xml->GetNodesNum(xml->GetLocalRoot(), "frame");
+		for(int i=0;i<fcnt;++i)
+		{
+			CUIFrameWindow* pFrame	= xr_new<CUIFrameWindow>();
+			pFrame->SetAutoDelete	(true);
+			xml_init.InitFrameWindow(*xml, "frame", i, pFrame);
+			if(UI()->is_widescreen())
+			{
+				Fvector2 pos		= pFrame->GetWndPos();
+				Fvector2 size		= pFrame->GetWndSize();
+				float w				= size.x/1.2f;
+				pos.x				+= (size.x - w)*0.5f;
+				size.x				= w;
+				pFrame->InitFrameWindow(pos, size);
+			}
+			m_UIWindow->AttachChild	(pFrame);
+		}
+		xml->SetLocalRoot			(_fr);
+	}
+
 	xml_init.InitWindow				(*xml, "main_wnd", 0,	m_UIWindow);
 //.	xml_init.InitAutoStaticGroup	(*xml, "main_wnd",		m_UIWindow);
 	xml->SetLocalRoot				(_lsr);
