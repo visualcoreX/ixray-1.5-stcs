@@ -302,10 +302,9 @@ public:
 	// eased 0..1 blend toward the alter pose (cubic ease-in-out, i.e. cubic-bezier(.42,0,.58,1)); the
 	// aim offset and hud fov interpolate with it instead of snapping.
 	float			AlterZoomBlend		() const;
-	// Weapon down (CActor::ToggleWeaponLowered): 0 = up, 1 = all the way down, eased in UpdateLoweredPose.
+	// Weapon down (CActor::ToggleWeaponLowered): 0 = up, 1 = all the way down (the animations' progress), UpdateLoweredPose.
 	float			LoweredFactor		() const	{ return m_fLoweredFactor; }
 	void			UpdateLoweredPose	(Fmatrix& trans, CActor* pActor);
-	void			TuneLoweredPose		(const Fvector& dpos, const Fvector& drot);	// hud tuner, weapon down
 	float			m_fLoweredFactor;
 	// which way the weapon-down move last went, the delta it put on the hud last frame, and the pose a change
 	// of direction fades over from (weight 1 -> 0 over [weapon_lowered] anim_blend)

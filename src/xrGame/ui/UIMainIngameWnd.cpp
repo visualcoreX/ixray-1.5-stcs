@@ -241,7 +241,9 @@ float UIStaticDiskIO_start_time = 0.0f;
 void CUIMainIngameWnd::Draw()
 {
 	CActor* m_pActor		= smart_cast<CActor*>(Level().CurrentViewEntity());
-	test_draw				();		// the hud tuner's overlay (Shift+Numpad), Release too
+#ifdef DEBUG
+	test_draw				();
+#endif
 	// show IO icon
 	bool IOActive	= (FS.dwOpenCounter>0);
 	if	(IOActive)	UIStaticDiskIO_start_time = Device.fTimeGlobal;
@@ -454,7 +456,9 @@ void CUIMainIngameWnd::Update()
 
 bool CUIMainIngameWnd::OnKeyboardPress(int dik)
 {
-	test_key(dik);					// the hud tuner's mode keys (Shift+Numpad), Release too
+#ifdef DEBUG
+	test_key(dik);
+#endif // #ifdef DEBUG
 /*
 	if(Level().IR_GetKeyState(DIK_LSHIFT) || Level().IR_GetKeyState(DIK_RSHIFT))
 	{

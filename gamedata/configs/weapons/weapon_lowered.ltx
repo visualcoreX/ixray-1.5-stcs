@@ -1,32 +1,11 @@
-#include "weapon_lowered_anim.ltx"	; the move, baked from meshes\dynamics\weapons\weapon_lowered\weapon_lowered.omf
-									; by tools\omf_to_lowered.py -- when it is there, the pose and curves below are NOT used
-									; the way up: #include "weapon_raised_anim.ltx" ([weapon_raised_anim], from weapon_raised.omf
-									; baked with --section weapon_raised_anim --ref last); without it the way down plays backwards
-									; (a weapon's own lowered_hud_offset_* still adds on top of it, eased by `bezier`)
-
 ; Weapon down (key wpn_lower, CActor::ToggleWeaponLowered / CWeapon::UpdateLoweredPose).
-; The first-person pose the weapon is carried in while it is down -- same units and order as the aim
-; offsets: hud_offset_pos in metres (x right, y up, z forward), hud_offset_rot in radians (x pitches
-; the muzzle down, y turns it -- negative = to the left, z rolls). A weapon can have its own in its hud
-; section as lowered_hud_offset_pos / lowered_hud_offset_rot (+ _16x9) -- the Shift+Numpad 1/2 hud tuner
-; writes them there when used with the weapon down. Try poses live with the console command
-; dbg_weapon_lowered_pose px py pz rx ry rz (dbg_weapon_lowered_pose off returns to this file).
+; The move on the hud is two hands-rig animations (OMF, only bip01 moving), layered additively on bip01 over
+; whatever the hud plays. Paths in meshes\, without .omf; read at game start.
 
 [weapon_lowered]
-time			= 0.6667				; 20 frames at 30 fps (0.8333 = 20 frames at 24 fps)
-hud_offset_pos	= 0.0, 0.0, 0.0
-hud_offset_rot	= 0.25, -0.45, 0.0
-anim_blend		= 0.15					; s: a change of direction mid-move (or a way up that does not start exactly
-									; where the way down ends) fades over from the current pose in this long
-
-; The move, per channel: t,v pairs, t = 0..1 over `time`, v = share of the pose's own value (below 0 or
-; above 1 swings past the start or the end). Smooth (Maya "auto"-like) between keys. Coming back up plays
-; them backwards. From the graph-editor curves drawn over 20 frames: frame / 20, value / end value.
-curve_pos_x		= 0,0,  1,1
-curve_pos_y		= 0,0,  1,1
-curve_pos_z		= 0,0,  0.5,0.8367,  1,1
-curve_rot_x		= 0,0,  0.35,-0.3077,  1,1
-curve_rot_y		= 0,0,  0.25,0.0732,  0.7,0.9146,  1,1
-curve_rot_z		= 0,0,  0.3,-0.2864,  0.7,0.8451,  1,1
-; a channel without a curve follows this one (CSS cubic-bezier x1, y1, x2, y2)
-bezier			= 0.37, 0.0, 0.63, 1.0
+anim_down		= dynamics\weapons\weapon_lowered\weapon_lowered	; frame 0 = up, last frame = down. Without it the
+																	; weapon does not move on the hud (warning in the log)
+anim_up			= dynamics\weapons\weapon_lowered\weapon_raised		; frame 0 = down, last frame = up. Without it the
+																	; way down plays backwards
+anim_blend		= 0.15			; s: a change of direction mid-move (or a way up that does not start exactly where
+								; the way down ends) fades over from the current pose in this long
