@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="st_squad_order_hint_title">
+		<text>Подсказка</text>
+	</string>
+	<string id="st_squad_order_hint">
+		<text>Когда отряд вашей группировки занимает позицию у цели и докладывает, что ждёт приказа, нажмите $$ACTION_alife_command$$ - бойцы пойдут в атаку. Так можно делать каждый раз, не дожидаясь, пока они начнут сами.</text>
+	</string>
+</string_table>

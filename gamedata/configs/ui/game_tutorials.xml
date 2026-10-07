@@ -34,6 +34,39 @@
 		</item>
 	</game_over>
 
+	<!-- shown once, the first time a friendly squad reports in position and waits for the player's
+	     order (sim_squad_generic.script); the game goes on and the keys work while it is up -->
+	<squad_order_hint>
+		<global_wnd/>
+		<item>
+			<length_sec>30</length_sec>
+			<pause_state>off</pause_state>
+			<sound/>
+			<cursor_pos/>
+			<pda_section/>
+			<grab_input>0</grab_input>
+			<main_wnd>
+				<!-- top centre, where the HUD has nothing. The box is the PDA map tooltip frame (9 pieces,
+				     ui_icons_PDA_tooltips_lt.._back); <frame> x/y are its top-left corner (box 224..800 x 32..160).
+				     Its middle is tiled with the 32x32 _back piece and a partial last tile leaves a seam line, so the
+				     middle is a whole number of tiles: 576-64 = 16 x 32 (480-64 = 13 x 32 at /1.2 on a wide screen),
+				     128-64 = 2 x 32.
+				     The statics use alignment="c", which centres BOTH ways: their x and y are centres. -->
+				<frame x="224" y="32" width="576" height="128">
+					<texture>ui_icons_PDA_tooltips</texture>
+				</frame>
+				<auto_static start_time="0" length_sec="30" x="512" y="54" width="540" height="20" alignment="c">
+					<window_name>title</window_name>
+					<text font="letterica18" r="238" g="153" b="26" a="255" align="c">st_squad_order_hint_title</text>
+				</auto_static>
+				<auto_static start_time="0" length_sec="30" x="512" y="108" width="540" height="84" alignment="c">
+					<window_name>body</window_name>
+					<text font="letterica18" r="216" g="216" b="216" a="255" align="c" complex_mode="1">st_squad_order_hint</text>
+				</auto_static>
+			</main_wnd>
+		</item>
+	</squad_order_hint>
+
 #include "ui\ui_credits.xml"
 #include "ui\ui_movies.xml"
 
