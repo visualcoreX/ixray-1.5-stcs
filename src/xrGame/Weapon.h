@@ -729,6 +729,11 @@ public:
 	//загружаемые параметры
 	Fvector					vLoadedFirePoint;
 	Fvector					vLoadedFirePoint2;
+	// how far the muzzle effects start past the fire point (see get_MuzzleFxPoint): added to the world
+	// fire_point / to the hud fire_point in its fire_bone's space. Two values, because the hud models are
+	// not to the world models' scale. Set by CWeaponMagazined::UpdateMuzzleFx.
+	Fvector					m_vMuzzleFxOffset;
+	Fvector					m_vMuzzleFxOffsetHud;
 
 private:
 	firedeps				m_current_firedeps;
@@ -750,6 +755,7 @@ public:
 
 	virtual const Fvector&	get_CurrentFirePoint	()			{ return get_LastFP();				}
 	virtual const Fvector&	get_CurrentFirePoint2	()			{ return get_LastFP2();				}
+	virtual const Fvector&	get_MuzzleFxPoint		()			{ UpdateFireDependencies(); return m_current_firedeps.vLastFXP;	}
 	virtual const Fmatrix&	get_ParticlesXFORM		()			{ UpdateFireDependencies(); return m_current_firedeps.m_FireParticlesXForm;	}
 	virtual void			ForceUpdateFireParticles();
 	virtual void			debug_draw_firedeps		();

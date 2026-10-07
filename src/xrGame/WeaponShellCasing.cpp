@@ -223,7 +223,8 @@ bool CWeapon::gwr_ShellCasingOnShot(const Fvector& owner_vel)
 		}
 	}
 
-	// from here on the weapon is on real cases: no shell particle, even when this one is too far to bother
+	// from here on the weapon is on real cases: no shell particle in third person (first person keeps it,
+	// as the smoke out of the port), even when this one is too far to bother
 	const float dist = READ_IF_EXISTS(pSettings, r_float, SC_SECT, "spawn_distance", 25.f);
 	if (Device.vCameraPosition.distance_to_sqr(Position()) > dist * dist)	return true;
 

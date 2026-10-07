@@ -145,6 +145,8 @@ protected:
 protected:
 	//������� ������������� �������
 	virtual const Fvector&	get_CurrentFirePoint()		= 0;
+	// where the muzzle flame, smoke and light start: the fire point, unless a silencer pushes them out
+	virtual const Fvector&	get_MuzzleFxPoint()			{ return get_CurrentFirePoint(); }
 	virtual const Fmatrix&	get_ParticlesXFORM()		= 0;
 	virtual void			ForceUpdateFireParticles	(){};
 	

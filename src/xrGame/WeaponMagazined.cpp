@@ -55,6 +55,8 @@ CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 	
 	m_sSndShotCurrent			= NULL;
 	m_sSilencerFlameParticles	= m_sSilencerSmokeParticles = NULL;
+	m_vMuzzleDeviceFxOffset.set	(0.f, 0.f, 0.f);
+	m_vMuzzleDeviceFxOffsetHud.set(0.f, 0.f, 0.f);
 	m_dwAimTransitionEndTm		= 0;
 	m_dwAimFireLockTm			= 0;
 	m_bAimLockAutoShoot			= false;
@@ -295,6 +297,11 @@ void CWeaponMagazined::Load	(LPCSTR section)
 
 	m_sSndShotCurrent = "sndShot";
 		
+	// the weapon's own muzzle fx offset, for a variant that shows a longer barrel than the shared
+	// fire_point was set for (an upgrade's muzzle_fx_offset replaces it -- see UpdateMuzzleFx)
+	m_vMuzzleDeviceFxOffset			= READ_IF_EXISTS(pSettings, r_fvector3, section, "muzzle_fx_offset", Fvector().set(0.f, 0.f, 0.f));
+	m_vMuzzleDeviceFxOffsetHud		= READ_IF_EXISTS(pSettings, r_fvector3, section, "muzzle_fx_offset_hud", m_vMuzzleDeviceFxOffset);
+
 	//звуки и партиклы глушителя, еслит такой есть
 	// NOTE: also load them when the silencer comes from an UPGRADE (base silencer_status may be 0 at Load,
 	// only becoming attachable after install_upgrade -- which never re-runs LoadSounds). Gate on the config
@@ -2618,7 +2625,9 @@ void CWeaponMagazined::OnShot()
 	// Shell Drop
 	Fvector vel; 
 	PHGetLinearVell				(vel);
-	if (!gwr_ShellCasingOnShot(vel))		// a real case, or the old particle
+	// a real case, or the old particle -- in first person both: the particle is the smoke out of the
+	// port the case leaves by (the hud shell_point is put there)
+	if (!gwr_ShellCasingOnShot(vel) || GetHUDmode())
 		OnShellDrop				(get_LastSP(), vel);
 	
 	// Огонь из ствола
@@ -2626,7 +2635,7 @@ void CWeaponMagazined::OnShot()
 
 	//дым из ствола
 	ForceUpdateFireParticles	();
-	StartSmokeParticles			(get_LastFP(), vel);
+	StartSmokeParticles			(get_MuzzleFxPoint(), vel);
 }
 
 
@@ -3875,10 +3884,10 @@ void CWeaponMagazined::InitAddons()
 		}
 	}
 
+	UpdateMuzzleFx();
+
 	if ( IsSilencerAttached() && SilencerAttachable() )
-	{		
-		m_sFlameParticlesCurrent	= m_sSilencerFlameParticles;
-		m_sSmokeParticlesCurrent	= m_sSilencerSmokeParticles;
+	{
 		m_sSndShotCurrent			= "sndSilencerShot";
 
 		//подсветка от выстрела
@@ -3887,8 +3896,6 @@ void CWeaponMagazined::InitAddons()
 	}
 	else
 	{
-		m_sFlameParticlesCurrent	= m_sFlameParticles;
-		m_sSmokeParticlesCurrent	= m_sSmokeParticles;
 		m_sSndShotCurrent			= "sndShot";
 
 		//подсветка от выстрела
@@ -3897,6 +3904,35 @@ void CWeaponMagazined::InitAddons()
 	}
 
 	inherited::InitAddons();
+}
+
+// The flame and smoke the next shot uses, and how far past the fire point they start: the silencer's
+// while one is on (muzzle_fx_offset in its section), otherwise the weapon's own -- which a muzzle upgrade
+// (brake, flash hider, sawn-off barrel) may have replaced, along with its own muzzle_fx_offset.
+// muzzle_fx_offset_hud is the same for the hud model, which is to a scale of its own; without it the
+// world value is used for both.
+void CWeaponMagazined::UpdateMuzzleFx()
+{
+	if ( IsSilencerAttached() && SilencerAttachable() )
+	{
+		// The same silencer sticks out a different length on every gun it fits (it is a part of each
+		// weapon model), so the weapon section may override it: silencer_muzzle_fx_offset(_hud).
+		LPCSTR sect					= m_sSilencerName.c_str();
+		LPCSTR wsect				= cNameSect().c_str();
+		m_sFlameParticlesCurrent	= m_sSilencerFlameParticles;
+		m_sSmokeParticlesCurrent	= m_sSilencerSmokeParticles;
+		m_vMuzzleFxOffset			= READ_IF_EXISTS(pSettings, r_fvector3, sect, "muzzle_fx_offset", Fvector().set(0.f, 0.f, 0.f));
+		m_vMuzzleFxOffset			= READ_IF_EXISTS(pSettings, r_fvector3, wsect, "silencer_muzzle_fx_offset", m_vMuzzleFxOffset);
+		m_vMuzzleFxOffsetHud		= READ_IF_EXISTS(pSettings, r_fvector3, sect, "muzzle_fx_offset_hud", m_vMuzzleFxOffset);
+		m_vMuzzleFxOffsetHud		= READ_IF_EXISTS(pSettings, r_fvector3, wsect, "silencer_muzzle_fx_offset_hud", m_vMuzzleFxOffsetHud);
+	}
+	else
+	{
+		m_sFlameParticlesCurrent	= m_sFlameParticles;
+		m_sSmokeParticlesCurrent	= m_sSmokeParticles;
+		m_vMuzzleFxOffset			= m_vMuzzleDeviceFxOffset;
+		m_vMuzzleFxOffsetHud		= m_vMuzzleDeviceFxOffsetHud;
+	}
 }
 
 void CWeaponMagazined::LoadSilencerKoeffs()
@@ -4775,6 +4811,21 @@ bool CWeaponMagazined::install_upgrade_impl( LPCSTR section, bool test )
 	//snd_shoot2     = weapons\ak74u_shot_2 ??
 	//snd_shoot3     = weapons\ak74u_shot_3 ??
 
+	// a muzzle device upgrade (brake, flash hider) brings its own flame and smoke, and can move them out
+	// to its end like a silencer does -- all three only show while no silencer is on
+	result2 = process_if_exists_set( section, "flame_particles", &CInifile::r_string, str, test );
+	if ( result2 && !test )	m_sFlameParticles = str;
+	result |= result2;
+
+	result2 = process_if_exists_set( section, "smoke_particles", &CInifile::r_string, str, test );
+	if ( result2 && !test )	m_sSmokeParticles = str;
+	result |= result2;
+
+	result2 = process_if_exists_set( section, "muzzle_fx_offset", &CInifile::r_fvector3, m_vMuzzleDeviceFxOffset, test );
+	if ( result2 && !test )	m_vMuzzleDeviceFxOffsetHud = m_vMuzzleDeviceFxOffset;	// unless _hud below says otherwise
+	result |= result2;
+	result |= process_if_exists_set( section, "muzzle_fx_offset_hud", &CInifile::r_fvector3, m_vMuzzleDeviceFxOffsetHud, test );
+
 	if ( m_eSilencerStatus == ALife::eAddonAttachable )
 	{
 		result |= process_if_exists_set( section, "silencer_flame_particles", &CInifile::r_string, m_sSilencerFlameParticles, test );
@@ -4806,6 +4857,10 @@ bool CWeaponMagazined::install_upgrade_impl( LPCSTR section, bool test )
 			result |= process_if_exists( section, "scope_zoom_factor", &CInifile::r_float, m_zoom_params.m_fIronSightZoomFactor, test );
 		}
 	}
+
+	// the base class's install_upgrade_addon already ran InitAddons, before the particles above were
+	// read -- so an upgrade installed at the mechanic showed its flame/smoke only after a save-load
+	if ( !test )	UpdateMuzzleFx();
 
 	return result;
 }

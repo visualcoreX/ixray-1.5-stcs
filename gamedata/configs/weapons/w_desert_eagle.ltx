@@ -141,7 +141,7 @@ smoke_particles		   	= ghost_particles\weapons\smoke_deagle
 
 shell_point		 				= 0.0, 0.133, 0.047
 shell_dir		 				= 0.0, 0.0, 0.4
-;shell_particles	 			= weapons\generic_shells
+shell_particles	 			= ghost_particles\weapons\shell_eject_up_large_01		; shell ejection smoke, 1st person
 
 ;-------------------------------------------------------------------------------
 ;startup_ammo           	= 90
@@ -202,6 +202,9 @@ snd_shoot_dist1            = weapons\shared\gen_pistol_shoot_dist_02, -1.1
 snd_shoot_dist2            = weapons\shared\gen_pistol_shoot_dist_03, -1.1
 snd_shoot_dist3            = weapons\shared\gen_pistol_shoot_dist_04, -1.1
 
+volume_snd_shoot           = 150
+volume_snd_silncer_shot    = 150
+
 snd_shoot_blend_dist_start = 30
 snd_shoot_blend_dist_end   = 60
 
@@ -209,34 +212,24 @@ snd_silncer_shot          = weapons\p99\p99_shoot_sil_3p_01, -1.1
 snd_silncer_shot1         = weapons\p99\p99_shoot_sil_3p_02, -1.1
 snd_silncer_shot2         = weapons\p99\p99_shoot_sil_3p_03, -1.1
 snd_silncer_shot3         = weapons\p99\p99_shoot_sil_3p_04, -1.1
-snd_silncer_shot4         = weapons\p99\p99_shoot_sil_3p_05, -1.1
-snd_silncer_shot5         = weapons\p99\p99_shoot_sil_3p_06, -1.1
 
 ;indoor sounds
 snd_shoot_indoor_1p               = weapons\shared\gen_tail_indoor_large_1p_01
 snd_shoot_indoor_1p1              = weapons\shared\gen_tail_indoor_large_1p_02
 snd_shoot_indoor_1p2              = weapons\shared\gen_tail_indoor_large_1p_03
 snd_shoot_indoor_1p3              = weapons\shared\gen_tail_indoor_large_1p_04
-snd_shoot_indoor_1p4              = weapons\shared\gen_tail_indoor_large_1p_05
-snd_shoot_indoor_1p5              = weapons\shared\gen_tail_indoor_large_1p_06
 snd_shoot_indoor                  = weapons\shared\gen_tail_indoor_large_3p_01
 snd_shoot_indoor1                 = weapons\shared\gen_tail_indoor_large_3p_02
 snd_shoot_indoor2                 = weapons\shared\gen_tail_indoor_large_3p_03
 snd_shoot_indoor3                 = weapons\shared\gen_tail_indoor_large_3p_04
-snd_shoot_indoor4                 = weapons\shared\gen_tail_indoor_large_3p_05
-snd_shoot_indoor5                 = weapons\shared\gen_tail_indoor_large_3p_06
 snd_silncer_shot_indoor_1p        = weapons\shared\gen_tail_indoor_suppressed_1p_01
 snd_silncer_shot_indoor_1p1       = weapons\shared\gen_tail_indoor_suppressed_1p_02
 snd_silncer_shot_indoor_1p2       = weapons\shared\gen_tail_indoor_suppressed_1p_03
 snd_silncer_shot_indoor_1p3       = weapons\shared\gen_tail_indoor_suppressed_1p_04
-snd_silncer_shot_indoor_1p4       = weapons\shared\gen_tail_indoor_suppressed_1p_05
-snd_silncer_shot_indoor_1p5       = weapons\shared\gen_tail_indoor_suppressed_1p_06
 snd_silncer_shot_indoor           = weapons\shared\gen_tail_indoor_suppressed_3p_01
 snd_silncer_shot_indoor1          = weapons\shared\gen_tail_indoor_suppressed_3p_02
 snd_silncer_shot_indoor2          = weapons\shared\gen_tail_indoor_suppressed_3p_03
 snd_silncer_shot_indoor3          = weapons\shared\gen_tail_indoor_suppressed_3p_04
-snd_silncer_shot_indoor4          = weapons\shared\gen_tail_indoor_suppressed_3p_05
-snd_silncer_shot_indoor5          = weapons\shared\gen_tail_indoor_suppressed_3p_06
 volume_snd_shoot_indoor           = 80
 volume_snd_shoot_indoor_1p        = 100
 volume_snd_silncer_shot_indoor    = 40
@@ -330,7 +323,7 @@ item_orientation				= 0.0,0.0,0.0
 item_visual             	= dynamics\weapons\wpn_desert_eagle\wpn_desert_eagle_hud.ogf
 fire_mode_bone             = pred
 attach_place_idx				= 0
-shell_point						= 0.021,0.057,0.456
+shell_point						= 0.001,0.137,0.224		; the port the hud shell leaves by in the shot anims (1st-person shell particle)
 shell_bone              	= wpn_body
 fire_point					= -0.010,0.13,0.37
 fire_bone               	= wpn_body

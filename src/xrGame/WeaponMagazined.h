@@ -23,6 +23,10 @@ protected:
 	//дополнительная информация о глушителе
 	LPCSTR			m_sSilencerFlameParticles;
 	LPCSTR			m_sSilencerSmokeParticles;
+	// muzzle_fx_offset(_hud) of an installed muzzle upgrade (brake, flash hider, sawn-off barrel);
+	// used while no silencer is on
+	Fvector			m_vMuzzleDeviceFxOffset;
+	Fvector			m_vMuzzleDeviceFxOffsetHud;
 
 	ESoundTypes		m_eSoundShow;
 	ESoundTypes		m_eSoundHide;
@@ -187,6 +191,7 @@ public:
 
 	virtual void	Load			(LPCSTR section);
 			void	LoadSilencerKoeffs();
+			void	UpdateMuzzleFx	();
 	virtual CWeaponMagazined*cast_weapon_magazined	()		 {return this;}
 
 	virtual void	SetDefaults		();
