@@ -1,6 +1,8 @@
 ; Weapon down (key wpn_lower, CActor::ToggleWeaponLowered / CWeapon::UpdateLoweredPose).
 ; The move on the hud is two hands-rig animations (OMF, only bip01 moving), layered additively on bip01 over
 ; whatever the hud plays. Paths in meshes\, without .omf; read at game start.
+; A weapon can have its own pair in its hud section: lowered_anim_down / lowered_anim_up (same format).
+; Each falls back to the default below; an own way down without an own way up plays backwards.
 
 [weapon_lowered]
 anim_down		= dynamics\weapons\weapon_lowered\weapon_lowered	; frame 0 = up, last frame = down. Without it the

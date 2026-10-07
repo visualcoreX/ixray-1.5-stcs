@@ -4975,6 +4975,7 @@ static void apply_hud_offset(Fmatrix& trans, const Fvector& offs, const Fvector&
 // turns into a bone matrix with mk_xform -- frames slerped / lerped, 30 per second (the OMF sample rate).
 //   anim_down	going down: frame 0 = up, last frame = down.
 //   anim_up		coming back up: frame 0 = down, last frame = up. Without it the way down plays backwards.
+// A weapon can have its own in its hud section as lowered_anim_down / lowered_anim_up (lower_anims).
 // Without the way down the weapon does not move on the hud (a warning in the log); the mode itself still works.
 struct SLowerAnim
 {
@@ -4995,8 +4996,7 @@ struct SLowerAnim
 		p.lerp	(T[i0], T[i0 + 1], a);
 	}
 };
-static SLowerAnim	s_lower_anim, s_raise_anim;
-static bool			s_lower_anim_loaded = false;
+static const SLowerAnim	s_no_anim = { 0.f, xr_vector<Fvector>(), xr_vector<Fquaternion>(), false };
 
 // quaternions as (x, y, z, w) with the Hamilton product -- the OMF key's own layout; kept apart from
 // Fquaternion so the delta is exactly what the key holds, converted only at the end
@@ -5102,30 +5102,75 @@ static void load_anim_omf(SLowerAnim& A, LPCSTR name, bool ref_last)
 	FS.r_close	(F);
 }
 
-static void load_lower_anim()
+// Every OMF once (keyed by path and by which frame is the weapon-up pose); 0 when missing or unusable.
+static xr_map<xr_string, SLowerAnim>	s_anim_files;
+
+static const SLowerAnim* get_anim(LPCSTR name, bool ref_last)
 {
-	if (s_lower_anim_loaded)	return;
-	s_lower_anim_loaded		= true;
-	s_lower_anim.valid		= false;
-	s_raise_anim.valid		= false;
-	if (pSettings->line_exist("weapon_lowered", "anim_down"))
-		load_anim_omf		(s_lower_anim, pSettings->r_string("weapon_lowered", "anim_down"), false);
-	if (!s_lower_anim.valid)
+	xr_string key	= name;
+	key				+= ref_last ? "|up" : "|down";
+	xr_map<xr_string, SLowerAnim>::iterator it = s_anim_files.find(key);
+	if (it == s_anim_files.end())
 	{
-		Msg("! [weapon_lowered] no way-down animation ([weapon_lowered] anim_down): the weapon does not move on the hud when lowered");
-		return;										// the way up only goes with a way down
+		it = s_anim_files.insert(std::make_pair(key, s_no_anim)).first;
+		load_anim_omf(it->second, name, ref_last);
+	}
+	return it->second.valid ? &it->second : 0;
+}
+
+// The pair a weapon plays, per hud section: its own lowered_anim_down / lowered_anim_up there, each falling
+// back to the [weapon_lowered] anim_down / anim_up default. An own way down without an own way up plays
+// backwards (the default way up would start from another pose); a file that is not there falls back to
+// the default (the log says which).
+struct SLowerPair
+{
+	const SLowerAnim*	down;
+	const SLowerAnim*	up;
+};
+static xr_map<shared_str, SLowerPair>	s_lower_by_hud;
+
+static const SLowerPair& default_lower_anims()
+{
+	static bool			loaded = false;
+	static SLowerPair	P = { 0, 0 };
+	if (loaded)			return P;
+	loaded				= true;
+	if (pSettings->line_exist("weapon_lowered", "anim_down"))
+		P.down			= get_anim(pSettings->r_string("weapon_lowered", "anim_down"), false);
+	if (!P.down)
+	{
+		Msg("! [weapon_lowered] no way-down animation ([weapon_lowered] anim_down): a weapon without its own does not move on the hud when lowered");
+		return P;										// the way up only goes with a way down
 	}
 	if (pSettings->line_exist("weapon_lowered", "anim_up"))
-		load_anim_omf		(s_raise_anim, pSettings->r_string("weapon_lowered", "anim_up"), true);
+		P.up			= get_anim(pSettings->r_string("weapon_lowered", "anim_up"), true);
+	return P;
+}
+
+static const SLowerPair& lower_anims(const shared_str& hud_sect)
+{
+	xr_map<shared_str, SLowerPair>::iterator it = s_lower_by_hud.find(hud_sect);
+	if (it != s_lower_by_hud.end())	return it->second;
+	SLowerPair P	= default_lower_anims();
+	if (hud_sect.size())
+	{
+		const SLowerAnim* own_down	= pSettings->line_exist(hud_sect, "lowered_anim_down") ?
+										get_anim(pSettings->r_string(hud_sect, "lowered_anim_down"), false) : 0;
+		const SLowerAnim* own_up	= pSettings->line_exist(hud_sect, "lowered_anim_up") ?
+										get_anim(pSettings->r_string(hud_sect, "lowered_anim_up"), true) : 0;
+		if (own_down)			{ P.down = own_down; P.up = own_up; }
+		else if (own_up && P.down)	P.up = own_up;
+	}
+	return s_lower_by_hud.insert(std::make_pair(hud_sect, P)).first->second;
 }
 
 void CWeapon::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 {
 	const bool down	= pActor->IsWeaponLowered() && pActor->inventory().ActiveItem() == this &&
 					  !(pActor->MovingState() & mcSprint);
-	load_lower_anim();
-	const SLowerAnim& A	= s_lower_anim;
-	const SLowerAnim& U	= s_raise_anim;
+	const SLowerPair&	P	= lower_anims(HudSection());
+	const SLowerAnim&	A	= P.down ? *P.down : s_no_anim;
+	const SLowerAnim&	U	= P.up ? *P.up : s_no_anim;
 	// the weapon-down factor runs at the length of the animation of the way it is going
 	// (no animation: the weapon stays where it is on the hud, the mode itself still works -- a short ramp
 	// for what goes by the factor: the crosshair, the blocked actions)
