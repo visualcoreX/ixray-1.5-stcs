@@ -523,6 +523,12 @@ hands_orientation			= 0.0,0.0,0.0
 hands_position_16x9			= 0.02,-0.02,0.005
 hands_orientation_16x9			= 0.0,0.0,0.0
 
+; weapon down (key wpn_lower): this weapon's own animations, meshes\ paths without .omf (weapons\weapon_lowered.ltx).
+; Example -- these are the default files; put this weapon's own here. No line = the default pair.
+lowered_anim_down			= dynamics\weapons\weapon_lowered\weapon_lowered	; frame 0 = up, last frame = down
+lowered_anim_up				= dynamics\weapons\weapon_lowered\weapon_raised		; frame 0 = down, last frame = up;
+																			; no file = lowered_anim_down backwards
+
 item_position				= 0.0,0.0,0.0
 item_orientation			= 0.0,0.0,0.0
 
