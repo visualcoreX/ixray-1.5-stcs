@@ -3409,6 +3409,30 @@ bool CWeapon::IsCollimatorScope() const
 	return READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "collimator", FALSE);
 }
 
+// A real red dot's glass is coated to reflect the emitter's colour back at the eye, so the world seen
+// through it takes the complementary cast. Not tied to the aim or the GL ladder: the glass is there
+// whenever the optic is, and the reticle is a separate model that draws over it untinted.
+Fvector CWeapon::CollimatorTint() const
+{
+	Fvector tint;
+	tint.set(128.f, 128.f, 128.f);
+	if (!IsScopeAttached())	return tint;
+
+	shared_str sc	= GetCurrentScopeSection();
+	shared_str item	= GetAttachedScopeName();
+	if (sc.size() && pSettings->section_exist(*sc) && pSettings->line_exist(*sc, "collimator_tint"))
+		tint = pSettings->r_fvector3(*sc, "collimator_tint");
+	else if (item.size() && pSettings->section_exist(*item) && pSettings->line_exist(*item, "collimator_tint"))
+		tint = pSettings->r_fvector3(*item, "collimator_tint");
+	else if (pSettings->line_exist(cNameSect(), "collimator_tint"))
+		tint = pSettings->r_fvector3(cNameSect(), "collimator_tint");
+
+	clamp(tint.x, 0.f, 255.f);
+	clamp(tint.y, 0.f, 255.f);
+	clamp(tint.z, 0.f, 255.f);
+	return tint;
+}
+
 // GS GetLensFOV: the FOV (degrees) to render the world at for the scope lens frame -- the base world FOV
 // narrowed by the scope magnification (scope_lens_factor). fov_lens = 2*atan(tan(base/2)/factor). Read the
 // factor from the attached scope's addon section first, else the weapon section (default 2.0). 0 = disabled.

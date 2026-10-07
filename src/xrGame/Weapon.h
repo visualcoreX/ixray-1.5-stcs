@@ -178,6 +178,9 @@ public:
 	// it must neither hide the weapon behind a 2D scope texture nor spin up the PiP lens -- and being 1x it
 	// must not zoom the world either. Keeps the weapon and the HUD visible, aim FOV from scope_hud_fov_aim.
 	bool IsCollimatorScope() const;
+	// `collimator_tint = r,g,b` (0..255, 128 = clear glass): the coating on the attached optic's glass.
+	// Read from the scope section, then its addon item, then the weapon; (128,128,128) when absent.
+	Fvector CollimatorTint() const;
 	float GetLensFOV() const;	// 3D PiP double-render: magnified world FOV (deg) for the lens frame; 0 = disabled
 	bool UseScopeAnims() const;	// Gunslinger use_scope_anims: play the "_scope" anim variants while a scope is attached
 	float ZoomMouseSenseKoef() const;	// Gunslinger zoom_mouse_sense_koef: look-sensitivity multiplier while scoped

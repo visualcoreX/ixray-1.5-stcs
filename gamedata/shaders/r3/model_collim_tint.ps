@@ -1,0 +1,17 @@
+#include "common.h"
+
+// The coating on a collimator's glass, the second pass of models_lenses / models_transparent.
+// Blended destcolor/srccolor, so the view behind ends up times 2*m_collim_tint: 0.5 leaves it alone.
+// .a is 0.5 too, which keeps the target's alpha as it was.
+uniform	float4	m_collim_tint;
+
+struct 	v2p
+{
+ 	float2 	tc0: 		TEXCOORD0;	// base
+  	float3	c0:			COLOR0;		// sun
+};
+
+float4 main( v2p I ) : SV_Target
+{
+	return	m_collim_tint;
+}
