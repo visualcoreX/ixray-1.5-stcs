@@ -2078,6 +2078,28 @@ public:
 // meets STATIC geometry. Compiled levels keep no object names -- only geometry -- so a world position
 // is the only address a level surface has: it is what the level tools take to pick the visual out of
 // level/level.geom (baked hemi patching, see the black-surface work).
+bool dbg_queue_tutorial(LPCSTR name);	// GamePersistent.cpp
+
+// dbg_tutorial <name>: show a tutorial / on-screen hint from game_tutorials.xml (e.g. squad_order_hint)
+// as soon as the console is closed, without playing up to the moment that shows it.
+class CCC_DbgTutorial : public IConsole_Command
+{
+public:
+	CCC_DbgTutorial(LPCSTR N) : IConsole_Command(N) {}
+	virtual void Save(IWriter*)	{}		// not something to replay from user.ltx at startup
+	virtual void Execute(LPCSTR args)
+	{
+		string256	name;
+		name[0]		= 0;
+		sscanf		(args, "%255s", name);
+		if (!name[0])					{ Msg("~ dbg_tutorial: give a name from game_tutorials.xml, e.g. squad_order_hint"); return; }
+		if (!g_pGameLevel)				{ Msg("~ dbg_tutorial: no level"); return; }
+		if (!dbg_queue_tutorial(name))	{ Msg("! dbg_tutorial: no tutorial '%s' in game_tutorials.xml", name); return; }
+		Msg			("~ dbg_tutorial: '%s' starts when the console is closed", name);
+	}
+	virtual void Info(TInfo& I)	{ xr_strcpy(I, "show a tutorial from game_tutorials.xml, e.g. squad_order_hint"); }
+};
+
 class CCC_LookAt : public IConsole_Command
 {
 public:
@@ -2120,6 +2142,7 @@ void CCC_RegisterCommands()
 	g_OptConCom.Init();
 
 	CMD1(CCC_LookAt,	"look_at");
+	CMD1(CCC_DbgTutorial,	"dbg_tutorial");
 
 	CMD1(CCC_SetWeather, "set_weather");
 	CMD1(CCC_ReceiveInfo, "g_info");
