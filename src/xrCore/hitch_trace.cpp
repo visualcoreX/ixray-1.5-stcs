@@ -6,7 +6,7 @@
 
 namespace hitch
 {
-	u32		threshold_ms	= 50;
+	u32		threshold_ms	= 0;
 
 	namespace
 	{
