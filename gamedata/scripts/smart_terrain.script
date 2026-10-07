@@ -20,6 +20,7 @@ local NO_MUTANT_SMARTS = {
 -- also works on an existing save. Read in read_params(), acted on in sim_faction.calculate_squad_tasks.
 local LAIR_SMARTS = {
 	["mar_smart_terrain_6_10"] = true,   -- Swamps "Lysyy ostrov" (bald island): boar lair, respawn_sector = monster, cap 1
+	["red_smart_terrain_monsters"] = true, -- Red Forest "Likhaya tropa" (notorious path): simulation mutants stay too
 }
 
 local math_max = math.max
