@@ -328,6 +328,7 @@ public:
 	void		xr_stdcall		OnBtnExitClicked			(CUIWindow* w, void* d);
 	void		xr_stdcall		TakeAllFromPartner			(CUIWindow* w, void* d);
 	void						TakeAllFromInventoryBox		();
+	void						UpdateTakeAllCaption		();
 
 	IC	UIHint*					get_hint_wnd				() { return m_hint_wnd; }
 

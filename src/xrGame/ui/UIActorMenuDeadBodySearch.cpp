@@ -18,6 +18,7 @@
 #include "../Inventory_item.h"
 #include "../InventoryBox.h"
 #include "../string_table.h"
+#include "../xr_level_controller.h"	// the sprint key that also takes everything (OnPressUserKey)
 #include "../ai/monsters/BaseMonster/base_monster.h"
 
 void move_item_from_to (u16 from_id, u16 to_id, u16 what_id)
@@ -144,6 +145,24 @@ void CUIActorMenu::UpdateDeadBodySearch()
 	FillDeadBodyBag					();
 }
 
+// "Take all" carries the key that does the same (the sprint key, see OnPressUserKey), e.g.
+// "Take all (Shift)". Built every time the search opens, so a key bound anew shows up at once;
+// the first bound slot is shown, and with the action unbound the caption stays plain.
+void CUIActorMenu::UpdateTakeAllCaption()
+{
+	shared_str caption		= CStringTable().translate("ui_st_take_all");
+	const _binding& b		= g_key_bindings[kSPRINT_TOGGLE];
+	const _keyboard* key	= b.m_keyboard[0] ? b.m_keyboard[0] : b.m_keyboard[1];
+	if (!key)
+	{
+		m_takeall_button->SetText	(*caption);
+		return;
+	}
+	string256 buf;
+	xr_sprintf				(buf, "%s (%s)", *caption, key->key_local_name.size() ? key->key_local_name.c_str() : key->key_name);
+	m_takeall_button->SetText	(buf);
+}
+
 void CUIActorMenu::InitDeadBodySearchMode()
 {
 	m_pDeadBodyBagList->Show		(true);
@@ -151,6 +170,7 @@ void CUIActorMenu::InitDeadBodySearchMode()
 	m_PartnerBottomInfo->Show		(true);
 	m_PartnerWeight->Show			(true);
 	m_takeall_button->Show			(true);
+	UpdateTakeAllCaption			();
 	// the quick slot frames are part of the background art, so leaving the list hidden here read as
 	// "the quick slots lost their items" while searching a corpse or a box (belt/outfit/weapon slots
 	// stay visible in every mode). InitInventoryContents below refills them.
