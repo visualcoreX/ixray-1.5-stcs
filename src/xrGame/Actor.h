@@ -771,6 +771,15 @@ public:
 			void				SwitchTorch						();
 			void				SwitchWeaponLaser				();	// GS: toggle the active weapon's laser designator (kWPN_LASER)
 			void				SwitchWeaponFlashlight			();	// GS: toggle the active weapon's mounted flashlight (kWPN_FLASHLIGHT)
+			// Weapon down (kWPN_LOWER, ActorInput.cpp): the firearm in hand is carried low -- the relaxed
+			// third-person set, the HUD pose lowered (CWeapon::UpdateLoweredPose), NPCs do not ask to put it
+			// away (level.actor_weapon_lowered) and every key that works the weapon is ignored.
+			void				ToggleWeaponLowered				();
+			bool				IsWeaponLowered					() const	{ return m_bWeaponLowered; }
+			bool				WeaponLoweredBlocksAction		(int cmd);
+			void				UpdateWeaponLowered				();
+			bool				m_bWeaponLowered;
+			u16					m_wpn_lowered_id;				// the weapon it was lowered with; any other in hand ends it
 
 	// ---- GS controller suicide (wpnpatch ControllerMonster.pas). The controller's psi grab makes the
 	// actor put his own weapon to his head (anm_suicide), fire (anm_shoot_suicide) and die

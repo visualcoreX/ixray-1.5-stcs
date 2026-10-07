@@ -108,6 +108,8 @@ enum	EGameActions
 
 	kQUICK_GRENADE,		// GS quick grenade throw (быстрый бросок гранаты) -- same index==enum rule as kWPN_LASER
 
+	kWPN_LOWER,			// weapon down / up (CActor::ToggleWeaponLowered) -- same index==enum rule as kWPN_LASER
+
 	kLASTACTION,
 	kNOTBINDED,
 	kFORCEDWORD		= u32(-1)

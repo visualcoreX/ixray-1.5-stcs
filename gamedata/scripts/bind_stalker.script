@@ -403,7 +403,9 @@ function actor_binder:update(delta)
 
 	-- item_animations_cs.update()  -- disabled: replaced by gwr_eatable
 
-	if weapon_needs_hiding or actor:is_talking() then
+	-- a conversation puts the weapon away -- unless it is carried low (weapon down, key wpn_lower): then it
+	-- stays in hand, lowered, as with an NPC who asks nothing of a lowered weapon either (xr_meet)
+	if weapon_needs_hiding or (actor:is_talking() and not level.actor_weapon_lowered()) then
 		if not weapon_hidden then
 			actor:hide_weapon()
 			weapon_hidden = true

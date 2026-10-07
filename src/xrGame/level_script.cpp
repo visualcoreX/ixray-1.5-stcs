@@ -485,6 +485,13 @@ void set_actor_invulnerable(bool b)
 // Neither of these was reachable from Lua: crouch lives in the actor's mstate (target_body_state()
 // only answers for CCustomMonster, i.e. NPCs), and the three light sources are three unrelated
 // classes. Exposed as plain facts so a script can decide what counts as "hidden".
+// Weapon down (CActor::ToggleWeaponLowered): xr_meet asks to put the weapon away only when it is up.
+bool actor_weapon_lowered()
+{
+	CActor* actor = smart_cast<CActor*>(Level().CurrentEntity());
+	return actor && actor->IsWeaponLowered();
+}
+
 bool actor_crouch()
 {
 	CActor* actor = smart_cast<CActor*>(Level().CurrentEntity());
@@ -915,6 +922,7 @@ void CLevel::script_register(lua_State *L)
 		def("hud_warn_row_left",				hud_warn_row_left),
 		def("set_actor_invulnerable",			set_actor_invulnerable),
 		def("actor_crouch",						actor_crouch),
+		def("actor_weapon_lowered",				actor_weapon_lowered),
 		def("actor_light_on",					actor_light_on),
 		def("actor_time_since_shot",			actor_time_since_shot),
 		def("show_weapon",						show_weapon),

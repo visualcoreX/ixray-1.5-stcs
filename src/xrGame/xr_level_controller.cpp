@@ -110,6 +110,7 @@ _action  actions[]		= {
 	{ "wpn_alter_zoom",			kWPN_ALTER_ZOOM		,_sp},		// GS alter zoom: the scope's second aim pose (ELCAN magnifier)
 	{ "wpn_kick",			kWPN_KICK				,_sp},		// GS quick knife kick
 	{ "quick_grenade",		kQUICK_GRENADE			,_sp},		// GS quick grenade throw
+	{ "wpn_lower",			kWPN_LOWER				,_sp},		// weapon down / up
 
 	{ NULL, 				kLASTACTION				,_both}
 };															

@@ -708,7 +708,8 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 	// 0 = never; 1 = with nothing in hand (the empty-hands torso set we already play there IS the
 	// relaxed one, so the two halves match); 2 = unless aiming; 3 = always.
 	// Falls back to the stock set on its own whenever the relaxed one is not fully present.
-	const bool bRelaxed	=	(g_actor_legs_relaxed == 1 && !inventory().ActiveItem()) ||
+	const bool bRelaxed	=	IsWeaponLowered() ||		// weapon down: the pack's relaxed set, legs and torso
+							(g_actor_legs_relaxed == 1 && !inventory().ActiveItem()) ||
 							(g_actor_legs_relaxed == 2 && !IsZoomAimingMode()) ||
 							(g_actor_legs_relaxed == 3);
 	const bool bDiagLegs =	(g_actor_legs_diagonal == 2) || (g_actor_legs_diagonal == 1 && bRelaxed);

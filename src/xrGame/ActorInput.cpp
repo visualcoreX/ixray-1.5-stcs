@@ -30,6 +30,7 @@
 #include "xr_level_controller.h"
 #include "ActorEffector.h"				// CActorCameraManager (Cameras().Position()/Direction() for the kick aim)
 #include "WeaponKnife.h"
+#include "WeaponBinoculars.h"				// not lowered: binoculars and the item-use phantoms (WP_BINOC)
 #include "WeaponRG6.h"
 #include "WeaponRPG7.h"
 #include "Grenade.h"					// knife-in-hand quick kick -> normal attack
@@ -114,6 +115,16 @@ void CActor::IR_OnKeyboardPress(int cmd)
 		 cmd==kWPN_5 || cmd==kWPN_6 || cmd==kARTEFACT || cmd==kWPN_NEXT ||
 		 cmd==kNEXT_SLOT || cmd==kPREV_SLOT))
 		return;
+
+	// Weapon down: the key toggles it, and while the weapon is down -- or still coming back up -- every key
+	// that works the weapon in hand is swallowed here, before anything reacts to it (kWPN_FIRE just below
+	// would otherwise still break a sprint).
+	if (cmd == kWPN_LOWER)
+	{
+		if (g_Alive())	ToggleWeaponLowered();
+		return;
+	}
+	if (WeaponLoweredBlocksAction(cmd))	return;
 
 	switch (cmd)
 	{
@@ -1469,6 +1480,76 @@ void CActor::SwitchWeaponFlashlight()
 	}
 	if (wm)	wm->PlaySound(desired ? "sndFlashOn" : "sndFlashOff", wpn->get_LastFP());
 	wpn->ScheduleFlashlightToggle(desired, delay);
+}
+
+// Weapon down ------------------------------------------------------------------------------------------
+// Only a firearm is carried low: binoculars (and the item-use phantoms, which are binocular-class items),
+// knives, grenades and devices are not.
+static CWeaponMagazined* lowerable_weapon(CActor* actor)
+{
+	CWeaponMagazined* w = smart_cast<CWeaponMagazined*>(actor->inventory().ActiveItem());
+	if (!w || smart_cast<CWeaponBinoculars*>(w))	return NULL;
+	return w;
+}
+
+void CActor::ToggleWeaponLowered()
+{
+	CWeaponMagazined* w = lowerable_weapon(this);
+	if (!w)
+	{
+		m_bWeaponLowered = false;
+		return;
+	}
+	if (m_bWeaponLowered)
+	{
+		m_bWeaponLowered = false;
+		return;
+	}
+	// down only from a weapon at rest: not while it reloads, shoots, comes out or plays a gesture
+	if (w->GetState() != CWeapon::eIdle || w->IsPending() || gwr_actor_hud_busy(this))	return;
+	if (w->IsZoomed())	w->OnZoomOut();
+	m_bWeaponLowered	= true;
+	m_wpn_lowered_id	= w->ID();
+}
+
+// Every frame: a different item in hand (or none), or death, ends it -- a weapon is always drawn up.
+void CActor::UpdateWeaponLowered()
+{
+	if (!m_bWeaponLowered)	return;
+	CInventoryItem* a = inventory().ActiveItem();
+	if (!g_Alive() || !a || a->object().ID() != m_wpn_lowered_id || !lowerable_weapon(this))
+		m_bWeaponLowered = false;
+}
+
+// The keys that work the weapon in hand. Swallowed while it is down and until it is most of the way back
+// up, so a shot cannot leave from the hip while the pose is still lowered. Switching weapons, grenades,
+// the inventory etc. stay free.
+bool CActor::WeaponLoweredBlocksAction(int cmd)
+{
+	CWeapon* w = smart_cast<CWeapon*>(inventory().ActiveItem());
+	if (!w)																return false;
+	if (!m_bWeaponLowered && w->LoweredFactor() <= 0.25f)				return false;
+	switch (cmd)
+	{
+	case kWPN_FIRE:
+	case kWPN_NEXT:
+	case kWPN_ZOOM:
+	case kWPN_ZOOM_INC:
+	case kWPN_ZOOM_DEC:
+	case kWPN_RELOAD:
+	case kWPN_FUNC:
+	case kWPN_FIREMODE_PREV:
+	case kWPN_FIREMODE_NEXT:
+	case kWPN_LASER:
+	case kWPN_FLASHLIGHT:
+	case kWPN_ALTER_ZOOM:
+	case kSCOPE_ILLUM_INC:
+	case kSCOPE_ILLUM_DEC:
+	case kWPN_KICK:
+		return true;
+	default:
+		return false;
+	}
 }
 
 // Called every frame from CActor::UpdateCL: fire pending deferred toggles and end the block window.
