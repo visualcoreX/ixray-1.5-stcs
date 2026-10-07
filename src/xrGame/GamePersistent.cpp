@@ -533,8 +533,26 @@ void CGamePersistent::update_game_intro			()
 	}
 }
 #include "holder_custom.h"
+#include "ui/xrUIXmlParser.h"
 extern CUISequencer * g_tutorial;
 extern CUISequencer * g_tutorial2;
+void start_tutorial(LPCSTR name);
+
+// dbg_tutorial <name>: run one of the game_tutorials.xml entries to look at it. Typed into the console,
+// so it cannot start right away -- a tutorial takes the input receiver it finds at its start, and that
+// would be the console. It is queued and started on the first frame with the console closed. The name
+// is checked first: a tutorial without items dereferences an empty list in CUISequencer::Start.
+static shared_str g_dbg_tutorial;
+
+bool dbg_queue_tutorial(LPCSTR name)
+{
+	CUIXml				xml;
+	xml.Load			(CONFIG_PATH, UI_PATH, "game_tutorials.xml");
+	if (!xml.NavigateToNode(name, 0) || xml.GetNodesNum(name, 0, "item") <= 0)
+		return			false;
+	g_dbg_tutorial		= name;
+	return				true;
+}
 
 void CGamePersistent::OnFrame	()
 {
@@ -545,6 +563,13 @@ void CGamePersistent::OnFrame	()
 
 	if(g_tutorial && !g_tutorial->IsActive()){
 		xr_delete(g_tutorial);
+	}
+
+	if (g_dbg_tutorial.size() && g_pGameLevel && !Console->bVisible && !m_pMainMenu->IsActive() && !g_tutorial)
+	{
+		shared_str name	= g_dbg_tutorial;
+		g_dbg_tutorial	= NULL;
+		start_tutorial	(*name);
 	}
 
 #ifdef DEBUG
