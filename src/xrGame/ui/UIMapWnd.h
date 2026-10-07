@@ -68,6 +68,7 @@ private:
 	};
 	CUI3tButtonEx*				m_btn_nav[max_btn_nav];
 	CUIStatic*					m_btn_nav_parent;
+	CUI3tButtonEx*				m_btn_names;		// top right: spot names on/off, same as the alife_command key
 	u32							m_nav_timing;
 
 	void						UpdateNav				();
@@ -83,6 +84,7 @@ private:
 	void xr_stdcall				OnBtnZoomLess_Push		(CUIWindow*, void*);
 	void xr_stdcall				OnBtnDown_Push			(CUIWindow*, void*);
 	void xr_stdcall				OnBtnZoomReset_Push		(CUIWindow*, void*);
+	void xr_stdcall				OnBtnNames_Push			(CUIWindow*, void*);
 
 private:
 	void xr_stdcall				OnScrollV				(CUIWindow*, void*);

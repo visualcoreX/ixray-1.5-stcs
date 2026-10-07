@@ -330,6 +330,38 @@ function se_sim_faction:get_spawn_section(level_name, custom_resource)
 		end
 	end
 
+	-- Loners (faction "stalker") are kept to a rank window on two levels: no one above rank 2 on the
+	-- Agroprom (sim_default_stalker_0.._2), no one below rank 2 on the Yantar (_2.._4). The loners'
+	-- resource lists below level 4 hold only _0/_1, so on the Yantar the intersection can come out empty;
+	-- then the level's own ranks inside the window are taken, with the level's weights.
+	local loner_ranks = {agroprom = {0, 2}, yantar = {2, 4}}
+	local window = self.player_name == "stalker" and loner_ranks[level_name]
+	if window then
+		-- only sim_default_stalker_<rank> is judged; sections named otherwise pass untouched
+		local function inside(section)
+			local r = tonumber(string.match(section, "^sim_default_stalker_(%d+)$") or "")
+			return r == nil or (r >= window[1] and r <= window[2])
+		end
+		local kept, n = {}, 0
+		for _, v in pairs (spawn_data) do
+			if inside(v.section) then
+				n = n + 1
+				kept[n] = v
+			end
+		end
+		if n == 0 then
+			for _, vv in pairs (level_spawn_data) do
+				if inside(vv.section) then
+					n = n + 1
+					kept[n] = {section = vv.section, prob = vv.prob}
+				end
+			end
+		end
+		if n > 0 then
+			spawn_data = kept
+		end
+	end
+
 	local sum = 0
 
 	for k, v in pairs (spawn_data) do

@@ -1,0 +1,10 @@
+<w>
+	<!-- the PDA map's spot names button (CUIMapWnd m_btn_names): the legend button's frame in its four
+	     states + a spot-and-label pictogram, 21x21 each, 24 px apart -->
+	<file name="ui\ui_mnav_bt_names">
+		<texture id="ui_mnav_bt_names_e"	x="0"	y="0" width="21" height="21" />
+		<texture id="ui_mnav_bt_names_d"	x="24"	y="0" width="21" height="21" />
+		<texture id="ui_mnav_bt_names_t"	x="48"	y="0" width="21" height="21" />
+		<texture id="ui_mnav_bt_names_h"	x="72"	y="0" width="21" height="21" />
+	</file>
+</w>

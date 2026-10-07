@@ -840,6 +840,17 @@ function sim_squad_generic:cover_attack()
 	end
 end
 
+-- The first time in a game a friendly squad reports "in position, waiting for your order" (it now waits
+-- for the alife_command key, sim_combat.start_attack), a hint names that key. Only when nothing else
+-- is on screen -- a menu or another tutorial would take it over -- otherwise the next report tries again.
+local function show_squad_order_hint()
+	if has_alife_info("cs_squad_order_hint_shown") or game.has_active_tutorial() or level.main_input_receiver() ~= nil then
+		return
+	end
+	db.actor:give_info_portion("cs_squad_order_hint_shown")
+	game.start_tutorial("squad_order_hint")
+end
+
 function sim_squad_generic:issue_order(order)
 
 --	if self.npc_count <= 1 then
@@ -873,11 +884,13 @@ function sim_squad_generic:issue_order(order)
 		if self.attacking_by_quest ~= nil then
 			self.sound_manager:set_storyteller(commander_id)
 			self.sound_manager:set_story("squad_prepare_attack")
+			show_squad_order_hint()
 		else
 			self.sound_manager:set_story("squad_prepare_attack_self")
 		end
 	elseif order == "wait_again_signal" then
 		xr_sound.set_sound_play(commander_id, "alife_wait_actor_signal", self.player_id, self.current_action.dest_smrt_id)
+		show_squad_order_hint()
 	elseif order == "alife_we_spoted" then
 		if self.spoted_shouted == false then
 			local target_id = self.current_action.dest_smrt_id
