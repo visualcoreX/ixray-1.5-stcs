@@ -1,5 +1,7 @@
 #include "weapon_lowered_anim.ltx"	; the move, baked from meshes\dynamics\weapons\weapon_lowered\weapon_lowered.omf
 									; by tools\omf_to_lowered.py -- when it is there, the pose and curves below are NOT used
+									; the way up: #include "weapon_raised_anim.ltx" ([weapon_raised_anim], from weapon_raised.omf
+									; baked with --section weapon_raised_anim --ref last); without it the way down plays backwards
 									; (a weapon's own lowered_hud_offset_* still adds on top of it, eased by `bezier`)
 
 ; Weapon down (key wpn_lower, CActor::ToggleWeaponLowered / CWeapon::UpdateLoweredPose).
@@ -14,6 +16,8 @@
 time			= 0.6667				; 20 frames at 30 fps (0.8333 = 20 frames at 24 fps)
 hud_offset_pos	= 0.0, 0.0, 0.0
 hud_offset_rot	= 0.25, -0.45, 0.0
+anim_blend		= 0.15					; s: a change of direction mid-move (or a way up that does not start exactly
+									; where the way down ends) fades over from the current pose in this long
 
 ; The move, per channel: t,v pairs, t = 0..1 over `time`, v = share of the pose's own value (below 0 or
 ; above 1 swings past the start or the end). Smooth (Maya "auto"-like) between keys. Coming back up plays

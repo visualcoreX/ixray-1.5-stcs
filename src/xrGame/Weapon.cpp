@@ -49,6 +49,10 @@ int		g_dbg_zoom_hide_crosshair	= -1;
 CWeapon::CWeapon()
 {
 	m_fLoweredFactor		= 0.f;
+	m_bLowerGoingDown		= false;
+	m_fLowerFromBlend		= 0.f;
+	m_lower_cur_q.identity	();	m_lower_from_q.identity();
+	m_lower_cur_p.set		(0, 0, 0);	m_lower_from_p.set(0, 0, 0);
 	SetState				(eHidden);
 	SetNextState			(eHidden);
 	m_sub_state				= eSubstateReloadBegin;
@@ -1864,6 +1868,8 @@ void CWeapon::OnH_A_Chield		()
 void CWeapon::OnActiveItem ()
 {
 	m_fLoweredFactor		= 0.f;		// always drawn up, whatever pose it was put away in
+	m_bLowerGoingDown		= false;
+	m_fLowerFromBlend		= 0.f;
 	//. from Activate
 	UpdateAddonsVisibility();
 	m_dwAmmoCurrentCalcFrame = 0;
@@ -5081,30 +5087,42 @@ static float eval_lower_curve(const SLowerCurve& C, float t)
 	return C.k[m-1].y;
 }
 
-// The move as an animation: [weapon_lowered_anim] (weapons\weapon_lowered_anim.ltx, baked from the hands-rig
-// OMF by tools/omf_to_lowered.py) -- per frame the root bone's transform relative to frame 0, i.e. the key the
-// engine itself turns into a bone matrix with mk_xform. Played on top of the whole HUD by the weapon-down
-// factor: forwards to lower, backwards to raise, frames slerped / lerped. With it, the [weapon_lowered] pose
-// and curves are not used; a weapon's lowered_hud_offset_* (the hud tuner's) still adds on top.
+// The move as animations (weapons\weapon_lowered_anim.ltx / weapon_raised_anim.ltx, baked from the hands-rig
+// OMFs by tools/omf_to_lowered.py) -- per frame the root bone's transform as a delta from the normal pose, i.e.
+// the key the engine itself turns into a bone matrix with mk_xform; frames slerped / lerped.
+//   [weapon_lowered_anim]	going down: frame 0 = up (the delta is 0 there), last frame = down.
+//   [weapon_raised_anim]	coming back up: frame 0 = down, last frame = up (the delta is 0 there). Without it
+//							the way down is played backwards.
+// With them the [weapon_lowered] pose and curves are not used; a weapon's lowered_hud_offset_* (the hud
+// tuner's) still adds on top.
 struct SLowerAnim
 {
 	float					fps;
 	xr_vector<Fvector>		T;
 	xr_vector<Fquaternion>	Q;
 	bool					valid;
+
+	float	length	() const	{ return float(T.size() - 1) / fps; }
+	// the delta at a share of the animation (0 = first frame, 1 = last)
+	void	sample	(float u, Fquaternion& q, Fvector& p) const
+	{
+		const float	fr	= _max(0.f, u) * float(T.size() - 1);
+		u32			i0	= (u32)iFloor(fr);
+		if (i0 > T.size() - 2)	i0 = T.size() - 2;
+		const float	a	= _min(1.f, fr - float(i0));
+		q.slerp	(Q[i0], Q[i0 + 1], a);
+		p.lerp	(T[i0], T[i0 + 1], a);
+	}
 };
-static SLowerAnim	s_lower_anim;
+static SLowerAnim	s_lower_anim, s_raise_anim;
 static bool			s_lower_anim_loaded = false;
 
-static void load_lower_anim()
+static void load_anim_section(SLowerAnim& A, LPCSTR S)
 {
-	if (s_lower_anim_loaded)	return;
-	s_lower_anim_loaded		= true;
-	s_lower_anim.valid		= false;
-	LPCSTR S = "weapon_lowered_anim";
+	A.valid		= false;
 	if (!pSettings->section_exist(S) || !pSettings->line_exist(S, "frames"))	return;
-	s_lower_anim.fps		= READ_IF_EXISTS(pSettings, r_float, S, "fps", 30.f);
-	const int n				= pSettings->r_s32(S, "frames");
+	A.fps		= READ_IF_EXISTS(pSettings, r_float, S, "fps", 30.f);
+	const int n	= pSettings->r_s32(S, "frames");
 	for (int i = 0; i < n; ++i)
 	{
 		string32 k;	xr_sprintf(k, "f%d", i);
@@ -5115,10 +5133,19 @@ static void load_lower_anim()
 		for (int j = 0; j < 7 && j < _GetItemCount(v); ++j)	t[j] = (float)atof(_GetItem(v, j, a));
 		Fvector		tt;	tt.set(t[0], t[1], t[2]);
 		Fquaternion	qq;	qq.set(t[6], t[3], t[4], t[5]);		// Fquaternion::set takes (w, x, y, z)
-		s_lower_anim.T.push_back(tt);
-		s_lower_anim.Q.push_back(qq);
+		A.T.push_back(tt);
+		A.Q.push_back(qq);
 	}
-	s_lower_anim.valid = s_lower_anim.T.size() >= 2 && s_lower_anim.fps > 0.f;
+	A.valid = A.T.size() >= 2 && A.fps > 0.f;
+}
+
+static void load_lower_anim()
+{
+	if (s_lower_anim_loaded)	return;
+	s_lower_anim_loaded		= true;
+	load_anim_section		(s_lower_anim, "weapon_lowered_anim");
+	load_anim_section		(s_raise_anim, "weapon_raised_anim");
+	if (!s_lower_anim.valid)	s_raise_anim.valid = false;		// the way up only goes with a way down
 }
 
 static void read_lowered_pose(LPCSTR hud_sect, bool wide, Fvector& pos, Fvector& rot)
@@ -5293,24 +5320,51 @@ void CWeapon::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 					  !(pActor->MovingState() & mcSprint);
 	load_lower_anim();
 	const SLowerAnim& A	= s_lower_anim;
-	const float t	= A.valid ? float(A.T.size() - 1) / A.fps
-							  : READ_IF_EXISTS(pSettings, r_float, "weapon_lowered", "time", 0.35f);
+	const SLowerAnim& U	= s_raise_anim;
+	// the weapon-down factor runs at the length of the animation of the way it is going
+	const float t	= !A.valid	? READ_IF_EXISTS(pSettings, r_float, "weapon_lowered", "time", 0.35f)
+					: (!down && U.valid) ? U.length() : A.length();
+	if (down != m_bLowerGoingDown)
+	{
+		// a change of direction: the other animation does not start where this one stands (a change of mind
+		// halfway, or two animations that do not quite meet) -- fade over from the pose the hud is in now
+		m_bLowerGoingDown	= down;
+		if (m_fLoweredFactor > 0.f && A.valid && U.valid)
+		{
+			m_lower_from_q	= m_lower_cur_q;
+			m_lower_from_p	= m_lower_cur_p;
+			m_fLowerFromBlend = 1.f;
+		}
+	}
 	m_fLoweredFactor += (down ? 1.f : -1.f) * Device.fTimeDelta / _max(t, 0.01f);
 	clamp(m_fLoweredFactor, 0.f, 1.f);
-	if (m_fLoweredFactor <= 0.f)	return;
+	if (m_fLowerFromBlend > 0.f)
+	{
+		const float bt		= READ_IF_EXISTS(pSettings, r_float, "weapon_lowered", "anim_blend", 0.15f);
+		m_fLowerFromBlend	-= Device.fTimeDelta / _max(bt, 0.01f);
+		if (m_fLowerFromBlend < 0.f)	m_fLowerFromBlend = 0.f;
+	}
+	if (m_fLoweredFactor <= 0.f)	{ m_fLowerFromBlend = 0.f; return; }
 
 	attachable_hud_item* hi = HudItemData();
 	if (!hi)						return;
 
 	if (A.valid)
 	{
-		// the frame the weapon-down factor stands at, the animation's own timing doing the easing
-		const float	fr	= m_fLoweredFactor * float(A.T.size() - 1);
-		u32			i0	= (u32)iFloor(fr);
-		if (i0 > A.T.size() - 2)	i0 = A.T.size() - 2;
-		const float	a	= _min(1.f, fr - float(i0));
-		Fquaternion	q;	q.slerp(A.Q[i0], A.Q[i0 + 1], a);
-		Fvector		p;	p.lerp(A.T[i0], A.T[i0 + 1], a);
+		// the frame the weapon-down factor stands at, the animation's own timing doing the easing: down =
+		// the way down at the factor, up = the way up at 1 - factor (or the way down played backwards)
+		Fquaternion	q;
+		Fvector		p;
+		if (!down && U.valid)	U.sample(1.f - m_fLoweredFactor, q, p);
+		else					A.sample(m_fLoweredFactor, q, p);
+		if (m_fLowerFromBlend > 0.f)
+		{
+			const float w	= m_fLowerFromBlend * m_fLowerFromBlend * (3.f - 2.f * m_fLowerFromBlend);	// smoothstep
+			Fquaternion	qb;	qb.slerp(q, m_lower_from_q, w);	q = qb;
+			Fvector		pb;	pb.lerp(p, m_lower_from_p, w);	p = pb;
+		}
+		m_lower_cur_q	= q;
+		m_lower_cur_p	= p;
 		Fmatrix		d;	d.mk_xform(q, p);
 		// ADDITIVE on bip01: the delta acts in the bone's own frame -- about where the weapon animation has
 		// put the bone this frame, along its axes -- not about the hud origin. With F = the bone's frame
