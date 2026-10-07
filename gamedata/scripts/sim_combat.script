@@ -993,23 +993,30 @@ function add_wait_attack(combat, squad_id)
 --	dbglog("[sim_combat.add_wait_attack]: Smart ID "..tostring(combat.smart.id).." and squad ID "..tostring(squad_id).." have been added to table wait_for_combat as a key-value pair with squad stage "..tostring(stage)..".")
 end
 
+-- Show / hide the names of every smart terrain on the PDA map. The alife_command key does it while the
+-- PDA is open (start_attack below); the map's names button calls it directly.
+function toggle_map_names()
+	local board = sim_board.get_sim_board()
+	-- Adding all location names on load and using smart:visible_for_map()
+	-- to show/hide them would be much more efficient than adding/removing
+	-- them each time, as below. However, that would also affect other map
+	-- spots for the smart terrain, like mission markers.
+	local map_has_object_spot = level.map_has_object_spot
+	local map_add_object_spot = level.map_add_object_spot
+	local map_remove_object_spot = level.map_remove_object_spot
+	for smart_name, smart in pairs (board.smarts_by_names) do
+		if map_has_object_spot(smart.id, smart_name) == 0 then
+			map_add_object_spot(smart.id, smart_name, "")
+		else
+			map_remove_object_spot(smart.id, smart_name)
+		end
+	end
+end
+
 function start_attack()
 	local board = sim_board.get_sim_board()
 	if has_alife_info("ui_pda") then
-		-- Adding all location names on load and using smart:visible_for_map()
-		-- to show/hide them would be much more efficient than adding/removing
-		-- them each time, as below. However, that would also affect other map
-		-- spots for the smart terrain, like mission markers.
-		local map_has_object_spot = level.map_has_object_spot
-		local map_add_object_spot = level.map_add_object_spot
-		local map_remove_object_spot = level.map_remove_object_spot
-		for smart_name, smart in pairs (board.smarts_by_names) do
-			if map_has_object_spot(smart.id, smart_name) == 0 then
-				map_add_object_spot(smart.id, smart_name, "")
-			else
-				map_remove_object_spot(smart.id, smart_name)
-			end
-		end
+		toggle_map_names()
 	else
 		for smart_id, squad_id in pairs (wait_for_combat) do
 			local squad = board.squads[squad_id]

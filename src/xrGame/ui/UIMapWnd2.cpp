@@ -35,6 +35,17 @@ void CUIMapWnd::init_xml_nav( CUIXml& xml )
 //	AddCallback( m_btn_nav[btn_down]->WindowName(),			BUTTON_DOWN, CUIWndCallback::void_function( this, &CUIMapWnd::OnBtnDown_Push	) );
 	AddCallback( m_btn_nav[btn_zoom_reset]->WindowName(),	BUTTON_DOWN, CUIWndCallback::void_function( this, &CUIMapWnd::OnBtnZoomReset_Push) );
 
+	// The spot names button (top right of the map): the same toggle the alife_command key (K) does in the
+	// PDA. A child of the map window itself, not of the nav group -- that one is only 72 px square, and a
+	// child outside its parent's rect never gets the mouse. Optional, for map layouts that do not have it.
+	if ( xml.NavigateToNode( "btn_map_names", 0 ) )
+	{
+		m_btn_names = UIHelper::Create3tButtonEx( xml, "btn_map_names", this );
+		Register( m_btn_names );
+		m_btn_names->set_hint_wnd( hint_wnd );
+		AddCallback( m_btn_names->WindowName(),	BUTTON_DOWN, CUIWndCallback::void_function( this, &CUIMapWnd::OnBtnNames_Push ) );
+	}
+
 }
 
 void CUIMapWnd::UpdateNav()
@@ -61,6 +72,13 @@ void CUIMapWnd::UpdateNav()
 	{
 		MoveMap( Fvector2().set( 0.0f, -m_map_move_step ) );
 	}
+}
+
+void pda_toggle_map_names();	// Level_input.cpp, next to the alife_command key that does the same
+
+void CUIMapWnd::OnBtnNames_Push(CUIWindow*, void*)
+{
+	pda_toggle_map_names();
 }
 
 void CUIMapWnd::OnBtnLegend_Push(CUIWindow*, void*)
