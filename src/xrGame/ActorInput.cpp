@@ -657,7 +657,18 @@ void CActor::IR_OnMouseMove(int dx, int dy)
 	{
 		CWeapon* pWpn = smart_cast<CWeapon*>(inventory().ActiveItem());
 		if (pWpn && pWpn->IsZoomed())
+		{
 			scale *= pWpn->AimSenseScale();
+			// The alter pose (the backup sight beside / on top of the scope) aims at hip sensitivity: none of
+			// the zoom's slowdown -- neither the narrower camera fov nor the weapon's koef. Faded along with
+			// the pose itself (AlterZoomBlend 0 = scope, 1 = alter), so switching does not jolt the mouse.
+			const float alter = pWpn->AlterZoomBlend();
+			if (alter > 0.f)
+			{
+				const float hip	= psMouseSens * psMouseSensScale/50.f / LookFactor;
+				scale			= scale + (hip - scale) * alter;
+			}
+		}
 	}
 
 	if (dx){
