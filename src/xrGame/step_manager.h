@@ -25,6 +25,11 @@ class CStepManager {
 	// Where in the leg loop we are (0..1 of the whole animation), accumulated frame by frame at the
 	// speed the blend had in that frame -- see CStepManager::update.
 	float			m_anim_phase;
+	// step_phase_from_anim (the actor): the step phase is the leg motion's own position (timeCurrent /
+	// timeTotal) -- what the legs show, the first-person ones included -- instead of a count of its own
+	CBlend*			m_phase_blend;		// the blend the phase was last read off (a new one re-arms the steps)
+	bool			m_true_phase;
+			void		do_step					(u32 leg, float power, SGameMtlPair* mtl_pair);
 	u32				m_phase_time;
 
 public: 
