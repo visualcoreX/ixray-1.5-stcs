@@ -125,6 +125,8 @@ void CActor::IR_OnKeyboardPress(int cmd)
 		return;
 	}
 	if (WeaponLoweredBlocksAction(cmd))	return;
+	// on a base: no quick knife stab, no quick grenade (the weapons themselves may be drawn and swapped)
+	if (m_bInBaseZone && (cmd == kWPN_KICK || cmd == kQUICK_GRENADE))	return;
 
 	switch (cmd)
 	{
@@ -655,7 +657,18 @@ void CActor::IR_OnMouseMove(int dx, int dy)
 	{
 		CWeapon* pWpn = smart_cast<CWeapon*>(inventory().ActiveItem());
 		if (pWpn && pWpn->IsZoomed())
+		{
 			scale *= pWpn->AimSenseScale();
+			// The alter pose (the backup sight beside / on top of the scope) aims at hip sensitivity: none of
+			// the zoom's slowdown -- neither the narrower camera fov nor the weapon's koef. Faded along with
+			// the pose itself (AlterZoomBlend 0 = scope, 1 = alter), so switching does not jolt the mouse.
+			const float alter = pWpn->AlterZoomBlend();
+			if (alter > 0.f)
+			{
+				const float hip	= psMouseSens * psMouseSensScale/50.f / LookFactor;
+				scale			= scale + (hip - scale) * alter;
+			}
+		}
 	}
 
 	if (dx){
@@ -1484,17 +1497,52 @@ void CActor::SwitchWeaponFlashlight()
 
 // Weapon down ------------------------------------------------------------------------------------------
 // Only a firearm is carried low: binoculars (and the item-use phantoms, which are binocular-class items),
-// knives, grenades and devices are not.
-static CWeaponMagazined* lowerable_weapon(CActor* actor)
+// knives, grenades, bolts and devices are not (on a base the knife and grenades are put away instead).
+bool CActor::IsLowerable(CInventoryItem* item)
 {
-	CWeaponMagazined* w = smart_cast<CWeaponMagazined*>(actor->inventory().ActiveItem());
-	if (!w || smart_cast<CWeaponBinoculars*>(w))	return NULL;
-	return w;
+	if (!item)	return false;
+	if (CWeaponMagazined* w = smart_cast<CWeaponMagazined*>(item))	return !smart_cast<CWeaponBinoculars*>(w);
+	return false;
+}
+
+static CHudItem* lowerable_weapon(CActor* actor)
+{
+	CInventoryItem* a = actor->inventory().ActiveItem();
+	return CActor::IsLowerable(a) ? smart_cast<CHudItem*>(a) : NULL;
+}
+
+// a firearm being aimed comes out of the sights when it is put down
+static void lowered_zoom_out(CHudItem* h)
+{
+	CWeapon* w = smart_cast<CWeapon*>(h);
+	if (w && w->IsZoomed())	w->OnZoomOut();
+}
+
+bool CActor::IsWeaponLowered() const
+{
+	if (m_bWeaponLowered)	return true;
+	// on a base it is down from the first frame it is in hand -- before UpdateWeaponLowered has run for it
+	return m_bInBaseZone && g_Alive() && lowerable_weapon(const_cast<CActor*>(this)) != NULL;
+}
+
+void CActor::SetWeaponLowered(bool b)
+{
+	if (!b)
+	{
+		m_bWeaponLowered	= false;
+		return;
+	}
+	CHudItem* w = lowerable_weapon(this);
+	if (!w)		return;
+	lowered_zoom_out	(w);
+	m_bWeaponLowered	= true;
+	m_wpn_lowered_id	= w->object().ID();
 }
 
 void CActor::ToggleWeaponLowered()
 {
-	CWeaponMagazined* w = lowerable_weapon(this);
+	if (m_bInBaseZone)	return;		// a base keeps it down
+	CHudItem* w = lowerable_weapon(this);
 	if (!w)
 	{
 		m_bWeaponLowered = false;
@@ -1506,15 +1554,35 @@ void CActor::ToggleWeaponLowered()
 		return;
 	}
 	// down only from a weapon at rest: not while it reloads, shoots, comes out or plays a gesture
-	if (w->GetState() != CWeapon::eIdle || w->IsPending() || gwr_actor_hud_busy(this))	return;
-	if (w->IsZoomed())	w->OnZoomOut();
+	if (w->GetState() != CHUDState::eIdle || w->IsPending() || gwr_actor_hud_busy(this))	return;
+	lowered_zoom_out	(w);
 	m_bWeaponLowered	= true;
-	m_wpn_lowered_id	= w->ID();
+	m_wpn_lowered_id	= w->object().ID();
 }
 
 // Every frame: a different item in hand (or none), or death, ends it -- a weapon is always drawn up.
 void CActor::UpdateWeaponLowered()
 {
+	// on a base the knife and the grenades are put away (and CInventory::Activate keeps them there)
+	if (m_bInBaseZone && g_Alive())
+	{
+		const u32 act = inventory().GetActiveSlot();
+		if ((act == KNIFE_SLOT || act == GRENADE_SLOT) && inventory().GetNextActiveSlot() == act)
+			inventory().Activate(NO_ACTIVE_SLOT);
+	}
+	// on a base whatever firearm is in hand is down: the key's state follows it, so leaving the base with
+	// "keep it down" keeps the weapon that is in hand now down
+	if (m_bInBaseZone && g_Alive())
+	{
+		CHudItem* w = lowerable_weapon(this);
+		if (w && (!m_bWeaponLowered || m_wpn_lowered_id != w->object().ID()))
+		{
+			lowered_zoom_out	(w);
+			m_bWeaponLowered	= true;
+			m_wpn_lowered_id	= w->object().ID();
+		}
+		if (w)	return;
+	}
 	if (!m_bWeaponLowered)	return;
 	CInventoryItem* a = inventory().ActiveItem();
 	if (!g_Alive() || !a || a->object().ID() != m_wpn_lowered_id || !lowerable_weapon(this))
@@ -1526,9 +1594,9 @@ void CActor::UpdateWeaponLowered()
 // the inventory etc. stay free.
 bool CActor::WeaponLoweredBlocksAction(int cmd)
 {
-	CWeapon* w = smart_cast<CWeapon*>(inventory().ActiveItem());
+	CHudItem* w = smart_cast<CHudItem*>(inventory().ActiveItem());
 	if (!w)																return false;
-	if (!m_bWeaponLowered && w->LoweredFactor() <= 0.25f)				return false;
+	if (!IsWeaponLowered() && w->LoweredFactor() <= 0.25f)				return false;
 	switch (cmd)
 	{
 	case kWPN_FIRE:

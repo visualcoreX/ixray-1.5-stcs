@@ -31,6 +31,7 @@
 #include "ai_space.h"
 #include "ai/monsters/BaseMonster/base_monster.h"
 #include "date_time.h"
+#include "alife_time_manager.h"
 #include "mt_config.h"
 #include "ui/UIOptConCom.h"
 #include "UIGameSP.h"
@@ -110,6 +111,8 @@ extern float	g_actor_torso_follow_empty;	// ActorAnimation.cpp -- spine/head cha
 extern float	g_actor_torso_follow_empty_pitch;	// ...its vertical half alone; -1 = tied to the line above
 extern float	g_actor_torso_blend;		// ActorAnimation.cpp -- ease time for the follow-cam constant
 extern float	g_actor_torso_yaw_blend;	// ActorAnimation.cpp -- ease time for the yaw correction alone
+extern int		g_actor_torso_auto;			// ActorAnimation.cpp -- measured upper-body heading instead of the tables
+extern int		g_actor_torso_auto_dbg;		// ActorAnimation.cpp -- log what it measures, once a second
 extern int		g_actor_legs_diagonal;		// ActorAnimation.cpp -- diagonal leg cycles when moving + strafing
 extern float	g_actor_walk_anim_speed;	// ActorAnimation.cpp -- third-person walk cycle playback speed
 extern float	g_actor_legs_blend;			// ActorAnimation.cpp -- cross-fade speed between leg cycles
@@ -1874,6 +1877,49 @@ public:
 	}
 };
 
+// set_time HH.MM (or HH:MM, or just HH): the clock forward to the next such time of day -- today if it is still ahead,
+// otherwise tomorrow. Forward only, the way sleeping moves it (level.change_game_time): A-Life, the weather
+// and the quests' timers all see time pass, nothing is taken back.
+class CCC_SetTime : public IConsole_Command {
+public:
+	CCC_SetTime(LPCSTR N) : IConsole_Command(N) {}
+
+	virtual void Execute(LPCSTR args) {
+		if (!g_pGameLevel || !ai().get_alife()) {
+			Msg("! set_time: no game running");
+			return;
+		}
+		game_sv_Single* game = smart_cast<game_sv_Single*>(Level().Server ? Level().Server->game : nullptr);
+		if (!game) {
+			Msg("! set_time: single player only");
+			return;
+		}
+		int h = -1, m = 0;
+		char tail = 0;
+		const bool parsed	= sscanf(args, "%d.%d", &h, &m) == 2 || sscanf(args, "%d:%d", &h, &m) == 2 ||
+							  (sscanf(args, "%d%c", &h, &tail) == 1 && (m = 0, true));	// just the hour: "12"
+		if (!parsed || h < 0 || h > 23 || m < 0 || m > 59) {
+			Msg("! set_time: expected HH.MM or HH, e.g. set_time 06.30 / set_time 12");
+			return;
+		}
+		u32 year = 0, month = 0, day = 0, hours = 0, mins = 0, secs = 0, ms = 0;
+		split_time(Level().GetGameTime(), year, month, day, hours, mins, secs, ms);
+		const u32 now_ms	= ((hours * 60 + mins) * 60 + secs) * 1000 + ms;
+		const u32 want_ms	= u32(h * 60 + m) * 60 * 1000;
+		const u32 day_ms	= 24 * 60 * 60 * 1000;
+		const u32 delta		= (want_ms + day_ms - now_ms) % day_ms;
+		if (!delta)
+			return;
+		g_pGamePersistent->Environment().ChangeGameTime(float(delta) / 1000.f);
+		game->alife().time_manager().change_game_time(delta);
+		Msg("- set_time: %02d.%02d (+%u min)", h, m, (delta + 30000) / 60000);
+	}
+
+	virtual void Info(TInfo& I) {
+		xr_strcpy(I, "set the time of day, HH.MM or HH (moves forward, to tomorrow if already past)");
+	}
+};
+
 class CCC_ReceiveInfo : public IConsole_Command {
 public:
 	CCC_ReceiveInfo(LPCSTR N) : IConsole_Command(N) {
@@ -2147,6 +2193,7 @@ void CCC_RegisterCommands()
 	CMD1(CCC_DbgTutorial,	"dbg_tutorial");
 
 	CMD1(CCC_SetWeather, "set_weather");
+	CMD1(CCC_SetTime, "set_time");
 	CMD1(CCC_ReceiveInfo, "g_info");
 	CMD1(CCC_DisableInfo, "d_info");
 	CMD1(CCC_GiveMoney, "g_money");
@@ -2246,6 +2293,10 @@ void CCC_RegisterCommands()
 	// separate, much shorter ease for the yaw correction (0 = snap); sharing the one above made
 	// every per-action correction roll in and out over a second, which reads as a swing
 	CMD4(CCC_Float,				"actor_torso_yaw_blend",&g_actor_torso_yaw_blend,	0.0f,	1.0f);
+	CMD4(CCC_Integer,			"actor_torso_auto_dbg",	&g_actor_torso_auto_dbg,	0,	1);
+	// 1 = the third-person barrel (or face) is turned onto the view by measurement every frame, 0 = the old
+	// per-set [actor_torso_yaw] table
+	CMD4(CCC_Integer,			"actor_torso_auto",		&g_actor_torso_auto,	0,	1);
 	// diagonal leg cycles while moving + strafing: 0 = off (stock), 1 = relaxed stance only, 2 = always
 	CMD4(CCC_Integer,			"actor_legs_diagonal",	&g_actor_legs_diagonal,	0,	2);
 	// playback speed of the third-person WALK cycles, legs and torso together (1.0 = as authored)

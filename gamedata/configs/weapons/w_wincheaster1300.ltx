@@ -1,6 +1,7 @@
 [wpn_wincheaster1300]:identity_immunities,weapon_probability,default_weapon_params
 shell_casing_world_offset	= 0.0, 0.0, -0.04	; third person: the case a little further back than the world model's shell bone
 shell_casing_window	= 1.1	; the pump throws the shell 0.4-0.9 s after the shot
+shell_casing_world_delay	= 0.45	; third person: the case comes out with the pump, not on the shot
 shell_casing_side	= 0.04	; the slide drags the shell 11 cm straight back before flipping it out: take over only past that
 GroupControlSection			= spawn_group
 discovery_dependency 		=
@@ -141,7 +142,7 @@ hud                      	= wpn_winchester1300_hud
 
 ;--STRAP PARAMETERS-----------------------------------------------------------------
 ;��� ������
-strap_position         		= -0.26,-0.10,0.05			; position (offset) and orientation of the weapon when it is strapped
+strap_position         		= -0.26,-0.10,0.20			; position (offset) and orientation of the weapon when it is strapped; z runs down the spine: 15 cm lower, orig 0.05
 strap_orientation      		= -15,-9,110				; (3rd person view in degrees)
 strap_bone0					= bip01_spine2
 strap_bone1					= bip01_spine1

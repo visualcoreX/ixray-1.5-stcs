@@ -37,6 +37,8 @@
 //                                   reload-open), instead of unjam_speed_scale of the usual range
 //   shell_casing_world_offset = x,y,z   third person: move the point, world model space (right, up, forward; m);
 //                                   shell_casing_extra_world_offset the same for the extra thing
+//   shell_casing_world_delay = <sec>    third person: throw this long after the shot (a pump gun racks the
+//                                   shell out later, not on the shot); shell_casing_extra_world_delay likewise
 //   shell_casing_speed  = min,max   m/s; the animation's own speed is kept inside it too
 //   shell_casing_extra, shell_casing_extra_bone, shell_casing_extra_dir, shell_casing_extra_speed
 //                                   the same for the second thing thrown (a belt link)
@@ -56,6 +58,7 @@ static LPCSTR SC_SECT = "shell_casings";
 
 // per track: 0 = the cartridge case, 1 = the extra (belt link)
 static LPCSTR KEY_WORLD_OFFSET[2] = { "shell_casing_world_offset", "shell_casing_extra_world_offset" };
+static LPCSTR KEY_WORLD_DELAY [2] = { "shell_casing_world_delay",  "shell_casing_extra_world_delay"  };
 static LPCSTR KEY_DIR	[2] = { "shell_casing_dir",		"shell_casing_extra_dir"	};
 static LPCSTR KEY_SPEED	[2] = { "shell_casing_speed",	"shell_casing_extra_speed"	};
 static LPCSTR TRACK_NAME[2] = { "case",					"extra"						};
@@ -250,6 +253,7 @@ void CWeapon::gwr_ShellCasingCancel()
 		if (T.active && casing_debug())
 			Msg			("~ shell_casing [%s] %s: the shot jammed the gun -- nothing thrown", cNameSect().c_str(), TRACK_NAME[idx]);
 		T.active		= false;
+		T.world_due		= 0;			// a jammed shot racks nothing out in third person either
 		if (T.reshow_time && hi && hi->m_model)
 			casing_show_hud_bone	(hi->m_model, T.bone, TRUE);
 		T.reshow_time	= 0;
@@ -657,6 +661,21 @@ void CWeapon::gwr_ShellCasingArm(u32 idx, const shared_str& sect, const Fvector&
 		return;
 	}
 
+	// third person, a pump gun: the case comes out when the slide is racked, a little after the shot --
+	// gwr_ShellCasingFollow throws it then (from where the gun is by that time)
+	const float wdelay = READ_IF_EXISTS(pSettings, r_float, ws, KEY_WORLD_DELAY[idx], 0.f);
+	if (wdelay > 0.f)
+	{
+		T.world_due		= Device.dwTimeGlobal + iFloor(1000.f * wdelay);
+		return;
+	}
+	gwr_ShellCasingThrowWorld(idx);
+}
+
+// Third person: the case out of the world model's port (see gwr_ShellCasingArm).
+void CWeapon::gwr_ShellCasingThrowWorld(u32 idx)
+{
+	LPCSTR ws		= cNameSect().c_str();
 	// Third person, an NPC, a weapon nobody holds. The WORLD model carries a shell bone of its own, sitting
 	// in its chamber in the bind pose -- far more reliable than the configured shell_point, which on many
 	// guns was copied over from another model (up to 40 cm off; on the PKM below and behind the gun).
@@ -710,6 +729,12 @@ void CWeapon::gwr_ShellCasingUpdate(bool force)
 void CWeapon::gwr_ShellCasingFollow(u32 idx, bool force)
 {
 	SShellCasingTrack& T = m_shell_track[idx];
+	// a third-person case held back for the pump (shell_casing_world_delay); the next shot settles it at once
+	if (T.world_due && (force || Device.dwTimeGlobal >= T.world_due))
+	{
+		T.world_due		= 0;
+		if (!GetHUDmode() && H_Parent())	gwr_ShellCasingThrowWorld(idx);
+	}
 	if (!T.active && !T.reshow_time)	return;
 
 	attachable_hud_item* hi = GetHUDmode() ? HudItemData() : NULL;

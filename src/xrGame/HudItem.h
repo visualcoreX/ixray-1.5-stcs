@@ -5,6 +5,7 @@ class CPhysicItem;
 class NET_Packet;
 class CInventoryItem;
 class CMotionDef;
+class CActor;
 
 #include "actor_defs.h"
 #include "inventory_space.h"
@@ -258,6 +259,21 @@ public:
 
 	virtual void				UpdateHudAdditonal	(Fmatrix&);
 
+	// Weapon down (CActor::ToggleWeaponLowered, implemented in Weapon.cpp): firearms and grenades are carried
+	// low. 0 = up, 1 = all the way down (the animations' progress). UpdateLoweredPose layers the move over the
+	// hud (call it from UpdateHudAdditonal), ResetLoweredPose starts over on a draw (from OnActiveItem): up --
+	// or already down on a base.
+	float						LoweredFactor		() const	{ return m_fLoweredFactor; }
+	void						UpdateLoweredPose	(Fmatrix& trans, CActor* pActor);
+	void						ResetLoweredPose	();
+	float						m_fLoweredFactor;
+	// which way the move last went, the delta it put on the hud last frame, and the pose a change of
+	// direction fades over from (weight 1 -> 0 over [weapon_lowered] anim_blend)
+	bool						m_bLowerGoingDown;
+	float						m_fLowerFromBlend;
+	Fquaternion					m_lower_cur_q,	m_lower_from_q;
+	Fvector						m_lower_cur_p,	m_lower_from_p;
+
 
 	virtual	void				UpdateXForm			()						= 0;
 
@@ -363,6 +379,7 @@ protected:
 
 	u32							m_animation_slot;
 	shared_str					m_actor_anim_group;		// xrMPE `actor_anim_group`, empty when unused
+	shared_str					m_actor_anim_group_sprint;	// `actor_anim_group_sprint`: the set the SPRINT torso comes from
 	shared_str					m_actor_torso_anim;		// xrMPE `actor_anim_group`, empty when unused
 
 	HUD_SOUND_COLLECTION		m_sounds;
@@ -389,6 +406,7 @@ public:
 	// Named actor torso set for this item, empty = use the numbered animation_slot. Virtual because a
 	// launcher rifle swaps between two of them (see CWeaponMagazinedWGrenade).
 	virtual const shared_str&	ActorAnimGroup			() const		{ return m_actor_anim_group; }
+	const shared_str&			ActorAnimGroupSprint	() const		{ return m_actor_anim_group_sprint; }
 	const shared_str&			ActorTorsoAnim			() const		{ return m_actor_torso_anim; }
 	InertionData&				CurrentInertionData		();				// GS UpdateInertion: hip<->aim blend by zoom factor, honors hud_inertion/zoom_inertion
 	virtual float				GetInertionAimFactor	() const		{ return 0.f; }	// CWeapon: zoom rotation factor

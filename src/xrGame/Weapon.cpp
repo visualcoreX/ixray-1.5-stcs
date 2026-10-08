@@ -12,6 +12,7 @@
 #include "CameraEffector.h"
 #include "PostprocessAnimator.h"
 #include "WeaponBinocularsVision.h"
+#include "WeaponBinoculars.h"			// a base draws firearms already lowered, binoculars are not one
 #include "level.h"
 #include "xr_level_controller.h"
 #include "game_cl_base.h"
@@ -48,11 +49,6 @@ int		g_dbg_zoom_hide_crosshair	= -1;
 
 CWeapon::CWeapon()
 {
-	m_fLoweredFactor		= 0.f;
-	m_bLowerGoingDown		= false;
-	m_fLowerFromBlend		= 0.f;
-	m_lower_cur_q.identity	();	m_lower_from_q.identity();
-	m_lower_cur_p.set		(0, 0, 0);	m_lower_from_p.set(0, 0, 0);
 	SetState				(eHidden);
 	SetNextState			(eHidden);
 	m_sub_state				= eSubstateReloadBegin;
@@ -103,6 +99,7 @@ CWeapon::CWeapon()
 		m_shell_track[sc].reshow_time = 0;
 		m_shell_track[sc].motion	= 0;
 		m_shell_track[sc].shot_time	= 0;
+		m_shell_track[sc].world_due	= 0;
 		m_shell_track[sc].speed_scale	= 1.f;
 		m_shell_track[sc].by_hand		= false;
 		m_shell_track[sc].ammo_bone		= false;
@@ -1884,9 +1881,7 @@ void CWeapon::OnH_A_Chield		()
 
 void CWeapon::OnActiveItem ()
 {
-	m_fLoweredFactor		= 0.f;		// always drawn up, whatever pose it was put away in
-	m_bLowerGoingDown		= false;
-	m_fLowerFromBlend		= 0.f;
+	ResetLoweredPose		();		// drawn up -- or already down on a base
 	//. from Activate
 	UpdateAddonsVisibility();
 	m_dwAmmoCurrentCalcFrame = 0;
@@ -5234,9 +5229,24 @@ static void play_lower_cam(CActor* pActor, const shared_str& anm)
 	pActor->Cameras().AddCamEffector(e);
 }
 
-void CWeapon::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
+// A draw starts the move over: always up, whatever pose it was put away in -- except on a base, where a
+// firearm or a grenade comes out already carried low (no lowering move, no camera animation).
+void CHudItem::ResetLoweredPose()
 {
-	const bool down	= pActor->IsWeaponLowered() && pActor->inventory().ActiveItem() == this &&
+	m_fLoweredFactor		= 0.f;
+	m_bLowerGoingDown		= false;
+	m_fLowerFromBlend		= 0.f;
+	if (CActor* a = smart_cast<CActor*>(object().H_Parent()))
+		if (a->InBaseZone() && CActor::IsLowerable(&item()))
+		{
+			m_fLoweredFactor	= 1.f;
+			m_bLowerGoingDown	= true;
+		}
+}
+
+void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
+{
+	const bool down	= pActor->IsWeaponLowered() && pActor->inventory().ActiveItem() == &item() &&
 					  !(pActor->MovingState() & mcSprint);
 	const SLowerPair&	P	= lower_anims(HudSection());
 	const SLowerAnim&	A	= P.down ? *P.down : s_no_anim;

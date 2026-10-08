@@ -1132,8 +1132,15 @@ bool player_hud::allow_activation(CHudItem* item)
 {
 	if(m_attached_items[1])
 		return m_attached_items[1]->m_parent_hud_item->CheckCompatibility(item);
-	else
-		return true;
+	// Third person: nothing is attached to the hud, so the left-hand item above is never there and ANY
+	// weapon could be drawn next to the detector. Ask the detector itself, out of the actor's slot, the
+	// same question -- it puts itself away when the answer is no, exactly as with the hud (its motions
+	// run on their own timing there), and the weapon comes out after it.
+	if (CActor* A = Actor())
+		if (CCustomDetector* D = smart_cast<CCustomDetector*>(A->inventory().ItemFromSlot(DETECTOR_SLOT)))
+			if (D->GetState() != CHUDState::eHidden && D != item)
+				return D->CheckCompatibility(item);
+	return true;
 }
 
 void player_hud::attach_item(CHudItem* item)
