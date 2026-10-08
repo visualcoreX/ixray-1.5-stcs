@@ -253,6 +253,16 @@ float CEnvironment::TimeWeight(float val, float min_t, float max_t)
 
 void CEnvironment::ChangeGameTime(float game_time) {
 	fGameTime = NormalizeTime(fGameTime + game_time);
+	// A jump (set_time, sleep): SelectEnvs only ever steps ONE descriptor on, and only once the time passes
+	// the next one -- jumping from 22:00 to 12:00 left the 21:00-23:00 pair up (weight 0: the 21:00 night)
+	// until 23:00 came round again. Pick the pair around the new time at once. A weather effect (the surge)
+	// keeps its own descriptors.
+	if (!bWFX && CurrentWeather)
+	{
+		Current[0]	= 0;
+		Current[1]	= 0;
+		SelectEnvs	(fGameTime);
+	}
 };
 
 void CEnvironment::SetGameTime(float game_time, float time_factor)
