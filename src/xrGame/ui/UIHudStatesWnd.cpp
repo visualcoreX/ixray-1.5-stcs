@@ -24,6 +24,17 @@ static const u32 c_green = color_rgba(0, 255, 0, 255);
 static const u32 c_yellow = color_rgba(255, 255, 0, 255);
 static const u32 c_red = color_rgba(255, 0, 0, 255);
 
+// a lowered weapon's ammo panel: the count in its own colour, dimmed (RGB times this); the icon dimmed
+static const float c_lowered_text_dim = 0.5f;
+static const u32 c_lowered_icon = color_rgba(120, 120, 120, 170);
+
+static u32 lerp_color(u32 a, u32 b, float k)
+{
+	auto ch = [k](u32 x, u32 y) { return u32(iFloor(float(x) + (float(y) - float(x)) * k + 0.5f)); };
+	return color_rgba(ch(color_get_R(a), color_get_R(b)), ch(color_get_G(a), color_get_G(b)),
+					  ch(color_get_B(a), color_get_B(b)), ch(color_get_A(a), color_get_A(b)));
+}
+
 CUIHudStatesWnd::CUIHudStatesWnd()
 {
 	m_last_time = Device.dwTimeGlobal;
@@ -46,6 +57,10 @@ CUIHudStatesWnd::CUIHudStatesWnd()
 	m_zone_hit_type[ALife::infl_electra] = ALife::eHitTypeShock;
 
 	m_zone_feel_radius_max = 0.0f;
+
+	m_wpn_lowered          = nullptr;
+	m_ammo_text_color      = 0;
+	m_lowered_look         = 0.f;
 	
 //-	Load_section();
 }
@@ -123,6 +138,8 @@ void CUIHudStatesWnd::InitFromXml( CUIXml& xml, LPCSTR path )
 	m_ui_weapon_icon_scale = xml.ReadAttribFlt("static_wpn_icon", 0, "scale", 1.f);
 
 	m_fire_mode = UIHelper::CreateStatic( xml, "static_fire_mode", this );
+	m_ammo_text_color      = m_ui_weapon_sign_ammo->GetTextColor();
+	m_lowered_look         = 0.f;
 	
 	m_ui_health_bar   = UIHelper::CreateProgressBar( xml, "progress_bar_health", this );
 	m_ui_armor_bar    = UIHelper::CreateProgressBar( xml, "progress_bar_armor", this );
@@ -144,6 +161,11 @@ void CUIHudStatesWnd::InitFromXml( CUIXml& xml, LPCSTR path )
 
 	m_bleeding = UIHelper::CreateStatic( xml, "bleeding", this );
 	m_bleeding->Show( false );
+
+	// last: drawn over the ammo panel
+	m_wpn_lowered = xml.NavigateToNode( "static_wpn_lowered", 0 ) ? UIHelper::CreateStatic( xml, "static_wpn_lowered", this ) : nullptr;
+	if ( m_wpn_lowered )
+		m_wpn_lowered->Show( false );
 
 	for ( int i = 0; i < it_max; ++i )
 	{
@@ -384,6 +406,34 @@ void CUIHudStatesWnd::UpdateActiveItemInfo( CActor* actor )
 		m_ui_weapon_icon->Show		( false );
 		m_ui_weapon_sign_ammo->Show	( false );
 		m_fire_mode->Show			( false );
+	}
+	UpdateLoweredLook( actor, item );
+}
+
+// The weapon lowered (or going down) fades the icon and the count to "inactive" (and the optional cover in);
+// raised, back.
+// Its own quick fade (0.12 s), not the lowering motion's pace.
+void CUIHudStatesWnd::UpdateLoweredLook( CActor* actor, CInventoryItem* item )
+{
+	const bool lowered	= item && actor->IsWeaponLowered() && CActor::IsLowerable(item);
+	const float step	= Device.fTimeDelta / 0.12f;
+	m_lowered_look		= lowered ? _min(1.f, m_lowered_look + step) : _max(0.f, m_lowered_look - step);
+	const float k		= m_lowered_look;
+
+	// set every frame: SetAmmoIcon makes the GS layers anew each frame, in white
+	const u32 tc = m_ammo_text_color;
+	const u32 tc_dim = color_rgba(iFloor(color_get_R(tc) * c_lowered_text_dim), iFloor(color_get_G(tc) * c_lowered_text_dim),
+								  iFloor(color_get_B(tc) * c_lowered_text_dim), color_get_A(tc));
+	m_ui_weapon_sign_ammo->SetTextColor( lerp_color(tc, tc_dim, k) );
+	const u32 icon_color = lerp_color(color_rgba(255, 255, 255, 255), c_lowered_icon, k);
+	m_ui_weapon_icon->SetTextureColor( icon_color );
+	for ( CUIStatic* l : m_gwr_icon_layers )
+		l->SetTextureColor( icon_color );
+
+	if ( m_wpn_lowered )
+	{
+		m_wpn_lowered->Show( item && k > 0.001f );
+		m_wpn_lowered->SetTextureColor( color_argb(iFloor(k * 255.f + 0.5f), 255, 255, 255) );
 	}
 }
 
