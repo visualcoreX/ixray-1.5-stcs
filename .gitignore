@@ -49,3 +49,7 @@ patch/
 # Python bytecode from the tools
 __pycache__/
 *.pyc
+
+# Compiled shader cache some engines write next to the sources; the game reads gamedata/shaders
+# through a junction, so keep any such cache out of the repo
+gamedata/shaders/*/objects/

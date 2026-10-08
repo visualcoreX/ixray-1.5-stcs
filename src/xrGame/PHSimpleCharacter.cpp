@@ -14,6 +14,7 @@
 #include "../xrEngine/gamemtllib.h"
 #include "gameobject.h"
 #include "physicsshellholder.h"
+#include "ShellCasing.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "PHSimpleCharacterInline.h"
 #include "DamageSource.h"
@@ -1518,7 +1519,10 @@ void CPHSimpleCharacter::InitContact(dContact* c,bool	&do_collide,u16 material_i
 		if(g1==m_wheel||g2==m_wheel)
 		{
 			dxGeomUserData	*ud=bo1	? retrieveGeomUserData(c->geom.g2) : retrieveGeomUserData(c->geom.g1);
-			foot_material_idx	= ud->material;
+			// A dropped case or magazine underfoot is not what the feet stand on: the step keeps the floor's
+			// material, or walking over a scatter of cases would sound like the case/creature pair's steps.
+			if(!smart_cast<CShellCasing*>(ud->ph_ref_object))
+				foot_material_idx	= ud->material;
 		}
 		contact_material=obj_material_idx;
 	}

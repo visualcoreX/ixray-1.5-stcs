@@ -20,10 +20,18 @@ float	DistantSoundBlend	(const Fvector& position, float start, float end);
 // so a burst costs one test.
 bool	IndoorSoundTest		(const Fvector& pos);
 
+// Overlapping sounds (an unlocked shot, see PlaySound) are held to so many copies per item ringing at
+// full volume: the one that would make it more fades out the oldest over snd_overlap_fade seconds, from
+// the moment it starts sounding itself. 0 = no limit. Console defaults; a config may override both, see
+// LoadSound.
+extern int		g_snd_overlap_voices;
+extern float	g_snd_overlap_fade;
+
 struct HUD_SOUND_ITEM
 {
 	HUD_SOUND_ITEM():m_activeSnd(NULL),m_b_exclusive(false),m_volume(1.0f),
-		m_blend_dist_start(DISTANT_SND_BLEND_START_DEF),m_blend_dist_end(DISTANT_SND_BLEND_END_DEF),m_indoor(false)
+		m_blend_dist_start(DISTANT_SND_BLEND_START_DEF),m_blend_dist_end(DISTANT_SND_BLEND_END_DEF),m_indoor(false),
+		m_overlap_voices(-1),m_overlap_fade(-1.f)
 	{
 		m_indoor_fade.start	= INDOOR_SND_FADE_START_DEF;
 		m_indoor_fade.end	= INDOOR_SND_FADE_END_DEF;
@@ -73,6 +81,9 @@ struct HUD_SOUND_ITEM
 
 	static void		StopSound		(	HUD_SOUND_ITEM& snd);
 
+	// Make room for one more overlapping copy that starts sounding <delay> seconds from now.
+	void			LimitVoices		(	float delay);
+
 	ICF BOOL		playing			()
 	{
 		if (m_activeSnd)	return	m_activeSnd->snd._feedback()?TRUE:FALSE;
@@ -107,6 +118,16 @@ struct HUD_SOUND_ITEM
 	bool			m_indoor;
 	sound_fade_out	m_indoor_fade;
 	xr_vector<SSnd> sounds;
+
+	// The overlapping copies still ringing, oldest first. Each is a clone of its own, so it can still be
+	// reached after the start -- which is all the voice limit needs. A copy that is over is let go.
+	struct SVoice	{
+		ref_sound	snd;
+		bool		fading;		// already cut by the limit; no longer counts against it
+	};
+	xr_vector<SVoice>	m_voices;
+	int				m_overlap_voices;	// < 0: g_snd_overlap_voices
+	float			m_overlap_fade;		// < 0: g_snd_overlap_fade
 
 	bool operator == (LPCSTR alias) const{return 0==_stricmp(m_alias.c_str(),alias);}
 };

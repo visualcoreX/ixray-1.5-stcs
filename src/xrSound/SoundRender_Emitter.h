@@ -46,6 +46,7 @@ public:
 	float						curve_volume;			// the source's own distance curve, applied by us into AL_GAIN; 1 with OpenAL rolloff
 	float						envelope_volume;		// the fade-out laid over this instance (set_fade_out), into AL_GAIN; 1 without one
 	sound_fade_out				fade_out;				// end <= 0: none
+	sound_fade_out				cut;					// cut_out's linear fade, same time base; end <= 0: none
 	Fvector						occluder	[3];
 
 	State						m_current_state;
@@ -85,6 +86,7 @@ public:
 	virtual void				set_volume				(float vol)				{ if(!_valid(vol)) vol=0.0f;		p_source.volume=vol;}
 	virtual void				set_priority			(float p)				{ priority_scale = p;									}
 	virtual void				set_fade_out			(const sound_fade_out& fade);
+	virtual void				cut_out					(float delay, float length);
 	virtual	const CSound_params* get_params				()						{ return &p_source;										}
 
 	void						fill_block				(void*	ptr, u32 size);

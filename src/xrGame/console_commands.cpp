@@ -88,6 +88,8 @@ extern	BOOL	g_ShowAnimationInfo		;
 #endif // DEBUG
 extern	BOOL	g_show_hud_anim_info	;	// hud animation overlay, available in Release (player_hud.cpp)
 extern	BOOL	g_snd_shot_overlap	;	// shot sounds ring over each other (WeaponMagazined.cpp)
+extern	int		g_snd_overlap_voices	;	// overlapping copies of one sound at full volume (HudSound.cpp)
+extern	float	g_snd_overlap_fade	;	// ...and how fast the oldest fades when a new one passes the limit
 extern	float	s_fLandingTime1	;	// landing state duration (Actor_Movement.cpp)
 extern	float	s_fLandingTime2	;
 extern	float	s_fLegsLandingHold	;	// legs hold the landing cycle (Actor_Movement.cpp)
@@ -2573,6 +2575,8 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	// Registered here rather than in the DEBUG block so it works in a Release build.
 	CMD4(CCC_Integer,		"hud_dbg_anim",		&g_show_hud_anim_info,	0, 1);
 	CMD4(CCC_Integer,		"snd_shot_overlap",	&g_snd_shot_overlap,		0, 1);
+	CMD4(CCC_Integer,		"snd_overlap_voices",	&g_snd_overlap_voices,	0, 32);
+	CMD4(CCC_Float,			"snd_overlap_fade",		&g_snd_overlap_fade,	0.f, 2.f);
 	CMD4(CCC_Float,			"actor_landing_time",		&s_fLandingTime1,	0.05f, 1.0f);
 	CMD4(CCC_Float,			"actor_landing_time_hard",	&s_fLandingTime2,	0.05f, 1.0f);
 	CMD4(CCC_Float,			"actor_landing_legs_time",	&s_fLegsLandingHold,	0.f, 1.0f);

@@ -31,6 +31,7 @@ void CSoundRender_Emitter::start(ref_sound* _owner, BOOL _loop, float delay)
 	bRewind					=	FALSE;
 	// a fade-out belongs to one play; whoever wants one sets it after starting
 	fade_out.end			=	0.f;
+	cut.end					=	0.f;
 	envelope_volume			=	1.f;
 }
 
@@ -56,6 +57,7 @@ void CSoundRender_Emitter::stop	(BOOL bDeffered)
 void CSoundRender_Emitter::rewind()
 {
 	bStopping					=  FALSE;
+	cut.end						=  0.f;		// a cut was meant for the play it was laid over
 
 	float fTime					=  SoundRender->Timer.GetElapsed_sec();
 	float fDiff					=  fTime-fTimeStarted;

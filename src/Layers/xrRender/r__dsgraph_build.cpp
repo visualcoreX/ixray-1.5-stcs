@@ -74,9 +74,12 @@ void R_dsgraph_structure::r_dsgraph_insert_dynamic	(dxRender_Visual *pVisual, Fv
 	// HUD rendering
 	if (RI.val_bHUD)			
 	{
-		if (sh->flags.bStrictB2F)	
+		if (sh->flags.bStrictB2F)
 		{
-			mapSorted_Node* N		= mapHUDSorted.insertInAnyWay	(distSQ);
+			// priority 3 goes over the rest whatever the distance: a collimator's reticle sits far
+			// behind its glass, yet must not take the glass's tint (models_collimsight.s)
+			R_dsgraph::mapHUD_T&	map		= (3==sh->flags.iPriority) ? mapHUDSortedLast : mapHUDSorted;
+			mapSorted_Node* N		= map.insertInAnyWay	(distSQ);
 			N->val.ssa				= SSA;
 			N->val.pObject			= RI.val_pObject;
 			N->val.pVisual			= pVisual;

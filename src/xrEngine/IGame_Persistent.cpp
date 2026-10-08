@@ -40,6 +40,7 @@ IGame_Persistent::IGame_Persistent	()
 	pp_zoom_circle.set			(0.f, 0.f, 1.f, 0.f);	// no digital zoom until a scope asks
 	pp_scope_shadow.set			(0.f, 0.f, 0.f, 0.f);	// ...and the eye is on the axis
 	hud_zoom_deviation.set			(0.f, 0.f, 0.f, 0.f);	// centred, static lens
+	hud_collim_tint.set				(0.5f, 0.5f, 0.5f, 0.5f);	// clear collimator glass
 	pp_screen_warp.set				(0.f, 1.f, 0.f, 0.f);	// no fisheye, fov untouched, no colour (z was the aspect once -- 1 here lit the colour swim in the menu)
 	dof_kernel_mul					= 1.f;					// the DOF blur exactly as r2_dof_kernel says
 	pp_blur							= 0.f;					// no blur over the final picture

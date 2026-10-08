@@ -84,8 +84,8 @@ position                 	= -0.024, -0.097, 0.
 orientation              	= 0, -4, 0      ;�������� ��������������� � ��������
 
 shell_point         = 0.0, 0.138, 0.07
-fire_point          = 0.0, 0.133, 0.686
-fire_point2         = 0.0, 0.103, 0.686
+fire_point          = 0.0, 0.133, 0.529	; bare muzzle (was z 0.686 -- 15.7 cm in front of it)
+fire_point2         = 0.0, 0.103, 0.529
 
 hand_dependence 	= 1
 single_handed		= 0
@@ -217,6 +217,8 @@ silencer_light_range    = 0.01
 silencer_light_var_color= 0.05
 silencer_light_var_range= 0.01
 silencer_light_time     = 0.01
+silencer_muzzle_fx_offset		= 0, 0.022, 0.326	; how far the silencer sticks out past the fire point on THIS gun (world model;
+silencer_muzzle_fx_offset_hud	= 0, -0.008, 0.380	; ...hud model) -- overrides the silencer section's muzzle_fx_offset(_hud)
 
 ; laser designator + weapon flashlight (installed by the up_protecta_laser upgrade); params below
 laser_params_section      = spas12_laser
@@ -276,7 +278,7 @@ zoom_hide_crosshair        = true
 shell_point			= 0.028,0.052,0.0147
 shell_dir                     	= 0.0, 1.0, 0.0
 shell_bone			= wpn_body
-fire_point		= 0, 0.057, 0.719
+fire_point		= 0, 0.057, 0.683	; bare muzzle (was z 0.719 -- 3.6 cm in front of it)
 fire_bone			= wpn_body
 attach_place_idx		= 0
 item_visual                   	= dynamics\weapons\wpn_spas12\wpn_spas12_hud.ogf
@@ -826,6 +828,8 @@ $spawn          = "weapons\wpn_protecta_nimble"   ; name and section in level ed
 
 def_hide_bones = scope1, scope2, scope3, scope4, flash, laser, bolt_foregrip_rail, handler, rail, rail_lam, body, stock, sight
 def_show_bones = barrel_long
+muzzle_fx_offset				= 0, 0, 0.175	; barrel_long is shown by default: flame/smoke at its end (world model)
+muzzle_fx_offset_hud			= 0, 0, 0.205	; ...and on the hud model (shared with wpn_spas12)
 
 upgrades = vartree_protecta_nimble_usm, vartree_protecta_nimble_stock, vartree_protecta_nimble_rail, vartree_protecta_nimble_sights, vartree_protecta_nimble_handle
 installed_upgrades = 

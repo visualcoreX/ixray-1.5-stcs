@@ -13,6 +13,7 @@
 #include "ExtendedGeom.h"
 #include "PHSoundPlayer.h"
 #include "MathUtils.h"
+#include "PHWorld.h"
 #include "../xrEngine/gamemtllib.h"
 #include "../Include/xrRender/Kinematics.h"
 
@@ -51,6 +52,12 @@ CShellCasing::CShellCasing()
 	m_snd_speed			= 1.f;
 	m_snd_full_speed	= 6.f;
 	m_snd_volume.set	(0.15f, 1.f);
+	m_snd_gap			= 0.03f;
+	m_contact_step		= 0;
+	m_contact_fresh		= true;
+	m_asleep			= false;
+	m_snd_budget		= 4;
+	m_snd_budget_window	= 100;
 	m_processing		= false;
 }
 
@@ -87,6 +94,15 @@ void CShellCasing::Load(LPCSTR section)
 	m_snd_speed			= READ_IF_EXISTS(pSettings, r_float, section, "collide_sound_speed", 1.f);
 	m_snd_full_speed	= READ_IF_EXISTS(pSettings, r_float, section, "collide_sound_full_speed", 6.f);
 	m_snd_volume		= READ_IF_EXISTS(pSettings, r_fvector2, section, "collide_sound_volume", Fvector2().set(0.15f, 1.f));
+	// a contact is a hit only after this long without touching the level (s): one lying, sliding, rolling or
+	// squeezed under a foot touches it every step and stays silent
+	m_snd_gap			= READ_IF_EXISTS(pSettings, r_float, section, "collide_sound_gap", 0.03f);
+	// no more than this many collide sounds of the same count_group within the window (s), all the cases together;
+	// [shell_casings] holds the default, a section may have its own
+	const u32 budget	= (u32)READ_IF_EXISTS(pSettings, r_s32, "shell_casings", "collide_sound_budget", 4);
+	const float window	= READ_IF_EXISTS(pSettings, r_float, "shell_casings", "collide_sound_budget_window", 0.1f);
+	m_snd_budget		= (u32)READ_IF_EXISTS(pSettings, r_s32, section, "collide_sound_budget", (s32)budget);
+	m_snd_budget_window	= u32(iFloor(1000.f * READ_IF_EXISTS(pSettings, r_float, section, "collide_sound_budget_window", window)));
 }
 
 u32 CShellCasing::Count()
@@ -254,6 +270,10 @@ void CShellCasing::UpdateCL()
 	if (m_pPhysicsShell && m_pPhysicsShell->isActive())
 		m_pPhysicsShell->InterpolateGlobalTransform(&XFORM());
 	m_phys_xform.set		(XFORM());
+	// a disabled body gets no contacts at all, so the gap ContactSound looks for would open up while it just
+	// lies there -- and the first contact after it is woken (a foot on it) would count as a hit
+	if (m_pPhysicsShell && !m_pPhysicsShell->isEnabled())
+		m_asleep			= true;
 
 	inherited::UpdateCL		();
 
@@ -317,6 +337,16 @@ void CShellCasing::Hit(SHit* pHDS)
 	inherited::Hit		(&H);
 }
 
+// The collide sounds started lately, per count_group: the budget of ContactSound. Only the physics thread
+// (the contact callbacks) touches it.
+struct SShellSoundBudget
+{
+	shared_str	group;
+	u32			window_start;	// Device.dwTimeGlobal
+	u32			count;			// sounds started since then
+};
+static xr_vector<SShellSoundBudget>	s_sound_budget;
+
 // The stock contact callback (ContactShotMark) weighs a hit as speed * sqrt(mass) against a threshold sized
 // for crates and bodies: on a 20 g case that takes some 70 m/s into the floor, so a case never made a sound.
 // This one goes by the speed alone -- collide_sound_speed .. collide_sound_full_speed m/s along the surface
@@ -324,6 +354,13 @@ void CShellCasing::Hit(SHit* pHDS)
 // material pair with the level's surface, through the case's own sound player (one at a time). The same
 // threshold holds for a passable surface (water): a case resting in it is not splashing all the time.
 // No particles and no wallmarks: the case pairs carry none.
+//
+// The speed alone is not enough to tell a hit, though. A case a character stands on is squeezed between the
+// foot and the floor (70 kg on 20 g), and every physics step throws it into the floor faster than any
+// threshold -- a scatter of cases underfoot went off all at once. So a contact counts only when it comes
+// after collide_sound_gap s off the level: a case lying, sliding, rolling or squeezed touches it every step
+// and is silent, one landing after its flight or a hop is heard. And all the cases of a count_group together
+// start no more than collide_sound_budget sounds within collide_sound_budget_window s.
 void CShellCasing::ContactSound(CDB::TRI* T, dContactGeom* c)
 {
 	dBodyID b				= dGeomGetBody(c->g1);
@@ -339,6 +376,18 @@ void CShellCasing::ContactSound(CDB::TRI* T, dContactGeom* c)
 
 	CShellCasing* self		= smart_cast<CShellCasing*>(data->ph_ref_object);
 	if (!self)			return;
+
+	// a new run of contacts or the same one as the last step's -- worked out once per step, the first contact
+	// of the step decides (a case touches down on several points at once)
+	const u32 step			= u32(ph_world->m_steps_num);
+	if (step != self->m_contact_step)
+	{
+		const u32 gap_steps	= u32(_max(1, iCeil(self->m_snd_gap / fixed_step)));
+		self->m_contact_fresh = !self->m_asleep && (step - self->m_contact_step > gap_steps);
+		self->m_asleep		= false;
+		self->m_contact_step = step;
+	}
+	if (!self->m_contact_fresh)	return;
 
 	static const float SOUND_DIST = 70.f;		// as for any other object (physics_game.cpp)
 	if (Device.vCameraPosition.distance_to_sqr(cast_fv(c->pos)) > SOUND_DIST * SOUND_DIST)	return;
@@ -357,7 +406,29 @@ void CShellCasing::ContactSound(CDB::TRI* T, dContactGeom* c)
 	const float volume		= self->m_snd_volume.x + k * (self->m_snd_volume.y - self->m_snd_volume.x);
 	if (volume <= 0.f)	return;
 
-	self->ph_sound_player()->Play(mtl_pair, cast_fv(c->pos), volume);
+	SShellSoundBudget* budget = NULL;
+	if (self->m_snd_budget)
+	{
+		for (u32 i = 0; i < s_sound_budget.size() && !budget; ++i)
+			if (s_sound_budget[i].group == self->m_count_group)	budget = &s_sound_budget[i];
+		if (!budget)
+		{
+			SShellSoundBudget B;	B.group = self->m_count_group;	B.window_start = 0;	B.count = 0;
+			s_sound_budget.push_back(B);
+			budget			= &s_sound_budget.back();
+		}
+		if (Device.dwTimeGlobal - budget->window_start >= self->m_snd_budget_window)
+		{
+			budget->window_start = Device.dwTimeGlobal;
+			budget->count	= 0;
+		}
+		if (budget->count >= self->m_snd_budget)	return;
+	}
+
+	// the hit is used up whether it is heard or not: the next contact of this run is not a new one
+	self->m_contact_fresh	= false;
+	if (self->ph_sound_player()->Play(mtl_pair, cast_fv(c->pos), volume) && budget)
+		++budget->count;
 }
 
 bool CShellCasing::in_hud_phase() const

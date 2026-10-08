@@ -429,7 +429,7 @@ void CShootingObject::UpdateFlameParticles	()
 
 	Fmatrix		pos; 
 	pos.set		(get_ParticlesXFORM()	); 
-	pos.c.set	(get_CurrentFirePoint()	);
+	pos.c.set	(get_MuzzleFxPoint()	);
 
 	VERIFY(_valid(pos));
 
@@ -465,7 +465,7 @@ void CShootingObject::RenderLight()
 {
 	if ( light_render && light_time>0 ) 
 	{
-		Light_Render(get_CurrentFirePoint());
+		Light_Render(get_MuzzleFxPoint());
 	}
 }
 

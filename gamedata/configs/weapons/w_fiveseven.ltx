@@ -174,6 +174,7 @@ smoke_particles		   	= ghost_particles\weapons\smoke_9mm_pistol
 grenade_flame_particles = weapons\generic_weapon01
 
 shell_point		= 0.0, 0.133, 0.047
+shell_particles		= ghost_particles\weapons\shell_eject_up_small_00		; shell ejection smoke, 1st person
 shell_dir		= 0.0, 0.0, 0.4
 
 ;--STRAP PARAMETERS-----------------------------------------------------------------
@@ -315,7 +316,7 @@ item_orientation	        = 0.0,0.0,0.0
 item_visual             	= dynamics\weapons\wpn_fiveseven\wpn_fiveseven_hud
 attach_place_idx		= 0
 
-shell_point			= 0.0,-9.0,0.0
+shell_point			= 0.01,0.117,0.181		; the port the hud shell leaves by in the shot anims (1st-person shell particle)
 shell_bone              	= wpn_body
 
 fire_point			= -0.010,0.11,0.37

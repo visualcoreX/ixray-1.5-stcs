@@ -57,6 +57,8 @@ CWeapon::CWeapon()
 	SetNextState			(eHidden);
 	m_sub_state				= eSubstateReloadBegin;
 	m_bTriStateReload		= false;
+	m_vMuzzleFxOffset.set	(0.f, 0.f, 0.f);
+	m_vMuzzleFxOffsetHud.set(0.f, 0.f, 0.f);
 	m_bZoomKeyHeld			= false;
 	m_bZoomToggleWanted		= false;
 	m_scope_illum_value		= 0.f;
@@ -316,11 +318,23 @@ void CWeapon::UpdateFireDependencies_internal()
 
 		UpdateXForm			();
 
+		// Muzzle effects (flame, smoke, light) start at the fire point moved by the muzzle fx offset -- out
+		// at the end of an attached silencer, back at a sawn-off muzzle. The offset is simply added to the
+		// fire_point, in the same space; the bullet keeps leaving from the fire point itself.
 		if ( GetHUDmode() )
 		{
-			HudItemData()->setup_firedeps		(m_current_firedeps);
+			attachable_hud_item* hi				= HudItemData();
+			hi->setup_firedeps					(m_current_firedeps);
 			VERIFY(_valid(m_current_firedeps.m_FireParticlesXForm));
-		} else 
+
+			m_current_firedeps.vLastFXP			= m_current_firedeps.vLastFP;
+			if ( hi->m_measures.m_prop_flags.test(hud_item_measures::e_fire_point) )
+			{
+				Fvector fxp;	fxp.add			(hi->m_measures.m_fire_point_offset, m_vMuzzleFxOffsetHud);
+				hi->m_model->LL_GetTransform	(hi->m_measures.m_fire_bone).transform_tiny(m_current_firedeps.vLastFXP, fxp);
+				hi->m_item_transform.transform_tiny(m_current_firedeps.vLastFXP);
+			}
+		} else
 		{
 			// 3rd person or no parent
 			Fmatrix& parent			= XFORM();
@@ -331,12 +345,15 @@ void CWeapon::UpdateFireDependencies_internal()
 			parent.transform_tiny	(m_current_firedeps.vLastFP,fp);
 			parent.transform_tiny	(m_current_firedeps.vLastFP2,fp2);
 			parent.transform_tiny	(m_current_firedeps.vLastSP,sp);
-			
+
 			m_current_firedeps.vLastFD.set	(0.f,0.f,1.f);
 			parent.transform_dir	(m_current_firedeps.vLastFD);
 
 			m_current_firedeps.m_FireParticlesXForm.set(parent);
 			VERIFY(_valid(m_current_firedeps.m_FireParticlesXForm));
+
+			Fvector fxp;			fxp.add(fp, m_vMuzzleFxOffset);
+			parent.transform_tiny	(m_current_firedeps.vLastFXP, fxp);
 		}
 	}
 }
@@ -3400,6 +3417,30 @@ bool CWeapon::IsCollimatorScope() const
 	return READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "collimator", FALSE);
 }
 
+// A real red dot's glass is coated to reflect the emitter's colour back at the eye, so the world seen
+// through it takes the complementary cast. Not tied to the aim or the GL ladder: the glass is there
+// whenever the optic is, and the reticle is a separate model that draws over it untinted.
+Fvector CWeapon::CollimatorTint() const
+{
+	Fvector tint;
+	tint.set(128.f, 128.f, 128.f);
+	if (!IsScopeAttached())	return tint;
+
+	shared_str sc	= GetCurrentScopeSection();
+	shared_str item	= GetAttachedScopeName();
+	if (sc.size() && pSettings->section_exist(*sc) && pSettings->line_exist(*sc, "collimator_tint"))
+		tint = pSettings->r_fvector3(*sc, "collimator_tint");
+	else if (item.size() && pSettings->section_exist(*item) && pSettings->line_exist(*item, "collimator_tint"))
+		tint = pSettings->r_fvector3(*item, "collimator_tint");
+	else if (pSettings->line_exist(cNameSect(), "collimator_tint"))
+		tint = pSettings->r_fvector3(cNameSect(), "collimator_tint");
+
+	clamp(tint.x, 0.f, 255.f);
+	clamp(tint.y, 0.f, 255.f);
+	clamp(tint.z, 0.f, 255.f);
+	return tint;
+}
+
 // GS GetLensFOV: the FOV (degrees) to render the world at for the scope lens frame -- the base world FOV
 // narrowed by the scope magnification (scope_lens_factor). fov_lens = 2*atan(tan(base/2)/factor). Read the
 // factor from the attached scope's addon section first, else the weapon section (default 2.0). 0 = disabled.
@@ -5596,7 +5637,11 @@ void CWeapon::debug_draw_firedeps()
 		CDebugRenderer			&render = Level().debug_renderer();
 
 		if(hud_adj_mode==5)
+		{
 			render.draw_aabb(get_LastFP(), 0.005f, 0.005f, 0.005f, color_xrgb(255, 0, 0));
+			if(!m_vMuzzleFxOffsetHud.similar(Fvector().set(0.f, 0.f, 0.f)))	// moved muzzle effects point
+				render.draw_aabb(get_MuzzleFxPoint(), 0.005f, 0.005f, 0.005f, color_xrgb(255, 255, 0));
+		}
 
 		if(hud_adj_mode==6)
 			render.draw_aabb(get_LastFP2(), 0.005f, 0.005f, 0.005f, color_xrgb(0, 0, 255));
