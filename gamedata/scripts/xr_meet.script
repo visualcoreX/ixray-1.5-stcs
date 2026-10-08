@@ -1,3 +1,9 @@
+-- A weapon in hand the NPC reacts to: up, not carried low (weapon down, key wpn_lower) -- with it down
+-- nobody asks to put it away.
+function actor_weapon_up()
+	return isWeapon(db.actor:active_item()) and not level.actor_weapon_lowered()
+end
+
 --------------------------------------------------------------------------------
 -- Evaluators
 --------------------------------------------------------------------------------
@@ -107,7 +113,7 @@ function action_meet_wait:execute()
 	end
 
 	if self.start_wait_time == nil then
-		local need_wpn = isWeapon(db.actor:active_item()) and self.object:relation(db.actor) ~= game_object.friend
+		local need_wpn = actor_weapon_up() and self.object:relation(db.actor) ~= game_object.friend
 		local start_sound = need_wpn and self.st.sound_start_wpn or self.st.sound_start
 		if start_sound ~= "nil" then
 			xr_sound.set_sound_play(self.object:id(), start_sound)
@@ -234,7 +240,7 @@ end
 
 function Cmeet_manager:process_meet()
 
-	local need_wpn = isWeapon(db.actor:active_item()) and self.npc:relation(db.actor) ~= game_object.friend
+	local need_wpn = actor_weapon_up() and self.npc:relation(db.actor) ~= game_object.friend
 	local meet_state_table
 
 	if need_wpn then
@@ -259,7 +265,7 @@ function Cmeet_manager:process_meet()
 end
 
 function Cmeet_manager:process_victim()
-	local victim_table = isWeapon(db.actor:active_item()) and self.st.victim_wpn or self.st.victim
+	local victim_table = actor_weapon_up() and self.st.victim_wpn or self.st.victim
 	local victim_data = get_data_for_distance(victim_table, self.dist)
 	if victim_data ~= nil then
 		return tostring(xr_logic.pick_section_from_condlist(db.actor, self.npc, victim_data.state))
@@ -283,7 +289,7 @@ function Cmeet_manager:process_use()
 
 	local t
 
-	if isWeapon(db.actor:active_item()) and self.npc:relation(db.actor) ~= game_object.friend then
+	if actor_weapon_up() and self.npc:relation(db.actor) ~= game_object.friend then
 		t = xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.use_wpn)
 	else
 		t = xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.use)
@@ -512,7 +518,7 @@ end
 
 function cannot_talk_by_weapon(npc)
 
-	if not isWeapon(db.actor:active_item()) then
+	if not actor_weapon_up() then
 		return false
 	end
 

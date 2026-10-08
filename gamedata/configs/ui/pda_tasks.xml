@@ -117,6 +117,13 @@
 		<hint_text delay="700">ui_task_btn_focus_center2</hint_text>
 	</btn_task_focus2>
 
+	<!-- top right of the map, in line with the right column of the nav buttons below: spot names on/off -->
+	<btn_map_names x="903" y="8" width="21" height="21">
+		<window_name>btn_map_names</window_name>
+		<texture>ui_mnav_bt_names</texture>
+		<hint_text delay="700">ui_map_btn_names</hint_text>
+	</btn_map_names>
+
 	<btn_nav_parent x="855" y="421" width="72" height="72">
 
 		<btn_nav_0 x="0" y="0" width="21" height="21">

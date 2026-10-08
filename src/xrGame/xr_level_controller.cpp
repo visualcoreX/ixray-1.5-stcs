@@ -110,6 +110,7 @@ _action  actions[]		= {
 	{ "wpn_alter_zoom",			kWPN_ALTER_ZOOM		,_sp},		// GS alter zoom: the scope's second aim pose (ELCAN magnifier)
 	{ "wpn_kick",			kWPN_KICK				,_sp},		// GS quick knife kick
 	{ "quick_grenade",		kQUICK_GRENADE			,_sp},		// GS quick grenade throw
+	{ "wpn_lower",			kWPN_LOWER				,_sp},		// weapon down / up
 
 	{ NULL, 				kLASTACTION				,_both}
 };															
@@ -210,6 +211,128 @@ void initialize_bindings()
 	
 }
 
+// Key names as shown to the player (controls menu, $$ACTION_...$$ hints, button captions) are the
+// US-English ones whatever keyboard layout Windows is in: DirectInput's DIPROP_KEYNAME follows the
+// active layout, so with Russian on, W read "Ц" and Space "ПРОБЕЛ". The names follow Windows'
+// own (GetKeyNameText on en-US). Keys missing here (Japanese ones and the like) still ask
+// DirectInput. Typing is not affected: text input asks CInput::get_dik_name directly.
+static LPCSTR english_key_name(int dik)
+{
+	switch (dik)
+	{
+	case DIK_ESCAPE:		return "Esc";
+	case DIK_1:				return "1";
+	case DIK_2:				return "2";
+	case DIK_3:				return "3";
+	case DIK_4:				return "4";
+	case DIK_5:				return "5";
+	case DIK_6:				return "6";
+	case DIK_7:				return "7";
+	case DIK_8:				return "8";
+	case DIK_9:				return "9";
+	case DIK_0:				return "0";
+	case DIK_MINUS:			return "-";
+	case DIK_EQUALS:		return "=";
+	case DIK_BACK:			return "Backspace";
+	case DIK_TAB:			return "Tab";
+	case DIK_Q:				return "Q";
+	case DIK_W:				return "W";
+	case DIK_E:				return "E";
+	case DIK_R:				return "R";
+	case DIK_T:				return "T";
+	case DIK_Y:				return "Y";
+	case DIK_U:				return "U";
+	case DIK_I:				return "I";
+	case DIK_O:				return "O";
+	case DIK_P:				return "P";
+	case DIK_LBRACKET:		return "[";
+	case DIK_RBRACKET:		return "]";
+	case DIK_RETURN:		return "Enter";
+	case DIK_LCONTROL:		return "Ctrl";
+	case DIK_A:				return "A";
+	case DIK_S:				return "S";
+	case DIK_D:				return "D";
+	case DIK_F:				return "F";
+	case DIK_G:				return "G";
+	case DIK_H:				return "H";
+	case DIK_J:				return "J";
+	case DIK_K:				return "K";
+	case DIK_L:				return "L";
+	case DIK_SEMICOLON:		return ";";
+	case DIK_APOSTROPHE:	return "'";
+	case DIK_GRAVE:			return "`";
+	case DIK_LSHIFT:		return "Shift";
+	case DIK_BACKSLASH:		return "\\";
+	case DIK_Z:				return "Z";
+	case DIK_X:				return "X";
+	case DIK_C:				return "C";
+	case DIK_V:				return "V";
+	case DIK_B:				return "B";
+	case DIK_N:				return "N";
+	case DIK_M:				return "M";
+	case DIK_COMMA:			return ",";
+	case DIK_PERIOD:		return ".";
+	case DIK_SLASH:			return "/";
+	case DIK_RSHIFT:		return "Right Shift";
+	case DIK_MULTIPLY:		return "Num *";
+	case DIK_LMENU:			return "Alt";
+	case DIK_SPACE:			return "Space";
+	case DIK_CAPITAL:		return "Caps Lock";
+	case DIK_F1:			return "F1";
+	case DIK_F2:			return "F2";
+	case DIK_F3:			return "F3";
+	case DIK_F4:			return "F4";
+	case DIK_F5:			return "F5";
+	case DIK_F6:			return "F6";
+	case DIK_F7:			return "F7";
+	case DIK_F8:			return "F8";
+	case DIK_F9:			return "F9";
+	case DIK_F10:			return "F10";
+	case DIK_NUMLOCK:		return "Num Lock";
+	case DIK_SCROLL:		return "Scroll Lock";
+	case DIK_NUMPAD7:		return "Num 7";
+	case DIK_NUMPAD8:		return "Num 8";
+	case DIK_NUMPAD9:		return "Num 9";
+	case DIK_SUBTRACT:		return "Num -";
+	case DIK_NUMPAD4:		return "Num 4";
+	case DIK_NUMPAD5:		return "Num 5";
+	case DIK_NUMPAD6:		return "Num 6";
+	case DIK_ADD:			return "Num +";
+	case DIK_NUMPAD1:		return "Num 1";
+	case DIK_NUMPAD2:		return "Num 2";
+	case DIK_NUMPAD3:		return "Num 3";
+	case DIK_NUMPAD0:		return "Num 0";
+	case DIK_DECIMAL:		return "Num .";
+	case DIK_F11:			return "F11";
+	case DIK_F12:			return "F12";
+	case DIK_F13:			return "F13";
+	case DIK_F14:			return "F14";
+	case DIK_F15:			return "F15";
+	case DIK_NUMPADEQUALS:	return "Num =";
+	case DIK_NUMPADENTER:	return "Num Enter";
+	case DIK_RCONTROL:		return "Right Ctrl";
+	case DIK_NUMPADCOMMA:	return "Num ,";
+	case DIK_DIVIDE:		return "Num /";
+	case DIK_SYSRQ:			return "Print Screen";
+	case DIK_RMENU:			return "Right Alt";
+	case DIK_PAUSE:			return "Pause";
+	case DIK_HOME:			return "Home";
+	case DIK_UP:			return "Up";
+	case DIK_PRIOR:			return "Page Up";
+	case DIK_LEFT:			return "Left";
+	case DIK_RIGHT:			return "Right";
+	case DIK_END:			return "End";
+	case DIK_DOWN:			return "Down";
+	case DIK_NEXT:			return "Page Down";
+	case DIK_INSERT:		return "Insert";
+	case DIK_DELETE:		return "Delete";
+	case DIK_LWIN:			return "Left Win";
+	case DIK_RWIN:			return "Right Win";
+	case DIK_APPS:			return "Menu";
+	}
+	return NULL;
+}
+
 void remap_keys()
 {
 	int idx				= 0;
@@ -218,7 +341,8 @@ void remap_keys()
 	{
 		buff[0]				= 0;
 		_keyboard&	kb		= keyboards[idx];
-		bool res			= pInput->get_dik_name(kb.dik, buff, sizeof(buff) );
+		LPCSTR english		= english_key_name(kb.dik);
+		bool res			= english ? (xr_strcpy(buff, english), true) : pInput->get_dik_name(kb.dik, buff, sizeof(buff) );
 		if(res)
 			kb.key_local_name	= buff;
 		else

@@ -48,6 +48,11 @@ int		g_dbg_zoom_hide_crosshair	= -1;
 
 CWeapon::CWeapon()
 {
+	m_fLoweredFactor		= 0.f;
+	m_bLowerGoingDown		= false;
+	m_fLowerFromBlend		= 0.f;
+	m_lower_cur_q.identity	();	m_lower_from_q.identity();
+	m_lower_cur_p.set		(0, 0, 0);	m_lower_from_p.set(0, 0, 0);
 	SetState				(eHidden);
 	SetNextState			(eHidden);
 	m_sub_state				= eSubstateReloadBegin;
@@ -1879,6 +1884,9 @@ void CWeapon::OnH_A_Chield		()
 
 void CWeapon::OnActiveItem ()
 {
+	m_fLoweredFactor		= 0.f;		// always drawn up, whatever pose it was put away in
+	m_bLowerGoingDown		= false;
+	m_fLowerFromBlend		= 0.f;
 	//. from Activate
 	UpdateAddonsVisibility();
 	m_dwAmmoCurrentCalcFrame = 0;
@@ -5002,10 +5010,307 @@ static void apply_hud_offset(Fmatrix& trans, const Fvector& offs, const Fvector&
 	trans.mulB_43(m);
 }
 
+// The move as animations: hands-rig OMFs read straight from $game_meshes$ ([weapon_lowered] anim_down /
+// anim_up, without .omf), in which only the root bone (bip01, track 0) moves. Per frame the bone's transform
+// is kept as a delta from the normal (weapon up) pose in the bone's own frame -- the key the engine itself
+// turns into a bone matrix with mk_xform -- frames slerped / lerped, 30 per second (the OMF sample rate).
+//   anim_down	going down: frame 0 = up, last frame = down.
+//   anim_up		coming back up: frame 0 = down, last frame = up. Without it the way down plays backwards.
+// A weapon can have its own in its hud section as lowered_anim_down / lowered_anim_up (lower_anims).
+// Without the way down the weapon does not move on the hud (a warning in the log); the mode itself still works.
+struct SLowerAnim
+{
+	float					fps;
+	xr_vector<Fvector>		T;
+	xr_vector<Fquaternion>	Q;
+	bool					valid;
+	shared_str				cam;		// its camera animation (anims\camera_effects\weapon\<OMF name>.anm), if there is one
+
+	float	length	() const	{ return float(T.size() - 1) / fps; }
+	// the delta at a share of the animation (0 = first frame, 1 = last)
+	void	sample	(float u, Fquaternion& q, Fvector& p) const
+	{
+		const float	fr	= _max(0.f, u) * float(T.size() - 1);
+		u32			i0	= (u32)iFloor(fr);
+		if (i0 > T.size() - 2)	i0 = T.size() - 2;
+		const float	a	= _min(1.f, fr - float(i0));
+		q.slerp	(Q[i0], Q[i0 + 1], a);
+		p.lerp	(T[i0], T[i0 + 1], a);
+	}
+};
+static const SLowerAnim	s_no_anim = { 0.f, xr_vector<Fvector>(), xr_vector<Fquaternion>(), false };
+
+// quaternions as (x, y, z, w) with the Hamilton product -- the OMF key's own layout; kept apart from
+// Fquaternion so the delta is exactly what the key holds, converted only at the end
+struct SQ { float x, y, z, w; };
+static SQ	sq_mul	(const SQ& a, const SQ& b)
+{
+	SQ r;
+	r.x = a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y;
+	r.y = a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x;
+	r.z = a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w;
+	r.w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z;
+	return r;
+}
+static SQ	sq_norm	(const SQ& a)
+{
+	float l = _sqrt(a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w);
+	if (l <= 0.f)	l = 1.f;
+	SQ r = { a.x / l, a.y / l, a.z / l, a.w / l };
+	return r;
+}
+static SQ	sq_conj	(const SQ& a)		{ SQ r = { -a.x, -a.y, -a.z, a.w }; return r; }
+static Fvector sq_rot	(const SQ& q, const Fvector& v)
+{
+	SQ p = { v.x, v.y, v.z, 0.f };
+	p = sq_mul(sq_mul(q, p), sq_conj(q));
+	Fvector r;	r.set(p.x, p.y, p.z);
+	return r;
+}
+
+// Track 0 of the first motion of an OMF ($game_meshes$\<name>.omf), as deltas from frame `ref` (the weapon-up
+// pose): inverse(M(ref)) * M(i), i.e. rotation q(ref)^-1 q(i), translation q(ref)^-1 (T(i) - T(ref)).
+// Key layout as the engine's motion loader reads it: a flags byte (1 = has translation keys, 2 = one constant
+// rotation key, 4 = 16-bit translation keys), rotation keys s16 x,y,z,w / 32767 after a crc, translation keys
+// s8 / s16 x,y,z times sizeT plus initT after a crc. Both parameter layouts of the motion-params chunk are
+// irrelevant here -- only OGF_S_MOTIONS is read.
+static void load_anim_omf(SLowerAnim& A, LPCSTR name, bool ref_last)
+{
+	A.valid		= false;
+	// The camera goes with it the way it does with every hud motion (attachable_hud_item::anim_play): an .anm
+	// named after the motion -- here the OMF's file name -- in camera_effects\weapon\, started with the move.
+	{
+		LPCSTR		base	= strrchr(name, '\\');
+		base				= base ? base + 1 : name;
+		string_path	anm, ce;
+		strconcat	(sizeof(anm), anm, "camera_effects\\weapon\\", base, ".anm");
+		A.cam				= FS.exist(ce, "$game_anims$", anm) ? shared_str(anm) : shared_str();
+		if (A.cam.size())	Msg("* [weapon_lowered] camera animation %s", anm);
+	}
+	string_path	fn;
+	xr_sprintf	(fn, "%s.omf", name);
+	if (!FS.exist("$game_meshes$", fn))	{ Msg("! [weapon_lowered] no animation file %s", fn); return; }
+	IReader* F	= FS.r_open("$game_meshes$", fn);
+	if (!F)		return;
+	IReader* MS	= F->open_chunk(14);				// OGF_S_MOTIONS
+	IReader* M	= MS ? MS->open_chunk(1) : 0;		// chunk 0 = the motion count, 1 = the first motion
+	if (M)
+	{
+		shared_str	mname;
+		M->r_stringZ(mname);
+		const u32	n	= M->r_u32();
+		const u8	fl	= M->r_u8();
+		xr_vector<SQ>		q(n);
+		xr_vector<Fvector>	t(n);
+		if (!(fl & 2))	M->r_u32();						// crc
+		for (u32 i = 0; i < n; ++i)
+		{
+			if (i && (fl & 2))	{ q[i] = q[0]; continue; }	// one constant key
+			q[i].x = M->r_s16() / 32767.f;
+			q[i].y = M->r_s16() / 32767.f;
+			q[i].z = M->r_s16() / 32767.f;
+			q[i].w = M->r_s16() / 32767.f;
+		}
+		xr_vector<Fvector>	keys;
+		Fvector				size;	size.set(0, 0, 0);
+		if (fl & 1)
+		{
+			M->r_u32();									// crc
+			keys.resize	(n);
+			for (u32 i = 0; i < n; ++i)
+			{
+				for (int c = 0; c < 3; ++c)				// one read per statement: the order matters
+					keys[i][c] = (fl & 4) ? float(M->r_s16()) : float(s8(M->r_u8()));
+			}
+			M->r_fvector3(size);
+		}
+		Fvector init;	M->r_fvector3(init);
+		for (u32 i = 0; i < n; ++i)
+		{
+			if (keys.empty())	t[i] = init;
+			else				t[i].set(keys[i].x * size.x + init.x, keys[i].y * size.y + init.y, keys[i].z * size.z + init.z);
+		}
+		if (n >= 2)
+		{
+			const u32	r	= ref_last ? n - 1 : 0;
+			const SQ	q0i	= sq_conj(sq_norm(q[r]));
+			A.fps			= 30.f;
+			for (u32 i = 0; i < n; ++i)
+			{
+				const SQ	d	= sq_norm(sq_mul(q0i, q[i]));
+				Fvector		dt;	dt.sub(t[i], t[r]);
+				A.T.push_back	(sq_rot(q0i, dt));
+				Fquaternion	qq;	qq.set(d.w, d.x, d.y, d.z);		// Fquaternion::set takes (w, x, y, z)
+				A.Q.push_back	(qq);
+			}
+			A.valid			= true;
+		}
+		Msg("* [weapon_lowered] %s: motion \"%s\", %d frames%s", fn, *mname, n, A.valid ? "" : " -- too short, not used");
+		M->close();
+	}
+	else
+		Msg("! [weapon_lowered] %s: no motion in it", fn);
+	if (MS)		MS->close();
+	FS.r_close	(F);
+}
+
+// Every OMF once (keyed by path and by which frame is the weapon-up pose); 0 when missing or unusable.
+static xr_map<xr_string, SLowerAnim>	s_anim_files;
+
+static const SLowerAnim* get_anim(LPCSTR name, bool ref_last)
+{
+	xr_string key	= name;
+	key				+= ref_last ? "|up" : "|down";
+	xr_map<xr_string, SLowerAnim>::iterator it = s_anim_files.find(key);
+	if (it == s_anim_files.end())
+	{
+		it = s_anim_files.insert(std::make_pair(key, s_no_anim)).first;
+		load_anim_omf(it->second, name, ref_last);
+	}
+	return it->second.valid ? &it->second : 0;
+}
+
+// The pair a weapon plays, per hud section: its own lowered_anim_down / lowered_anim_up there, each falling
+// back to the [weapon_lowered] anim_down / anim_up default. An own way down without an own way up plays
+// backwards (the default way up would start from another pose); a file that is not there falls back to
+// the default (the log says which).
+struct SLowerPair
+{
+	const SLowerAnim*	down;
+	const SLowerAnim*	up;
+};
+static xr_map<shared_str, SLowerPair>	s_lower_by_hud;
+
+static const SLowerPair& default_lower_anims()
+{
+	static bool			loaded = false;
+	static SLowerPair	P = { 0, 0 };
+	if (loaded)			return P;
+	loaded				= true;
+	if (pSettings->line_exist("weapon_lowered", "anim_down"))
+		P.down			= get_anim(pSettings->r_string("weapon_lowered", "anim_down"), false);
+	if (!P.down)
+	{
+		Msg("! [weapon_lowered] no way-down animation ([weapon_lowered] anim_down): a weapon without its own does not move on the hud when lowered");
+		return P;										// the way up only goes with a way down
+	}
+	if (pSettings->line_exist("weapon_lowered", "anim_up"))
+		P.up			= get_anim(pSettings->r_string("weapon_lowered", "anim_up"), true);
+	return P;
+}
+
+static const SLowerPair& lower_anims(const shared_str& hud_sect)
+{
+	xr_map<shared_str, SLowerPair>::iterator it = s_lower_by_hud.find(hud_sect);
+	if (it != s_lower_by_hud.end())	return it->second;
+	SLowerPair P	= default_lower_anims();
+	if (hud_sect.size())
+	{
+		const SLowerAnim* own_down	= pSettings->line_exist(hud_sect, "lowered_anim_down") ?
+										get_anim(pSettings->r_string(hud_sect, "lowered_anim_down"), false) : 0;
+		const SLowerAnim* own_up	= pSettings->line_exist(hud_sect, "lowered_anim_up") ?
+										get_anim(pSettings->r_string(hud_sect, "lowered_anim_up"), true) : 0;
+		if (own_down)			{ P.down = own_down; P.up = own_up; }
+		else if (own_up && P.down)	P.up = own_up;
+	}
+	return s_lower_by_hud.insert(std::make_pair(hud_sect, P)).first->second;
+}
+
+// The weapon-down move's camera animation on the actor's camera, the same way attachable_hud_item::anim_play
+// starts a hud motion's: a weapon-action effector, eased in from whatever weapon-action camera is running.
+static void play_lower_cam(CActor* pActor, const shared_str& anm)
+{
+	if (!IsGameTypeSingle() || pActor != Level().CurrentControlEntity())	return;
+	CAnimatorCamEffector*	cur	= smart_cast<CAnimatorCamEffector*>(pActor->Cameras().GetCamEffector(eCEWeaponAction));
+	Fmatrix					from;
+	const bool				has_from = (cur != 0);
+	if (cur)				from = cur->OffsetXForm();
+	CAnimatorCamEffector*	e	= xr_new<CAnimatorCamEffector>();
+	e->SetType				(eCEWeaponAction);
+	e->SetHudAffect			(false);
+	e->SetCyclic			(false);
+	e->Start				(anm.c_str());
+	if (has_from)			e->SetBlendFrom(from, 0.15f);
+	pActor->Cameras().AddCamEffector(e);
+}
+
+void CWeapon::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
+{
+	const bool down	= pActor->IsWeaponLowered() && pActor->inventory().ActiveItem() == this &&
+					  !(pActor->MovingState() & mcSprint);
+	const SLowerPair&	P	= lower_anims(HudSection());
+	const SLowerAnim&	A	= P.down ? *P.down : s_no_anim;
+	const SLowerAnim&	U	= P.up ? *P.up : s_no_anim;
+	// the weapon-down factor runs at the length of the animation of the way it is going
+	// (no animation: the weapon stays where it is on the hud, the mode itself still works -- a short ramp
+	// for what goes by the factor: the crosshair, the blocked actions)
+	const float t	= !A.valid ? 0.3f : (!down && U.valid) ? U.length() : A.length();
+	if (down != m_bLowerGoingDown)
+	{
+		// a change of direction: the other animation does not start where this one stands (a change of mind
+		// halfway, or two animations that do not quite meet) -- fade over from the pose the hud is in now
+		m_bLowerGoingDown	= down;
+		// the camera animation of the move that starts now (the way up only when the weapon is not up already)
+		const SLowerAnim*	C	= down ? (A.valid ? &A : 0) : ((m_fLoweredFactor > 0.f && U.valid) ? &U : 0);
+		if (C && C->cam.size())	play_lower_cam(pActor, C->cam);
+		if (m_fLoweredFactor > 0.f && A.valid && U.valid)
+		{
+			m_lower_from_q	= m_lower_cur_q;
+			m_lower_from_p	= m_lower_cur_p;
+			m_fLowerFromBlend = 1.f;
+		}
+	}
+	m_fLoweredFactor += (down ? 1.f : -1.f) * Device.fTimeDelta / _max(t, 0.01f);
+	clamp(m_fLoweredFactor, 0.f, 1.f);
+	if (m_fLowerFromBlend > 0.f)
+	{
+		const float bt		= READ_IF_EXISTS(pSettings, r_float, "weapon_lowered", "anim_blend", 0.15f);
+		m_fLowerFromBlend	-= Device.fTimeDelta / _max(bt, 0.01f);
+		if (m_fLowerFromBlend < 0.f)	m_fLowerFromBlend = 0.f;
+	}
+	if (m_fLoweredFactor <= 0.f)	{ m_fLowerFromBlend = 0.f; return; }
+
+	attachable_hud_item* hi = HudItemData();
+	if (!hi)						return;
+
+	if (A.valid)
+	{
+		// the frame the weapon-down factor stands at, the animation's own timing doing the easing: down =
+		// the way down at the factor, up = the way up at 1 - factor (or the way down played backwards)
+		Fquaternion	q;
+		Fvector		p;
+		if (!down && U.valid)	U.sample(1.f - m_fLoweredFactor, q, p);
+		else					A.sample(m_fLoweredFactor, q, p);
+		if (m_fLowerFromBlend > 0.f)
+		{
+			const float w	= m_fLowerFromBlend * m_fLowerFromBlend * (3.f - 2.f * m_fLowerFromBlend);	// smoothstep
+			Fquaternion	qb;	qb.slerp(q, m_lower_from_q, w);	q = qb;
+			Fvector		pb;	pb.lerp(p, m_lower_from_p, w);	p = pb;
+		}
+		m_lower_cur_q	= q;
+		m_lower_cur_p	= p;
+		Fmatrix		d;	d.mk_xform(q, p);
+		// ADDITIVE on bip01: the delta acts in the bone's own frame -- about where the weapon animation has
+		// put the bone this frame, along its axes -- not about the hud origin. With F = the bone's frame
+		// (hands attach * bone model matrix) the whole hud gets F * d * F^-1, which leaves bip01 at F * d.
+		Fmatrix		F;
+		if (g_player_hud && g_player_hud->hands_bone_frame("bip01", F))
+		{
+			Fmatrix Fi;	Fi.invert(F);
+			Fmatrix m;	m.mul_43(F, d);	m.mulB_43(Fi);
+			trans.mulB_43	(m);
+		}
+		else
+			trans.mulB_43	(d);
+	}
+}
+
 void CWeapon::UpdateHudAdditonal		(Fmatrix& trans)
 {
 	CActor* pActor	= smart_cast<CActor*>(H_Parent());
 	if(!pActor)		return;
+
+	UpdateLoweredPose(trans, pActor);
 
 	if (IsScopeAttached())
 	{
@@ -5274,6 +5579,7 @@ u32 CWeapon::Cost() const
 
 bool CWeapon::show_crosshair()
 {
+	if (m_fLoweredFactor > 0.f)	return false;		// weapon down: nothing to aim with
 	// GS: an enabled laser designator replaces the crosshair -- you aim with the dot, so hide it
 	if (m_bLaserInstalled && m_bLaserEnabled)	return false;
 	return !IsPending() && ( !IsZoomed() || !ZoomHideCrosshair() );

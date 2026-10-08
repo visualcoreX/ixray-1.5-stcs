@@ -92,6 +92,15 @@ extern float g_separate_radius;
 #include "script_engine.h"
 #include "ai_space.h"
 
+// The map's spot-names toggle, for the PDA map button (CUIMapWnd::OnBtnNames_Push). Only the toggle:
+// sim_combat.start_attack, which the key calls, would send the waiting squads in when the PDA is not up.
+void pda_toggle_map_names()
+{
+	luabind::functor<void>	functor;
+	if (ai().script_engine().functor("sim_combat.toggle_map_names", functor))
+		functor				();
+}
+
 void CLevel::IR_OnKeyboardPress	(int key)
 {
 	auto _curr = get_binded_action(key);

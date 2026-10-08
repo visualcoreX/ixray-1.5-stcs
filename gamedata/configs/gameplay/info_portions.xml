@@ -114,4 +114,7 @@
 	<!-- gwr: the Agroprom underground psi-blockade drop was placed (gwr_agr_psy_blockade.script) -->
 	<info_portion id="gwr_agr_psy_blockade_spawned"/>
 
+	<!-- the "squad in position, waiting for your order" hint was shown once (sim_squad_generic.script) -->
+	<info_portion id="cs_squad_order_hint_shown"/>
+
 </game_information_portions>

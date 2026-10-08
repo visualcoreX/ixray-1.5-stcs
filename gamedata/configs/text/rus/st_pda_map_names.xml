@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="ui_map_btn_names">
+		<text>Названия мест на карте ($$ACTION_alife_command$$)</text>
+	</string>
+</string_table>

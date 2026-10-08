@@ -40,6 +40,7 @@ CUIMapWnd::CUIMapWnd()
 	m_prev_actor_pos.set	(0,0);
 	m_currentZoom			= 1.0f;
 	m_map_location_hint		= NULL;
+	m_btn_names				= NULL;
 	m_task_hint_rect.set	(0.0f, 0.0f, UI_BASE_WIDTH, UI_BASE_HEIGHT);
 	m_map_move_step			= 10.0f;
 /*
@@ -395,6 +396,7 @@ void CUIMapWnd::Draw()
 #endif // DEBUG/**/
 
 	m_btn_nav_parent->Draw();
+	if (m_btn_names)	m_btn_names->Draw();	// over the map, like the nav buttons
 }
 
 void CUIMapWnd::MapLocationRelcase(CMapLocation* ml)

@@ -862,6 +862,13 @@ void CUIPdaWnd::DrawHint()
 	{
 
 	}
+	// Keep the hint on the PDA's screen. Its default bounds are the whole 1024x768 canvas, the bezel
+	// included, so a hint near the right edge (the map's nav buttons) ran out over it -- and with the 3D
+	// PDA the part outside the screen is simply cut off. UINoice is the screen glass, drawn on its own
+	// (not a child), so its rect is already in canvas units, from pda.xml or pda_16.xml as appropriate.
+	Frect screen;
+	UINoice->GetAbsoluteRect	( screen );
+	m_hint_wnd->set_rect		( screen );
 	m_hint_wnd->Draw();
 }
 

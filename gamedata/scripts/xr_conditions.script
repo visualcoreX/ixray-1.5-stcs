@@ -622,6 +622,12 @@ function is_surge_activated()
 	return xr_surge_hide.surge_activated == true
 end
 
+-- The surge has reached its first shake: phase 2 is where xr_surge_hide plays blowout_begin and the
+-- shell_shock camera (12 s in on the Swamps, 17 s elsewhere); phases 3-5 are the rest of the surge.
+function is_surge_shaking()
+	return xr_surge_hide.phase ~= nil and xr_surge_hide.phase >= 2
+end
+
 --'------------------------------------------------------
 --' functions for faction expansion levels
 --'------------------------------------------------------

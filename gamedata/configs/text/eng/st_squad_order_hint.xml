@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="st_squad_order_hint_title">
+		<text>Hint</text>
+	</string>
+	<string id="st_squad_order_hint">
+		<text>When a squad of your faction takes up position near its target and reports that it is waiting for your order, press $$ACTION_alife_command$$ and the fighters will attack. This works every time, you do not have to wait for them to go in on their own.</text>
+	</string>
+</string_table>
