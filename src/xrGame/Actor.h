@@ -303,6 +303,9 @@ protected:
 	// Upper-body yaw correction for the torso set currently playing, radians, added in
 	// Spin1Callback. Zero = stock behaviour; see torso_yaw_fix() in ActorAnimation.cpp.
 	float					m_fTorsoYawFix;
+	// actor_torso_auto: how far the third-person upper body's heading is from where it should look, in
+	// radians to add to m_fTorsoYawFix (ActorAnimation.cpp). 1 = measured, 0 = hold, -1 = ease to zero.
+	int						TorsoAutoError		(float& err);
 	float					m_fNeckYawFix;		// same, for bip01_neck -- see [actor_neck_yaw] in ActorAnimation.cpp
 	// Scales the camera-driven spine/head aiming in the bone callbacks: 1 normally, 0 with nothing
 	// in hand, which is what xrMPE does -- its empty-hands set is a full-body animation that the

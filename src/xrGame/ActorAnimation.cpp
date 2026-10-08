@@ -25,6 +25,8 @@
 #include "CustomDetector.h"
 #include "Bolt.h"
 #include "PDA.h"
+#include "../xrEngine/CameraBase.h"	// actor_torso_auto: the camera's look
+#include "Grenade.h"
 
 static const float y_spin0_factor		= 0.0f;
 static const float y_spin1_factor		= 0.4f;
@@ -63,6 +65,36 @@ static const float r_head_factor		= 0.2f;
 // carried the neck along: neck_key = (baked_neck - torso_key) - idle_neck.
 #define ACTOR_NECK_YAW_SECT "actor_neck_yaw"
 float g_actor_torso_yaw = 0.f;
+
+// ---- automatic upper-body heading (actor_torso_auto) -------------------------------------------
+// Replaces the per-set tables above. Every frame, whatever the motion, spine1 is turned so that the upper
+// body points exactly where the camera looks -- rigidly, the whole remaining error taken out at once, no
+// tables, no states, nothing learnt or stored. What "points" is, is read off the pose itself:
+//   - the FACE: square to the line between the eyes (eye_left / eye_right; the shoulders if a model has
+//     no eyes). It exists in every pose of every motion.
+//   - the BARREL of a firearm in hand: the world model's forward, the axis a third-person shot is fired
+//     along (vLastFD = XFORM().k). An aiming stance turns the head to the stock, so with the face
+//     straight the gun would sit a few degrees off -- the barrel is what has to be straight then.
+// The two are blended by how far the barrel is from where the camera looks, as the pose has it this
+// frame: within 25 deg the gun is being pointed and the barrel rules; past 45 deg (lowered, across the
+// chest in a sprint, still coming up out of the holster, tipped in a reload) the face does; in between
+// it fades. So a draw hands over to the barrel while the gun comes up, with the motion, not after it.
+// On a ladder and dead the correction eases back to zero, the body there is not his to turn.
+// SIGN, derived from the code, not guessed: mulA_43 makes a child direction v' = v * spin, and
+// setXYZ(0,a,0) turns model forward (0,0,1) into (-sin a, 0, cos a) -- so with heading(v) =
+// atan2(-v.x, v.z) the spin adds `a` to every heading below spine1. The follow-the-camera share of the
+// spin is (r_torso.yaw - m_fModelYawVis) * follow, i.e. that is the heading the body should end on.
+// 0 = off (default since 2026-10-08): no correction at all, as in xrMPE -- see the blend block in
+// g_SetAnimation. The measured version reacted to every change of pose and the body visibly twitched.
+int g_actor_torso_auto = 0;
+// actor_torso_auto_dbg 1: once a second, what it measures and holds (~ [torso_auto] in the log).
+int g_actor_torso_auto_dbg = 0;
+// Safety net for the sign: an integrator turned the wrong way runs off to the limit instead of settling.
+// If the correction sits at the limit with a large error for half a second, the sign is flipped (and
+// said in the log) -- a right sign never gets there.
+static float	s_torso_auto_sign		= 1.f;
+static int		s_torso_auto_stuck		= 0;
+static LPCSTR	s_torso_dbg_set			= "?";	// the torso set, for the actor_torso_auto_dbg line
 
 // Which of the two stances the actor holds when the pack ships both (see actor_anim_defs.h). It
 // switches the LEGS ("_0" braced / "_1" relaxed, + <base>_turn_safe) and the TORSO (aim_1/2/3 /
@@ -135,7 +167,7 @@ int g_actor_torso_sync_hud = 1;	// was 0
 // slot 2 have it cleared) 13 s of animation get replayed inside every 1.1 s step and snap back --
 // on screen the upper body vibrates. Reported for pistols (slot 1) 2026-08-10.
 // This is the largest torso:legs length ratio still considered a pair. 0 = no guard = stock.
-float g_actor_torso_sync_part = 1.5f;
+float g_actor_torso_sync_part = 1.6f;	// 1.5 left out the SPAS-12 (10) and PKM (machinegun) walk: 50 frames on a 33-frame step = 1.52
 
 // `action` is an optional suffix tried before the plain key. Some sets in the pack are not
 // internally consistent -- 8_mini (MP5 / AKS-74u / the slot-8 family) has its reload baked 17 deg
@@ -655,6 +687,87 @@ char* mov_state[] ={
 	"run",
 	"sprint",
 };
+int CActor::TorsoAutoError(float& err)
+{
+	if (!g_Alive() || (mstate_real & mcClimb))			return -1;
+	IKinematics* K = smart_cast<IKinematics*>(Visual());
+	if (!K)												return 0;
+
+	// where the body should point, as a heading in model space (see the SIGN note at g_actor_torso_auto)
+	const float want = angle_normalize_signed(r_torso.yaw - m_fModelYawVis) * m_fTorsoFollowCam;
+	K->CalculateBones();								// this frame's pose (a no-op when it is already done)
+
+	// the face: square to the line between the eyes; a model without eyes falls back to the shoulders
+	u16 lb = u16(m_eye_left), rb = u16(m_eye_right);
+	if (lb == BI_NONE || rb == BI_NONE)	{ lb = K->LL_BoneID("bip01_l_upperarm"); rb = K->LL_BoneID("bip01_r_upperarm"); }
+	if (lb == BI_NONE || rb == BI_NONE)					return 0;
+	Fvector d, across, up;	up.set(0.f, 1.f, 0.f);
+	across.sub(K->LL_GetTransform(rb).c, K->LL_GetTransform(lb).c);
+	across.y = 0.f;
+	if (across.square_magnitude() < EPS_S)				return 0;
+	d.crossproduct(across, up);
+	{
+		// of the two normals, the one on the side the body faces
+		Fvector c;	c.set(-_sin(want), 0.f, _cos(want));
+		if (d.x * c.x + d.z * c.z < 0.f)				d.invert();
+	}
+	const float err_face = angle_normalize_signed(want - atan2f(-d.x, d.z));
+
+	// the barrel, and how much it is being pointed: its angle to the camera's look, both in model space
+	float err_gun = 0.f, gun_w = 0.f, gun_angle = 0.f, gun_pitch = 0.f;
+	CWeapon* w = smart_cast<CWeapon*>(inventory().ActiveItem());
+	if (w && CActor::IsLowerable(w))
+	{
+		static_cast<CHudItem*>(w)->UpdateXForm();		// public on CHudItem, protected on CWeapon
+		Fmatrix inv;		inv.invert(XFORM());
+		Fvector b, v;
+		inv.transform_dir	(b, w->XFORM().k);
+		inv.transform_dir	(v, (eacFreeLook != cam_active ? cam_Active() : cam_FirstEye())->Direction());
+		if (b.square_magnitude() > EPS_L && v.square_magnitude() > EPS_L)
+		{
+			b.normalize();	v.normalize();
+			gun_angle		= rad2deg(acosf(clampr(b.dotproduct(v), -1.f, 1.f)));
+			gun_pitch		= rad2deg(asinf(clampr(b.y, -1.f, 1.f)) - asinf(clampr(v.y, -1.f, 1.f)));	// + = above
+			const float t	= clampr((45.f - gun_angle) / (45.f - 25.f), 0.f, 1.f);
+			gun_w			= t * t * (3.f - 2.f * t);		// smoothstep
+			Fvector bh;		bh.set(b.x, 0.f, b.z);
+			if (bh.square_magnitude() > EPS_L)
+				err_gun		= angle_normalize_signed(want - atan2f(-bh.x, bh.z));
+			else
+				gun_w		= 0.f;
+		}
+	}
+	err = angle_normalize_signed(err_face + gun_w * angle_normalize_signed(err_gun - err_face));
+
+	if (g_actor_torso_auto_dbg)
+	{
+		static u32 s_next = 0;
+		if (Device.dwTimeGlobal >= s_next)
+		{
+			s_next = Device.dwTimeGlobal + 1000;
+			// + = the body would have to turn that way by setXYZ yaw, i.e. it points the OTHER way now
+			Msg("~ [torso_auto] set '%s'%s, %s: face %+.1f deg, barrel %+.1f deg from the view (+ = left), barrel %+.1f deg above it (%.0f deg off in 3D); correction yaw %.1f",
+				s_torso_dbg_set, (mstate_real & mcCrouch) ? " crouched" : "", g_actor_torso_auto ? "auto ON" : "auto off",
+				-rad2deg(err_face), -rad2deg(err_gun), gun_pitch, gun_angle, rad2deg(m_fTorsoYawFix));
+		}
+	}
+	// the sign safety net (see s_torso_auto_sign)
+	if (_abs(m_fTorsoYawFix) > deg2rad(74.f) && _abs(err) > deg2rad(30.f))
+	{
+		if (++s_torso_auto_stuck > 30)
+		{
+			s_torso_auto_sign	= -s_torso_auto_sign;
+			s_torso_auto_stuck	= 0;
+			m_fTorsoYawFix		= 0.f;
+			Msg("! [torso_auto] the correction ran off to the limit -- sign flipped to %+.0f", s_torso_auto_sign);
+		}
+	}
+	else
+		s_torso_auto_stuck = 0;
+	err *= s_torso_auto_sign;
+	return 1;
+}
+
 void CActor::g_SetAnimation( u32 mstate_rl )
 {
 
@@ -1148,6 +1261,18 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 	// Now that M_torso is final, name the action by looking at WHICH motion of the winning set it is
 	// and pick <key>_<action> off that. This is what makes a corrected animation line up with the
 	// idle instead of sitting a few degrees away from it: whatever is on screen is what gets keyed.
+	// actor_anim_group_sprint: the sprint torso from another set (the SPAS-12's set 10 escape motion bends the
+	// body and swings the head out of step; its old set 9's is clean)
+	if (TW_used && M_torso == TW_used->Moving(STorsoWpn::eSprint, bRelaxed))
+	{
+		CHudItem* SH = smart_cast<CHudItem*>(inventory().ActiveItem());
+		if (SH && SH->ActorAnimGroupSprint().size())
+		{
+			SActorState*	SS	= (mstate_rl & mcCrouch) ? &m_anims->m_crouch : &m_anims->m_normal;
+			STorsoWpn*		SW	= SS->TorsoNamed(smart_cast<IKinematicsAnimated*>(Visual()), SH->ActorAnimGroupSprint());
+			if (SW && SW->moving[STorsoWpn::eSprint])	M_torso = SW->moving[STorsoWpn::eSprint];
+		}
+	}
 	if (TW_used && yaw_key_used)
 	{
 		LPCSTR act = NULL;
@@ -1184,8 +1309,58 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 
 		const float ky = (g_actor_torso_yaw_blend > EPS) ? (Device.fTimeDelta / g_actor_torso_yaw_blend) : 1.f;
 		const float wy = (ky < 1.f) ? ky : 1.f;
-		m_fTorsoYawFix		+= (yaw_fix_target  - m_fTorsoYawFix ) * wy;
-		m_fNeckYawFix		+= (neck_fix_target - m_fNeckYawFix) * wy;
+		if (g_actor_torso_auto)
+		{
+			float err		= 0.f;
+			const int r		= TorsoAutoError(err);
+			// rigid: the whole error is taken out every frame (measured on this frame's pose, so it is in
+			// place from the next one) -- no roll-in when one motion hands over to another
+			if		(r > 0)		m_fTorsoYawFix += err;
+			else if (r < 0)		m_fTorsoYawFix -= m_fTorsoYawFix * wy;
+			clamp				(m_fTorsoYawFix, -deg2rad(75.f), deg2rad(75.f));
+		}
+		else
+		{
+			// As in xrMPE (built on xray16, the stock CoP actor) the upper body follows the camera through the
+			// stock spin factors and shows the pose the motion bakes in -- with ONE exception: a few of the
+			// pack's sets are posed turned off the rifle sets (3, 8, 9, 10 about 17 deg left, machinegun 13),
+			// and xrMPE gives those weapons the same sets, so they sit turned there too. For them the plain
+			// key of [actor_torso_yaw] holds ONE constant for the whole set: no per-action, crouch or
+			// detector lines (those switched the angle whenever the motion changed and the body twitched),
+			// no neck table. Constant within a set, it only eases when the set itself changes.
+			// standing and crouched are separate sets in the pack, posed on their own angles: cr_<key> wins
+			// ...and only for the set's braced poses: its relaxed ones (weapon lowered -- idle_1 / walk_1 / run_1)
+			// are not turned off the rifle sets, the constant over-turned them to the right
+			const bool	set_on		= (!det_group && yaw_key_used && !bRelaxed);
+			// standing still the braced idle has its own angle (<key>_idle; crouched a cr_<key> line still wins):
+			// the compact sets' idle is turned differently from their walk and run
+			const bool	set_still	= !(mstate_rl & mcAnyMove);
+			// ...and the sprint too (<key>_sprint): the compact sets' escape pose is not turned like their walk
+			const bool	set_sprint	= !!(mstate_rl & mcSprint);
+			const float set_fix		= set_on ? deg2rad(torso_yaw_fix(yaw_key_used, set_sprint ? "_sprint" : (set_still ? "_idle" : NULL), bCrouchYaw)) : 0.f;
+			// the relaxed IDLE (weapon lowered, standing still) only by a line of its own, <key>_relaxed
+			// (cr_<key>_relaxed crouched): the compensated sets' lowered idle turns the body right; their
+			// lowered walk and run need nothing
+			float		relaxed_fix	= 0.f;
+			if (!det_group && yaw_key_used && bRelaxed && set_still)
+			{
+				string128	k;
+				if (bCrouchYaw && pSettings->line_exist(ACTOR_TORSO_YAW_SECT, strconcat(sizeof(k), k, "cr_", yaw_key_used, "_relaxed")))
+					relaxed_fix	= deg2rad(pSettings->r_float(ACTOR_TORSO_YAW_SECT, k));
+				else if (pSettings->line_exist(ACTOR_TORSO_YAW_SECT, strconcat(sizeof(k), k, yaw_key_used, "_relaxed")))
+					relaxed_fix	= deg2rad(pSettings->r_float(ACTOR_TORSO_YAW_SECT, k));
+			}
+			m_fTorsoYawFix	+= (set_fix + relaxed_fix - m_fTorsoYawFix) * wy;
+			// actor_torso_auto_dbg with the correction OFF: measure only -- where the barrel and the face
+			// point against the camera in the plain pose, and which torso set is playing
+			if (g_actor_torso_auto_dbg)
+			{
+				s_torso_dbg_set	= det_group ? det_group : (yaw_key_used ? yaw_key_used : "0");
+				float		dummy	= 0.f;
+				TorsoAutoError	(dummy);
+			}
+		}
+		m_fNeckYawFix		+= (0.f - m_fNeckYawFix) * wy;
 	}
 
 	// A one-shot gesture stops on its last frame and stays m_current_torso, so striking again

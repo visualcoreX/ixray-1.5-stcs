@@ -156,6 +156,8 @@ void CHudItem::Load(LPCSTR section)
 	// instead of one of the 13 stock numbered slots -- `norm_torso_<group>_aim_1` and so on. Optional;
 	// without it the weapon keeps using animation_slot exactly as before.
 	m_actor_anim_group		= READ_IF_EXISTS(pSettings, r_string, section, "actor_anim_group", "");
+	// ...and, optionally, another set's sprint: a set whose own escape motion is broken (the SPAS-12's 10)
+	m_actor_anim_group_sprint	= READ_IF_EXISTS(pSettings, r_string, section, "actor_anim_group_sprint", "");
 	// A ONE-SHOT torso motion for the actor while this item is in hand, addressed by full motion
 	// name (the pack has no family for these -- just norm_torso_item_medkit and friends). Meant for
 	// the item-use gesture phantoms, whose section IS the hud section gwr_eatable spawns.

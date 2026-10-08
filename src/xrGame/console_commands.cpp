@@ -110,6 +110,8 @@ extern float	g_actor_torso_follow_empty;	// ActorAnimation.cpp -- spine/head cha
 extern float	g_actor_torso_follow_empty_pitch;	// ...its vertical half alone; -1 = tied to the line above
 extern float	g_actor_torso_blend;		// ActorAnimation.cpp -- ease time for the follow-cam constant
 extern float	g_actor_torso_yaw_blend;	// ActorAnimation.cpp -- ease time for the yaw correction alone
+extern int		g_actor_torso_auto;			// ActorAnimation.cpp -- measured upper-body heading instead of the tables
+extern int		g_actor_torso_auto_dbg;		// ActorAnimation.cpp -- log what it measures, once a second
 extern int		g_actor_legs_diagonal;		// ActorAnimation.cpp -- diagonal leg cycles when moving + strafing
 extern float	g_actor_walk_anim_speed;	// ActorAnimation.cpp -- third-person walk cycle playback speed
 extern float	g_actor_legs_blend;			// ActorAnimation.cpp -- cross-fade speed between leg cycles
@@ -2246,6 +2248,10 @@ void CCC_RegisterCommands()
 	// separate, much shorter ease for the yaw correction (0 = snap); sharing the one above made
 	// every per-action correction roll in and out over a second, which reads as a swing
 	CMD4(CCC_Float,				"actor_torso_yaw_blend",&g_actor_torso_yaw_blend,	0.0f,	1.0f);
+	CMD4(CCC_Integer,			"actor_torso_auto_dbg",	&g_actor_torso_auto_dbg,	0,	1);
+	// 1 = the third-person barrel (or face) is turned onto the view by measurement every frame, 0 = the old
+	// per-set [actor_torso_yaw] table
+	CMD4(CCC_Integer,			"actor_torso_auto",		&g_actor_torso_auto,	0,	1);
 	// diagonal leg cycles while moving + strafing: 0 = off (stock), 1 = relaxed stance only, 2 = always
 	CMD4(CCC_Integer,			"actor_legs_diagonal",	&g_actor_legs_diagonal,	0,	2);
 	// playback speed of the third-person WALK cycles, legs and torso together (1.0 = as authored)

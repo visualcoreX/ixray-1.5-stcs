@@ -379,6 +379,7 @@ protected:
 
 	u32							m_animation_slot;
 	shared_str					m_actor_anim_group;		// xrMPE `actor_anim_group`, empty when unused
+	shared_str					m_actor_anim_group_sprint;	// `actor_anim_group_sprint`: the set the SPRINT torso comes from
 	shared_str					m_actor_torso_anim;		// xrMPE `actor_anim_group`, empty when unused
 
 	HUD_SOUND_COLLECTION		m_sounds;
@@ -405,6 +406,7 @@ public:
 	// Named actor torso set for this item, empty = use the numbered animation_slot. Virtual because a
 	// launcher rifle swaps between two of them (see CWeaponMagazinedWGrenade).
 	virtual const shared_str&	ActorAnimGroup			() const		{ return m_actor_anim_group; }
+	const shared_str&			ActorAnimGroupSprint	() const		{ return m_actor_anim_group_sprint; }
 	const shared_str&			ActorTorsoAnim			() const		{ return m_actor_torso_anim; }
 	InertionData&				CurrentInertionData		();				// GS UpdateInertion: hip<->aim blend by zoom factor, honors hud_inertion/zoom_inertion
 	virtual float				GetInertionAimFactor	() const		{ return 0.f; }	// CWeapon: zoom rotation factor
