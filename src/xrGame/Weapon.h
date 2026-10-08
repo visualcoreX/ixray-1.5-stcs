@@ -380,8 +380,10 @@ public:
 		Fvector		p0, pA;			// parent-bone space: p0 where the shell rests (the chamber), pA a frame ago
 		Fvector		owner_vel;		// of whoever holds the gun, added to the throw
 		shared_str	section;		// the case to spawn
+		u32			world_due;		// third person: throw at this Device.dwTimeGlobal (shell_casing_world_delay); 0 = none
 	};
 	SShellCasingTrack	m_shell_track[2];
+	void		gwr_ShellCasingThrowWorld	(u32 idx);	// third person: the case out of the world model's port
 
 	u32			 m_gwr_world_bones_sig;	// last applied attachment-state signature (u32(-1) = never)
 

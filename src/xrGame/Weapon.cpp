@@ -99,6 +99,7 @@ CWeapon::CWeapon()
 		m_shell_track[sc].reshow_time = 0;
 		m_shell_track[sc].motion	= 0;
 		m_shell_track[sc].shot_time	= 0;
+		m_shell_track[sc].world_due	= 0;
 		m_shell_track[sc].speed_scale	= 1.f;
 		m_shell_track[sc].by_hand		= false;
 		m_shell_track[sc].ammo_bone		= false;
