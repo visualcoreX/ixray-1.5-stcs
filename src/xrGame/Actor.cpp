@@ -201,6 +201,7 @@ CActor::CActor() : CEntityAlive()
 {
 	m_bWeaponLowered		= false;
 	m_wpn_lowered_id		= u16(-1);
+	m_bInBaseZone			= false;
 	m_dwBayonetHitTm		= 0;
 	m_eSuicideState			= eSuicideNone;
 	m_dwLastShotTime		= 0;

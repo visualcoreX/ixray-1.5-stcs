@@ -5,6 +5,7 @@ class CPhysicItem;
 class NET_Packet;
 class CInventoryItem;
 class CMotionDef;
+class CActor;
 
 #include "actor_defs.h"
 #include "inventory_space.h"
@@ -257,6 +258,21 @@ public:
 
 
 	virtual void				UpdateHudAdditonal	(Fmatrix&);
+
+	// Weapon down (CActor::ToggleWeaponLowered, implemented in Weapon.cpp): firearms and grenades are carried
+	// low. 0 = up, 1 = all the way down (the animations' progress). UpdateLoweredPose layers the move over the
+	// hud (call it from UpdateHudAdditonal), ResetLoweredPose starts over on a draw (from OnActiveItem): up --
+	// or already down on a base.
+	float						LoweredFactor		() const	{ return m_fLoweredFactor; }
+	void						UpdateLoweredPose	(Fmatrix& trans, CActor* pActor);
+	void						ResetLoweredPose	();
+	float						m_fLoweredFactor;
+	// which way the move last went, the delta it put on the hud last frame, and the pose a change of
+	// direction fades over from (weight 1 -> 0 over [weapon_lowered] anim_blend)
+	bool						m_bLowerGoingDown;
+	float						m_fLowerFromBlend;
+	Fquaternion					m_lower_cur_q,	m_lower_from_q;
+	Fvector						m_lower_cur_p,	m_lower_from_p;
 
 
 	virtual	void				UpdateXForm			()						= 0;

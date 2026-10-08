@@ -80,6 +80,11 @@ ENGINE_API extern float psHUD_FOV_def;
 CHudItem::CHudItem()
 {
 	RenderHud					(TRUE);
+	m_fLoweredFactor			= 0.f;
+	m_bLowerGoingDown			= false;
+	m_fLowerFromBlend			= 0.f;
+	m_lower_cur_q.identity		();	m_lower_from_q.identity();
+	m_lower_cur_p.set			(0, 0, 0);	m_lower_from_p.set(0, 0, 0);
 //	m_hud_item_shared_data		= NULL;
 	m_bStopAtEndAnimIsRunning = false;
 	m_current_motion_def		= NULL;
