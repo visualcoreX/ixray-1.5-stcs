@@ -77,6 +77,10 @@ public:
 	// units of the eyepiece radius; z = how soft/deep the darkening is (0 = no shadow at all).
 	Fvector4						pp_scope_shadow;
 	Fvector4						hud_zoom_deviation;
+	// Coating on a collimator's glass (m_collim_tint), filled by CActor from the held weapon's scope.
+	// rgb = the scope's collimator_tint / 256, so 0.5 = clear glass; the HUD glass multiplies the view
+	// behind it by 2*rgb (models_lenses.s / models_transparent.s). a = 0.5 keeps the target's alpha.
+	Fvector4						hud_collim_tint;
 	// Intoxication screen warp (gunsl_peredoz.script -> level.set_intox_screen_fx -> CActor::UpdateCL):
 	// x = fisheye strength at the screen edges (0 = none), y = world fov multiplier (1 = none, applied
 	// in CCameraManager::ApplyDevice), z = colour swim strength, w = edge wave strength.

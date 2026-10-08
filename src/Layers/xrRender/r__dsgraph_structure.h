@@ -43,6 +43,7 @@ public:
 	R_dsgraph::mapLOD_T											mapLOD;
 	R_dsgraph::mapSorted_T										mapDistort;
 	R_dsgraph::mapHUD_T											mapHUDSorted;
+	R_dsgraph::mapHUD_T											mapHUDSortedLast;	// strict-sorted HUD of priority 3: drawn over the rest
 
 #if RENDER!=R_R1
 	R_dsgraph::mapSorted_T										mapWmark;			// sorted
@@ -147,6 +148,7 @@ public:
 		mapLOD.destroy			();
 		mapDistort.destroy		();
 		mapHUDSorted.destroy();
+		mapHUDSortedLast.destroy();
 
 #if RENDER!=R_R1
 		mapWmark.destroy		();

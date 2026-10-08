@@ -69,6 +69,25 @@ void __fastcall sorted_L1		(mapSorted_Node *N)
 	V->Render						(calcLOD(N->key,V->vis.sphere.R));
 }
 
+// ALPHA, every pass of the element -- the HUD's strict-sorted geometry only. A collimator's glass draws
+// its coating as a second pass (models_lenses.s); the world keeps sorted_L1, so the same glass on a gun
+// lying around or in an NPC's hands never takes the player's tint.
+void __fastcall sorted_L1_passes	(mapSorted_Node *N)
+{
+	VERIFY (N);
+	dxRender_Visual *V				= N->val.pVisual;
+	VERIFY (V && V->shader._get());
+	const float lod					= calcLOD(N->key,V->vis.sphere.R);
+	for (u32 pass = 0; pass < N->val.se->passes.size(); ++pass)
+	{
+		RCache.set_Element				(N->val.se, pass);
+		RCache.set_xform_world			(N->val.Matrix);
+		RImplementation.apply_object	(N->val.pObject);
+		RImplementation.apply_lmaterial	();
+		V->Render						(lod);
+	}
+}
+
 IC	bool	cmp_vs_nrm			(mapNormalVS::TNode* N1, mapNormalVS::TNode* N2)			{	return (N1->val.ssa > N2->val.ssa);		}
 IC	bool	cmp_vs_mat			(mapMatrixVS::TNode* N1, mapMatrixVS::TNode* N2)			{	return (N1->val.ssa > N2->val.ssa);		}
 
@@ -561,8 +580,10 @@ void	R_dsgraph_structure::r_dsgraph_render_sorted_hud	()
 
 	// Rendering
 	rmNear();
-	mapHUDSorted.traverseRL(sorted_L1);
+	mapHUDSorted.traverseRL(sorted_L1_passes);
 	mapHUDSorted.clear();
+	mapHUDSortedLast.traverseRL(sorted_L1_passes);
+	mapHUDSortedLast.clear();
 	rmNormal();
 
 	// Restore projection

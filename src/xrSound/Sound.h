@@ -152,6 +152,7 @@ public:
 	IC void					set_volume				( float vol );
 	IC void					set_priority			( float vol );
 	IC void					set_fade_out			( const sound_fade_out& fade );
+	IC void					cut_out					( float delay, float length );
 
 	IC const CSound_params*	get_params				( );
     IC void					set_params				( CSound_params* p );
@@ -204,6 +205,9 @@ public:
 	virtual	const CSound_params*	get_params				( )															= 0;
 	virtual u32						play_time				( )															= 0;
 	virtual void					set_fade_out			(const sound_fade_out& fade)								= 0;
+	// Fade the instance out starting <delay> seconds from now, over <length>, then stop it -- on top of
+	// whatever set_fade_out laid over it (the two multiply). A second cut only ever moves the end closer.
+	virtual void					cut_out					(float delay, float length)									= 0;
 };
 
 /// definition (Sound Stream Interface)
@@ -325,6 +329,7 @@ IC void	ref_sound::set_range					( float min, float max )								{	VERIFY(!::Sou
 IC void	ref_sound::set_volume					( float vol )											{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	_feedback()->set_volume(vol);								}
 IC void	ref_sound::set_priority					( float p )												{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	_feedback()->set_priority(p);								}
 IC void	ref_sound::set_fade_out				( const sound_fade_out& f )								{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	_feedback()->set_fade_out(f);								}
+IC void	ref_sound::cut_out						( float delay, float length )							{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	_feedback()->cut_out(delay,length);							}
 IC void	ref_sound::stop							( )														{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	_feedback()->stop(FALSE);									}
 IC void	ref_sound::stop_deffered				( )														{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	_feedback()->stop(TRUE);									}
 IC const CSound_params*	ref_sound::get_params	( )														{	VERIFY(!::Sound->i_locked()); 	if (_feedback())	return _feedback()->get_params(); else return NULL;			}

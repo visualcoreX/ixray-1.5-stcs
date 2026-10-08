@@ -15,7 +15,8 @@ class CPHSoundPlayer
 public:
 		// One collision sound per object at a time (the _feedback test in Play). `volume` is the
 		// impact volume the contact computed; 0 or less means "leave the sound at its own level".
-		void						Play					(SGameMtlPair* mtl_pair,const Fvector& pos, float volume = -1.f);
+		// true = a sound started (false: the previous one is not far enough through, or the object stands still).
+		bool						Play					(SGameMtlPair* mtl_pair,const Fvector& pos, float volume = -1.f);
 									CPHSoundPlayer			(CPhysicsShellHolder *m_object)									;
 virtual								~CPHSoundPlayer			()													;
 

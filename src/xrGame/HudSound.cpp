@@ -20,6 +20,8 @@ static struct SIndoorSoundParams
 } s_indoor;
 
 float psHUDSoundVolume			= 1.0f;
+int		g_snd_overlap_voices	= 4;
+float	g_snd_overlap_fade		= 0.1f;
 void InitHudSoundSettings()
 {
 	psHUDSoundVolume		= pSettings->r_float("hud_sound", "hud_sound_vol_k");
@@ -176,6 +178,18 @@ void HUD_SOUND_ITEM::LoadSound(	LPCSTR section, LPCSTR line,
 	hud_snd.sounds.clear	();
 	hud_snd.m_volume		= LoadSndVolume(ini, section, line);
 
+	// the voice limit: "<line>_overlap_voices / _fade", else the section-wide "snd_overlap_voices / _fade",
+	// else the console's
+	string256	own;
+	xr_sprintf	(own, "%s_overlap_voices", line);
+	hud_snd.m_overlap_voices	= ini->line_exist(section, own)						? ini->r_s32(section, own)
+								: ini->line_exist(section, "snd_overlap_voices")	? ini->r_s32(section, "snd_overlap_voices")
+								: -1;
+	xr_sprintf	(own, "%s_overlap_fade", line);
+	hud_snd.m_overlap_fade		= ini->line_exist(section, own)						? ini->r_float(section, own)
+								: ini->line_exist(section, "snd_overlap_fade")		? ini->r_float(section, "snd_overlap_fade")
+								: -1.f;
+
 	string256	sound_line;
 	xr_strcpy		(sound_line,line);
 	int k=0;
@@ -266,7 +280,8 @@ void HUD_SOUND_ITEM::DestroySound(HUD_SOUND_ITEM& hud_snd)
 	for(;it!=hud_snd.sounds.end();++it)
 		(*it).snd.destroy();
 	hud_snd.sounds.clear	();
-	
+	hud_snd.m_voices.clear	();		// lets go of the overlapping copies; they ring on, as they always did
+
 	hud_snd.m_activeSnd		= NULL;
 }
 
@@ -312,8 +327,8 @@ void HUD_SOUND_ITEM::PlaySound(	HUD_SOUND_ITEM&		hud_snd,
 	// A locked sound keeps the one shared object per alias: it can be stopped, moved and re-tuned
 	// afterwards, but starting it again cuts whatever it was playing -- which is why a burst used to
 	// sound like a single shot being retriggered. An unlocked one is a detached instance, so several
-	// ring at once; the price is that there is no handle at all, hence no m_activeSnd bookkeeping and
-	// no way to stop it. That rules it out for anything looped or exclusive.
+	// ring at once; it is not m_activeSnd, so it cannot be moved or stopped with the item -- only the
+	// voice limit reaches it (LimitVoices). That rules it out for anything looped or exclusive.
 	if (!unlocked || hud_snd.m_b_exclusive || looped)
 	{
 		hud_snd.m_activeSnd		= NULL;
@@ -331,10 +346,51 @@ void HUD_SOUND_ITEM::PlaySound(	HUD_SOUND_ITEM&		hud_snd,
 		if (fade)
 			s.snd.set_fade_out	(*fade);
 	}
-	else
+	else if (s.snd._handle())
 	{
-		Fvector	pos				= (flags&sm_2D) ? Fvector().set(0,0,0) : position;
-		s.snd.play_no_feedback	(const_cast<CObject*>(parent), flags, s.delay, &pos, &volume, vary_freq?&freq:NULL, NULL, fade);
+		hud_snd.LimitVoices		(s.delay);
+
+		// what play_no_feedback does, but the copy stays within reach
+		SVoice	v;
+		v.fading				= false;
+		v.snd.clone				(s.snd, s.snd._sound_type(), s.snd._g_type());
+		v.snd.play_at_pos		(	const_cast<CObject*>(parent),
+									flags&sm_2D?Fvector().set(0,0,0):position,
+									flags,
+									s.delay);
+		v.snd.set_volume		(volume);
+		if (vary_freq)
+			v.snd.set_frequency	(freq);
+		if (fade)
+			v.snd.set_fade_out	(*fade);
+		if (v.snd._feedback())
+			hud_snd.m_voices.push_back	(v);
+	}
+}
+
+void HUD_SOUND_ITEM::LimitVoices(float delay)
+{
+	for (xr_vector<SVoice>::iterator it = m_voices.begin(); it != m_voices.end(); )
+	{
+		if (it->snd._feedback())	++it;
+		else						it = m_voices.erase(it);		// over
+	}
+
+	const int	max_voices		= (m_overlap_voices>=0) ? m_overlap_voices : g_snd_overlap_voices;
+	if (max_voices<=0)			return;
+	const float	fade			= (m_overlap_fade>=0.f) ? m_overlap_fade : g_snd_overlap_fade;
+
+	int			live			= 0;
+	for (xr_vector<SVoice>::const_iterator it = m_voices.begin(); it != m_voices.end(); ++it)
+		if (!it->fading)		++live;
+
+	// the new copy is about to make one more: the oldest go, fading from when it is first heard
+	for (xr_vector<SVoice>::iterator it = m_voices.begin(); live>=max_voices && it != m_voices.end(); ++it)
+	{
+		if (it->fading)			continue;
+		it->snd.cut_out			(delay, fade);
+		it->fading				= true;
+		--live;
 	}
 }
 

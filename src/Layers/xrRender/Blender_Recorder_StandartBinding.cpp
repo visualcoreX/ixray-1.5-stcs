@@ -253,6 +253,17 @@ class cl_scope_shadow : public R_constant_setup {
 };
 static cl_scope_shadow	binder_scope_shadow;
 
+// The coating on a collimator's glass: rgb = tint, 0.5 = clear. The glass's tint pass blends it
+// as destcolor/srccolor, i.e. view * 2*rgb (models_lenses.s, model_collim_tint.ps).
+class cl_collim_tint : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent)	RCache.set_c (C, g_pGamePersistent->hud_collim_tint);
+		else					RCache.set_c (C, 0.5f, 0.5f, 0.5f, 0.5f);
+	}
+};
+static cl_collim_tint	binder_collim_tint;
+
 // Gunslinger m_digiclock (r_constants.pas binder_digiclock_setup): the in-game clock drawn on electronic
 // weapon displays -- the gauss MUI's digit screens (models_digiclock_{hh,hl,mh,ml}_screen). Each channel is
 // one digit as an atlas offset 0.0..0.9; the digit shader samples s_base at digit + tc.x*0.1.
@@ -422,6 +433,7 @@ void	CBlender_Compile::SetMapping	()
 	r_Constant				("m_hud_params",	&binder_hud_params);
 	r_Constant				("m_zoom_deviation",&binder_zoom_deviation);
 	r_Constant				("m_scope_shadow",	&binder_scope_shadow);
+	r_Constant				("m_collim_tint",	&binder_collim_tint);
 	r_Constant				("m_digiclock",		&binder_digiclock);
 
 	// eye-params

@@ -154,7 +154,8 @@ void CWeaponPistol::OnShot		()
 	// Shell Drop
 	Fvector vel; 
 	PHGetLinearVell(vel);
-	if (!gwr_ShellCasingOnShot(vel))		// a real case, or the old particle
+	// a real case, or the old particle -- in first person both (see CWeaponMagazined::OnShot)
+	if (!gwr_ShellCasingOnShot(vel) || GetHUDmode())
 		OnShellDrop				(get_LastSP(),  vel);
 
 	// ����� �� ������
@@ -164,7 +165,7 @@ void CWeaponPistol::OnShot		()
 			  "can't set looped particles system for shoting with pistol");
 	
 	//��� �� ������
-	StartSmokeParticles	(get_LastFP(), vel);
+	StartSmokeParticles	(get_MuzzleFxPoint(), vel);
 }
 
 void CWeaponPistol::UpdateSounds()

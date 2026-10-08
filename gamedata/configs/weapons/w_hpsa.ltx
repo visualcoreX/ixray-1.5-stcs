@@ -153,7 +153,7 @@ smoke_particles		   	= ghost_particles\weapons\smoke_9mm_pistol
 
 shell_point		 				= 0.0, 0.133, 0.047
 shell_dir		 				= 0.0, 0.0, 0.4
-;shell_particles	 			= weapons\generic_shells
+shell_particles	 			= ghost_particles\weapons\shell_eject_up_small_00		; shell ejection smoke, 1st person
 
 ;-------------------------------------------------------------------------------
 ;startup_ammo           	= 90
@@ -217,6 +217,8 @@ silencer_light_range			= 0.01
 silencer_light_var_color	= 0.05
 silencer_light_var_range	= 0.5
 silencer_light_time 			= 0.2
+silencer_muzzle_fx_offset		= 0, -0.006, 0.197	; how far the silencer sticks out past the fire point on THIS gun (world model;
+silencer_muzzle_fx_offset_hud	= 0, 0, 0.247	; ...hud model) -- overrides the silencer section's muzzle_fx_offset(_hud)
 
 
 ; GS world-model animations (hpsa/base.ltx)
@@ -251,7 +253,7 @@ item_orientation				= 0.0,0.0,0.0
 item_visual             	= dynamics\weapons\wpn_hpsa\wpn_hpsa_hud.ogf
 ;fire_mode_bone             = pred
 attach_place_idx				= 0
-shell_point						= 0.012,0.038,0.473
+shell_point						= 0.01,0.116,0.181		; the port the hud shell leaves by in the shot anims (1st-person shell particle)
 shell_bone              	= wpn_body
 fire_point			= -0.00847,0.10638,0.37878
 fire_bone               	= wpn_body

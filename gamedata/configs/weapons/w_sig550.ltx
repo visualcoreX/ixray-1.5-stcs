@@ -116,7 +116,7 @@ grenade_flame_particles = ghost_particles\weapons\flame_40mm_m320
 
 shell_point             = -0.020000,0.167000,0.082000
 shell_dir               = 0.0, 0.0, 0.4
-;shell_particles         = weapons\generic_shells
+shell_particles         = ghost_particles\weapons\shell_eject_right_medium_00		; shell ejection smoke, 1st person
 
 
 
@@ -223,6 +223,8 @@ silencer_light_range    = 0.01
 silencer_light_var_color= 0.05
 silencer_light_var_range= 0.5
 silencer_light_time     = 0.2
+silencer_muzzle_fx_offset		= 0, 0.006, 0.039	; how far the silencer sticks out past the fire point on THIS gun (world model;
+silencer_muzzle_fx_offset_hud	= 0, 0, 0.110	; ...hud model) -- overrides the silencer section's muzzle_fx_offset(_hud)
 
 
 
@@ -393,7 +395,7 @@ hands_position_16x9     = 0.0,0.01,-0.065	; orig 0.0,0.01,0.016 (GS wpn_sig550)
 hands_orientation_16x9  = 0.0,0.0,0.0
 item_position		= 0.0,0.0,0.0
 item_orientation	= 0.0,0.0,0.0
-shell_point		= 0.028,0.075,0.156
+shell_point		= 0.024,0.072,0.028		; the port the hud shell leaves by in the shot anims (1st-person shell particle)
 shell_dir               = 0.0, 1.0, 0.0
 shell_bone		= wpn_body
 fire_point		= 0,0.052,0.818

@@ -19,7 +19,7 @@ CPHSoundPlayer::~CPHSoundPlayer()
 	m_object=NULL;
 }
 
-void CPHSoundPlayer::Play(SGameMtlPair* mtl_pair,const Fvector& pos, float volume)
+bool CPHSoundPlayer::Play(SGameMtlPair* mtl_pair,const Fvector& pos, float volume)
 {
 
 	// The gate is time, not the end of the sound: a new one is allowed once the current is
@@ -39,8 +39,10 @@ void CPHSoundPlayer::Play(SGameMtlPair* mtl_pair,const Fvector& pos, float volum
 
 			const float len = m_sound.get_length_sec();		// known from the clone, before it plays
 			m_next_play_tm	= Device.dwTimeGlobal + u32(len * PLAY_OVERLAP_K * 1000.f);
+			return			true;
 		}
 	}
+	return					false;
 }
 
 

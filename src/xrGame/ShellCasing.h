@@ -84,5 +84,11 @@ private:
 	float					m_snd_speed;			// m/s into the surface a hit is heard from...
 	float					m_snd_full_speed;		// ...and is at its loudest from
 	Fvector2				m_snd_volume;			// the volume at those two speeds
+	float					m_snd_gap;				// s off the level a contact has to follow to count as a hit
+	u32						m_contact_step;			// the physics step it last touched the level on...
+	bool					m_contact_fresh;		// ...and whether that step's contact came after such a gap
+	volatile bool			m_asleep;				// its body was disabled at the last UpdateCL: it lay still
+	u32						m_snd_budget;			// collide sounds of its count_group allowed...
+	u32						m_snd_budget_window;	// ...within this many ms (0 sounds = no limit)
 	bool					m_processing;
 };

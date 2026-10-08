@@ -1344,6 +1344,16 @@ void CActor::UpdateCL	()
 			else
 				g_pGamePersistent->hud_zoom_deviation.set(0.f, 0.f, 0.f, 0.f);
 		}
+
+		// The collimator glass's coating (m_collim_tint): /256 so collimator_tint 128 is exactly the
+		// shader's neutral 0.5. Only the held weapon's HUD glass draws the tint pass at all.
+		if (wpn)
+		{
+			Fvector tint = wpn->CollimatorTint();
+			g_pGamePersistent->hud_collim_tint.set(tint.x / 256.f, tint.y / 256.f, tint.z / 256.f, 0.5f);
+		}
+		else
+			g_pGamePersistent->hud_collim_tint.set(0.5f, 0.5f, 0.5f, 0.5f);
 	}
 
 	// INTOXICATION SCREEN WARP (gunsl_peredoz.script -> level.set_intox_screen_fx). A slow pulse drives it:

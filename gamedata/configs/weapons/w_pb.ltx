@@ -143,7 +143,7 @@ visual                  	= dynamics\weapons\wpn_pm\wpn_pb.ogf
 position                	= -0.021, -0.07, 0.0
 orientation             	= 0, 0, 0
 
-fire_point              	= 0.0, 0.104, 0.273
+fire_point              	= 0.0, 0.128, 0.134	; bare muzzle on the bore axis (was 0.0, 0.104, 0.273 -- the silencer's end)
 
 ;--STRAP PARAMETERS-----------------------------------------------------------------
 ;strap_position         	= -0.1,-0.45,0.2			; position (offset) and orientation of the weapon when it is strapped
@@ -156,7 +156,7 @@ smoke_particles		   	= ghost_particles\weapons\smoke_9mm_pm
 
 shell_point		 				= 0.0, 0.133, 0.047
 shell_dir		 				= 0.0, 0.0, 0.4
-;shell_particles	 			= weapons\generic_shells
+shell_particles	 			= ghost_particles\weapons\shell_eject_up_small_00		; shell ejection smoke, 1st person
 
 ;-------------------------------------------------------------------------------
 ;startup_ammo           	= 90
@@ -236,9 +236,9 @@ item_orientation				= 0.0,0.0,0.0
 item_visual             	= dynamics\weapons\wpn_pm\wpn_pb_hud.ogf
 fire_mode_bone             = pred
 attach_place_idx				= 0
-shell_point						= 0.013,0.04,0.468
+shell_point						= 0.01,0.12,0.187		; the port the hud shell leaves by in the shot anims (1st-person shell particle)
 shell_bone              	= wpn_body
-fire_point			= -0.00719,0.11076,0.56523
+fire_point			= -0.00719,0.11076,0.348	; bare muzzle (was z 0.56523 -- the silencer's end)
 fire_bone               	= wpn_body
 lock_time_anm_prepare_detector	= 0.4667
 aim_hud_offset_pos				= 0.000000,0.014000,0.0
