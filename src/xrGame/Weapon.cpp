@@ -4983,6 +4983,7 @@ struct SLowerAnim
 	xr_vector<Fvector>		T;
 	xr_vector<Fquaternion>	Q;
 	bool					valid;
+	shared_str				cam;		// its camera animation (anims\camera_effects\weapon\<OMF name>.anm), if there is one
 
 	float	length	() const	{ return float(T.size() - 1) / fps; }
 	// the delta at a share of the animation (0 = first frame, 1 = last)
@@ -5035,6 +5036,16 @@ static Fvector sq_rot	(const SQ& q, const Fvector& v)
 static void load_anim_omf(SLowerAnim& A, LPCSTR name, bool ref_last)
 {
 	A.valid		= false;
+	// The camera goes with it the way it does with every hud motion (attachable_hud_item::anim_play): an .anm
+	// named after the motion -- here the OMF's file name -- in camera_effects\weapon\, started with the move.
+	{
+		LPCSTR		base	= strrchr(name, '\\');
+		base				= base ? base + 1 : name;
+		string_path	anm, ce;
+		strconcat	(sizeof(anm), anm, "camera_effects\\weapon\\", base, ".anm");
+		A.cam				= FS.exist(ce, "$game_anims$", anm) ? shared_str(anm) : shared_str();
+		if (A.cam.size())	Msg("* [weapon_lowered] camera animation %s", anm);
+	}
 	string_path	fn;
 	xr_sprintf	(fn, "%s.omf", name);
 	if (!FS.exist("$game_meshes$", fn))	{ Msg("! [weapon_lowered] no animation file %s", fn); return; }
@@ -5164,6 +5175,24 @@ static const SLowerPair& lower_anims(const shared_str& hud_sect)
 	return s_lower_by_hud.insert(std::make_pair(hud_sect, P)).first->second;
 }
 
+// The weapon-down move's camera animation on the actor's camera, the same way attachable_hud_item::anim_play
+// starts a hud motion's: a weapon-action effector, eased in from whatever weapon-action camera is running.
+static void play_lower_cam(CActor* pActor, const shared_str& anm)
+{
+	if (!IsGameTypeSingle() || pActor != Level().CurrentControlEntity())	return;
+	CAnimatorCamEffector*	cur	= smart_cast<CAnimatorCamEffector*>(pActor->Cameras().GetCamEffector(eCEWeaponAction));
+	Fmatrix					from;
+	const bool				has_from = (cur != 0);
+	if (cur)				from = cur->OffsetXForm();
+	CAnimatorCamEffector*	e	= xr_new<CAnimatorCamEffector>();
+	e->SetType				(eCEWeaponAction);
+	e->SetHudAffect			(false);
+	e->SetCyclic			(false);
+	e->Start				(anm.c_str());
+	if (has_from)			e->SetBlendFrom(from, 0.15f);
+	pActor->Cameras().AddCamEffector(e);
+}
+
 void CWeapon::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 {
 	const bool down	= pActor->IsWeaponLowered() && pActor->inventory().ActiveItem() == this &&
@@ -5180,6 +5209,9 @@ void CWeapon::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 		// a change of direction: the other animation does not start where this one stands (a change of mind
 		// halfway, or two animations that do not quite meet) -- fade over from the pose the hud is in now
 		m_bLowerGoingDown	= down;
+		// the camera animation of the move that starts now (the way up only when the weapon is not up already)
+		const SLowerAnim*	C	= down ? (A.valid ? &A : 0) : ((m_fLoweredFactor > 0.f && U.valid) ? &U : 0);
+		if (C && C->cam.size())	play_lower_cam(pActor, C->cam);
 		if (m_fLoweredFactor > 0.f && A.valid && U.valid)
 		{
 			m_lower_from_q	= m_lower_cur_q;
