@@ -340,7 +340,8 @@ public:
 public:
 	// Called on a shot. true = this weapon throws real cases, so the old shell particle must not be
 	// started on top of them.
-			bool gwr_ShellCasingOnShot	(const Fvector& owner_vel);
+			// ammo: the round whose case is thrown (NULL = the one being fired, still on top of the magazine)
+			bool gwr_ShellCasingOnShot	(const Fvector& owner_vel, LPCSTR ammo = NULL);
 			void gwr_ShellCasingOnUnjam	(LPCSTR ammo);	// the jam-clear animation has just been started
 			void gwr_ShellCasingOnReloadAnim	();	// a reload animation has just been started
 			void gwr_ShellCasingArmReloadBones	();	// break-action guns: the shells the full reload throws

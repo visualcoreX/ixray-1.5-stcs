@@ -2601,6 +2601,13 @@ void CWeaponMagazined::OnShot()
 	// remember the round we're about to fire (still at the back; FireTrace pops it AFTER OnShot). Its type
 	// colours the ejecting shell for the eject/pump window, so a chamber-first pump ejects the fired shell's
 	// colour and not the next chambered round's.
+	// A drum (ammo_params_use_previous_shot_type: the Protecta / SPAS-12) keeps the fired shell in the chamber
+	// until the NEXT shot pushes it out, so the case a shot throws is the PREVIOUS shot's round, not its own
+	// (the first shot after a reload throws none at all -- gwr_ShellCasingOnShot, the _first take).
+	LPCSTR thrown_case = NULL;
+	if (READ_IF_EXISTS(pSettings, r_bool, HudSection(), "ammo_params_use_previous_shot_type", FALSE) &&	// a hud key
+		m_gwr_last_fired_type < m_ammoTypes.size())
+		thrown_case = m_ammoTypes[m_gwr_last_fired_type].c_str();
 	if (!m_magazine.empty())
 	{
 		m_gwr_last_fired_type = (u8)m_magazine.back().m_LocalAmmoType;
@@ -2627,7 +2634,10 @@ void CWeaponMagazined::OnShot()
 	PHGetLinearVell				(vel);
 	// a real case, or the old particle -- in first person both: the particle is the smoke out of the
 	// port the case leaves by (the hud shell_point is put there)
-	if (!gwr_ShellCasingOnShot(vel) || GetHUDmode())
+	// the first shot out of a freshly loaded drum throws no case, in third person as well (first person also
+	// knows it by its _first take, see gwr_ShellCasingOnShot)
+	const bool no_case = NeedFirstShootAnim();
+	if (!(no_case || gwr_ShellCasingOnShot(vel, thrown_case)) || GetHUDmode())
 		OnShellDrop				(get_LastSP(), vel);
 	
 	// Огонь из ствола

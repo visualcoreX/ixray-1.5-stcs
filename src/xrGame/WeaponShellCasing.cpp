@@ -196,13 +196,13 @@ static bool casing_section(LPCSTR ws, LPCSTR ammo, shared_str& sect)
 	return					(sect.size() && pSettings->section_exist(sect.c_str()));
 }
 
-bool CWeapon::gwr_ShellCasingOnShot(const Fvector& owner_vel)
+bool CWeapon::gwr_ShellCasingOnShot(const Fvector& owner_vel, LPCSTR ammo)
 {
 	LPCSTR ws = cNameSect().c_str();
 
 	// the round being fired is still on top of the magazine at this point
-	LPCSTR ammo = NULL;
-	if (!m_magazine.empty())					ammo = m_magazine.back().m_ammoSect.c_str();
+	if (ammo)									;	// the caller knows better (a drum: the PREVIOUS shot's case)
+	else if (!m_magazine.empty())				ammo = m_magazine.back().m_ammoSect.c_str();
 	else if (m_ammoType < m_ammoTypes.size())	ammo = m_ammoTypes[m_ammoType].c_str();
 	shared_str sect;
 	if (!casing_section(ws, ammo, sect))		return false;

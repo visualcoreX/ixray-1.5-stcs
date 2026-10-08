@@ -493,7 +493,7 @@ void CWeaponShotgun::PlayAnimOpenWeapon()
 	// that keeps it in the chamber, else the one on top of the magazine.
 	{
 		LPCSTR ammo		= NULL;
-		const bool prev	= !!READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "ammo_params_use_previous_shot_type", FALSE);
+		const bool prev	= !!READ_IF_EXISTS(pSettings, r_bool, HudSection(), "ammo_params_use_previous_shot_type", FALSE);	// a hud key
 		if ((prev || m_magazine.empty()) && m_gwr_last_fired_type < m_ammoTypes.size())
 			ammo		= m_ammoTypes[m_gwr_last_fired_type].c_str();
 		else if (!m_magazine.empty())
