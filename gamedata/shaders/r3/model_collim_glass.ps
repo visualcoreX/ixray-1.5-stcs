@@ -1,0 +1,23 @@
+#include "common.h"
+
+// The collimator glass's own texture -- pass 0 of models_lenses for wpn\lenses, model_def_lq with its
+// alpha times m_collim_glass.x: the optic's collimator_glass_strength for the current aim, so aiming can
+// fade the glass out along with its mirror. The binder gives everything outside the HUD's strict-sorted
+// pass 1, so the same glass on a gun in the world draws exactly as model_def_lq.
+uniform	float4	m_collim_glass;
+
+struct 	v2p
+{
+ 	float2 	tc0: 		TEXCOORD0;	// base
+  	float3	c0:			COLOR0;		// sun
+};
+
+float4 main( v2p I ) : SV_Target
+{
+	float4	t_base 	= s_base.Sample( smp_base, I.tc0 );
+
+	float3	light	= I.c0;
+	float3	final 	= light*t_base*2;
+
+	return  float4	(final.r,final.g,final.b,t_base.a*m_collim_glass.x);
+}

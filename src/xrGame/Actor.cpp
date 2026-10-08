@@ -1351,9 +1351,25 @@ void CActor::UpdateCL	()
 		{
 			Fvector tint = wpn->CollimatorTint();
 			g_pGamePersistent->hud_collim_tint.set(tint.x / 256.f, tint.y / 256.f, tint.z / 256.f, 0.5f);
+			g_pGamePersistent->hud_collim_reflect = wpn->CollimatorReflect();
+			g_pGamePersistent->hud_collim_reflect_shape = wpn->CollimatorReflectShape();
+			g_pGamePersistent->hud_collim_glass.set(wpn->CollimatorGlassStrength(), 1.f, 1.f, 1.f);
 		}
 		else
+		{
 			g_pGamePersistent->hud_collim_tint.set(0.5f, 0.5f, 0.5f, 0.5f);
+			g_pGamePersistent->hud_collim_reflect.set(0.f, 0.f, 0.f, 0.25f);
+			g_pGamePersistent->hud_collim_glass.set(1.f, 1.f, 1.f, 1.f);
+		}
+
+		// ...and how much sky the glass can see to mirror: the HUD sits at the eye, so the actor's own
+		// directional sky visibility is the glass's (the ROS smooths it as he walks in and out of cover)
+		if (IRender_ObjectSpecific* ros = renderable_ROS())
+		{
+			const float* hc = ros->get_luminocity_hemi_cube();	// +x +y +z -x -y -z
+			g_pGamePersistent->hud_collim_hemi_pos.set(hc[0], hc[1], hc[2], 0.f);
+			g_pGamePersistent->hud_collim_hemi_neg.set(hc[3], hc[4], hc[5], 0.f);
+		}
 	}
 
 	// INTOXICATION SCREEN WARP (gunsl_peredoz.script -> level.set_intox_screen_fx). A slow pulse drives it:

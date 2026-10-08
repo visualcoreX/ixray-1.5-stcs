@@ -6,9 +6,16 @@
 -- which CActor fills from the held weapon's collimator_tint. Only the HUD draws more than pass 0
 -- (sorted_L1_passes), so the same gun on the ground or in an NPC's hands keeps its plain glass. The
 -- reticle draws after all of the HUD's glass (models_collimsight.s, priority 3), so it stays untinted.
+--
+-- A third pass mirrors the weather's sky in the coating's colour (model_collim_reflect, added one/one
+-- over the tinted view): m_collim_reflect from the optic's collimator_reflect, 0 = nothing added.
 
 function normal		(shader, t_base, t_second, t_detail)
-	shader:begin	("model_def_lq","model_def_lq")
+	local collim	= string.lower(t_base) == "wpn\\lenses"
+
+	-- the collimator glass's own texture fades with the aim (model_collim_glass, m_collim_glass);
+	-- outside the HUD it gets 1 and draws as model_def_lq
+	shader:begin	("model_def_lq", collim and "model_collim_glass" or "model_def_lq")
 			: fog		(true)
 			: zb		(true,false)
 			: blend		(true,blend.srcalpha,blend.invsrcalpha)
@@ -16,11 +23,20 @@ function normal		(shader, t_base, t_second, t_detail)
 			: sorting	(2, true)
 	shader:sampler	("s_base")	:texture	(t_base)
 
-	if string.lower(t_base) == "wpn\\lenses" then
+	if collim then
 		shader:begin	("model_def_lq","model_collim_tint")
 				: fog		(false)
 				: zb		(true,false)
 				: blend		(true,blend.destcolor,blend.srccolor)
 				: aref		(false,0)
+
+		-- ...and the sky it mirrors, in the coating's colour, added over the tinted view
+		shader:begin	("model_collim_reflect","model_collim_reflect")
+				: fog		(false)
+				: zb		(true,false)
+				: blend		(true,blend.one,blend.one)
+				: aref		(false,0)
+		shader:sampler	("s_sky0")	:texture	("$user$sky0")	: clamp() : f_linear()
+		shader:sampler	("s_sky1")	:texture	("$user$sky1")	: clamp() : f_linear()
 	end
 end

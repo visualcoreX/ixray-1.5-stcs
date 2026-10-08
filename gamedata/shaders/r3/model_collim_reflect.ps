@@ -1,0 +1,79 @@
+#include "common.h"
+
+// The coating on a collimator's glass, seen from the eye's side: it mirrors the weather's sky in the
+// coating's colour, the way a fully glossy coloured specular would. Third pass of models_lenses /
+// models_transparent, added on top (one/one) after the tint, so the tint never reaches it; the reticle
+// still draws over all of it.
+//
+//   m_collim_reflect        rgb = coating colour * strength for the current aim, w = F0
+//   m_collim_reflect_shape  x = how much of the glass's dome the mirror keeps (0 = flat), y = contrast
+//   m_collim_hemi_*         the actor's sky visibility along +x+y+z / -x-y-z: no sky to mirror under a roof
+//   m_sky_params            xyz = the weather's sky colour, w = blend from sky0 to sky1 (as the skybox)
+//   m_sky_rotation          x = cos, y = sin of the skybox's turn about the vertical
+uniform	float4	m_collim_reflect;
+uniform	float4	m_collim_reflect_shape;
+uniform	float4	m_collim_hemi_pos;
+uniform	float4	m_collim_hemi_neg;
+uniform	float4	m_sky_params;
+uniform	float4	m_sky_rotation;
+
+TextureCube	s_sky0;
+TextureCube	s_sky1;
+
+struct v2p
+{
+	float2	tc0		: TEXCOORD0;
+	float3	pos_w	: TEXCOORD1;
+	float3	norm_w	: TEXCOORD2;
+	float3	axis_w	: TEXCOORD3;
+};
+
+// World direction -> the sky cubemaps' texcoord, as dxEnvironmentRender lays the skybox out: rotated
+// about Y by sky_rotation, and with the horizon pulled down to the cube's bottom edge -- the box's side
+// faces map box-y 0..1 to tc-y -1..1, and everything under the horizon to the bottom (hbox_verts).
+float3	sky_tc( float3 d )
+{
+	float3	s	= float3( d.x*m_sky_rotation.x - d.z*m_sky_rotation.y, d.y, d.x*m_sky_rotation.y + d.z*m_sky_rotation.x );
+	float3	p	= s / max( max( abs(s.x), abs(s.y) ), abs(s.z) );
+	p.y			= max( p.y*2 - 1, -1 );
+	return	p;
+}
+
+float3	face_eye( float3 n, float3 v )	{ return ( dot(n, v) > 0 ) ? -n : n; }
+
+float4 main( v2p I ) : SV_Target
+{
+	float3	v		= normalize( I.pos_w - eye_position );
+	float3	ng		= face_eye( normalize(I.norm_w), v );			// the glass's own (domed) normal
+	float3	na		= face_eye( normalize(I.axis_w), v );			// ...and its flat axis
+
+	// A domed lens is a convex mirror: the full dome shrinks the sky into a wide, still picture. Bent
+	// toward the flat axis it becomes a close-up that pans as the gun sways -- the mirror turns twice
+	// as fast as the glass does.
+	float3	n		= normalize( lerp(na, ng, m_collim_reflect_shape.x) );
+	float3	r		= reflect( v, n );
+
+	// Schlick: F0 looking straight in, all of it at a grazing angle
+	float	c		= saturate( dot(-v, n) );
+	float	f		= lerp( m_collim_reflect.w, 1, pow(1 - c, 5) );
+
+	// how much open sky lies the way the glass looks
+	float3	hc		= ( r < 0 ) ? m_collim_hemi_neg.xyz : m_collim_hemi_pos.xyz;
+	float	vis		= saturate( dot(hc, abs(r)) );
+
+	// lit like the glass's own diffuse (model_def_lq: light*base*2): bright where the sun or the sky
+	// falls on it, dim in the shade
+	float3	light	= calc_model_lq_lighting( ng ) * 2;
+
+	float3	tc		= sky_tc( r );
+	float3	s0		= s_sky0.SampleLevel( smp_rtlinear, tc, 0 ).rgb;
+	float3	s1		= s_sky1.SampleLevel( smp_rtlinear, tc, 0 ).rgb;
+	float3	sky		= m_sky_params.rgb * lerp( s0, s1, m_sky_params.w );
+
+	// contrast: the brightness raised to a power, hue kept -- dark sky adds less, the bright clouds and
+	// the sun's side stay, so the mirror reads as highlights over the view rather than a wash
+	float	lum		= max( dot(sky, float3(0.299, 0.587, 0.114)), 0.0001 );
+	sky				*= pow( lum, m_collim_reflect_shape.y - 1 );
+
+	return	float4( sky * m_collim_reflect.rgb * f * vis * light, 0 );	// a = 0: the target's alpha stays
+}

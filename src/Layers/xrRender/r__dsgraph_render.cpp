@@ -72,6 +72,12 @@ void __fastcall sorted_L1		(mapSorted_Node *N)
 // ALPHA, every pass of the element -- the HUD's strict-sorted geometry only. A collimator's glass draws
 // its coating as a second pass (models_lenses.s); the world keeps sorted_L1, so the same glass on a gun
 // lying around or in an NPC's hands never takes the player's tint.
+// Set while the HUD's strict-sorted geometry draws, for the binders that must tell it from the world's
+// (m_collim_glass). Binders only run when the constant table changes, so the table is dropped on the
+// way in and out -- the same glass drawn last in the world must not keep the world's value, nor the
+// next world draw the HUD's.
+bool r_dsgraph_hud_sorted_now = false;
+
 void __fastcall sorted_L1_passes	(mapSorted_Node *N)
 {
 	VERIFY (N);
@@ -580,10 +586,14 @@ void	R_dsgraph_structure::r_dsgraph_render_sorted_hud	()
 
 	// Rendering
 	rmNear();
+	RCache.set_Constants		((R_constant_table*)0);
+	r_dsgraph_hud_sorted_now	= true;
 	mapHUDSorted.traverseRL(sorted_L1_passes);
 	mapHUDSorted.clear();
 	mapHUDSortedLast.traverseRL(sorted_L1_passes);
 	mapHUDSortedLast.clear();
+	r_dsgraph_hud_sorted_now	= false;
+	RCache.set_Constants		((R_constant_table*)0);
 	rmNormal();
 
 	// Restore projection

@@ -264,6 +264,80 @@ class cl_collim_tint : public R_constant_setup {
 };
 static cl_collim_tint	binder_collim_tint;
 
+// The sky that glass mirrors (model_collim_reflect.ps): rgb = coating colour * strength, w = F0; and the
+// actor's sky visibility along +x+y+z / -x-y-z to fade it where the sky is blocked.
+class cl_collim_reflect : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent)	RCache.set_c (C, g_pGamePersistent->hud_collim_reflect);
+		else					RCache.set_c (C, 0.f, 0.f, 0.f, 0.25f);
+	}
+};
+static cl_collim_reflect	binder_collim_reflect;
+
+class cl_collim_reflect_shape : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent)	RCache.set_c (C, g_pGamePersistent->hud_collim_reflect_shape);
+		else					RCache.set_c (C, 0.35f, 1.f, 0.f, 0.f);
+	}
+};
+static cl_collim_reflect_shape	binder_collim_reflect_shape;
+
+// The glass's own texture, faded by the aim (model_collim_glass.ps, pass 0 of the collimator glass).
+// That pass is the world's too, so outside the HUD's strict-sorted pass it stays 1: the gun on the
+// ground keeps its glass while the player aims his own.
+extern bool r_dsgraph_hud_sorted_now;
+class cl_collim_glass : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	RCache.set_c (C, g_pGamePersistent->hud_collim_glass);
+		else												RCache.set_c (C, 1.f, 1.f, 1.f, 1.f);
+	}
+};
+static cl_collim_glass	binder_collim_glass;
+
+class cl_collim_hemi_pos : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent)	RCache.set_c (C, g_pGamePersistent->hud_collim_hemi_pos);
+		else					RCache.set_c (C, 1.f, 1.f, 1.f, 0.f);
+	}
+};
+static cl_collim_hemi_pos	binder_collim_hemi_pos;
+
+class cl_collim_hemi_neg : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent)	RCache.set_c (C, g_pGamePersistent->hud_collim_hemi_neg);
+		else					RCache.set_c (C, 1.f, 1.f, 1.f, 0.f);
+	}
+};
+static cl_collim_hemi_neg	binder_collim_hemi_neg;
+
+#ifndef _EDITOR
+// The weather's sky, for a forward shader that samples $user$sky0/1 itself the way the skybox does
+// (dxEnvironmentRender::RenderSky): xyz = sky colour, w = blend from sky0 to sky1.
+class cl_sky_params : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		CEnvDescriptorMixer&	env	= *g_pGamePersistent->Environment().CurrentEnv;
+		RCache.set_c	(C, env.sky_color.x, env.sky_color.y, env.sky_color.z, env.weight);
+	}
+};
+static cl_sky_params	binder_sky_params;
+
+// ...and its turn about the vertical: x = cos, y = sin of sky_rotation (the skybox is drawn rotateY'd by it).
+class cl_sky_rotation : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		const float a	= g_pGamePersistent->Environment().CurrentEnv->sky_rotation;
+		RCache.set_c	(C, _cos(a), _sin(a), 0.f, 0.f);
+	}
+};
+static cl_sky_rotation	binder_sky_rotation;
+#endif
+
 // Gunslinger m_digiclock (r_constants.pas binder_digiclock_setup): the in-game clock drawn on electronic
 // weapon displays -- the gauss MUI's digit screens (models_digiclock_{hh,hl,mh,ml}_screen). Each channel is
 // one digit as an atlas offset 0.0..0.9; the digit shader samples s_base at digit + tc.x*0.1.
@@ -434,6 +508,15 @@ void	CBlender_Compile::SetMapping	()
 	r_Constant				("m_zoom_deviation",&binder_zoom_deviation);
 	r_Constant				("m_scope_shadow",	&binder_scope_shadow);
 	r_Constant				("m_collim_tint",	&binder_collim_tint);
+	r_Constant				("m_collim_reflect",	&binder_collim_reflect);
+	r_Constant				("m_collim_reflect_shape",	&binder_collim_reflect_shape);
+	r_Constant				("m_collim_glass",	&binder_collim_glass);
+	r_Constant				("m_collim_hemi_pos",	&binder_collim_hemi_pos);
+	r_Constant				("m_collim_hemi_neg",	&binder_collim_hemi_neg);
+#ifndef _EDITOR
+	r_Constant				("m_sky_params",	&binder_sky_params);
+	r_Constant				("m_sky_rotation",	&binder_sky_rotation);
+#endif
 	r_Constant				("m_digiclock",		&binder_digiclock);
 
 	// eye-params

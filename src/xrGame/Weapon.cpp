@@ -3424,21 +3424,89 @@ Fvector CWeapon::CollimatorTint() const
 {
 	Fvector tint;
 	tint.set(128.f, 128.f, 128.f);
-	if (!IsScopeAttached())	return tint;
-
-	shared_str sc	= GetCurrentScopeSection();
-	shared_str item	= GetAttachedScopeName();
-	if (sc.size() && pSettings->section_exist(*sc) && pSettings->line_exist(*sc, "collimator_tint"))
-		tint = pSettings->r_fvector3(*sc, "collimator_tint");
-	else if (item.size() && pSettings->section_exist(*item) && pSettings->line_exist(*item, "collimator_tint"))
-		tint = pSettings->r_fvector3(*item, "collimator_tint");
-	else if (pSettings->line_exist(cNameSect(), "collimator_tint"))
-		tint = pSettings->r_fvector3(cNameSect(), "collimator_tint");
+	shared_str sect = CollimatorParamSection("collimator_tint");
+	if (sect.size())
+		tint = pSettings->r_fvector3(*sect, "collimator_tint");
 
 	clamp(tint.x, 0.f, 255.f);
 	clamp(tint.y, 0.f, 255.f);
 	clamp(tint.z, 0.f, 255.f);
 	return tint;
+}
+
+// The same coating seen from the eye's side: the glass mirrors the sky in the coating's colour, the way a
+// fully glossy coloured specular would. The aim slides the strength from its hip value to its aim value,
+// so the mirror does not wash out the view through it. No collimator_reflect = no reflection.
+Fvector4 CWeapon::CollimatorReflect() const
+{
+	Fvector4 res;
+	res.set(0.f, 0.f, 0.f, 0.25f);
+	shared_str sect = CollimatorParamSection("collimator_reflect");
+	if (!sect.size())	return res;
+
+	Fvector col = pSettings->r_fvector3(*sect, "collimator_reflect");
+	clamp(col.x, 0.f, 255.f);
+	clamp(col.y, 0.f, 255.f);
+	clamp(col.z, 0.f, 255.f);
+
+	Fvector2 strength;
+	strength.set(1.f, 0.3f);
+	shared_str ss = CollimatorParamSection("collimator_reflect_strength");
+	if (ss.size())
+		strength = pSettings->r_fvector2(*ss, "collimator_reflect_strength");
+	const float k = _max(0.f, strength.x + (strength.y - strength.x) * GetInertionAimFactor());
+
+	shared_str sf = CollimatorParamSection("collimator_reflect_f0");
+	if (sf.size())
+		res.w = pSettings->r_float(*sf, "collimator_reflect_f0");
+	clamp(res.w, 0.f, 1.f);
+
+	res.x = col.x / 255.f * k;
+	res.y = col.y / 255.f * k;
+	res.z = col.z / 255.f * k;
+	return res;
+}
+
+Fvector4 CWeapon::CollimatorReflectShape() const
+{
+	Fvector4 res;
+	res.set(0.35f, 1.f, 0.f, 0.f);
+	shared_str sc = CollimatorParamSection("collimator_reflect_curve");
+	if (sc.size())
+		res.x = pSettings->r_float(*sc, "collimator_reflect_curve");
+	shared_str sk = CollimatorParamSection("collimator_reflect_contrast");
+	if (sk.size())
+		res.y = pSettings->r_float(*sk, "collimator_reflect_contrast");
+	clamp(res.x, 0.f, 1.f);
+	clamp(res.y, 0.1f, 8.f);
+	return res;
+}
+
+float CWeapon::CollimatorGlassStrength() const
+{
+	Fvector2 strength;
+	strength.set(1.f, 1.f);
+	shared_str sect = CollimatorParamSection("collimator_glass_strength");
+	if (sect.size())
+		strength = pSettings->r_fvector2(*sect, "collimator_glass_strength");
+	return _max(0.f, strength.x + (strength.y - strength.x) * GetInertionAimFactor());
+}
+
+// Where an optic's glass keys live: the scope section, then its addon item, then the weapon. Empty when
+// no scope is on or none of them has the key.
+shared_str CWeapon::CollimatorParamSection(LPCSTR key) const
+{
+	if (!IsScopeAttached())	return shared_str();
+
+	shared_str sc	= GetCurrentScopeSection();
+	if (sc.size() && pSettings->section_exist(*sc) && pSettings->line_exist(*sc, key))
+		return sc;
+	shared_str item	= GetAttachedScopeName();
+	if (item.size() && pSettings->section_exist(*item) && pSettings->line_exist(*item, key))
+		return item;
+	if (pSettings->line_exist(cNameSect(), key))
+		return cNameSect();
+	return shared_str();
 }
 
 // GS GetLensFOV: the FOV (degrees) to render the world at for the scope lens frame -- the base world FOV

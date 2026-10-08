@@ -81,6 +81,19 @@ public:
 	// rgb = the scope's collimator_tint / 256, so 0.5 = clear glass; the HUD glass multiplies the view
 	// behind it by 2*rgb (models_lenses.s / models_transparent.s). a = 0.5 keeps the target's alpha.
 	Fvector4						hud_collim_tint;
+	// The sky mirrored in that glass (m_collim_reflect): rgb = the coating's reflection colour times its
+	// strength for the current aim, w = F0 (share reflected looking straight in). rgb 0 = no reflection.
+	Fvector4						hud_collim_reflect;
+	// Its shape (m_collim_reflect_shape): x = how much of the glass's dome the mirror keeps (0 = flat),
+	// y = contrast exponent on the mirrored sky's brightness (1 = as is).
+	Fvector4						hud_collim_reflect_shape;
+	// The glass's own texture (m_collim_glass.x): multiplies its alpha, so the aim can fade it out.
+	// Only the HUD's strict-sorted pass gets it -- the binder gives the world's guns 1.
+	Fvector4						hud_collim_glass;
+	// The actor's sky visibility per world axis (m_collim_hemi_pos / _neg: +x+y+z / -x-y-z), from his
+	// ROS: the reflection fades where the sky it would mirror is blocked -- indoors, under a roof.
+	Fvector4						hud_collim_hemi_pos;
+	Fvector4						hud_collim_hemi_neg;
 	// Intoxication screen warp (gunsl_peredoz.script -> level.set_intox_screen_fx -> CActor::UpdateCL):
 	// x = fisheye strength at the screen edges (0 = none), y = world fov multiplier (1 = none, applied
 	// in CCameraManager::ApplyDevice), z = colour swim strength, w = edge wave strength.

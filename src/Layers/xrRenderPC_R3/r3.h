@@ -219,13 +219,19 @@ public:
 	}
 	IC void							apply_lmaterial				()
 	{
+		// A pass with no s_base -- the collimator glass's sky reflection (model_collim_reflect) -- still
+		// takes the object's hemi/sun, only with material 0, as there is no texture to read it from.
+		// It used to return here and leave that pass the lighting of whatever was drawn before it.
 		R_constant*		C	= &*RCache.get_c	(c_sbase);		// get sampler
-		if (0==C)			return;
-		VERIFY				(RC_dest_sampler	== C->destination);
-		VERIFY				(RC_dx10texture		== C->type);
-		CTexture*		T	= RCache.get_ActiveTexture	(u32(C->samp.index));
-		VERIFY				(T);
-		float	mtl			= T->m_material;
+		float	mtl			= 0.f;
+		if (C)
+		{
+			VERIFY				(RC_dest_sampler	== C->destination);
+			VERIFY				(RC_dx10texture		== C->type);
+			CTexture*		T	= RCache.get_ActiveTexture	(u32(C->samp.index));
+			VERIFY				(T);
+			mtl					= T->m_material;
+		}
 #ifdef	DEBUG
 		if (ps_r2_ls_flags.test(R2FLAG_GLOBALMATERIAL))	mtl=ps_r2_gmaterial;
 #endif

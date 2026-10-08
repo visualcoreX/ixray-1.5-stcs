@@ -1,0 +1,15 @@
+#include "common.h"
+
+// See model_collim_reflect.vs: one sky lookup, everything else came from the vertices.
+uniform samplerCUBE	s_sky0;
+
+struct v2p
+{
+	float3	tc0		: TEXCOORD0;
+	float3	c0		: TEXCOORD1;
+};
+
+float4 main( v2p I ) : COLOR
+{
+	return	float4( texCUBE( s_sky0, I.tc0 ).rgb * I.c0, 0 );	// a = 0: the target's alpha stays
+}

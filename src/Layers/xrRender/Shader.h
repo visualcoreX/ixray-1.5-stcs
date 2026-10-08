@@ -18,7 +18,9 @@
 typedef xr_vector<shared_str>	sh_list;
 class					CBlender_Compile;
 class					IBlender;
-#define	SHADER_PASSES_MAX		2
+// 3: the HUD's collimator glass draws its stock look, its coating tint and the sky it mirrors
+// (models_lenses.s). passes is a fixed svector -- r_End / PassEnd assert before they overrun it.
+#define	SHADER_PASSES_MAX		3
 
 #pragma pack(push,4)
 

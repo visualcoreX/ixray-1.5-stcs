@@ -181,6 +181,18 @@ public:
 	// `collimator_tint = r,g,b` (0..255, 128 = clear glass): the coating on the attached optic's glass.
 	// Read from the scope section, then its addon item, then the weapon; (128,128,128) when absent.
 	Fvector CollimatorTint() const;
+	// The sky mirrored in that glass: rgb = collimator_reflect (0..255 -> 0..1) times the strength for the
+	// current aim (collimator_reflect_strength = hip, aim; default 1, 0.3), w = collimator_reflect_f0
+	// (share reflected looking straight in, default 0.25). Zero colour when the optic has no collimator_reflect.
+	Fvector4 CollimatorReflect() const;
+	// ...and its shape: x = collimator_reflect_curve (how much of the glass's dome the mirror keeps: 0 = a flat
+	// mirror, a close-up of the sky that pans with every sway; 1 = the model's normals, a wide shrunken view;
+	// default 0.35), y = collimator_reflect_contrast (exponent on the sky's brightness, 1 = as is).
+	Fvector4 CollimatorReflectShape() const;
+	// How much of the glass's own texture shows (its pass 0 alpha): collimator_glass_strength = hip, aim,
+	// slid by the aim like the reflection; default 1, 1 = as the model has it.
+	float CollimatorGlassStrength() const;
+	shared_str CollimatorParamSection(LPCSTR key) const;	// scope section / addon item / weapon holding `key`
 	float GetLensFOV() const;	// 3D PiP double-render: magnified world FOV (deg) for the lens frame; 0 = disabled
 	bool UseScopeAnims() const;	// Gunslinger use_scope_anims: play the "_scope" anim variants while a scope is attached
 	float ZoomMouseSenseKoef() const;	// Gunslinger zoom_mouse_sense_koef: look-sensitivity multiplier while scoped
