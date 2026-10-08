@@ -1040,19 +1040,10 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 							switch (W->GetState()){
 							case CWeapon::eIdle:		M_torso	= TW->Moving(moving_idx, bRelaxed);		break;
 							
-							case CWeapon::eFire:	
-								if(is_standing)
-														M_torso = M_legs = M_head = TW->all_attack_0;
-								else
-														M_torso	= TW->attack_zoom;
-								break;
-
-							case CWeapon::eFire2:
-								if(is_standing)
-														M_torso = M_legs = M_head = TW->all_attack_1;
-								else
-														M_torso	= TW->fire_idle;
-								break;
+							// the strikes are the knife set's own torso motions, standing or moving alike (stock CS
+							// played the whole-body all_attack standing -- a looping motion that is not in the pack)
+							case CWeapon::eFire:		M_torso	= TW->attack_zoom;	break;
+							case CWeapon::eFire2:		M_torso	= TW->fire_idle;	break;
 
 							case CWeapon::eReload:		M_torso	= TW->reload;					break;
 							case CWeapon::eShowing:		M_torso	= TW->draw;						break;
