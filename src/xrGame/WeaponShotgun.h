@@ -35,6 +35,14 @@ public:
 	u32				PlayAnimUnjamWeapon	();
 
 	virtual bool	Action(s32 cmd, u32 flags);
+	// the save keeps m_bJustAfterReload: which of the two partial reloads comes next (the "_first" one, no spent
+	// shell to rack out, or the plain one) must not change because the game was saved and loaded in between.
+	// It keeps every shell's own round too: a tube loaded shell by shell holds mixed rounds, and the stock save
+	// only has the count and ONE type, so a load refilled the whole tube with the last one loaded.
+	// And the last fired round (m_gwr_last_fired_type), whose spent shell the next reload throws out.
+	virtual void	save				(NET_Packet &output_packet);
+	virtual void	load				(IReader &input_packet);
+	virtual BOOL	net_Spawn			(CSE_Abstract* DC);
 	virtual bool	SwitchAmmoType(u32 flags);
 	virtual void	UpdateCL			();
 	// reloaded (or un-jammed) & no shot since -> the "_first" anim family (idle/gestures), like the
@@ -85,6 +93,9 @@ protected:
 	u32				m_dwTriInsertTm;		// wall-clock to add the shell (lock_time_start); 0 = none
 	u32				m_dwTriPhaseTm;			// wall-clock to advance to the next phase; 0 = fall back to OnAnimationEnd
 	shared_str		m_sTriCurAnim;			// alias currently playing (for the lock_time_* lookup)
+
+	xr_vector<u8>	m_loaded_ammo_ids;		// the shells' rounds as read by load(), put into the tube by net_Spawn
+											// (CWeapon::net_Spawn fills the tube with one type AFTER load runs)
 
 	ESoundTypes		m_eSoundOpen;
 	ESoundTypes		m_eSoundAddCartridge;
