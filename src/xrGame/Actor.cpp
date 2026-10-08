@@ -1825,7 +1825,10 @@ void CActor::UpdateCL	()
 			fire_disp_full = m_fdisp_controller.GetCurrentDispertion();
 
 			HUD().SetCrosshairDisp(fire_disp_full, 0.02f);
-			HUD().ShowCrosshair(pWeapon->use_crosshair());
+			// weapon down (or going down): the dot, as with the bolt in hand, not the cross -- and not nothing.
+			// The mode as well as the pose: a sprint takes the pose back up (factor 0) but the mode stays on.
+			const bool lowered = pWeapon->LoweredFactor() > 0.f || (IsWeaponLowered() && IsLowerable(pWeapon));
+			HUD().ShowCrosshair(pWeapon->use_crosshair() && !lowered);
 #ifdef DEBUG
 			HUD().SetFirstBulletCrosshairDisp(pWeapon->GetFirstBulletDisp());
 #endif
@@ -1834,7 +1837,7 @@ void CActor::UpdateCL	()
 
 			psHUD_Flags.set( HUD_WEAPON_RT, B );
 
-			B = B && pWeapon->show_crosshair();
+			B = B && (lowered || pWeapon->show_crosshair());
 
 			psHUD_Flags.set( HUD_CROSSHAIR_RT2, B );
 			
