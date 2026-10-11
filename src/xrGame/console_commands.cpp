@@ -1517,6 +1517,64 @@ struct CCC_TimeFactorSingle : public CCC_Float {
 	}
 };
 
+#include "alife_time_manager.h"
+
+// set_time HH[:MM[:SS]] -- moves the game clock forward to that time of day
+// (to the next day if it has already passed), the way level.change_game_time does
+class CCC_SetTime : public IConsole_Command {
+public:
+	CCC_SetTime(LPCSTR N) : IConsole_Command(N) {};
+
+	virtual void Execute(LPCSTR args)
+	{
+		if (!g_pGameLevel || !Level().Server || !ai().get_alife())
+		{
+			Msg("! set_time: no single player game is running");
+			return;
+		}
+
+		game_sv_Single* game = smart_cast<game_sv_Single*>(Level().Server->game);
+		if (!game)
+			return;
+
+		u32 hours = 0, mins = 0, secs = 0;
+		int count = sscanf(args, "%u:%u:%u", &hours, &mins, &secs);
+		if (count < 1 || hours > 23 || mins > 59 || secs > 59)
+		{
+			Msg("! set_time: expected HH, HH:MM or HH:MM:SS (00:00:00 - 23:59:59)");
+			return;
+		}
+
+		const u64 day_ms	= 24 * 60 * 60 * 1000;
+		u64 current			= Level().GetGameTime() % day_ms;
+		u64 target			= u64((hours * 60 + mins) * 60 + secs) * 1000;
+		u32 delta			= u32((target + day_ms - current) % day_ms);
+		if (!delta)
+			return;
+
+		g_pGamePersistent->Environment().ChangeGameTime(float(delta) / 1000.f);
+		game->alife().time_manager().change_game_time(delta);
+	}
+
+	virtual void Status(TStatus& S)
+	{
+		if (!g_pGameLevel || !Level().game)
+		{
+			xr_strcpy(S, "no game");
+			return;
+		}
+
+		u32 year = 0, month = 0, day = 0, hours = 0, mins = 0, secs = 0, milisecs = 0;
+		split_time(Level().GetGameTime(), year, month, day, hours, mins, secs, milisecs);
+		xr_sprintf(S, "%02d:%02d:%02d", hours, mins, secs);
+	}
+
+	virtual void Info(TInfo& I)
+	{
+		xr_strcpy(I, "HH, HH:MM or HH:MM:SS -- set the time of day");
+	}
+};
+
 #ifdef DEBUG
 class CCC_RadioGroupMask2;
 class CCC_RadioMask :public CCC_Mask
@@ -2208,6 +2266,7 @@ void CCC_RegisterCommands()
 	CMD1(CCC_ALifeObjectsPerUpdate,	"al_objects_per_update"	);		// set process time
 	CMD1(CCC_ALifeSwitchFactor,		"al_switch_factor"		);		// set switch factor
 #endif // MASTER_GOLD
+	CMD1(CCC_SetTime,				"set_time"				);		// set the time of day
 
 
 	CMD3(CCC_Mask,				"hud_weapon",			&psHUD_Flags,	HUD_WEAPON);
