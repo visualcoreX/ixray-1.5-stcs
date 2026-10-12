@@ -1555,6 +1555,9 @@ void CActor::ToggleWeaponLowered()
 	}
 	// down only from a weapon at rest: not while it reloads, shoots, comes out or plays a gesture
 	if (w->GetState() != CHUDState::eIdle || w->IsPending() || gwr_actor_hud_busy(this))	return;
+	// ...and not while aiming: aimed, or still on the way in or out of the aim
+	if (CWeapon* wpn = smart_cast<CWeapon*>(w))
+		if (wpn->IsZoomed() || wpn->GetZoomRotationFactor() > 0.f)	return;
 	lowered_zoom_out	(w);
 	m_bWeaponLowered	= true;
 	m_wpn_lowered_id	= w->object().ID();
