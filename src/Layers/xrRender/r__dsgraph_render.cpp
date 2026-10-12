@@ -726,7 +726,11 @@ void	R_dsgraph_structure::r_dsgraph_render_subspace	(IRender_Sector* _sector, CF
 				IRenderable*	renderable		= spatial->dcast_Renderable	();
 				if (0==renderable)				continue;					// unknown, but renderable object (r1_glow???)
 
+#if RENDER != R_R1
+				g_render_shadow_pass			= (phase == RImplementation.PHASE_SMAP);
+#endif
 				renderable->renderable_Render	();
+				g_render_shadow_pass			= FALSE;
 			}
 		}
 #if RENDER != R_R1
