@@ -509,3 +509,82 @@ void CROS_impl::prepare_lights(Fvector& position, IRenderable* O)
 
 	}
 }
+
+// The lights that reach a collimator's glass on the hud, besides the sun (cl_collim_lights, collim.h): the
+// strongest few of this frame's visible point and spot lights at the eye -- the glass sits a hand's width in
+// front of it. The glass is drawn forward, so it never gets the deferred lights the gun around it gets, and
+// the object's own light tracking (CROS_impl) only keeps the static hemi lights on R2/R3. A shadowed light
+// is kept only while nothing static stands between it and the eye: behind a wall it lights not the gun,
+// so not the glass either. Worked out once a frame. A light picked last frame counts double to stay: by a
+// campfire its flickering lights kept outranking the torch every few frames, and the torch's highlight on
+// the glass blinked on and off.
+// out: COLLIM_LIGHTS triples -- position (w = 1/range^2), colour (w = 1 for a spot), spot axis (w = cos of
+// half its cone); a light not used has a black colour.
+void collim_gather_lights	(Fvector4* out)
+{
+	static u32		s_frame		= u32(-1);
+	static Fvector4	s_set		[COLLIM_LIGHTS*3];
+	static light*	s_prev		[COLLIM_LIGHTS]	= { 0 };	// compared only, never dereferenced
+	if (s_frame != Device.dwFrame)
+	{
+		s_frame					= Device.dwFrame;
+		for (u32 i = 0; i < COLLIM_LIGHTS*3; ++i)	s_set[i].set(0.f, 0.f, 0.f, 0.f);
+#if RENDER!=R_R1
+		struct cand { light* L; float w; };
+		cand			best	[COLLIM_LIGHTS];
+		u32				n		= 0;
+		const Fvector&	eye		= Device.vCameraPosition;
+		light_Package&	P		= RImplementation.Lights.package;
+		xr_vector<light*>* lists[3] = { &P.v_point, &P.v_spot, &P.v_shadowed };
+		for (u32 l = 0; l < 3; ++l)
+		for (u32 k = 0; k < lists[l]->size(); ++k)
+		{
+			light*	L			= (*lists[l])[k];
+			if (!L || L->range < EPS_L)						continue;
+			const float d2		= eye.distance_to_sqr(L->position);
+			const float R		= L->range + 0.3f;
+			if (d2 >= R*R)									continue;
+			float	w			= (1.f - d2/(R*R)) * L->color.intensity();
+			if (IRender_Light::SPOT == L->flags.type && d2 > EPS_L)
+			{
+				Fvector	to;		to.sub(eye, L->position).normalize();
+				const float c	= to.dotproduct(L->direction);
+				const float lo	= _cos(L->cone*0.5f + deg2rad(10.f));
+				if (c <= lo)								continue;
+				w				*= (c - lo) / (1.f - lo);
+			}
+			if (w <= EPS_S)									continue;
+			for (u32 j = 0; j < COLLIM_LIGHTS; ++j)	if (s_prev[j] == L)	{ w *= 2.f; break; }
+			// the weakest of the kept ones goes, if this one beats it
+			u32		slot		= n;
+			if (n == COLLIM_LIGHTS)
+			{
+				slot			= 0;
+				for (u32 j = 1; j < n; ++j)	if (best[j].w < best[slot].w)	slot = j;
+				if (best[slot].w >= w)						continue;
+			}
+			if (L->flags.bShadow && g_pGameLevel && d2 > 0.25f)
+			{
+				const float	d	= _sqrt(d2);
+				Fvector	dir;	dir.sub(eye, L->position).div(d);
+				if (g_pGameLevel->ObjectSpace.RayTest(L->position, dir, d - 0.2f, collide::rqtStatic, NULL, NULL))
+					continue;
+			}
+			best[slot].L		= L;
+			best[slot].w		= w;
+			if (slot == n)		++n;
+		}
+		for (u32 i = 0; i < COLLIM_LIGHTS; ++i)
+			s_prev[i]			= (i < n) ? best[i].L : NULL;
+		for (u32 i = 0; i < n; ++i)
+		{
+			light*	L			= best[i].L;
+			const bool spot		= IRender_Light::SPOT == L->flags.type;
+			s_set[i*3+0].set	(L->position.x, L->position.y, L->position.z, 1.f/(L->range*L->range));
+			s_set[i*3+1].set	(L->color.r, L->color.g, L->color.b, spot ? 1.f : 0.f);
+			s_set[i*3+2].set	(L->direction.x, L->direction.y, L->direction.z, spot ? _cos(L->cone*0.5f) : -1.f);
+		}
+#endif
+	}
+	CopyMemory	(out, s_set, sizeof(s_set));
+}

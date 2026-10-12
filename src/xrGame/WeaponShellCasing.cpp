@@ -44,12 +44,23 @@
 //   shell_casing_speed  = min,max   m/s; the animation's own speed is kept inside it too
 //   shell_casing_extra, shell_casing_extra_bone, shell_casing_extra_dir, shell_casing_extra_speed
 //                                   the same for the second thing thrown (a belt link)
+//   shell_particles_with_case = true  first person: the shell particle (shell_particles) goes with the case
+//                                   the hud shell throws, from where it leaves -- a pump gun's smoke comes
+//                                   out with the pump, not with the shot
+//
+// The smoke a break-action gun lets out of its opened barrels on a reload (they throw no case on a shot):
+//   reload_smoke_time   = <sec>     a reload this soon after the last shot smokes (5 by default)
+//   reload_smoke_<alias> = <particle>[, <bone>, <bone>...]   the reload animation alias (anm_reload_0, ...)
+//                                   and its smoke, riding the first SHOWN of the hud model's bones listed
+//                                   (the barrels: a sawn-off shows another bone); none = the gun's body.
+//                                   One smoke per shot: a second reload has nothing left to let out.
 //////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
 #include "Weapon.h"
 #include "ShellCasing.h"
 #include "player_hud.h"
+#include "ParticlesObject.h"
 #include "level.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "../Include/xrRender/KinematicsAnimated.h"
@@ -202,6 +213,9 @@ bool CWeapon::gwr_ShellCasingOnShot(const Fvector& owner_vel, LPCSTR ammo)
 {
 	LPCSTR ws = cNameSect().c_str();
 
+	// the barrels smoke on a reload for a while after this (break-action guns, see the head of the file)
+	m_reload_smoke_until	= Device.dwTimeGlobal + iFloor(1000.f * READ_IF_EXISTS(pSettings, r_float, ws, "reload_smoke_time", 5.f));
+
 	// the round being fired is still on top of the magazine at this point
 	if (ammo)									;	// the caller knows better (a drum: the PREVIOUS shot's case)
 	else if (!m_magazine.empty())				ammo = m_magazine.back().m_ammoSect.c_str();
@@ -314,6 +328,7 @@ void CWeapon::gwr_ShellCasingOnUnjam(LPCSTR ammo)
 void CWeapon::gwr_ShellCasingOnReloadAnim()
 {
 	LPCSTR ws = cNameSect().c_str();
+	gwr_ReloadSmokeStart	();
 	if (pSettings->line_exist(ws, "reload_drop_bones"))
 	{
 		gwr_ShellCasingArmReloadDrop	();
@@ -1020,6 +1035,11 @@ void CWeapon::gwr_ShellCasingFollow(u32 idx, bool force)
 		if (m > EPS)	dir_world.div(m);
 	}
 
+	// The shell particle goes with this case (shell_particles_with_case: a pump gun's smoke comes out with the
+	// pump, not with the shot), from where the hud shell leaves the port -- a hud particle, so the hud point.
+	if ((idx == 0) && !T.by_hand && !T.drop && gwr_ShellParticlesWithCase())
+		OnShellDrop		(pos, T.owner_vel);
+
 	// Per weapon, the point can be nudged for the pose out of the sights: metres to the right, up and
 	// forward of the view, in the hud's own space. It fades out as the weapon comes up to the eye.
 	if (pSettings->line_exist(cNameSect().c_str(), "shell_casing_hip_offset"))
@@ -1269,4 +1289,108 @@ void CWeapon::gwr_ShellCasingThrow(u32 idx, const Fvector& pos, const Fmatrix& b
 		if (hud_scale < 1.f)	hud_scale = 1.f;
 	}
 	CShellCasing::Spawn	(m_shell_track[idx].section.c_str(), xform, linear, angular, hud_scale, drop ? m_shell_track[idx].launch_time : 0);
+}
+
+// The shell particle goes with the case the hud shell throws, not with the shot (see the head of the file).
+bool CWeapon::gwr_ShellParticlesWithCase() const
+{
+	return !!READ_IF_EXISTS(pSettings, r_bool, cNameSect().c_str(), "shell_particles_with_case", FALSE);
+}
+
+// A reload animation has just been started. Soon enough after a shot, a break-action gun's opened barrels
+// let the smoke out: reload_smoke_<alias> names it for this reload, and the bone it rides (see the head
+// of the file). Once let out, it is gone: the next reload smokes only after another shot.
+void CWeapon::gwr_ReloadSmokeStart()
+{
+	if (!m_reload_smoke_until || (Device.dwTimeGlobal >= m_reload_smoke_until))	return;
+
+	attachable_hud_item* hi = GetHUDmode() ? HudItemData() : NULL;
+	if (!hi || !hi->m_model)	return;
+	IKinematics* K		= hi->m_model;
+
+	LPCSTR ws			= cNameSect().c_str();
+	LPCSTR cur			= CurrentMotion().c_str();
+	if (!cur || !cur[0])	return;
+	string128			key;
+	strconcat			(sizeof(key), key, "reload_smoke_", cur);
+	if (!pSettings->line_exist(ws, key))
+	{
+		if (casing_debug())
+			Msg			("~ reload_smoke [%s]: %s has no smoke (%s)", ws, cur, key);
+		return;
+	}
+
+	LPCSTR v			= pSettings->r_string(ws, key);
+	string256			name;
+	_GetItem			(v, 0, name);
+	if (!name[0])		return;
+
+	// the first of the bones listed that is shown; one that is only there, for want of better; the body
+	u16 bone			= BI_NONE, spare = BI_NONE;
+	for (int i = 1, n = _GetItemCount(v); (i < n) && (bone == BI_NONE); ++i)
+	{
+		string128	bn;
+		_GetItem	(v, i, bn);
+		const u16 b	= K->LL_BoneID(bn);
+		if ((b == BI_NONE) || (b >= 64))	continue;
+		if (K->LL_GetBoneVisible(b))		bone = b;
+		else if (spare == BI_NONE)			spare = b;
+	}
+	if (bone == BI_NONE)	bone = spare;
+	if (bone == BI_NONE)	bone = K->LL_GetBoneRoot();
+
+	gwr_ReloadSmokeStop	();
+	m_reload_smoke		= CParticlesObject::Create(name, FALSE);
+	m_reload_smoke_bone	= bone;
+	m_reload_smoke_motion = MotionStartTm();
+	m_reload_smoke_until = 0;				// let out: nothing left for the next reload
+
+	Fmatrix M;			M.mul_43(hi->m_item_transform, K->LL_GetTransform(bone));
+	M.i.normalize_safe(); M.j.normalize_safe(); M.k.normalize_safe();
+	m_reload_smoke_pos.set	(M.c);
+	m_reload_smoke->UpdateParent	(M, Fvector().set(0.f, 0.f, 0.f));
+	m_reload_smoke->Play	(IsHudModeNow());
+
+	if (casing_debug())
+		Msg				("~ reload_smoke [%s]: %s -> %s on bone %s", ws, cur, name, K->LL_BoneName_dbg(bone));
+}
+
+// Every frame: the smoke rides its bone (the barrels swing open and shut), and drifts the way it moves.
+// A looped one ends with its reload; one that is not, when it has played out.
+void CWeapon::gwr_ReloadSmokeUpdate()
+{
+	if (!m_reload_smoke)	return;
+
+	attachable_hud_item* hi = GetHUDmode() ? HudItemData() : NULL;
+	if (!hi || !hi->m_model || (m_reload_smoke_bone >= hi->m_model->LL_BoneCount()))
+	{
+		gwr_ReloadSmokeStop	();
+		return;
+	}
+	if (m_reload_smoke->IsLooped() ? (MotionStartTm() != m_reload_smoke_motion)
+								   : (!m_reload_smoke->IsPlaying() && !m_reload_smoke->PSI_alive()))
+	{
+		gwr_ReloadSmokeStop	();
+		return;
+	}
+
+	Fmatrix M;			M.mul_43(hi->m_item_transform, hi->m_model->LL_GetTransform(m_reload_smoke_bone));
+	M.i.normalize_safe(); M.j.normalize_safe(); M.k.normalize_safe();
+	Fvector vel;		vel.set(0.f, 0.f, 0.f);
+	if (Device.fTimeDelta > EPS_S)
+	{
+		vel.sub			(M.c, m_reload_smoke_pos);
+		vel.div			(Device.fTimeDelta);
+	}
+	m_reload_smoke_pos.set	(M.c);
+	m_reload_smoke->UpdateParent	(M, vel);
+}
+
+// Let it go: what has come out already fades by itself.
+void CWeapon::gwr_ReloadSmokeStop()
+{
+	if (!m_reload_smoke)	return;
+	m_reload_smoke->SetAutoRemove	(true);
+	m_reload_smoke->Stop			();
+	m_reload_smoke		= NULL;
 }

@@ -32,6 +32,37 @@ void CRenderTarget::DoAsyncScreenshot()
 	}
 }
 
+// The frame's brightness for the game (IGame_Persistent::frame_luminance -- a collimator's light sensor):
+// every 5 s the adaptation's fresh 1x1 (this frame's rt_LUM_pool, the exposure scale bloom_luminance_3 made,
+// already eased over the last frames) is copied to a staging texture, and read a few frames later without
+// waiting on the GPU. The scale is MiddleGray.x / (lum*MiddleGray.y + MiddleGray.z): turned back into the
+// luminance with the MiddleGray it was made with. With the tonemap off (MiddleGray.y = 0) there is none.
+void	CRenderTarget::phase_luminance_readback	(u32 gpu_id)
+{
+	if (!t_lum_read)	return;
+	if (lum_read_pending)
+	{
+		D3D10_MAPPED_TEXTURE2D	m;
+		if (FAILED(t_lum_read->Map(0, D3D10_MAP_READ, D3D10_MAP_FLAG_DO_NOT_WAIT, &m)))
+			return;								// still on its way: next frame
+		const float scale	= *(const float*)m.pData;
+		t_lum_read->Unmap	(0);
+		lum_read_pending	= false;
+		const Fvector3& mg	= lum_read_middlegray;
+		float lum			= -1.f;
+		if (mg.y > EPS && scale > EPS)	lum = _max(0.f, (mg.x / scale - mg.z) / mg.y);
+		if (g_pGamePersistent)	g_pGamePersistent->frame_luminance = lum;
+		extern int ps_r__frame_lum_log;
+		if (ps_r__frame_lum_log)	Msg("* frame luminance %.4f (exposure scale %.4f)", lum, scale);
+		return;
+	}
+	if (lum_read_time && Device.dwTimeGlobal - lum_read_time < 5000)	return;
+	lum_read_time			= Device.dwTimeGlobal ? Device.dwTimeGlobal : 1;
+	HW.pDevice->CopyResource(t_lum_read, rt_LUM_pool[gpu_id*2+1]->pSurface);
+	lum_read_middlegray		= lum_middlegray;
+	lum_read_pending		= true;
+}
+
 float	hclip(float v, float dim)		{ return 2.f*v/dim - 1.f; }
 void	CRenderTarget::phase_combine	()
 {
@@ -419,6 +450,11 @@ void	CRenderTarget::phase_combine	()
 	}
 	RCache.set_Stencil		(FALSE);
 
+	// a prism sight's black field stop, over everything added after the hud's glass: the bloom, the sun's
+	// shafts (r_dsgraph_render_lens_late). Not over the lens flares, drawn next: they are the eye's, in front
+	// of the glass as of the gun around it.
+	RImplementation.r_dsgraph_render_lens_late();
+
 	//	if FP16-BLEND !not! supported - draw flares here, overwise they are already in the bloom target
 	/* if (!RImplementation.o.fp16_blend)*/	g_pGamePersistent->Environment().RenderFlares();	// lens-flares
 
@@ -449,7 +485,10 @@ void	CRenderTarget::phase_combine	()
 	{
 		// ...and it does not advance the chain either: nothing was measured this frame
 		if (!(g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow))
+		{
+			phase_luminance_readback	(gpu_id);
 			std::swap			(rt_LUM_pool[gpu_id*2+0],rt_LUM_pool[gpu_id*2+1]);
+		}
 		t_LUM_src->surface_set		(NULL);
 		t_LUM_dest->surface_set		(NULL);
 	}

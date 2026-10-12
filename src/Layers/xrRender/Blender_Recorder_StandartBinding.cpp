@@ -9,6 +9,8 @@
 #include "../../xrEngine/environment.h"
 
 #include "dxRenderDeviceRender.h"
+#include "xrRender_console.h"
+#include "LightTrack.h"
 
 // matrices
 #define	BIND_DECLARE(xf)	\
@@ -264,6 +266,180 @@ class cl_collim_tint : public R_constant_setup {
 };
 static cl_collim_tint	binder_collim_tint;
 
+// The sky that glass mirrors (model_collim_reflect.ps): rgb = coating colour * strength, w = F0; and the
+// actor's sky visibility along +x+y+z / -x-y-z to fade it where the sky is blocked.
+// The glass's sky and reticle are drawn by its pass 0, which the world draws too: outside the HUD's
+// strict-sorted pass they are 0, so a gun in the world shows its plain glass (see m_collim_glass).
+extern bool r_dsgraph_hud_sorted_now;
+class cl_collim_reflect : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	RCache.set_c (C, g_pGamePersistent->hud_collim_reflect);
+		else												RCache.set_c (C, 0.f, 0.f, 0.f, 0.25f);
+	}
+};
+static cl_collim_reflect	binder_collim_reflect;
+
+class cl_collim_reflect_ind : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	RCache.set_c (C, g_pGamePersistent->hud_collim_reflect_ind);
+		else												RCache.set_c (C, 0.f, 0.f, 0.f, 0.f);
+	}
+};
+static cl_collim_reflect_ind	binder_collim_reflect_ind;
+
+class cl_collim_reflect_shape : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent)	RCache.set_c (C, g_pGamePersistent->hud_collim_reflect_shape);
+		else					RCache.set_c (C, 0.35f, 1.f, 0.f, 0.f);
+	}
+};
+static cl_collim_reflect_shape	binder_collim_reflect_shape;
+
+// The glass's own texture, faded by the aim (model_collim_glass.ps, pass 0 of the collimator glass).
+// That pass is the world's too, so outside the HUD's strict-sorted pass it stays 1: the gun on the
+// ground keeps its glass while the player aims his own.
+extern bool r_dsgraph_hud_sorted_now;
+class cl_collim_glass : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	RCache.set_c (C, g_pGamePersistent->hud_collim_glass);
+		else												RCache.set_c (C, 1.f, 1.f, 1.f, 0.f);
+	}
+};
+static cl_collim_glass	binder_collim_glass;
+
+// The collimator's shader reticle (model_collim_reflect): rgb = colour * intensity, 0 = no reticle.
+class cl_collim_mark : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	RCache.set_c (C, g_pGamePersistent->hud_collim_mark);
+		else												RCache.set_c (C, 0.f, 0.f, 0.f, 0.f);
+	}
+};
+static cl_collim_mark	binder_collim_mark;
+
+// ...and where it sits: x = texcoord per tangent of the angle off the sight line, y/z = the zeroing
+// offset as tangents -- both in the HUD's angles. The size and offset come in degrees of the WORLD's view,
+// and the HUD draws through its own, narrower projection: a direction at tan t on screen is tan t *
+// tan(hud/2) / tan(world/2) in the HUD. So the reticle covers the same piece of the world whatever the
+// HUD fov does while aiming, and its centre stays on the screen's centre.
+extern ENGINE_API float psHUD_FOV;
+static float collim_hud_k()
+{
+	const float hud		= tanf(deg2rad(psHUD_FOV * Device.fFOV_HUD) * 0.5f);
+	const float world	= tanf(deg2rad(Device.fFOV) * 0.5f);
+	return (world > EPS) ? hud / world : 1.f;
+}
+class cl_collim_mark_proj : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		Fvector4 s;
+		if (g_pGamePersistent)	s = g_pGamePersistent->hud_collim_mark_shape;
+		else					s.set(2.f, 0.f, 0.f, 0.f);
+		const float k		= collim_hud_k();
+		const float hs		= tanf(deg2rad(s.x) * 0.5f) * k;
+		RCache.set_c (C, (hs > EPS) ? 0.5f / hs : 0.f, tanf(deg2rad(s.y)) * k, tanf(deg2rad(s.z)) * k, 0.f);
+	}
+};
+static cl_collim_mark_proj	binder_collim_mark_proj;
+
+// A prism sight's field stop and its etched reticle (model_collim_tint, model_collim_mask): x = tangent of
+// half the field of view, y = width of its soft edge as a tangent -- both turned into the hud's angles as
+// the reticle's are -- z = how much the reticle darkens the view, w = 1 for a prism (0: no stop, no cut).
+class cl_collim_prism : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		Fvector4 s;
+		if (g_pGamePersistent)	s = g_pGamePersistent->hud_collim_prism;
+		else					s.set(0.f, 1.f, 0.f, 0.f);
+		const float k		= collim_hud_k();
+		const bool	prism	= s.x > 0.f;
+		const float lo		= prism ? tanf(deg2rad(_max(s.x - s.y, 0.f)) * 0.5f) * k : 0.f;
+		const float hi		= prism ? tanf(deg2rad(s.x + s.y) * 0.5f) * k : 0.f;
+		RCache.set_c (C, (lo + hi) * 0.5f, hi - lo, s.z, prism ? 1.f : 0.f);
+	}
+};
+static cl_collim_prism	binder_collim_prism;
+
+// The sun shafts' haze over a prism sight's black field stop (model_collim_late), drawn over the finished
+// picture: x = its share of their full strength, y = 1 while the sun's shafts are on at all.
+class cl_collim_veil : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		const float v = g_pGamePersistent ? g_pGamePersistent->hud_collim_prism.w : 0.f;
+		RCache.set_c (C, v, (ps_r_sun_shafts > 0) ? 1.f : 0.f, 0.f, 0.f);
+	}
+};
+static cl_collim_veil	binder_collim_veil;
+
+// The collimator glass's highlight (collim.h collim_specular): x = strength, y = glossiness, z = the texture
+// alpha's mask. The hud's glass only -- none on the world's.
+class cl_collim_spec : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	RCache.set_c (C, g_pGamePersistent->hud_collim_spec);
+		else												RCache.set_c (C, 0.f, 64.f, 0.f, 0.f);
+	}
+};
+static cl_collim_spec	binder_collim_spec;
+
+// The lights besides the sun that reach a collimator's glass on the hud (collim.h collim_dynlight): an array of
+// COLLIM_LIGHTS triples, see collim_gather_lights. The hud's glass only -- black for the world's.
+class cl_collim_lights : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		Fvector4	set	[COLLIM_LIGHTS*3];
+		if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	collim_gather_lights(set);
+		else	for (u32 i = 0; i < COLLIM_LIGHTS*3; ++i)	set[i].set(0.f, 0.f, 0.f, 0.f);
+		for (u32 i = 0; i < COLLIM_LIGHTS*3; ++i)	RCache.set_ca(C, i, set[i]);
+	}
+};
+static cl_collim_lights	binder_collim_lights;
+
+class cl_collim_hemi_pos : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent)	RCache.set_c (C, g_pGamePersistent->hud_collim_hemi_pos);
+		else					RCache.set_c (C, 1.f, 1.f, 1.f, 0.f);
+	}
+};
+static cl_collim_hemi_pos	binder_collim_hemi_pos;
+
+class cl_collim_hemi_neg : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent)	RCache.set_c (C, g_pGamePersistent->hud_collim_hemi_neg);
+		else					RCache.set_c (C, 1.f, 1.f, 1.f, 0.f);
+	}
+};
+static cl_collim_hemi_neg	binder_collim_hemi_neg;
+
+#ifndef _EDITOR
+// The weather's sky, for a forward shader that samples $user$sky0/1 itself the way the skybox does
+// (dxEnvironmentRender::RenderSky): xyz = sky colour, w = blend from sky0 to sky1.
+class cl_sky_params : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		CEnvDescriptorMixer&	env	= *g_pGamePersistent->Environment().CurrentEnv;
+		RCache.set_c	(C, env.sky_color.x, env.sky_color.y, env.sky_color.z, env.weight);
+	}
+};
+static cl_sky_params	binder_sky_params;
+
+// ...and its turn about the vertical: x = cos, y = sin of sky_rotation (the skybox is drawn rotateY'd by it).
+class cl_sky_rotation : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		const float a	= g_pGamePersistent->Environment().CurrentEnv->sky_rotation;
+		RCache.set_c	(C, _cos(a), _sin(a), 0.f, 0.f);
+	}
+};
+static cl_sky_rotation	binder_sky_rotation;
+#endif
+
 // Gunslinger m_digiclock (r_constants.pas binder_digiclock_setup): the in-game clock drawn on electronic
 // weapon displays -- the gauss MUI's digit screens (models_digiclock_{hh,hl,mh,ml}_screen). Each channel is
 // one digit as an atlas offset 0.0..0.9; the digit shader samples s_base at digit + tc.x*0.1.
@@ -434,6 +610,22 @@ void	CBlender_Compile::SetMapping	()
 	r_Constant				("m_zoom_deviation",&binder_zoom_deviation);
 	r_Constant				("m_scope_shadow",	&binder_scope_shadow);
 	r_Constant				("m_collim_tint",	&binder_collim_tint);
+	r_Constant				("m_collim_reflect",	&binder_collim_reflect);
+	r_Constant				("m_collim_reflect_ind",	&binder_collim_reflect_ind);
+	r_Constant				("m_collim_reflect_shape",	&binder_collim_reflect_shape);
+	r_Constant				("m_collim_glass",	&binder_collim_glass);
+	r_Constant				("m_collim_mark",	&binder_collim_mark);
+	r_Constant				("m_collim_mark_proj",	&binder_collim_mark_proj);
+	r_Constant				("m_collim_prism",	&binder_collim_prism);
+	r_Constant				("m_collim_veil",	&binder_collim_veil);
+	r_Constant				("m_collim_lights",	&binder_collim_lights);
+	r_Constant				("m_collim_spec",	&binder_collim_spec);
+	r_Constant				("m_collim_hemi_pos",	&binder_collim_hemi_pos);
+	r_Constant				("m_collim_hemi_neg",	&binder_collim_hemi_neg);
+#ifndef _EDITOR
+	r_Constant				("m_sky_params",	&binder_sky_params);
+	r_Constant				("m_sky_rotation",	&binder_sky_rotation);
+#endif
 	r_Constant				("m_digiclock",		&binder_digiclock);
 
 	// eye-params

@@ -1,0 +1,31 @@
+#include "common.h"
+#include "collim.h"
+
+// Pass 0 of the collimator glass (models_lenses, wpn\lenses): what lies on the glass and what shows
+// through it, in one premultiplied-alpha pass (blend one, invsrcalpha):
+//   the glass's texture, lit as model_def_lq lights it, its alpha times m_collim_glass.x -- the aim fades it;
+//   the sky the coating mirrors, added on top -- the clearer the glass's texture, the stronger, as far
+//   as collimator_reflect_mask says (its own alpha: the aim's fade must not take the mirror along);
+//   the reticle's glow BEHIND the texture -- it hangs at infinity, the glass is in front of it.
+// Pass 1 (model_collim_tint: the tint, a prism's field stop, the etched lines) is drawn first, under it all:
+// it darkens the view behind the glass, never the glass. The world draws this pass alone, and there the
+// binders give a plain glass: full texture, no sky, no reticle.
+float4 main( v2p_collim I ) : SV_Target
+{
+	float3	v		= normalize( I.pos_w - eye_position );
+	float3	n		= normalize( I.norm_w );
+	float3	ng		= face_eye( n, v );
+	float3	na		= face_eye( normalize(I.axis_w), v );
+
+	float4	t_base	= s_base.Sample( smp_base, I.tc0 );
+	float3	dyn		= collim_dynlight( I.pos_w, ng, 1 );
+	float3	glass	= collim_glass_light( n, I.pos_w, ng ) * t_base.rgb;
+	float	a		= t_base.a * m_collim_glass.x;
+
+	float	ad;
+	float2	t		= collim_sight( v, I.axis_w, I.right_w, ad );
+
+	float3	refl	= collim_reflection( v, ng, na, dyn ) * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
+	float3	res		= glass * a + refl + collim_glow( t, ad ) * (1 - a) + collim_specular( I.pos_w, v, ng, t_base.a );
+	return	float4( res, a );
+}

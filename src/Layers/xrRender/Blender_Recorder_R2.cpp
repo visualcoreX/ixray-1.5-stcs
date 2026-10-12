@@ -164,6 +164,7 @@ void	CBlender_Compile::r_Sampler_clw	(LPCSTR name, LPCSTR texture, bool b_ps1x_P
 
 void	CBlender_Compile::r_End			()
 {
+	R_ASSERT2				(SH->passes.size() < SHADER_PASSES_MAX, "shader element has more passes than SHADER_PASSES_MAX");
 	dest.constants			= DEV->_CreateConstantTable(ctable);
 	dest.state				= DEV->_CreateState		(RS.GetContainer());
 	dest.T					= DEV->_CreateTextureList	(passTextures);

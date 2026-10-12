@@ -44,6 +44,24 @@ public:
 	R_dsgraph::mapSorted_T										mapDistort;
 	R_dsgraph::mapHUD_T											mapHUDSorted;
 	R_dsgraph::mapHUD_T											mapHUDSortedLast;	// strict-sorted HUD of priority 3: drawn over the rest
+	R_dsgraph::mapHUD_T											mapHUDSortedFirst;	// strict-sorted HUD flagged hud_first: drawn under the rest
+
+	// The collimator's shader reticle: $user$collim_mark, which model_collim_reflect samples, and the mark
+	// textures put behind it so far (kept loaded -- the brightness keys flip between them). See
+	// r_dsgraph_collim_mark_bind.
+	ref_texture													collim_mark_user;
+	xr_map<shared_str, ref_texture>								collim_mark_loaded;
+	void		r_dsgraph_collim_mark_bind						();
+
+	// A prism sight's eyepiece (E[4] with flags.bLensMask, models_transparent.s l_special): drawn right after
+	// the hud's deferred pass, it resets the depth and stencil inside the eyepiece, so the world -- drawn
+	// next -- fills it as if the sight's body were not there. Only where the hud goes BEFORE the world:
+	// the caller sets hud_lens_mask_now around that one r_dsgraph_render_hud.
+	R_dsgraph::mapSorted_T										mapHUDLensMask;
+	bool														hud_lens_mask_now;
+	// ...and the same eyepieces kept for their field stop drawn over the finished picture
+	xr_vector<R_dsgraph::_MatrixItemS,render_allocator::helper<R_dsgraph::_MatrixItemS>::result>	lstHUDLensLate;
+	void		r_dsgraph_render_lens_late						();
 
 #if RENDER!=R_R1
 	R_dsgraph::mapSorted_T										mapWmark;			// sorted
@@ -106,6 +124,7 @@ public:
 		marker				= 0;
 		r_pmask				(true,true);
 		b_loaded			= FALSE	;
+		hud_lens_mask_now	= false;
 	};
 
 	void		r_dsgraph_destroy()
@@ -149,6 +168,11 @@ public:
 		mapDistort.destroy		();
 		mapHUDSorted.destroy();
 		mapHUDSortedLast.destroy();
+		mapHUDSortedFirst.destroy();
+		collim_mark_user		= 0;
+		collim_mark_loaded.clear();
+		mapHUDLensMask.destroy();
+		lstHUDLensLate.clear();
 
 #if RENDER!=R_R1
 		mapWmark.destroy		();

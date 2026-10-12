@@ -1,5 +1,5 @@
 function normal		(shader, t_base, t_second, t_detail)
-  shader:begin  	("model_def_lplanes","base_lplanes")
+  shader:begin  	("model_def_lplanes","model_collimsight")	-- base_lplanes, hidden under a shader reticle
       : fog    		(false)
       : zb     		(true,false)
       : blend   	(true,blend.srcalpha,blend.one)

@@ -73,6 +73,8 @@ ShaderElement::ShaderElement()
 	flags.bEmissive		= FALSE;
 	flags.bDistort		= FALSE;
 	flags.bWmark		= FALSE;
+	flags.bLensMask		= FALSE;
+	flags.bHudFirst		= FALSE;
 }
 
 BOOL ShaderElement::equal	(ShaderElement& S)
@@ -82,6 +84,8 @@ BOOL ShaderElement::equal	(ShaderElement& S)
 	if (flags.bEmissive		!= S.flags.bEmissive)	return FALSE;
 	if (flags.bWmark		!= S.flags.bWmark)		return FALSE;
 	if (flags.bDistort		!= S.flags.bDistort)	return FALSE;
+	if (flags.bLensMask		!= S.flags.bLensMask)	return FALSE;
+	if (flags.bHudFirst		!= S.flags.bHudFirst)	return FALSE;
 	if (passes.size() != S.passes.size())			return FALSE;
 	for (u32 p=0; p<passes.size(); p++)
 		if (passes[p] != S.passes[p])				return FALSE;
