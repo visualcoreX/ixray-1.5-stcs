@@ -98,7 +98,14 @@ function UpdateState(delta1)
 	local newpos = db.actor:position()
 	local speed  = math.ceil((newpos:distance_to(lastpos) / delta1) * 10000)
 
-	if speed < 6 then                      -- standing
+	-- g_god freezes the actor's state, thirst included: no drain and no harm. Only the console
+	-- cheat counts -- hide_indicators()' invulnerability for sleep and cutscenes must still drain.
+	-- lasttime/lastpos still move on below, so switching it off does not bill the god-mode time.
+	local god = get_console():get_bool("g_god")
+
+	if god then
+		-- the level stands still
+	elseif speed < 6 then                  -- standing
 		cur = cur - (hit_allowed and idle_decrement * delta or sleep_decrement)
 	elseif speed < 50 then                 -- walking
 		cur = cur - (hit_allowed and move_decrement * delta or sleep_decrement)
@@ -107,7 +114,7 @@ function UpdateState(delta1)
 	end
 
 	local bleeding = db.actor:get_bleeding()
-	if bleeding > 0.005 then
+	if bleeding > 0.005 and not god then
 		cur = cur - bleeding_koef * bleeding * delta
 	end
 
@@ -128,7 +135,7 @@ function UpdateState(delta1)
 			level.set_pp_effector_factor(thirst_ppe, pp_factor * phase, 0.8)
 		end
 
-		if cur < 0 then
+		if cur < 0 and not god then
 			-- health and stamina are ADDITIVE properties here, so these are losses
 			local hlth = (cur - 1) * health_decrement * delta
 			if db.actor.health + hlth < 0.005 then
