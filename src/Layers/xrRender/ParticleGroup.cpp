@@ -203,6 +203,7 @@ void CParticleGroup::SItem::StartRelatedChild(CParticleEffect* emitter, LPCSTR e
     CParticleEffect*C		= static_cast<CParticleEffect*>(RImplementation.model_CreatePE(eff_name));
 	
 	C->SetHudMode			(emitter->GetHudMode());
+	C->SetHudWorld			(emitter->GetHudWorld());
 
     Fmatrix M; 				M.identity();
     Fvector vel; 			vel.sub(m.pos,m.posB); vel.div(fDT_STEP);
@@ -230,6 +231,7 @@ void CParticleGroup::SItem::StartFreeChild(CParticleEffect* emitter, LPCSTR nm, 
 {
     CParticleEffect*C			= static_cast<CParticleEffect*>(RImplementation.model_CreatePE(nm));
 	C->SetHudMode				(emitter->GetHudMode());
+	C->SetHudWorld				(emitter->GetHudWorld());
     if(!C->IsLooped())
 	{
         Fmatrix M; 				M.identity();
@@ -556,6 +558,25 @@ BOOL CParticleGroup::GetHudMode()
 	{
 		CParticleEffect* E	= static_cast<CParticleEffect*>(items[0]._effect);
 		return E->GetHudMode();
+	}else
+		return FALSE;
+}
+
+void CParticleGroup::SetHudWorld(BOOL b)
+{
+    for (SItemVecIt i_it=items.begin(); i_it!=items.end(); ++i_it)
+	{
+		CParticleEffect* E	= static_cast<CParticleEffect*>(i_it->_effect);
+		E->SetHudWorld(b);
+	}
+}
+
+BOOL CParticleGroup::GetHudWorld()
+{
+	if(items.size())
+	{
+		CParticleEffect* E	= static_cast<CParticleEffect*>(items[0]._effect);
+		return E->GetHudWorld();
 	}else
 		return FALSE;
 }

@@ -239,12 +239,27 @@ void CShootingObject::StartParticles (CParticlesObject*& pParticles, LPCSTR part
 
 	pParticles = CParticlesObject::Create(particles_name,(BOOL)auto_remove_flag);
 	
-	UpdateParticles(pParticles, pos, vel);
 	CSpectator* tmp_spectr = smart_cast<CSpectator*>(Level().CurrentControlEntity());
-	bool in_hud_mode = !force_world && IsHudModeNow();
+	bool in_hud_mode = IsHudModeNow();
 	if (in_hud_mode && tmp_spectr &&
 		(tmp_spectr->GetActiveCam() != CSpectator::eacFirstEye))
 	{
+		in_hud_mode = false;
+	}
+	// a world effect -- but out of the first-person weapon: its frame is a frame of the hud model, moved
+	// into the world where the hud shows it (HudFxXformToWorld), and it is drawn in the hud's depth slice
+	// while near, so the weapon does not cover it where it is in front of it (CParticlesObject::SetHudWorld)
+	if (force_world && in_hud_mode)
+	{
+		Fmatrix X;		X.set(get_ParticlesXFORM());	X.c.set(pos);
+		HudFxXformToWorld	(X);
+		pParticles->SetXFORM(X);
+	}
+	else
+		UpdateParticles(pParticles, pos, vel);
+	if (force_world)
+	{
+		pParticles->SetHudWorld(in_hud_mode);
 		in_hud_mode = false;
 	}
 	pParticles->Play(in_hud_mode);
@@ -325,7 +340,11 @@ void CShootingObject::OnShellDrop	(const Fvector& play_pos,
 	particles_pos.set		(get_ParticlesXFORM());
 	particles_pos.c.set		(play_pos);
 
-	pShellParticles->UpdateParent		(particles_pos, parent_vel);
+	// A world effect, like the muzzle smoke: what comes out of the port (smoke, sparks -- the cases
+	// themselves are models, see WeaponShellCasing.cpp) stays in the air where it left the gun. As a hud
+	// particle it went through the hud projection and swam across the screen with every turn of the
+	// camera. In first person the frame is a frame of the hud model, so it is moved to where the world
+	// projection shows it as the hud one does (see HudFxXformToWorld).
 	CSpectator* tmp_spectr = smart_cast<CSpectator*>(Level().CurrentControlEntity());
 	bool in_hud_mode = IsHudModeNow();
 	if (in_hud_mode && tmp_spectr &&
@@ -333,7 +352,11 @@ void CShootingObject::OnShellDrop	(const Fvector& play_pos,
 	{
 		in_hud_mode = false;
 	}
-	pShellParticles->Play(in_hud_mode);
+	if (in_hud_mode)	HudFxXformToWorld(particles_pos);
+
+	pShellParticles->UpdateParent		(particles_pos, parent_vel);
+	pShellParticles->SetHudWorld		(in_hud_mode);	// in the hud's depth slice while near (see StartParticles)
+	pShellParticles->Play(false);
 }
 
 
@@ -342,15 +365,18 @@ extern ENGINE_API float psHUD_FOV;	// hud fov as a fraction of the world fov
 
 // The muzzle FLAME is a hud particle and the SMOKE is a world one (see StartSmokeParticles), so the
 // same muzzle position goes through two different projections and the two effects come apart on
-// screen -- the smoke reading as sitting out in front of the barrel.
-// Remap the point so that, drawn in the WORLD projection, it appears where the HUD projection draws
-// it. A point's screen offset is perp / (along * tan(fov/2)), so the depth along the view axis is
-// kept (occlusion and sorting unchanged) and only the camera-perpendicular part is scaled by
-// tan(world/2) / tan(hud/2). The world fov is the wider one, so the point moves further off axis.
-// Same correction as LaserCorrectPointWorldToHud in Weapon.cpp, which exists for the same reason.
-// NOTE scaling the camera->muzzle DISTANCE instead does nothing for this: it leaves the direction
-// from the camera untouched, so the point keeps the very screen position that was wrong.
-static void SmokePointWorldToHud(Fvector& p)
+// screen. The hud projection is the narrower one: it shows everything magnified by
+// k = tan(world/2) / tan(hud/2), so the muzzle, drawn at its real depth along the view axis, reads as
+// a muzzle at depth/k.
+// Remap the point so that the WORLD projection shows it where the hud one does, and as large: the part
+// across the view is kept and the depth is squeezed by 1/k. Both give the same screen point
+// (perp / (along * tan(fov/2))), and the smoke at its real size then matches the flame's scale, and its
+// sideways drift the hud's, with no scaling of the effect itself.
+// NOTE keeping the depth and scaling the perpendicular part by k instead (what this did before) also
+// lands on the right screen point -- it is the same ray -- but k times further out along it: the smoke
+// came out k times too small and, once the camera moved, always sat beyond the muzzle, away from the
+// camera.
+void CShootingObject::HudFxPointToWorld(Fvector& p)
 {
 	const float t_hud = tanf(deg2rad(0.5f * psHUD_FOV * Device.fFOV_HUD));
 	const float t_wld = tanf(deg2rad(0.5f * Device.fFOV));
@@ -362,11 +388,32 @@ static void SmokePointWorldToHud(Fvector& p)
 	const float along = v.dotproduct(cdir);
 	if (along <= EPS_L)	return;				// behind the camera: leave it alone
 
-	Fvector par;	par.mul(cdir, along);	// depth component, preserved
-	Fvector perp;	perp.sub(v, par);		// screen-plane component, rescaled
-	perp.mul		(t_wld / t_hud);
-	p.add			(cpos, par);
-	p.add			(perp);
+	// across the view unchanged, depth along it times t_hud / t_wld
+	p.mad			(cdir, along * (t_hud / t_wld - 1.f));
+}
+
+// The same for a whole emitter frame. Moving its origin alone is not enough: an effect carries geometry
+// of its own in that frame -- an emitter set off from the bone it rides (the chambers of opened barrels sit
+// well behind the hinge), a cone thrown forward -- and the particle system takes it into the world through
+// the full matrix (pDomain::transform: points by transform_tiny, directions and velocities by
+// transform_dir). With the axes left as they were, that geometry came out at its real size in the world,
+// which is K times too deep once the hud's slice stretches the depth back (CParticleEffect::HudWorldNow):
+// every offset along the view drawn K times longer, the emitter and its throw pushed away from the eye and,
+// through the perspective, towards the middle of the screen. Squeezing the axes by the same
+// A^-1 = I + (t_hud/t_wld - 1) d d^T makes the effect exactly the one the hud would have drawn.
+// The axes come out no longer orthonormal: the domains do not mind, they are transformed linearly.
+void CShootingObject::HudFxXformToWorld(Fmatrix& M)
+{
+	const float t_hud = tanf(deg2rad(0.5f * psHUD_FOV * Device.fFOV_HUD));
+	const float t_wld = tanf(deg2rad(0.5f * Device.fFOV));
+	if (t_hud <= EPS_L || t_wld <= EPS_L)	return;
+
+	const Fvector& cdir = Device.vCameraDirection;
+	const float s		= t_hud / t_wld - 1.f;
+	M.i.mad			(cdir, M.i.dotproduct(cdir) * s);
+	M.j.mad			(cdir, M.j.dotproduct(cdir) * s);
+	M.k.mad			(cdir, M.k.dotproduct(cdir) * s);
+	HudFxPointToWorld	(M.c);
 }
 
 void CShootingObject::StartSmokeParticles	(const Fvector& play_pos,
@@ -376,11 +423,10 @@ void CShootingObject::StartSmokeParticles	(const Fvector& play_pos,
 	// World effect, not a hud one: powder smoke hangs in the air where the shot happened. As a hud
 	// particle it was drawn in the hud viewport -- scaled by hud_fov and swinging with every camera
 	// move, as if the cloud were glued to the screen.
-	Fvector pos = play_pos;
-	// Only the player's own weapon is drawn as a hud, and only there do the two projections differ.
-	// An NPC's weapon, a car, a helicopter and a mounted gun are world-rendered throughout.
-	if (IsHudModeNow())	SmokePointWorldToHud(pos);
-	StartParticles(pSmokeParticles, *m_sSmokeParticlesCurrent, pos, parent_vel, true, true);
+	// Only the player's own weapon is drawn as a hud, and only there do the two projections differ:
+	// StartParticles moves its frame into the world (HudFxXformToWorld). An NPC's weapon, a car, a
+	// helicopter and a mounted gun are world-rendered throughout.
+	StartParticles(pSmokeParticles, *m_sSmokeParticlesCurrent, play_pos, parent_vel, true, true);
 }
 
 

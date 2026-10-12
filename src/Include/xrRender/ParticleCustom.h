@@ -25,6 +25,12 @@ public:
 	virtual const shared_str	Name		()=0;
 	virtual void	SetHudMode			(BOOL b)=0;
 	virtual BOOL	GetHudMode			()=0;
+
+	// A world effect that starts at the first-person weapon (muzzle smoke and the like): it lives in the
+	// world, but while it is near the eye it is drawn in the hud's depth slice, so the weapon covers it only
+	// where it really is in front of it (see CParticleEffect::Render).
+	virtual void	SetHudWorld			(BOOL b)=0;
+	virtual BOOL	GetHudWorld			()=0;
 };
 
 #endif	//	ParticleCustom_included

@@ -2002,6 +2002,7 @@ void CActor::UpdateCL	()
 			if (CWeapon* awpn = smart_cast<CWeapon*>(aitm))
 			{
 				awpn->UpdateLaserDot();
+				awpn->gwr_ReloadSmokeUpdate();		// the reload smoke on its hud bone, by this frame's bone and camera
 				awpn->UpdateFlashlight();
 				awpn->UpdateCollimatorGlitch();		// GS: collimator reticle bone glitches out during an emission
 			}

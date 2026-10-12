@@ -2082,7 +2082,8 @@ void CWeapon::UpdateCL		()
 {
 	inherited::UpdateCL		();
 	gwr_ShellCasingUpdate	();	// a real case waiting for the hud shell animation to leave the port
-	gwr_ReloadSmokeUpdate	();	// the smoke out of a break-action gun's opened barrels, on their bone
+	// the smoke out of a break-action gun's opened barrels rides a hud bone: it is moved from CActor::UpdateCL,
+	// after g_player_hud->update(), where the bone and the camera are this frame's (as the laser dot is)
 	UpdateHUDAddonsVisibility();
 	UpdateAlterZoomBlend	(Device.fTimeDelta);	// GS alter zoom: eased ramp between the two aim poses
 	UpdateScopeFade		();		// arms/disarms the zoom-in/out easing (ScopeFadeFactor)
