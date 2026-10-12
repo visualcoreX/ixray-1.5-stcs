@@ -215,7 +215,10 @@ public:
 	void						u_DBT_disable			();
 
 	void						phase_ssao				();
-	void						phase_hud_shadow		(light* L = nullptr);	// nullptr == the sun
+	void						phase_hud_shadow		(light* L = nullptr);	// nullptr == the sun: now; a light: queued
+	void						phase_hud_shadow_lights	();						// the queued lights, once every light is in
+	void						hud_shadow_pass			(light* L);
+	xr_vector<light*>			hud_shadow_queue;
 	void phase_fxaa(u32 pass);
 	void phase_smaa(u32 pass);
 	// 3D PiP scope: take the lens capture, warped by the distortion mask when there is one.

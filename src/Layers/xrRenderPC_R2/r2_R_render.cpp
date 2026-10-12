@@ -447,6 +447,8 @@ void CRender::Render		()
 	
 	// Lighting, dependant on OCCQ
 	render_lights							(LP_pending);
+	// every light is in now: their HUD contact shadows, all together (see phase_hud_shadow)
+	Target->phase_hud_shadow_lights		();
 
 	// Postprocess
 	Target->phase_combine					();

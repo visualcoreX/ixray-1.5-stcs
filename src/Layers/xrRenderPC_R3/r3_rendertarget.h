@@ -274,7 +274,10 @@ public:
 	void						phase_scene_end			();
 	void						phase_occq				();
 	void						phase_ssao				();
-	void						phase_hud_shadow		(light* L = nullptr);	// nullptr == the sun
+	void						phase_hud_shadow		(light* L = nullptr);	// nullptr == the sun: now; a light: queued
+	void						phase_hud_shadow_lights	();						// the queued lights, once every light is in
+	void						hud_shadow_pass			(light* L);
+	xr_vector<light*>			hud_shadow_queue;
 	// Laser-designator beams (the game hands them over through IGame_Persistent::GetLaserBeams).
 	// Both run inside CRender::render_forward: the density pass before the sorted geometry (it reads
 	// the sorted list, which drawing it clears), the beams after the world's transparent geometry.
