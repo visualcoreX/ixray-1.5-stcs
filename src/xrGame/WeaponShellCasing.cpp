@@ -26,6 +26,8 @@
 //   shell_casing_point  = x,y,z     ...from this point of the hud model, in the space of the bone
 //   shell_casing_point_bone         named here (wpn_body by default)
 //   shell_casing_hip_offset = x,y,z first person, out of the sights: move the point (right, up, forward; m)
+//   shell_casing_burst_lead = <sec> first person, fire modes other than single: the burst/auto shot takes start
+//                                   this far into the shell's flight -- the point goes back along it by that much
 //   shell_casing_side   = <m>       how far off the barrel line the hud shell has to get before the case
 //                                   takes over (a pump gun: past the stretch the slide drags it back)
 //   shell_casing_override = <sect>  this case, whatever round is loaded (the shooting-range guns)
@@ -1028,6 +1030,17 @@ void CWeapon::gwr_ShellCasingFollow(u32 idx, bool force)
 		pos.mad			(Device.vCameraRight,		o.x * k);
 		pos.mad			(Device.vCameraTop,			o.y * k);
 		pos.mad			(Device.vCameraDirection,	o.z * k);
+	}
+
+	// Per weapon, for the fire modes other than single: their shot animations may start further into the shell's
+	// flight than the single one does. The Glock's _auto takes are its single ones minus the first frame -- the
+	// shell already 7 cm out of the port at the start -- so the bone was caught a frame along its path, right of
+	// and above where a single shot throws from. Back along the flight by that much of it, at the speed the
+	// bone was measured at (the animation's own, before the throw's clamp).
+	if (!T.drop && !T.by_hand && GetCurrentFireMode() != 1)
+	{
+		const float lead	= READ_IF_EXISTS(pSettings, r_float, cNameSect().c_str(), "shell_casing_burst_lead", 0.f);
+		if (lead > 0.f)	pos.mad	(dir_world, -speed * lead);
 	}
 
 	// a magazine is let go, not thrown: whatever the hand was doing, it does not leave upwards
