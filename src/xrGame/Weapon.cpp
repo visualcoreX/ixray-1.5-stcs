@@ -5235,12 +5235,14 @@ void CHudItem::ResetLoweredPose()
 {
 	m_fLoweredFactor		= 0.f;
 	m_bLowerGoingDown		= false;
+	m_bLowerModeOn			= false;
 	m_fLowerFromBlend		= 0.f;
 	if (CActor* a = smart_cast<CActor*>(object().H_Parent()))
 		if (a->InBaseZone() && CActor::IsLowerable(&item()))
 		{
 			m_fLoweredFactor	= 1.f;
 			m_bLowerGoingDown	= true;
+			m_bLowerModeOn		= true;	// came out already down: nothing was pressed
 		}
 }
 
@@ -5248,6 +5250,23 @@ void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 {
 	const bool down	= pActor->IsWeaponLowered() && pActor->inventory().ActiveItem() == &item() &&
 					  !(pActor->MovingState() & mcSprint);
+	// The left hand with a detector does what it does when this weapon is put away / drawn: the mode going on
+	// plays its anm_wpn_hide, going off its anm_wpn_show (TryPlayDetectorCompanion: only with this weapon in
+	// the right hand and a detector in the left). Keyed to the MODE, not to the direction of the move: a
+	// sprint lifts the weapon and puts it back down by itself, and the hand must then play its own sprint
+	// end, not a holster. Nothing while sprinting (the weapon does not move then), nothing when it is
+	// already where the mode puts it.
+	{
+		const bool	mode	= pActor->IsWeaponLowered() && pActor->inventory().ActiveItem() == &item();
+		if (mode != m_bLowerModeOn)
+		{
+			m_bLowerModeOn		= mode;
+			const bool	moves	= !(pActor->MovingState() & mcSprint) &&
+								  (mode ? m_fLoweredFactor < 1.f : m_fLoweredFactor > 0.f);
+			if (moves && pActor->inventory().ActiveItem() == &item())
+				TryPlayDetectorCompanion(shared_str(mode ? "anm_hide" : "anm_show"));
+		}
+	}
 	const SLowerPair&	P	= lower_anims(HudSection());
 	const SLowerAnim&	A	= P.down ? *P.down : s_no_anim;
 	const SLowerAnim&	U	= P.up ? *P.up : s_no_anim;
