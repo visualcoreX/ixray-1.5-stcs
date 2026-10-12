@@ -3772,6 +3772,14 @@ bool CWeapon::CollimatorMarkIllumSwitch() const
 	return sect.size() && pSettings->r_bool(*sect, "collimator_mark_illum_switch");
 }
 
+// collimator_marks_bright_first = true: the marks are brightness levels listed from the brightest down (the
+// EOTech's), so the first -- the default step -- is the full glow, and "brighter" is a step back.
+bool CWeapon::CollimatorMarksBrightFirst() const
+{
+	shared_str sect = CollimatorParamSection("collimator_marks_bright_first");
+	return sect.size() && pSettings->r_bool(*sect, "collimator_marks_bright_first");
+}
+
 bool CWeapon::CollimatorMarkAutoIllum(Fvector& range) const
 {
 	shared_str sect = CollimatorParamSection("collimator_mark_auto_illum");
@@ -5001,7 +5009,8 @@ void CWeapon::ChangeScopeIllum(int delta)
 	if (!IsScopeAttached() && CollimatorMarkCount() <= 0)	return;
 	LoadScopeIllumParams();					// pick up the current scope's range (scope may have changed)
 	const int prev_step = m_scope_illum_step;
-	m_scope_illum_step += delta;
+	// delta is the key: +1 = brighter. Marks listed brightest first step the other way (the sound still follows the key)
+	m_scope_illum_step += (CollimatorMarkCount() > 0 && CollimatorMarksBrightFirst()) ? -delta : delta;
 	clamp(m_scope_illum_step, 0, m_scope_illum_steps);
 	// Gunslinger scope-brightness click (snd_scope_brightness_plus/minus) -- only when the step
 	// actually moved, so no sound at the min/max ends. Optional: silent if the weapon has no key.

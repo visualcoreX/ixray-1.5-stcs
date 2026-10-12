@@ -233,6 +233,7 @@ public:
 	// (step 1) instead of stepping through marks -- the first mark only. Off wins; on leaves the glow to
 	// collimator_mark_auto_illum where the optic has it.
 	bool		CollimatorMarkIllumSwitch() const;
+	bool		CollimatorMarksBrightFirst() const;	// its marks go from the brightest down: the keys step the other way
 	bool		CollimatorMarkIllumOn() const	{ return m_scope_illum_step > 0; }
 	// The reticle's brightness now, 0..~1.3 (UpdateCollimatorGlitch): an emission's electronics trouble x the
 	// sight's wear. Multiplies the shader reticle's glow and the model reticle's alpha (CActor).
