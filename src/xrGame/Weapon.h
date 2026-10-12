@@ -412,6 +412,7 @@ public:
 	// Called on a shot. true = this weapon throws real cases, so the old shell particle must not be
 	// started on top of them.
 			bool gwr_ShellCasingOnShot	(const Fvector& owner_vel);
+			bool gwr_ShellParticlesWithCase	() const;	// first person: the shell particle waits for the case (a pump)
 			void gwr_ShellCasingOnUnjam	(LPCSTR ammo);	// the jam-clear animation has just been started
 			void gwr_ShellCasingOnReloadAnim	();	// a reload animation has just been started
 			void gwr_ShellCasingArmReloadBones	();	// break-action guns: the shells the full reload throws
@@ -453,6 +454,17 @@ public:
 		shared_str	section;		// the case to spawn
 	};
 	SShellCasingTrack	m_shell_track[2];
+
+	// Break-action guns: a reload soon after a shot lets the smoke out of the opened barrels -- a particle
+	// that rides a bone of the hud model (reload_smoke_* keys, see WeaponShellCasing.cpp).
+			void gwr_ReloadSmokeStart	();		// a reload animation has just been started
+			void gwr_ReloadSmokeUpdate	();		// every frame: keeps it on its bone
+			void gwr_ReloadSmokeStop	();
+	u32					m_reload_smoke_until;	// Device.dwTimeGlobal: a reload smokes until then (0 = no shot to smoke)
+	CParticlesObject*	m_reload_smoke;
+	u16					m_reload_smoke_bone;
+	u32					m_reload_smoke_motion;	// MotionStartTm() of the reload it plays with
+	Fvector				m_reload_smoke_pos;		// a frame ago: its velocity, for the smoke to drift with the barrels
 
 	u32			 m_gwr_world_bones_sig;	// last applied attachment-state signature (u32(-1) = never)
 

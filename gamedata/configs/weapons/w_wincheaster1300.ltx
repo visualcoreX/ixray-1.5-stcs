@@ -2,6 +2,7 @@
 shell_casing_world_offset	= 0.0, 0.0, -0.04	; third person: the case a little further back than the world model's shell bone
 shell_casing_window	= 1.1	; the pump throws the shell 0.4-0.9 s after the shot
 shell_casing_side	= 0.04	; the slide drags the shell 11 cm straight back before flipping it out: take over only past that
+shell_particles_with_case	= true	; 1st person: the shell smoke comes out with the case the pump throws, not with the shot
 GroupControlSection			= spawn_group
 discovery_dependency 		=
 $spawn                   	= "weapons\winchester1300"					; option for Level Editor
@@ -89,6 +90,7 @@ position                 	= -0.024, -0.097, 0.
 orientation              	= 0, -4, 0      ;�������� ��������������� � ��������
 
 shell_point				= 0.0, 0.180, 0.647
+shell_particles				= ghost_particles\weapons\shell_eject_right_large_00		; shell ejection smoke, 1st person
 fire_point              = 0.0, 0.158, 0.687	; muzzle of the long barrel (was z 0.647 -- 4 cm short of it)
 fire_point2				= 0.0, 0.158, 0.687
 hand_dependence 	 		= 1

@@ -2626,8 +2626,10 @@ void CWeaponMagazined::OnShot()
 	Fvector vel; 
 	PHGetLinearVell				(vel);
 	// a real case, or the old particle -- in first person both: the particle is the smoke out of the
-	// port the case leaves by (the hud shell_point is put there)
-	if (!gwr_ShellCasingOnShot(vel) || GetHUDmode())
+	// port the case leaves by (the hud shell_point is put there). A pump gun's waits for its case: it
+	// comes with the pump (shell_particles_with_case, WeaponShellCasing.cpp).
+	const bool real_case		= gwr_ShellCasingOnShot(vel);
+	if (!real_case || (GetHUDmode() && !gwr_ShellParticlesWithCase()))
 		OnShellDrop				(get_LastSP(), vel);
 	
 	// Огонь из ствола

@@ -68,6 +68,11 @@ CWeapon::CWeapon()
 	SetNextState			(eHidden);
 	m_sub_state				= eSubstateReloadBegin;
 	m_bTriStateReload		= false;
+	m_reload_smoke_until	= 0;
+	m_reload_smoke			= NULL;
+	m_reload_smoke_bone		= u16(-1);
+	m_reload_smoke_motion	= 0;
+	m_reload_smoke_pos.set	(0.f, 0.f, 0.f);
 	m_vMuzzleFxOffset.set	(0.f, 0.f, 0.f);
 	m_vMuzzleFxOffsetHud.set(0.f, 0.f, 0.f);
 	m_bZoomKeyHeld			= false;
@@ -1788,6 +1793,7 @@ void CWeapon::net_Destroy	()
 	//удалить объекты партиклов
 	StopFlameParticles	();
 	StopFlameParticles2	();
+	gwr_ReloadSmokeStop	();
 	StopLight			();
 	StopLaserDot		();
 	Light_Destroy		();
@@ -1973,6 +1979,7 @@ void CWeapon::OnH_B_Independent	(bool just_before_destroy)
 	// dot is restricted to the actor's own active weapon (UpdateLaserDot world-branch), so still kill it here.
 	if (!m_bFlashEnabled)		StopFlashlight();
 	StopLaserDot				();
+	gwr_ReloadSmokeStop			();
 
 	inherited::OnH_B_Independent(just_before_destroy);
 
@@ -2032,6 +2039,7 @@ void CWeapon::OnHiddenItem ()
 	m_dwAmmoCurrentCalcFrame = 0;
 	StopFlashlight	();		// don't leave the mounted light on after holstering (UpdateFlashlight only runs for the active weapon)
 	StopLaserDot	();
+	gwr_ReloadSmokeStop	();	// (nothing would move it along with the barrels any more)
 //. Hide
 	if(IsGameTypeSingle())
 		SwitchState(eHiding);
@@ -2079,6 +2087,7 @@ void CWeapon::UpdateCL		()
 {
 	inherited::UpdateCL		();
 	gwr_ShellCasingUpdate	();	// a real case waiting for the hud shell animation to leave the port
+	gwr_ReloadSmokeUpdate	();	// the smoke out of a break-action gun's opened barrels, on their bone
 	UpdateHUDAddonsVisibility();
 	UpdateAlterZoomBlend	(Device.fTimeDelta);	// GS alter zoom: eased ramp between the two aim poses
 	UpdateScopeFade		();		// arms/disarms the zoom-in/out easing (ScopeFadeFactor)

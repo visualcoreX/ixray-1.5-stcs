@@ -1,5 +1,16 @@
 [wpn_toz34]:identity_immunities,weapon_probability,default_weapon_params
 shell_casing			= false	; break-action: the fired shells stay in the barrels until the reload
+; Smoke the opened barrels let out on a reload soon after a shot (WeaponShellCasing.cpp). One smoke per shot.
+reload_smoke_time		= 5	; s after the last shot a reload still smokes
+; reload_smoke_<reload alias> = <particle>, <hud bones: the first one SHOWN carries it -- the sawn-off shows barrel_short>
+; both barrels fired:
+reload_smoke_anm_reload_0					= ghost_particles\weapons\smoke_toz34_reload_0, barrel_short, barrel
+reload_smoke_anm_reload_only_0				= ghost_particles\weapons\smoke_toz34_reload_0, barrel_short, barrel	; empty, one round on hand
+reload_smoke_anm_reload_only_ammochange_0	= ghost_particles\weapons\smoke_toz34_reload_0, barrel_short, barrel
+; one barrel fired:
+reload_smoke_anm_reload_1					= ghost_particles\weapons\smoke_toz34_reload_1, barrel_short, barrel
+reload_smoke_anm_reload_ammochange_1		= ghost_particles\weapons\smoke_toz34_reload_1, barrel_short, barrel
+reload_smoke_anm_reload_ammochange_only_1	= ghost_particles\weapons\smoke_toz34_reload_1, barrel_short, barrel
 GroupControlSection			= spawn_group
 discovery_dependency 		=
 $spawn                   = "weapons\toz-34"              ; option for Level Editor
