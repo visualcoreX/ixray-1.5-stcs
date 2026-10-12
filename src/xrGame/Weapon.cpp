@@ -5304,6 +5304,7 @@ void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 		// put the bone this frame, along its axes -- not about the hud origin. With F = the bone's frame
 		// (hands attach * bone model matrix) the whole hud gets F * d * F^-1, which leaves bip01 at F * d.
 		Fmatrix		F;
+		const Fmatrix	before	= trans;
 		if (g_player_hud && g_player_hud->hands_bone_frame("bip01", F))
 		{
 			Fmatrix Fi;	Fi.invert(F);
@@ -5312,6 +5313,8 @@ void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 		}
 		else
 			trans.mulB_43	(d);
+		// so that a detector in the left hand can stay up (player_hud::update)
+		if (g_player_hud)	g_player_hud->set_lowered_delta(before, trans);
 	}
 }
 
