@@ -61,7 +61,9 @@ void CRender::init_cacades()
 	s_cascade_scale_applied			= k;
 
 	m_sun_cascades[0].reset_chain = true;
-	m_sun_cascades[0].size = 15.f * k;
+	// 20 m, not the stock 15, as in OpenXRay: the sharp cascade reaches further before the coarser one
+	// takes over (2048..4096 texels over 20 m is still ~5..10 mm a texel).
+	m_sun_cascades[0].size = 20.f * k;
 	m_sun_cascades[0].bias = m_sun_cascades[0].size*fBias;
 
 	m_sun_cascades[1].size = 40.f * k;
