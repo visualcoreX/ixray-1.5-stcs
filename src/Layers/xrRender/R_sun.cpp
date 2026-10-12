@@ -376,13 +376,46 @@ void CRender::render_sun_cascade ( u32 cascade_ind )
 	PIX_EVENT(SE_SUN_NEAR);
 #endif // USE_DX10
 
+	// Cross-fade weights for the accumulation shader (R3; R2 takes them and ignores them). Cascade i
+	// contributes
+	//     w_i    = a_i * PROD(j<i) (1 - a_j)      and the last one takes the whole remainder,
+	//     w_last =       PROD(j<last) (1 - a_j),
+	// a_j being 1 inside cascade j's box and sliding to 0 over a band at its edge. The product form sums
+	// to exactly 1 for ANY layout of the boxes, and that matters: they are NOT nested --
+	// compute_caster_model_fixed slides each one forward along the view to hug its slice of the frustum,
+	// so cascade 0 can stick out of cascade 1. (A "subtract only the previous one" formula assumes
+	// nesting and paid for it in August with up to 2x sunlight there.)
+	// The band is a fixed share of each box, in shadow-map units (the side spans 0..1): wide enough that
+	// the step in shadow resolution reads as a gradient, narrow enough that the sharp cascade keeps most
+	// of its box. Close to the player it keeps its hard cut: the shader narrows the band to nothing for
+	// pixels within 8 m of the camera, opening it fully by 16 m (cascade_weight in accum_sun_near.ps); the
+	// near box is slid forward, so the edge that comes that close is mostly the one behind him.
+	constexpr float	cascade_band	= 0.15f;
+	Fvector4	blend;
+	blend.set	(cascade_band, cascade_band, cascade_ind > 0 ? 1.f : 0.f, cascade_ind > 1 ? cascade_band : 0.f);
+	const u32	i_prev		= cascade_ind > 0 ? cascade_ind-1 : cascade_ind;
+	const u32	i_prev2		= cascade_ind > 1 ? cascade_ind-2 : cascade_ind;
+	Fmatrix&	xform_prev	= m_sun_cascades[i_prev].xform;
+	Fmatrix&	xform_prev2	= m_sun_cascades[i_prev2].xform;
+	// The box also ends ALONG the sunlight, 1.41 x its size past the camera. Seen from up high the ground
+	// below lies further than that along the light, so the near cascade lets go of it on a line that walks
+	// with the camera's height -- and that limit was a hard step. It gets the same band, the same metres as
+	// the box's sides, put into each box's depth units (shadow z per metre along the light).
+	auto		z_band		= [&](u32 i)
+	{
+		Fvector	d;	m_sun_cascades[i].xform.transform_dir(d, fuckingsun->direction);
+		return	cascade_band * m_sun_cascades[i].size * _abs(d.z);
+	};
+	Fvector4	zband;
+	zband.set	(z_band(cascade_ind), z_band(i_prev), 0.f, z_band(i_prev2));
+
 	if( cascade_ind == 0 )
-		Target->accum_direct_cascade		(SE_SUN_NEAR, m_sun_cascades[cascade_ind].xform, m_sun_cascades[cascade_ind].xform, m_sun_cascades[cascade_ind].bias );
+		Target->accum_direct_cascade		(SE_SUN_NEAR, m_sun_cascades[cascade_ind].xform, xform_prev, xform_prev2, m_sun_cascades[cascade_ind].bias, blend, zband );
 	else
 		if( cascade_ind < m_sun_cascades.size()-1 )
-			Target->accum_direct_cascade		(SE_SUN_MIDDLE, m_sun_cascades[cascade_ind].xform, m_sun_cascades[cascade_ind-1].xform, m_sun_cascades[cascade_ind].bias);
+			Target->accum_direct_cascade		(SE_SUN_MIDDLE, m_sun_cascades[cascade_ind].xform, xform_prev, xform_prev2, m_sun_cascades[cascade_ind].bias, blend, zband);
 		else
-			Target->accum_direct_cascade		(SE_SUN_FAR, m_sun_cascades[cascade_ind].xform, m_sun_cascades[cascade_ind-1].xform, m_sun_cascades[cascade_ind].bias);
+			Target->accum_direct_cascade		(SE_SUN_FAR, m_sun_cascades[cascade_ind].xform, xform_prev, xform_prev2, m_sun_cascades[cascade_ind].bias, blend, zband);
 
 	// Restore XForms
 	RCache.set_xform_world		(Fidentity			);
