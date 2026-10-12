@@ -404,8 +404,9 @@ function actor_binder:update(delta)
 	-- item_animations_cs.update()  -- disabled: replaced by gwr_eatable
 
 	-- a conversation puts the weapon away -- unless it is carried low (weapon down, key wpn_lower): then it
-	-- stays in hand, lowered, as with an NPC who asks nothing of a lowered weapon either (xr_meet)
-	if weapon_needs_hiding or (actor:is_talking() and not level.actor_weapon_lowered()) then
+	-- stays in hand, lowered, as with an NPC who asks nothing of a lowered weapon either (xr_meet).
+	-- A base no longer puts it away at all (weapon_needs_hiding): it keeps it down, see hide_weapon below.
+	if actor:is_talking() and not level.actor_weapon_lowered() then
 		if not weapon_hidden then
 			actor:hide_weapon()
 			weapon_hidden = true
@@ -688,12 +689,36 @@ function actor_binder:load(reader)
 	set_save_marker(reader, "load", true, "actor_binder")
 end
 --------------------------------------------------------------------------------
+-- Base territory: the sr_no_weapon restrictors call these on the way in and out (a counter, as the
+-- restrictors of one base overlap). On a base weapons are no longer put away: they can be drawn and
+-- swapped, but every firearm is carried low and the quick knife / quick grenade keys do nothing
+-- (level.actor_set_in_base, CActor::SetInBaseZone). How the weapon was carried on the way in is kept in
+-- the actor's pstor -- so it survives a save made on the base -- and put back on the way out: raised if
+-- it came in raised, still down if it came in down.
 function hide_weapon()
 	zones_needing_weapon_hide = zones_needing_weapon_hide + 1
 	weapon_needs_hiding = true
+	if zones_needing_weapon_hide == 1 then
+		local actor = db.actor
+		if actor ~= nil and xr_logic.pstor_retrieve(actor, "base_wpn_lowered", nil) == nil then
+			xr_logic.pstor_store(actor, "base_wpn_lowered", level.actor_weapon_lowered())
+		end
+		level.actor_set_in_base(true)
+	end
 end
 
 function restore_weapon()
 	zones_needing_weapon_hide = zones_needing_weapon_hide - 1
 	weapon_needs_hiding = zones_needing_weapon_hide > 0
+	if zones_needing_weapon_hide == 0 then
+		level.actor_set_in_base(false)
+		local actor = db.actor
+		if actor ~= nil then
+			local was_lowered = xr_logic.pstor_retrieve(actor, "base_wpn_lowered", nil)
+			if was_lowered ~= nil then
+				level.actor_set_weapon_lowered(was_lowered)
+				xr_logic.pstor_clear(actor, "base_wpn_lowered")
+			end
+		end
+	end
 end

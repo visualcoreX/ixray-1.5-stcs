@@ -116,7 +116,8 @@ species                                = actor
 
 ;---STEP MANAGER------------------------------------------------------
 LegsCount                                                = 2
-step_params                                                = stalker_step_manager
+step_params                                                = actor_step_manager	; the stalkers' table with the pack's own foot landings (below); orig stalker_step_manager
+step_phase_from_anim                                       = true	; the step phase is the leg motion's own position -- what the legs (first-person too) show
 foot_bones                                                = stalker_foot_bones
 
 memory_update_time                        = 100
@@ -496,8 +497,14 @@ zone_freq_6		= 0.1, 40 ; min,max
 ; 27.8 / 24.0 / 28.5 against the rifle sets' 45.0 / 44.5 / 39.7, i.e. 17.2 further LEFT.
 ; Sprint needs none -- escape_0 is 11.9 here against 15.0 there, no relative lean.
 3               = -17.2
+3_idle          = -16.0             ; standing idle, shotguns: -8.5 (from -17.2) left the gun ~7.5 deg left of the view (screenshot)
+3_relaxed       = 20.0              ; weapon lowered, standing still (relaxed idle): the body sits ~20 deg right of the view, as the RPG's
 3_sprint        = 0.0
-4               = 0.0               ; orig 8.0
+4               = -17.0             ; RPG standing: the face measured 17 deg left of the view (the barrel, 36, over-turned it); orig 0.0
+4_sprint        = 0.0               ; sprint: the escape pose is not turned like the walk
+4_idle          = -19.5             ; RPG standing still: -17 left the launcher a little left of the aim, -22 too far right
+cr_4            = 0.0               ; RPG crouched: reads straight as it is
+4_relaxed       = 20.0              ; RPG lowered, standing still (relaxed idle): the body sits ~20 deg right of the view (screenshot, not measured)
 5               = 0.0
 6               = 0.0
 7               = 0.0               ; orig -21.2
@@ -506,11 +513,17 @@ zone_freq_6		= 0.1, 40 ; min,max
 ; needs none: escape_0 is ~15 deg in EVERY set, so there is no relative lean there -- hence the
 ; explicit _sprint = 0 override (a <key>_<action> line wins over the plain key).
 8               = -17.2
+8_idle          = -8.5              ; standing idle: with -17.2 the torso sat 8.7 deg right of the view (actor_torso_auto_dbg)
+8_relaxed       = 20.0              ; weapon lowered, standing still (relaxed idle): the body sits ~20 deg right of the view, as the RPG's
 8_sprint        = 0.0
 9               = -17.2
+9_idle          = -16.0             ; standing idle, shotguns: -8.5 (from -17.2) left the gun ~7.5 deg left of the view (screenshot)
+9_relaxed       = 20.0              ; weapon lowered, standing still (relaxed idle): the body sits ~20 deg right of the view, as the RPG's
 9_sprint        = 0.0
 10              = -17.2
-10_sprint       = 25.5
+10_idle         = -16.0             ; standing idle, shotguns: -8.5 (from -17.2) left the gun ~7.5 deg left of the view (screenshot)
+10_relaxed      = 20.0              ; weapon lowered, standing still (relaxed idle): the body sits ~20 deg right of the view, as the RPG's
+10_sprint       = 0.0               ; SPAS-12 (set 10) sprint: 25.5 bent the torso left; orig 25.5
 11              = 0.0               ; orig -22.9
 13              = 0.0               ; orig -22.9
 ; Per-action override: <key>_reload wins over <key> while a reload is playing. The pack's 8_mini
@@ -518,6 +531,8 @@ zone_freq_6		= 0.1, 40 ; min,max
 ; idle at 45.0 -- 17 deg, which on screen is the torso swinging left as the reload starts. Every
 ; other set has reload == idle and needs no line here.
 machinegun      = -12.8
+machinegun_sprint = 0.0             ; sprint: the escape pose is not turned like the walk
+machinegun_relaxed = 20.0           ; weapon lowered, standing still (relaxed idle): the body sits ~20 deg right of the view, as the RPG's
 ; ---- crouched ------------------------------------------------------------------------------------
 ; A "cr_<key>[_<action>]" line wins over "<key>[_<action>]" while the actor is crouched. The pack
 ; bakes its crouch sets on other angles: the compact family (slots 3 / 8 / 9) against the rifle set
@@ -525,7 +540,7 @@ machinegun      = -12.8
 ; 14 left, and 9 to the RIGHT -- so the standing -17.2 over-turned it there (11 deg at rest, 26 in
 ; the crouch run). value = baked - target, the target being the rifle set in the same state.
 ; Aimed (aim_0, suffix _zoom): 40.7 against 37.9.
-cr_3            = -6.0
+cr_3            = 0.0               ; crouched shotguns read straight as they are; orig -6.0
 cr_3_walk       = -14.4
 cr_3_run        = 8.6
 cr_3_zoom       = 2.8
@@ -533,7 +548,7 @@ cr_8            = -6.0
 cr_8_walk       = -14.4
 cr_8_run        = 8.6
 cr_8_zoom       = 2.8
-cr_9            = -6.0
+cr_9            = 0.0               ; crouched shotguns read straight as they are; orig -6.0
 cr_9_walk       = -14.4
 cr_9_run        = 8.6
 cr_9_zoom       = 2.8
@@ -592,3 +607,76 @@ knife+detector_drawdevice     = 23.8
 knife+detector_holsterdevice  = 23.8
 6+detector_drawdevice         = 23.1
 6+detector_holsterdevice      = 23.1
+
+; The actor's footsteps: the stalkers' table, with every locomotion motion of the animation pack
+; (stalker_animation_new.omf) given the moments its feet REALLY land -- measured by tools/foot_contacts.py
+; off the motions themselves (the stalker table's 0.2 / 0.65 were the stock motions', with the feet the
+; other way round). Read against the leg motion's own position (step_phase_from_anim), so a step sounds
+; when the foot -- in third person and in the first-person legs alike -- comes down. Powers: the stalker table's.
+; order: left, right   (cycles, left time, left power, right time, right power)
+[actor_step_manager]:stalker_step_manager
+cr_run_back_0           = 1,    0.848,  0.10,   0.364,  0.10
+cr_run_back_1           = 1,    0.848,  0.10,   0.364,  0.10
+cr_run_back_ls_0        = 1,    0.848,  0.10,   0.364,  0.10
+cr_run_back_ls_1        = 1,    0.848,  0.10,   0.364,  0.10
+cr_run_back_rs_0        = 1,    0.061,  0.10,   0.273,  0.10
+cr_run_back_rs_1        = 1,    0.061,  0.10,   0.273,  0.10
+cr_run_fwd_0            = 1,    0.455,  0.10,   0.030,  0.10
+cr_run_fwd_1            = 1,    0.455,  0.10,   0.030,  0.10
+cr_run_fwd_ls_0         = 1,    0.545,  0.10,   0.061,  0.10
+cr_run_fwd_ls_1         = 1,    0.545,  0.10,   0.061,  0.10
+cr_run_fwd_rs_0         = 1,    0.485,  0.10,   0.030,  0.10
+cr_run_fwd_rs_1         = 1,    0.485,  0.10,   0.030,  0.10
+cr_run_ls_0             = 1,    0.697,  0.10,   0.364,  0.10
+cr_run_ls_1             = 1,    0.697,  0.10,   0.364,  0.10
+cr_run_rs_0             = 1,    0.545,  0.10,   0.061,  0.10
+cr_run_rs_1             = 1,    0.545,  0.10,   0.061,  0.10
+cr_walk_back_0          = 1,    0.824,  0.10,   0.255,  0.10
+cr_walk_back_1          = 1,    0.333,  0.10,   0.745,  0.10
+cr_walk_back_ls_0       = 1,    0.824,  0.10,   0.255,  0.10
+cr_walk_back_ls_1       = 1,    0.333,  0.10,   0.745,  0.10
+cr_walk_back_rs_0       = 1,    0.824,  0.10,   0.255,  0.10
+cr_walk_back_rs_1       = 1,    0.824,  0.10,   0.255,  0.10
+cr_walk_fwd_0           = 1,    0.529,  0.10,   0.000,  0.10
+cr_walk_fwd_1           = 1,    0.529,  0.10,   0.000,  0.10
+cr_walk_fwd_ls_0        = 1,    0.529,  0.10,   0.961,  0.10
+cr_walk_fwd_ls_1        = 1,    0.529,  0.10,   0.961,  0.10
+cr_walk_fwd_rs_0        = 1,    0.529,  0.10,   0.000,  0.10
+cr_walk_fwd_rs_1        = 1,    0.529,  0.10,   0.000,  0.10
+cr_walk_ls_0            = 1,    0.627,  0.10,   0.333,  0.10
+cr_walk_ls_1            = 1,    0.627,  0.10,   0.333,  0.10
+cr_walk_rs_0            = 1,    0.588,  0.10,   0.098,  0.10
+cr_walk_rs_1            = 1,    0.588,  0.10,   0.098,  0.10
+norm_escape_00          = 1,    0.316,  1.10,   0.789,  1.10
+norm_run_back_0         = 1,    0.375,  0.80,   0.792,  0.80
+norm_run_back_1         = 1,    0.680,  0.80,   0.200,  0.80
+norm_run_back_ls_0      = 1,    0.292,  0.80,   0.750,  0.80
+norm_run_back_ls_1      = 1,    0.680,  0.80,   0.200,  0.80
+norm_run_back_rs_0      = 1,    0.333,  0.80,   0.792,  0.80
+norm_run_back_rs_1      = 1,    0.680,  0.80,   0.200,  0.80
+norm_run_fwd_0          = 1,    0.125,  0.90,   0.667,  0.90
+norm_run_fwd_1          = 1,    0.040,  0.90,   0.520,  0.90
+norm_run_fwd_ls_0       = 1,    0.167,  0.90,   0.667,  0.90
+norm_run_fwd_ls_1       = 1,    0.040,  0.90,   0.520,  0.90
+norm_run_fwd_rs_0       = 1,    0.125,  0.90,   0.667,  0.90
+norm_run_fwd_rs_1       = 1,    0.040,  0.90,   0.520,  0.90
+norm_run_ls_0           = 1,    0.333,  0.80,   0.833,  0.80
+norm_run_ls_1           = 1,    0.040,  0.80,   0.600,  0.80
+norm_run_rs_0           = 1,    0.292,  0.80,   0.750,  0.80
+norm_run_rs_1           = 1,    0.120,  0.80,   0.520,  0.80
+norm_walk_back_0        = 1,    0.848,  0.25,   0.364,  0.25
+norm_walk_back_1        = 1,    0.268,  0.25,   0.756,  0.25
+norm_walk_back_ls_0     = 1,    0.818,  0.25,   0.364,  0.25
+norm_walk_back_ls_1     = 1,    0.244,  0.25,   0.756,  0.25
+norm_walk_back_rs_0     = 1,    0.848,  0.25,   0.333,  0.25
+norm_walk_back_rs_1     = 1,    0.268,  0.25,   0.732,  0.25
+norm_walk_fwd_0         = 1,    0.697,  0.25,   0.212,  0.25
+norm_walk_fwd_1         = 1,    0.610,  0.25,   0.146,  0.25
+norm_walk_fwd_ls_0      = 1,    0.545,  0.25,   0.091,  0.25
+norm_walk_fwd_ls_1      = 1,    0.610,  0.25,   0.146,  0.25
+norm_walk_fwd_rs_0      = 1,    0.667,  0.25,   0.273,  0.25
+norm_walk_fwd_rs_1      = 1,    0.659,  0.25,   0.146,  0.25
+norm_walk_ls_0          = 1,    0.818,  0.25,   0.303,  0.25
+norm_walk_ls_1          = 1,    0.220,  0.25,   0.780,  0.25
+norm_walk_rs_0          = 1,    0.606,  0.25,   0.212,  0.25
+norm_walk_rs_1          = 1,    0.610,  0.25,   0.146,  0.25

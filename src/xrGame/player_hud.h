@@ -142,6 +142,10 @@ public:
 	// attach offset times the bone's model-space matrix (last calculated pose). For layering a motion on top
 	// of that bone (CWeapon::UpdateLoweredPose). False if there is no hands model or no such bone.
 	bool			hands_bone_frame	(LPCSTR bone, Fmatrix& out) const;
+	// CHudItem::UpdateLoweredPose reports the hud transform just before and just after it put the weapon-down
+	// motion on it. With a detector in the left hand, that hand takes the motion back (see update()).
+	void			set_lowered_delta	(const Fmatrix& before, const Fmatrix& after)
+										{ m_lower_before.set(before); m_lower_after.set(after); m_lower_reported = true; }
 private:
 	void			update_inertion		(Fmatrix& trans);
 	void			update_additional	(Fmatrix& trans);
@@ -159,6 +163,15 @@ private:
 	Fmatrix								m_transform;
 	IKinematicsAnimated*				m_model;
 	xr_vector<u16>						m_ancors;
+
+	// Weapon down with a detector out: the left arm is kept where it would be without the motion.
+	Fmatrix								m_lower_before, m_lower_after;	// see set_lowered_delta
+	bool								m_lower_reported;
+	Fmatrix								m_left_hold;		// model space, put on the left arm's root bones
+	bool								m_left_hold_on;
+	xr_vector<u16>						m_left_roots;		// bones of the "left_hand" part whose parent is outside it
+	void								setup_left_hold		();
+	static void							left_hold_callback	(CBoneInstance* B);
 	attachable_hud_item*				m_attached_items[2];
 	xr_vector<attachable_hud_item*>		m_pool;
 

@@ -316,4 +316,8 @@ protected:
 
 //extern ENGINE_API	IRender_interface*	Render;
 
+// TRUE while the renderer asks objects to draw themselves into a shadow map (R2/R3 sun and light
+// shadow passes), so that an object left out of the world pass can still cast its shadow.
+extern ENGINE_API	BOOL				g_render_shadow_pass;
+
 #endif

@@ -506,6 +506,12 @@ void CRender::Render		()
 		PIX_EVENT(DEFER_SUN);
 		RImplementation.stats.l_visible		++;
 		render_sun_cascades();
+		// The sun marks the stencil with the current light marker (its mask pass) and only the near and
+		// middle cascades put their pixels back; the far one keeps the mark. The lights start from the
+		// same marker, so without moving it on the first light of the frame took every pixel the sun
+		// left marked as its own: lit outside its volume, shadowed from whatever part of the shadow-map
+		// atlas lay there -- and which light came first changed from frame to frame, so it flickered.
+		Target->increment_light_marker		();
 		// HUD models cast no shadow of their own (they never enter a shadow map); fake the
 		// self-occlusion in screen space while the accumulator still holds only the sun.
 		Target->phase_hud_shadow();
@@ -540,6 +546,8 @@ void CRender::Render		()
 	{
 		PIX_EVENT(DEFER_LIGHT_OCCQ);
 		render_lights							(LP_pending);
+		// every light is in now: their HUD contact shadows, all together (see phase_hud_shadow)
+		Target->phase_hud_shadow_lights		();
 	}
 
 	// Postprocess

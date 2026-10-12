@@ -493,7 +493,7 @@ void CWeaponShotgun::PlayAnimOpenWeapon()
 	// that keeps it in the chamber, else the one on top of the magazine.
 	{
 		LPCSTR ammo		= NULL;
-		const bool prev	= !!READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "ammo_params_use_previous_shot_type", FALSE);
+		const bool prev	= !!READ_IF_EXISTS(pSettings, r_bool, HudSection(), "ammo_params_use_previous_shot_type", FALSE);	// a hud key
 		if ((prev || m_magazine.empty()) && m_gwr_last_fired_type < m_ammoTypes.size())
 			ammo		= m_ammoTypes[m_gwr_last_fired_type].c_str();
 		else if (!m_magazine.empty())
@@ -627,6 +627,49 @@ u8 CWeaponShotgun::AddCartridge		(u8 cnt)
 		m_pAmmo->SetDropManual(TRUE);
 
 	return cnt;
+}
+
+void CWeaponShotgun::save(NET_Packet &output_packet)
+{
+	inherited::save			(output_packet);
+	output_packet.w_u8		(m_bJustAfterReload ? 1 : 0);
+	output_packet.w_u8		(u8(m_magazine.size()));
+	for (const CCartridge& c : m_magazine)
+		output_packet.w_u8	(c.m_LocalAmmoType);
+	output_packet.w_u8		(m_gwr_last_fired_type);	// the spent shell's round: what the next reload racks out
+}
+
+void CWeaponShotgun::load(IReader &input_packet)
+{
+	inherited::load			(input_packet);
+	// a save from before this byte existed simply ends here (shotguns carry no script binder data after it)
+	if (input_packet.elapsed() > 0)
+		m_bJustAfterReload	= (input_packet.r_u8() != 0);
+	m_loaded_ammo_ids.clear	();
+	if (input_packet.elapsed() > 0)
+	{
+		const u8 n = input_packet.r_u8();
+		for (u8 i = 0; i < n && input_packet.elapsed() > 0; ++i)
+			m_loaded_ammo_ids.push_back(input_packet.r_u8());
+	}
+	if (input_packet.elapsed() > 0)
+		m_gwr_last_fired_type	= input_packet.r_u8();
+}
+
+BOOL CWeaponShotgun::net_Spawn(CSE_Abstract* DC)
+{
+	BOOL res = inherited::net_Spawn(DC);
+	// the tube is there now (all of the saved ammo_type): give each shell back its own round, the way
+	// net_Import does it for a network update
+	for (u32 i = 0; i < m_loaded_ammo_ids.size() && i < m_magazine.size(); ++i)
+	{
+		const u8 t = m_loaded_ammo_ids[i];
+		CCartridge& c = m_magazine[i];
+		if (t < m_ammoTypes.size() && t != c.m_LocalAmmoType)
+			c.Load(*m_ammoTypes[t], t);
+	}
+	m_loaded_ammo_ids.clear();
+	return res;
 }
 
 void	CWeaponShotgun::net_Export	(NET_Packet& P)

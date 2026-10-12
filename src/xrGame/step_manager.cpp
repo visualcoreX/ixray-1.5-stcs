@@ -14,7 +14,7 @@
 BOOL debug_step_info = FALSE;
 BOOL debug_step_info_load = FALSE;
 #endif
-CStepManager::CStepManager() : m_time_anim_started(0), m_anim_phase(0.f), m_phase_time(0)
+CStepManager::CStepManager() : m_time_anim_started(0), m_anim_phase(0.f), m_phase_time(0), m_phase_blend(0), m_true_phase(false)
 {
 }
 
@@ -37,6 +37,8 @@ void CStepManager::reload(LPCSTR section)
 	// Clearing it makes the footsteps go silent. See also CActor::OnChangeVisual: this reload
 	// must stay AFTER LL_AddMotions / m_anims->Create, or it resolves against the wrong slot.
 	m_legs_count		= pSettings->r_u8		(section, "LegsCount");
+	m_true_phase		= !!READ_IF_EXISTS(pSettings, r_bool, section, "step_phase_from_anim", FALSE);
+	m_phase_blend		= 0;
 	LPCSTR anim_section = pSettings->r_string	(section, "step_params");
 
 	if (!pSettings->section_exist(anim_section))
@@ -155,6 +157,36 @@ void CStepManager::on_animation_start(MotionID motion_id, CBlend *blend)
 }
 
 
+// One step of one foot: the material sound, dust off the ground and the camera's step (CActor::event_on_step).
+void CStepManager::do_step(u32 i, float power, SGameMtlPair* mtl_pair)
+{
+	if (is_on_ground())
+		m_step_sound.play_next( mtl_pair, m_object, power );
+	// ������ ��������
+	if (!mtl_pair->CollideParticles.empty())	{
+		LPCSTR ps_name = *mtl_pair->CollideParticles[::Random.randI(0,mtl_pair->CollideParticles.size())];
+
+		//�������� �������� ������������ ����������
+		CParticlesObject* ps = CParticlesObject::Create(ps_name,TRUE);
+
+		// ��������� ������� � �������������� ��������
+		Fmatrix pos; 
+
+		// ���������� �����������
+		pos.k.set(Fvector().set(0.0f,1.0f,0.0f));
+		Fvector::generate_orthonormal_basis(pos.k, pos.j, pos.i);
+
+		// ���������� �������
+		pos.c.set(get_foot_position(ELegType(i)));
+
+		ps->UpdateParent(pos,Fvector().set(0.f,0.f,0.f));
+		GamePersistent().ps_needtoplay.push_back(ps);
+	}
+
+	// Play Camera FXs
+	event_on_step();
+}
+
 void CStepManager::update()
 {
 	START_PROFILE("Step Manager")
@@ -176,6 +208,36 @@ void CStepManager::update()
 	// set every frame from the real velocity (CActor::UpdateCL). Wherever that velocity jitters (water,
 	// rough ground) every upward spike jumped the phase forward, closed the loop early and started the
 	// next one: the footsteps came faster than the legs actually moved.
+	if (m_true_phase && m_blend->timeTotal > EPS_S)
+	{
+		// The actor: where the leg motion itself stands -- exactly what the legs show. A new blend starts
+		// with the steps whose moment it is already past counted as made (no burst on a change of gait);
+		// going round the end of the loop starts the next one.
+		const float phase	= _min(1.f, _max(0.f, m_blend->timeCurrent / m_blend->timeTotal));
+		if (m_phase_blend != m_blend)
+		{
+			m_phase_blend			= m_blend;
+			m_step_info.cur_cycle	= u8(_min(float(step.cycles), 1.f + phase * float(step.cycles)));
+			for (u32 i = 0; i < m_legs_count; i++)
+			{
+				const float sp	= (float(m_step_info.cur_cycle - 1) + step.step[i].time) / float(step.cycles);
+				m_step_info.activity[i].handled	= (sp <= phase);
+				m_step_info.activity[i].cycle	= m_step_info.cur_cycle;
+			}
+		}
+		else if (!m_blend->stop_at_end && phase < m_anim_phase - 0.5f)
+		{
+			m_step_info.cur_cycle	= 1;
+			for (u32 i = 0; i < m_legs_count; i++)
+			{
+				m_step_info.activity[i].handled	= false;
+				m_step_info.activity[i].cycle	= m_step_info.cur_cycle;
+			}
+		}
+		m_anim_phase		= phase;
+		m_phase_time		= cur_time;
+	}
+	else
 	{
 		const float blend_time	= get_blend_time();
 		const u32 dt				= cur_time - m_phase_time;
@@ -197,41 +259,7 @@ void CStepManager::update()
 		// ��������� ��������� ����� ���� � ������������ � ����������� �������� ������
 		const float step_phase = (float(m_step_info.cur_cycle-1) + step.step[i].time) / float(step.cycles);
 		if (step_phase <= m_anim_phase){
-
-			// ������ ����
-
-			//if (!mtl_pair->StepSounds.empty() && is_on_ground() ) 
-			//{
-			//	Fvector sound_pos = m_object->Position();
-			//	sound_pos.y += 0.5;
-			//	GET_RANDOM(mtl_pair->StepSounds).play_no_feedback(m_object,0,0,&sound_pos,&m_step_info.params.step[i].power);
-			//}
-			if( is_on_ground() )
-				m_step_sound.play_next( mtl_pair, m_object, m_step_info.params.step[i].power );
-
-			// ������ ��������
-			if (!mtl_pair->CollideParticles.empty())	{
-				LPCSTR ps_name = *mtl_pair->CollideParticles[::Random.randI(0,mtl_pair->CollideParticles.size())];
-
-				//�������� �������� ������������ ����������
-				CParticlesObject* ps = CParticlesObject::Create(ps_name,TRUE);
-
-				// ��������� ������� � �������������� ��������
-				Fmatrix pos; 
-
-				// ���������� �����������
-				pos.k.set(Fvector().set(0.0f,1.0f,0.0f));
-				Fvector::generate_orthonormal_basis(pos.k, pos.j, pos.i);
-
-				// ���������� �������
-				pos.c.set(get_foot_position(ELegType(i)));
-
-				ps->UpdateParent(pos,Fvector().set(0.f,0.f,0.f));
-				GamePersistent().ps_needtoplay.push_back(ps);
-			}
-
-			// Play Camera FXs
-			event_on_step();
+			do_step(i, m_step_info.params.step[i].power, mtl_pair);
 
 			// �������� ���� handle
 			m_step_info.activity[i].handled	= true;

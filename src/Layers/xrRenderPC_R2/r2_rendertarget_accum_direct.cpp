@@ -28,7 +28,7 @@ static u16			facetable[16][3]		= {
 	{ 2, 4, 1 },
 };
 
-void CRenderTarget::accum_direct_cascade	( u32 sub_phase, Fmatrix& xform, Fmatrix& xform_prev, float fBias )
+void CRenderTarget::accum_direct_cascade	( u32 sub_phase, Fmatrix& xform, Fmatrix& xform_prev, Fmatrix& /*xform_prev2*/, float fBias, const Fvector4& /*blend*/, const Fvector4& /*zband*/ )
 {
 	// Choose normal code-path or filtered
 	phase_accumulator					();

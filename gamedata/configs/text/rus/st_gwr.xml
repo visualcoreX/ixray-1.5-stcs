@@ -27,6 +27,9 @@
 	<string id="kb_wpn_lower">
 		<text>Опустить / поднять оружие</text>
 	</string>
+	<string id="kb_wpn_alter_zoom">
+		<text>Альтернативный прицел</text>
+	</string>
 	<string id="kb_scope_brightness_plus">
 		<text>Подсветка сетки прицела +</text>
 	</string>

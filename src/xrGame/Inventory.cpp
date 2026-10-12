@@ -662,6 +662,13 @@ void CInventory::Activate(u32 slot, /*EActivationReason reason, */bool bForce)
 			return;
 	}
 
+	// On a base the knife and the grenades stay put away (CActor::SetInBaseZone): no key, wheel or menu
+	// draws them there.
+	if (slot == (u32)KNIFE_SLOT || slot == (u32)GRENADE_SLOT)
+		if (CActor* base_actor = smart_cast<CActor*>(m_pOwner))
+			if (base_actor->InBaseZone())
+				return;
+
 	if (m_iActiveSlot==slot || (m_iNextActiveSlot==slot && !bForce))
 	{
 		m_iNextActiveSlot=slot;

@@ -20,7 +20,7 @@ float	hclip(float v, float dim);
 // all the way into every accum blender. The error only shows when two lights light the HUD at once,
 // and the lamp's own falloff (att, in the shader) keeps it small; r2_hud_shadow_lights scales it,
 // 0 goes back to sun-only.
-void CRenderTarget::phase_hud_shadow	(light* L)
+void CRenderTarget::hud_shadow_pass	(light* L)
 {
 	if (!ps_r__common_flags.test(RFLAG_HUD_SHADOW))	return;	// the "SSS" options checkbox
 	if (ps_r2_hud_shadow <= EPS)					return;
@@ -149,4 +149,29 @@ void CRenderTarget::phase_hud_shadow	(light* L)
 
 	// Put the accumulator's stencil rule back the way the light passes expect to find it.
 	RCache.set_Stencil			(TRUE,D3DCMP_LESSEQUAL,0x01,0xff,0x00);
+}
+
+// A light's share of the HUD contact shadow is a multiply over the whole accumulator, so it dims what is
+// already there too (see the trade-off above). Run at the tail of each light, as it used to be, that made
+// the result depend on the ORDER of the lights -- and that order follows the shadow-map atlas packing,
+// which changes every few frames: the HUD shadows flickered. An omni with shadows also came through six
+// times, once per face, darkening six-fold. So the lights are only queued here, one entry per physical
+// light (the faces share position and range), and phase_hud_shadow_lights runs them all at once after
+// the last light: a product of multiplies does not care about their order.
+void CRenderTarget::phase_hud_shadow	(light* L)
+{
+	if (nullptr == L)					{ hud_shadow_pass(nullptr); return; }
+	for (u32 i = 0; i < hud_shadow_queue.size(); ++i)
+	{
+		light*	Q	= hud_shadow_queue[i];
+		if (Q->position.similar(L->position, EPS_L) && fsimilar(Q->range, L->range))	return;
+	}
+	hud_shadow_queue.push_back			(L);
+}
+
+void CRenderTarget::phase_hud_shadow_lights	()
+{
+	for (u32 i = 0; i < hud_shadow_queue.size(); ++i)
+		hud_shadow_pass					(hud_shadow_queue[i]);
+	hud_shadow_queue.clear				();
 }

@@ -27,6 +27,9 @@
 	<string id="kb_wpn_lower">
 		<text>Lower / raise weapon</text>
 	</string>
+	<string id="kb_wpn_alter_zoom">
+		<text>Alternative sight</text>
+	</string>
 	<string id="kb_scope_brightness_plus">
 		<text>Scope reticle illumination +</text>
 	</string>

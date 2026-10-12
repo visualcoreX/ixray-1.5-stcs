@@ -440,10 +440,11 @@ bool CShellCasing::in_hud_phase() const
 // lies behind the gun's picture on the screen is covered by it, however near it is. A case that leaves
 // the port across the gun (a PKM throws its cases to the left, over the receiver) would be thrown
 // straight behind that picture and never be seen. So for its first moments the case is drawn in that same
-// pass -- see RenderHud -- and is left out of the world one.
+// pass -- see RenderHud -- and is left out of the world one. Not out of the shadow maps, though: the hud
+// pass casts no shadows, and the case would throw none until it went over to the world pass.
 void CShellCasing::renderable_Render()
 {
-	if (in_hud_phase() && s_hud_pass_frame && (s_hud_pass_frame + 1 >= Device.dwFrame))
+	if (in_hud_phase() && s_hud_pass_frame && (s_hud_pass_frame + 1 >= Device.dwFrame) && !g_render_shadow_pass)
 		return;
 	inherited::renderable_Render	();
 }

@@ -38,6 +38,13 @@ private:
 	Frect				m_ui_weapon_icon_rect;
 	CUIStatic*			m_fire_mode;
 
+	// The weapon lowered (T / a base): the icon and the count dim (the count keeps its
+	// colour, just darker); the screen itself is left alone. An optional
+	// static_wpn_lowered node is faded in over them as well. See UpdateLoweredLook.
+	CUIStatic*			m_wpn_lowered;
+	u32					m_ammo_text_color;
+	float				m_lowered_look;		// 0..1, its own quick fade
+
 	CUIProgressBar*		m_ui_health_bar;
 	CUIProgressBar*		m_ui_armor_bar;
 	CUIProgressBar*		m_ui_stamina_bar;
@@ -85,6 +92,7 @@ public:
 			// section name. Optional, so non-weapon callers are unaffected.
 			void	SetAmmoIcon			( const shared_str& sect_name, CInventoryItem* src = nullptr );
 			void	UpdateActiveItemInfo( CActor* actor );
+			void	UpdateLoweredLook	( CActor* actor, CInventoryItem* item );
 
 			void 	UpdateZones			();
 			void	UpdateIndicators	( CActor* actor );

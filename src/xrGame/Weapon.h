@@ -366,16 +366,6 @@ public:
 	// eased 0..1 blend toward the alter pose (cubic ease-in-out, i.e. cubic-bezier(.42,0,.58,1)); the
 	// aim offset and hud fov interpolate with it instead of snapping.
 	float			AlterZoomBlend		() const;
-	// Weapon down (CActor::ToggleWeaponLowered): 0 = up, 1 = all the way down (the animations' progress), UpdateLoweredPose.
-	float			LoweredFactor		() const	{ return m_fLoweredFactor; }
-	void			UpdateLoweredPose	(Fmatrix& trans, CActor* pActor);
-	float			m_fLoweredFactor;
-	// which way the weapon-down move last went, the delta it put on the hud last frame, and the pose a change
-	// of direction fades over from (weight 1 -> 0 over [weapon_lowered] anim_blend)
-	bool			m_bLowerGoingDown;
-	float			m_fLowerFromBlend;
-	Fquaternion		m_lower_cur_q,	m_lower_from_q;
-	Fvector			m_lower_cur_p,	m_lower_from_p;
 	// GS GetZoomLensVisibilityFactor: 1 = PiP lens fully visible, 0 = off (alter pose / no lensed scope);
 	// cross-fades with the alter-pose ramp. Drives the lens shader alpha and the $user$scope capture.
 	float			LensVisibility		() const;
@@ -411,7 +401,8 @@ public:
 public:
 	// Called on a shot. true = this weapon throws real cases, so the old shell particle must not be
 	// started on top of them.
-			bool gwr_ShellCasingOnShot	(const Fvector& owner_vel);
+			// ammo: the round whose case is thrown (NULL = the one being fired, still on top of the magazine)
+			bool gwr_ShellCasingOnShot	(const Fvector& owner_vel, LPCSTR ammo = NULL);
 			bool gwr_ShellParticlesWithCase	() const;	// first person: the shell particle waits for the case (a pump)
 			void gwr_ShellCasingOnUnjam	(LPCSTR ammo);	// the jam-clear animation has just been started
 			void gwr_ShellCasingOnReloadAnim	();	// a reload animation has just been started
@@ -452,8 +443,10 @@ public:
 		Fvector		p0, pA;			// parent-bone space: p0 where the shell rests (the chamber), pA a frame ago
 		Fvector		owner_vel;		// of whoever holds the gun, added to the throw
 		shared_str	section;		// the case to spawn
+		u32			world_due;		// third person: throw at this Device.dwTimeGlobal (shell_casing_world_delay); 0 = none
 	};
 	SShellCasingTrack	m_shell_track[2];
+	void		gwr_ShellCasingThrowWorld	(u32 idx);	// third person: the case out of the world model's port
 
 	// Break-action guns: a reload soon after a shot lets the smoke out of the opened barrels -- a particle
 	// that rides a bone of the hud model (reload_smoke_* keys, see WeaponShellCasing.cpp).

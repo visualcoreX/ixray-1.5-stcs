@@ -215,7 +215,10 @@ public:
 	void						u_DBT_disable			();
 
 	void						phase_ssao				();
-	void						phase_hud_shadow		(light* L = nullptr);	// nullptr == the sun
+	void						phase_hud_shadow		(light* L = nullptr);	// nullptr == the sun: now; a light: queued
+	void						phase_hud_shadow_lights	();						// the queued lights, once every light is in
+	void						hud_shadow_pass			(light* L);
+	xr_vector<light*>			hud_shadow_queue;
 	void phase_fxaa(u32 pass);
 	void phase_smaa(u32 pass);
 	// 3D PiP scope: take the lens capture, warped by the distortion mask when there is one.
@@ -243,7 +246,7 @@ public:
 	void						disable_aniso			();
 
 	void						draw_volume				(light* L);
-	void						accum_direct_cascade	(u32 sub_phase, Fmatrix& xform, Fmatrix& xform_prev, float fBias); 
+	void						accum_direct_cascade	(u32 sub_phase, Fmatrix& xform, Fmatrix& xform_prev, Fmatrix& xform_prev2, float fBias, const Fvector4& blend, const Fvector4& zband);	// R2: xform_prev2 and blend unused, no cross-fade
 	void						accum_direct_volumetric	(u32	sub_phase, const u32 Offset, const Fmatrix &mShadow);
 	void						accum_point				(light* L);
 	void						accum_spot				(light* L);

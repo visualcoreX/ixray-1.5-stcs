@@ -492,6 +492,18 @@ bool actor_weapon_lowered()
 	return actor && actor->IsWeaponLowered();
 }
 
+// Base territory (bind_stalker, sr_no_weapon): weapons carried low, no quick knife / quick grenade.
+void actor_set_in_base(bool b)
+{
+	if (CActor* actor = smart_cast<CActor*>(Level().CurrentEntity()))	actor->SetInBaseZone(b);
+}
+
+// The weapon-down key's state, put back by bind_stalker when the actor leaves a base.
+void actor_set_weapon_lowered(bool b)
+{
+	if (CActor* actor = smart_cast<CActor*>(Level().CurrentEntity()))	actor->SetWeaponLowered(b);
+}
+
 bool actor_crouch()
 {
 	CActor* actor = smart_cast<CActor*>(Level().CurrentEntity());
@@ -923,6 +935,8 @@ void CLevel::script_register(lua_State *L)
 		def("set_actor_invulnerable",			set_actor_invulnerable),
 		def("actor_crouch",						actor_crouch),
 		def("actor_weapon_lowered",				actor_weapon_lowered),
+		def("actor_set_in_base",				actor_set_in_base),
+		def("actor_set_weapon_lowered",			actor_set_weapon_lowered),
 		def("actor_light_on",					actor_light_on),
 		def("actor_time_since_shot",			actor_time_since_shot),
 		def("show_weapon",						show_weapon),

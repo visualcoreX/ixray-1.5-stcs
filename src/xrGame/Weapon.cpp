@@ -12,6 +12,7 @@
 #include "CameraEffector.h"
 #include "PostprocessAnimator.h"
 #include "WeaponBinocularsVision.h"
+#include "WeaponBinoculars.h"			// a base draws firearms already lowered, binoculars are not one
 #include "level.h"
 #include "xr_level_controller.h"
 #include "game_cl_base.h"
@@ -59,11 +60,6 @@ CWeapon::CWeapon()
 	m_collim_flk_next		= 1.f;
 	m_collim_flk_noise		= 0.f;
 	m_collim_flk_noise_t	= 0.f;
-	m_fLoweredFactor		= 0.f;
-	m_bLowerGoingDown		= false;
-	m_fLowerFromBlend		= 0.f;
-	m_lower_cur_q.identity	();	m_lower_from_q.identity();
-	m_lower_cur_p.set		(0, 0, 0);	m_lower_from_p.set(0, 0, 0);
 	SetState				(eHidden);
 	SetNextState			(eHidden);
 	m_sub_state				= eSubstateReloadBegin;
@@ -119,6 +115,7 @@ CWeapon::CWeapon()
 		m_shell_track[sc].reshow_time = 0;
 		m_shell_track[sc].motion	= 0;
 		m_shell_track[sc].shot_time	= 0;
+		m_shell_track[sc].world_due	= 0;
 		m_shell_track[sc].speed_scale	= 1.f;
 		m_shell_track[sc].by_hand		= false;
 		m_shell_track[sc].ammo_bone		= false;
@@ -2017,9 +2014,7 @@ void CWeapon::OnH_A_Chield		()
 
 void CWeapon::OnActiveItem ()
 {
-	m_fLoweredFactor		= 0.f;		// always drawn up, whatever pose it was put away in
-	m_bLowerGoingDown		= false;
-	m_fLowerFromBlend		= 0.f;
+	ResetLoweredPose		();		// drawn up -- or already down on a base
 	//. from Activate
 	UpdateAddonsVisibility();
 	m_dwAmmoCurrentCalcFrame = 0;
@@ -5614,10 +5609,44 @@ static void play_lower_cam(CActor* pActor, const shared_str& anm)
 	pActor->Cameras().AddCamEffector(e);
 }
 
-void CWeapon::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
+// A draw starts the move over: always up, whatever pose it was put away in -- except on a base, where a
+// firearm or a grenade comes out already carried low (no lowering move, no camera animation).
+void CHudItem::ResetLoweredPose()
 {
-	const bool down	= pActor->IsWeaponLowered() && pActor->inventory().ActiveItem() == this &&
+	m_fLoweredFactor		= 0.f;
+	m_bLowerGoingDown		= false;
+	m_bLowerModeOn			= false;
+	m_fLowerFromBlend		= 0.f;
+	if (CActor* a = smart_cast<CActor*>(object().H_Parent()))
+		if (a->InBaseZone() && CActor::IsLowerable(&item()))
+		{
+			m_fLoweredFactor	= 1.f;
+			m_bLowerGoingDown	= true;
+			m_bLowerModeOn		= true;	// came out already down: nothing was pressed
+		}
+}
+
+void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
+{
+	const bool down	= pActor->IsWeaponLowered() && pActor->inventory().ActiveItem() == &item() &&
 					  !(pActor->MovingState() & mcSprint);
+	// The left hand with a detector does what it does when this weapon is put away / drawn: the mode going on
+	// plays its anm_wpn_hide, going off its anm_wpn_show (TryPlayDetectorCompanion: only with this weapon in
+	// the right hand and a detector in the left). Keyed to the MODE, not to the direction of the move: a
+	// sprint lifts the weapon and puts it back down by itself, and the hand must then play its own sprint
+	// end, not a holster. Nothing while sprinting (the weapon does not move then), nothing when it is
+	// already where the mode puts it.
+	{
+		const bool	mode	= pActor->IsWeaponLowered() && pActor->inventory().ActiveItem() == &item();
+		if (mode != m_bLowerModeOn)
+		{
+			m_bLowerModeOn		= mode;
+			const bool	moves	= !(pActor->MovingState() & mcSprint) &&
+								  (mode ? m_fLoweredFactor < 1.f : m_fLoweredFactor > 0.f);
+			if (moves && pActor->inventory().ActiveItem() == &item())
+				TryPlayDetectorCompanion(shared_str(mode ? "anm_hide" : "anm_show"));
+		}
+	}
 	const SLowerPair&	P	= lower_anims(HudSection());
 	const SLowerAnim&	A	= P.down ? *P.down : s_no_anim;
 	const SLowerAnim&	U	= P.up ? *P.up : s_no_anim;
@@ -5674,6 +5703,7 @@ void CWeapon::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 		// put the bone this frame, along its axes -- not about the hud origin. With F = the bone's frame
 		// (hands attach * bone model matrix) the whole hud gets F * d * F^-1, which leaves bip01 at F * d.
 		Fmatrix		F;
+		const Fmatrix	before	= trans;
 		if (g_player_hud && g_player_hud->hands_bone_frame("bip01", F))
 		{
 			Fmatrix Fi;	Fi.invert(F);
@@ -5682,6 +5712,8 @@ void CWeapon::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 		}
 		else
 			trans.mulB_43	(d);
+		// so that a detector in the left hand can stay up (player_hud::update)
+		if (g_player_hud)	g_player_hud->set_lowered_delta(before, trans);
 	}
 }
 

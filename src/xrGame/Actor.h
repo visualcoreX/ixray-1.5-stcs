@@ -303,6 +303,9 @@ protected:
 	// Upper-body yaw correction for the torso set currently playing, radians, added in
 	// Spin1Callback. Zero = stock behaviour; see torso_yaw_fix() in ActorAnimation.cpp.
 	float					m_fTorsoYawFix;
+	// actor_torso_auto: how far the third-person upper body's heading is from where it should look, in
+	// radians to add to m_fTorsoYawFix (ActorAnimation.cpp). 1 = measured, 0 = hold, -1 = ease to zero.
+	int						TorsoAutoError		(float& err);
 	float					m_fNeckYawFix;		// same, for bip01_neck -- see [actor_neck_yaw] in ActorAnimation.cpp
 	// Scales the camera-driven spine/head aiming in the bone callbacks: 1 normally, 0 with nothing
 	// in hand, which is what xrMPE does -- its empty-hands set is a full-body animation that the
@@ -775,7 +778,18 @@ public:
 			// third-person set, the HUD pose lowered (CWeapon::UpdateLoweredPose), NPCs do not ask to put it
 			// away (level.actor_weapon_lowered) and every key that works the weapon is ignored.
 			void				ToggleWeaponLowered				();
-			bool				IsWeaponLowered					() const	{ return m_bWeaponLowered; }
+			// what can be carried low: a firearm (not binoculars)
+	static	bool				IsLowerable						(CInventoryItem* item);
+			// down by the key, or held down by a base (SetInBaseZone): there any firearm in hand is carried low
+			bool				IsWeaponLowered					() const;
+			// Base territory (sr_no_weapon restrictors through bind_stalker): weapons can be drawn and swapped,
+			// but every firearm is carried low -- drawn already low, the key cannot raise it -- the knife and
+			// the grenades are put away and cannot be drawn, and the quick knife and quick grenade keys do nothing. SetWeaponLowered puts the key's state back on the way
+			// out (the script remembers how the weapon was carried on the way in).
+			void				SetInBaseZone					(bool b)	{ m_bInBaseZone = b; }
+			bool				InBaseZone						() const	{ return m_bInBaseZone; }
+			void				SetWeaponLowered				(bool b);
+			bool				m_bInBaseZone;
 			bool				WeaponLoweredBlocksAction		(int cmd);
 			void				UpdateWeaponLowered				();
 			bool				m_bWeaponLowered;

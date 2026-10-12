@@ -12,6 +12,10 @@
 // USE_SHADOW
 //////////////////////////////////////////////////////////////////////////////////////////
 uniform float4              m_lmap        [2]        ;
+// This light's own part of the shadow-map atlas, in texture coordinates (min.xy, max.xy). A hud pixel can be
+// handed to a light (one face of an omni, mostly) that does not hold its point, and its look-up then lands in
+// another light's part of the atlas -- see accum_spot in the engine. No shadow is taken from outside it.
+uniform float4              m_shadow_rect            ;
 //float4 main( float4 tc : TEXCOORD0, float4 tcJ : TEXCOORD1 ) : SV_Target
 #ifdef MSAA_OPTIMIZATION
 #ifdef GBUFFER_OPTIMIZATION
@@ -56,6 +60,11 @@ float4 main( p_volume I ) : SV_Target
         float         		s		= 1.h;
         #ifdef  USE_SHADOW
 							s		= shadow( PS );
+		{
+			float2	tcS		= PS.xy / PS.w;
+			bool	in_rect	= ( PS.w > 0 ) && all( tcS >= m_shadow_rect.xy ) && all( tcS <= m_shadow_rect.zw );
+			s				= in_rect ? s : 1.h;
+		}
         #endif
 
         // ----- lightmap
