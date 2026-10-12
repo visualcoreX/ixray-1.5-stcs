@@ -69,14 +69,47 @@ void __fastcall sorted_L1		(mapSorted_Node *N)
 	V->Render						(calcLOD(N->key,V->vis.sphere.R));
 }
 
-// ALPHA, every pass of the element -- the HUD's strict-sorted geometry only. A collimator's glass draws
-// its coating as a second pass (models_lenses.s); the world keeps sorted_L1, so the same glass on a gun
-// lying around or in an NPC's hands never takes the player's tint.
+// The same, depth-tested EQUAL: only where the item itself is what the depth buffer holds. The hud's
+// emissive pass while a prism sight's eyepiece is cut out (r_dsgraph_render_emissive): the world drawn in
+// the cut lies far behind the hud, and a self-lit part of the gun behind the glass (the front sight's
+// tritium) would otherwise light it up in its own shape. Its pass computes the position exactly as the
+// G-buffer pass did (m_WVP over the same skinning), so where it is seen the depth matches.
+void __fastcall sorted_L1_zequal	(mapSorted_Node *N)
+{
+	VERIFY (N);
+	dxRender_Visual *V				= N->val.pVisual;
+	VERIFY (V && V->shader._get());
+	RCache.set_Element				(N->val.se);
+	RCache.set_ZFunc				(D3DCMP_EQUAL);
+	RCache.set_xform_world			(N->val.Matrix);
+	RImplementation.apply_object	(N->val.pObject);
+	RImplementation.apply_lmaterial	();
+	V->Render						(calcLOD(N->key,V->vis.sphere.R));
+}
+
+// ALPHA, every pass of the element -- the HUD's strict-sorted geometry only -- the extra passes first and
+// pass 0 last, over them. A collimator's glass is pass 0 (its texture, with the sky mirrored and the reticle's
+// glow) over pass 1 (the coating's tint, a prism's field stop, an etched reticle's lines: what darkens the
+// view BEHIND the glass) -- models_lenses.s. The world keeps sorted_L1, pass 0 alone: the same glass on a gun
+// lying around or in an NPC's hands is plain glass.
 // Set while the HUD's strict-sorted geometry draws, for the binders that must tell it from the world's
 // (m_collim_glass). Binders only run when the constant table changes, so the table is dropped on the
 // way in and out -- the same glass drawn last in the world must not keep the world's value, nor the
 // next world draw the HUD's.
 bool r_dsgraph_hud_sorted_now = false;
+
+// One element's pass `pass` over one HUD item, if it has that pass.
+static void r_dsgraph_draw_pass	(const R_dsgraph::_MatrixItemS& it, u32 pass)
+{
+	if (pass >= it.se->passes.size())	return;
+	dxRender_Visual *V				= it.pVisual;
+	VERIFY (V && V->shader._get());
+	RCache.set_Element				(it.se, pass);
+	RCache.set_xform_world			(it.Matrix);
+	RImplementation.apply_object	(it.pObject);
+	RImplementation.apply_lmaterial	();
+	V->Render						(calcLOD(it.ssa,V->vis.sphere.R));
+}
 
 void __fastcall sorted_L1_passes	(mapSorted_Node *N)
 {
@@ -84,8 +117,10 @@ void __fastcall sorted_L1_passes	(mapSorted_Node *N)
 	dxRender_Visual *V				= N->val.pVisual;
 	VERIFY (V && V->shader._get());
 	const float lod					= calcLOD(N->key,V->vis.sphere.R);
-	for (u32 pass = 0; pass < N->val.se->passes.size(); ++pass)
+	const u32 count					= N->val.se->passes.size();
+	for (u32 i = 1; i <= count; ++i)
 	{
+		const u32 pass					= i % count;			// 1, 2, ..., 0
 		RCache.set_Element				(N->val.se, pass);
 		RCache.set_xform_world			(N->val.Matrix);
 		RImplementation.apply_object	(N->val.pObject);
@@ -464,6 +499,27 @@ void R_dsgraph_structure::r_dsgraph_render_hud	()
 	mapHUD.traverseLR			(sorted_L1);
 	mapHUD.clear				();
 
+	// Prism sights (models_lenses.s, l_special with lens_mask), the eyepiece glass drawn now that the hud is in.
+	// Pass 1 first, the mark: inside the field stop, wherever the glass is in front of the hud (depth-tested in
+	// the hud's slice), stencil bit 0x80 -- not where the sight's own rim, nearer the eye, hides the glass.
+	// Pass 0 next, the cut: where marked, the far plane back into the depth and 0 into the stencil, so the
+	// world drawn next fills those pixels as if the sight's body were not there (or leaves them to the sky,
+	// which goes where the stencil says nothing was drawn). The far plane needs the normal depth range: rmNear
+	// would clamp it into the hud's thin slice. (The cut is pass 0 because only pass 0 may write depth --
+	// PassSET_ZB.) Pass 2 waits for the end of the frame (r_dsgraph_render_lens_late), so the glass is kept.
+	lstHUDLensLate.clear		();
+	if (hud_lens_mask_now && mapHUDLensMask.size())
+	{
+		mapHUDLensMask.getLR		(lstHUDLensLate);
+		for (u32 i = 0; i < lstHUDLensLate.size(); ++i)
+			r_dsgraph_draw_pass		(lstHUDLensLate[i], 1);
+		rmNormal					();
+		for (u32 i = 0; i < lstHUDLensLate.size(); ++i)
+			r_dsgraph_draw_pass		(lstHUDLensLate[i], 0);
+		rmNear						();
+	}
+	mapHUDLensMask.clear		();
+
 #if	RENDER==R_R1
 	if (g_hud && g_hud->RenderActiveItemUIQuery())
 		r_dsgraph_render_hud_ui						();				// hud ui
@@ -570,6 +626,68 @@ void	R_dsgraph_structure::r_dsgraph_render_sorted_world	()
 	mapSorted.clear			();
 }
 
+// The collimator's reticle texture is the player's pick (the brightness keys step through the optic's
+// collimator_marks), but a shader's textures are fixed when it compiles -- so the glass samples the stand-in
+// $user$collim_mark, and the pick is put behind it here, before the HUD's glass draws. The surface is only
+// re-set when it differs: on DX10 that makes a new view each time.
+void	R_dsgraph_structure::r_dsgraph_collim_mark_bind	()
+{
+	const shared_str& name	= g_pGamePersistent->hud_collim_mark_tex;
+	if (!name.size())		return;		// no shader reticle: m_collim_mark is 0, the stand-in goes unread
+
+	if (!collim_mark_user)	collim_mark_user.create("$user$collim_mark");
+	ref_texture& t			= collim_mark_loaded[name];
+	if (!t)					t.create(*name);
+
+	ID3DBaseTexture* want	= t->surface_get();
+	ID3DBaseTexture* have	= collim_mark_user->surface_get();
+	if (want != have)		collim_mark_user->surface_set(want);
+	_RELEASE				(want);
+	_RELEASE				(have);
+}
+
+// A prism sight's black field stop, drawn over the FINISHED picture (pass 2 of the eyepiece's l_special,
+// models_lenses.s): the r3 combine calls this once the bloom, the sun's shafts and the lens flares are in.
+// Drawn with the hud's own glass in the forward pass, the black was still lit up afterwards by everything
+// added on top: the shafts, the bloom of whatever bright thing lay behind it. Here it covers them all, and
+// lays an even haze of its own instead (model_collim_late).
+void	R_dsgraph_structure::r_dsgraph_render_lens_late	()
+{
+	if (lstHUDLensLate.empty())	return;
+
+	extern ENGINE_API float psHUD_FOV;
+	Fmatrix Pold = Device.mProject;
+	Fmatrix FTold = Device.mFullTransform;
+	Device.mProject.build_projection(
+		deg2rad(psHUD_FOV * Device.fFOV_HUD),
+		Device.fASPECT, VIEWPORT_NEAR,
+		g_pGamePersistent->Environment().CurrentEnv->far_plane);
+	Device.mFullTransform.mul(Device.mProject, Device.mView);
+	RCache.set_xform_view	(Device.mView);			// the screen-space passes since have set their own
+	RCache.set_xform_project(Device.mProject);
+
+	// depth-tested in the hud's slice against the frame's depth, so the eyepiece's own rim keeps what it
+	// hides of the glass when the eye looks in from the side (under MSAA no depth is bound: all of it draws).
+	// It redraws the hud's glass over the black, so its binders must give the hud's values (and the constant
+	// table is dropped on the way in and out, binders running only when it changes).
+	RCache.set_CullMode			(CULL_CCW);
+	RCache.set_Stencil			(FALSE);
+	rmNear						();
+	RCache.set_Constants		((R_constant_table*)0);
+	r_dsgraph_hud_sorted_now	= true;
+	for (u32 i = 0; i < lstHUDLensLate.size(); ++i)
+		r_dsgraph_draw_pass		(lstHUDLensLate[i], 2);
+	r_dsgraph_hud_sorted_now	= false;
+	RCache.set_Constants		((R_constant_table*)0);
+	rmNormal					();
+	lstHUDLensLate.clear		();
+	RCache.set_CullMode			(CULL_NONE);
+
+	Device.mProject = Pold;
+	Device.mFullTransform = FTold;
+	RCache.set_xform_project(Device.mProject);
+}
+
 void	R_dsgraph_structure::r_dsgraph_render_sorted_hud	()
 {
 	ENGINE_API extern float psHUD_FOV;
@@ -586,8 +704,11 @@ void	R_dsgraph_structure::r_dsgraph_render_sorted_hud	()
 
 	// Rendering
 	rmNear();
+	r_dsgraph_collim_mark_bind	();
 	RCache.set_Constants		((R_constant_table*)0);
 	r_dsgraph_hud_sorted_now	= true;
+	mapHUDSortedFirst.traverseRL(sorted_L1_passes);
+	mapHUDSortedFirst.clear();
 	mapHUDSorted.traverseRL(sorted_L1_passes);
 	mapHUDSorted.clear();
 	mapHUDSortedLast.traverseRL(sorted_L1_passes);
@@ -628,9 +749,11 @@ void	R_dsgraph_structure::r_dsgraph_render_emissive	()
 
 	// Rendering
 	rmNear						();
-	// Sorted (back to front)
-	mapHUDEmissive.traverseLR	(sorted_L1);
+	// Sorted (back to front); EQUAL while a prism sight's eyepiece is cut out (sorted_L1_zequal)
+	if (lstHUDLensLate.empty())	mapHUDEmissive.traverseLR	(sorted_L1);
+	else						mapHUDEmissive.traverseLR	(sorted_L1_zequal);
 	mapHUDEmissive.clear		();
+	RCache.set_ZFunc			(D3DCMP_LESSEQUAL);
 
 	rmNormal					();
 

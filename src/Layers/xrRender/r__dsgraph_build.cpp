@@ -62,6 +62,25 @@ void R_dsgraph_structure::r_dsgraph_insert_dynamic	(dxRender_Visual *pVisual, Fv
 		N->val.se				= sh_d;		// 4=L_special
 	}
 
+	// A prism sight's eyepiece cuts the hud out behind it (r_dsgraph_render_hud), and draws its field stop over
+	// the finished picture (r_dsgraph_render_lens_late). It has to be here, ahead of the priority mask: the
+	// glass is strictly sorted, priority 2, which the deferred pass that draws the hud masks out -- the forward
+	// pass gathered it, after the hud was drawn, and it reached the cut a frame late or not at all. Taken in the
+	// deferred pass only (priority 0 on), so the forward one does not take it again.
+	if (RI.val_bHUD && pmask[0])
+	{
+		ShaderElement*	sh_m	= &*pVisual->shader->E[4];
+		if (sh_m && sh_m->flags.bLensMask)
+		{
+			mapSorted_Node* N		= mapHUDLensMask.insertInAnyWay	(distSQ);
+			N->val.ssa				= SSA;
+			N->val.pObject			= RI.val_pObject;
+			N->val.pVisual			= pVisual;
+			N->val.Matrix			= *RI.val_pTransform;
+			N->val.se				= sh_m;
+		}
+	}
+
 	// Select shader
 	ShaderElement*	sh		=	RImplementation.rimp_select_sh_dynamic	(pVisual,distSQ);
 	if (0==sh)								return;
@@ -78,7 +97,10 @@ void R_dsgraph_structure::r_dsgraph_insert_dynamic	(dxRender_Visual *pVisual, Fv
 		{
 			// priority 3 goes over the rest whatever the distance: a collimator's reticle sits far
 			// behind its glass, yet must not take the glass's tint (models_collimsight.s)
-			R_dsgraph::mapHUD_T&	map		= (3==sh->flags.iPriority) ? mapHUDSortedLast : mapHUDSorted;
+			// ...and hud_first under it: a sight's front aperture (crosshair_contur) sits behind its eyepiece glass
+			// but shares a mesh -- and so a sorting centre -- with another sight's, which can put it in front
+			R_dsgraph::mapHUD_T&	map		= (3==sh->flags.iPriority) ? mapHUDSortedLast
+											: sh->flags.bHudFirst ? mapHUDSortedFirst : mapHUDSorted;
 			mapSorted_Node* N		= map.insertInAnyWay	(distSQ);
 			N->val.ssa				= SSA;
 			N->val.pObject			= RI.val_pObject;

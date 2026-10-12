@@ -25,9 +25,26 @@ control_inertion_factor = 1.0
 
 def_hide_bones = flash
 collimator_sights_bones = sight
-collimator_breaking_params = 0.3, 0.1, 0.1 //состояние, при котором начнутся проблемы, состояние, при котором все совсем поломается, стартовая вероятность проблемы (конечная - конечно же, 1)
 collimator_problems_level = 4
+collimator_wear		= 0.9, 0.4, 0.25	; the reticle dims below condition 0.8 (to 30% of its brightness at 0, never out), flickers like a failing lamp below 0.25
 hide_collimator_sights_in_alter_zoom = true
+collimator_tint	= 106,130,126
+collimator_glass_strength	= 1.0, 0.25
+collimator_reflect			= 140,110,128
+collimator_reflect_indirect	= 64,72,96
+collimator_reflect_strength	= 2.0, 0.25
+collimator_reflect_limit	= 1
+collimator_reflect_f0		= 0.75
+collimator_reflect_curve    = 0.08
+collimator_reflect_contrast = 2.5
+collimator_reflect_mask		= 1.0
+collimator_specular			= 0.02, 120
+collimator_specular_mask	= 1.0
+collimator_marks			= wpn\sight_marks\mark_p90_01
+collimator_mark_size		= 5
+collimator_mark_color		= 255,225,225
+collimator_mark_intensity	= 1.0
+collimator_mark_offset		= 0, 0
 
 repair_group = p90
 
@@ -1074,10 +1091,14 @@ anm_nv_off_auto_jammed = p90_nv_off
 
 
 
-aim_hud_offset_pos = 0.000160,0.015600,-0.1
+;aim_hud_offset_pos = 0.000160,0.015600,-0.1
+;aim_hud_offset_rot = -0.002300,0.000200,0.000000
+aim_hud_offset_pos = 0.000000,0.015400,-0.1
 aim_hud_offset_rot = -0.002300,0.000200,0.000000
 
-aim_hud_offset_pos_16x9 = 0.000160,0.015600,-0.1
+;aim_hud_offset_pos_16x9 = 0.000160,0.015600,-0.1
+;aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.000000,0.015400,-0.1
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
 
 gl_hud_offset_pos		        = 0,0,0
@@ -1087,8 +1108,8 @@ lean_hud_offset_pos			= 0,0,0
 lean_hud_offset_rot			= 0,0,0
 
 
-hud_fov_aim = 0.264	; orig 0.281; = 0.66 * (GS hud_fov_zoom_factor 0.5 / 1.25). The old 0.5625 base was wrong: GS's base is 40 DEGREES and its 1.25 factor equals our console hud_fov 0.66.
-scope_hud_fov_alter_aim = 0.185	; orig 0.197; = 0.66 * (GS hud_fov_alter_zoom_factor 0.35 / 1.25)
+hud_fov_aim = 0.5 ;0.264	; orig 0.281; = 0.66 * (GS hud_fov_zoom_factor 0.5 / 1.25). The old 0.5625 base was wrong: GS's base is 40 DEGREES and its 1.25 factor equals our console hud_fov 0.66.
+scope_hud_fov_alter_aim = 0.4 ;0.185	; orig 0.197; = 0.66 * (GS hud_fov_alter_zoom_factor 0.35 / 1.25)
 alter_zoom_allowed = true
 hud_fov_alter_zoom_factor = 0.35
 

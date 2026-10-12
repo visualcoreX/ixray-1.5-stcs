@@ -1,0 +1,20 @@
+#include "common.h"
+
+// A sight's front aperture, crosshair\crosshair_contur (models_lenses / models_transparent): model_def_lq with
+// its alpha times m_collim_glass.z -- 0 while the held optic is a prism sight, whose field stop is the
+// aperture: the ring, transparent forward geometry, let the world's sun shafts shine over it, and drew a
+// second, softer rim inside the stop. The binder gives 1 outside the hud: the world's guns keep it.
+uniform	float4	m_collim_glass;
+
+struct 	v2p
+{
+ 	float2 	tc0: 		TEXCOORD0;	// base
+  	float3	c0:			COLOR0;		// sun
+};
+
+float4 main( v2p I ) : SV_Target
+{
+	float4	t_base 	= s_base.Sample( smp_base, I.tc0 );
+	float3	final 	= I.c0*t_base*2;
+	return  float4	(final.r,final.g,final.b,t_base.a*m_collim_glass.z);
+}

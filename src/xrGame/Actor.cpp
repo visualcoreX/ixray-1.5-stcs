@@ -1352,14 +1352,72 @@ void CActor::UpdateCL	()
 			Fvector tint = wpn->CollimatorTint();
 			g_pGamePersistent->hud_collim_tint.set(tint.x / 256.f, tint.y / 256.f, tint.z / 256.f, 0.5f);
 			g_pGamePersistent->hud_collim_reflect = wpn->CollimatorReflect();
+			g_pGamePersistent->hud_collim_reflect_ind = wpn->CollimatorReflectIndirect();
 			g_pGamePersistent->hud_collim_reflect_shape = wpn->CollimatorReflectShape();
-			g_pGamePersistent->hud_collim_glass.set(wpn->CollimatorGlassStrength(), 1.f, 1.f, 1.f);
+			g_pGamePersistent->hud_collim_spec = wpn->CollimatorSpecular();
+			// .y: the model's reticle, off while the glass draws one itself
+			shared_str mark = wpn->CollimatorMarkTexture();
+			// .z: a sight's front aperture (crosshair_contur), off on a prism -- its field stop is the aperture
+			// ...its alpha times the reticle's power: an emission's glitch, the sight's wear (CollimatorPower)
+			g_pGamePersistent->hud_collim_glass.set(wpn->CollimatorGlassStrength(), mark.size() ? 0.f : wpn->CollimatorPower(),
+													(wpn->CollimatorPrism().x > 0.f) ? 0.f : 1.f, 0.f);
+			g_pGamePersistent->hud_collim_mark_tex = mark;
+			if (mark.size())
+			{
+				g_pGamePersistent->hud_collim_mark = wpn->CollimatorMarkColor();
+				g_pGamePersistent->hud_collim_mark_shape = wpn->CollimatorMarkShape();
+
+				// A tritium reticle: lit all the time, but only seen when the light is low. The actor's lighting
+				// (his ROS -- the same figure the AI sees him by) is eased as the eye adapts, over ~1.3 s, so the
+				// glow neither flickers in the dappled shade nor snaps on in a doorway -- nor dies in the flash of
+				// a lightning bolt at night (at 0.7 s it did).
+				// The brightness keys may switch it by hand: off, or on -- lit, or left to the light sensor.
+				// The sensor (collimator_mark_auto_illum) reads the frame's average brightness, measured every
+				// 5 s (IGame_Persistent::frame_luminance) -- the actor's own lighting jumped about with the hemi's
+				// patchiness -- and the glow eases toward what it asks for over a few seconds.
+				Fvector illum;
+				if (wpn->CollimatorMarkIllumSwitch() && !wpn->CollimatorMarkIllumOn())
+					g_pGamePersistent->hud_collim_mark.set(0.f, 0.f, 0.f, g_pGamePersistent->hud_collim_mark.w);
+				else if (wpn->CollimatorMarkAutoIllum(illum))
+				{
+					float lum = g_pGamePersistent->frame_luminance;
+					if (lum < 0.f)
+					{
+						// no frame measure from this renderer: the actor's lighting, eased as before
+						static float s_lum = 0.f;
+						IRender_ObjectSpecific* ros = renderable_ROS();
+						s_lum	+= ((ros ? ros->get_luminocity() : 0.f) - s_lum) * _min(1.f, Device.fTimeDelta * 0.75f);
+						lum		= s_lum;
+					}
+					float target	= (illum.x - lum) / _max(illum.x - illum.y, EPS);
+					clamp(target, 0.f, 1.f);
+					static float s_glow = -1.f;
+					if (s_glow < 0.f || illum.z <= EPS)	s_glow = target;
+					else	s_glow += (target - s_glow) * _min(1.f, Device.fTimeDelta / illum.z);
+					g_pGamePersistent->hud_collim_mark.x *= s_glow;
+					g_pGamePersistent->hud_collim_mark.y *= s_glow;
+					g_pGamePersistent->hud_collim_mark.z *= s_glow;
+				}
+				// an emission's glitch and the sight's wear (CWeapon::UpdateCollimatorGlitch)
+				const float pw	= wpn->CollimatorPower();
+				g_pGamePersistent->hud_collim_mark.x *= pw;
+				g_pGamePersistent->hud_collim_mark.y *= pw;
+				g_pGamePersistent->hud_collim_mark.z *= pw;
+			}
+			else
+				g_pGamePersistent->hud_collim_mark.set(0.f, 0.f, 0.f, 0.f);
+			g_pGamePersistent->hud_collim_prism = wpn->CollimatorPrism();
 		}
 		else
 		{
 			g_pGamePersistent->hud_collim_tint.set(0.5f, 0.5f, 0.5f, 0.5f);
 			g_pGamePersistent->hud_collim_reflect.set(0.f, 0.f, 0.f, 0.25f);
-			g_pGamePersistent->hud_collim_glass.set(1.f, 1.f, 1.f, 1.f);
+			g_pGamePersistent->hud_collim_reflect_ind.set(0.f, 0.f, 0.f, 0.f);
+			g_pGamePersistent->hud_collim_spec.set(0.f, 64.f, 0.f, 0.f);
+			g_pGamePersistent->hud_collim_glass.set(1.f, 1.f, 1.f, 0.f);
+			g_pGamePersistent->hud_collim_mark_tex = shared_str();
+			g_pGamePersistent->hud_collim_mark.set(0.f, 0.f, 0.f, 0.f);
+			g_pGamePersistent->hud_collim_prism.set(0.f, 1.f, 0.f, 0.f);
 		}
 
 		// ...and how much sky the glass can see to mirror: the HUD sits at the eye, so the actor's own

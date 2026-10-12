@@ -131,6 +131,7 @@ float		ps_r__ssaDONTSORT			=  32.f	;					//RO
 float		ps_r__ssaHZBvsTEX			=  96.f	;					//RO
 
 int			ps_r__tf_Anisotropic		= 4		;
+int			ps_r__frame_lum_log			= 0		;	// log the frame luminance read back (r3, every 5 s): collimator_mark_auto_illum tuning
 
 // Upload a texture only when something actually draws with it. ON by default: hidden addon bones,
 // weapons sitting in NPC inventories and LOD-only parts otherwise cost their full surface, which is
@@ -710,6 +711,7 @@ int		ps_lens_skip_present	= 1;
 
 void		xrRender_initconsole	()
 {
+	CMD4(CCC_Integer,	"r__frame_lum_log",		&ps_r__frame_lum_log,	0,		1		);
 	CMD4(CCC_Integer,	"lens_skip_present",	&ps_lens_skip_present,	0,	1);
 
 	CMD3(CCC_Preset,	"_preset",				&ps_Preset,	qpreset_token	);

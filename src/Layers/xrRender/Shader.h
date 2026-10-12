@@ -109,6 +109,8 @@ public:
 		u32	bEmissive	:	1;
 		u32	bDistort	:	1;
 		u32	bWmark		:	1;
+		u32	bLensMask	:	1;	// an E[4] that cuts the HUD out behind a prism sight's eyepiece (r_dsgraph_render_hud)
+		u32	bHudFirst	:	1;	// strict-sorted HUD drawn before the rest of it, whatever its distance (mapHUDSortedFirst)
 	};
 public:
 	Sflags								flags;

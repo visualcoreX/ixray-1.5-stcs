@@ -158,11 +158,12 @@ void CActor::IR_OnKeyboardPress(int cmd)
 
 	if (!g_Alive()) return;
 
-	// GS scope reticle/NV illumination up/down (scope_brightness_plus/minus) -- only while aiming a scope.
+	// GS scope reticle/NV illumination up/down (scope_brightness_plus/minus) -- only while aiming a scope,
+	// or a collimator built into the gun that has shader reticles (the P90's: no scope addon at all).
 	if (cmd==kSCOPE_ILLUM_INC || cmd==kSCOPE_ILLUM_DEC)
 	{
 		CWeapon* w = smart_cast<CWeapon*>(inventory().ActiveItem());
-		if (w && w->IsZoomed() && w->IsScopeAttached())
+		if (w && w->IsZoomed() && (w->IsScopeAttached() || w->CollimatorMarkCount() > 0))
 			w->ChangeScopeIllum(cmd==kSCOPE_ILLUM_INC ? +1 : -1);
 		return;
 	}

@@ -1,9 +1,9 @@
 function normal		(shader, t_base, t_second, t_detail)
-  shader:begin  	("model_def_lplanes","base_lplanes")
+  shader:begin  	("model_def_lplanes","model_collimsight")	-- base_lplanes, hidden under a shader reticle
       : fog    		(false)
       : zb     		(true,false)
       : blend   	(true,blend.srcalpha,blend.one)
       : aref    	(true,0)
-      : sorting		(2, true)
+      : sorting		(3, true)	-- 3: the HUD draws it after every glass, so no lens tint reaches it
   shader:sampler	("s_base")      :texture  (t_base)
 end

@@ -13,6 +13,8 @@
 // (0,0,-1) packed the way skin.h reads a direction: unpacked as 2*v-1 (DX9 swaps the D3DCOLOR
 // channels itself, so unlike r3 there is no .zyx in between)
 #define AXIS_PACKED	float3( 0.5, 0.5, 0 )
+// (1,0,0) the same way, in the binormal's slot: the scope's right, for the reticle (model_collim_reflect.ps)
+#define RIGHT_PACKED	float3( 1, 0.5, 0.5 )
 
 struct vf
 {
@@ -21,6 +23,7 @@ struct vf
 	float3	pos_w	: TEXCOORD1;
 	float3	norm_w	: TEXCOORD2;
 	float3	axis_w	: TEXCOORD3;
+	float3	right_w	: TEXCOORD4;
 };
 
 vf _main( v_model v )
@@ -32,31 +35,32 @@ vf _main( v_model v )
 	o.pos_w		= mul( m_W, v.P );
 	o.norm_w	= mul( (float3x3)m_W, v.N );
 	o.axis_w	= mul( (float3x3)m_W, v.T );					// the lens axis, see AXIS_PACKED
+	o.right_w	= mul( (float3x3)m_W, v.B );					// the scope's right, see RIGHT_PACKED
 
 	return o;
 }
 
 /////////////////////////////////////////////////////////////////////////
 #ifdef 	SKIN_NONE
-vf	main(v_model v) 		{ v.T = float3(0, 0, -1);	return _main(v); 		}
+vf	main(v_model v) 		{ v.T = float3(0, 0, -1);	v.B = float3(1, 0, 0);	return _main(v); }
 #endif
 
 #ifdef 	SKIN_0
-vf	main(v_model_skinned_0 v) 	{ v.T.xyz = AXIS_PACKED;	return _main(skinning_0(v)); }
+vf	main(v_model_skinned_0 v) 	{ v.T.xyz = AXIS_PACKED;	v.B.xyz = RIGHT_PACKED;	return _main(skinning_0(v)); }
 #endif
 
 #ifdef	SKIN_1
-vf	main(v_model_skinned_1 v) 	{ v.T.xyz = AXIS_PACKED;	return _main(skinning_1(v)); }
+vf	main(v_model_skinned_1 v) 	{ v.T.xyz = AXIS_PACKED;	v.B.xyz = RIGHT_PACKED;	return _main(skinning_1(v)); }
 #endif
 
 #ifdef	SKIN_2
-vf	main(v_model_skinned_2 v) 	{ v.T.xyz = AXIS_PACKED;	return _main(skinning_2(v)); }
+vf	main(v_model_skinned_2 v) 	{ v.T.xyz = AXIS_PACKED;	v.B.xyz = RIGHT_PACKED;	return _main(skinning_2(v)); }
 #endif
 
 #ifdef	SKIN_3
-vf	main(v_model_skinned_3 v) 	{ v.T.xyz = AXIS_PACKED;	return _main(skinning_3(v)); }
+vf	main(v_model_skinned_3 v) 	{ v.T.xyz = AXIS_PACKED;	v.B.xyz = RIGHT_PACKED;	return _main(skinning_3(v)); }
 #endif
 
 #ifdef	SKIN_4
-vf	main(v_model_skinned_4 v) 	{ v.T.xyz = AXIS_PACKED;	return _main(skinning_4(v)); }
+vf	main(v_model_skinned_4 v) 	{ v.T.xyz = AXIS_PACKED;	v.B.xyz = RIGHT_PACKED;	return _main(skinning_4(v)); }
 #endif

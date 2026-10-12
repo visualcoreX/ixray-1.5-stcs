@@ -1,26 +1,52 @@
 #include "common.h"
 
-// The collimator glass's own texture -- pass 0 of models_lenses for wpn\lenses, model_def_lq with its
-// alpha times m_collim_glass.x: the optic's collimator_glass_strength for the current aim, so aiming can
-// fade the glass out along with its mirror. The binder gives everything outside the HUD's strict-sorted
-// pass 1, so the same glass on a gun in the world draws exactly as model_def_lq.
-uniform	float4	m_collim_glass;
+// Pass 0 of the collimator glass on R1 (models_lenses, wpn\lenses), as on r2/r3: what lies on the glass and
+// what shows through it, in one premultiplied-alpha pass (blend one, invsrcalpha):
+//   the glass's texture, lit and fogged as model_def_lq does it, its alpha times m_collim_glass.x (the aim);
+//   the sky the coating mirrors (per vertex here, see model_collim_reflect.vs), added on top;
+//   the reticle's glow BEHIND the texture -- it hangs at infinity, the glass is in front of it.
+// Pass 1 (model_collim_tint, the tint) is drawn first, under it all. The world draws this pass alone, and
+// there the binders give a plain glass: full texture, no sky, no reticle.
+//   m_collim_mark       rgb = colour * intensity (0 = no reticle)
+//   m_collim_mark_proj  x = texcoord per tangent of the angle, y/z = zeroing offset as tangents (HUD angles)
+uniform	float4		m_collim_glass;
+uniform	float4		m_collim_reflect_shape;	// z = how much the glass texture's alpha masks the mirror
+uniform	float4		m_collim_mark;
+uniform	float4		m_collim_mark_proj;
+uniform samplerCUBE	s_sky0;
+uniform sampler2D	s_mark;			// $user$collim_mark: the reticle picked
 
-struct 	v2p
+struct v2p
 {
- 	float2 	tc0: 		TEXCOORD0;	// base
- 	float2 	tc1: 		TEXCOORD1;	// lmap
-  	float3	c0:		COLOR0;		// sun
-	float  fog	: FOG;
+	float3	tc0		: TEXCOORD0;
+	float3	c0		: TEXCOORD1;
+	float3	pos_w	: TEXCOORD2;
+	float3	axis_w	: TEXCOORD3;
+	float3	right_w	: TEXCOORD4;
+	float2	tcb		: TEXCOORD5;
+	float3	glight	: TEXCOORD6;
+	float	fog		: TEXCOORD7;
 };
 
-float4 	main	( v2p I )	: COLOR
+float4 main( v2p I ) : COLOR
 {
-	float4	t_base 	= tex2D	(s_base,I.tc0);
+	float4	t_base	= tex2D( s_base, I.tcb );
+	float3	glass	= lerp( fog_color.xyz, I.glight * t_base.rgb * 2.0f, I.fog );
+	float	a		= t_base.a * m_collim_glass.x;
 
-	float3	light	= I.c0;
-	float3 final = light*t_base * 2.0f;
-	final = lerp(fog_color.xyz, final, I.fog);
+	// the clearer the glass's texture, the stronger the mirror (its own alpha, not the aim's fade)
+	float3	refl	= texCUBE( s_sky0, I.tc0 ).rgb * I.c0 * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
 
-	return  float4	(final.r,final.g,final.b,t_base.a*m_collim_glass.x);
+	float3	v		= normalize( I.pos_w - eye_position );
+	float3	fwd		= -normalize( I.axis_w );
+	float3	rt		= normalize( I.right_w - fwd*dot(I.right_w, fwd) );
+	float3	up		= cross( fwd, rt );
+	float	ad		= dot( v, fwd );
+	float2	t		= float2( dot(v, rt), dot(v, up) ) / max( ad, 0.001 ) - m_collim_mark_proj.yz;
+	float2	tc		= 0.5 + float2( t.x, -t.y ) * m_collim_mark_proj.x;
+	float	inside	= ( ad > 0 && all(tc == saturate(tc)) ) ? 1 : 0;
+	float4	mark	= tex2D( s_mark, tc );
+	float3	glow	= mark.rgb * mark.a * m_collim_mark.rgb * inside;
+
+	return	float4( glass * a + refl + glow * (1 - a), a );
 }

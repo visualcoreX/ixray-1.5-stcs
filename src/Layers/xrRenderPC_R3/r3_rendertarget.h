@@ -120,6 +120,13 @@ public:
 
 	//	Igor: for async screenshots
 	ID3DTexture2D*			t_ss_async;				//32bit		(r,g,b,a) is situated in the system memory
+	// the adapted luminance read back for the game (phase_luminance_readback)
+	ID3DTexture2D*			t_lum_read;				//1x1 fp32, in the system memory
+	bool					lum_read_pending;
+	u32						lum_read_time;
+	Fvector3				lum_read_middlegray;	// the MiddleGray the read value was made with
+	Fvector3				lum_middlegray;			// ...this frame's (phase_luminance)
+	void					phase_luminance_readback(u32 gpu_id);
 
 	// Textures
 	ID3DTexture3D*			t_material_surf;

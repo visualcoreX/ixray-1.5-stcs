@@ -343,6 +343,7 @@ void CRender::Render		()
 	if (bSUN)									set_Recorder	(&main_coarse_structure);
 	else										set_Recorder	(NULL);
 	phase										= PHASE_NORMAL;
+	mapHUDLensMask.clear						();		// only this frame's eyepieces
 	render_main									(Device.mFullTransform,true);
 	set_Recorder								(NULL);
 	r_pmask										(true,false);	// disable priority "1"
@@ -350,6 +351,9 @@ void CRender::Render		()
 
 	BOOL	split_the_scene_to_minimize_wait		= FALSE;
 	if (ps_r2_ls_flags.test(R2FLAG_EXP_SPLIT_SCENE))	split_the_scene_to_minimize_wait=TRUE;
+	// A prism sight's eyepiece (mapHUDLensMask) cuts the hud out for the world drawn after it, so it needs the
+	// hud before the world: never split while one is in view (the split draws the hud last, PART-1).
+	if (mapHUDLensMask.size())							split_the_scene_to_minimize_wait=FALSE;
 
 	//******* Main render :: PART-0	-- first
 	if (!split_the_scene_to_minimize_wait)
@@ -357,7 +361,9 @@ void CRender::Render		()
 		PIX_EVENT(DEFER_PART0_NO_SPLIT);
 		// level, DO NOT SPLIT
 		Target->phase_scene_begin				();
+		hud_lens_mask_now						= true;		// the hud goes before the world here
 		r_dsgraph_render_hud					();
+		hud_lens_mask_now						= false;
 		r_dsgraph_render_graph					(0);
 		r_dsgraph_render_lods					(true,true);
 		if(Details)	Details->Render				();

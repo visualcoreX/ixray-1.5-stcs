@@ -1,42 +1,49 @@
--- models\lenses: no script used to exist, the shaders.xr MODEL blender drew it -- its forward path, which pass 0
--- repeats as it was (model_def_lq, alpha blend, aref 0, priority 2 strictly sorted).
+-- models\lenses: no script used to exist, the shaders.xr MODEL blender drew it -- its forward path, which
+-- this repeats as it was (model_def_lq, alpha blend, aref 0, priority 2 strictly sorted) for anything but
+-- a collimator's glass. crosshair\crosshair_contur, a sight's front aperture, goes under the rest of the
+-- hud's glass (hud_first): it sits behind the eyepiece, but the sorting centre of its mesh can put it in front.
 --
--- wpn\lenses on it is a collimator's glass, and gets a second pass: the coating on that glass. It multiplies
--- the view behind by m_collim_tint (destcolor*src + dst*srccolor = 2*src*dst, so 0.5 = clear glass),
--- which CActor fills from the held weapon's collimator_tint. Only the HUD draws more than pass 0
--- (sorted_L1_passes), so the same gun on the ground or in an NPC's hands keeps its plain glass. The
--- reticle draws after all of the HUD's glass (models_collimsight.s, priority 3), so it stays untinted.
---
--- A third pass mirrors the weather's sky in the coating's colour (model_collim_reflect, added one/one
--- over the tinted view): m_collim_reflect from the optic's collimator_reflect, 0 = nothing added.
+-- wpn\lenses is a collimator's glass, two passes (collim.h holds the constants and the shared code):
+--   pass 0  model_collim_glass: the glass's texture (its alpha faded by the aim), the sky the coating
+--           mirrors over it, the reticle's glow behind it -- one premultiplied-alpha pass (one, invsrcalpha);
+--   pass 1  model_collim_tint: what darkens the view BEHIND the glass -- the coating's tint (2*src*dst, 0.5
+--           = clear), a prism sight's field stop, an etched reticle's lines.
+-- The hud draws pass 1 first and pass 0 over it (sorted_L1_passes); the world draws pass 0 alone, and its
+-- binders then give a plain glass -- full texture, no sky, no reticle. The model reticle draws after all of
+-- the hud's glass (models_collimsight.s, priority 3).
 
 function normal		(shader, t_base, t_second, t_detail)
 	local collim	= string.lower(t_base) == "wpn\\lenses"
 
-	-- the collimator glass's own texture fades with the aim (model_collim_glass, m_collim_glass);
-	-- outside the HUD it gets 1 and draws as model_def_lq
-	shader:begin	("model_def_lq", collim and "model_collim_glass" or "model_def_lq")
-			: fog		(true)
+	if not collim then
+		-- the front aperture fades out on a prism sight (model_collim_contour, m_collim_glass.z)
+		local contour	= string.lower(t_base) == "crosshair\\crosshair_contur"
+		shader:begin	("model_def_lq", contour and "model_collim_contour" or "model_def_lq")
+				: fog		(true)
+				: zb		(true,false)
+				: blend		(true,blend.srcalpha,blend.invsrcalpha)
+				: aref		(true,0)
+				: sorting	(2, true)
+				: hud_first	(contour)	-- a sight's front aperture: under the eyepiece glass
+		shader:sampler	("s_base")	:texture	(t_base)
+		return
+	end
+
+	shader:begin	("model_collim_reflect","model_collim_glass")
+			: fog		(false)
 			: zb		(true,false)
-			: blend		(true,blend.srcalpha,blend.invsrcalpha)
-			: aref		(true,0)
+			: blend		(true,blend.one,blend.invsrcalpha)
+			: aref		(false,0)
 			: sorting	(2, true)
 	shader:sampler	("s_base")	:texture	(t_base)
+	shader:sampler	("s_sky0")	:texture	("$user$sky0")	: clamp() : f_linear()
+	shader:sampler	("s_sky1")	:texture	("$user$sky1")	: clamp() : f_linear()
+	shader:sampler	("s_mark")	:texture	("$user$collim_mark")	: clamp() : f_linear()
 
-	if collim then
-		shader:begin	("model_def_lq","model_collim_tint")
-				: fog		(false)
-				: zb		(true,false)
-				: blend		(true,blend.destcolor,blend.srccolor)
-				: aref		(false,0)
-
-		-- ...and the sky it mirrors, in the coating's colour, added over the tinted view
-		shader:begin	("model_collim_reflect","model_collim_reflect")
-				: fog		(false)
-				: zb		(true,false)
-				: blend		(true,blend.one,blend.one)
-				: aref		(false,0)
-		shader:sampler	("s_sky0")	:texture	("$user$sky0")	: clamp() : f_linear()
-		shader:sampler	("s_sky1")	:texture	("$user$sky1")	: clamp() : f_linear()
-	end
+	shader:begin	("model_collim_reflect","model_collim_tint")
+			: fog		(false)
+			: zb		(true,false)
+			: blend		(true,blend.destcolor,blend.srccolor)
+			: aref		(false,0)
+	shader:sampler	("s_mark")	:texture	("$user$collim_mark")	: clamp() : f_linear()
 end

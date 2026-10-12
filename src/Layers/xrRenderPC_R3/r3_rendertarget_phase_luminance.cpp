@@ -135,6 +135,7 @@ void	CRenderTarget::phase_luminance()
 		RCache.set_Element			(s_luminance->E[2]		);
 		RCache.set_Geometry			(g_bloom_filter			);
 		RCache.set_c("MiddleGray",	_result.x,_result.y,_result.z,f_luminance_adapt	);
+		lum_middlegray				= _result;		// to turn the read-back scale into a luminance
 		RCache.Render				(D3DPT_TRIANGLELIST,Offset,0,4,0,2);
 	}
 
