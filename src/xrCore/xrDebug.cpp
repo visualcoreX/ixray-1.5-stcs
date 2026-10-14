@@ -162,9 +162,7 @@ void xrDebug::backend	(const char *expression, const char *description, const ch
 #ifdef USE_OWN_ERROR_MESSAGE_WINDOW
 	LPCSTR				endline = "\r\n";
 	LPSTR				buffer = assertion_info + xr_strlen(assertion_info);
-	buffer				+= sprintf(buffer,"%sPress CANCEL to abort execution%s",endline,endline);
-	buffer				+= sprintf(buffer,"Press TRY AGAIN to continue execution%s",endline);
-	buffer				+= sprintf(buffer,"Press CONTINUE to continue execution and ignore all the errors of this type%s%s",endline,endline);
+	buffer				+= sprintf(buffer,"%sPress OK to close the game%s",endline,endline);
 #endif // USE_OWN_ERROR_MESSAGE_WINDOW
 
 	if (handler)
@@ -175,6 +173,11 @@ void xrDebug::backend	(const char *expression, const char *description, const ch
 
 #ifdef XRCORE_STATIC
 	MessageBox			(NULL,assertion_info,"X-Ray error",MB_OK|MB_ICONERROR|MB_SYSTEMMODAL);
+
+	if (get_on_dialog())
+		get_on_dialog()	(false);
+
+	CS.Leave			();
 #else
 
 	HWND hWnd = GetActiveWindow();
@@ -182,38 +185,19 @@ void xrDebug::backend	(const char *expression, const char *description, const ch
 		hWnd = GetForegroundWindow();
 	ShowWindow(hWnd, SW_MINIMIZE);
 
-	int result = MessageBox(
+	// As stock: a fatal error ends the game. The dialog used to offer TRY AGAIN / CONTINUE, which ran the
+	// game on past a broken state -- a failed check, a corrupted heap -- into crashes that no longer said
+	// where they came from, or into a save written from that state. Now there is only OK: the exception
+	// below goes to UnhandledFilter, which writes the minidump (error_after_dialog keeps it from showing
+	// a second dialog), and the process ends.
+	MessageBox(
 		NULL, assertion_info, "Fatal Error",
-		MB_CANCELTRYCONTINUE | MB_ICONERROR | MB_DEFBUTTON3 | MB_SYSTEMMODAL | MB_DEFAULT_DESKTOP_ONLY);
+		MB_OK | MB_ICONERROR | MB_SYSTEMMODAL | MB_DEFAULT_DESKTOP_ONLY);
 
-	switch (result) {
-		case IDCANCEL: {
-			DEBUG_INVOKE;
-			// TODO: Maybe not correct
-			exit(-1);
-			break;
-		}
-		case IDTRYAGAIN: {
-			error_after_dialog = false;
-			break;
-		}
-		case IDCONTINUE: {
-			error_after_dialog = false;
-			ignore_always = true;
-			ShowWindow(hWnd, SW_SHOWNORMAL);
-			break;
-		}
-		default: {
-			Msg("! xrDebug::backend default reached");
-			break;
-		}
-	}
+	FlushLog			();
+	DEBUG_INVOKE;
+	exit				(-1);
 #endif
-
-	if (get_on_dialog())
-		get_on_dialog()	(false);
-
-	CS.Leave			();
 }
 
 LPCSTR xrDebug::error2string	(long code)
