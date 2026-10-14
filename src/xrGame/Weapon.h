@@ -523,6 +523,10 @@ protected:
 			bool			m_bLaserDotOffInGL;			// disable_laserdot_when_gl_enabled (weapon section)
 			u32				m_dwLaserSwitchTimeToGL;	// laser_switch_time_to_gl, ms
 			u32				m_dwLaserSwitchTimeFromGL;	// laser_switch_time_from_gl, ms
+			// emission flicker (LaserSurgeOff): decided once a frame, held for a random 30..90 ms like the collimator's
+			mutable bool	m_bLaserEmisOn;
+			mutable float	m_fLaserEmisHold;
+			mutable u32		m_dwLaserEmisFrame;
 			shared_str		m_sLaserBone;				// laserdot_attach_bone
 			shared_str		m_sLaserRayBones;			// laser_ray_bones (the visible beam bones, e.g. "line, line2")
 			xr_vector<shared_str>	m_LaserParticles;	// laserdot_particle_0..N (distance-switched dot)
@@ -548,6 +552,9 @@ protected:
 			Fvector			m_vLaserBeamOffset;			// laser_beam_attach_offset: where on the laserdot_attach_bone the beam leaves (hud)
 public:
 			bool			LaserBeamHidesMesh	() const { return m_LaserBeam.beam && m_LaserBeam.hide_mesh; }
+			// an emission's electronics problems are past [gwr_blowout] laser_disabling_level: the dot, the beam
+			// (volumetric and mesh, hud and world model) and the dot's light are all out until they drop again
+			bool			LaserSurgeOff		() const;
 protected:
 
 	// ---- weapon-mounted flashlight (Gunslinger LightUtils port) ----------------------------------

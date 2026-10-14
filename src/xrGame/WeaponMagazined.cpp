@@ -1549,8 +1549,7 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 	// dot particle. Uses the full ray-bone list (line, line2) with the single attach bone as a fallback.
 	if (m_bLaserInstalled)
 	{
-		extern float g_electronics_problems;
-		const bool  surge_off = m_bLaserEnabled && (m_fLaserDisablingLevel > 0.f) && (g_electronics_problems >= m_fLaserDisablingLevel);
+		const bool  surge_off = m_bLaserEnabled && LaserSurgeOff();
 		LPCSTR rb = m_sLaserRayBones.size() ? m_sLaserRayBones.c_str() : (m_sLaserBone.size() ? m_sLaserBone.c_str() : nullptr);
 		// Symmetric: SHOW them when the laser is on. An upgrade-installed laser gets that for free from the
 		// node's show_bones, but a weapon whose designator is PERMANENT (the P90 -- laser_installed on the
