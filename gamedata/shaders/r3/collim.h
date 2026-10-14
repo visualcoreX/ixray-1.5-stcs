@@ -40,6 +40,7 @@ uniform	float4	m_collim_mark_proj;
 uniform	float4	m_collim_prism;
 uniform	float4	m_collim_glass;		// x = how much of the glass's texture shows (the aim fades it)
 #define	COLLIM_LIGHTS	8
+#define	COLLIM_LOOP		[unroll]		// collim_lamps: unrolled, SM4 has the registers
 uniform	float4	m_collim_lights[COLLIM_LIGHTS*3];
 uniform	float4	m_collim_spec;
 
@@ -103,11 +104,10 @@ float	collim_field_stop( float2 t, float a )
 	return	( a > 0 ) ? f : 0;
 }
 
-// The light the lamps, torches, fires and muzzle flashes near the eye throw on the glass at p (the glass is
-// drawn forward: the deferred lights the gun around it gets never reach it). n: the glass's normal facing the
-// eye; wrap 0 lights only what faces the light, as a surface is lit, 1 lights it from any side, as the
-// sky's light does the mirror. The fall-off is the deferred lights' own (1 - d^2/range^2); a spot's edge
-// is softened over a quarter of its cone, where the engine's projected spot texture fades too.
+// The lamps, torches, fires and muzzle flashes near the eye, on the glass at p (the glass is drawn forward:
+// the deferred lights the gun around it gets never reach it). The fall-off is the deferred lights' own
+// (1 - d^2/range^2); a spot's edge is softened over a quarter of its cone, where the engine's projected spot
+// texture fades too.
 // One of them at p: its colour as it arrives (fall-off, spot edge), l = the way to it.
 float3	collim_lamp( int i, float3 p, out float3 l )
 {
@@ -122,39 +122,52 @@ float3	collim_lamp( int i, float3 p, out float3 l )
 	return	lc.rgb * att * spot;
 }
 
-float3	collim_dynlight( float3 p, float3 n, float wrap )
+// All of them at once, in one pass over the lamps (n: the glass's normal facing the eye, v: from the eye):
+// diff -- as a surface facing them is lit (the glass's texture), omni -- from any side (the mirror's indirect
+// light, as the sky's is), spec -- their Blinn highlight at m_collim_spec.y's glossiness. One loop, not one
+// per use: on R2 (ps_3_0, 32 temporaries) three unrolled ones ran out of registers.
+struct collim_lamps_t
 {
-	float3	res		= 0;
-	[unroll]
+	float3	diff;
+	float3	omni;
+	float3	spec;
+};
+
+collim_lamps_t	collim_lamps( float3 p, float3 n, float3 v )
+{
+	collim_lamps_t	r;
+	r.diff			= 0;
+	r.omni			= 0;
+	r.spec			= 0;
+	float	g		= m_collim_spec.y;
+	COLLIM_LOOP
 	for ( int i = 0; i < COLLIM_LIGHTS; ++i )
 	{
 		float3	l;
 		float3	c		= collim_lamp( i, p, l );
-		res				+= c * lerp( saturate(dot(n, l)), 1, wrap );
+		float	ndl		= saturate( dot(n, l) );
+		r.diff			+= c * ndl;
+		r.omni			+= c;
+		r.spec			+= c * pow( saturate(dot(n, normalize(l - v))), g ) * ndl;
 	}
-	return	res;
+	return	r;
 }
 
 // The glass's highlight (Blinn), from the sun -- as much of it as reaches the actor, the same share the
-// glass's diffuse light takes (L_material.y) -- and from the lights near the eye. The model's lighting has
-// no specular at all, and in a direct light the glass's texture alone read flat and matte. v: from the eye;
-// ng: the glass's normal facing the eye; a: the glass texture's alpha, picking the glossy parts as
-// m_collim_spec.z says. Glossier means a smaller, sharper highlight, kept as bright: (gloss+8)/8. It fades
-// for the aim with the glass's texture (m_collim_glass.x): through the sight it would cover the view.
-float3	collim_specular( float3 p, float3 v, float3 ng, float a )
+// glass's diffuse light takes (L_material.y) -- and from the lights near the eye (collim_lamps' spec). The
+// model's lighting has no specular at all, and in a direct light the glass's texture alone read flat and
+// matte. v: from the eye; ng: the glass's normal facing the eye; a: the glass texture's alpha, picking the
+// glossy parts as m_collim_spec.z says. Glossier means a smaller, sharper highlight, kept as bright:
+// (gloss+8)/8. It fades for the aim with the glass's texture (m_collim_glass.x): through the sight it would
+// cover the view.
+float3	collim_specular( float3 v, float3 ng, float a, float3 lamps )
 {
 	if ( m_collim_spec.x <= 0 )	return 0;
 	float	g		= m_collim_spec.y;
 
 	float3	ls		= -L_sun_dir_w;
-	float3	res		= L_sun_color * L_material.y * pow( saturate(dot(ng, normalize(ls - v))), g ) * saturate( dot(ng, ls) );
-	[unroll]
-	for ( int i = 0; i < COLLIM_LIGHTS; ++i )
-	{
-		float3	l;
-		float3	c		= collim_lamp( i, p, l );
-		res				+= c * pow( saturate(dot(ng, normalize(l - v))), g ) * saturate( dot(ng, l) );
-	}
+	float3	res		= L_sun_color * L_material.y * pow( saturate(dot(ng, normalize(ls - v))), g ) * saturate( dot(ng, ls) )
+					+ lamps;
 
 	float	m		= m_collim_spec.z;
 	float	mask	= ( m >= 0 ) ? lerp( 1, 1 - a, m ) : lerp( 1, a, -m );
@@ -172,16 +185,16 @@ float3	collim_limit( float3 x, float c )
 }
 
 // The light on the glass's own texture: the sun and the sky as model_def_lq gives them (its light*2), and
-// the lamps near the eye as the deferred lights give them to the gun around it -- once, not twice: in
-// model_def_lq's doubling a fire beside the actor made the glass brighter than anything around it. They are
-// held under m_collim_reflect_shape.w too, as the mirror's indirect light is.
-float3	collim_glass_light( float3 n, float3 p, float3 ng )
+// the lamps near the eye (collim_lamps' diff) as the deferred lights give them to the gun around it -- once,
+// not twice: in model_def_lq's doubling a fire beside the actor made the glass brighter than anything around
+// it. They are held under m_collim_reflect_shape.w too, as the mirror's indirect light is.
+float3	collim_glass_light( float3 n, float3 lamps )
 {
-	return	calc_model_lq_lighting( n ) * 2 + collim_limit( collim_dynlight(p, ng, 0), m_collim_reflect_shape.w );
+	return	calc_model_lq_lighting( n ) * 2 + collim_limit( lamps, m_collim_reflect_shape.w );
 }
 
 // The sky the coating mirrors, in its colour (v: from the eye; ng: the glass's own normal, facing the eye;
-// na: its flat axis; dyn: collim_dynlight's from any side). A domed lens is a convex mirror: the full dome shrinks the sky into a wide, still
+// na: its flat axis; dyn: the lamps from any side, collim_lamps' omni). A domed lens is a convex mirror: the full dome shrinks the sky into a wide, still
 // picture; bent toward the flat axis it becomes a close-up that pans as the gun sways -- the mirror turns
 // twice as fast as the glass does. 0 outside the hud (the binder).
 float3	collim_reflection( float3 v, float3 ng, float3 na, float3 dyn )

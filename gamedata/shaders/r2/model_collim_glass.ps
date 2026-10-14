@@ -18,14 +18,14 @@ float4 main( v2p_collim I ) : COLOR
 	float3	na		= face_eye( normalize(I.axis_w), v );
 
 	float4	t_base	= tex2D( s_base, I.tc0 );
-	float3	dyn		= collim_dynlight( I.pos_w, ng, 1 );
-	float3	glass	= collim_glass_light( n, I.pos_w, ng ) * t_base.rgb;
+	collim_lamps_t	lamps	= collim_lamps( I.pos_w, ng, v );
+	float3	glass	= collim_glass_light( n, lamps.diff ) * t_base.rgb;
 	float	a		= t_base.a * m_collim_glass.x;
 
 	float	ad;
 	float2	t		= collim_sight( v, I.axis_w, I.right_w, ad );
 
-	float3	refl	= collim_reflection( v, ng, na, dyn ) * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
-	float3	res		= glass * a + refl + collim_glow( t, ad ) * (1 - a) + collim_specular( I.pos_w, v, ng, t_base.a );
+	float3	refl	= collim_reflection( v, ng, na, lamps.omni ) * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
+	float3	res		= glass * a + refl + collim_glow( t, ad ) * (1 - a) + collim_specular( v, ng, t_base.a, lamps.spec );
 	return	float4( res, a );
 }

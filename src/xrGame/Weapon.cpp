@@ -146,6 +146,9 @@ CWeapon::CWeapon()
 	m_bLaserDotOffInGL		= false;
 	m_dwLaserSwitchTimeToGL	= 500;
 	m_dwLaserSwitchTimeFromGL	= 700;
+	m_bLaserEmisOn			= true;
+	m_fLaserEmisHold		= 0.f;
+	m_dwLaserEmisFrame		= u32(-1);
 	m_iLaserParticleIdx		= -1;
 	m_vLaserOffset.set		(0.f,0.f,0.f);
 	m_vLaserWorldOffset.set	(0.f,0.f,0.f);
@@ -1031,6 +1034,37 @@ void CWeapon::UpdateCollimatorGlitch()
 	gwr_SetWorldBonesCSV(hi->m_model, bones, show);
 }
 
+// The emission's electronics problems glitch the laser the way they glitch the collimator
+// (UpdateCollimatorGlitch): from the first sign of the surge it drops out at random, every 30..90 ms it
+// re-rolls with a chance of being off = level / laser_disabling_level, and at or past that level it is
+// off for good until the surge ebbs. Rolled ONCE a frame -- the dot, both beams and both models ask
+// within the same frame and have to go out together, not each on its own dice.
+bool CWeapon::LaserSurgeOff() const
+{
+	extern float g_electronics_problems;	// ActorInput.cpp -- ramped by the surge
+	if (m_dwLaserEmisFrame != Device.dwFrame)
+	{
+		m_dwLaserEmisFrame	= Device.dwFrame;
+		const float lvl		= m_fLaserDisablingLevel;
+		if (lvl > 0.f && g_electronics_problems > 0.f)
+		{
+			m_fLaserEmisHold	-= Device.fTimeDelta;
+			if (m_fLaserEmisHold <= 0.f)
+			{
+				const float prob	= (g_electronics_problems >= lvl) ? 1.f : (g_electronics_problems / lvl);
+				m_bLaserEmisOn		= ::Random.randF() >= prob;
+				m_fLaserEmisHold	= ::Random.randF(0.03f, 0.09f);
+			}
+		}
+		else
+		{
+			m_bLaserEmisOn		= true;
+			m_fLaserEmisHold	= 0.f;
+		}
+	}
+	return !m_bLaserEmisOn;
+}
+
 void CWeapon::ScheduleLaserToggle(bool e, u32 delay_ms)
 {
 	if (!delay_ms)	{ m_bLaserEnabled = e; m_dwLaserToggleAt = 0; return; }
@@ -1142,8 +1176,9 @@ void CWeapon::UpdateLaserDot()
 		// level is high (the laser stays enabled; the dot returns after). The BEAM bones (line, line2) are
 		// hidden in lockstep by CWeaponMagazined::gwr_UpdateBones, which runs every frame and is the bone
 		// authority -- doing it here loses, because that re-applies the upgrade's show_bones each frame.
-		extern float g_electronics_problems;
-		if (m_fLaserDisablingLevel > 0.f && g_electronics_problems >= m_fLaserDisablingLevel)	{ StopLaserDot(); return; }
+		// (StopLaserDot also puts out the procedural dot's light; the volumetric beam and dot are simply not
+		// published this frame, so the renderer has nothing to draw)
+		if (LaserSurgeOff())	{ StopLaserDot(); return; }
 	}
 	// GS disable_laserdot_when_gl_enabled (WeaponUpdate.pas): with the GL raised, stop the projected dot (the
 	// far dot is what made the beam read as reaching the target -> without it the laser looks like a short stub,
@@ -3005,7 +3040,7 @@ void CWeapon::gwr_UpdateWorldBones(IKinematics* K, bool force)
 	shared_str cur_scope = GetCurrentScopeSection();
 	u32 sig =  (IsScopeAttached()						? 1u : 0u)
 			| ((ScopeIllumValue() > 0.f)				? 2u : 0u)
-			| ((m_bLaserInstalled && m_bLaserEnabled)	? 4u : 0u)
+			| ((m_bLaserInstalled && m_bLaserEnabled && !LaserSurgeOff())	? 4u : 0u)	// the emission puts it out (same as the hud)
 			| ((m_bFlashInstalled && m_bFlashEnabled)	? 8u : 0u)
 			| (IsBayonetActive()						? 16u : 0u)
 			| (IsGrenadeLauncherAttached()				? 32u : 0u)		// def_hide_bones_override_when_gl_attached
@@ -3128,7 +3163,7 @@ void CWeapon::gwr_UpdateWorldBones(IKinematics* K, bool force)
 	// bring it back, see the matching block in CWeaponMagazined::UpdateHUDAddonsVisibility)
 	if (m_bLaserInstalled && m_sLaserBone.size())
 		gwr_SetWorldBonesCSV(K, m_sLaserRayBones.size() ? m_sLaserRayBones.c_str() : m_sLaserBone.c_str(),
-							 m_bLaserEnabled ? TRUE : FALSE);
+							 (m_bLaserEnabled && !LaserSurgeOff()) ? TRUE : FALSE);
 
 	// bayonet blade removed when a silencer/GL occupies the barrel
 	if (m_bBayonetInstalled && !IsBayonetActive())

@@ -98,6 +98,8 @@ public:
 
 	void							Render			();
 	void							OnFrame			();
+	// how much sky is over the camera, 0 (roofed) .. 1 (open), smoothed -- the rain on the lens asks it too
+	float							SkyFactor		() const	{ return sky_factor; }
 };
 
 #endif //RainH

@@ -48,6 +48,8 @@
 #include "Physics.h"
 #include "level.h"
 #include "GamePersistent.h"
+#include "../xrEngine/Environment.h"	// the rain on the lens: rain_density...
+#include "../xrEngine/Rain.h"			// ...and the rain effect's sky factor
 #include "game_cl_base.h"
 #include "game_cl_single.h"
 #include "xrmessages.h"
@@ -1223,6 +1225,94 @@ float g_intox_fx_level = 0.f;
 // -- a short quintic ease in ending at the peak, a longer one out, then a rest -- its period sliding from
 // period_slow as the effect just shows to period_fast at level 1. Advances phase, low-passes the shape into
 // pulse (a frame-time hitch never shows as a step); both reset while the level is 0. Returns pulse, 0..1.
+// LENS DROPLETS, the bleeding's and the rain's alike (the shader tints only the blood). Each one shows up over its
+// look's fade_in and fades out over its fade_out, all the while running LD_TRAVEL along the outline of a big
+// ellipse standing on the middle of the screen's bottom edge (LD_RX wide, LD_RY high, in screen uv) -- down and
+// away from the middle (flat across the top, steeper down the sides), tipped LD_DOWN towards straight down,
+// gathering speed. WHEN they come is the caller's: the blood's on the pulse's beats, the rain's evenly. WHERE,
+// HOW BIG and HOW LONG are the caller's too (SLensDropletLook):
+//  - the BLOOD lands in the band AROUND that bottom ellipse: the top of the screen and down its sides, never in
+//    the middle, thicker the further out (blood running off the brows); 128..192 px at 1080p, 3 s to fade;
+//  - the RAIN lands INSIDE an ellipse hung from the middle of the top edge (the whole width, down to RY):
+//    the upper middle of the view, thinning out towards its rim; half the size, half the fade.
+struct SLensDropletLook
+{
+	float	size_min, size_max;		// diameter, share of the screen height
+	float	fade_in, fade_out;		// seconds to show up, then to fade out (its whole life)
+	// where they land: an ellipse centred at (cx, cy) in screen uv with half-axes rx, ry -- OUTSIDE it (fuller
+	// the further out, full at soft of its radii past the rim) or INSIDE it (full up to soft of its radii short
+	// of the rim, none past it); tried over y in 0..y_max
+	float	cx, cy, rx, ry, soft, y_max;
+	bool	inside;
+	float	life	() const	{ return fade_in + fade_out; }
+};
+static const SLensDropletLook	LD_BLOOD	= { 128.f / 1080.f, 192.f / 1080.f, 0.25f, 3.f,		0.5f, 1.f, 0.5f, 0.8f, 0.2f, 0.85f, false };
+static const SLensDropletLook	LD_RAIN		= {  64.f / 1080.f,  96.f / 1080.f, 0.25f, 1.5f,	0.5f, 0.f, 0.5f, 0.7f, 0.25f, 0.7f, true };
+static const float	LD_RX			= 0.5f;				// the ellipse the run follows: half-width (screen uv)...
+static const float	LD_RY			= 0.8f;				// ...and height up from the bottom edge
+static const float	LD_TRAVEL		= 0.055f;			// how far one runs over its life, share of the height
+static const float	LD_DOWN			= 0.6f;				// how much the run is tipped towards straight down
+struct SLensDroplet	{ float x, y, dx, dy, size, age; bool flip, live; };
+
+// a new droplet in d: false if no place turned up this time (try again next frame)
+static bool lens_droplet_spawn(SLensDroplet& d, const SLensDropletLook& look)
+{
+	const float	aspect	= Device.dwWidth ? float(Device.dwHeight) / float(Device.dwWidth) : 9.f / 16.f;	// h / w
+	// a place: tried at random over the screen's upper part, kept by where it falls against the look's ellipse
+	// (a soft edge, not a line)
+	float x = 0.f, y = 0.f;
+	bool found = false;
+	for (int k = 0; k < 16 && !found; ++k)
+	{
+		x = ::Random.randF(0.f, 1.f);
+		y = ::Random.randF(0.f, look.y_max);
+		const float	ex	= (x - look.cx) / look.rx, ey = (y - look.cy) / look.ry;
+		const float	r	= _sqrt(ex * ex + ey * ey);
+		float		e	= look.inside ? (1.f - r) / look.soft : (r - 1.f) / look.soft;
+		clamp		(e, 0.f, 1.f);
+		found = ::Random.randF(0.f, 1.f) < e * e * (3.f - 2.f * e);
+	}
+	if (!found)	return false;
+	// its run: the ellipse's tangent here (worked out in height units, so it is round on any screen), the
+	// branch heading down and away from the middle, tipped towards straight down
+	const float	hx	= (x - 0.5f) / aspect, hy = y - 1.f;
+	const float	rx	= LD_RX / aspect, ry = LD_RY;
+	const float	nx	= hx / (rx * rx), ny = hy / (ry * ry);
+	float		tx	= (hx < 0.f) ? ny : -ny;
+	float		ty	= (hx < 0.f) ? -nx : nx;
+	ty			+= LD_DOWN * _sqrt(tx * tx + ty * ty);
+	const float	tl	= _sqrt(tx * tx + ty * ty);
+	d.x		= x;
+	d.y		= y;
+	d.dx	= (tl > EPS) ? tx / tl * aspect : 0.f;		// back to uv across
+	d.dy	= (tl > EPS) ? ty / tl : 1.f;
+	d.size	= ::Random.randF(look.size_min, look.size_max);
+	d.age	= 0.f;
+	d.flip	= ::Random.randI(2) != 0;
+	d.live	= true;
+	return true;
+}
+
+// ages d by a frame and writes it for the shader (pp_droplets: centre, signed radius, opacity -- negative for
+// rain); an empty slot writes zeros
+static void lens_droplet_step(SLensDroplet& d, const SLensDropletLook& look, Fvector4& out, bool rain)
+{
+	if (d.live)
+	{
+		d.age += Device.fTimeDelta;
+		if (d.age >= look.life())	d.live = false;
+	}
+	if (!d.live)	{ out.set(0.f, 0.f, 0.f, 0.f); return; }
+	const float	t		= _min(1.f, d.age / look.life());
+	float		in		= d.age / look.fade_in;
+	float		out_	= (look.life() - d.age) / look.fade_out;
+	clamp		(in, 0.f, 1.f);
+	clamp		(out_, 0.f, 1.f);
+	const float	alpha	= in * in * (3.f - 2.f * in) * out_ * out_ * (3.f - 2.f * out_);
+	const float	run		= LD_TRAVEL * t * _sqrt(t);		// gathering speed
+	out.set		(d.x + d.dx * run, d.y + d.dy * run, (d.flip ? -0.5f : 0.5f) * d.size, rain ? -alpha : alpha);
+}
+
 static float pp_pulse_update(float& phase, float& pulse, float level, float period_slow, float period_fast)
 {
 	const float		PULSE_PEAK	= 0.18f;	// share of the period where the pulse peaks
@@ -1680,42 +1770,24 @@ void CActor::UpdateCL	()
 										 INJURY_BLUR * s_blur + s_blur_bleed * (INJURY_BLUR_TROUGH + (INJURY_BLUR_PULSE - INJURY_BLUR_TROUGH) * s_pulse),
 										 s_vessels * (INJURY_VESSELS_TROUGH + (1.f - INJURY_VESSELS_TROUGH) * s_pulse));
 
-		// LENS DROPLETS while bleeding -- blood running down off the brows. Single drops land at random in the band
-		// AROUND a big ellipse standing on the middle of the screen's bottom edge (DROPLET_RX wide, DROPLET_RY high,
-		// in screen uv): the top of the screen and down its sides, never in the middle, a little thicker the further
-		// out of it (DROPLET_SPAWN_SOFT). They appear at DROPLET_RATE_MIN a second for the lightest bleeding, up to
-		// DROPLET_RATE_MAX at INJURY_BLEED_FULL, never more than DROPLET_COUNT_MAX at once -- and only on the beat:
-		// the rate fills a budget all the time, but it is let out only in a window DROPLET_WINDOW long opened at a
-		// beat's peak, up to DROPLET_BEAT_MAX of them in one. Not on every beat once they come fast: a window
-		// opens only DROPLET_BEAT_GAP after the last one -- every beat at the breathing's pace, every other one at
-		// the heart's -- and as the pace eases from one to the other it simply starts skipping. (The window was
-		// the pulse past 0.7 once; at the heart's pace the smoothed pulse no longer got that high.) Each one lives
-		// DROPLET_LIFE: shows up over DROPLET_FADE_IN and fades out over the rest, all the while running
-		// DROPLET_TRAVEL along the ellipse's outline -- down and away from the middle (flat across the top, steeper
-		// down the sides), tipped DROPLET_DOWN towards straight down, gathering speed. The shader refracts the
-		// picture through it, tints it and lights its glare from the bloom (pp_droplets_*).
+		// LENS DROPLETS while bleeding -- blood running down off the brows (their look and run: lens_droplet_*).
+		// They appear at DROPLET_RATE_MIN a second for the lightest bleeding, up to DROPLET_RATE_MAX at
+		// INJURY_BLEED_FULL, never more than DROPLET_COUNT_MAX at once -- and only on the beat: the rate fills a
+		// budget all the time, but it is let out only in a window DROPLET_WINDOW long opened at a beat's peak, up
+		// to DROPLET_BEAT_MAX of them in one. Not on every beat once they come fast: a window opens only
+		// DROPLET_BEAT_GAP after the last one -- every beat at the breathing's pace, every other one at the
+		// heart's -- and as the pace eases from one to the other it simply starts skipping. (The window was the
+		// pulse past 0.7 once; at the heart's pace the smoothed pulse no longer got that high.)
 		{
-			const int		DROPLETS				= IGame_Persistent::PP_DROPLETS;
+			const int		DROPLETS				= IGame_Persistent::PP_DROPLETS_BLOOD;	// slots 0.. of pp_droplets
 			const float		DROPLET_RATE_MIN		= 0.4f;		// new ones a second for the slightest bleeding...
 			const float		DROPLET_RATE_MAX		= 2.8f;		// ...and at full (life 3.25 s: ~9 alive, so the cap below is reached)
 			const float		DROPLET_WINDOW			= 0.2f;		// seconds a beat's spawn window stays open...
 			const float		DROPLET_BEAT_GAP		= 1.f;		// ...no sooner than this after the last one opened...
 			const float		DROPLET_BEAT_MAX		= 5.f;		// ...and the most one window may let out
-			const int		DROPLET_COUNT_MAX		= 8;		// never more at once (and never more than PP_DROPLETS)
-			const float		DROPLET_FADE_IN			= 0.25f;	// seconds to show up...
-			const float		DROPLET_FADE_OUT		= 3.f;		// ...and to fade out after that
-			const float		DROPLET_LIFE			= DROPLET_FADE_IN + DROPLET_FADE_OUT;
-			const float		DROPLET_SIZE_MIN		= 128.f / 1080.f;	// diameter, share of the screen height (128 px at 1080p)...
-			const float		DROPLET_SIZE_MAX		= 192.f / 1080.f;	// ...up to 192 px
-			const float		DROPLET_RX				= 0.5f;		// the clear ellipse in the middle: half-width (screen uv)...
-			const float		DROPLET_RY				= 0.8f;		// ...and height up from the bottom edge
-			const float		DROPLET_SPAWN_SOFT		= 0.2f;		// how far out of it (its own radii) they reach full density
-			const float		DROPLET_TRAVEL			= 0.055f;	// how far it runs over its life, share of the height
-			const float		DROPLET_DOWN			= 0.6f;		// how much the run is tipped towards straight down
-			struct SDroplet	{ float x, y, dx, dy, size, age; bool flip, live; };
-			static SDroplet	s_droplets[DROPLETS] = {};
+			const int		DROPLET_COUNT_MAX		= 8;		// never more at once (and never more than DROPLETS)
+			static SLensDroplet	s_droplets[DROPLETS] = {};
 			static float	s_spawn = 0.f;
-			const float		aspect	= Device.dwWidth ? float(Device.dwHeight) / float(Device.dwWidth) : 9.f / 16.f;	// h / w
 			const float		bleed_k	= (bleed > EPS) ? _min(1.f, bleed / INJURY_BLEED_FULL) : 0.f;
 			if (bleed_k > 0.f)
 				s_spawn += Device.fTimeDelta * (DROPLET_RATE_MIN + (DROPLET_RATE_MAX - DROPLET_RATE_MIN) * bleed_k)
@@ -1730,70 +1802,68 @@ void CActor::UpdateCL	()
 			if (beat_peak && s_since >= DROPLET_BEAT_GAP)	{ s_window = DROPLET_WINDOW; s_since = 0.f; }
 			const bool		beat	= s_window > 0.f;
 			s_window	-= Device.fTimeDelta;
-			bool			one		= false;	// one a frame: a beat's several spread over its window, not all at once
-			for (int i = 0; i < DROPLETS && beat && !one && s_spawn >= 1.f && live < DROPLET_COUNT_MAX; ++i)
-			{
-				if (s_droplets[i].live)	continue;
-				// a place in the band: tried at random over the upper part of the screen, kept by how far out of
-				// the ellipse it is (a soft edge, not a line)
-				float x = 0.f, y = 0.f;
-				bool found = false;
-				for (int k = 0; k < 16 && !found; ++k)
-				{
-					x = ::Random.randF(0.f, 1.f);
-					y = ::Random.randF(0.f, DROPLET_RY + 0.05f);
-					const float	ex	= (x - 0.5f) / DROPLET_RX, ey = (y - 1.f) / DROPLET_RY;
-					float		e	= (_sqrt(ex * ex + ey * ey) - 1.f) / DROPLET_SPAWN_SOFT;
-					clamp		(e, 0.f, 1.f);
-					found = ::Random.randF(0.f, 1.f) < e * e * (3.f - 2.f * e);
-				}
-				if (!found)	break;		// try again next frame
-				s_spawn -= 1.f;
-				++live;
-				one = true;
-				// its run: the ellipse's tangent here (worked out in height units, so it is round on any screen),
-				// the branch heading down and away from the middle, tipped towards straight down
-				const float	hx	= (x - 0.5f) / aspect, hy = y - 1.f;
-				const float	rx	= DROPLET_RX / aspect, ry = DROPLET_RY;
-				const float	nx	= hx / (rx * rx), ny = hy / (ry * ry);
-				float		tx	= (hx < 0.f) ? ny : -ny;
-				float		ty	= (hx < 0.f) ? -nx : nx;
-				ty			+= DROPLET_DOWN * _sqrt(tx * tx + ty * ty);
-				const float	tl	= _sqrt(tx * tx + ty * ty);
-				SDroplet&	d	= s_droplets[i];
-				d.x		= x;
-				d.y		= y;
-				d.dx	= (tl > EPS) ? tx / tl * aspect : 0.f;		// back to uv across
-				d.dy	= (tl > EPS) ? ty / tl : 1.f;
-				d.size	= ::Random.randF(DROPLET_SIZE_MIN, DROPLET_SIZE_MAX);
-				d.age	= 0.f;
-				d.flip	= ::Random.randI(2) != 0;
-				d.live	= true;
-			}
+			// one a frame: a beat's several spread over its window, not all at once
+			if (beat && s_spawn >= 1.f && live < DROPLET_COUNT_MAX)
+				for (int i = 0; i < DROPLETS; ++i)
+					if (!s_droplets[i].live)
+					{
+						if (lens_droplet_spawn(s_droplets[i], LD_BLOOD))	s_spawn -= 1.f;
+						break;
+					}
 			for (int i = 0; i < DROPLETS; ++i)
-			{
-				SDroplet& d = s_droplets[i];
-				if (d.live)
-				{
-					d.age += Device.fTimeDelta;
-					if (d.age >= DROPLET_LIFE)	d.live = false;
-				}
-				if (!d.live)
-				{
-					g_pGamePersistent->pp_droplets[i].set(0.f, 0.f, 0.f, 0.f);
-					continue;
-				}
-				const float	t		= _min(1.f, d.age / DROPLET_LIFE);
-				float		in		= d.age / DROPLET_FADE_IN;
-				float		out		= (DROPLET_LIFE - d.age) / DROPLET_FADE_OUT;
-				clamp		(in, 0.f, 1.f);
-				clamp		(out, 0.f, 1.f);
-				const float	alpha	= in * in * (3.f - 2.f * in) * out * out * (3.f - 2.f * out);
-				const float	run		= DROPLET_TRAVEL * t * _sqrt(t);		// gathering speed
-				g_pGamePersistent->pp_droplets[i].set(d.x + d.dx * run, d.y + d.dy * run,
-													  (d.flip ? -0.5f : 0.5f) * d.size, alpha);
-			}
+				lens_droplet_step(s_droplets[i], LD_BLOOD, g_pGamePersistent->pp_droplets[i], false);
 		}
+	}
+
+	// RAIN ON THE LENS: while it rains, standing under an open sky (the rain effect's own sky factor, its fan of
+	// rays straight up, at least RAIN_SKY_OPEN) and looking up past RAIN_LOOK_UP, drops of rain land on the lens
+	// -- the same droplets as the bleeding's (lens_droplet_*) but in the upper middle of the view, half the size
+	// and quicker (LD_RAIN), clear
+	// instead of red (w < 0 for the shader), coming evenly: RAIN_COUNT_LIGHT at once in a light rain
+	// (rain_density RAIN_LIGHT), RAIN_COUNT_HEAVY in a heavy one (RAIN_HEAVY). They come RAIN_OVERFILL times
+	// faster than that many would need, so the count is always full -- a new one as soon as one goes. Look down
+	// or step under a roof and no new ones come; those on the lens run their course.
+	if (g_pGamePersistent)
+	{
+		const int		RAIN_FIRST			= IGame_Persistent::PP_DROPLETS_BLOOD;	// its slots in pp_droplets...
+		const int		RAIN_SLOTS			= IGame_Persistent::PP_DROPLETS - RAIN_FIRST;
+		const float		RAIN_LIGHT			= 0.5f;		// rain_density of a light rain (the weathers' 0.5)...
+		const float		RAIN_HEAVY			= 1.f;		// ...and of a heavy one
+		const float		RAIN_COUNT_LIGHT	= 6.f;		// drops on the lens at once in a light rain...
+		const float		RAIN_COUNT_HEAVY	= 12.f;		// ...and in a heavy one (all of RAIN_SLOTS)
+		const float		RAIN_OVERFILL		= 1.5f;		// they come this much faster than the count needs: always full
+		const float		RAIN_LOOK_UP		= 0.5f;		// the view's rise past which they land: sin 30 degrees
+		const float		RAIN_SKY_OPEN		= 0.8f;		// the sky over the camera, 0..1 (4 of the 5 rays clear)
+		static SLensDroplet	s_rain[RAIN_SLOTS] = {};
+		static float	s_rain_spawn = 0.f;
+		static int		s_rain_cap = 0;		// how many at once for this rain
+		CEnvironment&	env		= g_pGamePersistent->Environment();
+		const float		density	= env.CurrentEnv ? env.CurrentEnv->rain_density : 0.f;
+		const float		sky		= env.eff_Rain ? env.eff_Rain->SkyFactor() : 0.f;
+		const bool		landing	= g_Alive() && density > EPS_L && sky >= RAIN_SKY_OPEN
+								&& Device.vCameraDirection.y > RAIN_LOOK_UP && !g_pGamePersistent->m_bLensFrameNow;
+		if (landing)
+		{
+			// how many at once, evenly: rising to RAIN_COUNT_LIGHT at a light rain, then on to RAIN_COUNT_HEAVY
+			float	count	= (density < RAIN_LIGHT) ? RAIN_COUNT_LIGHT * density / RAIN_LIGHT
+							: RAIN_COUNT_LIGHT + (RAIN_COUNT_HEAVY - RAIN_COUNT_LIGHT) * _min(1.f, (density - RAIN_LIGHT) / (RAIN_HEAVY - RAIN_LIGHT));
+			s_rain_cap		= iCeil(count - 0.01f);
+			s_rain_spawn	+= Device.fTimeDelta * count * RAIN_OVERFILL / LD_RAIN.life() * ::Random.randF(0.5f, 1.5f);
+		}
+		else
+			s_rain_spawn	= 0.f;
+		int live = 0;
+		for (int i = 0; i < RAIN_SLOTS; ++i)	live += s_rain[i].live ? 1 : 0;
+		if (s_rain_spawn >= 1.f && live < s_rain_cap)
+			for (int i = 0; i < RAIN_SLOTS; ++i)
+				if (!s_rain[i].live)
+				{
+					if (lens_droplet_spawn(s_rain[i], LD_RAIN))	s_rain_spawn -= 1.f;
+					break;
+				}
+		s_rain_spawn = _min(s_rain_spawn, 1.f);		// no room: wait, don't burst out a backlog later
+		for (int i = 0; i < RAIN_SLOTS; ++i)
+			lens_droplet_step(s_rain[i], LD_RAIN, g_pGamePersistent->pp_droplets[RAIN_FIRST + i], true);
 	}
 
 	// HIT FLASH: a one-off hit (CActor::Hit -> s_hit_flash_pending) blurs the whole picture for a moment, flushes
