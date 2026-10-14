@@ -322,7 +322,7 @@ void	CRenderTarget::phase_combine	()
 	// Distortion filter
 	BOOL	bDistort	= RImplementation.o.distortion_enabled;				// This can be modified
 	{
-		if		((0==RImplementation.mapDistort.size()) && !_menu_pp)		
+		if		((0==RImplementation.mapDistort.size()) && !_menu_pp && !rain_distort_pending())
 			bDistort= FALSE;
 		if (bDistort)		
 		{
@@ -339,8 +339,10 @@ void	CRenderTarget::phase_combine	()
 			FLOAT ColorRGBA[4] = { 127.0f/255.0f, 127.0f/255.0f, 0.0f, 0.0f};
 			HW.pDevice->ClearRenderTargetView( rt_Generic_1->pRT, ColorRGBA);
 			RImplementation.r_dsgraph_render_distort	();
+			phase_rain_distort							();
 			if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_PP()	;	// PP-UI
 		}
+		rain_distort_end	(0);	// drawn or not, they were this frame's
 	}
 
 	// 3D PiP scope: snapshot the scene into $user$scope. It sits HERE, after render_forward (so the

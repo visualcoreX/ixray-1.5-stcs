@@ -95,6 +95,13 @@ public:
 	ref_shader					s_laser_dot;		// the procedural dot at the end of a beam
 	xr_map<shared_str, ref_shader>	s_torch_dust;	// dust in handheld torches' cones, one per noise texture
 	bool						m_laser_dens_valid;	// the density buffer holds this frame's smoke
+	// Rain refraction: dxRainRender keeps here the streaks it drew this frame, phase_rain_distort draws
+	// them once more into the distortion mask. The mask cannot take them when the rain is drawn: until
+	// the bloom has run, rt_Generic_1 still holds the combine's bright pass.
+	xr_vector<FVF::LIT>			m_rain_distort;		// sized once, to the most streaks seen
+	u32							m_rain_distort_count;
+	ref_shader					s_rain_distort;
+	ref_geom					g_rain_distort;
 	ref_rt						rt_Generic_1;		// 32bit		(r,g,b,a)				// post-process, intermidiate results, etc.
 	//	Igor: for volumetric lights
 	ref_rt						rt_Generic_2;		// 32bit		(r,g,b,a)				// post-process, intermidiate results, etc.
@@ -294,6 +301,12 @@ public:
 	void						phase_torch_dust		();
 	// dxRainRender, right after drawing the rain streaks: the same vertices once more into the density buffer
 	void						phase_laser_density_rain(ref_geom& geom, u32 vOffset, u32 vCount);
+	// dxRainRender, around building the streaks: where to keep a copy of them (NULL: refraction is
+	// off, keep nothing), then how many it kept. phase_combine draws them into the distortion mask.
+	FVF::LIT*					rain_distort_begin		(u32 max_verts);
+	void						rain_distort_end		(u32 count)		{ m_rain_distort_count = count; }
+	bool						rain_distort_pending	() const		{ return m_rain_distort_count != 0; }
+	void						phase_rain_distort		();
 	void						phase_downsamp			();
 	void						phase_wallmarks			();
 	void						phase_smap_direct		(light* L,	u32 sub_phase);
