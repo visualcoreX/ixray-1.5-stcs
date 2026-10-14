@@ -181,6 +181,68 @@ public:
 	// `collimator_tint = r,g,b` (0..255, 128 = clear glass): the coating on the attached optic's glass.
 	// Read from the scope section, then its addon item, then the weapon; (128,128,128) when absent.
 	Fvector CollimatorTint() const;
+	// The sky mirrored in that glass: rgb = collimator_reflect (0..255 -> 0..1) times the strength for the
+	// current aim (collimator_reflect_strength = hip, aim; default 1, 0.3), w = collimator_reflect_f0
+	// (share reflected looking straight in, default 0.25). Zero colour when the optic has no collimator_reflect.
+	Fvector4 CollimatorReflect() const;
+	// ...and the mirror lit by the sky alone, not the sun: collimator_reflect_indirect = r,g,b (0..255), its
+	// own colour, the same strength for the aim. Zero when the optic has no such key.
+	Fvector4 CollimatorReflectIndirect() const;
+	float	 CollimatorReflectStrength() const;
+	bool	 CollimatorReflectColor(LPCSTR key, Fvector& col) const;
+	// ...and its shape: x = collimator_reflect_curve (how much of the glass's dome the mirror keeps: 0 = a flat
+	// mirror, a close-up of the sky that pans with every sway; 1 = the model's normals, a wide shrunken view;
+	// default 0.35), y = collimator_reflect_contrast (exponent on the sky's brightness, 1 = as is), z =
+	// collimator_reflect_mask (0..1: how much the glass texture's alpha masks the mirror -- the clearer the
+	// glass, the stronger; 0 = the whole glass alike), w = collimator_reflect_limit (the most indirect light --
+	// the sky's and the lamps' together -- the mirror takes: past 3/4 of it more light adds less and less, so a
+	// torch, a fire and the sky stacked do not set the glass glowing; daylight's sky alone is about 1..1.6;
+	// the lamps' light on the glass's texture is held under it as well; default 2, 0 = no limit).
+	Fvector4 CollimatorReflectShape() const;
+	// The glass's highlight from the sun and the lights near the eye (Blinn): collimator_specular = strength,
+	// glossiness (the highlight's exponent: higher = smaller and sharper; default 64), collimator_specular_mask
+	// = -1..1 (how the glass texture's alpha picks the glossy parts: +1 the clear ones, -1 the opaque ones,
+	// 0 the whole glass alike). x = 0 when the optic has no collimator_specular. It fades for the aim with the
+	// glass's texture (collimator_glass_strength).
+	Fvector4 CollimatorSpecular() const;
+	// How much of the glass's own texture shows (its pass 0 alpha): collimator_glass_strength = hip, aim,
+	// slid by the aim like the reflection; default 1, 1 = as the model has it.
+	float CollimatorGlassStrength() const;
+	// The reticle drawn by the glass's shader instead of a model, at infinity like a real red dot's:
+	// collimator_marks = tex, tex, ... (the brightness keys step through them, each optic keeping its pick),
+	// collimator_mark_size = width of the texture in degrees of the world's view, collimator_mark_color =
+	// r,g,b (0..255) times collimator_mark_intensity, collimator_mark_offset = right, up in degrees (zeroing).
+	int			CollimatorMarkCount() const;		// 0 = no shader reticle on this optic
+	shared_str	CollimatorMarkTexture() const;		// the pick for the current brightness step, or empty
+	Fvector4	CollimatorMarkColor() const;		// rgb = colour * intensity
+	Fvector4	CollimatorMarkShape() const;		// x = size, y/z = offset right/up -- degrees
+	// A prism sight (collimator_prism = true): 1x optics, so the glass shows the world with the sight's body
+	// cut out behind the eyepiece, inside a field stop -- x = collimator_prism_fov (full angle, degrees; 0 =
+	// not a prism), y = collimator_prism_fov_soft (width of its edge), z = collimator_mark_dark (how much the
+	// reticle darkens the view: an etched one, 0..1, any optic), w = collimator_prism_veil (the sun shafts' haze
+	// over the black of the field stop, a share of their full strength, even across it; default 0.5).
+	Fvector4	CollimatorPrism() const;
+	// collimator_mark_auto_illum = bright, dark[, seconds]: the reticle's glow follows the light around, as a
+	// light sensor on the sight would -- none at `bright` and above, full at `dark` and below, eased over
+	// `seconds` (default 3). The light is the frame's average brightness as the eye has adapted to it
+	// (IGame_Persistent::frame_luminance, read every 5 s; r__frame_lum_log 1 logs it for tuning), or, where
+	// the renderer has none, the actor's own lighting. With collimator_mark_illum_switch the keys turn it
+	// between this and off. false = always lit.
+	bool		CollimatorMarkAutoIllum(Fvector& range) const;
+	// collimator_mark_illum_switch = true: the brightness keys turn the reticle's glow off (step 0) and on
+	// (step 1) instead of stepping through marks -- the first mark only. Off wins; on leaves the glow to
+	// collimator_mark_auto_illum where the optic has it.
+	bool		CollimatorMarkIllumSwitch() const;
+	bool		CollimatorMarksBrightFirst() const;	// its marks go from the brightest down: the keys step the other way
+	bool		CollimatorMarkIllumOn() const	{ return m_scope_illum_step > 0; }
+	// The reticle's brightness now, 0..~1.3 (UpdateCollimatorGlitch): an emission's electronics trouble x the
+	// sight's wear. Multiplies the shader reticle's glow and the model reticle's alpha (CActor).
+	float		CollimatorPower() const			{ return m_collim_power; }
+	// collimator_wear = start, floor, flicker: below condition `start` the reticle dims with the weapon's
+	// condition, down to `floor` of its brightness at condition 0 -- never out; below condition `flicker` it
+	// flickers like a failing lamp, the worse the condition the more often and deeper. False = no such key.
+	bool		CollimatorWear(Fvector& w) const;
+	shared_str CollimatorParamSection(LPCSTR key) const;	// scope section / addon item / weapon holding `key`
 	float GetLensFOV() const;	// 3D PiP double-render: magnified world FOV (deg) for the lens frame; 0 = disabled
 	bool UseScopeAnims() const;	// Gunslinger use_scope_anims: play the "_scope" anim variants while a scope is attached
 	float ZoomMouseSenseKoef() const;	// Gunslinger zoom_mouse_sense_koef: look-sensitivity multiplier while scoped
@@ -340,7 +402,9 @@ public:
 public:
 	// Called on a shot. true = this weapon throws real cases, so the old shell particle must not be
 	// started on top of them.
-			bool gwr_ShellCasingOnShot	(const Fvector& owner_vel);
+			// ammo: the round whose case is thrown (NULL = the one being fired, still on top of the magazine)
+			bool gwr_ShellCasingOnShot	(const Fvector& owner_vel, LPCSTR ammo = NULL);
+			bool gwr_ShellParticlesWithCase	() const;	// first person: the shell particle waits for the case (a pump)
 			void gwr_ShellCasingOnUnjam	(LPCSTR ammo);	// the jam-clear animation has just been started
 			void gwr_ShellCasingOnReloadAnim	();	// a reload animation has just been started
 			void gwr_ShellCasingArmReloadBones	();	// break-action guns: the shells the full reload throws
@@ -385,6 +449,17 @@ public:
 	SShellCasingTrack	m_shell_track[2];
 	void		gwr_ShellCasingThrowWorld	(u32 idx);	// third person: the case out of the world model's port
 
+	// Break-action guns: a reload soon after a shot lets the smoke out of the opened barrels -- a particle
+	// that rides a bone of the hud model (reload_smoke_* keys, see WeaponShellCasing.cpp).
+			void gwr_ReloadSmokeStart	();		// a reload animation has just been started
+			void gwr_ReloadSmokeUpdate	();		// every frame: keeps it on its bone
+			void gwr_ReloadSmokeStop	();
+	u32					m_reload_smoke_until;	// Device.dwTimeGlobal: a reload smokes until then (0 = no shot to smoke)
+	CParticlesObject*	m_reload_smoke;
+	u16					m_reload_smoke_bone;
+	u32					m_reload_smoke_motion;	// MotionStartTm() of the reload it plays with
+	Fvector				m_reload_smoke_pos;		// a frame ago: its velocity, for the smoke to drift with the barrels
+
 	u32			 m_gwr_world_bones_sig;	// last applied attachment-state signature (u32(-1) = never)
 
 	// ---- laser designator (Gunslinger LAM port) --------------------------------------------------
@@ -398,8 +473,21 @@ public:
 			void			ScheduleLaserToggle	(bool e, u32 delay_ms);	// GS anm_laser_on/off: the beam flips mid-gesture (lock_time_start)
 			void			UpdateLaserDot		();		// per RENDER frame (from CActor::UpdateCL, after the HUD transform is fresh)
 			void			PlaceLaserDot		(const Fvector& dot, int idx);	// create/move the dot particle
-			void			UpdateCollimatorGlitch();			// GS: hide the active scope's collimator_sights_bones reticle during an emission (per render frame)
+			void			UpdateCollimatorGlitch();			// the reticle's brightness: the emission glitch and the wear (per render frame)
 protected:
+			// the collimator reticle's state (UpdateCollimatorGlitch)
+			float			m_collim_power;			// the brightness it ends at, 1 = as configured
+			bool			m_collim_emis_on;		// lit or out in the emission's flicker, held for a moment
+			float			m_collim_emis_hold;		// ...for this long yet, seconds
+			float			m_collim_flk_base;		// the failing lamp's level it settles at between its jumps
+			int				m_collim_flk_kind;		// the jump in progress: 0 none, 1 a dip, 2 a flare
+			float			m_collim_flk_t;			// how far into it, seconds
+			float			m_collim_flk_len;		// how long it lasts
+			float			m_collim_flk_amp;		// how deep / high it goes
+			float			m_collim_flk_next;		// seconds to the next jump
+			float			m_collim_flk_noise;		// the stutter on a dip, held a few ms
+			float			m_collim_flk_noise_t;
+			float			CollimatorWearFlicker	(float dt, float severity);
 			void			LoadLaserParams		();		// from cNameSect() at Load
 			void			StopLaserDot		();
 			float			TraceLaserAsView	(const Fvector& pos, const Fvector& dir, float range, CObject* ignore);	// GS TraceAsView: ray passes vision-transparent statics (alpha)
@@ -435,6 +523,10 @@ protected:
 			bool			m_bLaserDotOffInGL;			// disable_laserdot_when_gl_enabled (weapon section)
 			u32				m_dwLaserSwitchTimeToGL;	// laser_switch_time_to_gl, ms
 			u32				m_dwLaserSwitchTimeFromGL;	// laser_switch_time_from_gl, ms
+			// emission flicker (LaserSurgeOff): decided once a frame, held for a random 30..90 ms like the collimator's
+			mutable bool	m_bLaserEmisOn;
+			mutable float	m_fLaserEmisHold;
+			mutable u32		m_dwLaserEmisFrame;
 			shared_str		m_sLaserBone;				// laserdot_attach_bone
 			shared_str		m_sLaserRayBones;			// laser_ray_bones (the visible beam bones, e.g. "line, line2")
 			xr_vector<shared_str>	m_LaserParticles;	// laserdot_particle_0..N (distance-switched dot)
@@ -460,6 +552,9 @@ protected:
 			Fvector			m_vLaserBeamOffset;			// laser_beam_attach_offset: where on the laserdot_attach_bone the beam leaves (hud)
 public:
 			bool			LaserBeamHidesMesh	() const { return m_LaserBeam.beam && m_LaserBeam.hide_mesh; }
+			// an emission's electronics problems are past [gwr_blowout] laser_disabling_level: the dot, the beam
+			// (volumetric and mesh, hud and world model) and the dot's light are all out until they drop again
+			bool			LaserSurgeOff		() const;
 protected:
 
 	// ---- weapon-mounted flashlight (Gunslinger LightUtils port) ----------------------------------

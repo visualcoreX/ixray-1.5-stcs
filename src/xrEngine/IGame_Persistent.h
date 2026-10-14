@@ -81,6 +81,43 @@ public:
 	// rgb = the scope's collimator_tint / 256, so 0.5 = clear glass; the HUD glass multiplies the view
 	// behind it by 2*rgb (models_lenses.s / models_transparent.s). a = 0.5 keeps the target's alpha.
 	Fvector4						hud_collim_tint;
+	// The sky mirrored in that glass (m_collim_reflect): rgb = the coating's reflection colour times its
+	// strength for the current aim, w = F0 (share reflected looking straight in). rgb 0 = no reflection.
+	Fvector4						hud_collim_reflect;
+	// The same mirror lit by the sky alone (m_collim_reflect_ind): rgb = its colour * strength, 0 = none.
+	Fvector4						hud_collim_reflect_ind;
+	// Its shape (m_collim_reflect_shape): x = how much of the glass's dome the mirror keeps (0 = flat),
+	// y = contrast exponent on the mirrored sky's brightness (1 = as is), z = how much the glass texture's
+	// alpha masks it (0 = not at all), w = the most indirect light it takes (0 = no limit).
+	Fvector4						hud_collim_reflect_shape;
+	// The glass's highlight (m_collim_spec): x = strength (0 = none), y = glossiness (the highlight's exponent),
+	// z = how the glass texture's alpha picks the glossy parts (+1 the clear ones, -1 the opaque, 0 all alike).
+	// The shader also fades it with the glass's texture for the aim (m_collim_glass.x).
+	Fvector4						hud_collim_spec;
+	// The glass's own texture (m_collim_glass.x): multiplies its alpha, so the aim can fade it out.
+	// Only the HUD's strict-sorted pass gets it -- the binder gives the world's guns 1.
+	Fvector4						hud_collim_glass;
+	// The collimator's shader reticle (model_collim_reflect): the texture of the current pick, its colour
+	// (m_collim_mark: rgb = colour * intensity, 0 = none) and its shape in degrees of the world's view (x =
+	// width of the texture, y/z = zeroing offset right/up) -- the binder turns that into the HUD's angles.
+	// With a shader reticle on, hud_collim_glass.y = 0 hides the model's reticle (models_collimsight); on a
+	// prism sight hud_collim_glass.z = 0 hides its front aperture, crosshair_contur (model_collim_contour).
+	shared_str						hud_collim_mark_tex;
+	Fvector4						hud_collim_mark;
+	Fvector4						hud_collim_mark_shape;
+	// A prism sight (m_collim_prism): x = field of view, y = width of its soft edge -- degrees of the world's
+	// view, the binder turns them into the hud's -- z = how much the reticle darkens the view, w = the share
+	// of the sun shafts' haze over the black of the field stop (m_collim_veil.x).
+	// x = 0: not a prism, no field stop and no hud cut-out behind the eyepiece.
+	Fvector4						hud_collim_prism;
+	// The actor's sky visibility per world axis (m_collim_hemi_pos / _neg: +x+y+z / -x-y-z), from his
+	// ROS: the reflection fades where the sky it would mirror is blocked -- indoors, under a roof.
+	Fvector4						hud_collim_hemi_pos;
+	Fvector4						hud_collim_hemi_neg;
+	// The frame's average brightness as the eye has adapted to it (the tonemap's measure), read back from the
+	// GPU every few seconds by the renderer (R3); < 0 while there is none -- another renderer, or the tonemap
+	// off. What a collimator's light sensor sees: collimator_mark_auto_illum (CActor).
+	float							frame_luminance;
 	// Intoxication screen warp (gunsl_peredoz.script -> level.set_intox_screen_fx -> CActor::UpdateCL):
 	// x = fisheye strength at the screen edges (0 = none), y = world fov multiplier (1 = none, applied
 	// in CCameraManager::ApplyDevice), z = colour swim strength, w = edge wave strength.
@@ -104,9 +141,10 @@ public:
 	// bleeding) -- z = the radial blur of the edges (share of the distance from the middle), w = how far in
 	// the blood vessels have crept, 0..1 (beating).
 	Fvector4						pp_injury;
-	// The bleeding's lens droplets (CActor): x, y = the centre in screen uv, z = the radius as a share of the
-	// screen height (negative = the texture mirrored), w = its opacity, 0 = the slot is empty.
-	enum							{ PP_DROPLETS = 8 };
+	// The lens droplets (CActor): x, y = the centre in screen uv, z = the radius as a share of the screen height
+	// (negative = the texture mirrored), w = its opacity, 0 = the slot is empty -- negative for a drop of RAIN
+	// (no blood tint). Slots 0..PP_DROPLETS_BLOOD-1 are the bleeding's, the rest the rain's.
+	enum							{ PP_DROPLETS = 20, PP_DROPLETS_BLOOD = 8 };	// the rain's 12
 	// The hit flash (CActor): x = how strongly the edges are flushed dark red (the injury's mask), y = the
 	// vignette, how much of the light leaves the corners. Both 0 = nothing.
 	Fvector4						pp_hit;

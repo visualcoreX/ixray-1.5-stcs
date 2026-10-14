@@ -18,7 +18,9 @@
 typedef xr_vector<shared_str>	sh_list;
 class					CBlender_Compile;
 class					IBlender;
-#define	SHADER_PASSES_MAX		2
+// 3: the HUD's collimator glass draws its stock look, its coating tint and the sky it mirrors
+// (models_lenses.s). passes is a fixed svector -- r_End / PassEnd assert before they overrun it.
+#define	SHADER_PASSES_MAX		3
 
 #pragma pack(push,4)
 
@@ -107,6 +109,8 @@ public:
 		u32	bEmissive	:	1;
 		u32	bDistort	:	1;
 		u32	bWmark		:	1;
+		u32	bLensMask	:	1;	// an E[4] that cuts the HUD out behind a prism sight's eyepiece (r_dsgraph_render_hud)
+		u32	bHudFirst	:	1;	// strict-sorted HUD drawn before the rest of it, whatever its distance (mapHUDSortedFirst)
 	};
 public:
 	Sflags								flags;

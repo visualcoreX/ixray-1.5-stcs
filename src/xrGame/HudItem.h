@@ -270,6 +270,9 @@ public:
 	// which way the move last went, the delta it put on the hud last frame, and the pose a change of
 	// direction fades over from (weight 1 -> 0 over [weapon_lowered] anim_blend)
 	bool						m_bLowerGoingDown;
+	// the weapon-down MODE as this item saw it last frame (on and this the active item) -- a change of it,
+	// unlike a change of direction (a sprint lifts the weapon too), is the player pressing the key
+	bool						m_bLowerModeOn;
 	float						m_fLowerFromBlend;
 	Fquaternion					m_lower_cur_q,	m_lower_from_q;
 	Fvector						m_lower_cur_p,	m_lower_from_p;

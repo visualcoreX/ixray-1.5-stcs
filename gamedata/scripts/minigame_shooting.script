@@ -192,7 +192,9 @@ function CMGShooting:save(thread, params_list)
 	if(self.cur_game==nil) then
 		thread:w_stringZ("nil")
 	else
-		thread:w_stringZ(params_list.game_type)
+		-- The shooting dialog sets a new game_type before the next round starts, while cur_game is still
+		-- the last round's object; name the class actually saved, or load reads it with the wrong one.
+		thread:w_stringZ(self.cur_game.type)
 		self.cur_game:save(thread, params_list)
 	end
 --------------------------------------------------------------------------------
@@ -200,6 +202,7 @@ function CMGShooting:save(thread, params_list)
 end
 -- Load class object
 function CMGShooting:load(thread, params_list)
+	local start = thread:r_tell()
 	set_save_marker(thread, "load", false, "CMGShooting")
 --------------------------------------------------------------------------------
 	params_list.game_type = thread:r_stringZ()
@@ -258,13 +261,38 @@ function CMGShooting:load(thread, params_list)
 		self.cur_game = nil
 	else
 	    self.cur_game = minigame_shooting[type](params_list)
-	    self.cur_game:load(thread, params_list)
+	    self:load_cur_game(thread, params_list, type, start)
 	end
 	self.obj_name = params_list.obj_name
 	self.wpn_type = params_list.wpn_type
 	self.ammo = params_list.ammo
 --------------------------------------------------------------------------------
 	set_save_marker(thread, "load", true, "CMGShooting")
+end
+-- Saves made before the type fix in save() can name one class and hold another's data. The block ends
+-- with its own length (u16) and CMGShooting's right after it; find that pair, and if the named class
+-- can't read the block, skip it and start a fresh object of the named type, as the next round's reinit would.
+function CMGShooting:load_cur_game(thread, params_list, game_type, outer_start)
+	local inner_start = thread:r_tell()
+	local inner_end = nil
+	for pos = inner_start, inner_start + thread:r_elapsed() - 4 do
+		thread:r_seek(pos)
+		if(thread:r_u16()==pos-inner_start) and (thread:r_u16()==pos+2-outer_start) then
+			inner_end = pos + 2
+			break
+		end
+	end
+	thread:r_seek(inner_start)
+	if(inner_end==nil) then
+		self.cur_game:load(thread, params_list)
+		return
+	end
+	if pcall(self.cur_game.load, self.cur_game, thread, params_list) and (thread:r_tell()==inner_end) then
+		return
+	end
+	thread:r_seek(inner_end)
+	self.cur_game = minigame_shooting[game_type](params_list)
+	error_log(string.format("[minigame_shooting]: saved '%s' round held another game's data; skipped it", game_type))
 end
 -- Callback called on target hit
 function CMGShooting:hit_callback(obj, amount, local_direction, who, bone_index)

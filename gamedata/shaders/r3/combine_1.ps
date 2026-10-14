@@ -58,6 +58,10 @@ Texture2D<float> s_occ;
 #endif	//	USE_HBAO
 #endif // USE_HDAO
 
+//	Tint the lights' specular by their colour instead of leaving it white (see where spec is built).
+//	Comment out to compare against the stock look.
+#define SPEC_TINT_BY_LIGHT
+
 struct	_input
 {
 	float4	tc0	: TEXCOORD0;	// tc.xy, tc.w = tonemap scale
@@ -173,7 +177,18 @@ _out main ( _input I, uint iSample : SV_SAMPLEINDEX )
         float4         light       = float4         (L.rgb + hdiffuse, L.w)        ;
         float4         C           = D*light       ;                             // rgb.gloss * light(diffuse.specular)
 //        float3         spec        = (C.rgb*.5h + .5h)*C.w + hspecular + hspecular + hspecular;			// replicated specular
+#ifndef SPEC_TINT_BY_LIGHT
 	float3         spec        = C.www         + hspecular;      // replicated specular
+#else
+	//	The accumulator keeps the lights' specular as ONE number (Ldynamic_color.w is the mean of the
+	//	colour), so every highlight came out white -- a red laser dot left a white glare on a wet road.
+	//	Give it back the colour of the light that falls on this pixel: the diffuse in L.rgb is the same
+	//	lights summed, so its chroma is theirs. Mean-preserving, so the highlight is as bright as before.
+	//	Where hardly any light arrives the ratio means nothing: stay white there.
+	float          spec_lum    = dot( L.rgb, 1.h/3.h );
+	float3         spec_tint   = lerp( 1.h, L.rgb / max( spec_lum, 1e-4 ), saturate( spec_lum*256 ) );
+	float3         spec        = C.w*spec_tint + hspecular;      // specular, in the colour of the light
+#endif
 
 #ifdef         USE_SUPER_SPECULAR
                       spec      = (C.rgb*.5h + .5h)*C.w + hspecular        ;

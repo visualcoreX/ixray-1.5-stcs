@@ -399,6 +399,7 @@ CRenderTarget::CRenderTarget		()
 		// laser beams: smoke coverage + depth, half-res (it only has to follow puffs of smoke)
 		rt_laser_dens.create(r2_RT_laser_dens, _max(s_dwWidth / 2, 1u), _max(s_dwHeight / 2, 1u), D3DFMT_A16B16G16R16F, 1);
 		m_laser_dens_valid = false;
+		m_rain_distort_count = 0;
 		rt_Generic_1.create(r2_RT_generic1, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, SampleCount);
 		if (RImplementation.o.dx10_msaa)
 		{
@@ -730,6 +731,27 @@ CRenderTarget::CRenderTarget		()
 
 			R_CHK( HW.pDevice->CreateTexture2D(&desc, 0, &t_ss_async) );
 		}
+		// ...and for the adapted luminance the game reads (phase_luminance_readback)
+		{
+			D3D10_TEXTURE2D_DESC	desc;
+			desc.Width = 1;
+			desc.Height = 1;
+			desc.MipLevels = 1;
+			desc.ArraySize = 1;
+			desc.SampleDesc.Count = 1;
+			desc.SampleDesc.Quality = 0;
+			desc.Format = DXGI_FORMAT_R32_FLOAT;
+			desc.Usage = D3D10_USAGE_STAGING;
+			desc.BindFlags = 0;
+			desc.CPUAccessFlags = D3D10_CPU_ACCESS_READ;
+			desc.MiscFlags = 0;
+
+			R_CHK( HW.pDevice->CreateTexture2D(&desc, 0, &t_lum_read) );
+			lum_read_pending	= false;
+			lum_read_time		= 0;
+			lum_read_middlegray.set	(1.f, 0.f, 1.f);
+			lum_middlegray.set		(1.f, 0.f, 1.f);
+		}
 		// Build material(s)
 		{
 			//	Create immutable texture. 
@@ -971,6 +993,7 @@ CRenderTarget::CRenderTarget		()
 CRenderTarget::~CRenderTarget	()
 {
 	_RELEASE					(t_ss_async);
+	_RELEASE					(t_lum_read);
 
 	// Textures
 	t_material->surface_set		(NULL);

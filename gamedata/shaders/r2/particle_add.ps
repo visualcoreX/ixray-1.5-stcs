@@ -12,6 +12,13 @@ struct 	v2p
     float fog : FOG;
 };
 
+// 1 while the particle is drawn in the hud's depth slice (set by CParticleEffect::Render), 0 in the world.
+// The soft fade below takes ~0.8 m to come in full -- made for the world, where fire sinks softly into the
+// ground; at the scale of the weapon in hand it ate every sprite lying on the gun but what stuck out past
+// its outline, and the sprite read as shifted off its point. There the sprite is clipped by the geometry,
+// as particle.ps does everywhere.
+uniform float4	particle_hud_slice;
+
 //	Must be less than view near
 #define	DEPTH_EPSILON	0.1h
 
@@ -27,8 +34,9 @@ float4 main(v2p I) : COLOR
         spaceDepth = 100000.0h; //  Skybox doesn't draw into position buffer
     }
 
-	result.a *= Contrast(saturate(spaceDepth*1.3h), 2);
-	result.rgb *= Contrast(saturate(spaceDepth*1.3h), 2);
+	float fade = lerp(Contrast(saturate(spaceDepth*1.3h), 2), 1.0f, particle_hud_slice.x);
+	result.a *= fade;
+	result.rgb *= fade;
 #endif	//	USE_SOFT_PARTICLES
 
 	clip(result.a - (0.01f / 255.0f));

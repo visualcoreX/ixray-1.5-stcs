@@ -10,6 +10,10 @@ const	float				lt_inc			= 4.f	;
 const	float				lt_dec			= 2.f	;
 const	int					lt_hemisamples	= 26	;
 
+// the lights besides the sun that reach a collimator's glass on the hud (LightTrack.cpp, cl_collim_lights)
+#define COLLIM_LIGHTS	8
+void	collim_gather_lights	(Fvector4* out);
+
 class	CROS_impl			: public IRender_ObjectSpecific
 {
 public:

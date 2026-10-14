@@ -49,10 +49,26 @@ int		g_dbg_zoom_hide_crosshair	= -1;
 
 CWeapon::CWeapon()
 {
+	m_collim_power			= 1.f;
+	m_collim_emis_on		= true;
+	m_collim_emis_hold		= 0.f;
+	m_collim_flk_base		= 1.f;
+	m_collim_flk_kind		= 0;
+	m_collim_flk_t			= 0.f;
+	m_collim_flk_len		= 0.f;
+	m_collim_flk_amp		= 0.f;
+	m_collim_flk_next		= 1.f;
+	m_collim_flk_noise		= 0.f;
+	m_collim_flk_noise_t	= 0.f;
 	SetState				(eHidden);
 	SetNextState			(eHidden);
 	m_sub_state				= eSubstateReloadBegin;
 	m_bTriStateReload		= false;
+	m_reload_smoke_until	= 0;
+	m_reload_smoke			= NULL;
+	m_reload_smoke_bone		= u16(-1);
+	m_reload_smoke_motion	= 0;
+	m_reload_smoke_pos.set	(0.f, 0.f, 0.f);
 	m_vMuzzleFxOffset.set	(0.f, 0.f, 0.f);
 	m_vMuzzleFxOffsetHud.set(0.f, 0.f, 0.f);
 	m_bZoomKeyHeld			= false;
@@ -130,6 +146,9 @@ CWeapon::CWeapon()
 	m_bLaserDotOffInGL		= false;
 	m_dwLaserSwitchTimeToGL	= 500;
 	m_dwLaserSwitchTimeFromGL	= 700;
+	m_bLaserEmisOn			= true;
+	m_fLaserEmisHold		= 0.f;
+	m_dwLaserEmisFrame		= u32(-1);
 	m_iLaserParticleIdx		= -1;
 	m_vLaserOffset.set		(0.f,0.f,0.f);
 	m_vLaserWorldOffset.set	(0.f,0.f,0.f);
@@ -862,16 +881,144 @@ void CWeapon::StopLaserDot()
 	m_LaserBeam.LightOff();		// the procedural dot's surface light goes with the dot
 }
 
-// GS collimator glitch (WeaponUpdate.pas ~952): the electronic reticle of a collimator sight fails during an
-// emission. Reads `collimator_sights_bones` from the ACTIVE scope section (falls back to the weapon section) --
-// e.g. metka_cobra for the cobra red-dot -- and hides those bones on the HUD model with a probability that
-// ramps with the electronics-problems level: from the moment the level is >0 the reticle starts flickering,
-// probability = level/collimator_problems_level, reaching 1 (solid off) at the peak, then recovering on the way
-// down. The reticle stays lit normally otherwise. Only the active scope's reticle is touched.
+// The collimator's reticle failing (UpdateCollimatorGlitch), two ways.
+//
+// An emission (GS WeaponUpdate.pas ~952, there the P90's alone): the reticle's electronics flicker out with a
+// probability that ramps with the electronics-problems level -- level / collimator_problems_level (from the
+// optic's section, the addon's or the weapon's; else [gwr_blowout] collimator_disabling_level, default 6; 0 =
+// immune), solid off from that level on, back as the level falls after the surge. GS hid the reticle bones
+// anew every frame; here each lit/out spell is held 30..90 ms, so it flickers the same at any frame rate.
+// Every collimator: the shader reticle and the model one alike go through CollimatorPower.
+//
+// Wear (collimator_wear, CollimatorWear): the reticle dims with the weapon's condition, and below its flicker
+// threshold it behaves like a failing lamp -- a level it holds for a while, now and then a dip (a sharp drop
+// that stutters back up), a flare (a quick jump up, sagging back), and after either a new level a little off
+// the old. The worse the condition, the more often and the deeper (CollimatorWearFlicker).
+bool CWeapon::CollimatorWear(Fvector& w) const
+{
+	shared_str sect = CollimatorParamSection("collimator_wear");
+	if (!sect.size())	return false;
+	w = pSettings->r_fvector3(*sect, "collimator_wear");
+	clamp(w.x, 0.f, 1.f);
+	clamp(w.y, 0.f, 1.f);
+	clamp(w.z, 0.f, 1.f);
+	return true;
+}
+
+float CWeapon::CollimatorWearFlicker(float dt, float s)
+{
+	// the jumps' size: as given just under the threshold, half as large again at condition 0
+	const float A = 1.f + 0.5f * s;
+
+	// the level it holds drifts back toward the lamp's own over ~10 s
+	m_collim_flk_base	+= (1.f - m_collim_flk_base) * _min(1.f, dt * 0.1f);
+
+	float mod = 1.f;
+	if (m_collim_flk_kind)
+	{
+		m_collim_flk_t	+= dt;
+		const float u	= m_collim_flk_t / m_collim_flk_len;
+		if (u >= 1.f)
+		{
+			// over -- and as often as not it settles at another level
+			if (::Random.randF() < 0.5f)
+				m_collim_flk_base = m_collim_flk_base + ::Random.randF(-0.12f, 0.06f) * (0.5f + s) * A;
+			clamp(m_collim_flk_base, 0.55f, 1.1f);
+			m_collim_flk_kind = 0;
+		}
+		else if (1 == m_collim_flk_kind)
+		{
+			// a dip: down at once, stuttering back up
+			m_collim_flk_noise_t -= dt;
+			if (m_collim_flk_noise_t <= 0.f)
+			{
+				m_collim_flk_noise		= ::Random.randF(-0.1f, 0.1f) * (0.5f + s) * A;
+				m_collim_flk_noise_t	= ::Random.randF(0.02f, 0.05f);
+			}
+			mod = 1.f - m_collim_flk_amp * _sqrt(1.f - u) + m_collim_flk_noise * (1.f - u);
+		}
+		else
+		{
+			// a flare: up quickly, sagging back
+			mod = 1.f + m_collim_flk_amp * ((u < 0.15f) ? (u / 0.15f) : _sqr(1.f - (u - 0.15f) / 0.85f));
+		}
+	}
+	else
+	{
+		m_collim_flk_next -= dt;
+		if (m_collim_flk_next <= 0.f)
+		{
+			// the next jump: 0.3 a second just under the threshold, 2 a second at condition 0
+			const float rate	= 0.3f + 1.7f * s;
+			m_collim_flk_next	= -logf(_max(::Random.randF(), 0.01f)) / rate;	// exponential: no rhythm to it
+			const float r		= ::Random.randF();
+			if (r < 0.55f)
+			{
+				m_collim_flk_kind	= 1;
+				m_collim_flk_len	= ::Random.randF(0.15f, 0.5f);
+				m_collim_flk_amp	= _min(0.9f, ::Random.randF(0.25f, 0.5f) * (0.6f + 0.4f * s) * A);
+				m_collim_flk_noise	= 0.f;
+				m_collim_flk_noise_t= 0.f;
+			}
+			else if (r < 0.8f)
+			{
+				m_collim_flk_kind	= 2;
+				m_collim_flk_len	= ::Random.randF(0.2f, 0.6f);
+				m_collim_flk_amp	= ::Random.randF(0.15f, 0.35f) * A;
+			}
+			else
+			{
+				// only a new level
+				m_collim_flk_base	+= ::Random.randF(-0.12f, 0.08f) * (0.5f + s) * A;
+				clamp(m_collim_flk_base, 0.55f, 1.1f);
+			}
+			m_collim_flk_t		= 0.f;
+		}
+	}
+	return _max(0.f, m_collim_flk_base * mod);
+}
+
 void CWeapon::UpdateCollimatorGlitch()
 {
-	// A weapon can carry the collimator BUILT IN (the P90: no scope item, `collimator_sights_bones` on the
-	// weapon section) -- so gate on the bones key, not on an attached scope.
+	const float dt = Device.fTimeDelta;
+
+	// the emission
+	extern float g_electronics_problems;
+	float lvl = READ_IF_EXISTS(pSettings, r_float, "gwr_blowout", "collimator_disabling_level", 6.f);
+	shared_str sl = CollimatorParamSection("collimator_problems_level");
+	if (sl.size())	lvl = pSettings->r_float(*sl, "collimator_problems_level");
+	if (lvl > 0.f && g_electronics_problems > 0.f)
+	{
+		m_collim_emis_hold -= dt;
+		if (m_collim_emis_hold <= 0.f)
+		{
+			const float prob	= (g_electronics_problems >= lvl) ? 1.f : (g_electronics_problems / lvl);
+			m_collim_emis_on	= ::Random.randF() >= prob;
+			m_collim_emis_hold	= ::Random.randF(0.03f, 0.09f);
+		}
+	}
+	else
+	{
+		m_collim_emis_on	= true;
+		m_collim_emis_hold	= 0.f;
+	}
+
+	// the wear
+	float wear = 1.f;
+	Fvector w;
+	if (CollimatorWear(w))
+	{
+		const float c	= GetCondition();
+		const float k	= (w.x > EPS) ? _min(1.f, c / w.x) : 1.f;
+		wear			= w.y + (1.f - w.y) * k;
+		if (c < w.z)	wear *= CollimatorWearFlicker(dt, 1.f - c / _max(w.z, EPS));
+		else			{ m_collim_flk_kind = 0; m_collim_flk_base = 1.f; }
+	}
+	m_collim_power = m_collim_emis_on ? wear : 0.f;
+
+	// GS hide_collimator_sights_in_alter_zoom: the alter pose looks over/through the BACKUP sights, so the
+	// red-dot housing's reticle (collimator_sights_bones, the optic's section or the weapon's -- a built-in
+	// collimator like the P90's) is taken off the model for as long as that pose is held.
 	shared_str scope = IsScopeAttached() ? GetCurrentScopeSection() : shared_str();
 	LPCSTR bones = (scope.size() && pSettings->line_exist(*scope, "collimator_sights_bones"))
 					? pSettings->r_string(*scope, "collimator_sights_bones")
@@ -882,22 +1029,40 @@ void CWeapon::UpdateCollimatorGlitch()
 	attachable_hud_item* hi = GetHUDmode() ? HudItemData() : nullptr;
 	if (!hi || !hi->m_model)	return;
 
-	extern float g_electronics_problems;
-	float lvl = READ_IF_EXISTS(pSettings, r_float, "gwr_blowout", "collimator_disabling_level", 6.f);
-	if (scope.size())	lvl = READ_IF_EXISTS(pSettings, r_float, *scope, "collimator_problems_level", lvl);
-
-	BOOL show = TRUE;
-	if (lvl > 0.f && g_electronics_problems > 0.f)
-	{
-		const float prob = (g_electronics_problems >= lvl) ? 1.f : (g_electronics_problems / lvl);
-		if (::Random.randF() < prob)	show = FALSE;
-	}
-	// GS hide_collimator_sights_in_alter_zoom: the alter pose looks over/through the BACKUP sights, so the
-	// red-dot housing's reticle is taken off the model for as long as that pose is held.
-	if (show && AlterZoomBlend() > 0.5f
-		&& READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "hide_collimator_sights_in_alter_zoom", FALSE))
-		show = FALSE;
+	const BOOL show = !(AlterZoomBlend() > 0.5f
+		&& READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "hide_collimator_sights_in_alter_zoom", FALSE));
 	gwr_SetWorldBonesCSV(hi->m_model, bones, show);
+}
+
+// The emission's electronics problems glitch the laser the way they glitch the collimator
+// (UpdateCollimatorGlitch): from the first sign of the surge it drops out at random, every 30..90 ms it
+// re-rolls with a chance of being off = level / laser_disabling_level, and at or past that level it is
+// off for good until the surge ebbs. Rolled ONCE a frame -- the dot, both beams and both models ask
+// within the same frame and have to go out together, not each on its own dice.
+bool CWeapon::LaserSurgeOff() const
+{
+	extern float g_electronics_problems;	// ActorInput.cpp -- ramped by the surge
+	if (m_dwLaserEmisFrame != Device.dwFrame)
+	{
+		m_dwLaserEmisFrame	= Device.dwFrame;
+		const float lvl		= m_fLaserDisablingLevel;
+		if (lvl > 0.f && g_electronics_problems > 0.f)
+		{
+			m_fLaserEmisHold	-= Device.fTimeDelta;
+			if (m_fLaserEmisHold <= 0.f)
+			{
+				const float prob	= (g_electronics_problems >= lvl) ? 1.f : (g_electronics_problems / lvl);
+				m_bLaserEmisOn		= ::Random.randF() >= prob;
+				m_fLaserEmisHold	= ::Random.randF(0.03f, 0.09f);
+			}
+		}
+		else
+		{
+			m_bLaserEmisOn		= true;
+			m_fLaserEmisHold	= 0.f;
+		}
+	}
+	return !m_bLaserEmisOn;
 }
 
 void CWeapon::ScheduleLaserToggle(bool e, u32 delay_ms)
@@ -1011,8 +1176,9 @@ void CWeapon::UpdateLaserDot()
 		// level is high (the laser stays enabled; the dot returns after). The BEAM bones (line, line2) are
 		// hidden in lockstep by CWeaponMagazined::gwr_UpdateBones, which runs every frame and is the bone
 		// authority -- doing it here loses, because that re-applies the upgrade's show_bones each frame.
-		extern float g_electronics_problems;
-		if (m_fLaserDisablingLevel > 0.f && g_electronics_problems >= m_fLaserDisablingLevel)	{ StopLaserDot(); return; }
+		// (StopLaserDot also puts out the procedural dot's light; the volumetric beam and dot are simply not
+		// published this frame, so the renderer has nothing to draw)
+		if (LaserSurgeOff())	{ StopLaserDot(); return; }
 	}
 	// GS disable_laserdot_when_gl_enabled (WeaponUpdate.pas): with the GL raised, stop the projected dot (the
 	// far dot is what made the beam read as reaching the target -> without it the laser looks like a short stub,
@@ -1659,6 +1825,7 @@ void CWeapon::net_Destroy	()
 	//удалить объекты партиклов
 	StopFlameParticles	();
 	StopFlameParticles2	();
+	gwr_ReloadSmokeStop	();
 	StopLight			();
 	StopLaserDot		();
 	Light_Destroy		();
@@ -1844,6 +2011,7 @@ void CWeapon::OnH_B_Independent	(bool just_before_destroy)
 	// dot is restricted to the actor's own active weapon (UpdateLaserDot world-branch), so still kill it here.
 	if (!m_bFlashEnabled)		StopFlashlight();
 	StopLaserDot				();
+	gwr_ReloadSmokeStop			();
 
 	inherited::OnH_B_Independent(just_before_destroy);
 
@@ -1901,6 +2069,7 @@ void CWeapon::OnHiddenItem ()
 	m_dwAmmoCurrentCalcFrame = 0;
 	StopFlashlight	();		// don't leave the mounted light on after holstering (UpdateFlashlight only runs for the active weapon)
 	StopLaserDot	();
+	gwr_ReloadSmokeStop	();	// (nothing would move it along with the barrels any more)
 //. Hide
 	if(IsGameTypeSingle())
 		SwitchState(eHiding);
@@ -1948,6 +2117,8 @@ void CWeapon::UpdateCL		()
 {
 	inherited::UpdateCL		();
 	gwr_ShellCasingUpdate	();	// a real case waiting for the hud shell animation to leave the port
+	// the smoke out of a break-action gun's opened barrels rides a hud bone: it is moved from CActor::UpdateCL,
+	// after g_player_hud->update(), where the bone and the camera are this frame's (as the laser dot is)
 	UpdateHUDAddonsVisibility();
 	UpdateAlterZoomBlend	(Device.fTimeDelta);	// GS alter zoom: eased ramp between the two aim poses
 	UpdateScopeFade		();		// arms/disarms the zoom-in/out easing (ScopeFadeFactor)
@@ -2869,7 +3040,7 @@ void CWeapon::gwr_UpdateWorldBones(IKinematics* K, bool force)
 	shared_str cur_scope = GetCurrentScopeSection();
 	u32 sig =  (IsScopeAttached()						? 1u : 0u)
 			| ((ScopeIllumValue() > 0.f)				? 2u : 0u)
-			| ((m_bLaserInstalled && m_bLaserEnabled)	? 4u : 0u)
+			| ((m_bLaserInstalled && m_bLaserEnabled && !LaserSurgeOff())	? 4u : 0u)	// the emission puts it out (same as the hud)
 			| ((m_bFlashInstalled && m_bFlashEnabled)	? 8u : 0u)
 			| (IsBayonetActive()						? 16u : 0u)
 			| (IsGrenadeLauncherAttached()				? 32u : 0u)		// def_hide_bones_override_when_gl_attached
@@ -2992,7 +3163,7 @@ void CWeapon::gwr_UpdateWorldBones(IKinematics* K, bool force)
 	// bring it back, see the matching block in CWeaponMagazined::UpdateHUDAddonsVisibility)
 	if (m_bLaserInstalled && m_sLaserBone.size())
 		gwr_SetWorldBonesCSV(K, m_sLaserRayBones.size() ? m_sLaserRayBones.c_str() : m_sLaserBone.c_str(),
-							 m_bLaserEnabled ? TRUE : FALSE);
+							 (m_bLaserEnabled && !LaserSurgeOff()) ? TRUE : FALSE);
 
 	// bayonet blade removed when a silencer/GL occupies the barrel
 	if (m_bBayonetInstalled && !IsBayonetActive())
@@ -3419,21 +3590,261 @@ Fvector CWeapon::CollimatorTint() const
 {
 	Fvector tint;
 	tint.set(128.f, 128.f, 128.f);
-	if (!IsScopeAttached())	return tint;
-
-	shared_str sc	= GetCurrentScopeSection();
-	shared_str item	= GetAttachedScopeName();
-	if (sc.size() && pSettings->section_exist(*sc) && pSettings->line_exist(*sc, "collimator_tint"))
-		tint = pSettings->r_fvector3(*sc, "collimator_tint");
-	else if (item.size() && pSettings->section_exist(*item) && pSettings->line_exist(*item, "collimator_tint"))
-		tint = pSettings->r_fvector3(*item, "collimator_tint");
-	else if (pSettings->line_exist(cNameSect(), "collimator_tint"))
-		tint = pSettings->r_fvector3(cNameSect(), "collimator_tint");
+	shared_str sect = CollimatorParamSection("collimator_tint");
+	if (sect.size())
+		tint = pSettings->r_fvector3(*sect, "collimator_tint");
 
 	clamp(tint.x, 0.f, 255.f);
 	clamp(tint.y, 0.f, 255.f);
 	clamp(tint.z, 0.f, 255.f);
 	return tint;
+}
+
+// The same coating seen from the eye's side: the glass mirrors the sky in the coating's colour, the way a
+// fully glossy coloured specular would. The aim slides the strength from its hip value to its aim value,
+// so the mirror does not wash out the view through it. No collimator_reflect = no reflection.
+Fvector4 CWeapon::CollimatorReflect() const
+{
+	Fvector4 res;
+	res.set(0.f, 0.f, 0.f, 0.25f);
+	shared_str sf = CollimatorParamSection("collimator_reflect_f0");
+	if (sf.size())
+		res.w = pSettings->r_float(*sf, "collimator_reflect_f0");
+	clamp(res.w, 0.f, 1.f);
+
+	Fvector col;
+	if (CollimatorReflectColor("collimator_reflect", col))
+	{
+		const float k = CollimatorReflectStrength();
+		res.x = col.x * k;
+		res.y = col.y * k;
+		res.z = col.z * k;
+	}
+	return res;
+}
+
+// The same mirror where the sun does not reach it: the sky's own light (the weather's hemi colour), in a
+// colour of its own -- a coloured specular with no map. Shares the strength, F0, curve and contrast.
+Fvector4 CWeapon::CollimatorReflectIndirect() const
+{
+	Fvector4 res;
+	res.set(0.f, 0.f, 0.f, 0.f);
+	Fvector col;
+	if (CollimatorReflectColor("collimator_reflect_indirect", col))
+	{
+		const float k = CollimatorReflectStrength();
+		res.set(col.x * k, col.y * k, col.z * k, 0.f);
+	}
+	return res;
+}
+
+// collimator_reflect_strength = hip, aim, for the current aim (default 1, 0.3)
+float CWeapon::CollimatorReflectStrength() const
+{
+	Fvector2 strength;
+	strength.set(1.f, 0.3f);
+	shared_str ss = CollimatorParamSection("collimator_reflect_strength");
+	if (ss.size())
+		strength = pSettings->r_fvector2(*ss, "collimator_reflect_strength");
+	return _max(0.f, strength.x + (strength.y - strength.x) * GetInertionAimFactor());
+}
+
+// a 0..255 colour key of the optic's glass, as 0..1; false when no section has it
+bool CWeapon::CollimatorReflectColor(LPCSTR key, Fvector& col) const
+{
+	shared_str sect = CollimatorParamSection(key);
+	if (!sect.size())	return false;
+	col = pSettings->r_fvector3(*sect, key);
+	clamp(col.x, 0.f, 255.f);
+	clamp(col.y, 0.f, 255.f);
+	clamp(col.z, 0.f, 255.f);
+	col.div(255.f);
+	return true;
+}
+
+Fvector4 CWeapon::CollimatorReflectShape() const
+{
+	Fvector4 res;
+	res.set(0.35f, 1.f, 0.f, 0.f);
+	shared_str sc = CollimatorParamSection("collimator_reflect_curve");
+	if (sc.size())
+		res.x = pSettings->r_float(*sc, "collimator_reflect_curve");
+	shared_str sk = CollimatorParamSection("collimator_reflect_contrast");
+	if (sk.size())
+		res.y = pSettings->r_float(*sk, "collimator_reflect_contrast");
+	shared_str sm = CollimatorParamSection("collimator_reflect_mask");
+	if (sm.size())
+		res.z = pSettings->r_float(*sm, "collimator_reflect_mask");
+	res.w = 2.f;
+	shared_str sl = CollimatorParamSection("collimator_reflect_limit");
+	if (sl.size())
+		res.w = pSettings->r_float(*sl, "collimator_reflect_limit");
+	clamp(res.x, 0.f, 1.f);
+	clamp(res.y, 0.1f, 8.f);
+	clamp(res.z, 0.f, 1.f);
+	clamp(res.w, 0.f, 100.f);
+	return res;
+}
+
+Fvector4 CWeapon::CollimatorSpecular() const
+{
+	Fvector4 res;
+	res.set(0.f, 64.f, 0.f, 0.f);
+	shared_str ss = CollimatorParamSection("collimator_specular");
+	if (ss.size())
+	{
+		const Fvector2 v = pSettings->r_fvector2(*ss, "collimator_specular");
+		res.x = v.x;
+		res.y = v.y;
+	}
+	shared_str sm = CollimatorParamSection("collimator_specular_mask");
+	if (sm.size())
+		res.z = pSettings->r_float(*sm, "collimator_specular_mask");
+	clamp(res.x, 0.f, 100.f);
+	clamp(res.y, 1.f, 4096.f);
+	clamp(res.z, -1.f, 1.f);
+	return res;
+}
+
+float CWeapon::CollimatorGlassStrength() const
+{
+	Fvector2 strength;
+	strength.set(1.f, 1.f);
+	shared_str sect = CollimatorParamSection("collimator_glass_strength");
+	if (sect.size())
+		strength = pSettings->r_fvector2(*sect, "collimator_glass_strength");
+	return _max(0.f, strength.x + (strength.y - strength.x) * GetInertionAimFactor());
+}
+
+int CWeapon::CollimatorMarkCount() const
+{
+	shared_str sect = CollimatorParamSection("collimator_marks");
+	if (!sect.size())	return 0;
+	return _GetItemCount(pSettings->r_string(*sect, "collimator_marks"));
+}
+
+// The brightness step picks the mark: the same keys, sounds and per-optic memory (saved with the game) as an
+// optical sight's reticle levels -- LoadScopeIllumParams gives an optic with marks one step per mark.
+shared_str CWeapon::CollimatorMarkTexture() const
+{
+	shared_str sect = CollimatorParamSection("collimator_marks");
+	if (!sect.size())	return shared_str();
+	LPCSTR list = pSettings->r_string(*sect, "collimator_marks");
+	const int n = _GetItemCount(list);
+	if (n <= 0)			return shared_str();
+	int i = CollimatorMarkIllumSwitch() ? 0 : m_scope_illum_step;	// the steps light it up instead
+	clamp(i, 0, n - 1);
+	string_path one;
+	_GetItem(list, i, one);
+	return shared_str(one);
+}
+
+Fvector4 CWeapon::CollimatorMarkColor() const
+{
+	Fvector col;
+	col.set(255.f, 255.f, 255.f);
+	shared_str sc = CollimatorParamSection("collimator_mark_color");
+	if (sc.size())
+		col = pSettings->r_fvector3(*sc, "collimator_mark_color");
+	clamp(col.x, 0.f, 255.f);
+	clamp(col.y, 0.f, 255.f);
+	clamp(col.z, 0.f, 255.f);
+	float k = 1.f;
+	shared_str si = CollimatorParamSection("collimator_mark_intensity");
+	if (si.size())
+		k = _max(0.f, pSettings->r_float(*si, "collimator_mark_intensity"));
+
+	Fvector4 res;
+	res.set(col.x / 255.f * k, col.y / 255.f * k, col.z / 255.f * k, 1.f);
+	return res;
+}
+
+Fvector4 CWeapon::CollimatorMarkShape() const
+{
+	Fvector4 res;
+	res.set(2.f, 0.f, 0.f, 0.f);
+	shared_str ss = CollimatorParamSection("collimator_mark_size");
+	if (ss.size())
+		res.x = pSettings->r_float(*ss, "collimator_mark_size");
+	clamp(res.x, 0.01f, 90.f);
+	shared_str so = CollimatorParamSection("collimator_mark_offset");
+	if (so.size())
+	{
+		Fvector2 o = pSettings->r_fvector2(*so, "collimator_mark_offset");
+		res.y = o.x;
+		res.z = o.y;
+	}
+	return res;
+}
+
+Fvector4 CWeapon::CollimatorPrism() const
+{
+	Fvector4 res;
+	res.set(0.f, 1.f, 0.f, 0.f);
+	shared_str sp = CollimatorParamSection("collimator_prism");
+	if (sp.size() && pSettings->r_bool(*sp, "collimator_prism"))
+	{
+		res.x = 13.f;
+		shared_str sf = CollimatorParamSection("collimator_prism_fov");
+		if (sf.size())	res.x = pSettings->r_float(*sf, "collimator_prism_fov");
+		shared_str ss = CollimatorParamSection("collimator_prism_fov_soft");
+		if (ss.size())	res.y = pSettings->r_float(*ss, "collimator_prism_fov_soft");
+		res.w = 0.5f;
+		shared_str sv = CollimatorParamSection("collimator_prism_veil");
+		if (sv.size())	res.w = pSettings->r_float(*sv, "collimator_prism_veil");
+		clamp(res.x, 0.1f, 170.f);
+		clamp(res.y, 0.f, 90.f);
+		clamp(res.w, 0.f, 1.f);
+	}
+	shared_str sd = CollimatorParamSection("collimator_mark_dark");
+	if (sd.size())		res.z = pSettings->r_float(*sd, "collimator_mark_dark");
+	clamp(res.z, 0.f, 1.f);
+	return res;
+}
+
+bool CWeapon::CollimatorMarkIllumSwitch() const
+{
+	shared_str sect = CollimatorParamSection("collimator_mark_illum_switch");
+	return sect.size() && pSettings->r_bool(*sect, "collimator_mark_illum_switch");
+}
+
+// collimator_marks_bright_first = true: the marks are brightness levels listed from the brightest down (the
+// EOTech's), so the first -- the default step -- is the full glow, and "brighter" is a step back.
+bool CWeapon::CollimatorMarksBrightFirst() const
+{
+	shared_str sect = CollimatorParamSection("collimator_marks_bright_first");
+	return sect.size() && pSettings->r_bool(*sect, "collimator_marks_bright_first");
+}
+
+bool CWeapon::CollimatorMarkAutoIllum(Fvector& range) const
+{
+	shared_str sect = CollimatorParamSection("collimator_mark_auto_illum");
+	if (!sect.size())	return false;
+	LPCSTR v = pSettings->r_string(*sect, "collimator_mark_auto_illum");
+	range.set(0.f, 0.f, 3.f);
+	sscanf(v, "%f,%f,%f", &range.x, &range.y, &range.z);
+	if (range.z < 0.f)	range.z = 0.f;
+	return true;
+}
+
+// Where an optic's glass keys live: the scope section, then its addon item, then the weapon. Empty when
+// no scope is on or none of them has the key.
+shared_str CWeapon::CollimatorParamSection(LPCSTR key) const
+{
+	if (IsScopeAttached())
+	{
+		shared_str sc	= GetCurrentScopeSection();
+		if (sc.size() && pSettings->section_exist(*sc) && pSettings->line_exist(*sc, key))
+			return sc;
+		shared_str item	= GetAttachedScopeName();
+		if (item.size() && pSettings->section_exist(*item) && pSettings->line_exist(*item, key))
+			return item;
+	}
+	// ...and the weapon's own section, scope or no scope: a collimator built into the gun (the P90's,
+	// scope_status = 0) has no scope section at all, its keys sit in the weapon's
+	if (pSettings->line_exist(cNameSect(), key))
+		return cNameSect();
+	return shared_str();
 }
 
 // GS GetLensFOV: the FOV (degrees) to render the world at for the scope lens frame -- the base world FOV
@@ -3801,6 +4212,18 @@ void CWeapon::LoadScopeIllumParams()
 	m_scope_illum_jitter= upgraded_float("jitter_brightness",    m_scope_illum_jitter);
 	m_scope_illum_max	/= 3.f;		// GS divides the configured brightness by 3
 	m_scope_illum_min	/= 3.f;
+	// A collimator with shader reticles: the steps pick the reticle, one per mark. Its own steps_brightness
+	// does not count -- the scope sections inherit one from their base (scope_ak74m_base), and a red dot
+	// has no brightness for the steps to drive anyway.
+	// A reticle whose glow is switched by hand has two: off and on. A single reticle left to itself has none
+	// -- the keys do nothing there (the Rakurs: its glow is the light sensor's alone).
+	{
+		const int marks = CollimatorMarkCount();
+		if (marks > 0 && CollimatorMarkIllumSwitch())
+			m_scope_illum_steps = 1;
+		else if (marks > 0)
+			m_scope_illum_steps = marks - 1;
+	}
 	// The step the player picked for this optic is remembered per scope, and THAT is the truth -- the
 	// working step is only a clamped copy. On a save load CWeapon::load restores it and calls this at once,
 	// but the upgrades are installed only afterwards: the gauss, whose whole brightness block comes with
@@ -4618,10 +5041,12 @@ void CWeapon::ApplyScopeIllumUI()
 
 void CWeapon::ChangeScopeIllum(int delta)
 {
-	if (!IsScopeAttached())	return;
+	// a scope, or a collimator built into the gun with shader reticles to step through (CollimatorParamSection)
+	if (!IsScopeAttached() && CollimatorMarkCount() <= 0)	return;
 	LoadScopeIllumParams();					// pick up the current scope's range (scope may have changed)
 	const int prev_step = m_scope_illum_step;
-	m_scope_illum_step += delta;
+	// delta is the key: +1 = brighter. Marks listed brightest first step the other way (the sound still follows the key)
+	m_scope_illum_step += (CollimatorMarkCount() > 0 && CollimatorMarksBrightFirst()) ? -delta : delta;
 	clamp(m_scope_illum_step, 0, m_scope_illum_steps);
 	// Gunslinger scope-brightness click (snd_scope_brightness_plus/minus) -- only when the step
 	// actually moved, so no sound at the min/max ends. Optional: silent if the weapon has no key.
@@ -5235,12 +5660,14 @@ void CHudItem::ResetLoweredPose()
 {
 	m_fLoweredFactor		= 0.f;
 	m_bLowerGoingDown		= false;
+	m_bLowerModeOn			= false;
 	m_fLowerFromBlend		= 0.f;
 	if (CActor* a = smart_cast<CActor*>(object().H_Parent()))
 		if (a->InBaseZone() && CActor::IsLowerable(&item()))
 		{
 			m_fLoweredFactor	= 1.f;
 			m_bLowerGoingDown	= true;
+			m_bLowerModeOn		= true;	// came out already down: nothing was pressed
 		}
 }
 
@@ -5248,6 +5675,23 @@ void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 {
 	const bool down	= pActor->IsWeaponLowered() && pActor->inventory().ActiveItem() == &item() &&
 					  !(pActor->MovingState() & mcSprint);
+	// The left hand with a detector does what it does when this weapon is put away / drawn: the mode going on
+	// plays its anm_wpn_hide, going off its anm_wpn_show (TryPlayDetectorCompanion: only with this weapon in
+	// the right hand and a detector in the left). Keyed to the MODE, not to the direction of the move: a
+	// sprint lifts the weapon and puts it back down by itself, and the hand must then play its own sprint
+	// end, not a holster. Nothing while sprinting (the weapon does not move then), nothing when it is
+	// already where the mode puts it.
+	{
+		const bool	mode	= pActor->IsWeaponLowered() && pActor->inventory().ActiveItem() == &item();
+		if (mode != m_bLowerModeOn)
+		{
+			m_bLowerModeOn		= mode;
+			const bool	moves	= !(pActor->MovingState() & mcSprint) &&
+								  (mode ? m_fLoweredFactor < 1.f : m_fLoweredFactor > 0.f);
+			if (moves && pActor->inventory().ActiveItem() == &item())
+				TryPlayDetectorCompanion(shared_str(mode ? "anm_hide" : "anm_show"));
+		}
+	}
 	const SLowerPair&	P	= lower_anims(HudSection());
 	const SLowerAnim&	A	= P.down ? *P.down : s_no_anim;
 	const SLowerAnim&	U	= P.up ? *P.up : s_no_anim;
@@ -5304,6 +5748,7 @@ void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 		// put the bone this frame, along its axes -- not about the hud origin. With F = the bone's frame
 		// (hands attach * bone model matrix) the whole hud gets F * d * F^-1, which leaves bip01 at F * d.
 		Fmatrix		F;
+		const Fmatrix	before	= trans;
 		if (g_player_hud && g_player_hud->hands_bone_frame("bip01", F))
 		{
 			Fmatrix Fi;	Fi.invert(F);
@@ -5312,6 +5757,8 @@ void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 		}
 		else
 			trans.mulB_43	(d);
+		// so that a detector in the left hand can stay up (player_hud::update)
+		if (g_player_hud)	g_player_hud->set_lowered_delta(before, trans);
 	}
 }
 

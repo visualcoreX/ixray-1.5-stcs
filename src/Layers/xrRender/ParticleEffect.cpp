@@ -449,6 +449,53 @@ IC BOOL		particle_is_lit		(CPEDef* def)
 	}
 	return	def->m_LitBlend > 0;
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// A world effect drawn in the hud's depth slice (flRT_HUDworld).
+//
+// The hud is drawn into a slice of its own at the front of the depth range (rmNear), so any pixel of the
+// weapon or the hands wins the depth test against anything in the world, however near. Smoke that has
+// left the first-person weapon -- out of the muzzle, the ejection port, the opened barrels -- is a world
+// effect (it stays where it came out), and drawn with the world it is covered by the whole weapon: only
+// what sticks out past its outline is seen, and the cloud reads as sitting behind the gun.
+// So while such an effect is near the eye it is drawn with the hud's projection, in the hud's slice, and
+// through a world matrix that turns the world into the hud's space. The game put it there from a hud
+// point by squeezing the depth along the view by tan(hud/2) / tan(world/2) and keeping the part across it
+// (CShootingObject::HudFxPointToWorld); this stretches the depth back by the inverse:
+//		x' = cam + A (x - cam),		A = I + (K - 1) d d^T,		K = tan(world/2) / tan(hud/2)
+// The hud projection then shows every point exactly where, and as large as, the world one would (the
+// screen offset is across / (along * tan(fov/2)), and along grows by K as tan shrinks by it), so the
+// picture does not change -- only the depth does, and it is the hud's own: the smoke at the muzzle is at
+// the muzzle's depth, in front of what is behind it and behind what is in front of it.
+// The price: in the hud's slice the world does not cover it either. So only near the eye, where nothing
+// else is, as a rule; further out it is drawn with the world, and the hand-over is not seen, the two
+// pictures being the same. The matrix is built from this frame's camera, so it is right whatever the
+// camera has done since the effect was let out.
+static const float	PARTICLE_HUD_WORLD_REACH	= 1.5f;		// meters from the eye to the centre of the effect
+
+BOOL	CParticleEffect::HudWorldNow	(Fmatrix& W)
+{
+	if (!m_RT_Flags.is(flRT_HUDworld) || m_RT_Flags.is(flRT_HUDmode))	return FALSE;
+
+	Fvector	C	= vis.sphere.P;
+	if (m_RT_Flags.is(flRT_XFORM))	m_XFORM.transform_tiny(C);
+	if (Device.vCameraPosition.distance_to_sqr(C) > PARTICLE_HUD_WORLD_REACH*PARTICLE_HUD_WORLD_REACH)	return FALSE;
+
+	const float	t_hud	= tanf(deg2rad(0.5f * psHUD_FOV * Device.fFOV_HUD));
+	const float	t_wld	= tanf(deg2rad(0.5f * Device.fFOV));
+	if (t_hud <= EPS_L || t_wld <= EPS_L)							return FALSE;
+	const float	k1		= t_wld / t_hud - 1.f;
+
+	const Fvector&	d	= Device.vCameraDirection;
+	const Fvector&	cam	= Device.vCameraPosition;
+	W.identity	();
+	W.i.set		(1.f + k1 * d.x * d.x,	k1 * d.x * d.y,			k1 * d.x * d.z);
+	W.j.set		(k1 * d.y * d.x,		1.f + k1 * d.y * d.y,	k1 * d.y * d.z);
+	W.k.set		(k1 * d.z * d.x,		k1 * d.z * d.y,			1.f + k1 * d.z * d.z);
+	Fvector	a;	W.transform_dir	(a, cam);
+	W.c.sub		(cam, a);
+	return		TRUE;
+}
 #endif	// _EDITOR
 
 void CParticleEffect::Render(float )
@@ -558,7 +605,9 @@ void CParticleEffect::Render(float )
 #ifndef _EDITOR
 				Fmatrix Pold						= Device.mProject;
 				Fmatrix FTold						= Device.mFullTransform;
-				if(GetHudMode())
+				Fmatrix W;
+				const BOOL bHudWorld				= HudWorldNow(W);
+				if(GetHudMode() || bHudWorld)
 				{
 					Device.mProject.build_projection(	deg2rad(psHUD_FOV*Device.fFOV_HUD), 
 														Device.fASPECT, 
@@ -568,18 +617,37 @@ void CParticleEffect::Render(float )
 					Device.mFullTransform.mul	(Device.mProject, Device.mView);
 					RCache.set_xform_project	(Device.mProject);
 					RImplementation.rmNear		();
-					ApplyTexgen(Device.mFullTransform);
+					// The soft-particle shaders (particle_add, particle_distort...) look the scene's position
+					// buffer up through this texgen, at the pixel the particle covers. In the hud's slice the
+					// particle is drawn through W as well (m_WVP), so the texgen must have it too: without it the
+					// lookup landed K times further from the middle of the screen than the sprite, and the sprite
+					// faded out wherever the weapon happened to be at that other pixel, as if behind it.
+					if (bHudWorld)
+					{
+						Fmatrix	FTW;	FTW.mul		(Device.mFullTransform, W);
+						ApplyTexgen		(FTW);
+					}
+					else
+						ApplyTexgen		(Device.mFullTransform);
 				}
 #endif
 
+#ifndef _EDITOR
+				RCache.set_xform_world	(bHudWorld ? W : Fidentity);
+				// in the hud's slice no soft fade (particle_add.ps): it is ~0.8 m deep, and at the scale of the
+				// weapon in hand it ate every sprite lying on the gun. Set on every draw, both ways: a shader
+				// constant keeps whatever the last draw left in it.
+				RCache.set_c			("particle_hud_slice", (GetHudMode() || bHudWorld) ? 1.f : 0.f, 0.f, 0.f, 0.f);
+#else
 				RCache.set_xform_world	(Fidentity);
+#endif
 				RCache.set_Geometry		(geom);
 
                 RCache.set_CullMode		(m_Def->m_Flags.is(CPEDef::dfCulling)?(m_Def->m_Flags.is(CPEDef::dfCullCCW)?CULL_CCW:CULL_CW):CULL_NONE);
 				RCache.Render	   		(D3DPT_TRIANGLELIST,dwOffset,0,dwCount,0,dwCount/2);
                 RCache.set_CullMode		(CULL_CCW	); 
 #ifndef _EDITOR
-				if(GetHudMode())
+				if(GetHudMode() || bHudWorld)
 				{
 					RImplementation.rmNormal	();
 					Device.mProject				= Pold;

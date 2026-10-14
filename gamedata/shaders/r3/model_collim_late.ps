@@ -1,0 +1,54 @@
+#include "common.h"
+#include "collim.h"
+
+// A prism sight's black field stop over the FINISHED picture -- pass 1 of the eyepiece's l_special
+// (models_lenses.s), drawn by r_dsgraph_render_lens_late once the bloom, the sun's shafts and the lens
+// flares are in. The hud's own glass blacks the stop out in the forward pass, but all those are added on top
+// of it afterwards, and the bright world behind the glass shone back through.
+//
+// So where the stop is black, the picture is replaced (blend one, invsrcalpha, alpha = how black): by the glass
+// again exactly as model_collim_glass draws it -- its texture, the sky it mirrors, the reticle's glow behind
+// it -- and over all of it an even haze: the sun's shafts between the eye and the glass, as
+// accum_volumetric_sun.ps weighs them (the sun's colour, more of it the more the eye faces the sun), a share
+// m_collim_veil.x of their strength, only while they are on, and as far as the sun reaches the air just
+// before the eye along the pixel's ray: the shafts' own pass (accum_volumetric_sun.ps) looks that up in the
+// sun's shadow map and leaves it in its alpha -- in a shadow, behind a wall or a tree, the air is dark, in a
+// beam falling on the gun it is lit like the gun. Where the stop lets the view through, nothing changes.
+uniform	float4	m_collim_veil;			// x = the haze's share, y = 1 while the sun's shafts are on
+uniform	float4	sun_shafts_intensity;	// the weather's (r3.cpp)
+#ifndef USE_MSAA
+Texture2D							s_vollight;		// the sun's shafts, a = the lit air before the eye
+#else
+Texture2DMS<float4, MSAA_SAMPLES>	s_vollight;
+#endif
+
+float4 main( v2p_collim I, float4 pos2d : SV_Position ) : SV_Target
+{
+	clip( m_collim_prism.w - 0.5 );
+
+	float3	v		= normalize( I.pos_w - eye_position );
+	float	ad;
+	float2	t		= collim_sight( v, I.axis_w, I.right_w, ad );
+	float	dark	= 1 - collim_field_stop( t, ad );
+	clip( dark - 0.001 );
+
+	float	facing	= 0.8 * ( 0.5 * -dot( L_sun_dir_w, v ) + 0.5 ) + 0.2;
+#ifndef USE_MSAA
+	float	sunlit	= s_vollight.Load( int3(pos2d.xy, 0) ).a;
+#else
+	float	sunlit	= s_vollight.Load( int2(pos2d.xy), 0 ).a;
+#endif
+	float3	haze	= L_sun_color * sun_shafts_intensity.x * facing * sunlit * m_collim_veil.x * m_collim_veil.y;
+
+	float3	n		= normalize( I.norm_w );
+	float3	ng		= face_eye( n, v );
+	float3	na		= face_eye( normalize(I.axis_w), v );
+	float4	t_base	= s_base.Sample( smp_base, I.tc0 );
+	collim_lamps_t	lamps	= collim_lamps( I.pos_w, ng, v );
+	float3	glass	= collim_glass_light( n, lamps.diff ) * t_base.rgb;
+	float	a		= t_base.a * m_collim_glass.x;
+	float3	refl	= collim_reflection( v, ng, na, lamps.omni ) * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
+
+	float3	res		= collim_glow( t, ad ) * (1 - a) + glass * a + refl + collim_specular( v, ng, t_base.a, lamps.spec ) + haze;
+	return	float4( res * dark, dark );
+}

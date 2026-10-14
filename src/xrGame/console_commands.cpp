@@ -1915,6 +1915,16 @@ public:
 		Msg("- set_time: %02d.%02d (+%u min)", h, m, (delta + 30000) / 60000);
 	}
 
+	virtual void Status(TStatus& S) {
+		if (!g_pGameLevel || !Level().game) {
+			xr_strcpy(S, "no game");
+			return;
+		}
+		u32 year = 0, month = 0, day = 0, hours = 0, mins = 0, secs = 0, ms = 0;
+		split_time(Level().GetGameTime(), year, month, day, hours, mins, secs, ms);
+		xr_sprintf(S, "%02d.%02d", hours, mins);
+	}
+
 	virtual void Info(TInfo& I) {
 		xr_strcpy(I, "set the time of day, HH.MM or HH (moves forward, to tomorrow if already past)");
 	}

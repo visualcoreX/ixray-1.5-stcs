@@ -183,6 +183,7 @@ void	CBlender_Compile::PassEnd			()
 #else	//	USE_DX10
 	ref_pass	_pass_		= DEV->_CreatePass			(state,ps,vs,ct,T,M,C);
 #endif	//	USE_DX10
+	R_ASSERT2				(SH->passes.size() < SHADER_PASSES_MAX, "shader element has more passes than SHADER_PASSES_MAX");
 	SH->passes.push_back	(_pass_);
 }
 

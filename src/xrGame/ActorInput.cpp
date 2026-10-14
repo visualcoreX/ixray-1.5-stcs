@@ -160,11 +160,12 @@ void CActor::IR_OnKeyboardPress(int cmd)
 
 	if (!g_Alive()) return;
 
-	// GS scope reticle/NV illumination up/down (scope_brightness_plus/minus) -- only while aiming a scope.
+	// GS scope reticle/NV illumination up/down (scope_brightness_plus/minus) -- only while aiming a scope,
+	// or a collimator built into the gun that has shader reticles (the P90's: no scope addon at all).
 	if (cmd==kSCOPE_ILLUM_INC || cmd==kSCOPE_ILLUM_DEC)
 	{
 		CWeapon* w = smart_cast<CWeapon*>(inventory().ActiveItem());
-		if (w && w->IsZoomed() && w->IsScopeAttached())
+		if (w && w->IsZoomed() && (w->IsScopeAttached() || w->CollimatorMarkCount() > 0))
 			w->ChangeScopeIllum(cmd==kSCOPE_ILLUM_INC ? +1 : -1);
 		return;
 	}
@@ -1555,6 +1556,9 @@ void CActor::ToggleWeaponLowered()
 	}
 	// down only from a weapon at rest: not while it reloads, shoots, comes out or plays a gesture
 	if (w->GetState() != CHUDState::eIdle || w->IsPending() || gwr_actor_hud_busy(this))	return;
+	// ...and not while aiming: aimed, or still on the way in or out of the aim
+	if (CWeapon* wpn = smart_cast<CWeapon*>(w))
+		if (wpn->IsZoomed() || wpn->GetZoomRotationFactor() > 0.f)	return;
 	lowered_zoom_out	(w);
 	m_bWeaponLowered	= true;
 	m_wpn_lowered_id	= w->object().ID();

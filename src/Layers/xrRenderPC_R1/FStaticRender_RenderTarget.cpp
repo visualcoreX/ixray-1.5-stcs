@@ -141,12 +141,12 @@ void CRenderTarget::calc_tc_duality_ss	(Fvector2& r0, Fvector2& r1, Fvector2& l0
 	l0.set(p0.x+shift_u,p0.y+shift_v);	l1.set(p1.x,p1.y);
 }
 
-// any of the bleeding's lens droplets on screen (pp_droplets, CActor)
+// any lens droplet on screen (pp_droplets, CActor; w < 0 is a drop of rain)
 static bool NeedDroplets()
 {
 	if (!g_pGamePersistent)	return false;
 	for (int i = 0; i < IGame_Persistent::PP_DROPLETS; ++i)
-		if (g_pGamePersistent->pp_droplets[i].w > 0.f)	return true;
+		if (g_pGamePersistent->pp_droplets[i].w != 0.f)	return true;
 	return false;
 }
 
@@ -190,7 +190,7 @@ BOOL CRenderTarget::NeedPostProcess()
 					|| g_pGamePersistent->pp_hit.x > 0.f		// ...and a hit's flash
 					|| g_pGamePersistent->pp_hit.y > 0.f
 					|| g_pGamePersistent->pp_blur > 0.f
-					|| NeedDroplets());							// ...and the bleeding's droplets
+					|| NeedDroplets());							// ...and the lens droplets (blood or rain)
 	return _blur || _gray || _noise || _dual || _cbase || _cadd || _menu_pp || _scope;
 }
 

@@ -543,6 +543,11 @@ player_hud::player_hud()
 	m_restore_slot			= NO_ACTIVE_SLOT;
 	m_restore_detector		= false;
 	m_want_frames			= 0;
+	m_lower_before.identity	();
+	m_lower_after.identity	();
+	m_lower_reported		= false;
+	m_left_hold.identity	();
+	m_left_hold_on			= false;
 }
 
 
@@ -716,6 +721,8 @@ void player_hud::load_now(const shared_str& player_hud_sect)
 	}
 	m_model->dcast_PKinematics()->CalculateBones_Invalidate	();
 	m_model->dcast_PKinematics()->CalculateBones(TRUE);
+
+	setup_left_hold				();
 
 	// Warm the hud visuals of the item-use PHANTOMS. They are created the first time the gesture runs
 	// (attachable_hud_item::load -> model_Create), which for the 3D PDA means loading its model and
@@ -966,6 +973,7 @@ void player_hud::update(const Fmatrix& cam_trans)
 {
 	Fmatrix	trans					= cam_trans;
 	update_inertion					(trans);
+	m_lower_reported				= false;
 	update_additional				(trans);
 
 	// SNAP FIX (#6): attach_pos()/attach_rot() return the WEAPON[0]'s hands_attach, or the DETECTOR[1]'s when
@@ -1002,6 +1010,24 @@ void player_hud::update(const Fmatrix& cam_trans)
 	m_attach_offset.setHPB			(ypr.x,ypr.y,ypr.z);
 	m_attach_offset.translate_over	(s_pos);
 	m_transform.mul					(trans, m_attach_offset);
+
+	// Weapon down with a detector in the left hand: the motion is the weapon's, the detector is not to
+	// go down with it. The motion was put on the hud base as a whole (CHudItem::UpdateLoweredPose), and
+	// after it the weapon's other offsets and the detector's own were added on top. Had the motion not
+	// been there, the base would be  before * after^-1 * trans  -- the same later offsets, without it. The
+	// left arm's root bones get the difference in model space, so the arm and the detector it holds stand
+	// exactly where they would, and the right arm with the weapon goes down. Without a detector the left
+	// hand is on the weapon and goes down with it, as before.
+	m_left_hold_on					= m_lower_reported && m_attached_items[0] && m_attached_items[1] && !m_left_roots.empty();
+	if (m_left_hold_on)
+	{
+		Fmatrix	after_i;	after_i.invert	(m_lower_after);
+		Fmatrix	base;		base.mul		(m_lower_before, after_i);
+		base.mulB_44					(trans);
+		base.mulB_44					(m_attach_offset);			// where the hands would stand
+		Fmatrix	cur_i;		cur_i.invert	(m_transform);
+		m_left_hold.mul					(cur_i, base);				// model space: where they stand -> where they would
+	}
 	// insert inertion here
 
 	m_model->UpdateTracks				();
@@ -1592,4 +1618,34 @@ void gwr_UpdateHudMove(u32 mreal, u32 mwish, u32 dt)
 	if (s_hm.from_rlook_t > dt)		s_hm.from_rlook_t -= dt;	else s_hm.from_rlook_t = 0;
 	if (s_hm.to_llook_t > dt)		s_hm.to_llook_t -= dt;		else s_hm.to_llook_t = 0;
 	if (s_hm.from_llook_t > dt)		s_hm.from_llook_t -= dt;	else s_hm.from_llook_t = 0;
+}
+
+// The left arm's root bones: the bones of the "left_hand" part (the one the detector animations play on)
+// whose parent is not in that part. A callback on them carries the whole arm, the detector included --
+// children are built from their parent's matrix after the callback (CKinematics::CLBone).
+void player_hud::setup_left_hold()
+{
+	m_left_roots.clear		();
+	m_left_hold_on			= false;
+	if (!m_model)			return;
+	IKinematics*	K		= m_model->dcast_PKinematics();
+	const u16		pid		= m_model->partitions().part_id("left_hand");
+	if (pid == u16(-1))		return;
+	const xr_vector<u32>&	bones	= m_model->partitions().part(pid).bones;
+	for (u32 i = 0; i < bones.size(); ++i)
+	{
+		const u16	id		= u16(bones[i]);
+		const u16	parent	= K->LL_GetData(id).GetParentID();
+		if (parent != BI_NONE && std::find(bones.begin(), bones.end(), u32(parent)) != bones.end())
+			continue;
+		m_left_roots.push_back	(id);
+		K->LL_GetBoneInstance(id).set_callback(bctCustom, left_hold_callback, this);
+	}
+}
+
+void player_hud::left_hold_callback(CBoneInstance* B)
+{
+	player_hud*	H	= static_cast<player_hud*>(B->callback_param());
+	if (H && H->m_left_hold_on)
+		B->mTransform.mulA_43	(H->m_left_hold);
 }

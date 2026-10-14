@@ -131,6 +131,7 @@ float		ps_r__ssaDONTSORT			=  32.f	;					//RO
 float		ps_r__ssaHZBvsTEX			=  96.f	;					//RO
 
 int			ps_r__tf_Anisotropic		= 4		;
+int			ps_r__frame_lum_log			= 0		;	// log the frame luminance read back (r3, every 5 s): collimator_mark_auto_illum tuning
 
 // Upload a texture only when something actually draws with it. ON by default: hidden addon bones,
 // weapons sitting in NPC inventories and LOD-only parts otherwise cost their full surface, which is
@@ -261,6 +262,12 @@ float		ps_r3_dyn_wet_surf_hud		= 0.7f;				// how much of the wetness lands on th
 															// first-person models (0 = the old dry gun)
 float		ps_r3_dyn_wet_surf_hud_tile	= 6.0f;				// ...and how tight the drop pattern tiles
 															// on them (they are ~1/3 m across)
+float		ps_r__rain_lights			= 1.0f;				// how strongly the dynamic lights light up
+															// the rain drops and splashes (0 = off)
+float		ps_r__rain_ambient			= 0.5f;				// how far the rain follows the weather's
+															// ambient+hemi+sun (0 = rain_color as is)
+float		ps_r__rain_distort			= 0.75f;			// refraction through the rain streaks, R3
+															// (0 = off)
 
 
 //- Mad Max
@@ -710,6 +717,7 @@ int		ps_lens_skip_present	= 1;
 
 void		xrRender_initconsole	()
 {
+	CMD4(CCC_Integer,	"r__frame_lum_log",		&ps_r__frame_lum_log,	0,		1		);
 	CMD4(CCC_Integer,	"lens_skip_present",	&ps_lens_skip_present,	0,	1);
 
 	CMD3(CCC_Preset,	"_preset",				&ps_Preset,	qpreset_token	);
@@ -957,6 +965,9 @@ void		xrRender_initconsole	()
 	CMD4(CCC_Float,		"r3_dynamic_wet_surfaces_bias",	&ps_r3_dyn_wet_surf_bias,	0.001f,	1.f	);
 	CMD4(CCC_Float,		"r3_dynamic_wet_surfaces_hud",	&ps_r3_dyn_wet_surf_hud,	0.f,	1.f	);
 	CMD4(CCC_Float,		"r3_dynamic_wet_surfaces_hud_tile",&ps_r3_dyn_wet_surf_hud_tile,1.f,	32.f);
+	CMD4(CCC_Float,		"r__rain_lights",				&ps_r__rain_lights,			0.f,	4.f	);
+	CMD4(CCC_Float,		"r__rain_ambient",				&ps_r__rain_ambient,		0.f,	1.f	);
+	CMD4(CCC_Float,		"r__rain_distort",				&ps_r__rain_distort,		0.f,	4.f	);
 
 	CMD3(CCC_Mask,		"r3_volumetric_smoke",			&ps_r2_ls_flags,			R3FLAG_VOLUMETRIC_SMOKE);
 

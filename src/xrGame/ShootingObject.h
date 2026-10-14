@@ -182,6 +182,13 @@ protected:
 
 	//�������� �����
 			void			OnShellDrop			(const Fvector& play_pos, const Fvector& parent_vel);
+
+	// A point of the hud model, moved to where the WORLD projection shows it as the hud one does, and as
+	// large: for an effect that starts at the hud weapon but lives in the world (see ShootingObject.cpp)
+	static	void			HudFxPointToWorld	(Fvector& p);
+	// ...and a whole emitter frame of it, axes and all, so that what the effect carries in its own space
+	// (where its emitters sit, which way it throws) lands where the hud would have shown it too
+	static	void			HudFxXformToWorld	(Fmatrix& M);
 protected:
 	//��� ��������� ��� �����
 	shared_str				m_sShellParticles;

@@ -1,0 +1,19 @@
+#include "common.h"
+
+// Rain refraction (effects_rain_distort.s): a streak shifts the picture behind it by its distortion
+// texture. Same rule as particle_distort.ps -- the mask is a SCREEN-space offset, so past
+// DISTORT_REF_DIST it shrinks with distance the way a real one does, and a far streak does not
+// shift a distant pole by more than its own width.
+#define	DISTORT_REF_DIST	10.0
+
+float4		rain_distort;		// x = strength (r__rain_distort)
+Texture2D	s_distort;
+
+float4 main ( float2 tc : TEXCOORD0, float4 c : COLOR, float4 hpos : SV_Position ) : SV_Target
+{
+	float4	distort	= s_distort.Sample( smp_linear, tc );
+	distort.xy		= 0.5h + (distort.xy-0.5h)*rain_distort.x*saturate(DISTORT_REF_DIST/hpos.w);
+
+	// the streak's alpha (rain density) on top of the texture's own coverage
+	return	float4	(distort.rgb, distort.a*c.a);
+}

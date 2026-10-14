@@ -1,0 +1,20 @@
+#include "common.h"
+
+// The model reticle of a collimator (models_collimsight): base_lplanes with its alpha times m_collim_glass.y,
+// which goes 0 while the held optic draws its reticle in the glass's shader instead (collimator_marks), so
+// the two never show at once. Outside the HUD's strict-sorted pass the binder gives 1: the world's guns keep
+// their model reticle.
+uniform	float4	m_collim_glass;
+
+struct 	v2p
+{
+ 	float2 	tc0: 		TEXCOORD0;	// base
+  	float4	c0:		COLOR0;		// sun
+};
+
+float4 main( v2p I ) : SV_Target
+{
+	float4	t_base 	= s_base.Sample( smp_base, I.tc0 );
+
+	return  float4	(t_base.r,t_base.g,t_base.b,t_base.a * I.c0.a * m_collim_glass.y);
+}

@@ -99,8 +99,17 @@ void CRenderTarget::accum_spot	(light* L)
 
 	// Shadow xform (+texture adjustment matrix)
 	Fmatrix			m_Shadow,m_Lmap;
+	// This light's own part of the shadow-map atlas (its 1-texel guard frame included), in texture coordinates.
+	// The stencil picks the light's pixels by where they fall on the screen in the WORLD projection, but the hud
+	// models were drawn with the hud one: a weapon pixel can be handed to a light -- one face of an omni, mostly --
+	// that does not hold the point it really is, and its shadow look-up then lands in another light's part of the
+	// atlas. The packing changes from frame to frame, so that borrowed shadow flickered. accum_base.ps takes no
+	// shadow from outside this rectangle; a world pixel always falls inside it.
+	Fvector4		m_ShadowRect;
 	{
 		float			smapsize			= float(RImplementation.o.smapsize);
+		m_ShadowRect.set				(float(L->X.S.posX)/smapsize, float(L->X.S.posY)/smapsize,
+										 float(L->X.S.posX+L->X.S.size)/smapsize, float(L->X.S.posY+L->X.S.size)/smapsize);
 		float			fTexelOffs			= (.5f / smapsize);
 		float			view_dim			= float(L->X.S.size-2)/smapsize;
 		float			view_sx				= float(L->X.S.posX+1)/smapsize;
@@ -172,6 +181,7 @@ void CRenderTarget::accum_spot	(light* L)
 		RCache.set_c				("m_texgen",		m_Texgen	);
 		RCache.set_c				("m_texgen_J",		m_Texgen_J	);
 		RCache.set_c				("m_shadow",		m_Shadow	);
+		RCache.set_c				("m_shadow_rect",	m_ShadowRect);
 		RCache.set_ca				("m_lmap",		0,	m_Lmap._11, m_Lmap._21, m_Lmap._31, m_Lmap._41	);
 		RCache.set_ca				("m_lmap",		1,	m_Lmap._12, m_Lmap._22, m_Lmap._32, m_Lmap._42	);
 

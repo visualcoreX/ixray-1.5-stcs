@@ -155,7 +155,8 @@ void CWeaponPistol::OnShot		()
 	Fvector vel; 
 	PHGetLinearVell(vel);
 	// a real case, or the old particle -- in first person both (see CWeaponMagazined::OnShot)
-	if (!gwr_ShellCasingOnShot(vel) || GetHUDmode())
+	const bool real_case = gwr_ShellCasingOnShot(vel);
+	if (!real_case || (GetHUDmode() && !gwr_ShellParticlesWithCase()))
 		OnShellDrop				(get_LastSP(),  vel);
 
 	// ����� �� ������

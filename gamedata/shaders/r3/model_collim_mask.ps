@@ -1,0 +1,35 @@
+#include "common.h"
+#include "collim.h"
+
+// See model_collim_mask.vs. Only while the held optic is a prism sight -- the glass is on other optics' hud
+// models too -- and only inside its field stop: where the stop is black the sight's body stays, so its depth
+// stays the hud's near one and nothing of the world shows through -- the sun's shafts above all, which are
+// worked out along each pixel's view ray to its depth and would otherwise shine over the black.
+//
+// The cut (models_lenses.s) also writes the G-buffer back to its cleared state, 0 everywhere, as
+// phase_scene_prepare leaves it: where only the sky is behind the glass the world writes nothing there, and
+// the hud's position left in it had the sun's shafts march to the sight's tube instead of the sky -- the
+// sky showed through without its shafts, in the shape of the front sight and the tube. The mark writes no
+// colour at all.
+struct gbuffer_clear
+{
+	float4	p	: SV_Target0;
+	float4	n	: SV_Target1;
+	float4	c	: SV_Target2;
+};
+
+gbuffer_clear main( v2p_collim I )
+{
+	clip( m_collim_prism.w - 0.5 );
+
+	float3	v		= normalize( I.pos_w - eye_position );
+	float	a;
+	float2	t		= collim_sight( v, I.axis_w, I.right_w, a );
+	clip( collim_field_stop( t, a ) - 0.001 );
+
+	gbuffer_clear	o;
+	o.p		= 0;
+	o.n		= 0;
+	o.c		= 0;
+	return	o;
+}

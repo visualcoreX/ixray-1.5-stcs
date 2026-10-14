@@ -432,17 +432,19 @@ float3 pp_injury_rblur1(float2 uv, float3 c, float2 at)
 }
 
 // The bleeding's LENS DROPLETS (CActor, pp_droplets): up to PP_DROPLETS single drops, m_pp_droplets[i] =
-// centre (screen uv), radius (share of the screen height; negative = mirrored), opacity (0 = none).
+// centre (screen uv), radius (share of the screen height; negative = mirrored), opacity (0 = none;
+// NEGATIVE = a drop of rain: clear, PP_RAIN_DROPLET_MIX of a faint grey instead of the blood's tint).
 // The texture packs a drop into its channels: R = its diffuse mask, tinted here; G, B = the refraction
 // offset in units of the drop's radius (0.5 + offset / 4); A = its glare, a bokeh of its own shape.
 // pp_droplets_refract bends the scene's sampling through them (before everything else -- the drop refracts
 // the plain picture); pp_droplets_colour tints them and adds the glare over everything, on the lens. R2/R3
 // light the glare from the bloom; R1 has none, so it reads the picture itself once, at the droplet's centre,
 // from PP_DROPLET_GLARE_LO to PP_DROPLET_GLARE_HI of luma -- the whole droplet lights up or dims at once.
-#define PP_DROPLETS			8
+#define PP_DROPLETS			20		// the bleeding's 8 and the rain's 12
 #define PP_DROPLET_REFRACT	1.0f	// how strongly a drop bends what is behind it
 #define PP_DROPLET_TINT		float3(70.0f, 7.0f, 5.0f) / 255.0f	// was (140, 15, 10), halved
 #define PP_DROPLET_MIX		0.7f	// the tint, by overlay
+#define PP_RAIN_DROPLET_MIX	0.12f	// a drop of rain: this much of the picture greyed and dimmed a touch
 #define PP_DROPLET_GLARE	1.0f	// the glare, added (x the light behind it)
 #define PP_DROPLET_GLARE_LO	0.6f	// the picture's luma where the glare starts to light...
 #define PP_DROPLET_GLARE_HI	1.0f	// ...and where it is full
@@ -453,7 +455,7 @@ bool pp_droplet_local(float4 dr, float2 uv, out float2 p)
 {
 	p	= (uv - dr.xy) / (abs(dr.z) * float2(screen_res.y * screen_res.z, 1.0f));
 	if (dr.z < 0.0f)	p.x = -p.x;
-	return dr.w > 0.0f && all(abs(p) < 1.0f);
+	return dr.w != 0.0f && all(abs(p) < 1.0f);
 }
 
 float2 pp_droplets_refract(float2 uv)
@@ -467,7 +469,7 @@ float2 pp_droplets_refract(float2 uv)
 		float4 t	= tex2Dlod(s_blood_droplet, float4(p * 0.5f + 0.5f, 0.0f, 0.0f));
 		float2 o	= (t.gb - 0.5f) * 4.0f;
 		if (dr.z < 0.0f)	o.x = -o.x;
-		off += o * abs(dr.z) * float2(screen_res.y * screen_res.z, 1.0f) * (t.r * dr.w * PP_DROPLET_REFRACT);
+		off += o * abs(dr.z) * float2(screen_res.y * screen_res.z, 1.0f) * (t.r * abs(dr.w) * PP_DROPLET_REFRACT);
 	}
 	return off;
 }
@@ -480,10 +482,12 @@ float3 pp_droplets_colour(float3 c, float2 uv)
 		float2 p;
 		if (!pp_droplet_local(dr, uv, p))	continue;
 		float4 t	= tex2Dlod(s_blood_droplet, float4(p * 0.5f + 0.5f, 0.0f, 0.0f));
-		c	= lerp(c, pp_overlay(c, PP_DROPLET_TINT), t.r * dr.w * PP_DROPLET_MIX);
+		const float a = abs(dr.w);
+		if (dr.w > 0.0f)	c = lerp(c, pp_overlay(c, PP_DROPLET_TINT), t.r * a * PP_DROPLET_MIX);
+		else				c = lerp(c, dot(c, float3(0.299f, 0.587f, 0.114f)) * 0.9f, t.r * a * PP_RAIN_DROPLET_MIX);
 		float3 bl	= tex2Dlod(s_base0, float4(dr.xy, 0.0f, 0.0f)).rgb;
 		float  lit	= sqrt(saturate((dot(bl, float3(0.299f, 0.587f, 0.114f)) - PP_DROPLET_GLARE_LO) / (PP_DROPLET_GLARE_HI - PP_DROPLET_GLARE_LO)));
-		c	+= t.a * dr.w * lit * PP_DROPLET_GLARE;
+		c	+= t.a * a * lit * PP_DROPLET_GLARE;
 	}
 	return c;
 }

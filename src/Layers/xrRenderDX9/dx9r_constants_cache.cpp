@@ -10,11 +10,15 @@ void R_constants::flush_cache()
 		// fp
 		R_constant_array::t_f&	F	= a_pixel.c_f;
 		{
-			if (F.r_lo() <= 32) //. hack
+			// ps_3_0 has 224 float registers. This uploaded 31 at most, from no further than c32 -- a ps_2_0
+			// limit ("hack") -- and a shader whose constants reach past c31 read zeros there: the collimator
+			// glass on R2 (its lamps take c0..c23) lost every parameter after them and drew nothing at all.
+			const u32	limit	= 224;
+			if (F.r_lo() < limit)
 			{		
 				u32		count		= F.r_hi()-F.r_lo();
 				if (count)			{
-					count = (count>31)?31:count;
+					if (F.r_lo() + count > limit)	count = limit - F.r_lo();
 					PGO		(Msg("PGO:P_CONST:%d",count));
 					CHK_DX	(HW.pDevice->SetPixelShaderConstantF	(F.r_lo(), (float*)F.access(F.r_lo()),count));
 					F.flush	();

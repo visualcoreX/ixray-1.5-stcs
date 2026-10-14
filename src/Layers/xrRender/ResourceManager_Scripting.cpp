@@ -55,15 +55,23 @@ public:
 class	adopt_compiler																																		
 {
 	CBlender_Compile*		C;
+	bool					&m_bFirstPass;
+
+	// A second shader:begin in one element starts a second pass: the one before it is ended first, as the
+	// DX10 wrapper does it. Without this every begin restarted the same pass, and an element kept only its
+	// LAST pass -- the collimator glass (models_lenses.s) drew its tint alone on R1/R2, never the glass.
+	void					TryEndPass()												{	if (!m_bFirstPass) C->r_End(); m_bFirstPass = false;}
 public:
-	adopt_compiler			(CBlender_Compile*	_C)	: C(_C)							{ }
-	adopt_compiler			(const adopt_compiler&	_C)	: C(_C.C)					{ }
+	adopt_compiler			(CBlender_Compile*	_C, bool& bFirstPass)	: C(_C), m_bFirstPass(bFirstPass)		{ m_bFirstPass = true;}
+	adopt_compiler			(const adopt_compiler&	_C)	: C(_C.C), m_bFirstPass(_C.m_bFirstPass){ }
 
 	adopt_compiler&			_options		(int	P,		bool	S)				{	C->SetParams		(P,S);					return	*this;		}
 	adopt_compiler&			_o_emissive		(bool	E)								{	C->SH->flags.bEmissive=E;					return	*this;		}
 	adopt_compiler&			_o_distort		(bool	E)								{	C->SH->flags.bDistort=E;					return	*this;		}
 	adopt_compiler&			_o_wmark		(bool	E)								{	C->SH->flags.bWmark=E;						return	*this;		}
-	adopt_compiler&			_pass			(LPCSTR	vs,		LPCSTR ps)				{	C->r_Pass			(vs,ps,true);			return	*this;		}
+	adopt_compiler&			_o_lens_mask	(bool	E)								{	C->SH->flags.bLensMask=E;					return	*this;		}
+	adopt_compiler&			_o_hud_first	(bool	E)								{	C->SH->flags.bHudFirst=E;					return	*this;		}
+	adopt_compiler&			_pass			(LPCSTR	vs,		LPCSTR ps)				{	TryEndPass();	C->r_Pass			(vs,ps,true);			return	*this;		}
 	adopt_compiler&			_fog			(bool	_fog)							{	C->PassSET_LightFog	(FALSE,_fog);			return	*this;		}
 	adopt_compiler&			_ZB				(bool	_test,	bool _write)			{	C->PassSET_ZB		(_test,_write);			return	*this;		}
 	adopt_compiler&			_blend			(bool	_blend, u32 abSRC, u32 abDST)	{	C->PassSET_ablend_mode(_blend,abSRC,abDST);	return 	*this;		}
@@ -177,6 +185,8 @@ void	CResourceManager::LS_Load			()
 			.def("emissive",					&adopt_compiler::_o_emissive	,return_reference_to(_1))
 			.def("distort",						&adopt_compiler::_o_distort		,return_reference_to(_1))
 			.def("wmark",						&adopt_compiler::_o_wmark		,return_reference_to(_1))
+			.def("lens_mask",					&adopt_compiler::_o_lens_mask	,return_reference_to(_1))
+			.def("hud_first",					&adopt_compiler::_o_hud_first	,return_reference_to(_1))
 			.def("fog",							&adopt_compiler::_fog			,return_reference_to(_1))
 			.def("zb",							&adopt_compiler::_ZB			,return_reference_to(_1))
 			.def("blend",						&adopt_compiler::_blend			,return_reference_to(_1))
@@ -344,7 +354,8 @@ ShaderElement*		CBlender_Compile::_lua_Compile	(LPCSTR namesp, LPCSTR name)
 	lua_State*			LSVM	= dxRenderDeviceRender::Instance().Resources->LSVM;
 	object				shader	= get_globals(LSVM)[namesp];
 	functor<void>		element	= object_cast<functor<void> >(shader[name]);
-	adopt_compiler		ac		= adopt_compiler(this);
+	bool				bFirstPass = false;
+	adopt_compiler		ac		= adopt_compiler(this, bFirstPass);
 	element						(ac,t_0,t_1,t_d);
 	r_End				();
 	ShaderElement*	_r	= dxRenderDeviceRender::Instance().Resources->_CreateElement(E);

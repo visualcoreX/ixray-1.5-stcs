@@ -1549,8 +1549,7 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 	// dot particle. Uses the full ray-bone list (line, line2) with the single attach bone as a fallback.
 	if (m_bLaserInstalled)
 	{
-		extern float g_electronics_problems;
-		const bool  surge_off = m_bLaserEnabled && (m_fLaserDisablingLevel > 0.f) && (g_electronics_problems >= m_fLaserDisablingLevel);
+		const bool  surge_off = m_bLaserEnabled && LaserSurgeOff();
 		LPCSTR rb = m_sLaserRayBones.size() ? m_sLaserRayBones.c_str() : (m_sLaserBone.size() ? m_sLaserBone.c_str() : nullptr);
 		// Symmetric: SHOW them when the laser is on. An upgrade-installed laser gets that for free from the
 		// node's show_bones, but a weapon whose designator is PERMANENT (the P90 -- laser_installed on the
@@ -2601,6 +2600,13 @@ void CWeaponMagazined::OnShot()
 	// remember the round we're about to fire (still at the back; FireTrace pops it AFTER OnShot). Its type
 	// colours the ejecting shell for the eject/pump window, so a chamber-first pump ejects the fired shell's
 	// colour and not the next chambered round's.
+	// A drum (ammo_params_use_previous_shot_type: the Protecta / SPAS-12) keeps the fired shell in the chamber
+	// until the NEXT shot pushes it out, so the case a shot throws is the PREVIOUS shot's round, not its own
+	// (the first shot after a reload throws none at all -- gwr_ShellCasingOnShot, the _first take).
+	LPCSTR thrown_case = NULL;
+	if (READ_IF_EXISTS(pSettings, r_bool, HudSection(), "ammo_params_use_previous_shot_type", FALSE) &&	// a hud key
+		m_gwr_last_fired_type < m_ammoTypes.size())
+		thrown_case = m_ammoTypes[m_gwr_last_fired_type].c_str();
 	if (!m_magazine.empty())
 	{
 		m_gwr_last_fired_type = (u8)m_magazine.back().m_LocalAmmoType;
@@ -2626,8 +2632,13 @@ void CWeaponMagazined::OnShot()
 	Fvector vel; 
 	PHGetLinearVell				(vel);
 	// a real case, or the old particle -- in first person both: the particle is the smoke out of the
-	// port the case leaves by (the hud shell_point is put there)
-	if (!gwr_ShellCasingOnShot(vel) || GetHUDmode())
+	// port the case leaves by (the hud shell_point is put there). A pump gun's waits for its case: it
+	// comes with the pump (shell_particles_with_case, WeaponShellCasing.cpp). The first shot out of a
+	// freshly loaded drum throws no case, in third person as well (first person also knows it by its
+	// _first take, see gwr_ShellCasingOnShot)
+	const bool no_case		= NeedFirstShootAnim();
+	const bool real_case	= !no_case && gwr_ShellCasingOnShot(vel, thrown_case);
+	if ((!no_case && !real_case) || (GetHUDmode() && !gwr_ShellParticlesWithCase()))
 		OnShellDrop				(get_LastSP(), vel);
 	
 	// Огонь из ствола

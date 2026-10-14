@@ -31,6 +31,7 @@
 
 float4	volume_range;	//	x - near plane, y - far plane
 float4	sun_shafts_intensity;
+uniform	float4	m_collim_veil;	// x > 0 while a prism sight with a haze is held (model_collim_late.ps)
 uniform	float4	screen_res;
 
 #ifdef MSAA_OPTIMIZATION
@@ -116,7 +117,20 @@ float4 	main (v2p_volume  I) : SV_Target
 
 	res		*= fSturation;
 
-	return res*Ldynamic_color;
+	// For a prism sight's black field stop (model_collim_late.ps), in the alpha, which nothing else here
+	// writes and combine_volumetric leaves alone: how much of the air just before the eye along this pixel's
+	// ray the sun reaches -- 0.3 to 0.9 m out, the stretch the gun around the sight takes its shafts from
+	// (the march above counts nothing nearer than 0.3). Only while such a sight is held.
+	float	near_lit = 0;
+	if (m_collim_veil.x > 0)
+	{
+		float3	ray = P / max(P.z, 0.0001);		// one metre of depth along the ray; the eye itself on the sky
+		[unroll]
+		for ( int k=0; k<4; ++k )
+			near_lit += 0.25*sample_hw_pcf( mul(m_shadow, float4(ray*(0.3 + 0.2*k), 1)), float4(0,0,0,0) );
+	}
+
+	return float4( res*Ldynamic_color.rgb, near_lit );
 #endif	//	SUN_SHAFTS_QUALITY
 }
 
