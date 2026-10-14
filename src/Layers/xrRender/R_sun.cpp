@@ -71,6 +71,13 @@ void CRender::init_cacades()
 
  	m_sun_cascades[2].size = 160.f * k;
  	m_sun_cascades[2].bias = m_sun_cascades[2].size*fBias;
+	// The last cascade is fitted from the camera, not chained on from where the view rays leave the middle
+	// one. Chained, the boxes can leave a gap next to the camera at some view angles: a pixel a few metres
+	// away in none of the three. Stock only fitted it from the camera while sun shafts were on (so it came
+	// and went with the weather); the far pass is now a screen quad that takes whatever the tighter ones
+	// left, so it lit such a pixel from outside its own map -- "lit", no roof: sunlight through a ceiling
+	// and shadows dropping out at the screen edges.
+	m_sun_cascades[2].reset_chain = true;
 }
 
 void CRender::render_sun_cascades ( )
