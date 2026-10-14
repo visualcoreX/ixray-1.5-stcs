@@ -44,11 +44,11 @@ float4 main( v2p_collim I, float4 pos2d : SV_Position ) : SV_Target
 	float3	ng		= face_eye( n, v );
 	float3	na		= face_eye( normalize(I.axis_w), v );
 	float4	t_base	= s_base.Sample( smp_base, I.tc0 );
-	float3	dyn		= collim_dynlight( I.pos_w, ng, 1 );
-	float3	glass	= collim_glass_light( n, I.pos_w, ng ) * t_base.rgb;
+	collim_lamps_t	lamps	= collim_lamps( I.pos_w, ng, v );
+	float3	glass	= collim_glass_light( n, lamps.diff ) * t_base.rgb;
 	float	a		= t_base.a * m_collim_glass.x;
-	float3	refl	= collim_reflection( v, ng, na, dyn ) * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
+	float3	refl	= collim_reflection( v, ng, na, lamps.omni ) * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
 
-	float3	res		= collim_glow( t, ad ) * (1 - a) + glass * a + refl + collim_specular( I.pos_w, v, ng, t_base.a ) + haze;
+	float3	res		= collim_glow( t, ad ) * (1 - a) + glass * a + refl + collim_specular( v, ng, t_base.a, lamps.spec ) + haze;
 	return	float4( res * dark, dark );
 }
