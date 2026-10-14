@@ -161,6 +161,9 @@ extern ECORE_API int			ps_r3_dyn_wet_surf_sm_res;	// 256
 extern ECORE_API float			ps_r3_dyn_wet_surf_bias;	// 0.03 m
 extern ECORE_API float			ps_r3_dyn_wet_surf_hud;		// 0.7
 extern ECORE_API float			ps_r3_dyn_wet_surf_hud_tile;// 6.0
+extern ECORE_API float			ps_r__rain_lights;			// 1.0
+extern ECORE_API float			ps_r__rain_ambient;			// 0.5
+extern ECORE_API float			ps_r__rain_distort;			// 0.75
 
 enum
 {

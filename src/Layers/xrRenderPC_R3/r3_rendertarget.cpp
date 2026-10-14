@@ -399,6 +399,7 @@ CRenderTarget::CRenderTarget		()
 		// laser beams: smoke coverage + depth, half-res (it only has to follow puffs of smoke)
 		rt_laser_dens.create(r2_RT_laser_dens, _max(s_dwWidth / 2, 1u), _max(s_dwHeight / 2, 1u), D3DFMT_A16B16G16R16F, 1);
 		m_laser_dens_valid = false;
+		m_rain_distort_count = 0;
 		rt_Generic_1.create(r2_RT_generic1, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, SampleCount);
 		if (RImplementation.o.dx10_msaa)
 		{

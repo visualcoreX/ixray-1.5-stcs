@@ -142,6 +142,8 @@ namespace PS
 
 		virtual void		SetHudMode			(BOOL b);
 		virtual BOOL		GetHudMode			();
+		virtual void		SetHudWorld			(BOOL b);
+		virtual BOOL		GetHudWorld			();
 
 		virtual float		GetTimeLimit	(){VERIFY(m_Def); return m_Def->m_fTimeLimit;}
 

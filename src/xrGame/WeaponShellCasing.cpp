@@ -78,8 +78,8 @@ static LPCSTR TRACK_NAME[2] = { "case",					"extra"						};
 
 // A point of the hud model is drawn with the hud projection; a case is a world object and goes through
 // the world one. Move the point so that the world projection puts it where the hud projection shows it
-// (the depth along the view is kept, only the part across it is scaled) -- the same correction the muzzle
-// smoke and the laser dot get, see SmokePointWorldToHud in ShootingObject.cpp.
+// (the depth along the view is kept, only the part across it is scaled) -- the correction the muzzle smoke
+// had before HudFxPointToWorld (ShootingObject.cpp) took to squeezing the depth instead.
 static void casing_point_hud_to_world(Fvector& p)
 {
 	const float t_hud = tanf(deg2rad(0.5f * psHUD_FOV * Device.fFOV_HUD));
@@ -1345,11 +1345,18 @@ void CWeapon::gwr_ReloadSmokeStart()
 	m_reload_smoke_motion = MotionStartTm();
 	m_reload_smoke_until = 0;				// let out: nothing left for the next reload
 
+	// A world effect, like the muzzle smoke: what has come out of the barrels hangs in the air, and only
+	// the emitter rides the bone. The bone is a frame of the hud model, so the emitter goes where the world
+	// projection shows it as the hud one does -- axes and all, for the effect's own emitters sit off the bone
+	// (HudFxXformToWorld) -- here and every frame after (gwr_ReloadSmokeUpdate). As a hud particle the smoke
+	// went through the hud projection and swam across the screen as the camera turned.
 	Fmatrix M;			M.mul_43(hi->m_item_transform, K->LL_GetTransform(bone));
 	M.i.normalize_safe(); M.j.normalize_safe(); M.k.normalize_safe();
+	if (IsHudModeNow())	HudFxXformToWorld(M);
 	m_reload_smoke_pos.set	(M.c);
 	m_reload_smoke->UpdateParent	(M, Fvector().set(0.f, 0.f, 0.f));
-	m_reload_smoke->Play	(IsHudModeNow());
+	m_reload_smoke->SetHudWorld	(IsHudModeNow());	// in the hud's depth slice while near: the barrels cover only what is behind them
+	m_reload_smoke->Play	(false);
 
 	if (casing_debug())
 		Msg				("~ reload_smoke [%s]: %s -> %s on bone %s", ws, cur, name, K->LL_BoneName_dbg(bone));
@@ -1376,6 +1383,9 @@ void CWeapon::gwr_ReloadSmokeUpdate()
 
 	Fmatrix M;			M.mul_43(hi->m_item_transform, hi->m_model->LL_GetTransform(m_reload_smoke_bone));
 	M.i.normalize_safe(); M.j.normalize_safe(); M.k.normalize_safe();
+	// in the world, where the barrels are seen (see gwr_ReloadSmokeStart); the velocity is taken between
+	// these points, so the smoke drifts the way the barrels move on the screen
+	if (IsHudModeNow())	HudFxXformToWorld(M);
 	Fvector vel;		vel.set(0.f, 0.f, 0.f);
 	if (Device.fTimeDelta > EPS_S)
 	{

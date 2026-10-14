@@ -1,16 +1,4 @@
 [wpn_toz34]:identity_immunities,weapon_probability,default_weapon_params
-shell_casing			= false	; break-action: the fired shells stay in the barrels until the reload
-; Smoke the opened barrels let out on a reload soon after a shot (WeaponShellCasing.cpp). One smoke per shot.
-reload_smoke_time		= 5	; s after the last shot a reload still smokes
-; reload_smoke_<reload alias> = <particle>, <hud bones: the first one SHOWN carries it -- the sawn-off shows barrel_short>
-; both barrels fired:
-reload_smoke_anm_reload_0					= ghost_particles\weapons\smoke_toz34_reload_0, barrel_short, barrel
-reload_smoke_anm_reload_only_0				= ghost_particles\weapons\smoke_toz34_reload_0, barrel_short, barrel	; empty, one round on hand
-reload_smoke_anm_reload_only_ammochange_0	= ghost_particles\weapons\smoke_toz34_reload_0, barrel_short, barrel
-; one barrel fired:
-reload_smoke_anm_reload_1					= ghost_particles\weapons\smoke_toz34_reload_1, barrel_short, barrel
-reload_smoke_anm_reload_ammochange_1		= ghost_particles\weapons\smoke_toz34_reload_1, barrel_short, barrel
-reload_smoke_anm_reload_ammochange_only_1	= ghost_particles\weapons\smoke_toz34_reload_1, barrel_short, barrel
 GroupControlSection			= spawn_group
 discovery_dependency 		=
 $spawn                   = "weapons\toz-34"              ; option for Level Editor
@@ -88,9 +76,7 @@ condition_shot_dec      	= 0.0045	; orig 0.005 (GS)
 position                   = -0.025,-0.11,0.06
 orientation                = 0, 30, 0      ;�������� ��������������� � ��������
 
-shell_point      = 0.0, 0.183, 0.07
-fire_point       = 0.0, 0.168, 0.755
-fire_point2      = 0.0, 0.168, 0.755
+
 
 hand_dependence = 1
 single_handed	= 0
@@ -111,6 +97,22 @@ kill_msg_x       = 127
 kill_msg_y       = 82
 kill_msg_width   = 97
 kill_msg_height  = 23
+
+shell_point      = 0.0, 0.183, 0.07
+fire_point       = 0.0, 0.168, 0.755
+fire_point2      = 0.0, 0.168, 0.755
+shell_casing			= false	; break-action: the fired shells stay in the barrels until the reload
+; Smoke the opened barrels let out on a reload soon after a shot (WeaponShellCasing.cpp). One smoke per shot.
+reload_smoke_time		= 5	; s after the last shot a reload still smokes
+; reload_smoke_<reload alias> = <particle>, <hud bones: the first one SHOWN carries it -- the sawn-off shows barrel_short>
+; both barrels fired:
+reload_smoke_anm_reload_0					= ghost_particles\weapons\smoke_toz34_reload_0, barrel_short, barrel
+reload_smoke_anm_reload_only_0				= ghost_particles\weapons\smoke_toz34_reload_0, barrel_short, barrel	; empty, one round on hand
+reload_smoke_anm_reload_only_ammochange_0	= ghost_particles\weapons\smoke_toz34_reload_0, barrel_short, barrel
+; one barrel fired:
+reload_smoke_anm_reload_1					= ghost_particles\weapons\smoke_toz34_reload_1, barrel_short, barrel
+reload_smoke_anm_reload_ammochange_1		= ghost_particles\weapons\smoke_toz34_reload_1, barrel_short, barrel
+reload_smoke_anm_reload_ammochange_only_1	= ghost_particles\weapons\smoke_toz34_reload_1, barrel_short, barrel
 
 flame_particles		   	= ghost_particles\weapons\flame_12cal_toz34_buckshot
 smoke_particles		   	= ghost_particles\weapons\smoke_12cal_toz34_buckshot

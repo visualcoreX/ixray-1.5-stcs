@@ -40,6 +40,7 @@ namespace PS
 			flRT_DefferedStop	= (1<<1),
 			flRT_XFORM			= (1<<2),
 			flRT_HUDmode		= (1<<3),
+			flRT_HUDworld		= (1<<4),	// a world effect drawn in the hud's slice while near (see Render)
 		};
 		Flags8				m_RT_Flags;
 	protected:
@@ -47,6 +48,7 @@ namespace PS
 		BOOL 				LoadActionList		(IReader& F);
 
 		void				RefreshShader		();
+		BOOL				HudWorldNow			(Fmatrix& W);	// flRT_HUDworld and near: W takes it into the hud's space
 	public:
 							CParticleEffect		();
 		virtual 			~CParticleEffect	();
@@ -74,6 +76,8 @@ namespace PS
 		
 		virtual void		SetHudMode			(BOOL b){m_RT_Flags.set(flRT_HUDmode,b);}
 		virtual BOOL		GetHudMode			()		{return m_RT_Flags.is(flRT_HUDmode);}
+		virtual void		SetHudWorld			(BOOL b){m_RT_Flags.set(flRT_HUDworld,b);}
+		virtual BOOL		GetHudWorld			()		{return m_RT_Flags.is(flRT_HUDworld);}
 
 		virtual float		GetTimeLimit		(){VERIFY(m_Def); return m_Def->m_Flags.is(CPEDef::dfTimeLimit)?m_Def->m_fTimeLimit:-1.f;}
 

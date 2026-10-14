@@ -194,7 +194,13 @@ void CActorCondition::UpdateCondition()
 	// actor hungry (the time did arrive in UpdateConditionTime, it just died here).
 	// Hunger is not damage, so keep it ticking; UpdateSatiety guards the health/power half with its
 	// own AF_GODMODE_RT test, so nothing harmful is applied while invulnerable.
-	if (GodMode())				{ UpdateSatiety(); return; }
+	// The g_god cheat itself (AF_GODMODE) is different: there the player asked for the actor's state to
+	// stand still, so hunger freezes along with everything else (the thirst script does the same).
+	if (GodMode())
+	{
+		if (!psActorFlags.test(AF_GODMODE))	UpdateSatiety();
+		return;
+	}
 	if (!object().g_Alive())	return;
 	if (!object().Local() && m_object != Level().CurrentViewEntity())		return;	
 	

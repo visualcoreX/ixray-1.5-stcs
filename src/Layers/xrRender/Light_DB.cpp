@@ -173,13 +173,32 @@ light*			CLight_DB::Create	()
 	return				L;
 }
 
+void			CLight_DB::add_rain_light	(light* L)
+{
+	if (L->flags.bHudMode)					return;	// lights the first-person models only
+	if (L->flags.type!=IRender_Light::POINT && L->flags.type!=IRender_Light::SPOT)	return;
+	if (L->range<EPS_L)						return;
+
+	v_rain.push_back						(rain_light());
+	rain_light&	R							= v_rain.back();
+	R.position.set							(L->position);
+	R.range									= L->range;
+	R.color.set								(L->color.r,L->color.g,L->color.b);
+	R.color.mul								(L->get_LOD());
+	R.direction.set							(L->direction);
+	R.cone_cos								= (L->flags.type==IRender_Light::SPOT) ? _cos(L->cone*0.5f) : -2.f;
+}
+
 #if RENDER==R_R1
 void			CLight_DB::add_light		(light* L)
 {
 	if (Device.dwFrame==L->frame_render)	return;
 	L->frame_render							=	Device.dwFrame;
 	if (L->flags.bStatic)					return;	// skip static lighting, 'cause they are in lmaps
-	if (ps_r1_flags.test(R1FLAG_DLIGHTS))	RImplementation.L_Dynamic->add	(L);
+	if (ps_r1_flags.test(R1FLAG_DLIGHTS))	{
+		RImplementation.L_Dynamic->add		(L);
+		add_rain_light						(L);
+	}
 }
 #endif
 
@@ -191,6 +210,7 @@ void			CLight_DB::add_light		(light* L)
 	if (RImplementation.o.noshadows)		L->flags.bShadow		= FALSE;
 	if (L->flags.bStatic && !ps_r2_ls_flags.test(R2FLAG_R1LIGHTS))	return;
 	L->export_								(package);
+	add_rain_light							(L);
 }
 #endif
 
@@ -253,4 +273,5 @@ void			CLight_DB::Update			()
 
 	// Clear selection
 	package.clear	();
+	v_rain.clear	();
 }

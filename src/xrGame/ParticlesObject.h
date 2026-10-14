@@ -40,6 +40,9 @@ public:
 
 	void				play_at_pos			(const Fvector& pos, BOOL xform=FALSE);
 	virtual void		Play				(bool bHudMode);
+	// a world effect out of the first-person weapon: drawn in the hud's depth slice while near the eye,
+	// so the weapon covers it only where it is in front of it (IParticleCustom::SetHudWorld). Before Play.
+	void				SetHudWorld			(bool b);
 	void				Stop				(BOOL bDefferedStop=TRUE);
 	virtual BOOL		Locked				()				{ return mt_dt; }
 	

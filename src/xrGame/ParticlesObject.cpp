@@ -131,6 +131,14 @@ void CParticlesObject::Play		(bool bHudMode)
 	m_bStopping					= false;
 }
 
+void CParticlesObject::SetHudWorld	(bool b)
+{
+	if(g_dedicated_server)		return;
+
+	IParticleCustom* V			= smart_cast<IParticleCustom*>(renderable.visual); VERIFY(V);
+	V->SetHudWorld				(b);
+}
+
 void CParticlesObject::play_at_pos(const Fvector& pos, BOOL xform)
 {
 	if(g_dedicated_server)		return;
