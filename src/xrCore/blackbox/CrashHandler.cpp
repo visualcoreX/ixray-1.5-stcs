@@ -16,6 +16,9 @@ CONDITIONAL COMPILATION :
 #include "BugslayerUtil.h"
 #include "CrashHandler.h"
 
+// xrDebug.cpp: an engine source path from the repository root instead of the build machine's drive
+LPCSTR xr_source_path(LPCSTR path);
+
 // The project internal header file
 //#include "Internal.h"
 
@@ -518,6 +521,7 @@ LPCTSTR __stdcall GetFaultReason ( EXCEPTION_POINTERS * pExPtrs )
                                           &dwDisp                      ,
                                           &g_stLine                   ))
         {
+            g_stLine.FileName = (PCHAR)xr_source_path ( g_stLine.FileName ) ;
             iCurr += wsprintf ( g_szBuff + iCurr , _T ( ", " ) ) ;
 
             // Copy no more of the source file and line number
@@ -831,6 +835,7 @@ LPCTSTR __stdcall
                                                 &dwDisp                ,
                                                 &g_stLine             ))
             {
+                g_stLine.FileName = (PCHAR)xr_source_path ( g_stLine.FileName ) ;
                 iCurr += wsprintf ( g_szBuff + iCurr , _T ( ", " ) ) ;
 
                 // Copy no more of the source file and line number

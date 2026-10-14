@@ -39,6 +39,22 @@ XRCORE_API	xrDebug		Debug;
 
 static bool	error_after_dialog = false;
 
+// A path of the engine's own sources -- an assert's __FILE__, a stack frame's source file -- shown from the
+// repository root (src\xrCore\...), not from the drive of the machine that built it. The root is where the
+// compiler saw this very file: <root>\src\xrCore\xrDebug.cpp. Anything outside it is returned as it is.
+LPCSTR xr_source_path(LPCSTR path)
+{
+	static const size_t	root	= []() -> size_t {
+		const char		self[]	= __FILE__;
+		const char		tail[]	= "src\\xrCore\\xrDebug.cpp";
+		const size_t	n		= sizeof(self) - 1, t = sizeof(tail) - 1;
+		return (n > t && 0 == _stricmp(self + n - t, tail)) ? n - t : 0;
+	}();
+	if (path && root && 0 == _strnicmp(path, __FILE__, root))
+		return			path + root;
+	return				path;
+}
+
 extern void BuildStackTrace();
 extern char g_stackTrace[100][4096];
 extern int	g_stackTraceCount;
@@ -67,7 +83,7 @@ void xrDebug::gather_info		(const char *expression, const char *description, con
 			buffer		+= sprintf(buffer,"%sFATAL ERROR%s%s",endline,endline,endline);
 		buffer			+= sprintf(buffer,"%sExpression    : %s%s",prefix,expression,endline);
 		buffer			+= sprintf(buffer,"%sFunction      : %s%s",prefix,function,endline);
-		buffer			+= sprintf(buffer,"%sFile          : %s%s",prefix,file,endline);
+		buffer			+= sprintf(buffer,"%sFile          : %s%s",prefix,xr_source_path(file),endline);
 		buffer			+= sprintf(buffer,"%sLine          : %d%s",prefix,line,endline);
 		
 		if (extended_description) {
