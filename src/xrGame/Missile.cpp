@@ -92,9 +92,13 @@ CMissile::CMissile(void)
 	m_bQuickThrow			= false;
 	m_quick_throw_ret_slot	= NO_ACTIVE_SLOT;
 	m_quick_throw_had_det	= false;
+	m_bHasActorOffset		= false;
+	m_world_pos_actor.set	(0.f,0.f,0.f);
+	m_world_ypr_actor.set	(0.f,0.f,0.f);
+	m_OffsetActor.identity	();
 }
 
-CMissile::~CMissile(void) 
+CMissile::~CMissile(void)
 {
 }
 
@@ -129,6 +133,22 @@ void CMissile::Load(LPCSTR section)
 	m_vHudThrowDir		= pSettings->r_fvector3(*hud_sect,"throw_dir");
 
 	m_ef_weapon_type	= READ_IF_EXISTS(pSettings,r_u32,section,"ef_weapon_type",u32(-1));
+
+	// Actor-only seat in the hand (see Missile.h): `<section>_actor`, the same two keys CWeapon reads.
+	string256			asect;
+	strconcat			(sizeof(asect), asect, section, "_actor");
+	m_bHasActorOffset	= !!pSettings->section_exist(asect)
+						&& pSettings->line_exist(asect, "position")
+						&& pSettings->line_exist(asect, "orientation");
+	if (m_bHasActorOffset)
+	{
+		m_world_pos_actor	= pSettings->r_fvector3(asect, "position");
+		m_world_ypr_actor	= pSettings->r_fvector3(asect, "orientation");
+		Fvector a			= m_world_ypr_actor;
+		a.mul				(PI/180.f);
+		m_OffsetActor.setHPB			(a.x, a.y, a.z);
+		m_OffsetActor.translate_over	(m_world_pos_actor);
+	}
 
 	// GS `snd_throw_quick` -> registered under the name the generic per-anim sound lookup expects
 	// (`snd_<alias>` in PlayHUDMotion), so playing anm_throw_quick plays it without a special case.
@@ -544,7 +564,35 @@ bool CMissile::PlayHudActionAnim(LPCSTR base)
 
 void CMissile::UpdatePosition(const Fmatrix& trans)
 {
-	XFORM().mul		(trans,offset());
+	// The actor's own seat when the config supplies one (`<section>_actor`), offset() for everybody else.
+	const bool actor	= m_bHasActorOffset && H_Parent() && H_Parent() == (CObject*)Actor();
+	XFORM().mul		(trans, actor ? m_OffsetActor : offset());
+}
+
+// The cam_3 tuner (world_item_tune) for a missile: edits the actor-only seat and logs it as a
+// `<section>_actor` block for configs\weapons\actor_wpn_pos.ltx. Without one it starts from offset()
+// (attach_*_offset, angles read as radians), converted to the degrees the _actor keys take.
+void CMissile::TuneWorldOffset(const Fvector& dpos, const Fvector& dypr_deg)
+{
+	if (!m_bHasActorOffset)
+	{
+		offset().getHPB		(m_world_ypr_actor);
+		m_world_ypr_actor.mul	(180.f/PI);
+		m_world_pos_actor	= offset().c;
+		m_bHasActorOffset	= true;
+	}
+	m_world_pos_actor.add	(dpos);
+	m_world_ypr_actor.add	(dypr_deg);
+
+	Fvector a				= m_world_ypr_actor;
+	a.mul					(PI/180.f);
+	m_OffsetActor.setHPB			(a.x, a.y, a.z);
+	m_OffsetActor.translate_over	(m_world_pos_actor);
+
+	Msg("[%s_actor]", cNameSect().c_str());
+	Msg("position                = %f, %f, %f", m_world_pos_actor.x, m_world_pos_actor.y, m_world_pos_actor.z);
+	Msg("orientation             = %f, %f, %f", m_world_ypr_actor.x, m_world_ypr_actor.y, m_world_ypr_actor.z);
+	Log("-----------");
 }
 
 void CMissile::UpdateXForm	()
