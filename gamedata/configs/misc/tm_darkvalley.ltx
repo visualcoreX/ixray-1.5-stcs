@@ -17,6 +17,7 @@ val_bring_to_fang
 val_capture_smart_7_8
 val_capture_smart_4_0
 val_capture_smart_1_1
+val_reward_for_killer_base
 ;val_destroy_boar_guard_9_2
 val_check_blockpost
 val_find_pda
@@ -260,6 +261,18 @@ community_relation_delta_complete = 5000
 reward_money = 1000
 play_regard = nil
 auto_faction = true
+
+; Given by val_quests_line once Chekhov's radio message about the cleared hall ends; done the moment the actor
+; opens the talk with him -- the start dialog hands over the reward (phrase 51) and gives this info right away.
+[val_reward_for_killer_base]
+type = storyline
+task_type = additional
+target_cond = true
+prior = 10
+name = val_reward_for_killer_base_name
+text = val_reward_for_killer_base_text
+condlist_0 = {+val_reward_for_destroy_killer_base} complete
+target_story_ids = 1106
 
 ;[val_destroy_boar_guard_9_2]
 ;type = storyline
