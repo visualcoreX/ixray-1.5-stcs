@@ -248,6 +248,9 @@ type = eliminate_smart
 task_type = additional
 ;icon = ui_mt_image_attack_tower
 target_cond = {+val_strike_antenna_two_captured -val_destroy_killer_base_done =target_smart_name(val_smart_terrain_1_2)} true
+; the hall counts as cleared only once the jumpers have come (they spawn after the roof dies -- kill the
+; roof last and the hall was "cleared" a moment before them); val_killer_1_4_dead covers older saves
+complete_cond = {+val_killer_jumpers_spawned} true, {+val_killer_1_4_dead} true, false
 prior = 100
 name = val_destroy_killer_base_name
 text = val_destroy_killer_base_text
