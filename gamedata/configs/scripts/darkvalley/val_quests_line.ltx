@@ -77,7 +77,8 @@ on_info = {+val_destroy_killer_base_done} sr_idle@val_comeback_freedom_leader %+
 on_info2 = {=is_faction_enemy_to_actor(freedom)} sr_idle@killer_base_abandoned
 [sr_idle@val_comeback_freedom_leader]
 on_timer = 4000 | %=play_sound(val_quest_finish:freedom:val_freedom_leader_name)%
-on_signal = sound_end | sr_idle@join_freedom
+; once the message ends: the task to collect the reward from Chekhov (unless it was collected meanwhile)
+on_signal = sound_end | {-val_reward_for_destroy_killer_base} sr_idle@join_freedom %=give_inited_task(storyline:val_reward_for_killer_base:freedom)%, sr_idle@join_freedom
 
 [sr_idle@join_freedom]
 on_timer = 2000 | {+val_freedom_join_need_sound +agru_open_story_door !black_screen !is_faction_enemy_to_actor(freedom)} sr_idle@val_finish_quest_line %=play_sound(val_leader_join_freedom:freedom:val_freedom_leader_name)%

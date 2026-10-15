@@ -195,4 +195,10 @@
 	<string id="val_recover_item_3_text">
 		<text>Someone stole Serega’s guitar, can you imagine that? He’s the only one who can play the guitar around here, and he does it well too, unlike the rest of them. We figured out who the thief is real quick but the cocksucker hid it someplace. Bring that guitar back ’cause Serega refuses to play any other, OK?</text>
 	</string>
+	<string id="val_reward_for_killer_base_name">
+		<text>Collect the reward from Chekhov</text>
+	</string>
+	<string id="val_reward_for_killer_base_text">
+		<text>The mercenary base at the factory has been destroyed. Return to Freedom leader Chekhov for your reward.</text>
+	</string>
 </string_table>
