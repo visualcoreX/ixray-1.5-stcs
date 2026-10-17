@@ -382,6 +382,7 @@
 			<phrase id="7">
 				<text>mar_csky_leader_intro_dialog_7</text>
 				<action>dialogs.break_dialog</action>
+				<action>dialogs_marsh.disable_input</action>
 			</phrase>
 		</phrase_list>
 	</dialog>
