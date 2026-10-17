@@ -688,6 +688,15 @@ end
 
 local pda_binder = nil      -- the live phantom's binder while the PDA is out
 local pda_wanted = false    -- the PDA window is currently open
+local pda_in_hand = false   -- a PDA phantom exists: from its spawn until it is released, put-away included
+
+-- bind_stalker's "a conversation puts the weapon away" must leave the hands alone meanwhile: the PDA is not
+-- a lowered firearm, so with it out that rule blocked the weapon slots, and when the PDA tutorial (run from
+-- a dialog) closed the PDA the saved weapon could not be drawn back -- the PDA hung without its put-away
+-- animation until PDA_HIDE_TIMEOUT deleted it.
+function pda_out()
+	return pda_in_hand
+end
 
 function on_pda_show()
 	if db.actor == nil or pda_wanted or busy then return end
@@ -706,6 +715,7 @@ local PDA_HIDE_TIMEOUT = 3000   -- ms; safety net in case the holster never repo
 local NO_ACTIVE_SLOT   = 4294967295   -- 0xffffffff, xrServerEntities\inventory_space.h
 
 function gwr_pda_binder:__init(obj) super(obj)
+	pda_in_hand  = true
 	self.taken   = false
 	self.hiding  = false
 	self.done    = false
@@ -766,6 +776,7 @@ end
 
 function gwr_pda_binder:release_now()
 	self.done = true
+	pda_in_hand = false
 	alife():release(alife():object(self.object:id()), true)
 	if saved_detector then detector_show_pending = true end
 	busy = false
@@ -773,6 +784,7 @@ end
 
 function gwr_pda_binder:net_destroy()
 	pda_binder = nil
+	pda_in_hand = false
 	if not self.done then
 		-- destroyed before finish (level change / quit / load): release the locks
 		busy = false
