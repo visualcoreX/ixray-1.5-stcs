@@ -67,6 +67,35 @@
 		</item>
 	</squad_order_hint>
 
+	<!-- shown once in the marsh tutorial, when the controls come back after the walk with the guide
+	     (mar_intro_zone.ltx, sr_idle@tutorial_guide_time_2): the weapon down key and the bases.
+	     Same box as squad_order_hint; the game goes on and the keys work while it is up -->
+	<weapon_lowered_hint>
+		<global_wnd/>
+		<item>
+			<length_sec>30</length_sec>
+			<pause_state>off</pause_state>
+			<sound/>
+			<cursor_pos/>
+			<pda_section/>
+			<grab_input>0</grab_input>
+			<main_wnd>
+				<!-- same layout as squad_order_hint, see the notes there -->
+				<frame x="224" y="32" width="576" height="128">
+					<texture>ui_icons_PDA_tooltips</texture>
+				</frame>
+				<auto_static start_time="0" length_sec="30" x="512" y="54" width="540" height="20" alignment="c">
+					<window_name>title</window_name>
+					<text font="letterica18" r="238" g="153" b="26" a="255" align="c">st_weapon_lowered_hint_title</text>
+				</auto_static>
+				<auto_static start_time="0" length_sec="30" x="512" y="108" width="540" height="84" alignment="c">
+					<window_name>body</window_name>
+					<text font="letterica18" r="216" g="216" b="216" a="255" align="c" complex_mode="1">st_weapon_lowered_hint</text>
+				</auto_static>
+			</main_wnd>
+		</item>
+	</weapon_lowered_hint>
+
 #include "ui\ui_credits.xml"
 #include "ui\ui_movies.xml"
 

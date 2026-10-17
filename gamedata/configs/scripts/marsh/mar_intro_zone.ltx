@@ -60,7 +60,7 @@ on_info = {+mar_intro_talk_with_guide_done} sr_idle@tutorial_guide_time_1 %=disa
 on_timer = 2500 | sr_idle@tutorial_guide_time_2 %+mar_intro_talk_with_guide_end =teleport_actor(mar_actor_teleport_tutorial_walk:mar_actor_teleport_tutorial_look)%
 
 [sr_idle@tutorial_guide_time_2]
-on_timer = 2500 | sr_idle@tutorial_tower_wait %=activate_weapon_slot(2) =enable_ui%
+on_timer = 2500 | sr_idle@tutorial_tower_wait %=activate_weapon_slot(2) =enable_ui =run_tutorial(weapon_lowered_hint)%
 
 [sr_idle@tutorial_tower_wait]
 on_info = {+mar_tutorial_tower_top_started} sr_idle@tutorial_kill_boars_wait %=give_inited_task(storyline:mar_tutorial_tower_top:csky)%, {=distance_to_obj_ge(306:260)} sr_idle@tutorial_surge

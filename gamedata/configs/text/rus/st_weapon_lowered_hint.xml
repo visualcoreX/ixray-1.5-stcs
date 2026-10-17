@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="st_weapon_lowered_hint_title">
+		<text>Подсказка</text>
+	</string>
+	<string id="st_weapon_lowered_hint">
+		<text>Оружие можно опустить, не убирая его: нажмите $$ACTION_wpn_lower$$, повторное нажатие поднимет его обратно. На базах оружие опускается само, и поднять его там нельзя.</text>
+	</string>
+</string_table>
