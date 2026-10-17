@@ -12,6 +12,7 @@
 #include "actor.h"			// third-person world-model tuning: camera state + active weapon
 #include "inventory.h"
 #include "Weapon.h"
+#include "Missile.h"
 
 u32 hud_adj_mode		= 0;
 u32 hud_adj_item_idx	= 0;
@@ -219,8 +220,9 @@ static bool world_item_tune(const Ivector& values)
 	CActor* a = Actor();
 	if (!a || a->cam_ActiveStyle() != eacFreeLook)	return false;	// cam_3 only
 
-	CWeapon* w = smart_cast<CWeapon*>(a->inventory().ActiveItem());
-	if (!w)											return false;
+	CWeapon*  w = smart_cast<CWeapon*>(a->inventory().ActiveItem());
+	CMissile* m = w ? NULL : smart_cast<CMissile*>(a->inventory().ActiveItem());	// bolt, grenades
+	if (!w && !m)									return false;
 
 	Fvector dpos, dypr;
 	dpos.set(0.f,0.f,0.f);
@@ -239,7 +241,10 @@ static bool world_item_tune(const Ivector& values)
 	}
 
 	if (values.x || values.y || values.z)
-		w->TuneWorldOffset(dpos, dypr);
+	{
+		if (w)	w->TuneWorldOffset(dpos, dypr);
+		else	m->TuneWorldOffset(dpos, dypr);
+	}
 	return true;			// input consumed even on an idle frame, so the hud is left alone
 }
 

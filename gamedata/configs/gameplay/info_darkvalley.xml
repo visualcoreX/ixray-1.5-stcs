@@ -19,6 +19,7 @@
 	<info_portion id="val_killer_roof_sniper_6_dead"/>
 	<info_portion id="val_killer_1_4_dead"/>
 	<info_portion id="val_killer_1_5_dead"/>
+	<info_portion id="val_killer_jumpers_spawned"/>
 	<info_portion id="val_killer_base_is_no_more"/>
 	<info_portion id="val_freedom_join_talked_first"/>
 	<info_portion id="val_freedom_join_need_sound"/>

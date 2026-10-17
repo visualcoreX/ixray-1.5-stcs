@@ -406,7 +406,11 @@ function actor_binder:update(delta)
 	-- a conversation puts the weapon away -- unless it is carried low (weapon down, key wpn_lower): then it
 	-- stays in hand, lowered, as with an NPC who asks nothing of a lowered weapon either (xr_meet).
 	-- A base no longer puts it away at all (weapon_needs_hiding): it keeps it down, see hide_weapon below.
-	if actor:is_talking() and not level.actor_weapon_lowered() then
+	-- While the 3D PDA is in hand (the PDA tutorial runs mid-conversation) nothing is switched either way: the
+	-- PDA phantom gives the slot back itself when it is put away (gwr_eatable.pda_out).
+	if gwr_eatable.pda_out() then
+		-- leave weapon_hidden as it is
+	elseif actor:is_talking() and not level.actor_weapon_lowered() then
 		if not weapon_hidden then
 			actor:hide_weapon()
 			weapon_hidden = true

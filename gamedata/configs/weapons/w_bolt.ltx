@@ -39,6 +39,14 @@ cost				= 0
 throw_point			= 0,0.4,0.5
 throw_dir			= 0,0,1
 
+; world model's seat in the hand (third person), in the hand bone frame; added, was absent (= 0,0,0 / 0,0,0).
+; Only the player uses the bolt, so this is global. Read by CAttachableItem::reload -> offset(), which
+; CMissile::UpdatePosition applies; the bolt is not in the actor's attachable_items, so nothing gets attached.
+; Measured in game with the cam_3 tuner (SHIFT+Num1/2).
+attach_position_offset	= -0.033900,-0.036000,0.007100
+attach_angle_offset		= 0.000000,0.000000,0.000000
+attach_bone_name		= bip01_r_hand
+
 PDM_disp_base           = 1.0
 PDM_disp_vel_factor     = 1.0
 PDM_disp_accel_factor   = 1.0

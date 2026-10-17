@@ -459,6 +459,13 @@ class "CEliminateSmartTask" (task_objects.CGeneralTask)
 
 function CEliminateSmartTask:__init(task_ini, section, type) super(task_ini, section, type) -- called 0th (on load), 0th and 3rd (otherwise)
 	self.target_cond = xr_logic.parse_condlist(nil, nil, nil, utils.cfg_get_string(task_ini, section, "target_cond", nil, false, "", "true"))
+	-- optional: an emptied smart only counts once this holds. A scripted assault spawns its later waves
+	-- onto the same smart (val_smart_terrain_1_2: the jumpers after the roof dies) -- without it the task
+	-- completed in the gap between the last kill and the next wave.
+	local complete_cond = utils.cfg_get_string(task_ini, section, "complete_cond", nil, false, "", nil)
+	if complete_cond then
+		self.complete_cond = xr_logic.parse_condlist(nil, nil, nil, complete_cond)
+	end
 end
 
 function CEliminateSmartTask:check_target(smart, faction) -- called 1st (not on load)
@@ -500,6 +507,9 @@ function CEliminateSmartTask:check_task(tm) -- called 6th
 	local target_owner = self.board.smarts[self.target].smrt.player_name
 
 	if target_owner == "none" or target_owner == self.community then
+		if self.complete_cond and xr_logic.pick_section_from_condlist(db.actor, nil, self.complete_cond) ~= "true" then
+			return		-- emptied, but the scenario still has a wave to send in (see __init)
+		end
 		if self.actor_helped then
 			if self.play_regard == "" then
 				for _, ally_squad in pairs (self.board.smarts[self.target].squads) do

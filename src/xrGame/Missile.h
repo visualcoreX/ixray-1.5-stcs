@@ -60,6 +60,16 @@ protected:
 	virtual void			UpdateFireDependencies_internal	();
 	virtual void			UpdateXForm						();
 	void					UpdatePosition					(const Fmatrix& trans);
+	// Actor-only seat in the hand, as CWeapon has: `<section>_actor` with position (metres) and orientation
+	// (degrees, HPB) in the hand bone frame -- configs/weapons/actor_wpn_pos.ltx. Only the player animates on
+	// the new pack, so NPCs keep offset() (attach_*_offset). The cam_3 tuner edits this one (TuneWorldOffset).
+	bool					m_bHasActorOffset;
+	Fvector					m_world_pos_actor;
+	Fvector					m_world_ypr_actor;
+	Fmatrix					m_OffsetActor;
+public:
+	void					TuneWorldOffset					(const Fvector& dpos, const Fvector& dypr_deg);
+protected:
 	void					spawn_fake_missile				();
 
 	virtual void			OnActiveItem		();

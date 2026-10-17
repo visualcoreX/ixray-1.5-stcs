@@ -178,7 +178,13 @@ void xrDebug::backend	(const char *expression, const char *description, const ch
 #ifdef USE_OWN_ERROR_MESSAGE_WINDOW
 	LPCSTR				endline = "\r\n";
 	LPSTR				buffer = assertion_info + xr_strlen(assertion_info);
+#	ifdef DEBUG
+	buffer				+= sprintf(buffer,"%sPress CANCEL to abort execution%s",endline,endline);
+	buffer				+= sprintf(buffer,"Press TRY AGAIN to continue execution%s",endline);
+	buffer				+= sprintf(buffer,"Press CONTINUE to continue execution and ignore all the errors of this type%s%s",endline,endline);
+#	else
 	buffer				+= sprintf(buffer,"%sPress OK to close the game%s",endline,endline);
+#	endif // DEBUG
 #endif // USE_OWN_ERROR_MESSAGE_WINDOW
 
 	if (handler)
@@ -201,11 +207,44 @@ void xrDebug::backend	(const char *expression, const char *description, const ch
 		hWnd = GetForegroundWindow();
 	ShowWindow(hWnd, SW_MINIMIZE);
 
-	// As stock: a fatal error ends the game. The dialog used to offer TRY AGAIN / CONTINUE, which ran the
-	// game on past a broken state -- a failed check, a corrupted heap -- into crashes that no longer said
-	// where they came from, or into a save written from that state. Now there is only OK: the exception
-	// below goes to UnhandledFilter, which writes the minidump (error_after_dialog keeps it from showing
-	// a second dialog), and the process ends.
+#	ifdef DEBUG
+	// Debug and Mixed: the developer may step past a failed check -- TRY AGAIN once, CONTINUE for good.
+	int result = MessageBox(
+		NULL, assertion_info, "Fatal Error",
+		MB_CANCELTRYCONTINUE | MB_ICONERROR | MB_DEFBUTTON3 | MB_SYSTEMMODAL | MB_DEFAULT_DESKTOP_ONLY);
+
+	switch (result) {
+		case IDCANCEL: {
+			DEBUG_INVOKE;
+			// TODO: Maybe not correct
+			exit(-1);
+			break;
+		}
+		case IDTRYAGAIN: {
+			error_after_dialog = false;
+			break;
+		}
+		case IDCONTINUE: {
+			error_after_dialog = false;
+			ignore_always = true;
+			ShowWindow(hWnd, SW_SHOWNORMAL);
+			break;
+		}
+		default: {
+			Msg("! xrDebug::backend default reached");
+			break;
+		}
+	}
+
+	if (get_on_dialog())
+		get_on_dialog()	(false);
+
+	CS.Leave			();
+#	else
+	// Release, as stock: a fatal error ends the game. Going on past a broken state -- a failed check, a
+	// corrupted heap -- only led to crashes that no longer said where they came from, or to a save written
+	// from that state. There is only OK: the exception below goes to UnhandledFilter, which writes the
+	// minidump (error_after_dialog keeps it from showing a second dialog), and the process ends.
 	MessageBox(
 		NULL, assertion_info, "Fatal Error",
 		MB_OK | MB_ICONERROR | MB_SYSTEMMODAL | MB_DEFAULT_DESKTOP_ONLY);
@@ -213,6 +252,7 @@ void xrDebug::backend	(const char *expression, const char *description, const ch
 	FlushLog			();
 	DEBUG_INVOKE;
 	exit				(-1);
+#	endif // DEBUG
 #endif
 }
 

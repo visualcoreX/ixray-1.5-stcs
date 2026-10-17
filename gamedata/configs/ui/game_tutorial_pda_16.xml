@@ -5,16 +5,19 @@
     <length_sec>5</length_sec>
     <sound>characters_voice\scenario\marsh\mar_csky_tactic_pda_tutorial_00</sound>
     <pda_section>pda_tasks</pda_section>
-    <cursor_pos x="530" y="78"/>
+    <cursor_pos x="575" y="78"/><!--was x="530"; the "Map" tab centre, see the note below-->
     <!--was 0, the only item in the file that didn't grab: the player could still click and swing the
         camera while the PDA was being drawn. 1 = same block every other step already uses; ESC still
         skips the tutorial (CUISequencer::IR_OnKeyboardPress checks kQUIT regardless of grab).-->
     <grab_input>1</grab_input>
     <pause_state>off</pause_state>
     <main_wnd>
-      <auto_static start_time="1" length_sec="5" x="510" y="70" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
+      <auto_static start_time="1" length_sec="5" x="575" y="70" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
         <texture>ui_highlight</texture>
       </auto_static>
+      <!-- was x="510". The tabs are laid out by RearrangeTabButtons (UIPdaWnd.cpp): text width + 30, 6 px
+           overlap, the row right-aligned at 868. Text widths from ui_font_letter_16_1600.ini (letterica16)
+           at 2560x1440: Map 549..601 (centre 575), Faction war 595..704 (650), Ranking 698..771 (734) -->
     </main_wnd>
   </item>
 
@@ -76,7 +79,7 @@
     <grab_input>1</grab_input>
     <pause_state>off</pause_state>
     <main_wnd>
-      <auto_static start_time="0" length_sec="9" x="584" y="468" width="60" height="60" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
+      <auto_static start_time="0" length_sec="9" x="577" y="470" width="60" height="60" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
         <texture>ui_highlight</texture>
       </auto_static>
     </main_wnd>
@@ -98,7 +101,7 @@
   <item>
     <!--При наведении на отметку на карте, ты можешь получить дополнительную информацию о ней. -->
     <length_sec>5</length_sec>
-    <cursor_pos x="584" y="468"/>
+    <cursor_pos x="577" y="468"/><!--was x="584": right of the highlight-->
     <sound>characters_voice\scenario\marsh\mar_csky_tactic_pda_tutorial_06</sound>
     <pda_section>pda_tasks</pda_section>
     <grab_input>1</grab_input>
@@ -120,7 +123,7 @@
     <grab_input>1</grab_input>
     <pause_state>off</pause_state>
     <main_wnd>
-      <auto_static start_time="0" length_sec="9" x="829" y="355" width="60" height="60" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
+      <auto_static start_time="0" length_sec="9" x="790" y="353" width="60" height="60" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
         <texture>ui_highlight</texture>
       </auto_static>
       <auto_static start_time="0" length_sec="9" x="533" y="470" width="60" height="60" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
@@ -145,11 +148,11 @@
     <length_sec>6</length_sec>
     <sound>characters_voice\scenario\marsh\mar_csky_tactic_pda_tutorial_09</sound>
     <pda_section>pda_fraction_war</pda_section>
-    <cursor_pos x="706" y="79"/>
+    <cursor_pos x="650" y="79"/><!--was x="706"; the "Faction war" tab centre, see the "Map" step-->
     <grab_input>1</grab_input>
     <pause_state>off</pause_state>
     <main_wnd>
-      <auto_static start_time="1" length_sec="6" x="683" y="70" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
+      <auto_static start_time="1" length_sec="6" x="650" y="70" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
         <texture>ui_highlight</texture>
       </auto_static>
     </main_wnd>
@@ -166,7 +169,7 @@
     <grab_input>1</grab_input>
     <pause_state>off</pause_state>
     <main_wnd>
-      <auto_static start_time="0" length_sec="8" x="247" y="185" width="200" height="200" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
+      <auto_static start_time="0" length_sec="8" x="231" y="191" width="200" height="200" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
         <texture>ui_highlight</texture>
       </auto_static>
     </main_wnd>
@@ -180,7 +183,7 @@
     <grab_input>1</grab_input>
     <pause_state>off</pause_state>
     <main_wnd>
-      <auto_static start_time="0" length_sec="3" x="793" y="185" width="200" height="200" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
+      <auto_static start_time="0" length_sec="3" x="790" y="191" width="200" height="200" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
         <texture>ui_highlight</texture>
       </auto_static>
     </main_wnd>
@@ -277,7 +280,7 @@
     <grab_input>1</grab_input>
     <pause_state>off</pause_state>
     <main_wnd>
-      <auto_static start_time="0" length_sec="4" x="518" y="114" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
+      <auto_static start_time="0" length_sec="4" x="515" y="133" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
         <texture>ui_highlight</texture>
       </auto_static>
       <auto_static start_time="4" length_sec="9" x="433" y="165" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
@@ -295,15 +298,18 @@
     <grab_input>1</grab_input>
     <pause_state>off</pause_state>
     <main_wnd>
-      <auto_static start_time="0" length_sec="5" x="441" y="387" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
+      <auto_static start_time="0" length_sec="5" x="477" y="387" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
         <texture>ui_highlight</texture>
       </auto_static>
-      <auto_static start_time="0" length_sec="5" x="513" y="387" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
+      <auto_static start_time="0" length_sec="5" x="548" y="387" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
         <texture>ui_highlight</texture>
       </auto_static>
-      <auto_static start_time="0" length_sec="5" x="583" y="387" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
+      <!-- the done strategic tasks (UIFactionWarWnd war states, 54 wide, step 71) are centred on x=512;
+           at this point of the game there are two of them, at 476.5 and 547.5 -- was three highlights
+           at 441/513/583, which fell left of, between and right of the two -->
+      <!--<auto_static start_time="0" length_sec="5" x="583" y="387" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
         <texture>ui_highlight</texture>
-      </auto_static>
+      </auto_static>-->
     </main_wnd>
   </item>
 
@@ -312,11 +318,11 @@
     <length_sec>9</length_sec>
     <sound>characters_voice\scenario\marsh\mar_csky_tactic_pda_tutorial_19</sound>
     <pda_section>pda_ranking</pda_section>
-    <cursor_pos x="772" y="79"/>
+    <cursor_pos x="734" y="79"/><!--was x="772"; the "Ranking" tab centre, see the "Map" step-->
     <grab_input>1</grab_input>
     <pause_state>off</pause_state>
     <main_wnd>
-      <auto_static start_time="1" length_sec="9" x="750" y="70" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
+      <auto_static start_time="1" length_sec="9" x="734" y="70" width="50" height="50" stretch="1" light_anim="tutor_rad_sign_clr" light_anim_cyclic="1" la_alpha="0" la_texture="1" xform_anim="tutor_rad_sign_xform" xform_anim_cyclic="1" alignment="c">
         <texture>ui_highlight</texture>
       </auto_static>
     </main_wnd>

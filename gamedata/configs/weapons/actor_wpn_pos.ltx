@@ -263,3 +263,13 @@ orientation             = 3.049995, -5.749999, 15.850043
 [wpn_rpg7_actor]
 position                = -0.089901, -0.007299, -0.169402
 orientation             = -19.149994, -24.549911, -5.600004
+
+; ---- grenades (CMissile reads <section>_actor too; measured on the RGD-5 with the cam_3 tuner,
+; the four share one vanilla seat: attach_position_offset -0.03,-0.089,0.025 / attach_angle_offset 90 = 2.035 rad) ----
+[grenade_rgd5_actor]
+position                = -0.057300, -0.068800, 0.005000
+orientation             = 116.620002, 0.000000, 0.000000
+
+[grenade_f1_actor]:grenade_rgd5_actor
+[grenade_rgn_actor]:grenade_rgd5_actor
+[grenade_rgo_actor]:grenade_rgd5_actor
