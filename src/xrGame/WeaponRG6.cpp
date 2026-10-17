@@ -75,16 +75,26 @@ void CWeaponRG6::FireStart ()
 	if (GetState() == eIdle && SpawnRocketIfNeeded())	return;	// grenade created this frame -> pull again
 
 	if(GetState() == eIdle	&& getRocketCount() )
-	{
 		inheritedSG::FireStart ();
-		// Launch only if that actually started a shot. FireStart has plenty of reasons to hold one back
-		// -- the sprint-exit gate above all, which only remembers the press -- and the launch below used
-		// to go out regardless: a grenade flew, but no eFire ever ran to spend the round, so every press
-		// during a sprint transition was another free shot. A held-back press comes back through
-		// ResumeDeferredFire -> FireStart and launches then.
-		if (GetNextState() != eFire)	return;
+}
 
-		Fvector p1, d; 
+// The grenade leaves with the ROUND, i.e. from state_Fire's OnShot -- not from FireStart. FireStart only
+// opens the trigger; whether a round actually goes is decided later in state_Fire, and two of its outcomes
+// fire nothing: the no_jam_fire dud (this weapon's misfire, rolled BEFORE the shot) and the light strike.
+// Launching in FireStart sent the grenade out on those too -- a misfire that still fired. It also covers
+// every reason FireStart holds a press back (the sprint-exit gate above all): no eFire, no OnShot, no launch.
+void CWeaponRG6::OnShot()
+{
+	inheritedSG::OnShot		();
+	LaunchFakeGrenade		();
+}
+
+void CWeaponRG6::LaunchFakeGrenade()
+{
+	if (!getRocketCount())	return;
+
+	{
+		Fvector p1, d;
 		p1.set(get_LastFP()); 
 		d.set(get_LastFD());
 
@@ -159,7 +169,7 @@ void CWeaponRG6::FireStart ()
 		// GS LaunchGrenade_controller_Correct, as for the underbarrel GL: under a controller the grenade is
 		// DROPPED at the victim's feet -- (0,-2,0), whatever the barrel points at
 		if (suicide_muzzle)	d.set(0.f, -2.f, 0.f);
-		VERIFY2(_valid(launch_matrix),"CWeaponRG6::FireStart. Invalid launch_matrix");
+		VERIFY2(_valid(launch_matrix),"CWeaponRG6::LaunchFakeGrenade. Invalid launch_matrix");
 		CRocketLauncher::LaunchRocket(launch_matrix, d, zero_vel);
 
 		CExplosiveRocket* pGrenade = smart_cast<CExplosiveRocket*>(getCurrentRocket());
