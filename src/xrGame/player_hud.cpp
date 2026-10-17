@@ -546,6 +546,7 @@ player_hud::player_hud()
 	m_lower_before.identity	();
 	m_lower_after.identity	();
 	m_lower_reported		= false;
+	reset_sway				();
 	m_left_hold.identity	();
 	m_left_hold_on			= false;
 }
@@ -1018,13 +1019,24 @@ void player_hud::update(const Fmatrix& cam_trans)
 	// left arm's root bones get the difference in model space, so the arm and the detector it holds stand
 	// exactly where they would, and the right arm with the weapon goes down. Without a detector the left
 	// hand is on the weapon and goes down with it, as before.
-	m_left_hold_on					= m_lower_reported && m_attached_items[0] && m_attached_items[1] && !m_left_roots.empty();
+	// The same hold gives a detector next to a weapon its own sway: m_sway_left_corr swaps the weapon's
+	// sway for the detector's (update_inertion), on top of whatever the weapon-down part did.
+	const bool lower_hold			= m_lower_reported && m_attached_items[0] && m_attached_items[1];
+	m_left_hold_on					= (lower_hold || m_sway_split) && !m_left_roots.empty();
 	if (m_left_hold_on)
 	{
-		Fmatrix	after_i;	after_i.invert	(m_lower_after);
-		Fmatrix	base;		base.mul		(m_lower_before, after_i);
-		base.mulB_44					(trans);
+		Fmatrix	base;
+		if (lower_hold)
+		{
+			Fmatrix	after_i;	after_i.invert	(m_lower_after);
+			base.mul					(m_lower_before, after_i);
+			base.mulB_44				(trans);
+		}
+		else
+			base.set					(trans);
 		base.mulB_44					(m_attach_offset);			// where the hands would stand
+		if (m_sway_split)
+			base.mulA_44				(m_sway_left_corr);			// ...swaying as the detector does
 		Fmatrix	cur_i;		cur_i.invert	(m_transform);
 		m_left_hold.mul					(cur_i, base);				// model space: where they stand -> where they would
 	}
@@ -1095,44 +1107,151 @@ void player_hud::update_additional	(Fmatrix& trans)
 		m_attached_items[1]->update_hud_additional(trans);
 }
 
+void player_hud::SSway::reset()
+{
+	rot.set		(0.f, 0.f, 0.f);
+	rot_v.set	(0.f, 0.f, 0.f);
+	pos.set		(0.f, 0.f, 0.f);
+	pos_v.set	(0.f, 0.f, 0.f);
+}
+
+void player_hud::reset_sway()
+{
+	m_sway.reset		();
+	m_sway_left.reset	();
+	m_sway_split		= false;
+	m_sway_left_corr.identity();
+	m_sway_prev_dir.set	(0.f, 0.f, 1.f);
+	m_sway_frame		= 0;
+}
+
+// One sub-step of a damped spring per axis, x chasing tgt. The spring term is semi-implicit and the
+// damping implicit, so a stiff or heavily damped setting cannot blow up. Held inside +-lim.
+static void sway_spring(Fvector& x, Fvector& v, const Fvector& tgt, float freq, float damp, float lim, float h)
+{
+	const float w	= PI_MUL_2 * freq;
+	float* px		= &x.x;
+	float* pv		= &v.x;
+	const float* pt	= &tgt.x;
+	for (int a = 0; a < 3; ++a)
+	{
+		pv[a]	= (pv[a] + w * w * (pt[a] - px[a]) * h) / (1.f + 2.f * damp * w * h);
+		px[a]	+= pv[a] * h;
+		if (px[a] > lim)		{ px[a] = lim;	if (pv[a] > 0.f) pv[a] = 0.f; }
+		else if (px[a] < -lim)	{ px[a] = -lim;	if (pv[a] < 0.f) pv[a] = 0.f; }
+	}
+}
+
+// One frame of one sway: the camera rate (rad/s, x = turning right, y = looking up) sets the target,
+// the offsets chase it in fixed sub-steps.
+void player_hud::SSway::step(const InertionData& in, const Fvector& rate, float dt)
+{
+	// targets in setHPB terms: +h turns the muzzle left, +p up, +b drops the right side
+	const float rmax	= _max(in.RotMax, 0.f);
+	const float pmax	= _max(in.PosMax, 0.f);
+	Fvector rt, pt;
+	rt.set				( in.RotYaw * rate.x, -in.RotPitch * rate.y, in.RotRoll * rate.x);
+	pt.set				(-in.PosX * rate.x,   -in.PosY * rate.y,     0.f);
+	clamp				(rt.x, -rmax, rmax);	clamp(rt.y, -rmax, rmax);	clamp(rt.z, -rmax, rmax);
+	clamp				(pt.x, -pmax, pmax);	clamp(pt.y, -pmax, pmax);
+
+	float rf = in.RotFreq, rd = in.RotDamp, pf = in.PosFreq, pd = in.PosDamp;
+	clamp				(rf, 0.1f, 30.f);	clamp(pf, 0.1f, 30.f);
+	clamp				(rd, 0.05f, 4.f);	clamp(pd, 0.05f, 4.f);
+
+	const float span	= _min(dt, 0.1f);	// a hitch is not a long flight
+	const int n			= _max(1, _min(48, iCeil(span * 240.f)));
+	const float h		= span / float(n);
+	for (int s = 0; s < n && h > 0.f; ++s)
+	{
+		sway_spring		(rot, rot_v, rt, rf, rd, rmax, h);
+		sway_spring		(pos, pos_v, pt, pf, pd, pmax, h);
+	}
+}
+
+void player_hud::SSway::xform(const InertionData& in, Fmatrix& L) const
+{
+	L.setHPB			(rot.x, rot.y, rot.z);
+	Fvector rp;			L.transform_dir(rp, in.RotPivot);
+	L.c.set				(in.RotPivot.x - rp.x + pos.x, in.RotPivot.y - rp.y + pos.y, in.RotPivot.z - rp.z);
+}
+
+// Spring-damper sway. How fast the view turned this frame, measured in the camera's own axes, sets
+// where the hud should hang (gain * rate, behind the turn); the hud's offset chases that as a damped
+// spring, stepped at a fixed rate so the feel does not change with fps. Rotation is underdamped by
+// default -- it trails the turn, then swings past centre once the turn stops; translation is
+// critically damped and only trails. The rotation is about RotPivot, the shift is added after it.
+// The vanilla pitch compensation (a static pose by look pitch) is kept as it was.
+//
+// The sway of the hud base (the weapon, or the detector when it is alone) moves the whole hands
+// frame. A detector next to a weapon has its own sway, with its own parameters and pivot: update()
+// puts it on the left arm through m_left_hold, in place of the weapon's (m_sway_left_corr).
 void player_hud::update_inertion(Fmatrix& trans)
 {
 	auto hi = m_attached_items[0] ? m_attached_items[0] : m_attached_items[1];
-
-	if (hi)
+	if (!hi || !hi->m_parent_hud_item)
 	{
-		auto& inertion = hi->m_parent_hud_item->CurrentInertionData();
-
-		Fmatrix								xform;
-		Fvector& origin						= trans.c;
-		xform								= trans;
-
-		static Fvector						st_last_dir={0,0,0};
-
-		// calc difference
-		Fvector								diff_dir;
-		diff_dir.sub						(xform.k, st_last_dir);
-
-		// clamp by PI_DIV_2
-		Fvector last;						last.normalize_safe(st_last_dir);
-		float dot							= last.dotproduct(xform.k);
-		if (dot<EPS){
-			Fvector v0;
-			v0.crossproduct					(st_last_dir,xform.k);
-			st_last_dir.crossproduct		(xform.k,v0);
-			diff_dir.sub					(xform.k, st_last_dir);
-		}
-
-		// tend to forward
-		st_last_dir.mad(diff_dir, inertion.TendtoSpeed * Device.fTimeDelta);
-		origin.mad(diff_dir, inertion.OriginOffset);
-
-		// pitch compensation
-		float pitch							= angle_normalize_signed(xform.k.getP());
-		origin.mad(xform.k, -pitch * inertion.PitchOffsetD);
-		origin.mad(xform.i, -pitch * inertion.PitchOffsetR);
-		origin.mad(xform.j, -pitch * inertion.PitchOffsetN);
+		reset_sway	();
+		return;
 	}
+	const InertionData& in	= hi->m_parent_hud_item->CurrentInertionData();
+
+	attachable_hud_item* det = m_attached_items[0] ? m_attached_items[1] : NULL;
+	const bool split		= det && det->m_parent_hud_item && !m_left_roots.empty();
+	// hand the motion over, so neither arm jumps: a detector drawn next to the weapon starts where the
+	// arm is; a weapon put away leaves the base to the detector, which carries on from its own sway
+	if (split && !m_sway_split)							m_sway_left	= m_sway;
+	else if (!split && m_sway_split && !m_attached_items[0])	m_sway		= m_sway_left;
+	m_sway_split			= split;
+	const InertionData* ind	= split ? &det->m_parent_hud_item->CurrentInertionData() : NULL;
+
+	if (m_sway_frame != Device.dwFrame)		// once per frame, however often the hud is updated
+	{
+		// Last frame's view direction seen in this frame's axes. A skipped frame (menu, load, another
+		// camera) or a jump over 30 degrees (teleport, camera reset) is not a turn.
+		Fvector rate;		rate.set(0.f, 0.f, 0.f);
+		const float dt		= Device.fTimeDelta;
+		if (m_sway_frame && m_sway_frame + 1 == Device.dwFrame && dt > EPS_S)
+		{
+			const float px	= m_sway_prev_dir.dotproduct(trans.i);
+			const float py	= m_sway_prev_dir.dotproduct(trans.j);
+			const float pz	= m_sway_prev_dir.dotproduct(trans.k);
+			if (pz > 0.866f)
+			{
+				rate.x		= atan2f(-px, pz) / dt;		// + = turning right
+				rate.y		= atan2f(-py, pz) / dt;		// + = looking up
+			}
+		}
+		m_sway_prev_dir		= trans.k;
+		m_sway_frame		= Device.dwFrame;
+
+		m_sway.step			(in, rate, dt);
+		if (ind)	m_sway_left.step(*ind, rate, dt);
+	}
+
+	// pitch compensation (vanilla)
+	const Fmatrix xform		= trans;
+	Fvector& origin			= trans.c;
+	float pitch				= angle_normalize_signed(xform.k.getP());
+	origin.mad				(xform.k, -pitch * in.PitchOffsetD);
+	origin.mad				(xform.i, -pitch * in.PitchOffsetR);
+	origin.mad				(xform.j, -pitch * in.PitchOffsetN);
+
+	Fmatrix L;				m_sway.xform(in, L);
+	if (ind)
+	{
+		// Everything after this point is multiplied on from the right, so the left arm, wanting
+		// cam * Ld * rest instead of cam * L * rest, takes (cam * Ld * L^-1 * cam^-1) on from the left.
+		Fmatrix Ld;			m_sway_left.xform(*ind, Ld);
+		Fmatrix L_i;		L_i.invert(L);
+		Fmatrix cam_i;		cam_i.invert(trans);
+		m_sway_left_corr.mul_43	(trans, Ld);
+		m_sway_left_corr.mulB_43(L_i);
+		m_sway_left_corr.mulB_43(cam_i);
+	}
+	else
+		m_sway_left_corr.identity();
+	trans.mulB_43			(L);
 }
 
 

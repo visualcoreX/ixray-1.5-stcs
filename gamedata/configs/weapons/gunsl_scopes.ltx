@@ -38,7 +38,7 @@ visual          = dynamics\weapons\addons\scopes\cobra.ogf
 inv_name		= st_scope_cobra
 inv_name_short	= st_scope_cobra
 description		= st_scope_cobra_descr
-collimator_tint	= 100,128,132 ;142,160,165
+collimator_tint	= 106,128,130
 collimator_glass_strength	= 1.0, 0.25   ; от бедра, в прицеле: множитель видимости текстуры стекла
 collimator_reflect			= 255,96,0	; the sky mirrored in the coating, in its colour (0..255; none = no reflection)
 collimator_reflect_indirect	= 80,128,144	; the same mirror in the sky's light alone (shade, against the sun): its own colour
@@ -69,7 +69,7 @@ visual          = dynamics\weapons\addons\scopes\pka.ogf
 inv_name		= st_scope_pka
 inv_name_short	= st_scope_pka
 description		= st_scope_pka_descr
-collimator_tint	= 100,128,134
+collimator_tint	= 84,128,136
 collimator_glass_strength	= 1.0, 0.25
 collimator_reflect			= 255,128,0
 collimator_reflect_indirect	= 64,100,128
@@ -442,8 +442,8 @@ aim_hud_offset_pos      = -0.009800,-0.0183000,-0.15
 aim_hud_offset_rot      = 0.007000,0.000000,0.000000
 aim_hud_offset_pos_16x9 = -0.009800,-0.0183000,-0.15
 aim_hud_offset_rot_16x9 = 0.001000,0.000000,0.000000
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 10
 
 ; Rakurs COLLIMATOR -- mountable after up_toz34_weaver. GS-faithful: NO use_scope_anims, NO lens frame,
 ; and scope_texture = zero_alpha (its reticle is on the model, so no 2D crosshair overlay is drawn).
@@ -471,8 +471,8 @@ aim_hud_offset_pos      = -0.009100,-0.014700,0.0
 aim_hud_offset_rot      = -0.001000,0.000000,0.000000
 aim_hud_offset_pos_16x9 = -0.009100,-0.013600,0.0
 aim_hud_offset_rot_16x9 = 0.001000,0.000000,0.000000
-inertion_aim_origin_offset = 0.02
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.02
+;inertion_aim_speed      = 8
 
 [wpn_addon_scope_pu]:wpn_addon_scope_x2.7
 $spawn			= "weapons\addons\scope_pu"
@@ -549,7 +549,7 @@ visual          = dynamics\weapons\addons\scopes\aimpoint.ogf
 inv_name		= gunsl_addon_scope_aimpoint
 inv_name_short	= gunsl_addon_scope_aimpoint
 description		= gunsl_addon_scope_aimpoint_descr
-collimator_tint	= 100,130,134
+collimator_tint	= 118,136,128
 collimator_glass_strength	= 1.0, 0.25
 collimator_reflect			= 255,100,0
 collimator_reflect_indirect	= 64,110,128
@@ -644,8 +644,8 @@ aim_hud_offset_pos      = 0.000000,-0.052700,0.0
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.000000,-0.052700,0.0
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_aimpoint_winchester1300]
 scope_name              = wpn_addon_scope_susat_dusk
@@ -664,8 +664,8 @@ aim_hud_offset_pos      = 0.000000,-0.056100,0.0
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.000000,-0.056100,0.0
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_elcan_winchester1300]
 scope_name              = wpn_addon_scope_susat_custom
@@ -703,8 +703,8 @@ aim_hud_offset_pos      = 0.000000,-0.058240,-0.01
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.000000,-0.058240,-0.01
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_winchester1300]
@@ -735,8 +735,8 @@ aim_hud_offset_pos      = 0.000000,-0.077840,0.0
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.000000,-0.077840,0.0
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 
 ; ===== Wincheaster 1300 "Trapper" scope sections (GS scopes_uniq.ltx) =====
 ; Same 4 optics as the base weapon, only the on-icon offsets differ (longer wood-stock body).
@@ -756,8 +756,8 @@ aim_hud_offset_pos      = 0.000000,-0.052700,0.0
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.000000,-0.052700,0.0
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_aimpoint_winchester1300_trapper]
 scope_name              = wpn_addon_scope_susat_dusk
@@ -776,8 +776,8 @@ aim_hud_offset_pos      = 0.000000,-0.056100,0.0
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.000000,-0.056100,0.0
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_elcan_winchester1300_trapper]
 scope_name              = wpn_addon_scope_susat_custom
@@ -815,8 +815,8 @@ aim_hud_offset_pos      = 0.000000,-0.058240,-0.01
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.000000,-0.058240,-0.01
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_winchester1300_trapper]
@@ -847,8 +847,8 @@ aim_hud_offset_pos      = 0.000000,-0.077840,0.0
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.000000,-0.077840,0.0
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 
 ; ===== protecta/striker (our spas12) per-weapon scope sections (GS protecta/scopes.ltx) =====
 ; Same 4 optics as the winchester -- the ITEMS already exist; only these per-weapon sections differ
@@ -869,8 +869,8 @@ aim_hud_offset_pos      = 0.000150,-0.057100,-0.02
 aim_hud_offset_rot      = 0.000000,0.000000,0.000000
 aim_hud_offset_pos_16x9 = 0.000190,-0.05710,-0.02
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_aimpoint_protecta]
 scope_name              = wpn_addon_scope_susat_dusk
@@ -889,8 +889,8 @@ aim_hud_offset_pos      = -0.000050,-0.061500,-0.02
 aim_hud_offset_rot      = 0.000000,0.000000,0.000000
 aim_hud_offset_pos_16x9 = 0.000190,-0.061500,-0.02
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_elcan_protecta]
 scope_name              = wpn_addon_scope_susat_custom
@@ -925,8 +925,8 @@ aim_hud_offset_pos      = 0.000800,-0.071900,-0.06
 aim_hud_offset_rot      = -0.030000,-0.002000,0.000000
 aim_hud_offset_pos_16x9 = 0.000800,-0.071900,-0.06
 aim_hud_offset_rot_16x9 = -0.030000,-0.002000,0.000000
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_protecta]
@@ -955,8 +955,8 @@ aim_hud_offset_pos      = -0.000200,-0.087700,-0.013
 aim_hud_offset_rot      = -0.030000,-0.002000,0.000000
 aim_hud_offset_pos_16x9 = 0.000200,-0.087700,-0.013
 aim_hud_offset_rot_16x9 = -0.030000,0.000000,0.000000
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 
 
 ;==============================================================================
@@ -987,8 +987,8 @@ aim_hud_offset_pos      = 0.0,-0.0239,-0.02
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0,-0.0239,-0.02
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_aimpoint_mp5]
 scope_name              = wpn_addon_scope_susat_dusk
@@ -1007,8 +1007,8 @@ aim_hud_offset_pos      = 0.0,-0.0285,-0.05
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0,-0.0285,-0.05
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_elcan_mp5]
 scope_name              = wpn_addon_scope_susat_custom
@@ -1042,8 +1042,8 @@ aim_hud_offset_pos      = 0.0,-0.03,-0.155
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0,-0.03,-0.155
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_mp5]
@@ -1072,8 +1072,8 @@ aim_hud_offset_pos      = 0.0,-0.052,0.0
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0,-0.052,0.0
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 
 ;==============================================================================
 ; MP5SD optics -- GS's mp5sd\scopes.ltx is identical to the mp5's except the section names.
@@ -1094,8 +1094,8 @@ aim_hud_offset_pos      = 0.0,-0.0239,-0.02
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0,-0.0239,-0.02
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_aimpoint_mp5sd]
 scope_name              = wpn_addon_scope_susat_dusk
@@ -1114,8 +1114,8 @@ aim_hud_offset_pos      = 0.0,-0.0285,-0.05
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0,-0.0285,-0.05
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_elcan_mp5sd]
 scope_name              = wpn_addon_scope_susat_custom
@@ -1149,8 +1149,8 @@ aim_hud_offset_pos      = 0.0,-0.03,-0.155
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0,-0.03,-0.155
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_mp5sd]
@@ -1179,8 +1179,8 @@ aim_hud_offset_pos      = 0.0,-0.052,0.0
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0,-0.052,0.0
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 
 
 ;==============================================================================
@@ -1203,8 +1203,8 @@ aim_hud_offset_pos      = -0.00019,-0.0257,-0.02
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = -0.00019,-0.0257,-0.02
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_aimpoint_ump]
 scope_name              = wpn_addon_scope_susat_dusk
@@ -1223,8 +1223,8 @@ aim_hud_offset_pos      = 0.00011,-0.0289,-0.045
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.00011,-0.0289,-0.045
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_elcan_ump]
 scope_name              = wpn_addon_scope_susat_custom
@@ -1258,8 +1258,8 @@ aim_hud_offset_pos      = 0.0,-0.031,-0.15
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0,-0.031,-0.15
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_ump]
@@ -1288,8 +1288,8 @@ aim_hud_offset_pos      = 0.0,-0.0527,0.0
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0,-0.0527,0.0
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 
 ;==============================================================================
 ; AKS-74U optics (GS assault\aks74u\scopes.ltx). Same addon items and the same bone names as
@@ -1520,8 +1520,8 @@ gl_hud_offset_pos       = 0.0,0.012,-0.05
 gl_hud_offset_rot       = 0.0,0.0,0.0
 gl_hud_offset_pos_16x9  = 0.0,0.012,-0.1
 gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_aimpoint_l85a2]
 scope_name              = wpn_addon_scope_susat_dusk
@@ -1545,8 +1545,8 @@ gl_hud_offset_pos       = 0.0,0.012,0.0
 gl_hud_offset_rot       = 0.0,0.0,0.0
 gl_hud_offset_pos_16x9  = 0.0,0.012,-0.05
 gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 ; the SUSAT itself -- the L85's own 4x sight, first weapon to use this optic here.
 ; Reticle = the stock CS L85 scope texture (that sight IS a SUSAT).
@@ -1579,8 +1579,8 @@ gl_hud_offset_pos       = 0.0,0.012,0.0
 gl_hud_offset_rot       = 0.0,0.0,0.0
 gl_hud_offset_pos_16x9  = 0.0,0.012,-0.05
 gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_elcan_l85a2]
 scope_name              = wpn_addon_scope_susat_custom
@@ -1620,8 +1620,8 @@ gl_hud_offset_pos       = 0.0,0.012,0.0
 gl_hud_offset_rot       = 0.0,0.0,0.0
 gl_hud_offset_pos_16x9  = 0.0,0.012,-0.05
 gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 ;prohibit_aim_for_grenade_mode = true ; was true: GL aiming allowed with the ELCAN on the L85
 
 [scope_pn23_l85a2]
@@ -1656,8 +1656,8 @@ gl_hud_offset_pos       = 0.0,0.012,0.12
 gl_hud_offset_rot       = 0.0,0.0,0.0
 gl_hud_offset_pos_16x9  = 0.0,0.012,0.07
 gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 
 ;==============================================================================
 ; SIG SG 550 optics -- GS assault\sig550\scopes.ltx
@@ -1680,8 +1680,8 @@ aim_hud_offset_pos      = 0.0001,-0.0221,0.0
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0001,-0.0221,0.0
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_aimpoint_sig550]
 scope_name              = wpn_addon_scope_susat_dusk
@@ -1701,8 +1701,8 @@ aim_hud_offset_pos      = 0.0002,-0.0253,0.0
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0002,-0.0253,0.0
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_elcan_sig550]
 scope_name              = wpn_addon_scope_susat_custom
@@ -1738,8 +1738,8 @@ aim_hud_offset_pos      = 0.000200,-0.027400,-0.12
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.000200,-0.027400,-0.12
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 ;prohibit_aim_for_grenade_mode = true ; was true: GL aiming allowed with the ELCAN on the SIG 550
 
 [scope_pn23_sig550]
@@ -1770,8 +1770,8 @@ aim_hud_offset_pos      = 0.0,-0.05,0.05
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0,-0.05,0.05
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 
 ;==============================================================================
 ; SIG SG 552 optics -- GS assault\sig552\scopes.ltx
@@ -1794,8 +1794,8 @@ aim_hud_offset_pos      = 0.0001,-0.0221,0.0
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0001,-0.0221,0.0
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_aimpoint_sig552]
 scope_name              = wpn_addon_scope_susat_dusk
@@ -1815,8 +1815,8 @@ aim_hud_offset_pos      = 0.0002,-0.0253,0.0
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0002,-0.0253,0.0
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_elcan_sig552]:scope_elcan_sig550
 ; SIG 552's own ELCAN (GS assault\sig552\scopes.ltx differs from the 550's only in the icon offset and a
@@ -1854,8 +1854,8 @@ aim_hud_offset_pos      = 0.0,-0.05,0.05
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.0,-0.05,0.05
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 
 ;==============================================================================
 ; PO 4x34 scope item (GS addons/scopes/special/std_po4x34.ltx) -- the Groza's own optic.
@@ -1911,8 +1911,8 @@ aim_hud_offset_pos      = 0.000276,-0.032090,-0.12
 aim_hud_offset_rot      = 0.007000,0.000000,0.000000
 aim_hud_offset_pos_16x9 = 0.000276,-0.032090,-0.12
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 additional_icon_element = icon_element_oc14_handle_upper_for_scope
 additional_icon_element_offset_x = 50
@@ -1940,8 +1940,8 @@ gl_hud_offset_pos       = 0.0,-0.001,-0.1
 gl_hud_offset_rot       = 0.0,0.0,0.0
 gl_hud_offset_pos_16x9  = 0.0,-0.001,-0.05
 gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 prohibit_aim_for_grenade_mode = true
 
 [scope_aimpoint_groza]
@@ -1966,8 +1966,8 @@ gl_hud_offset_pos       = 0.0,-0.001,-0.1
 gl_hud_offset_rot       = 0.0,0.0,0.0
 gl_hud_offset_pos_16x9  = 0.0,-0.001,-0.05
 gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 prohibit_aim_for_grenade_mode = true
 
 [scope_elcan_groza]
@@ -2008,8 +2008,8 @@ gl_hud_offset_pos       = 0.0,-0.001,-0.1
 gl_hud_offset_rot       = 0.0,0.0,0.0
 gl_hud_offset_pos_16x9  = 0.0,-0.001,-0.05
 gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_groza]
@@ -2044,8 +2044,8 @@ gl_hud_offset_pos       = 0.0,-0.001,-0.1
 gl_hud_offset_rot       = 0.0,0.0,0.0
 gl_hud_offset_pos_16x9  = 0.0,-0.001,-0.05
 gl_hud_offset_rot_16x9  = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 ;==============================================================================
@@ -2063,8 +2063,8 @@ aim_hud_offset_pos      = 0.009350,-0.034100,0.11
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.009350,-0.034100,0.11
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.02
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.02
+;inertion_aim_speed      = 8
 
 [scope_pso1m2x1_val]:scope_pso1m2x1_ak74m
 scope_texture		= crosshair_2d_pso1as	; GS parity: the stock reticle has no illumination levels
@@ -2075,8 +2075,8 @@ aim_hud_offset_pos      = 0.009350,-0.033200,0.10
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.009350,-0.033200,0.10
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.02
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.02
+;inertion_aim_speed      = 8
 
 [scope_rakurs_val]:scope_rakurs_ak74m
 scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
@@ -2087,8 +2087,8 @@ aim_hud_offset_pos      = 0.000000,-0.002500,-0.03
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.000000,-0.002500,-0.03
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.005
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.005
+;inertion_aim_speed      = 8
 
 [scope_nvsn_val]:scope_nvsn_ak74m
 scope_texture		= crosshair_2d_1pn93x4	; GS parity: the stock reticle has no illumination levels
@@ -2099,8 +2099,8 @@ aim_hud_offset_pos      = 0.013000,-0.062000,0.145
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.013000,-0.062000,0.145
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 10
 
 [scope_nvas_val]:scope_nvas_ak74m
 scope_texture		= crosshair_2d_1pn93x1	; GS parity: the stock reticle has no illumination levels
@@ -2111,8 +2111,8 @@ aim_hud_offset_pos      = 0.018850,-0.048900,0.135
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.018850,-0.048900,0.135
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 10
 
 [scope_cobra_val]:scope_cobra_ak74m
 scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
@@ -2123,8 +2123,8 @@ aim_hud_offset_pos      = -0.000300,-0.042900,0.03
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = -0.000300,-0.040000,0.03
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 8
 
 [scope_pka_val]:scope_pka_ak74m
 scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
@@ -2135,8 +2135,8 @@ aim_hud_offset_pos      = 0.009200,-0.033700,-0.02
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.009200,-0.033700,-0.02
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 8
 
 [scope_kashtan_val]:scope_kashtan_ak74m
 scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
@@ -2147,8 +2147,8 @@ aim_hud_offset_pos      = -0.001300,-0.032100,0.09
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = -0.001300,-0.032100,0.09
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 10
 
 ;==============================================================================
 ; SVU optics -- GS sniper/svu/scopes.ltx. Same optic items as the ak74m (inherit the twin),
@@ -2167,8 +2167,8 @@ aim_hud_offset_pos      = 0.000150,-0.001700,-0.009
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.000150,-0.001700,-0.009
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.02
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.02
+;inertion_aim_speed      = 8
 additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
 additional_icon_element_offset_x = 50
 additional_icon_element_offset_y = 0
@@ -2185,8 +2185,8 @@ aim_hud_offset_pos      = 0.000150,-0.002800,-0.055
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.000150,-0.002800,-0.055
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.02
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.02
+;inertion_aim_speed      = 8
 additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
 additional_icon_element_offset_x = 50
 additional_icon_element_offset_y = 0
@@ -2203,8 +2203,8 @@ aim_hud_offset_pos      = 0.003450,-0.031000,-0.09
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.003450,-0.031000,-0.09
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 10
 additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
 additional_icon_element_offset_x = 50
 additional_icon_element_offset_y = 0
@@ -2222,8 +2222,8 @@ aim_hud_offset_pos      = 0.010400,-0.023300,-0.05
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.010400,-0.023300,-0.05
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 10
 additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
 additional_icon_element_offset_x = 50
 additional_icon_element_offset_y = 0
@@ -2241,8 +2241,8 @@ aim_hud_offset_pos      = -0.0088,0.001,-0.16
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = -0.0088,0.001,-0.16
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 8
 additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
 additional_icon_element_offset_x = 50
 additional_icon_element_offset_y = 0
@@ -2259,8 +2259,8 @@ aim_hud_offset_pos      = 0.001,-0.0015,-0.13
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.001,-0.0015,-0.13
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 8
 additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
 additional_icon_element_offset_x = 50
 additional_icon_element_offset_y = 0
@@ -2277,8 +2277,8 @@ aim_hud_offset_pos      = -0.011550,-0.000700,-0.1
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = -0.011550,-0.000700,-0.1
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 10
 additional_icon_element = icon_element_svu_sights_off	; icon swaps to the folded sights
 additional_icon_element_offset_x = 50
 additional_icon_element_offset_y = 0
@@ -2298,8 +2298,8 @@ aim_hud_offset_pos      = -0.000050,-0.000300,0.06
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = -0.000050,-0.000300,0.06
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.02
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.02
+;inertion_aim_speed      = 8
 
 [scope_pso1m2_svd]:scope_pso1m2x1_ak74m
 scope_texture		= crosshair_2d_pso1as	; GS parity: the stock reticle has no illumination levels
@@ -2311,8 +2311,8 @@ aim_hud_offset_pos      = -0.000350,-0.000800,0.06
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = -0.000350,-0.000800,0.06
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.02
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.02
+;inertion_aim_speed      = 8
 
 [scope_nvsn_svd]:scope_nvsn_ak74m
 scope_texture		= crosshair_2d_1pn93x4	; GS parity: the stock reticle has no illumination levels
@@ -2324,8 +2324,8 @@ aim_hud_offset_pos      = 0.004800,-0.028200,0.04
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.004800,-0.028200,0.04
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 10
 
 [scope_nvas_svd]:scope_nvas_ak74m
 scope_texture		= crosshair_2d_1pn93x1	; GS parity: the stock reticle has no illumination levels
@@ -2337,8 +2337,8 @@ aim_hud_offset_pos      = 0.010300,-0.022100,0.04
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.010300,-0.022100,0.04
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 10
 
 [scope_cobra_svd]:scope_cobra_ak74m
 scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
@@ -2350,8 +2350,8 @@ aim_hud_offset_pos      = -0.009300,0.001300,-0.08
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = -0.009300,0.001300,-0.08
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 8
 
 [scope_pka_svd]:scope_pka_ak74m
 scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
@@ -2364,8 +2364,8 @@ aim_hud_offset_pos      = 0.000400,0.000100,-0.05
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.000400,0.000100,-0.05
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 8
 
 [scope_kashtan_svd]:scope_kashtan_ak74m
 scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
@@ -2377,8 +2377,8 @@ aim_hud_offset_pos      = -0.012000,0.000800,-0.008
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = -0.012000,0.000800,-0.008
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed      = 10
 
 ;==============================================================================
 ; PGO-7V -- the RPG-7's own 2.7x optic (GS heavy/rpg-7/scopes.ltx + addons/scopes/lastochka/std_pgo7v.ltx)
@@ -2449,8 +2449,8 @@ aim_hud_offset_pos      = 0.0,0.008,0.00
 aim_hud_offset_rot      = 0.000000,0.000000,0.000000
 aim_hud_offset_pos_16x9 = 0.0,0.008,0.00
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
-inertion_aim_origin_offset = 0.009	; scope sections keep GS's POSITIVE sign (only hud sections are mirrored)
-inertion_aim_speed_factor  = 0.8
+;inertion_aim_origin_offset = 0.009	; scope sections keep GS's POSITIVE sign (only hud sections are mirrored)
+;inertion_aim_speed_factor  = 0.8
 
 ; ==============================================================================
 ; LR300 optics -- ported from the xrMPE lr300 (scope bones scope1..scope4 on the
@@ -2480,8 +2480,8 @@ gl_hud_offset_pos       = 0.001000,0.022289,-0.03
 gl_hud_offset_rot       = 0.043,0.0,0.0
 gl_hud_offset_pos_16x9  = 0.001000,0.022289,-0.03
 gl_hud_offset_rot_16x9  = 0.043,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_aimpoint_lr300]
 scope_name              = wpn_addon_scope_susat_dusk
@@ -2504,8 +2504,8 @@ gl_hud_offset_pos       = 0.001000,0.022289,-0.03
 gl_hud_offset_rot       = 0.043,0.0,0.0
 gl_hud_offset_pos_16x9  = 0.001000,0.022289,-0.03
 gl_hud_offset_rot_16x9  = 0.043,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_elcan_lr300]
 scope_name              = wpn_addon_scope_susat_custom
@@ -2544,8 +2544,8 @@ gl_hud_offset_pos       = 0.001000,0.022289,-0.03
 gl_hud_offset_rot       = 0.043,0.0,0.0
 gl_hud_offset_pos_16x9  = 0.001000,0.022289,-0.03
 gl_hud_offset_rot_16x9  = 0.043,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 prohibit_aim_for_grenade_mode = true
 
 [scope_pn23_lr300]
@@ -2579,8 +2579,8 @@ gl_hud_offset_pos       = 0.001000,0.022289,-0.03
 gl_hud_offset_rot       = 0.043,0.0,0.0
 gl_hud_offset_pos_16x9  = 0.001000,0.022289,-0.03
 gl_hud_offset_rot_16x9  = 0.043,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 ; the PN23 sits too high to aim through with the launcher raised (same as the groza's optics)
 prohibit_aim_for_grenade_mode = true
 
@@ -2613,8 +2613,8 @@ inertion_pitch_offset_n_factor = 0.2
 inertion_pitch_offset_d_factor = 0.5
 inertion_origin_offset_factor  = 0.3
 
-inertion_aim_origin_offset_factor = 4
-inertion_aim_speed_factor = 0.8
+;inertion_aim_origin_offset_factor = 4
+;inertion_aim_speed_factor = 0.8
 
 zoom_mouse_sense_koef	= 0.13	; as scope_pso1_ak74m
 steps_brightness		= 1
@@ -2646,8 +2646,8 @@ inertion_pitch_offset_n_factor = 0.2
 inertion_pitch_offset_d_factor = 0.5
 inertion_origin_offset_factor  = 0.3
 
-inertion_aim_origin_offset_factor = 4
-inertion_aim_speed_factor = 0.8
+;inertion_aim_origin_offset_factor = 4
+;inertion_aim_speed_factor = 0.8
 
 zoom_mouse_sense_koef	= 0.2	; as scope_pso1m2x1_ak74m
 steps_brightness		= 1
@@ -2680,8 +2680,8 @@ aim_hud_offset_rot = 0.000000,0.000000,0.0
 aim_hud_offset_pos_16x9 = -0.005450,-0.036200,0.09
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
 
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed = 10 
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed = 10 
 
 alter_zoom_allowed = true
 hud_fov_alter_zoom_factor = 0.5
@@ -2723,8 +2723,8 @@ aim_hud_offset_rot = 0.000000,0.000000,0.0
 aim_hud_offset_pos_16x9 = 0.001900,-0.019800,0.09
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
 
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed = 10 
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed = 10 
 
 
 zoom_mouse_sense_koef	= 0.2
@@ -2751,8 +2751,8 @@ aim_hud_offset_rot = 0.000000,0.000000,0.0
 aim_hud_offset_pos_16x9 = -0.0193,-0.016,-0.02
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
 
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed = 8
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed = 8
 
 
 collimator				= true
@@ -2777,8 +2777,8 @@ aim_hud_offset_rot = 0.000000,0.000000,0.0
 aim_hud_offset_pos_16x9 = -0.0093,-0.008,0.03
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
 
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed = 8
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed = 8
 
 
 collimator				= true
@@ -2805,8 +2805,8 @@ aim_hud_offset_rot = 0.000000,0.000000,0.0
 aim_hud_offset_pos_16x9 = -0.019750,-0.003600,0.04
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
 
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed = 10 
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed = 10 
 zoom_mouse_sense_koef	= 0.5
 
 ; ==========================================================================
@@ -2836,8 +2836,8 @@ inertion_pitch_offset_n_factor = 0.2
 inertion_pitch_offset_d_factor = 0.5
 inertion_origin_offset_factor  = 0.3
 
-inertion_aim_origin_offset_factor = 4
-inertion_aim_speed_factor = 0.8
+;inertion_aim_origin_offset_factor = 4
+;inertion_aim_speed_factor = 0.8
 
 
 ; engine-only optic keys, copied from scope_pso1_ak74m (GS does not ship them)
@@ -2870,8 +2870,8 @@ inertion_pitch_offset_n_factor = 0.2
 inertion_pitch_offset_d_factor = 0.5
 inertion_origin_offset_factor  = 0.3
 
-inertion_aim_origin_offset_factor = 4
-inertion_aim_speed_factor = 0.8
+;inertion_aim_origin_offset_factor = 4
+;inertion_aim_speed_factor = 0.8
 
 ; engine-only optic keys, copied from scope_pso1m2x1_ak74m (GS does not ship them)
 zoom_mouse_sense_koef     = 0.2
@@ -2905,8 +2905,8 @@ aim_hud_offset_rot = 0.000000,0.000000,0.000000
 aim_hud_offset_pos_16x9 = 0.017900,-0.030000,0.12
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
 
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed = 10 
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed = 10 
 
 alter_zoom_allowed = true
 hud_fov_alter_zoom_factor = 0.5
@@ -2949,8 +2949,8 @@ aim_hud_offset_rot = 0.000000,0.000000,0.000000
 aim_hud_offset_pos_16x9 = 0.025200,-0.020500,0.12
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
 
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed = 10 
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed = 10 
 
 
 ; engine-only optic keys, copied from scope_nvas_ak74m (GS does not ship them)
@@ -2979,8 +2979,8 @@ aim_hud_offset_rot = 0.000000,0.000000,0.000000
 aim_hud_offset_pos_16x9 = 0.004500,-0.0115000,0.0
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
 
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed = 8
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed = 8
 
 
 ; engine-only optic keys, copied from scope_cobra_ak74m (GS does not ship them)
@@ -3006,8 +3006,8 @@ aim_hud_offset_rot = 0.000000,0.000000,0.000000
 aim_hud_offset_pos_16x9 = 0.01500,-0.0075000,0.05
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
 
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed = 8
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed = 8
 
 
 ; engine-only optic keys, copied from scope_pka_ak74m (GS does not ship them)
@@ -3034,8 +3034,8 @@ aim_hud_offset_rot = 0.000000,0.000000,0.000000
 aim_hud_offset_pos_16x9 = 0.005100,-0.005700,0.05
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
 
-inertion_aim_origin_offset = 0.01
-inertion_aim_speed = 10 
+;inertion_aim_origin_offset = 0.01
+;inertion_aim_speed = 10 
 ; engine-only optic keys, copied from scope_kashtan_ak74m (GS does not ship them)
 zoom_mouse_sense_koef     = 0.5
 scope_lens_factor         = 3.5	; orig 2.0 -- 2.8x, same as scope_kashtan_ak74m
@@ -3043,7 +3043,10 @@ scope_lens_factor         = 3.5	; orig 2.0 -- 2.8x, same as scope_kashtan_ak74m
 ; ==============================================================================
 ; PKM "Nimble" optics -- the same three collimator/ELCAN sections the mp5 and the
 ; lr300 use; only the mount bones and the aim poses are the pkm's own.
-; AIM POSES ARE THE MP5 VALUES AS A STARTING POINT AND STILL NEED AN IN-GAME PASS.
+; EOTech / Aimpoint aim poses: rot.x -0.005 as the iron sights' -- it levels the ~0.3 deg droop of the
+; gun in the aim pose, so the glass centre and the reticle line up. Their y is the irons' +0.0041 minus
+; the lens centre's height over the iron aim point (model y ~0.0114, the front sight tip), measured in
+; the editor: EOTech 0.0493, Aimpoint 0.0534. The hud model maths gives the same to 0.07 mm.
 ; ==============================================================================
 [scope_eotech_pkm]
 ; no scope_illum_bones: metka1 is a child of scope1 and comes up with the optic -- gating it on
@@ -3059,12 +3062,12 @@ scope_hud_fov_aim       = 0.48
 scope_x                 = 107		; offset in inventory icon
 scope_y                 = -10
 bones                   = scope1
-aim_hud_offset_pos      = 0.000600,-0.039200,-0.050000
-aim_hud_offset_rot      = 0.0,0.0,0.0
-aim_hud_offset_pos_16x9 = 0.000600,-0.039200,-0.050000
-aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+aim_hud_offset_pos      = 0.000000,-0.045170,-0.225000	; orig 0.000600,-0.039200 ;0.000390,-0.042050,-0.05000
+aim_hud_offset_rot      = -0.005000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.000000,-0.045170,-0.225000
+aim_hud_offset_rot_16x9 = -0.005000,0.000000,0.000000
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_aimpoint_pkm]
 scope_name              = wpn_addon_scope_susat_dusk
@@ -3079,12 +3082,12 @@ scope_x                 = 105		; offset in inventory icon
 scope_y                 = -13
 bones                   = scope2
 overriding_hide_bones   = lense2	; the opaque rear lens the aim anims slide away -- hidden, the glass with the lens shader sits there instead
-aim_hud_offset_pos      = 0.000500,-0.043900,-0.050000
-aim_hud_offset_rot      = 0.0,0.0,0.0
-aim_hud_offset_pos_16x9 = 0.000500,-0.043900,-0.050000
-aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 8
+aim_hud_offset_pos      = 0.000000,-0.049260,-0.17500	; orig 0.000500,-0.043900 ;0.000280,-0.046360,-0.05000
+aim_hud_offset_rot      = -0.005000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = 0.000000,-0.049260,-0.17500
+aim_hud_offset_rot_16x9 = -0.005000,0.000000,0.000000
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 8
 
 [scope_elcan_pkm]
 scope_name              = wpn_addon_scope_susat_custom
@@ -3118,8 +3121,8 @@ aim_hud_offset_pos      = 0.000100,-0.048500,-0.374087
 aim_hud_offset_rot      = 0.0,0.0,0.0
 aim_hud_offset_pos_16x9 = 0.000100,-0.048500,-0.374087
 aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
-inertion_aim_origin_offset = 0.015
-inertion_aim_speed      = 10
+;inertion_aim_origin_offset = 0.015
+;inertion_aim_speed      = 10
 
 ; ---------------------------------------------------------------------------------------------
 ; GS scope_nightvision effector (GS weapons\addons\scopes\effectors\nightvision_base.ltx).

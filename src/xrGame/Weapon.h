@@ -715,9 +715,6 @@ protected:
 	bool					m_bScope2DZoomSet;	// ...and the digital-zoom circle
 	bool					m_bScope2DDofSet;	// the lens DOF is armed for a flat scope picture
 
-	InertionData	m_base_inertion;
-	InertionData	m_zoom_inertion;
-
 public:
 
 	// GS CanStartAimNow (WeaponAdditionalBuffer.pas:919): with the LAUNCHER RAISED, aiming is refused when

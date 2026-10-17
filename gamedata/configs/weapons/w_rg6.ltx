@@ -60,7 +60,7 @@ kill_msg_height			= 30
 ;-------------------------------------------------------------------------------
 ;������� ���������
 fire_dispersion_base	= 1.0  	;���� (� ��������) ������� ��������� ������ (������ �������� � ������)
-control_inertion_factor	= 1.7f
+control_inertion_factor	= 1.25f ;1.7f  ; Поменял, потому что это легковесное оружие, нахуя ему такая низкая сенса
 
 ;������
 cam_relax_speed         = 5	; orig 7.0 (GS wpn_rgm-40)
@@ -205,6 +205,7 @@ attach_place_idx			= 0
 ; OUR path kept on purpose: wpn_rg6_hud.ogf IS the GS rgm40 hud model, with its motion-ref repointed
 ; to dynamics\weapons\wpn_rg6\wpn_rg6_hud_animation (that omf holds the rgm40_* item motions)
 item_visual             = dynamics\weapons\wpn_rg6\wpn_rg6_hud.ogf
+inertia_profile				= inertia_rgm40
 hands_position				= 0.0,-0.015,-0.07
 hands_orientation			= 0.0,0.0,0.0
 hands_position_16x9			= 0.0,-0.015,-0.07
