@@ -17,6 +17,8 @@ public:
 	virtual void	OnEvent					(NET_Packet& P, u16 type);
 protected:
 	virtual void	FireStart				();
+	virtual void	OnShot					();		// launches the grenade -- only a round that really fires
+	void			LaunchFakeGrenade		();
 	virtual u8		AddCartridge			(u8 cnt);
 	// GS: the launchable "fake grenade" is created once per loaded round, not per AddCartridge call
 	bool			SpawnRocketIfNeeded		();

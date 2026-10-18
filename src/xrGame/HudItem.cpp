@@ -149,6 +149,98 @@ CHudItem::~CHudItem()
 {
 }
 
+namespace
+{
+	// Where a sway key is looked up: the hud section, then the profile it names (inertia_profile =
+	// <section>, shared by a kind of weapon), then [hud_inertia], then the code default.
+	struct SSwaySrc { LPCSTR hud, profile; };
+
+	bool sway_find(const SSwaySrc& s, LPCSTR key, LPCSTR& sect)
+	{
+		if (pSettings->line_exist(s.hud, key))							{ sect = s.hud;			return true; }
+		if (s.profile && pSettings->line_exist(s.profile, key))			{ sect = s.profile;		return true; }
+		if (pSettings->line_exist("hud_inertia", key))					{ sect = "hud_inertia";	return true; }
+		return false;
+	}
+
+	float sway_f(const SSwaySrc& s, LPCSTR pfx, LPCSTR name, float def)
+	{
+		string128 k;	xr_sprintf(k, "%s%s", pfx, name);
+		LPCSTR sect;
+		return sway_find(s, k, sect) ? pSettings->r_float(sect, k) : def;
+	}
+
+	Fvector sway_v(const SSwaySrc& s, LPCSTR pfx, LPCSTR name, const Fvector& def)
+	{
+		string128 k;	xr_sprintf(k, "%s%s", pfx, name);
+		LPCSTR sect;
+		return sway_find(s, k, sect) ? pSettings->r_fvector3(sect, k) : def;
+	}
+
+	// the hud section itself still carries the old lag keys (GS-tuned weapons)
+	bool sway_has_legacy(LPCSTR hud, LPCSTR a, LPCSTR b, LPCSTR c)
+	{
+		return pSettings->line_exist(hud, a) || pSettings->line_exist(hud, b) || (c && pSettings->line_exist(hud, c));
+	}
+
+	// The old lag pair (already resolved into d: hud section, then [gunslinger_base]) trailed by about
+	// rate/speed rad and shifted origin_offset m per rad of it, i.e. -origin/speed m per rad/s -- the
+	// translation gain here. A weapon whose hud section sets the pair itself keeps that over any
+	// profile; for the rest it is the last fallback, so untouched weapons move as much as before.
+	float sway_pos(const SSwaySrc& s, LPCSTR pfx, LPCSTR name, bool legacy, float lp)
+	{
+		string128 k;	xr_sprintf(k, "%s%s", pfx, name);
+		if (pSettings->line_exist(s.hud, k))	return pSettings->r_float(s.hud, k);
+		return legacy ? lp : sway_f(s, pfx, name, lp);
+	}
+
+	// Pitch compensation: the hud section's own value, new name or old (inertia_pitch_offset_r /
+	// inertion_pitch_offset_r -- a weapon's own value wins), then the profile, then [hud_inertia]
+	// (new name only), then the [gunslinger_base] default when that set has one, then def.
+	float sway_pitch(const SSwaySrc& s, LPCSTR pfx, LPCSTR old_pfx, LPCSTR gb_pfx, LPCSTR axis, float def)
+	{
+		string128 kn, ko;
+		xr_sprintf(kn, "%spitch_offset_%s", pfx, axis);
+		xr_sprintf(ko, "%spitch_offset_%s", old_pfx, axis);
+		if (pSettings->line_exist(s.hud, kn))						return pSettings->r_float(s.hud, kn);
+		if (pSettings->line_exist(s.hud, ko))						return pSettings->r_float(s.hud, ko);
+		if (s.profile && pSettings->line_exist(s.profile, kn))		return pSettings->r_float(s.profile, kn);
+		if (pSettings->line_exist("hud_inertia", kn))				return pSettings->r_float("hud_inertia", kn);
+		if (gb_pfx)
+		{
+			string128 kg;	xr_sprintf(kg, "%spitch_offset_%s", gb_pfx, axis);
+			if (pSettings->line_exist("gunslinger_base", kg))		return pSettings->r_float("gunslinger_base", kg);
+		}
+		return def;
+	}
+
+	void sway_load(InertionData& d, const SSwaySrc& s, LPCSTR pfx, LPCSTR old_pfx, LPCSTR gb_pfx, const InertionData& def, bool legacy)
+	{
+		d.PitchOffsetR	= sway_pitch(s, pfx, old_pfx, gb_pfx, "r", def.PitchOffsetR);
+		d.PitchOffsetN	= sway_pitch(s, pfx, old_pfx, gb_pfx, "n", def.PitchOffsetN);
+		d.PitchOffsetD	= sway_pitch(s, pfx, old_pfx, gb_pfx, "d", def.PitchOffsetD);
+
+		const float lp	= fis_zero(d.TendtoSpeed) ? 0.f : -d.OriginOffset / d.TendtoSpeed;
+		d.PosX			= sway_pos(s, pfx, "pos_x", legacy, lp);
+		d.PosY			= sway_pos(s, pfx, "pos_y", legacy, lp);
+
+		d.RotYaw		= sway_f(s, pfx, "rot_yaw",			def.RotYaw);
+		d.RotPitch		= sway_f(s, pfx, "rot_pitch",		def.RotPitch);
+		d.RotRoll		= sway_f(s, pfx, "rot_roll",		def.RotRoll);
+		d.RotFreq		= sway_f(s, pfx, "rot_freq",		def.RotFreq);
+		d.RotDamp		= sway_f(s, pfx, "rot_damping",		def.RotDamp);
+		d.RotMax		= deg2rad(sway_f(s, pfx, "rot_max",	rad2deg(def.RotMax)));
+		d.RotPivot		= sway_v(s, pfx, "rot_pivot",		def.RotPivot);
+		d.PosFreq		= sway_f(s, pfx, "pos_freq",		def.PosFreq);
+		d.PosDamp		= sway_f(s, pfx, "pos_damping",		def.PosDamp);
+		d.PosMax		= sway_f(s, pfx, "pos_max",			def.PosMax);
+		d.HandlingRef	= sway_f(s, pfx, "handling_ref",	def.HandlingRef);
+		d.HandlingMag	= sway_f(s, pfx, "handling_mag",	def.HandlingMag);
+		d.HandlingFreq	= sway_f(s, pfx, "handling_freq",	def.HandlingFreq);
+		d.HandlingDamp	= sway_f(s, pfx, "handling_damping",def.HandlingDamp);
+	}
+}
+
 void CHudItem::Load(LPCSTR section)
 {
 	hud_sect				= pSettings->r_string		(section,"hud");
@@ -168,41 +260,47 @@ void CHudItem::Load(LPCSTR section)
 	m_fHudFovAim = READ_IF_EXISTS(pSettings, r_float, hud_sect, "hud_fov_aim", 0.f);
 	m_fHudFovAimScope = READ_IF_EXISTS(pSettings, r_float, hud_sect, "scope_hud_fov_aim", 0.f);
 
-	// GS inertion model (WeaponInertion.pas UpdateInertion): defaults from [gunslinger_base]
-	// (GS gunslinger_params.ltx: hip -0.017/-0.012/-0.02, origin 0.09, speed 5; aim 0/0/0, 0.04, 7 --
-	// note the flipped signs vs vanilla: GS substitutes these into the same engine constant slots),
-	// per-weapon overrides via inertion_* / inertion_aim_* in the hud section.
+	// GS inertion model (WeaponInertion.pas UpdateInertion): the old lag pair, hud section over
+	// [gunslinger_base] (GS gunslinger_params.ltx: origin 0.09, speed 5; aim 0.04, 7 -- flipped signs
+	// vs vanilla). It only seeds the sway's translation now (sway_pos); the pitch offsets are read by
+	// sway_load, profiles included.
 	LPCSTR GB = "gunslinger_base";
-	float d_r  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_default_pitch_offset_r", PITCH_OFFSET_R);
-	float d_n  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_default_pitch_offset_n", PITCH_OFFSET_N);
-	float d_d  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_default_pitch_offset_d", PITCH_OFFSET_D);
 	float d_o  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_default_origin_offset", ORIGIN_OFFSET);
 	float d_s  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_default_speed", TENDTO_SPEED);
-	m_current_inertion.PitchOffsetR = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_pitch_offset_r", d_r);
-	m_current_inertion.PitchOffsetN = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_pitch_offset_n", d_n);
-	m_current_inertion.PitchOffsetD = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_pitch_offset_d", d_d);
 	m_current_inertion.OriginOffset = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_origin_offset", d_o);
 	m_current_inertion.TendtoSpeed  = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_speed",
 									  READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_tendto_speed", d_s));
 
-	float a_r  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_aim_default_pitch_offset_r", m_current_inertion.PitchOffsetR);
-	float a_n  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_aim_default_pitch_offset_n", m_current_inertion.PitchOffsetN);
-	float a_d  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_aim_default_pitch_offset_d", m_current_inertion.PitchOffsetD);
 	float a_o  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_aim_default_origin_offset", m_current_inertion.OriginOffset);
 	float a_s  = READ_IF_EXISTS(pSettings, r_float, GB, "inertion_aim_default_speed", m_current_inertion.TendtoSpeed);
-	m_aim_inertion.PitchOffsetR = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_aim_pitch_offset_r", a_r);
-	m_aim_inertion.PitchOffsetN = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_aim_pitch_offset_n", a_n);
-	m_aim_inertion.PitchOffsetD = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_aim_pitch_offset_d", a_d);
 	m_aim_inertion.OriginOffset = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_aim_origin_offset", a_o);
 	m_aim_inertion.TendtoSpeed  = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_aim_speed", a_s);
 
 	// grenade-launcher mode: inertion_gl_* keys, defaulting to the resolved aim set (GS
 	// ApplyInertionParamsWithDef(aim_inert, wpn_inert.gl, aim_inert))
-	m_gl_inertion.PitchOffsetR = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_gl_pitch_offset_r", m_aim_inertion.PitchOffsetR);
-	m_gl_inertion.PitchOffsetN = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_gl_pitch_offset_n", m_aim_inertion.PitchOffsetN);
-	m_gl_inertion.PitchOffsetD = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_gl_pitch_offset_d", m_aim_inertion.PitchOffsetD);
 	m_gl_inertion.OriginOffset = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_gl_origin_offset", m_aim_inertion.OriginOffset);
 	m_gl_inertion.TendtoSpeed  = READ_IF_EXISTS(pSettings, r_float, hud_sect, "inertion_gl_speed", m_aim_inertion.TendtoSpeed);
+
+	// spring-damper sway (inertia_* / inertia_aim_* / inertia_gl_*, see sway_load). Aim defaults to the
+	// hip set with a third of the rotation; the grenade mode to the aim set.
+	LPCSTR prof = READ_IF_EXISTS(pSettings, r_string, hud_sect, "inertia_profile",
+				  READ_IF_EXISTS(pSettings, r_string, section, "inertia_profile", (LPCSTR)NULL));
+	if (prof && !pSettings->section_exist(prof))
+	{
+		Msg("! [%s] inertia_profile = %s: no such section", hud_sect.c_str(), prof);
+		prof = NULL;
+	}
+	const SSwaySrc src = { hud_sect.c_str(), prof };
+	InertionData def;
+	def.PitchOffsetR = PITCH_OFFSET_R;	def.PitchOffsetN = PITCH_OFFSET_N;	def.PitchOffsetD = PITCH_OFFSET_D;
+	sway_load(m_current_inertion, src, "inertia_", "inertion_", "inertion_default_", def,
+			  sway_has_legacy(hud_sect.c_str(), "inertion_origin_offset", "inertion_speed", "inertion_tendto_speed"));
+	def = m_current_inertion;
+	def.RotYaw *= 0.3f;		def.RotPitch *= 0.3f;		def.RotRoll *= 0.3f;
+	sway_load(m_aim_inertion, src, "inertia_aim_", "inertion_aim_", "inertion_aim_default_", def,
+			  sway_has_legacy(hud_sect.c_str(), "inertion_aim_origin_offset", "inertion_aim_speed", NULL));
+	sway_load(m_gl_inertion, src, "inertia_gl_", "inertion_gl_", NULL, m_aim_inertion,
+			  sway_has_legacy(hud_sect.c_str(), "inertion_gl_origin_offset", "inertion_gl_speed", NULL));
 
 	m_bHudInertion  = !!READ_IF_EXISTS(pSettings, r_bool, hud_sect, "hud_inertion", TRUE);
 	m_bZoomInertion = !!READ_IF_EXISTS(pSettings, r_bool, hud_sect, "zoom_inertion", FALSE);
@@ -214,25 +312,38 @@ void CHudItem::Load(LPCSTR section)
 	m_sounds.LoadSound(section, "snd_blowout", "sndBlowout", true);	// GS emission glitch sound (PDA pda_vibros); optional
 }
 
-// GS UpdateInertion: hip params blended toward the aim set by the zoom factor; hud_inertion=false or
-// (zoom_inertion && zoomed) turns the sway off (GS AllowWeaponInertion on OnZoomIn/OnZoomOut).
-InertionData& CHudItem::CurrentInertionData()
+// The sway parameters for this frame: hip blended toward the aim (or grenade-mode) set by the zoom
+// factor, then scaled by the item's handling. hud_inertion=false or (zoom_inertion && zoomed) zero
+// the gains (GS AllowWeaponInertion on OnZoomIn/OnZoomOut); the springs then settle what is left.
+const InertionData& CHudItem::CurrentInertionData()
 {
+	InertionData& d = m_blend_inertion;
+	float f = GetInertionAimFactor();
+	if (f <= 0.f)	d = m_current_inertion;
+	else			d.lerp(m_current_inertion, InertionGrenadeModeNow() ? m_gl_inertion : m_aim_inertion, f);
+
+	// Handling: control_inertion_factor is what the item divides the mouse by (CActor::GetLookFactor),
+	// 1.0..2.2 over the weapons, and upgrades lower it. Read live, so an upgrade shows at once: a
+	// heavier item sways further, slower and (rotation) springier.
+	float h = m_item ? m_item->GetControlInertionFactor() : 1.f;
+	if (!_valid(h) || h <= 0.f)	h = 1.f;
+	if (d.HandlingRef > EPS)	h /= d.HandlingRef;
+	clamp(h, 0.2f, 5.f);
+	if (!fsimilar(h, 1.f))
+	{
+		const float km = powf(h, d.HandlingMag), kf = powf(h, -d.HandlingFreq), kd = powf(h, -d.HandlingDamp);
+		d.RotYaw *= km;		d.RotPitch *= km;	d.RotRoll *= km;
+		d.PosX *= km;		d.PosY *= km;
+		d.RotFreq *= kf;	d.PosFreq *= kf;
+		d.RotDamp *= kd;
+	}
+
 	if (!m_bHudInertion || (m_bZoomInertion && InertionZoomedNow()))
 	{
-		// zero offsets = no visual sway. TendtoSpeed must make speed*dt == EXACTLY 1 (one-frame snap of
-		// the internal last-dir tracker): the tracker is st_last_dir.mad(diff, speed*dt), so speed*dt > 1
-		// OVERSHOOTS and diverges to NaN (was 1000 -> weapons went invisible + fps drop).
-		static InertionData s_off;
-		s_off.PitchOffsetR = s_off.PitchOffsetN = s_off.PitchOffsetD = 0.f;
-		s_off.OriginOffset = 0.f;
-		s_off.TendtoSpeed  = (Device.fTimeDelta > EPS) ? (1.f / Device.fTimeDelta) : 0.f;
-		return s_off;
+		d.RotYaw = d.RotPitch = d.RotRoll = d.PosX = d.PosY = 0.f;
+		d.PitchOffsetR = d.PitchOffsetN = d.PitchOffsetD = 0.f;
 	}
-	float f = GetInertionAimFactor();
-	if (f <= 0.f)	return m_current_inertion;
-	m_blend_inertion.lerp(m_current_inertion, InertionGrenadeModeNow() ? m_gl_inertion : m_aim_inertion, f);
-	return m_blend_inertion;
+	return d;
 }
 
 

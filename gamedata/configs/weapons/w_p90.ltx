@@ -28,7 +28,7 @@ collimator_sights_bones = sight
 collimator_problems_level = 4
 collimator_wear		= 0.9, 0.4, 0.25	; the reticle dims below condition 0.8 (to 30% of its brightness at 0, never out), flickers like a failing lamp below 0.25
 hide_collimator_sights_in_alter_zoom = true
-collimator_tint	= 106,130,126
+collimator_tint	= 96,132,126
 collimator_glass_strength	= 1.0, 0.25
 collimator_reflect			= 140,110,128
 collimator_reflect_indirect	= 64,72,96
@@ -346,10 +346,10 @@ hud_move_landing_offset_pos_16x9 = 0,-0.15,0.03
 inertion_pitch_offset_r = 0
 inertion_pitch_offset_n = 0
 inertion_pitch_offset_d = 0
-inertion_origin_offset = -0.05	; orig 0.05 (GS) -- our inertia axes are mirrored
+;inertion_origin_offset = -0.05	; orig 0.05 (GS) -- our inertia axes are mirrored
 
-inertion_aim_origin_offset = -0.015	; orig 0.015 (GS) -- our inertia axes are mirrored
-inertion_aim_speed = 10
+;inertion_aim_origin_offset = -0.015	; orig 0.015 (GS) -- our inertia axes are mirrored
+;inertion_aim_speed = 10
 
 hud_fov_zoom_factor = 0.5 ;аналогичный параметр работает и с прицелами
 hud_recalc_koef = 1.25
@@ -364,6 +364,7 @@ zoom_hide_crosshair     = true
 attach_place_idx        = 0
 item_visual             = dynamics\weapons\wpn_p90\wpn_p90_hud.ogf
 
+inertia_profile				= inertia_smg
 hands_position				= 0.0,-0.015,-0.05
 hands_orientation			= 0.0,0.0,0.0
 

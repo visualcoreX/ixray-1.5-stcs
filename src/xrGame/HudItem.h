@@ -386,10 +386,10 @@ protected:
 	shared_str					m_actor_torso_anim;		// xrMPE `actor_anim_group`, empty when unused
 
 	HUD_SOUND_COLLECTION		m_sounds;
-	InertionData				m_current_inertion;		// hip params (per-weapon inertion_* over [gunslinger_base] defaults)
-	InertionData				m_aim_inertion;			// aim params (inertion_aim_* over aim defaults)
-	InertionData				m_gl_inertion;			// grenade-mode params (inertion_gl_*, defaults = the resolved aim set, like GS)
-	InertionData				m_blend_inertion;		// scratch for the hip<->aim lerp returned by CurrentInertionData
+	InertionData				m_current_inertion;		// hip params (inertia_* sway, inertion_* pitch/legacy over [gunslinger_base])
+	InertionData				m_aim_inertion;			// aim params (inertia_aim_* / inertion_aim_*)
+	InertionData				m_gl_inertion;			// grenade-mode params (inertia_gl_* / inertion_gl_*, defaults = the aim set, like GS)
+	InertionData				m_blend_inertion;		// this frame's set, returned by CurrentInertionData
 	bool						m_bHudInertion;			// hud_inertion (hud section, GS default true): master switch
 	bool						m_bZoomInertion;		// zoom_inertion (GS code default false, GS base config true): kill inertion while zoomed
 	bool						m_bDisableBore;			// disable_bore (hud section, GS default true): never play the idle "bore"/fidget anim
@@ -411,7 +411,7 @@ public:
 	virtual const shared_str&	ActorAnimGroup			() const		{ return m_actor_anim_group; }
 	const shared_str&			ActorAnimGroupSprint	() const		{ return m_actor_anim_group_sprint; }
 	const shared_str&			ActorTorsoAnim			() const		{ return m_actor_torso_anim; }
-	InertionData&				CurrentInertionData		();				// GS UpdateInertion: hip<->aim blend by zoom factor, honors hud_inertion/zoom_inertion
+	const InertionData&			CurrentInertionData		();				// hip<->aim blend by zoom factor, scaled by handling, honors hud_inertion/zoom_inertion
 	virtual float				GetInertionAimFactor	() const		{ return 0.f; }	// CWeapon: zoom rotation factor
 	virtual bool				InertionZoomedNow		() const		{ return false; }
 	virtual bool				InertionGrenadeModeNow	() const		{ return false; }	// CWeaponMagazinedWGrenade: m_bGrenadeMode

@@ -1,0 +1,310 @@
+;==============================================================================
+; Spring-damper HUD sway (player_hud::update_inertion, CHudItem::Load)
+;
+; How fast the view turns sets where the weapon should hang (gain * turn rate),
+; and the weapon chases that as a damped spring: it trails the turn and comes
+; back when the turn stops. damping < 1 swings past centre on the way back
+; (0.5 ~ 16% overshoot, 0.35 ~ 30%, 1.0 = none).
+;
+; Every key is looked up in this order:
+;   1. the weapon's hud section                     (wpn_xxx_hud)
+;   2. the profile it names: inertia_profile = <section below>
+;   3. [hud_inertia]
+;   4. the engine default (the values written in [hud_inertia])
+; Prefixes: inertia_ = hip, inertia_aim_ = aiming, inertia_gl_ = grenade launcher.
+; Aim falls back to hip with a third of the rotation gains, gl to aim.
+;
+; Keys (after the prefix):
+;   rot_yaw / rot_pitch / rot_roll  rad of tilt per rad/s of turning (roll from the
+;                                   yaw rate). Positive = lags behind; negative flips it
+;   rot_freq                        Hz, how fast the rotation returns
+;   rot_damping                     <1 overshoots, 1 does not
+;   rot_max                         degrees, limit per axis
+;   rot_pivot                       x,y,z in camera space (m) the hud turns about
+;   pos_x / pos_y                   m of shift per rad/s of turning
+;   pos_freq / pos_damping / pos_max (m)
+;   pitch_offset_r / _n / _d        static hud pose by how far the view looks up or
+;                                   down (vanilla pitch compensation), m per rad.
+;       A weapon's own old inertion_pitch_offset_* (hud section) still wins over
+;       the profile; with no value anywhere: [gunslinger_base] inertion_default_* /
+;       inertion_aim_default_*.
+;   handling_ref / handling_mag / handling_freq / handling_damping
+;       coupling to control_inertion_factor (the weapon's "handling", lowered by
+;       upgrades, read live): h = factor / handling_ref;
+;       gains * h^mag, frequencies / h^freq, rotation damping / h^damping. 0 = off.
+;
+; pos_x / pos_y are NOT set in [hud_inertia] on purpose: a weapon without them
+; takes them from its old inertion_origin_offset / inertion_speed (GS tuning), or
+; from [gunslinger_base], so it shifts as much as it used to. Setting them here
+; would override that for every weapon that has no own value.
+; Profiles are multiplied by the handling factor on top, so a heavy profile on a
+; weapon with control_inertion_factor 2.2 gets heavier still.
+;==============================================================================
+
+[hud_inertia]
+inertia_rot_pitch           = 0.01
+inertia_rot_yaw             = 0.01
+inertia_rot_roll            = 0.0075
+inertia_rot_pivot           = 0.0,-0.25,0.25
+inertia_pos_x               = -0.0075
+inertia_pos_y               = 0.0075
+inertia_pos_freq            = 2.0
+inertia_rot_freq            = 2.5
+inertia_pos_damping         = 1.0
+inertia_rot_damping         = 0.5
+inertia_rot_max             = 2.5
+inertia_pos_max             = 0.05
+inertia_handling_ref        = 2.0 ;0 - disable
+inertia_handling_mag        = 0.75 ;0 - disable
+inertia_handling_freq       = 0.6 ;0 - disable
+inertia_handling_damping    = 0.5 ;0 - disable
+
+inertia_aim_rot_pitch           = -0.0005
+inertia_aim_rot_yaw             = -0.0005
+inertia_aim_rot_roll            = 0.015
+inertia_aim_rot_pivot           = 0.0, -0.05, 0.25
+inertia_aim_pos_x               = 0.001
+inertia_aim_pos_y               = 0.001
+inertia_aim_pos_freq            = 2.0
+inertia_aim_rot_freq            = 2.0
+inertia_aim_pos_damping         = 1.0
+inertia_aim_rot_damping         = 0.5
+inertia_aim_rot_max             = 0.5
+inertia_aim_pos_max             = 0.005
+inertia_aim_handling_ref        = 2.0 ;0 - disable
+inertia_aim_handling_mag        = 0.75 ;0 - disable
+inertia_aim_handling_freq       = 0.50 ;0 - disable
+inertia_aim_handling_damping    = 0.50 ;0 - disable
+
+[inertia_pistol]:hud_inertia
+inertia_rot_pitch           = -0.0015
+inertia_rot_yaw             = -0.0015
+inertia_rot_roll            = 0.0075
+inertia_rot_pivot           = 0.12, -0.15, -0.15
+inertia_pos_x               = -0.002
+inertia_pos_y               = 0.002
+inertia_pos_freq            = 1.4
+inertia_rot_freq            = 1.8
+inertia_pos_damping         = 0.6
+inertia_rot_damping         = 0.4
+inertia_rot_max             = 3.0
+inertia_pos_max             = 0.025
+
+inertia_aim_rot_pivot       = 0.0, -0.1, 0.25
+
+inertia_handling_ref        = 1.5
+inertia_aim_handling_ref    = 3.0
+
+[inertia_smg]:hud_inertia
+inertia_rot_pitch           = 0.005
+inertia_rot_yaw             = -0.005
+inertia_rot_roll            = 0.01
+inertia_rot_pivot           = 0.1, -0.15, 0.25
+inertia_pos_x               = 0.0025
+inertia_pos_y               = 0.005
+inertia_pos_freq            = 2.0
+inertia_rot_freq            = 2.0
+inertia_pos_damping         = 0.9
+inertia_rot_damping         = 0.35
+inertia_rot_max             = 3.0
+inertia_pos_max             = 0.065
+
+inertia_handling_ref        = 3.0
+inertia_aim_handling_ref    = 2.75
+inertia_handling_mag        = 0.60
+inertia_handling_freq       = 0.25
+inertia_handling_damping    = 0.25
+
+[inertia_p90]:inertia_smg
+inertia_rot_pivot           = 0.1, -0.125, 0.25
+
+[inertia_rifle]:hud_inertia
+inertia_rot_pitch           = 0.0065
+inertia_rot_yaw             = 0.0065
+inertia_rot_roll            = 0.015
+inertia_rot_pivot           = 0.092, -0.2, 0.25
+inertia_pos_x               = -0.005
+inertia_pos_y               = 0.005
+inertia_pos_freq            = 2.0
+inertia_rot_freq            = 2.5
+inertia_pos_damping         = 1.0
+inertia_rot_damping         = 0.65
+inertia_rot_max             = 3.5
+inertia_pos_max             = 0.05
+inertia_handling_ref        = 1.0
+inertia_handling_mag        = 0.5
+inertia_handling_freq       = 1.0
+inertia_handling_damping    = 1.0
+
+[inertia_bullpup]:inertia_rifle
+inertia_rot_pitch           = 0.005
+inertia_rot_yaw             = 0.005
+inertia_rot_roll            = 0.01
+inertia_pos_x               = -0.0025
+inertia_pos_y               = 0.0025
+inertia_rot_pivot           = 0.092, -0.2, 0.3
+
+[inertia_shotgun]:hud_inertia
+inertia_rot_pitch           = 0.0075
+inertia_rot_yaw             = 0.0085
+inertia_rot_roll            = 0.020
+inertia_rot_pivot           = 0.092, -0.25, 0.25
+inertia_pos_x               = -0.005
+inertia_pos_y               = 0.005
+inertia_pos_freq            = 2.0
+inertia_rot_freq            = 2.5
+inertia_pos_damping         = 1.0
+inertia_rot_damping         = 0.5
+inertia_rot_max             = 4.0
+inertia_pos_max             = 0.06
+
+inertia_handling_ref        = 1.8
+inertia_aim_handling_ref    = 1.6
+
+[inertia_sniper]:hud_inertia
+inertia_rot_pitch           = 0.0075
+inertia_rot_yaw             = 0.008
+inertia_rot_roll            = 0.025
+inertia_rot_pivot           = 0.092, -0.2, 0.25
+inertia_pos_x               = -0.0075
+inertia_pos_y               = 0.0075
+inertia_pos_freq            = 2.0
+inertia_rot_freq            = 2.5
+inertia_pos_damping         = 1.0
+inertia_rot_damping         = 0.6
+inertia_rot_max             = 4.0
+inertia_pos_max             = 0.075
+
+inertia_aim_rot_max             = 0.25
+inertia_aim_pos_max             = 0.003
+
+inertia_handling_ref        = 1.6
+inertia_aim_handling_ref    = 1.6
+
+[inertia_pkm]:hud_inertia
+inertia_rot_pitch           = 0.0075
+inertia_rot_yaw             = 0.008
+inertia_rot_roll            = 0.025
+inertia_rot_pivot           = 0.092, -0.2, 0.25
+inertia_pos_x               = -0.0075
+inertia_pos_y               = 0.0075
+inertia_pos_freq            = 2.0
+inertia_rot_freq            = 2.5
+inertia_pos_damping         = 1.0
+inertia_rot_damping         = 0.55
+inertia_rot_max             = 4.0
+inertia_pos_max             = 0.075
+
+inertia_aim_rot_max             = 0.25
+inertia_aim_pos_max             = 0.0025
+
+inertia_handling_ref        = 1.5
+inertia_aim_handling_ref    = 3.0
+inertia_aim_handling_mag        = 0.75
+inertia_aim_handling_freq       = 0.50 
+inertia_aim_handling_damping    = 0.50
+
+[inertia_rpg7]:hud_inertia
+inertia_rot_pitch           = 0.01
+inertia_rot_yaw             = 0.01
+inertia_rot_roll            = 0.015
+inertia_rot_pivot           = 0.25, -0.175, 0.0
+inertia_pos_x               = 0.00
+inertia_pos_y               = 0.00
+inertia_pos_freq            = 1.0
+inertia_rot_freq            = 1.25
+inertia_pos_damping         = 1.0
+inertia_rot_damping         = 0.5
+inertia_rot_max             = 4.0
+inertia_pos_max             = 0.05
+
+inertia_handling_ref        = 2.0
+;inertia_aim_handling_ref    = 2.0
+
+inertion_pitch_offset_r     = 0.0
+inertion_pitch_offset_n     = 0.0
+inertion_pitch_offset_d     = 0.0
+
+[inertia_rgm40]:hud_inertia
+inertia_rot_pitch           = 0.005
+inertia_rot_yaw             = -0.005
+inertia_rot_roll            = 0.01
+inertia_rot_pivot           = 0.1, -0.15, 0.25
+inertia_pos_x               = 0.0025
+inertia_pos_y               = 0.005
+inertia_pos_freq            = 2.0
+inertia_rot_freq            = 2.0
+inertia_pos_damping         = 0.9
+inertia_rot_damping         = 0.35
+inertia_rot_max             = 3.0
+inertia_pos_max             = 0.065
+
+inertia_handling_ref        = 3.0
+inertia_aim_handling_ref    = 2.75
+inertia_handling_mag        = 0.60
+inertia_handling_freq       = 0.25
+inertia_handling_damping    = 0.25
+
+[inertia_detector]:hud_inertia
+inertia_rot_pitch           = -0.0025
+inertia_rot_yaw             = -0.0025
+inertia_rot_roll            = 0.0025
+inertia_rot_pivot           = -0.35, -0.45, 0.1
+inertia_pos_x               = 0.0025
+inertia_pos_y               = 0.0025
+inertia_pos_freq            = 1.4
+inertia_rot_freq            = 1.8
+inertia_pos_damping         = 0.75
+inertia_rot_damping         = 0.5
+inertia_rot_max             = 1.25
+inertia_pos_max             = 0.025
+
+[inertia_grenade]:hud_inertia
+inertia_rot_pitch           = -0.0025
+inertia_rot_yaw             = -0.0025
+inertia_rot_roll            = 0.0025
+inertia_rot_pivot           = 0.35, -0.45, 0.1
+inertia_pos_x               = 0.0025
+inertia_pos_y               = 0.0025
+inertia_pos_freq            = 1.4
+inertia_rot_freq            = 1.8
+inertia_pos_damping         = 0.75
+inertia_rot_damping         = 0.5
+inertia_rot_max             = 1.25
+inertia_pos_max             = 0.025
+
+[inertia_drinks]:hud_inertia
+inertia_rot_pitch           = -0.005
+inertia_rot_yaw             = -0.005
+inertia_rot_roll            = 0.005
+inertia_rot_pivot           = 0.0, -0.15, 0.1
+inertia_pos_x               = 0.001
+inertia_pos_y               = 0.001
+inertia_pos_freq            = 2.0
+inertia_rot_freq            = 2.0
+inertia_pos_damping         = 0.75
+inertia_rot_damping         = 0.5
+inertia_rot_max             = 1.25
+inertia_pos_max             = 0.02
+
+inertia_pitch_offset_r     = 0.0
+inertia_pitch_offset_n     = 0.0
+inertia_pitch_offset_d     = 0.0
+
+[inertia_food]:inertia_drinks
+inertia_rot_pivot           = 0.0, -0.2, 0.25
+inertia_pitch_offset_r     = 0.004
+inertia_pitch_offset_n     = 0.003
+inertia_pitch_offset_d     = 0.001
+
+[inertia_med]:inertia_drinks
+inertia_rot_pivot           = -0.15, -0.2, 0.25
+inertia_pitch_offset_r     = 0.004
+inertia_pitch_offset_n     = 0.003
+inertia_pitch_offset_d     = 0.001
+
+[inertia_pda]:inertia_drinks
+inertia_rot_pivot           = 0.0, -0.2, 0.15
+inertia_pitch_offset_r     = 0.004
+inertia_pitch_offset_n     = 0.003
+inertia_pitch_offset_d     = 0.001

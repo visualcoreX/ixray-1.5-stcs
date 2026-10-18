@@ -171,7 +171,7 @@ scope_zoom_factor       = 98
 ;�����
 snd_draw						= weapons\toz34\toz34_draw
 snd_holster					= weapons\toz34\toz34_hide
-snd_shoot         		= weapons\toz34\toz34_shoot, -1.1
+;snd_shoot         		= weapons\toz34\toz34_shoot, -1.1
 snd_empty					= weapons\glock17\glock17_dry
 ; snd_reload -- reload audio comes from snd_anm_reload* (GS base has no snd_reload)  ; orig weapons\toz34\toz34_reload_full
 snd_reload_jammed			= weapons\toz34\toz34_revival
@@ -187,6 +187,45 @@ snd_close_weapon			= weapons\spas12_close
 snd_add_cartridge			= weapons\w1300_load		;was gen_grenload
 snd_open_weapon			= weapons\spas12_close
 
+;firing sounds (1st person)
+snd_shoot_1p          = weapons\toz34\toz34_shoot_1p_01, -0.9
+snd_shoot_1p1         = weapons\toz34\toz34_shoot_1p_02, -0.9
+snd_shoot_1p2         = weapons\toz34\toz34_shoot_1p_03, -0.9
+snd_shoot_1p3         = weapons\toz34\toz34_shoot_1p_04, -0.9
+
+volume_snd_shoot_1p          = 125
+volume_snd_silncer_shot_1p   = 110
+
+;firing sounds (3rd person)
+snd_shoot          = weapons\toz34\toz34_shoot_3p_01, -0.9
+snd_shoot1         = weapons\toz34\toz34_shoot_3p_02, -0.9
+snd_shoot2         = weapons\toz34\toz34_shoot_3p_03, -0.9
+snd_shoot3         = weapons\toz34\toz34_shoot_3p_04, -0.9
+
+snd_shoot_dist             = weapons\shared\gen_shotgun_shoot_dist_01, -1.1
+snd_shoot_dist1            = weapons\shared\gen_shotgun_shoot_dist_02, -1.1
+snd_shoot_dist2            = weapons\shared\gen_shotgun_shoot_dist_03, -1.1
+snd_shoot_dist3            = weapons\shared\gen_shotgun_shoot_dist_04, -1.1
+
+volume_snd_shoot           = 150
+
+snd_shoot_blend_dist_start = 30
+snd_shoot_blend_dist_end   = 60
+
+;indoor sounds
+snd_shoot_indoor_1p          = weapons\shared\gen_tail_indoor_large_1p_01
+snd_shoot_indoor_1p1         = weapons\shared\gen_tail_indoor_large_1p_02
+snd_shoot_indoor_1p2         = weapons\shared\gen_tail_indoor_large_1p_03
+snd_shoot_indoor_1p3         = weapons\shared\gen_tail_indoor_large_1p_04
+snd_shoot_indoor             = weapons\shared\gen_tail_indoor_large_3p_01
+snd_shoot_indoor1            = weapons\shared\gen_tail_indoor_large_3p_02
+snd_shoot_indoor2            = weapons\shared\gen_tail_indoor_large_3p_03
+snd_shoot_indoor3            = weapons\shared\gen_tail_indoor_large_3p_04
+volume_snd_shoot_indoor      = 100
+volume_snd_shoot_indoor_1p   = 125
+snd_indoor_fadeout_start     = 0.1
+snd_indoor_fadeout_end       = 0.5
+snd_indoor_fadeout_db        = 6
 
 ; ---- GS parity block (ported from GS shotguns/toz34/base.ltx) ----
 crosshair_inertion = 6.0
@@ -238,6 +277,7 @@ hud_move_fall_offset_pos = 0,0.0,0.06
 hud_move_fall_offset_pos_16x9 = 0,0.0,0.06
 hud_move_landing_offset_pos = 0,-0.2,0.03
 hud_move_landing_offset_pos_16x9 = 0,-0.15,0.03
+inertia_profile				= inertia_shotgun
 hands_position				= 0.01,-0.032,0.045
 hands_orientation			= 0.0,0.0,0.0
 hands_position_16x9			= 0.01,-0.032,0.045

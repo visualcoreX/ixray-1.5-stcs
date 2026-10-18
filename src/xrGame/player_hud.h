@@ -5,6 +5,8 @@
 #include "../Include/xrRender/KinematicsAnimated.h"
 #include "actor_defs.h"
 
+struct InertionData;
+
 class player_hud;
 class CHudItem;
 class CMotionDef;
@@ -159,6 +161,23 @@ private:
 	bool							m_restore_detector;	// a detector was out and has to come back
 
 	Fmatrix								m_attach_offset;
+
+	// spring-damper sway (update_inertion), camera space
+	struct SSway
+	{
+		Fvector		rot, rot_v;		// yaw, pitch, roll (rad) and their rates
+		Fvector		pos, pos_v;		// x, y (m); z unused
+		void		reset			();
+		void		step			(const InertionData& in, const Fvector& rate, float dt);
+		void		xform			(const InertionData& in, Fmatrix& L) const;	// v -> R (v - pivot) + pivot + shift
+	};
+	SSway								m_sway;						// the hud base: weapon, or the detector alone
+	SSway								m_sway_left;				// the detector next to a weapon (left arm)
+	bool								m_sway_split;				// m_sway_left drives the left arm this frame
+	Fmatrix								m_sway_left_corr;			// world: weapon's sway -> detector's, for m_left_hold
+	Fvector								m_sway_prev_dir;			// last frame's view direction
+	u32									m_sway_frame;				// Device.dwFrame of the last step, 0 = none
+	void			reset_sway			();
 
 	Fmatrix								m_transform;
 	IKinematicsAnimated*				m_model;
