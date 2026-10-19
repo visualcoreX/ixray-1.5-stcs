@@ -909,7 +909,10 @@ void CActor::g_SetAnimation( u32 mstate_rl )
 	const float	follow_target	= inventory().ActiveItem() ? 1.f : g_actor_torso_follow_empty;
 	// Vertical half of the same chase. With a weapon it tracks the horizontal one (1); with empty
 	// hands it takes its own knob, or falls back to the horizontal one when that knob is left at -1.
-	const float	follow_target_p	= inventory().ActiveItem() ? 1.f
+	// A weapon carried DOWN (key T, or forced down on a base) is held like empty hands, so the upper
+	// body does not tip forward/back with the view either -- the horizontal chase stays as it is.
+	const bool	wpn_lowered	= inventory().ActiveItem() && IsWeaponLowered() && IsLowerable(inventory().ActiveItem());
+	const float	follow_target_p	= (inventory().ActiveItem() && !wpn_lowered) ? 1.f
 								: ((g_actor_torso_follow_empty_pitch < 0.f)
 									? g_actor_torso_follow_empty : g_actor_torso_follow_empty_pitch);
 	if(mstate_rl&mcClimb)
