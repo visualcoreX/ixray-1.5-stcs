@@ -707,6 +707,11 @@ protected:
 	u32						m_dwScope2DReadyAt;	// when the 2D picture may come up (0 = not aiming)
 	Fvector					m_scope_prev_cam_dir;	// camera aim last frame, for the scope-shadow drift
 	Fvector2				m_scope_shadow_shift;	// ...and the smoothed drift itself
+	// The hud tuner (hud_adj_mode) with a scope on: the weapon's own aim offset, put aside while the tuner edits
+	// the scope's in its place (CWeapon::UpdateHudAdditonal)
+	bool					m_hud_adj_scope_seeded;
+	Fvector					m_hud_adj_saved_pos;
+	Fvector					m_hud_adj_saved_rot;
 	u32						m_dwScopeKickAt;		// when the last shot jolted the optic
 	Fvector2				m_scope_kick_dir;		// which way it threw the eye (random per shot)
 	float					m_scope_kick_zoom;		// ...and how much closer the picture jumped

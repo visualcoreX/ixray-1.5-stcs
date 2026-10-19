@@ -181,6 +181,9 @@ CWeapon::CWeapon()
 	m_dwScope2DReadyAt							= 0;
 	m_scope_prev_cam_dir.set					(0.f, 0.f, 0.f);
 	m_scope_shadow_shift.set					(0.f, 0.f);
+	m_hud_adj_scope_seeded					= false;
+	m_hud_adj_saved_pos.set					(0.f, 0.f, 0.f);
+	m_hud_adj_saved_rot.set					(0.f, 0.f, 0.f);
 	m_dwScopeKickAt								= 0;
 	m_scope_kick_dir.set						(0.f, 0.f);
 	m_scope_kick_zoom							= 0.f;
@@ -5788,6 +5791,37 @@ void CWeapon::UpdateHudAdditonal		(Fmatrix& trans)
 		// While the in-game HUD tuner is active (hud_adj_mode, Mixed build: Shift+Num1/2) let it drive the
 		// aim offset directly -- otherwise the per-scope override swallows the tuner's changes.
 		extern u32 hud_adj_mode;
+		// ...but the tuner edits the hud measures' aim offset, which is the WEAPON's (its iron sights'), while
+		// with a scope on the scope's own aim_hud_offset_* is what is shown: switching the tuner on jumped the
+		// gun to the iron-sight pose (the TOZ-34's -0.006 for the PU's 0.001). So when it comes on with a scope,
+		// the scope's values (the alter pose's, if that is the one up) are put into the measures for it to start
+		// from -- and its printout is then the scope's keys --, and the weapon's own come back when it goes off.
+		if (idx == 1)
+		{
+			const bool	wide	= hi->m_measures.m_prop_flags.test(hud_item_measures::e_16x9_mode_now);
+			if (hud_adj_mode != 0 && !m_hud_adj_scope_seeded && IsScopeAttached())
+			{
+				Fvector		spos, srot;
+				shared_str	sc		= (AlterZoomBlend() >= 0.5f) ? AlterZoomSection() : GetCurrentScopeSection();
+				if (read_scope_aim_offset(sc.size() ? *sc : nullptr, *hi->m_sect_name, wide, spos, srot,
+										  AlterZoomBlend() >= 0.5f))
+				{
+					m_hud_adj_saved_pos					= hi->m_measures.m_hands_offset[0][1];
+					m_hud_adj_saved_rot					= hi->m_measures.m_hands_offset[1][1];
+					hi->m_measures.m_hands_offset[0][1]	= spos;
+					hi->m_measures.m_hands_offset[1][1]	= srot;
+					m_hud_adj_scope_seeded				= true;
+				}
+			}
+			else if (hud_adj_mode == 0 && m_hud_adj_scope_seeded)
+			{
+				hi->m_measures.m_hands_offset[0][1]		= m_hud_adj_saved_pos;
+				hi->m_measures.m_hands_offset[1][1]		= m_hud_adj_saved_rot;
+				m_hud_adj_scope_seeded					= false;
+			}
+			curr_offs	= hi->m_measures.m_hands_offset[0][1];
+			curr_rot	= hi->m_measures.m_hands_offset[1][1];
+		}
 		if (idx==1 && hud_adj_mode == 0)
 		{
 			bool	wide = hi->m_measures.m_prop_flags.test(hud_item_measures::e_16x9_mode_now);
