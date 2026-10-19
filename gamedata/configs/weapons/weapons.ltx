@@ -8,6 +8,7 @@
 #include "weapon_lowered.ltx"		; weapon down: its first-person pose
 #include "mag_drops.ltx"		; magazines a full reload lets fall
 #include "hud_inertia.ltx"		; spring-damper hud sway: defaults and per-kind profiles
+#include "hud_recoil.ltx"		; the weapon's own recoil on the hud: defaults and the hip shot's ray
 
 #include "upgrades\w_abakan_up.ltx"
 #include "upgrades\w_ak74_up.ltx"
@@ -165,7 +166,7 @@ explode_particles				= explosions\expl_bullet,explosions\expl_bullet_00,explosio
 
 
 [tracers_color_table]
-color_0 = 255, 130, 	0, 	255	; yellow
+color_0 = 255, 132, 	32, 	255	; yellow
 color_1 = 255, 255, 	255, 	255	; white
 color_2 = 255, 25, 	0,	255	; red
 color_3 = 77, 	255, 	77,	255	; green

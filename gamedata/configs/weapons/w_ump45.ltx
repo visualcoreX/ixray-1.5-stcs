@@ -25,6 +25,25 @@ ammo_mag_size     = 26
 ammo_class		= ammo_11.43x23_fmj, ammo_11.43x23_hydro
 fire_modes		= 1, -1
 
+;пїЅпїЅпїЅпїЅпїЅпїЅ
+cam_relax_speed      = 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+cam_relax_speed_ai   = 120.75
+cam_dispersion       = 0.9		; orig 0.2 (GS) ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+cam_dispersion_inc   = 0.25		; orig 0.5 (GS) ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅe cam_dispersion пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+cam_dispersion_frac  = 1.0		; orig 0.7 (GS) ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
+cam_max_angle        = 70.0		; orig 5.0 (GS) ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+cam_max_angle_horz   = 50.0		; orig 10.0 (GS) ;(degree) maximum shot horizontal degree
+cam_step_angle_horz  = 1.5		; orig 2.0 (GS) ;(degree) size of step camera moved in horizontal position while shooting
+
+zoom_cam_relax_speed        = 5    ; scope & ironsight
+zoom_cam_relax_speed_ai     = 120.75
+zoom_cam_dispersion         = 0.55	; orig 0.2 (GS)
+zoom_cam_dispersion_inc     = 0.2	; orig 0.5 (GS)
+zoom_cam_dispersion_frac    = 1.0	; orig 0.7 (GS)
+zoom_cam_max_angle          = 50.0	; orig 5.0 (GS)
+zoom_cam_max_angle_horz     = 50.0	; orig 10.0 (GS)
+zoom_cam_step_angle_horz    = 1.5
+
 flame_particles		   		= ghost_particles\weapons\flame_9mm_pistol
 smoke_particles		   		= ghost_particles\weapons\smoke_9mm_stock_smg
 silencer_smoke_particles 	= ghost_particles\weapons\suppressor_smoke_pistol_common
@@ -89,6 +108,11 @@ wanm_shoot_last_a = shoot_last_auto
 
 fire_point		   = 0,-0.016,0.359
 fire_point2		   = 0,-0.016,0.526
+
+hip_fire_point			= 0.140909, -0.138350, 0.941615
+hip_fire_dir			= 0.000000, 0.000000, 1.000000
+hud_recoil_pivot		= 0.140909, -0.188350, 0.1
+hud_recoil_aim_pivot	= 0.0, -0.05, 0.0
 
 item_position				        = 0.0,0.0045,-0.003
 
