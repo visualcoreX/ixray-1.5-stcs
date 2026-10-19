@@ -367,6 +367,7 @@ void	CRenderTarget::phase_combine	()
 			HW.pDevice->ClearRenderTargetView( rt_Generic_1->pRT, ColorRGBA);
 			RImplementation.r_dsgraph_render_distort	();
 			phase_rain_distort							();
+			RImplementation.r_dsgraph_render_lens_undistort	();	// reticles and dots do not ripple
 			if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_PP()	;	// PP-UI
 		}
 		rain_distort_end	(0);	// drawn or not, they were this frame's

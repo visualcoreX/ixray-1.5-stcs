@@ -709,6 +709,44 @@ void	R_dsgraph_structure::r_dsgraph_collim_mark_bind	()
 	_RELEASE				(have);
 }
 
+// The hud's glass over the distortion mask: pass 3 of every masked glass (models_zoom*.s, models_lenses.s -- an
+// optic's lens, a collimator's glass, and the collimator's model reticle behind it). What distorts behind a sight
+// -- water, heat haze, an anomaly -- rippled its reticle or its dot along with the world, as they are drawn on the
+// glass in the very picture the combine then warps. Over the glass the mask goes back to its cleared "no offset,
+// not under the haze" (an optic's by how far its lens has come in: from the hip its glass is see-through). The world
+// inside a 3D lens keeps its ripple -- its own frame is warped before it is captured (phase_scope_capture).
+void	R_dsgraph_structure::r_dsgraph_render_lens_undistort	()
+{
+	if (lstHUDLensLate.empty())	return;
+
+	extern ENGINE_API float psHUD_FOV;
+	Fmatrix Pold = Device.mProject;
+	Fmatrix FTold = Device.mFullTransform;
+	Device.mProject.build_projection(
+		deg2rad(psHUD_FOV * Device.fFOV_HUD),
+		Device.fASPECT, VIEWPORT_NEAR,
+		g_pGamePersistent->Environment().CurrentEnv->far_plane);
+	Device.mFullTransform.mul(Device.mProject, Device.mView);
+	RCache.set_xform_view	(Device.mView);
+	RCache.set_xform_project(Device.mProject);
+
+	// depth-tested in the hud's slice, so the sight's own body keeps what it hides of the glass
+	RCache.set_CullMode			(CULL_CCW);
+	RCache.set_Stencil			(FALSE);
+	rmNear						();
+	RCache.set_Constants		((R_constant_table*)0);
+	r_dsgraph_hud_sorted_now	= true;
+	for (u32 i = 0; i < lstHUDLensLate.size(); ++i)
+		r_dsgraph_draw_pass		(lstHUDLensLate[i], 3);
+	r_dsgraph_hud_sorted_now	= false;
+	RCache.set_Constants		((R_constant_table*)0);
+	rmNormal					();
+
+	Device.mProject			= Pold;
+	Device.mFullTransform	= FTold;
+	RCache.set_xform_project(Device.mProject);
+}
+
 // A prism sight's black field stop, drawn over the FINISHED picture (pass 2 of the eyepiece's l_special,
 // models_lenses.s): the r3 combine calls this once the bloom, the sun's shafts and the lens flares are in.
 // Drawn with the hud's own glass in the forward pass, the black was still lit up afterwards by everything

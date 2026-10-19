@@ -62,6 +62,7 @@ public:
 	// ...and the same eyepieces kept for their field stop drawn over the finished picture
 	xr_vector<R_dsgraph::_MatrixItemS,render_allocator::helper<R_dsgraph::_MatrixItemS>::result>	lstHUDLensLate;
 	void		r_dsgraph_render_lens_late						();
+	void		r_dsgraph_render_lens_undistort					();	// the hud's glass back out of the distortion mask
 
 #if RENDER!=R_R1
 	R_dsgraph::mapSorted_T										mapWmark;			// sorted

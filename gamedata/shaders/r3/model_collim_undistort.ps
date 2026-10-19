@@ -1,0 +1,10 @@
+#include "common.h"
+#include "collim.h"
+
+// Pass 3 of a collimator's glass (models_lenses.s l_special), drawn over the distortion mask
+// (r_dsgraph_render_lens_undistort): the mask back to its cleared "no offset, not under the haze" over the glass,
+// so the dot -- on the glass, or the model reticle behind it -- does not ripple with the water or the haze behind.
+float4 main( v2p_collim I ) : SV_Target
+{
+	return	float4( 127.0f/255.0f, 127.0f/255.0f, 0.0f, 1.0f );
+}

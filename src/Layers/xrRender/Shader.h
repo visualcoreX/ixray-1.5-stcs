@@ -20,7 +20,9 @@ class					CBlender_Compile;
 class					IBlender;
 // 3: the HUD's collimator glass draws its stock look, its coating tint and the sky it mirrors
 // (models_lenses.s). passes is a fixed svector -- r_End / PassEnd assert before they overrun it.
-#define	SHADER_PASSES_MAX		3
+// 4: an eyepiece's l_special -- the cut, the mark, the late pass and the distortion mask over the glass
+// (r_dsgraph_render_lens_undistort).
+#define	SHADER_PASSES_MAX		4
 
 #pragma pack(push,4)
 

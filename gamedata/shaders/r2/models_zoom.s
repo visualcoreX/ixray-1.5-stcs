@@ -48,4 +48,12 @@ function l_special	(shader, t_base, t_second, t_detail)
 			: aref		(false,0)
 	shader:sampler	("s_scope_late")	:texture	("$user$scopelate")	-- the prism mode's fade: the frames without the cut, finished
 	shader:sampler	("s_scope_latec")	:texture	("$user$scopelatec")	-- ...and with it
+
+	shader:begin	("model_collim_reflect","model_scope_undistort")	-- pass 3: the distortion mask (r_dsgraph_render_lens_undistort)
+			: fog		(false)
+			: zb		(true,false)
+			: blend		(true,blend.srcalpha,blend.invsrcalpha)
+			: aref		(false,0)
+			: color_write_enable	(true, true, true, true)	-- DX9: never trust what an earlier pass's block left
+			: stencil	(false, cmp_func.always, 255, 255, stencil_op.keep, stencil_op.keep, stencil_op.keep)
 end

@@ -47,4 +47,10 @@ function l_special	(shader, t_base, t_second, t_detail)
 			: aref		(false,0)
 	shader:dx10texture	("s_scope_late",	"$user$scopelate")	-- the prism mode's fade: the frames without the cut, finished
 	shader:dx10texture	("s_scope_latec",	"$user$scopelatec")	-- ...and with it
+
+	shader:begin	("model_collim_reflect","model_scope_undistort")	-- pass 3: the distortion mask (r_dsgraph_render_lens_undistort)
+			: fog		(false)
+			: zb		(true,false)
+			: blend		(true,blend.srcalpha,blend.invsrcalpha)
+			: aref		(false,0)
 end
