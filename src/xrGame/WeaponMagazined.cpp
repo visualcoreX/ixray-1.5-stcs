@@ -371,6 +371,12 @@ bool CWeaponMagazined::SprintTransitionNow()
 	return m_bSprintStartRunning && m_dwMotionEndTm && Device.dwTimeGlobal < m_dwMotionEndTm;
 }
 
+bool CWeaponMagazined::SprintBlocksFireNow()
+{
+	if (m_dwSprintExitEndTm && Device.dwTimeGlobal < m_dwSprintExitEndTm)	return true;
+	return SprintTransitionNow();
+}
+
 bool CWeaponMagazined::IsActorSprinting()
 {
 	CActor* a = smart_cast<CActor*>(H_Parent());
