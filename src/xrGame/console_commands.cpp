@@ -2656,6 +2656,9 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	// Top-left overlay for every playing hud blend: source .omf, motion name, time and state.
 	// Registered here rather than in the DEBUG block so it works in a Release build.
 	CMD4(CCC_Integer,		"hud_dbg_anim",		&g_show_hud_anim_info,	0, 1);
+	// the crosshair where the shot lands (1) or in the middle of the screen (0) -- HUDTarget.cpp
+	extern int g_hud_crosshair_detailed;
+	CMD4(CCC_Integer,		"hud_crosshair_detailed",	&g_hud_crosshair_detailed,	0, 1);
 	CMD2(CCC_HudFireRay,		"hud_fire_ray_dump",		0);
 	CMD2(CCC_HudFireRay,		"hud_fire_ray_resample",	1);
 	CMD2(CCC_HudFireRay,		"hud_fire_ray_bake",		2);

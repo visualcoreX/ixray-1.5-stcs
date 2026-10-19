@@ -20,6 +20,9 @@ function opt_gameplay:InitControls(x, y, xml, handler)
 	local chk_tips = xml:InitCheck("tab_gameplay:check_tips", self)
 	local chk_crosshair = xml:InitCheck("tab_gameplay:check_crosshair",	self)
 	local chk_dyn_crosshair = xml:InitCheck("tab_gameplay:check_dyn_crosshair", self)
+	-- hud_crosshair_detailed: the crosshair where the shot lands (it follows the weapon's sway and
+	-- recoil), or the stock one in the middle of the screen
+	local chk_det_crosshair = xml:InitCheck("tab_gameplay:check_detailed_crosshair", self)
 	xml:InitCheck("tab_gameplay:check_show_weapon", 	self)
 	local chk_dist = xml:InitCheck("tab_gameplay:check_dist", self)
 	xml:InitCheck("tab_gameplay:check_autoreload", 		self)
@@ -63,6 +66,8 @@ function opt_gameplay:InitControls(x, y, xml, handler)
 	list_difficulty:AddDisabledOnValue(3, chk_crosshair)
 	list_difficulty:AddDisabledOnValue(2, chk_dyn_crosshair)
 	list_difficulty:AddDisabledOnValue(3, chk_dyn_crosshair)
+	list_difficulty:AddDisabledOnValue(2, chk_det_crosshair)
+	list_difficulty:AddDisabledOnValue(3, chk_det_crosshair)
 	list_difficulty:AddDisabledOnValue(2, chk_dist)
 	list_difficulty:AddDisabledOnValue(3, chk_dist)
 	-- NPC identification is drawn AT the crosshair and reads whatever is under it, so it belongs to

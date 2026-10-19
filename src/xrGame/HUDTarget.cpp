@@ -27,6 +27,10 @@
 #include "../Include/xrRender/UIRender.h"
 
 
+// hud_crosshair_detailed (options: game): 1 = the crosshair stands where the gun's shot would land and
+// follows its sway and recoil, 0 = the stock crosshair in the middle of the screen. The shot is the same.
+int g_hud_crosshair_detailed = 1;
+
 u32 C_ON_ENEMY = color_rgba(0xff,0,0,0x80);
 u32 C_ON_NEUTRAL = color_rgba(0xff,0xff,0x80,0x80);
 u32 C_ON_FRIEND = color_rgba(0,0xff,0,0x80);
@@ -142,7 +146,7 @@ void CHUDTarget::CursorOnFrame ()
 	m_fire_ray			= false;
 	CActor* A			= smart_cast<CActor*>(Level().CurrentEntity());
 	CHudItem* hi		= A ? smart_cast<CHudItem*>(A->inventory().ActiveItem()) : NULL;
-	if (hi && smart_cast<CWeaponMagazined*>(hi) && A->HudFireRay(hi, m_fire_pos, m_fire_dir))
+	if (g_hud_crosshair_detailed && hi && smart_cast<CWeaponMagazined*>(hi) && A->HudFireRay(hi, m_fire_pos, m_fire_dir))
 	{
 		PPF.RQ.O		= 0;
 		PPF.RQ.range	= g_pGamePersistent->Environment().CurrentEnv->far_plane*0.99f;
