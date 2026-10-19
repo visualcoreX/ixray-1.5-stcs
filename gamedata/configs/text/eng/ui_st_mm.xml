@@ -744,6 +744,18 @@
 	<string id="ui_mm_lens_factor">
 		<text>3D-lens FPS</text>
 	</string>
+	<string id="ui_mm_scope_mode">
+		<text>Scopes</text>
+	</string>
+	<string id="ui_mm_scope_pip">
+		<text>True PiP scopes</text>
+	</string>
+	<string id="ui_mm_scope_fake3d">
+		<text>Fake 3D scopes</text>
+	</string>
+	<string id="ui_mm_scope_2d">
+		<text>2D scopes</text>
+	</string>
 	<string id="ui_mm_lens_enabled">
 		<text>Enable 3D-lens</text>
 	</string>

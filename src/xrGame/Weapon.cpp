@@ -3544,6 +3544,8 @@ bool CWeapon::UseScopeTexture()
 bool CWeapon::IsScopePrismCfg() const
 {
 	if (IsLensedScope())								return false;	// the real 3D lens is on
+	extern u32 g_scope_mode;											// the options' scope mode: 1 = fake 3D
+	if (g_scope_mode != 1)								return false;	// (console_commands.cpp CCC_ScopeMode)
 	if (!IsLensedScopeCfg())							return false;	// not a magnifying optic
 	if (!psDeviceFlags.test(rsR2|rsR3))					return false;
 	shared_str sc = GetCurrentScopeSection();
