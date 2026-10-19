@@ -581,6 +581,11 @@ void CRender::render_forward				()
 		g_pGamePersistent->Environment().RenderLast()	;					// rain/thunder-bolts (the rain adds its drops to the laser density)
 		Target->phase_laser_beams				()	;					// over the world's smoke/glass/rain, under the HUD's
 		Target->phase_torch_dust				()	;					// same place, same reasons
+		// World tracers go in here, with the scene's depth bound and before the hud: the hud and the scope's glass
+		// then cover them. Drawn later (the UI pass, or after the hud under MSAA) a tracer behind the glass, which
+		// writes no depth, landed on top of the lens and its reticle, unmagnified. The lens-off prism capture below
+		// gets them too. CBulletManager::Render raises its guard, so the UI pass skips them.
+		if (g_pGamePersistent)	g_pGamePersistent->OnRenderForward();
 		// The lens-off prism mode with an optic whose lens processes the picture (night vision, the gauss):
 		// the world is complete now and the hud's glass comes next -- hand that glass this very frame
 		// (CaptureScopePrism). x > 170.5 is CActor's marker for it (hud_collim_prism, CWeapon::IsScopePrismCapture).

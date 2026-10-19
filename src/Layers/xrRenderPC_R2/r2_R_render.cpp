@@ -480,6 +480,11 @@ void CRender::render_forward				()
 		PortalTraverser.fade_render				()	;					// faded-portals
 		r_dsgraph_render_sorted_world			()	;					// strict-sorted geoms
 		g_pGamePersistent->Environment().RenderLast()	;					// rain/thunder-bolts
+		// World tracers go in here, with the scene's depth bound and before the hud: the hud and the scope's glass
+		// then cover them. Drawn later (the UI pass, or after the hud under MSAA) a tracer behind the glass, which
+		// writes no depth, landed on top of the lens and its reticle, unmagnified. The lens-off prism capture below
+		// gets them too. CBulletManager::Render raises its guard, so the UI pass skips them.
+		if (g_pGamePersistent)	g_pGamePersistent->OnRenderForward();
 		// The lens-off prism mode (r__dsgraph_render.cpp, hud_collim_prism.x > 170.5 from CActor): the world is
 		// complete and the hud's glass comes next -- hand it this frame's world (on a frame with the eyepiece's
 		// cut) or, after the hud, the look through the glass (on one without it, while the lens fades). As r3.
