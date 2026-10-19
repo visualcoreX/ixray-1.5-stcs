@@ -75,6 +75,10 @@ void CWeaponShotEffector::Reset()
 	m_relax_elapsed		= 0.0f;
 	m_relax_duration	= 0.0f;
 	m_last_kick_vert	= 0.0f;
+	m_raw_kick_vert		= 0.0f;
+	m_raw_kick_horz		= 0.0f;
+	m_kick_scale_vert	= 1.0f;
+	m_kick_scale_horz	= 1.0f;
 
 	m_roll_count		= 0;
 }
@@ -105,8 +109,9 @@ void CWeaponShotEffector::Shot2( float angle )
 {
 	float old_target_vert = m_angle_vert_target;
 
-	float new_target_vert = old_target_vert +
-		angle * ( m_cam_recoil.DispersionFrac + m_Random.randF(-1.0f, 1.0f) * (1.0f - m_cam_recoil.DispersionFrac) );
+	m_raw_kick_vert = angle * ( m_cam_recoil.DispersionFrac + m_Random.randF(-1.0f, 1.0f) * (1.0f - m_cam_recoil.DispersionFrac) );
+	// the camera takes its own share of the kick, the hud weapon the rest (SetKickScale)
+	float new_target_vert = old_target_vert + m_raw_kick_vert * m_kick_scale_vert;
 
 	clamp( new_target_vert, -m_cam_recoil.MaxAngleVert, m_cam_recoil.MaxAngleVert );
 	if ( fis_zero(new_target_vert - m_cam_recoil.MaxAngleVert) )
@@ -118,8 +123,14 @@ void CWeaponShotEffector::Shot2( float angle )
 	// only a fraction of this, not of the whole accumulated angle.
 	m_last_kick_vert = new_target_vert - old_target_vert;
 
+	// The sideways step grows with how far the camera has climbed. A camera that takes only a share of
+	// each kick climbs that much slower, so the climb is measured against the same share of the ceiling:
+	// the step comes out as it would for the whole kick, and the camera then takes its share of it.
 	float rdm = m_Random.randF( -1.0f, 1.0f );
-	float new_target_horz = m_angle_horz_target + (new_target_vert / m_cam_recoil.MaxAngleVert) * rdm * m_cam_recoil.StepAngleHorz;
+	float climb = new_target_vert / ( m_cam_recoil.MaxAngleVert * _max(m_kick_scale_vert, 0.05f) );
+	clamp( climb, -1.04f, 1.04f );
+	m_raw_kick_horz = climb * rdm * m_cam_recoil.StepAngleHorz;
+	float new_target_horz = m_angle_horz_target + m_raw_kick_horz * m_kick_scale_horz;
 
 	clamp( new_target_horz, -m_cam_recoil.MaxAngleHorz, m_cam_recoil.MaxAngleHorz );
 
@@ -152,6 +163,30 @@ void CWeaponShotEffector::Shot2( float angle )
 	m_first_shot	= true;
 	m_actived		= true;
 	m_shot_end		= false;
+}
+
+void CWeaponShotEffector::AddKick( float vert, float horz )
+{
+	if ( fis_zero(vert) && fis_zero(horz) )
+		return;
+
+	float old_target_vert	= m_angle_vert_target;
+	m_angle_vert_target		+= vert;
+	clamp( m_angle_vert_target, -m_cam_recoil.MaxAngleVert, m_cam_recoil.MaxAngleVert );
+	m_last_kick_vert		+= m_angle_vert_target - old_target_vert;	// relaxed like the rest of the shot
+
+	m_angle_horz_target		+= horz;
+	clamp( m_angle_horz_target, -m_cam_recoil.MaxAngleHorz, m_cam_recoil.MaxAngleHorz );
+
+	// part of the shot that just started: same rise, from where the camera is
+	if ( m_phase != ePhaseRising )
+	{
+		m_angle_vert_from	= m_angle_vert;
+		m_angle_horz_from	= m_angle_horz;
+		m_rise_elapsed		= 0.0f;
+		m_phase				= ePhaseRising;
+	}
+	m_actived				= true;
 }
 
 void CWeaponShotEffector::BeginRelax()

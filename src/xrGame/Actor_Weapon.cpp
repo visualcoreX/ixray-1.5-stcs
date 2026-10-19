@@ -16,6 +16,7 @@
 #include "Grenade.h"
 #include "game_base_space.h"
 #include "Artefact.h"
+#include "player_hud.h"
 
 static const float VEL_MAX		= 10.f;
 static const float VEL_A_MAX	= 10.f;
@@ -72,6 +73,39 @@ void CActor::g_fireParams	(const CHudItem* pHudItem, Fvector &fire_pos, Fvector 
 		XFORM().transform_dir(offset, m_vMissileOffset);
 		fire_pos.add(offset);
 	}
+	// A gun in first-person hands shoots along its hud ray: from the hip off the barrel, aiming from the
+	// eye, either way carried by the sway and the weapon's own recoil (player_hud::update_fire_ray).
+	else if (smart_cast<const CWeaponMagazined*>(pHudItem))
+		HudFireRay		(pHudItem, fire_pos, fire_dir);
+}
+
+bool CActor::HudFireRay(const CHudItem* pHudItem, Fvector& P, Fvector& D)
+{
+	if (!g_player_hud || cam_Active() != cam_FirstEye() || !HUDview())	return false;
+	Fvector lp, ld;
+	if (!g_player_hud->fire_ray_local(pHudItem, lp, ld))				return false;
+
+	Fmatrix M;			Cameras().hud_camera_Matrix(M);
+	Fvector p, d;
+	M.transform_tiny	(p, lp);
+	M.transform_dir		(d, ld);
+	d.normalize_safe	();
+	if (!_valid(p) || !_valid(d))										return false;
+
+	// The hip ray starts out at the barrel, off the eye. With the barrel in a wall that start is past
+	// the surface, and the round would come out on its far side: start from the eye then.
+	Fvector to;			to.sub(p, M.c);
+	const float dist	= to.magnitude();
+	if (dist > EPS_L)
+	{
+		to.mul			(1.f / dist);
+		collide::rq_result RQ;
+		if (Level().ObjectSpace.RayPick(M.c, to, dist, collide::rqtBoth, RQ, this))
+			p.set		(M.c);
+	}
+	P					= p;
+	D					= d;
+	return				true;
 }
 
 void CActor::g_WeaponBones	(int &L, int &R1, int &R2)
@@ -254,7 +288,26 @@ void CActor::on_weapon_shot_start		(CWeapon *weapon)
 
 	effector->SetRndSeed	(GetShotRndSeed());
 	effector->SetActor		(this);
+
+	// The weapon on the hud kicks along, by a part of this very kick (HudRecoilData::Inherit). With
+	// camera_split that part is taken out of the camera's own kick: the camera gets 1 - Inherit.
+	const bool hud_recoil			= g_player_hud && HUDview();
+	const HudRecoilData* hrd		= hud_recoil ? weapon->CurrentHudRecoilData() : NULL;
+	if ( hrd && hrd->CameraSplit > 0.f )
+		effector->SetKickScale		( _max(0.f, 1.f - hrd->Inherit * hrd->CameraSplit),
+									  _max(0.f, 1.f - hrd->InheritHorz * hrd->CameraSplit) );
+	else
+		effector->SetKickScale		( 1.f, 1.f );
+
 	effector->Shot			(weapon);
+
+	if ( hud_recoil )
+	{
+		float kv, kh, ov, oh;
+		effector->GetLastKick		(kv, kh);
+		g_player_hud->recoil_shot	(kv, kh, ov, oh);
+		effector->AddKick			(ov, oh);
+	}
 }
 
 void CActor::on_weapon_shot_update		()
@@ -285,6 +338,8 @@ void CActor::on_weapon_hide				(CWeapon *weapon)
 	CCameraShotEffector				*effector = smart_cast<CCameraShotEffector*>(Cameras().GetCamEffector(eCEShot)); 
 	if (effector && effector->IsActive())
 		effector->Reset				();
+	if (g_player_hud)
+		g_player_hud->recoil_reset	();
 }
 
 Fvector CActor::weapon_recoil_delta_angle	()

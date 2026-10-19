@@ -60,6 +60,7 @@
 #include "xrServer_Objects_ALife_Monsters.h"
 
 #include "hudmanager.h"
+#include "player_hud.h"
 
 string_path		g_last_saved_game;
 
@@ -171,6 +172,26 @@ CUIOptConCom g_OptConCom;
 #ifdef SEVERAL_ALLOCATORS
 	extern		u32 game_lua_memory_usage	();
 #endif // SEVERAL_ALLOCATORS
+
+// The hip shot's ray of the weapon in hand (player_hud::update_fire_ray): print it, in the form the hud
+// section takes (hip_fire_point / hip_fire_dir), or have it taken off the barrel again.
+// bake: off the first frame of anm_idle -- the weapon in hand, or every gun into $logs$\hud_fire_rays.ltx.
+class CCC_HudFireRay : public IConsole_Command {
+	int			m_mode;		// 0 dump, 1 resample, 2 bake, 3 bake all
+public:
+				CCC_HudFireRay(LPCSTR N, int mode) : IConsole_Command(N), m_mode(mode)	{ bEmptyArgsHandled = true; };
+	virtual void	Execute	(LPCSTR args)
+	{
+		if (!g_player_hud)	return;
+		switch (m_mode)
+		{
+		case 1:		g_player_hud->fire_ray_resample();	break;
+		case 2:		g_player_hud->fire_ray_bake();		break;
+		case 3:		g_player_hud->fire_ray_bake_all();	break;
+		default:	g_player_hud->fire_ray_dump();		break;
+		}
+	}
+};
 
 class CCC_MemStats : public IConsole_Command
 {
@@ -2635,6 +2656,10 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	// Top-left overlay for every playing hud blend: source .omf, motion name, time and state.
 	// Registered here rather than in the DEBUG block so it works in a Release build.
 	CMD4(CCC_Integer,		"hud_dbg_anim",		&g_show_hud_anim_info,	0, 1);
+	CMD2(CCC_HudFireRay,		"hud_fire_ray_dump",		0);
+	CMD2(CCC_HudFireRay,		"hud_fire_ray_resample",	1);
+	CMD2(CCC_HudFireRay,		"hud_fire_ray_bake",		2);
+	CMD2(CCC_HudFireRay,		"hud_fire_ray_bake_all",	3);
 	CMD4(CCC_Integer,		"snd_shot_overlap",	&g_snd_shot_overlap,		0, 1);
 	CMD4(CCC_Integer,		"snd_overlap_voices",	&g_snd_overlap_voices,	0, 32);
 	CMD4(CCC_Float,			"snd_overlap_fade",		&g_snd_overlap_fade,	0.f, 2.f);

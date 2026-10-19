@@ -31,6 +31,8 @@ public:
 					~CHUDCrosshair	();
 
 			void	OnRender		();
+			// centred on a point of the screen, -1..1 across and down (the shot's ray, CHUDTarget)
+			void	OnRender		(const Fvector2& at);
 			void	SetDispersion	(float disp);
 #ifdef DEBUG
 			void	SetFirstBulletDispertion(float fbdisp);

@@ -244,7 +244,7 @@ void SLaserBeamParams::Publish(const Fvector& from, const Fvector& axis, const F
 
 // tan(world fov / 2) / tan(hud fov / 2): how much further off the view axis a HUD point has to be put
 // for the world projection to draw it over the same pixel
-static float hud_to_world_k()
+float LaserBeam_HudToWorldK()
 {
 	const float th	= tanf(deg2rad(0.5f * psHUD_FOV * Device.fFOV_HUD));
 	const float tw	= tanf(deg2rad(0.5f * Device.fFOV));
@@ -256,7 +256,7 @@ void LaserBeam_HudDirToWorld(Fvector& d)
 	const Fvector& cdir	= Device.vCameraDirection;
 	Fvector par;	par.mul(cdir, d.dotproduct(cdir));
 	Fvector perp;	perp.sub(d, par);
-	perp.mul		(hud_to_world_k());
+	perp.mul		(LaserBeam_HudToWorldK());
 	d.add			(par, perp);
 	d.normalize_safe();
 }
@@ -383,7 +383,7 @@ void LaserBeam_HudPointToWorld(Fvector& p)
 	if (along <= EPS_L)		return;
 	Fvector par;	par.mul(cdir, along);
 	Fvector perp;	perp.sub(v, par);
-	perp.mul		(hud_to_world_k());
+	perp.mul		(LaserBeam_HudToWorldK());
 	p.add			(cpos, par);
 	p.add			(perp);
 }

@@ -22,6 +22,7 @@
 
 #include "inventory_item.h"
 #include "inventory.h"
+#include "WeaponMagazined.h"
 
 #include "../Include/xrRender/UIRender.h"
 
@@ -58,6 +59,10 @@ CHUDTarget::CHUDTarget	()
 	hShader->create		("hud\\cursor","ui\\cursor");
 
 	PP.RQ.set				(NULL, 0.f, -1);
+	PPF						= PP;
+	m_fire_ray				= false;
+	m_fire_pos.set			(0.f, 0.f, 0.f);
+	m_fire_dir.set			(0.f, 0.f, 1.f);
 
 	Load				();
 	m_bShowCrosshair	= false;
@@ -132,6 +137,25 @@ void CHUDTarget::CursorOnFrame ()
 			clamp			(PP.RQ.range, NEAR_LIM, PP.RQ.range);
 	}
 
+	// A gun in first-person hands: the crosshair stands where its shot would land -- the first thing its
+	// ray meets, the same see-through rules as above -- and follows the weapon's sway and recoil.
+	m_fire_ray			= false;
+	CActor* A			= smart_cast<CActor*>(Level().CurrentEntity());
+	CHudItem* hi		= A ? smart_cast<CHudItem*>(A->inventory().ActiveItem()) : NULL;
+	if (hi && smart_cast<CWeaponMagazined*>(hi) && A->HudFireRay(hi, m_fire_pos, m_fire_dir))
+	{
+		PPF.RQ.O		= 0;
+		PPF.RQ.range	= g_pGamePersistent->Environment().CurrentEnv->far_plane*0.99f;
+		PPF.RQ.element	= -1;
+		PPF.power		= 1.0f;
+		PPF.pass		= 0;
+
+		collide::ray_defs	RD(m_fire_pos, m_fire_dir, PPF.RQ.range, CDB::OPT_CULL, collide::rqtBoth);
+		RQR.r_clear		();
+		if (Level().ObjectSpace.RayQuery(RQR, RD, pick_trace_callback, &PPF, NULL, A))
+			clamp		(PPF.RQ.range, NEAR_LIM, PPF.RQ.range);
+		m_fire_ray		= true;
+	}
 }
 
 extern ENGINE_API BOOL g_bRendering; 
@@ -150,8 +174,10 @@ void CHUDTarget::Render()
 	CEntity*	E		= smart_cast<CEntity*>(O);
 	if (0==E)	return;
 
-	Fvector p1				= Device.vCameraPosition;
-	Fvector dir				= Device.vCameraDirection;
+	// the shot's ray when there is one (CursorOnFrame), else the view's
+	SPickParam& PP			= m_fire_ray ? PPF : this->PP;
+	Fvector p1				= m_fire_ray ? m_fire_pos : Device.vCameraPosition;
+	Fvector dir				= m_fire_ray ? m_fire_dir : Device.vCameraDirection;
 	
 	// Render cursor
 	u32 C				= C_DEFAULT;
@@ -162,6 +188,10 @@ void CHUDTarget::Render()
 	Fvector4			pt;
 	Device.mFullTransform.transform(pt, p2);
 	pt.y = -pt.y;
+	if (pt.w <= EPS_L || !_valid(pt.x) || !_valid(pt.y))	// behind the eye: keep it in the middle
+		{ pt.x = pt.y = 0.f; pt.w = _max(pt.w, 1.f); }
+	clamp				(pt.x, -1.f, 1.f);
+	clamp				(pt.y, -1.f, 1.f);
 	//PT.transform		(p2,Device.mFullTransform);
 	//float				di_size = C_SIZE/powf(PT.p.w,.2f);
 	float				di_size = C_SIZE/powf(pt.w,.2f);
@@ -318,7 +348,7 @@ void CHUDTarget::Render()
 	}else{
 		//����������� ������
 		HUDCrosshair.cross_color	= C;
-		HUDCrosshair.OnRender		();
+		HUDCrosshair.OnRender		(Fvector2().set(pt.x, pt.y));
 	}
 }
 
@@ -326,6 +356,8 @@ void CHUDTarget::net_Relcase(CObject* O)
 {
 	if(PP.RQ.O == O)
 		PP.RQ.O = NULL;
+	if(PPF.RQ.O == O)
+		PPF.RQ.O = NULL;
 
 	RQR.r_clear	();
 }

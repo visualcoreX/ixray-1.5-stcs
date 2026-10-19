@@ -672,14 +672,22 @@ void CActor::IR_OnMouseMove(int dx, int dy)
 		}
 	}
 
-	if (dx){
-		float d = float(dx)*scale;
-		cam_Active()->Move((d<0)?kLEFT:kRIGHT, _abs(d));
+	float yaw	= float(dx)*scale;											// + = right
+	float pitch	= ((psMouseInvert.test(1))?-1:1)*float(dy)*scale*3.f/4.f;	// + = kUP, the view goes down
+
+	// While the trigger is held the weapon on the hud takes its part of the mouse inside its recoil zone
+	// (HudRecoilData::Mouse), the camera gets the rest -- the spray is steered with the weapon itself.
+	if (g_player_hud && cam_Active() == cam_FirstEye() && (dx || dy))
+	{
+		float up	= -pitch;
+		g_player_hud->recoil_mouse	(yaw, up);
+		pitch		= -up;
 	}
-	if (dy){
-		float d = ((psMouseInvert.test(1))?-1:1)*float(dy)*scale*3.f/4.f;
-		cam_Active()->Move((d>0)?kUP:kDOWN, _abs(d));
-	}
+
+	if (!fis_zero(yaw))
+		cam_Active()->Move((yaw<0)?kLEFT:kRIGHT, _abs(yaw));
+	if (!fis_zero(pitch))
+		cam_Active()->Move((pitch>0)?kUP:kDOWN, _abs(pitch));
 }
 #include "HudItem.h"
 bool CActor::use_Holder				(CHolderCustom* holder)

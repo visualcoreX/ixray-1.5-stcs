@@ -131,6 +131,8 @@ void	LaserBeam_HudPointToWorld	(Fvector& p);
 // The same for a direction: a straight line of the HUD model maps onto a straight line, so a beam
 // from HudPointToWorld(start) along HudDirToWorld(dir) covers exactly the pixels of the HUD's axis.
 void	LaserBeam_HudDirToWorld		(Fvector& d);
+// tan(world fov / 2) / tan(hud fov / 2), the factor both of them put on the off-axis part
+float	LaserBeam_HudToWorldK		();
 
 // What CGamePersistent::GetLaserBeams returns: the beams published this frame.
 u32		LaserBeams_Get				(const SLaserBeamRender*& beams);

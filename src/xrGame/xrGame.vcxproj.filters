@@ -7476,6 +7476,9 @@
     <ClInclude Include="InertionData.h">
       <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Custom Weapon\Weapon Generic</Filter>
     </ClInclude>
+    <ClInclude Include="HudRecoilData.h">
+      <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Custom Weapon\Weapon Generic</Filter>
+    </ClInclude>
     <ClInclude Include="IXRayGameConstants.h">
       <Filter>Core</Filter>
     </ClInclude>
