@@ -57,9 +57,14 @@ struct hud_item_measures
 	// barrel while it stands at rest, and kept: the shot is not tied to the bone after that, so the
 	// weapon's animations do not throw it about. hip_fire_converge > 0 turns the ray onto the middle of
 	// the view that far ahead (m) instead of along the barrel.
+	// hip_fire_zero_dist (m; < 0 = not set, the console's hud_fire_zero_dist then) aims the ray the way the
+	// laser's laserdot_zero_dist places its dot: at what lies under the middle of the view, whatever its
+	// distance, sliding back onto the barrel's own line closer than this past the muzzle. 0 = off. Wins
+	// over converge.
 	Fvector							m_hip_fire_point;
 	Fvector							m_hip_fire_dir;
 	float							m_hip_fire_converge;
+	float							m_hip_fire_zero_dist;
 	bool							m_hip_fire_set;		// the ray above is known (configured or taken)
 	bool							m_hip_fire_cfg;		// configured: never taken off the barrel
 	bool							m_hip_fire_dir_cfg;	// hip_fire_dir configured: the barrel gives the point only
@@ -177,7 +182,20 @@ public:
 	// taken out, so the line covers the barrel's pixels): from the hip along the barrel, aiming from the
 	// eye, blended by the aim factor -- carried by the sway and the recoil, never by the weapon's
 	// animation. False when there is none for this item (another item, nothing fresh).
-	bool			fire_ray_local		(const CHudItem* item, Fvector& pos, Fvector& dir) const;
+	// crosshair: the ray the crosshair is put on instead -- the same, with only hud_crosshair_sway of the
+	// sway in it (the recoil in full), so the crosshair trails the inertia less than the shot does.
+	// cam: the world camera the ray is asked in (the hud camera of that moment).
+	// target_dist / target_obj: aimed at the middle of the view from the hip, how far along the ray the point
+	// the eye sees there lies, and what is there (-1 / NULL: none) -- the crosshair stands there even when
+	// something only the muzzle sees is in the way (HUDTarget.cpp)
+	bool			fire_ray_local		(const CHudItem* item, const Fmatrix& cam, Fvector& pos, Fvector& dir, bool crosshair = false,
+										 float* target_dist = NULL, CObject** target_obj = NULL) const;
+	// a hip ray before its aim: the barrel's line (hp, hd) and the view's (ap, ad), hud camera axes, world terms
+	struct SFireRay
+	{
+		Fvector		hp, hd, ap, ad;
+		bool		aimed;			// along the barrel, to be aimed at the middle of the view (aim_ray)
+	};
 	// console: take the hip ray off the barrel again / print it for the hud section
 	void			fire_ray_resample	();
 	void			fire_ray_dump		();
@@ -206,7 +224,8 @@ private:
 		Fvector		pos, pos_v;		// x, y (m); z unused
 		void		reset			();
 		void		step			(const InertionData& in, const Fvector& rate, float dt);
-		void		xform			(const InertionData& in, Fmatrix& L) const;	// v -> R (v - pivot) + pivot + shift
+		// v -> R (v - pivot) + pivot + shift; part < 1 = that share of the angles and the shift only
+		void		xform			(const InertionData& in, Fmatrix& L, float part = 1.f) const;
 	};
 	SSway								m_sway;						// the hud base: weapon, or the detector alone
 	SSway								m_sway_left;				// the detector next to a weapon (left arm)
@@ -242,11 +261,24 @@ private:
 	// offsets (aim, lowering); the shot's ray (fire_ray_local), its frame and item
 	Fmatrix								m_cam_trans;
 	Fmatrix								m_proc_trans;
-	Fvector								m_fire_lpos, m_fire_ldir;
 	u32									m_fire_frame;
 	const CHudItem*						m_fire_item;
 	float								m_fire_rest_since;	// the weapon stands at rest since (hip ray sample)
+	// the crosshair's ray (fire_ray_local, crosshair): world, the sway part taken out of the shot's frame,
+	// put on from the left (update_inertion)
+	Fmatrix								m_xhair_corr;
+	// this frame's rays before the aim (update_fire_ray), [0] the shot's, [1] the crosshair's; the aim at
+	// what is under the middle of the view is taken when one is asked for (fire_ray_local)
+	SFireRay							m_ray[2];
+	float								m_ray_slide[2];		// eased w / D of aim_ray, -1 = start over
+	float								m_ray_zero;			// hip_fire_zero_dist in force, 0 = along the barrel
+	float								m_ray_aim;			// aim factor: barrel -> eye
+	float								m_ray_optic;		// optic factor: eye -> straight down the middle
+	u32									m_slide_frame;
 	void			update_fire_ray		();
+	float			aim_depth			(const Fmatrix& cam, const SFireRay& r, CObject** O = NULL) const;
+	float			aim_slide			(const SFireRay& r, float D) const;
+	void			aim_ray				(const SFireRay& r, float slide, float D, Fvector& hd, Fvector* target = NULL) const;
 	bool			bake_hip_ray		(attachable_hud_item* hi, Fvector& pos, Fvector& dir);
 	void			bake_restore		();
 

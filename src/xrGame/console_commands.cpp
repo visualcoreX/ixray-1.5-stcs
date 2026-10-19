@@ -2659,6 +2659,11 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	// the crosshair where the shot lands (1) or in the middle of the screen (0) -- HUDTarget.cpp
 	extern int g_hud_crosshair_detailed;
 	CMD4(CCC_Integer,		"hud_crosshair_detailed",	&g_hud_crosshair_detailed,	0, 1);
+	// the hip shot's aim and the crosshair's share of the sway -- player_hud.cpp (aim_hip_ray)
+	extern float g_hud_fire_zero_dist, g_hud_fire_slide_time, g_hud_crosshair_sway;
+	CMD4(CCC_Float,			"hud_fire_zero_dist",		&g_hud_fire_zero_dist,		0.f, 50.f);
+	CMD4(CCC_Float,			"hud_fire_slide_time",		&g_hud_fire_slide_time,		0.f, 1.f);
+	CMD4(CCC_Float,			"hud_crosshair_sway",		&g_hud_crosshair_sway,		0.f, 1.f);
 	CMD2(CCC_HudFireRay,		"hud_fire_ray_dump",		0);
 	CMD2(CCC_HudFireRay,		"hud_fire_ray_resample",	1);
 	CMD2(CCC_HudFireRay,		"hud_fire_ray_bake",		2);

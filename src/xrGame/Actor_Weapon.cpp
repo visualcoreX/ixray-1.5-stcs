@@ -79,13 +79,17 @@ void CActor::g_fireParams	(const CHudItem* pHudItem, Fvector &fire_pos, Fvector 
 		HudFireRay		(pHudItem, fire_pos, fire_dir);
 }
 
-bool CActor::HudFireRay(const CHudItem* pHudItem, Fvector& P, Fvector& D)
+// crosshair: the ray the crosshair goes on (player_hud::fire_ray_local), not the shot's own;
+// target_dist / target_obj: see fire_ray_local
+bool CActor::HudFireRay(const CHudItem* pHudItem, Fvector& P, Fvector& D, bool crosshair, float* target_dist, CObject** target_obj)
 {
+	if (target_dist)	*target_dist = -1.f;
+	if (target_obj)		*target_obj = NULL;
 	if (!g_player_hud || cam_Active() != cam_FirstEye() || !HUDview())	return false;
-	Fvector lp, ld;
-	if (!g_player_hud->fire_ray_local(pHudItem, lp, ld))				return false;
-
 	Fmatrix M;			Cameras().hud_camera_Matrix(M);
+	Fvector lp, ld;
+	if (!g_player_hud->fire_ray_local(pHudItem, M, lp, ld, crosshair, target_dist, target_obj))	return false;
+
 	Fvector p, d;
 	M.transform_tiny	(p, lp);
 	M.transform_dir		(d, ld);
@@ -93,7 +97,10 @@ bool CActor::HudFireRay(const CHudItem* pHudItem, Fvector& P, Fvector& D)
 	if (!_valid(p) || !_valid(d))										return false;
 
 	// The hip ray starts out at the barrel, off the eye. With the barrel in a wall that start is past
-	// the surface, and the round would come out on its far side: start from the eye then.
+	// the surface, and the round would come out on its far side: start where the line from the eye to the
+	// muzzle meets the wall then, just short of it. That point is seen exactly where the muzzle is, so the
+	// crosshair stays on the muzzle instead of jumping to the middle of the screen, and the round hits the
+	// wall right there.
 	Fvector to;			to.sub(p, M.c);
 	const float dist	= to.magnitude();
 	if (dist > EPS_L)
@@ -101,7 +108,10 @@ bool CActor::HudFireRay(const CHudItem* pHudItem, Fvector& P, Fvector& D)
 		to.mul			(1.f / dist);
 		collide::rq_result RQ;
 		if (Level().ObjectSpace.RayPick(M.c, to, dist, collide::rqtBoth, RQ, this))
-			p.set		(M.c);
+		{
+			p.mad		(M.c, to, _max(RQ.range - 0.02f, 0.f));
+			if (target_dist)	*target_dist = -1.f;	// not from where the target was measured
+		}
 	}
 	P					= p;
 	D					= d;

@@ -38,6 +38,9 @@ constexpr u32 C_DEFAULT = color_rgba(0xff, 0xff, 0xff, 0x80);
 
 #define C_SIZE		0.025f
 #define NEAR_LIM	0.5f
+// the shot's ray starts at the muzzle, or right at a wall the barrel is in: a crosshair held 0.5 m out
+// along it would slide off the muzzle towards the middle of the screen
+#define FIRE_NEAR_LIM	0.01f
 
 #define SHOW_INFO_SPEED		0.5f
 #define HIDE_INFO_SPEED		10.f
@@ -142,11 +145,14 @@ void CHUDTarget::CursorOnFrame ()
 	}
 
 	// A gun in first-person hands: the crosshair stands where its shot would land -- the first thing its
-	// ray meets, the same see-through rules as above -- and follows the weapon's sway and recoil.
+	// ray meets, the same see-through rules as above -- and follows the weapon's recoil, and of its sway
+	// the part hud_crosshair_sway leaves it (player_hud::fire_ray_local).
 	m_fire_ray			= false;
 	CActor* A			= smart_cast<CActor*>(Level().CurrentEntity());
 	CHudItem* hi		= A ? smart_cast<CHudItem*>(A->inventory().ActiveItem()) : NULL;
-	if (g_hud_crosshair_detailed && hi && smart_cast<CWeaponMagazined*>(hi) && A->HudFireRay(hi, m_fire_pos, m_fire_dir))
+	float tdist			= -1.f;
+	CObject* tobj		= NULL;
+	if (g_hud_crosshair_detailed && hi && smart_cast<CWeaponMagazined*>(hi) && A->HudFireRay(hi, m_fire_pos, m_fire_dir, true, &tdist, &tobj))
 	{
 		PPF.RQ.O		= 0;
 		PPF.RQ.range	= g_pGamePersistent->Environment().CurrentEnv->far_plane*0.99f;
@@ -157,7 +163,19 @@ void CHUDTarget::CursorOnFrame ()
 		collide::ray_defs	RD(m_fire_pos, m_fire_dir, PPF.RQ.range, CDB::OPT_CULL, collide::rqtBoth);
 		RQR.r_clear		();
 		if (Level().ObjectSpace.RayQuery(RQR, RD, pick_trace_callback, &PPF, NULL, A))
-			clamp		(PPF.RQ.range, NEAR_LIM, PPF.RQ.range);
+			clamp		(PPF.RQ.range, FIRE_NEAR_LIM, PPF.RQ.range);
+		// Aimed at what the eye sees in the middle of the view: the crosshair stands there. The muzzle sits
+		// off the eye, and an edge only it sees -- a beam, a block just beside the line of sight -- would put
+		// the crosshair on that edge, a jump along the ray each time the view passes one; the same the other
+		// way round close up, where the aim slides towards the barrel and its ray can run past the edge of
+		// what the eye sees onto something behind. The round may still clip or miss such an edge; the
+		// crosshair does not jump to show it -- right up to the muzzle. With the barrel in a wall there is no
+		// target: the hit is shown, at the wall where the muzzle is.
+		if (tdist > 0.f)
+		{
+			PPF.RQ.range	= tdist;
+			PPF.RQ.O		= tobj;
+		}
 		m_fire_ray		= true;
 	}
 }

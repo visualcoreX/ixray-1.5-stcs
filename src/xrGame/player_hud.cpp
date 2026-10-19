@@ -17,12 +17,23 @@
 #include "Inventory.h"
 #include "HUDmanager.h"		// HUD().Font() for the animation debug overlay
 #include "../xrEngine/GameFont.h"
+#include "Level.h"			// the hip shot's aim looks at what is under the middle of the view
+#include "../xrEngine/gamemtllib.h"
 
 player_hud* g_player_hud = NULL;
 Fvector _ancor_pos;
 Fvector _wpn_root_pos;
 
 extern int g_block_wpn_switch;	// != 0 while an animated item-use / device gesture is playing (ActorInput.cpp)
+
+// The hip shot's aim (player_hud::aim_ray), console-tunable:
+//  hud_fire_zero_dist     m, the weapons' default hip_fire_zero_dist (0 = along the barrel, as before)
+//  hud_fire_slide_time    s, how quickly the aim slides between the middle of the view and the barrel's line
+//                         when what is in front of the weapon jumps nearer or further
+//  hud_crosshair_sway     0..1, share of the sway (inertia) the crosshair follows; the recoil it follows in full
+float g_hud_fire_zero_dist		= 0.5f;
+float g_hud_fire_slide_time		= 0.08f;
+float g_hud_crosshair_sway		= 0.2f;
 
 float CalcMotionSpeed(const shared_str& anim_name)
 {
@@ -336,6 +347,7 @@ void hud_item_measures::load(const shared_str& sect_name, IKinematics* K)
 	m_hip_fire_point.set		(0.f, 0.f, 0.f);
 	m_hip_fire_dir.set			(0.f, 0.f, 1.f);
 	m_hip_fire_converge			= 0.f;
+	m_hip_fire_zero_dist		= -1.f;
 	load_hip_fire				(sect_name, m_hip_fire_wpn);
 
 	m_prop_flags.set(e_16x9_mode_now,is_16x9);
@@ -383,6 +395,9 @@ void hud_item_measures::load_hip_fire(const shared_str& sect_name, const shared_
 
 	s							= find("hip_fire_converge");
 	m_hip_fire_converge			= s ? _max(0.f, pSettings->r_float(s, "hip_fire_converge")) : 0.f;
+
+	s							= find("hip_fire_zero_dist");
+	m_hip_fire_zero_dist		= s ? _max(0.f, pSettings->r_float(s, "hip_fire_zero_dist")) : -1.f;
 }
 
 attachable_hud_item::~attachable_hud_item()
@@ -604,11 +619,16 @@ player_hud::player_hud()
 	reset_sway				();
 	m_cam_trans.identity	();
 	m_proc_trans.identity	();
-	m_fire_lpos.set			(0.f, 0.f, 0.f);
-	m_fire_ldir.set			(0.f, 0.f, 1.f);
 	m_fire_frame			= 0;
 	m_fire_item				= NULL;
 	m_fire_rest_since		= -1.f;
+	m_xhair_corr.identity	();
+	m_ray_slide[0]			= -1.f;
+	m_ray_slide[1]			= -1.f;
+	m_ray_zero				= 0.f;
+	m_ray_aim				= 0.f;
+	m_ray_optic				= 0.f;
+	m_slide_frame			= 0;
 	m_left_hold.identity	();
 	m_left_hold_on			= false;
 }
@@ -1187,6 +1207,7 @@ void player_hud::reset_sway()
 	m_sway_left.reset	();
 	m_sway_split		= false;
 	m_sway_left_corr.identity();
+	m_xhair_corr.identity();
 	m_sway_prev_dir.set	(0.f, 0.f, 1.f);
 	m_sway_frame		= 0;
 	m_recoil.reset		();
@@ -1237,11 +1258,11 @@ void player_hud::SSway::step(const InertionData& in, const Fvector& rate, float 
 	}
 }
 
-void player_hud::SSway::xform(const InertionData& in, Fmatrix& L) const
+void player_hud::SSway::xform(const InertionData& in, Fmatrix& L, float part) const
 {
-	L.setHPB			(rot.x, rot.y, rot.z);
+	L.setHPB			(rot.x * part, rot.y * part, rot.z * part);
 	Fvector rp;			L.transform_dir(rp, in.RotPivot);
-	L.c.set				(in.RotPivot.x - rp.x + pos.x, in.RotPivot.y - rp.y + pos.y, in.RotPivot.z - rp.z);
+	L.c.set				(in.RotPivot.x - rp.x + pos.x * part, in.RotPivot.y - rp.y + pos.y * part, in.RotPivot.z - rp.z);
 }
 
 // Spring-damper sway. How fast the view turned this frame, measured in the camera's own axes, sets
@@ -1316,12 +1337,26 @@ void player_hud::update_inertion(Fmatrix& trans)
 	origin.mad				(xform.j, -pitch * in.PitchOffsetN);
 
 	Fmatrix L;				m_sway.xform(in, L);
+	// The crosshair's frame: the same, with only hud_crosshair_sway of the sway in it. Kept as what turns
+	// the shot's frame into it, put on from the left: cam * Lx * L^-1 * cam^-1 (see m_sway_left_corr).
+	float xs				= g_hud_crosshair_sway;
+	clamp					(xs, 0.f, 1.f);
+	Fmatrix Lx;				m_sway.xform(in, Lx, xs);
 	// The recoil goes on after the sway, about the same pivot unless it has its own. It is part of L
-	// for the left arm below too, so a detector next to the weapon does not kick with it.
+	// for the left arm below too, so a detector next to the weapon does not kick with it. The crosshair
+	// takes it in full.
 	if (rd)
 	{
 		Fmatrix R;			recoil_xform(*rd, in, R);
 		L.mulB_43			(R);
+		Lx.mulB_43			(R);
+	}
+	{
+		Fmatrix L_i;		L_i.invert(L);
+		Fmatrix cam_i;		cam_i.invert(trans);
+		m_xhair_corr.mul_43	(trans, Lx);
+		m_xhair_corr.mulB_43(L_i);
+		m_xhair_corr.mulB_43(cam_i);
 	}
 	if (ind)
 	{
@@ -1588,66 +1623,230 @@ void player_hud::update_fire_ray()
 		}
 	}
 
-	Fvector hp, hd;
-	if (M.m_hip_fire_set)
+	if (item != prev)
+		m_ray_slide[0] = m_ray_slide[1] = -1.f;
+	const bool gl			= item->InertionGrenadeModeNow();
+	// the grenade launcher keeps its hip shot along the barrel: it is aimed with its own sight
+	m_ray_zero				= gl ? 0.f : (M.m_hip_fire_zero_dist >= 0.f ? M.m_hip_fire_zero_dist : g_hud_fire_zero_dist);
+	m_ray_aim				= gl ? 0.f : item->GetInertionAimFactor();
+	clamp					(m_ray_aim, 0.f, 1.f);
+	m_ray_optic				= item->HudOpticAimFactor();
+	const float k			= LaserBeam_HudToWorldK();
+	Fmatrix cam_i;			cam_i.invert(m_cam_trans);
+	// the slide eases once per frame, however often the hud is updated in it
+	const float slide_dt	= m_slide_frame != Device.dwFrame ? _min(Device.fTimeDelta, 0.1f) : 0.f;
+	m_slide_frame			= Device.dwFrame;
+
+	// One ray, given the hands' frame and the sway-and-recoil frame of the view it is taken in: the shot's
+	// own (m_transform, m_proc_trans) or the crosshair's (the same with m_xhair_corr on). Kept as it is
+	// before the aim: the barrel's line and the view's, in the hud camera's axes, world terms.
+	auto ray = [&](const Fmatrix& hands, const Fmatrix& view, SFireRay& r, float& slide)
 	{
-		m_transform.transform_tiny	(hp, M.m_hip_fire_point);
-		if (M.m_hip_fire_converge > EPS_L)
+		r.aimed				= false;
+		if (M.m_hip_fire_set)
 		{
-			Fvector c;		m_proc_trans.transform_tiny(c, Fvector().set(0.f, 0.f, M.m_hip_fire_converge));
-			hd.sub			(c, hp);
+			hands.transform_tiny		(r.hp, M.m_hip_fire_point);
+			if (m_ray_zero <= 0.f && M.m_hip_fire_converge > EPS_L)
+			{
+				Fvector c;	view.transform_tiny(c, Fvector().set(0.f, 0.f, M.m_hip_fire_converge));
+				r.hd.sub	(c, r.hp);
+			}
+			else
+			{
+				hands.transform_dir		(r.hd, M.m_hip_fire_dir);
+				r.aimed		= m_ray_zero > 0.f;
+			}
+		}
+		else	// not known yet: from the eye, as when aiming
+		{
+			r.hp.set		(view.c);
+			r.hd.set		(view.k);
+		}
+		r.ap				= view.c;
+		r.ad				= view.k;
+
+		cam_i.transform_tiny	(r.hp);
+		cam_i.transform_dir		(r.hd);
+		cam_i.transform_tiny	(r.ap);
+		cam_i.transform_dir		(r.ad);
+
+		// a hud point (x, y, z) is drawn over the pixel the world draws (x*k, y*k, z) on; a line maps onto a line
+		r.hp.x *= k;	r.hp.y *= k;	r.hd.x *= k;	r.hd.y *= k;	r.hd.normalize_safe();
+		r.ap.x *= k;	r.ap.y *= k;	r.ad.x *= k;	r.ad.y *= k;	r.ad.normalize_safe();
+
+		// the slide follows what is in front of the weapon now, eased (aim_slide)
+		if (r.aimed)
+		{
+			const float want	= aim_slide(r, aim_depth(m_cam_trans, r));
+			if (slide < 0.f)	slide = want;
+			else
+			{
+				const float tau	= _max(g_hud_fire_slide_time, 0.f);
+				slide			= tau > EPS_S ? slide + (want - slide) * (1.f - expf(-slide_dt / tau)) : want;
+			}
 		}
 		else
-			m_transform.transform_dir(hd, M.m_hip_fire_dir);
-	}
-	else	// not known yet: from the eye, as when aiming
-	{
-		hp.set				(m_proc_trans.c);
-		hd.set				(m_proc_trans.k);
-	}
-	Fvector ap				= m_proc_trans.c;
-	Fvector ad				= m_proc_trans.k;
+			slide			= -1.f;
+	};
 
-	Fmatrix cam_i;			cam_i.invert(m_cam_trans);
-	cam_i.transform_tiny	(hp);
-	cam_i.transform_dir		(hd);
-	cam_i.transform_tiny	(ap);
-	cam_i.transform_dir		(ad);
+	ray						(m_transform, m_proc_trans, m_ray[0], m_ray_slide[0]);
+	Fmatrix xh;				xh.mul_43(m_xhair_corr, m_transform);
+	Fmatrix xv;				xv.mul_43(m_xhair_corr, m_proc_trans);
+	ray						(xh, xv, m_ray[1], m_ray_slide[1]);
 
-	// a hud point (x, y, z) is drawn over the pixel the world draws (x*k, y*k, z) on; a line maps onto a line
-	const float k			= LaserBeam_HudToWorldK();
-	hp.x *= k;	hp.y *= k;	hd.x *= k;	hd.y *= k;	hd.normalize_safe();
-	ap.x *= k;	ap.y *= k;	ad.x *= k;	ad.y *= k;	ad.normalize_safe();
-
-	// through an optical sight the shot goes straight down the middle of the view: the 2D reticle and the
-	// 3D lens show that, not the weapon's sway
-	const float o			= item->HudOpticAimFactor();
-	if (o > 0.f)
-	{
-		ap.mul				(1.f - o);
-		ad.lerp				(ad, Fvector().set(0.f, 0.f, 1.f), o);
-		ad.normalize_safe	();
-	}
-
-	float f					= item->InertionGrenadeModeNow() ? 0.f : item->GetInertionAimFactor();
-	clamp					(f, 0.f, 1.f);
-	Fvector p, d;
-	p.lerp					(hp, ap, f);
-	d.lerp					(hd, ad, f);
-	d.normalize_safe		();
-	if (!_valid(p) || !_valid(d) || d.z <= 0.f)	return;		// a weapon pointing back at the eye is no shot
-
-	m_fire_lpos				= p;
-	m_fire_ldir				= d;
 	m_fire_item				= item;
 	m_fire_frame			= Device.dwFrame;
 }
 
-bool player_hud::fire_ray_local(const CHudItem* item, Fvector& pos, Fvector& dir) const
+// hip_fire_zero_dist: the laser's parallax zero (laserdot_zero_dist), for the shot. Everything in the hud
+// camera's axes, world terms. The ray along the barrel (hp, hd) is turned onto a target point at the depth D
+// of whatever lies under the middle of the view (ap, ad):
+//     target = centre + (barrel - centre) * w,   w = 1 - (D - muzzle) / zero, held in 0..1
+// centre: the middle of the view at that depth; barrel: the barrel's own line at that depth; muzzle: how far
+// ahead of the eye the barrel's point is. From zero metres past the muzzle on, w = 0: the shot heads for the
+// middle of the view whatever the distance, so the crosshair stays where it is when the mouse sweeps over
+// things near and far. Closer, it slides back onto the barrel's line, and right at the muzzle it is on it --
+// where the round really comes out -- instead of jumping to the middle.
+// The slide is kept as w / D, the crosshair's angle off the middle per metre of the barrel's offset: eased
+// once a frame (update_fire_ray), so a pillar crossing the view does not snap it, while the depth itself is
+// taken again for every ray asked for (fire_ray_local), with the camera of that moment.
+// The middle of the view is the line from the eye itself (the camera's origin, 0 in these axes) along the
+// view's axis with the sway and recoil on it -- not from the hud frame's origin, which the pitch
+// compensation and the sway's shift move off the eye: a line beside the eye would put the target off the
+// middle by that offset over the distance, a little more for near things than for far ones.
+
+// see-through as the crosshair's own pick (HUDTarget.cpp): what is seen through -- leaves, nets, glass --
+// does not stop it, so the shot is aimed at the very surface the crosshair is drawn on
+struct SAimPick
 {
+	float				power;
+	float				range;
+	CObject*			O;
+};
+static BOOL aim_pick_callback(collide::rq_result& result, LPVOID params)
+{
+	SAimPick* pp		= (SAimPick*)params;
+	if (!result.O)
+	{
+		CDB::TRI* T		= Level().ObjectSpace.GetStaticTris() + result.element;
+		SGameMtl* mtl	= GMLib.GetMaterialByIdx(T->material);
+		pp->power		*= mtl->fVisTransparencyFactor;
+		if (pp->power > 0.4f)	return TRUE;
+	}
+	pp->range			= result.range;
+	pp->O				= result.O;
+	return				FALSE;
+}
+
+float player_hud::aim_depth(const Fmatrix& cam, const SFireRay& r, CObject** O) const
+{
+	const float range		= 200.f;
+	if (O)					*O = NULL;
+	CActor* A				= Actor();
+	if (!A)					return range;
+	const Fvector& wo		= cam.c;
+	Fvector wd;
+	cam.transform_dir		(wd, r.ad);
+	wd.normalize_safe		();
+	if (!_valid(wo) || !_valid(wd))	return range;
+
+	static collide::rq_results s_rqr;
+	SAimPick pp;			pp.power = 1.f;	pp.range = range;	pp.O = NULL;
+	collide::ray_defs RD	(wo, wd, range, CDB::OPT_CULL, collide::rqtBoth);
+	s_rqr.r_clear			();
+	Level().ObjectSpace.RayQuery(s_rqr, RD, aim_pick_callback, &pp, NULL, A);
+	if (O)					*O = pp.O;
+	return					pp.range;
+}
+
+// the barrel's point off the view's line: how far ahead of the eye (the muzzle's depth)
+static float aim_ahead(const player_hud::SFireRay& r)
+{
+	return					r.hp.dotproduct(r.ad);
+}
+
+// nothing is aimed at behind the muzzle (with the barrel in a wall the shot starts at the wall: HudFireRay):
+// held 2 cm past it, so the crosshair stands all but on the muzzle as the barrel meets a wall and the hit
+// there takes over
+static float aim_clamp_depth(const player_hud::SFireRay& r, float D)
+{
+	return					_max(_max(D, aim_ahead(r) + 0.02f), 0.1f);
+}
+
+float player_hud::aim_slide(const SFireRay& r, float D) const
+{
+	if (m_ray_zero <= EPS_L)	return 0.f;
+	D						= aim_clamp_depth(r, D);
+	return					_max(0.f, 1.f - (D - aim_ahead(r)) / m_ray_zero) / D;
+}
+
+void player_hud::aim_ray(const SFireRay& r, float slide, float D, Fvector& hd, Fvector* target_out) const
+{
+	D						= aim_clamp_depth(r, D);
+	const float ahead		= aim_ahead(r);
+	float w					= slide * D;
+	clamp					(w, 0.f, 1.f);
+
+	Fvector P;				P.mad(r.hp, r.ad, -ahead);
+	Fvector centre;			centre.mul(r.ad, D);
+	Fvector barrel;
+	const float c			= r.hd.dotproduct(r.ad);
+	if (c > 0.1f)			barrel.mad(r.hp, r.hd, (D - ahead) / c);
+	else					barrel.add(centre, P);
+	Fvector target;			target.sub(barrel, centre);
+	target.mad				(centre, target, w);
+	if (target_out)			*target_out = target;
+
+	Fvector nd;				nd.sub(target, r.hp);
+	if (nd.square_magnitude() < EPS_S)	return;
+	nd.normalize			();
+	if (_valid(nd))			hd = nd;
+}
+
+bool player_hud::fire_ray_local(const CHudItem* item, const Fmatrix& cam, Fvector& pos, Fvector& dir, bool crosshair,
+								 float* target_dist, CObject** target_obj) const
+{
+	if (target_dist)		*target_dist = -1.f;
+	if (target_obj)			*target_obj = NULL;
 	if (!item || item != m_fire_item || Device.dwFrame > m_fire_frame + 2)	return false;
-	pos						= m_fire_lpos;
-	dir						= m_fire_ldir;
+	const int i				= crosshair ? 1 : 0;
+	const SFireRay& r		= m_ray[i];
+	Fvector hp = r.hp, hd = r.hd, ap = r.ap, ad = r.ad;
+
+	// aimed at what lies under the middle of the view right now
+	bool have_target		= false;
+	Fvector target;
+	CObject* tobj			= NULL;
+	if (r.aimed && m_ray_slide[i] >= 0.f)
+	{
+		const float D		= aim_depth(cam, r, &tobj);
+		aim_ray				(r, m_ray_slide[i], D, hd, &target);
+		// Close up the target is held just past the muzzle, on the barrel's line: the crosshair moves along
+		// the line from the middle of the view to the muzzle and never off it onto what lies behind an edge.
+		// (With the barrel in a wall HudFireRay starts the ray at the wall and drops the target.)
+		have_target			= true;
+	}
+
+	// through an optical sight the shot goes straight down the middle of the view: the 2D reticle and the
+	// 3D lens show that, not the weapon's sway
+	if (m_ray_optic > 0.f)
+	{
+		ap.mul				(1.f - m_ray_optic);
+		ad.lerp				(ad, Fvector().set(0.f, 0.f, 1.f), m_ray_optic);
+		ad.normalize_safe	();
+	}
+
+	pos.lerp				(hp, ap, m_ray_aim);
+	dir.lerp				(hd, ad, m_ray_aim);
+	dir.normalize_safe		();
+	if (!_valid(pos) || !_valid(dir) || dir.z <= 0.f)	return false;	// a weapon pointing back at the eye is no shot
+
+	// from the hip, the ray runs through the target: how far along it, and what the eye sees there
+	if (have_target && m_ray_aim <= EPS_L && m_ray_optic <= EPS_L)
+	{
+		if (target_dist)	*target_dist = pos.distance_to(target);
+		if (target_obj)		*target_obj = tobj;
+	}
 	return					true;
 }
 
@@ -1675,6 +1874,8 @@ void player_hud::fire_ray_dump()
 	Msg("hip_fire_point			= %f, %f, %f", M.m_hip_fire_point.x, M.m_hip_fire_point.y, M.m_hip_fire_point.z);
 	Msg("hip_fire_dir			= %f, %f, %f", M.m_hip_fire_dir.x, M.m_hip_fire_dir.y, M.m_hip_fire_dir.z);
 	Msg("hip_fire_converge		= %f", M.m_hip_fire_converge);
+	if (M.m_hip_fire_zero_dist >= 0.f)	Msg("hip_fire_zero_dist		= %f", M.m_hip_fire_zero_dist);
+	else								Msg("; hip_fire_zero_dist	= %f (hud_fire_zero_dist)", g_hud_fire_zero_dist);
 }
 
 // ---- the hip ray baked off the first frame of the idle ------------------------------------------------
