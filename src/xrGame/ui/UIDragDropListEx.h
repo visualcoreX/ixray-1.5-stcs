@@ -45,6 +45,10 @@ private:
 	Ivector2				m_virtual_cells_alignment;
 	bool					m_bConditionProgBarVisible;
 	CUIProgressBar*			m_condition_indicator;	// NOT owned: the actor menu holds it
+	CUIStatic*				m_highlighter;			// "the hovered item fits here" (OpenXRay), drawn under the cells
+	xr_vector<Frect>		m_hl_rects;				// the slot's drawn frame(s), list-relative: [0] for a one-cell slot, [i] for cell i
+	Frect					m_hl_cell;				// else per cell: lt = offset from the cell, rb = size (0 = the cell's own)
+	int						m_hl_limit;				// light only the first N cells (-1 = all): the belt's usable ones
 
 protected:
 	
@@ -65,6 +69,13 @@ protected:
 	
 public:
 	static CUIDragItem*		m_drag_item;
+				void		SetHighlighter			(CUIStatic* highlighter, const xr_vector<Frect>& frames, const Frect& cell);
+		const	xr_vector<Frect>&	GetHighlightRects	() const	{ return m_hl_rects; }
+		const	Frect&		GetHighlightCell		() const	{ return m_hl_cell; }
+				void		SetHighlightLimit		(int n)		{ m_hl_limit = n; }
+				int			GetHighlightLimit		() const	{ return m_hl_limit; }
+				CUIStatic*	GetHighlighter			() const	{ return m_highlighter; }
+				void		Highlight				(bool highlight);
 							CUIDragDropListEx	();
 	virtual					~CUIDragDropListEx	();
 				void		InitDragDropList		(Fvector2 pos, Fvector2 size);
