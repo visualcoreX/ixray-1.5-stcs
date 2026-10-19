@@ -295,13 +295,18 @@ void CRender::Render		()
 
 	BOOL	split_the_scene_to_minimize_wait		= FALSE;
 	if (ps_r2_ls_flags.test(R2FLAG_EXP_SPLIT_SCENE))	split_the_scene_to_minimize_wait=TRUE;
+	// an eyepiece that cuts the hud out (the lens-off prism mode, r__dsgraph_render.cpp) needs the hud before the
+	// world: never split while one is in view (the split draws the hud last, PART-1)
+	if (mapHUDLensMask.size())							split_the_scene_to_minimize_wait=FALSE;
 
 	//******* Main render :: PART-0	-- first
 	if (!split_the_scene_to_minimize_wait)
 	{
 		// level, DO NOT SPLIT
 		Target->phase_scene_begin				();
+		hud_lens_mask_now						= true;		// the hud goes before the world here
 		r_dsgraph_render_hud					();
+		hud_lens_mask_now						= false;
 		r_dsgraph_render_graph					(0);
 		r_dsgraph_render_lods					(true,true);
 		if(Details)	Details->Render				();
@@ -473,8 +478,21 @@ void CRender::render_forward				()
 		mapLOD.clear							();
 		r_dsgraph_render_graph					(1)	;					// normal level, secondary priority
 		PortalTraverser.fade_render				()	;					// faded-portals
-		r_dsgraph_render_sorted					()	;					// strict-sorted geoms
+		r_dsgraph_render_sorted_world			()	;					// strict-sorted geoms
 		g_pGamePersistent->Environment().RenderLast()	;					// rain/thunder-bolts
+		// The lens-off prism mode (r__dsgraph_render.cpp, hud_collim_prism.x > 170.5 from CActor): the world is
+		// complete and the hud's glass comes next -- hand it this frame's world (on a frame with the eyepiece's
+		// cut) or, after the hud, the look through the glass (on one without it, while the lens fades). As r3.
+		extern bool g_scope_prism_cut;
+		const bool scope_prism = g_pGamePersistent && g_pGamePersistent->hud_collim_prism.x > 170.5f;
+		// ...with the sun's volumetric shafts already in it, at the world's own scale (phase_combine_volumetric_early)
+		if (scope_prism)
+			Target->phase_combine_volumetric_early	();
+		if (scope_prism && g_scope_prism_cut)
+			CaptureScopePrism					();
+		r_dsgraph_render_sorted_hud				()	;
+		if (scope_prism && !g_scope_prism_cut)
+			CaptureScopeHudLayer				();
 	}
 
 	RImplementation.o.distortion				= FALSE;				// disable distorion

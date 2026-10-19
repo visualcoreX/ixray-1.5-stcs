@@ -35,6 +35,9 @@ upgrades = vartree_ump45_mag_fix, vartree_ump45_zatvor, vartree_ump45_rail, vart
 installed_upgrades = 
 upgrade_scheme = upgrade_scheme_ump45
 allowed_upgrades = up_ump45_
+; own optics list: the inherited wpn_mp5 one put the MP5 sections first, and ScopeIndexByItem takes the
+; first section with the item's scope_name -> the UMP aimed through scope_elcan_mp5 etc.
+scopes_sect = scope_eotech_ump, scope_aimpoint_ump, scope_elcan_ump, scope_pn23_ump	; orig (inherited wpn_mp5: scope_*_mp5)
 
 inv_grid_width    = 4
 inv_grid_height   = 2

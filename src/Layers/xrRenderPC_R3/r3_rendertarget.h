@@ -86,6 +86,14 @@ public:
 	// GS's second lens capture $user$scopeui ("scope render with UI"). Electronic optics sample it instead
 	// of $user$scope (the gauss's models_zoom_gauss.s binds s_vp2 to it) -- absent, that lens reads black.
 	ref_rt						rt_scope_ui;
+	// The lens-off prism mode while its lens fades: the finished look through the glass on the last frame WITHOUT
+	// the eyepiece's cut (CaptureScopeHudLayer), for the frame with the cut to show.
+	ref_rt						rt_scope_hud;
+	// ...and the FINISHED pictures (bloom, the sun's volumetric shafts, DOF -- all that the combine adds over the
+	// hud) of the last frame without the cut and of the last one with it, which the late pass mixes over the glass
+	// by the lens's fade (CaptureScopeLateLayer, model_scope_late.ps)
+	ref_rt						rt_scope_late;
+	ref_rt						rt_scope_late_cut;
 	// Laser beams: how much blend-shaded smoke/dust (R, G) and rain (B, A) covers each pixel and how far
 	// away it is (coverage, coverage-weighted view depth). Half-res, 1-sample, sampled by laser_beam.ps.
 	ref_rt						rt_laser_dens;

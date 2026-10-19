@@ -873,7 +873,18 @@ bool CGamePersistent::HudFovBase(float& out_fov)
 	CActor* a = smart_cast<CActor*>(Level().CurrentControlEntity());
 	if (!a || a->cam_ActiveStyle() != eacFirstEye)			return false;
 	CWeapon* w = smart_cast<CWeapon*>(a->inventory().ActiveItem());
-	if (!w || !w->UseScopeTexture() || !w->IsScopeAttached())	return false;
+	// ...and the lens-off prism mode (CWeapon::IsScopePrismCfg): the weapon stays on screen there, and it must
+	// hold still the way it does behind the 3D lens -- the world alone is magnified
+	if (!w || !(w->UseScopeTexture() || w->IsScopePrismCfg()) || !w->IsScopeAttached())	return false;
+	// The lens-off prism mode: the weapon is on screen through the whole aim, so the hud keeps exactly the fov it
+	// has behind the 3D lens -- the camera's own (the shoulder ramp through its fov filter, CCameraManager::Fov)
+	// -- all the way in and out. Holding it at g_fov for as long as the magnification eased (as below) let it go
+	// at a quarter of the aim-out, where the camera is already narrower: a jump.
+	if (w->IsScopePrismCfg())
+	{
+		out_fov = a->Cameras().Fov();
+		return true;
+	}
 	if (!w->IsZoomed() && w->ScopeFadeFactor() <= 0.f)		return false;
 	extern float g_fov;
 	out_fov = g_fov;
@@ -913,13 +924,16 @@ bool CGamePersistent::ComputeLensFrame(float& out_fov)
 		// ramp is still a quarter of the way in, so interpolating from g_fov made the view step ~0.5% narrower
 		// right at the end of the aim-out and then widen again. Interpolate from the fallback itself and the
 		// two curves meet at exactly the same value, in both directions.
-		extern float g_fov;
-		float aim_rf = w->GetZoomRotationFactor();
-		clamp(aim_rf, 0.f, 1.f);
-		const float base_fov = g_fov + (w->AimBaseFOV() - g_fov) * aim_rf;
+		// ...and not even from the ramp itself: from the camera's fov AS IT STANDS, the ramp through its fov filter
+		// (CCameraManager::Fov), which is what the fallback really shows. On a fast aim-out the filter trails the
+		// ramp, so easing towards the raw ramp still left a jump the moment the override let go -- seen on a weak
+		// optic (the ELCAN at 1.8x), where nothing else moves to hide it.
+		const float base_fov = a->Cameras().Fov();
 		// The eyepiece takes a share of the magnification, so this override is left with the rest instead
 		// of the whole of it -- otherwise the two would multiply.
 		// No eyepiece (binoculars): nothing to split, the lens magnification below goes to the world.
+		// (the lens-off prism mode does not split: UseScopeTexture is false for it, so the world takes the
+		// whole GetLensFOV below and the lens magnifies nothing)
 		if (w->UseScopeTexture() && w->Scope2DEyepieceAllowed())
 		{
 			const float cam_fov = w->Scope2DCameraFOV();
@@ -941,7 +955,7 @@ bool CGamePersistent::ComputeLensFrame(float& out_fov)
 		// optic.
 		const float k = w->ScopeFadeFactor();
 		if (k <= 0.f)					return false;
-		const float lens = w->GetLensFOV();
+		const float lens = w->GetWorldLensFOV();		// the prism mode's: the 3D lens's apparent power
 		if (lens <= 0.f)				return false;
 		out_fov = base_fov + (lens - base_fov) * k;
 		return true;

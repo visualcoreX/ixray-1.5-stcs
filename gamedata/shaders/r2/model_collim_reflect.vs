@@ -31,6 +31,9 @@ vf _main( v_model v )
 	vf		o;
 
 	o.hpos		= mul( m_WVP, v.P );
+#ifdef COLLIM_FAR_PLANE
+	o.hpos.z	= o.hpos.w;										// model_collim_mask.vs: on the far plane
+#endif
 	o.tc0		= v.tc.xy;
 	o.pos_w		= mul( m_W, v.P );
 	o.norm_w	= mul( (float3x3)m_W, v.N );

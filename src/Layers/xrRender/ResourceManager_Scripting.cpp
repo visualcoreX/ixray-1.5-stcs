@@ -52,6 +52,9 @@ public:
 };																																							
 																																							
 // wrapper																																					
+class	adopt_cmp_func		{ public: };		// enum holders for the scripts (cmp_func.*, stencil_op.*)
+class	adopt_stencil_op	{ public: };
+
 class	adopt_compiler																																		
 {
 	CBlender_Compile*		C;
@@ -77,6 +80,25 @@ public:
 	adopt_compiler&			_blend			(bool	_blend, u32 abSRC, u32 abDST)	{	C->PassSET_ablend_mode(_blend,abSRC,abDST);	return 	*this;		}
 	adopt_compiler&			_aref			(bool	_aref,  u32 aref)				{	C->PassSET_ablend_aref(_aref,aref);			return 	*this;		}
 	adopt_compiler&			_color_write_enable (bool cR, bool cG, bool cB, bool cA)		{	C->r_ColorWriteEnable(cR, cG, cB, cA);		return	*this;		}
+	// The depth test's function and the stencil, for the eyepiece's cut of a lens-off prism scope (models_zoom*.s
+	// l_special, r__dsgraph_render.cpp) -- DX10's dx10zfunc / dx10stencil, set as render states directly here
+	// (CBlender_Compile::r_Stencil is built for DX10 only). Single-sided stencil, as the engine uses it on DX9.
+	adopt_compiler&			_zfunc			(u32 Func)								{	C->RS.SetRS(D3DRS_ZFUNC, Func);				return	*this;		}
+	adopt_compiler&			_stencil		(bool E, u32 Func, u32 Mask, u32 WMask, u32 Fail, u32 Pass, u32 ZFail)
+	{
+		C->RS.SetRS(D3DRS_STENCILENABLE, E ? TRUE : FALSE);
+		if (E)
+		{
+			C->RS.SetRS(D3DRS_STENCILFUNC,		Func);
+			C->RS.SetRS(D3DRS_STENCILMASK,		Mask);
+			C->RS.SetRS(D3DRS_STENCILWRITEMASK,	WMask);
+			C->RS.SetRS(D3DRS_STENCILFAIL,		Fail);
+			C->RS.SetRS(D3DRS_STENCILPASS,		Pass);
+			C->RS.SetRS(D3DRS_STENCILZFAIL,		ZFail);
+		}
+		return	*this;
+	}
+	adopt_compiler&			_stencil_ref	(u32 Ref)								{	C->RS.SetRS(D3DRS_STENCILREF, Ref);			return	*this;		}
 	adopt_sampler			_sampler		(LPCSTR _name)							{	u32 s = C->r_Sampler(_name,0);				return	adopt_sampler(C,s);	}
 };
 
@@ -192,6 +214,9 @@ void	CResourceManager::LS_Load			()
 			.def("blend",						&adopt_compiler::_blend			,return_reference_to(_1))
 			.def("aref",						&adopt_compiler::_aref			,return_reference_to(_1))
 			.def("color_write_enable",			&adopt_compiler::_color_write_enable,return_reference_to(_1))
+			.def("zfunc",						&adopt_compiler::_zfunc			,return_reference_to(_1))
+			.def("stencil",						&adopt_compiler::_stencil		,return_reference_to(_1))
+			.def("stencil_ref",					&adopt_compiler::_stencil_ref	,return_reference_to(_1))
 			.def("sampler",						&adopt_compiler::_sampler		),	// returns sampler-object
 
 		class_<adopt_blend>("blend")
@@ -208,6 +233,32 @@ void	CResourceManager::LS_Load			()
 				value("destcolor",				int(D3DBLEND_DESTCOLOR)),
 				value("invdestcolor",			int(D3DBLEND_INVDESTCOLOR)),
 				value("srcalphasat",			int(D3DBLEND_SRCALPHASAT))
+			],
+
+		class_<adopt_cmp_func>("cmp_func")
+			.enum_("cmp_func")
+			[
+				value("never",					int(D3DCMP_NEVER)),
+				value("less",					int(D3DCMP_LESS)),
+				value("equal",					int(D3DCMP_EQUAL)),
+				value("lessequal",				int(D3DCMP_LESSEQUAL)),
+				value("greater",				int(D3DCMP_GREATER)),
+				value("notequal",				int(D3DCMP_NOTEQUAL)),
+				value("greaterequal",			int(D3DCMP_GREATEREQUAL)),
+				value("always",					int(D3DCMP_ALWAYS))
+			],
+
+		class_<adopt_stencil_op>("stencil_op")
+			.enum_("stencil_op")
+			[
+				value("keep",					int(D3DSTENCILOP_KEEP)),
+				value("zero",					int(D3DSTENCILOP_ZERO)),
+				value("replace",				int(D3DSTENCILOP_REPLACE)),
+				value("incrsat",				int(D3DSTENCILOP_INCRSAT)),
+				value("decrsat",				int(D3DSTENCILOP_DECRSAT)),
+				value("invert",					int(D3DSTENCILOP_INVERT)),
+				value("incr",					int(D3DSTENCILOP_INCR)),
+				value("decr",					int(D3DSTENCILOP_DECR))
 			]
 	];
 

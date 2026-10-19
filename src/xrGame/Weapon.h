@@ -222,6 +222,12 @@ public:
 	// reticle darkens the view: an etched one, 0..1, any optic), w = collimator_prism_veil (the sun shafts' haze
 	// over the black of the field stop, a share of their full strength, even across it; default 0.5).
 	Fvector4	CollimatorPrism() const;
+	// 3D lens switched OFF, R3: a magnifying optic works like the Rakurs prism instead of the stock 2D
+	// picture -- the weapon stays, the eyepiece glass cuts the hud out to the (zoomed) world, the lens
+	// draws only its reticle. Cfg = this optic would; Now = and it is aimed through right now.
+	bool		IsScopePrismCfg() const;
+	bool		IsScopePrismNow() const;
+
 	// collimator_mark_auto_illum = bright, dark[, seconds]: the reticle's glow follows the light around, as a
 	// light sensor on the sight would -- none at `bright` and above, full at `dark` and below, eased over
 	// `seconds` (default 3). The light is the frame's average brightness as the eye has adapted to it
@@ -244,6 +250,10 @@ public:
 	bool		CollimatorWear(Fvector& w) const;
 	shared_str CollimatorParamSection(LPCSTR key) const;	// scope section / addon item / weapon holding `key`
 	float GetLensFOV() const;	// 3D PiP double-render: magnified world FOV (deg) for the lens frame; 0 = disabled
+	float GetWorldLensFOV() const;	// ...the same for the lens switched off (the world's share of the zoom); 0 = disabled
+	void  ScopePrismPowers(float& total, float& world) const;	// the lens-off prism mode: its power, and the world's share
+	float ScopePrismDofHole() const;	// ...the circle the aim's DOF leaves sharp round its glass (share of the screen height)
+	float ScopePrismLensZoom() const;	// ...and what the eyepiece adds on top of the world, eased in with the aim (1 = nothing)
 	bool UseScopeAnims() const;	// Gunslinger use_scope_anims: play the "_scope" anim variants while a scope is attached
 	float ZoomMouseSenseKoef() const;	// Gunslinger zoom_mouse_sense_koef: look-sensitivity multiplier while scoped
 	float ScaleSenseByLensStep(float k) const;	// ...scaled by the current magnification on a variable-power optic

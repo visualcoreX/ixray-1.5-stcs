@@ -1,0 +1,26 @@
+#include "common.h"
+#include "collim.h"
+
+// the lens-off prism mode's own constant: w = 1 / 2 on a frame with / without the eyepiece's cut, x = 1 while the
+// lens fades; and the lens's fade itself, min(aim, visibility) (model_scope_lense*.ps)
+uniform float4	m_scope_prism;
+uniform float4	m_hud_params;
+// the finished pictures of the last frame without the cut and of the last one with it (CRender::CaptureScopeLateLayer)
+Texture2D		s_scope_late;
+Texture2D		s_scope_latec;
+
+// The late pass of an eyepiece (r_dsgraph_render_lens_late draws pass 2 of every masked glass over the finished
+// picture). A prism sight paints its field stop's black here; an optic in the lens-off prism mode has no field
+// stop, and draws only while its lens fades: the two kinds of frame the fade takes turns with, finished, mixed by
+// the fade. What the combine adds after the hud -- the bloom, the sun's volumetric shafts -- comes from the HDR scene
+// and the G-buffer, which hold the world under the glass on a frame with the cut and the tube on one without: the
+// shafts hazed the glass on one kind and not the other (it flickered in the sun), and the look jumped where the
+// fade met full aim (all frames cut) and where the mode ended. Mixed, it is the same on both kinds and runs from
+// the one end to the other.
+float4 main( v2p_collim I, float4 pos : SV_Position ) : SV_Target
+{
+	clip( (m_scope_prism.x > 0.5f && m_scope_prism.w > 0.5f) ? 1.0f : -1.0f );
+	const float	a	= saturate( min(m_hud_params.y, m_hud_params.w) );
+	const int3	p	= int3( pos.xy, 0 );
+	return	float4( lerp(s_scope_late.Load(p).rgb, s_scope_latec.Load(p).rgb, a), 1.0f );
+}

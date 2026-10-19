@@ -477,9 +477,57 @@ void R_dsgraph_structure::r_dsgraph_render_graph	(u32	_priority, bool _clear)
 
 //////////////////////////////////////////////////////////////////////////
 // HUD render
+// The lens-off prism mode (hud_collim_prism.x > 170.5, CActor) while its lens fades in or out: the eyepiece cuts the
+// hud out every OTHER frame only. A frame WITHOUT the cut draws the lens exactly as the 3D lens is drawn -- see-through,
+// alpha-blended over the live hud by its fade -- with the world of the last frame with the cut in it, and the finished
+// result is copied (CRender::CaptureScopeHudLayer). A frame WITH the cut (the world under the glass, copied for the
+// lens by CaptureScopePrism) just shows that copy. So both look like the 3D lens fading in, a frame apart at most.
+// Once the lens is fully in, the cut is constant. Decided once per frame, here, for the cut below, the copies in
+// render_forward and the lens shader (m_collim_prism.w = 2 on a frame without the cut).
+bool	g_scope_prism_cut	= true;
+// ...and whether the frames take turns at all (the lens fading): then the post-process measures on the frames
+// WITHOUT the cut (r2/r3 phase_combine scope_unmeasured)
+bool	g_scope_prism_fade	= false;
+// ...and the circle the aim's DOF leaves sharp round its eyepiece glass (the cut puts the world's depth under the
+// glass, so the depth alone would blur the lens picture with the world): x, y = radii, z, w = centre, in screen uv;
+// all 0 = none (r3_rendertarget_phase_combine.cpp dof_scope_hole). Centred on the screen, where the aim brings the
+// glass, its size as a share of the screen's height from CActor (hud_collim_prism.z, CWeapon::ScopePrismDofHole).
+// (The glass mesh's own bounding sphere cannot place it: it is in the model's bind pose, and the aim's bones move
+// the glass -- measured, it put the circle at the bottom of the screen.) Too big does no harm: what it spares round
+// the glass is the tube and the eyecup, at the eye and sharp anyway.
+Fvector4	g_scope_glass_hole;		// (zero at start: a global)
+
+static bool scope_prism_cut_decide()
+{
+	static u32 s_frames	= 0;
+	g_scope_prism_fade	= false;
+	if (!g_pGamePersistent || g_pGamePersistent->hud_collim_prism.x < 170.5f)
+	{
+		s_frames		= 0;
+		return			true;			// not the mode: a real prism (the Rakurs) cuts always
+	}
+	const Fvector4& h	= g_pGamePersistent->hud_scope_params;
+	const float a		= _min(h.y, h.w);	// the lens's fade (model_scope_lense*.ps): min(aim, visibility)
+	if (a >= 0.999f)
+	{
+		s_frames		= 0;
+		return			true;
+	}
+	g_scope_prism_fade	= true;
+	++s_frames;
+	return (s_frames & 1) == 0;			// a fade's first frame (in or out) is without the cut: it makes the copy
+}
+
 void R_dsgraph_structure::r_dsgraph_render_hud	()
 {
 	extern ENGINE_API float		psHUD_FOV;
+	g_scope_prism_cut			= scope_prism_cut_decide();
+	g_scope_glass_hole.set		(0.f, 0.f, 0.f, 0.f);
+	if (g_pGamePersistent && g_pGamePersistent->hud_collim_prism.x > 170.5f && g_pGamePersistent->hud_collim_prism.z > 0.f)
+	{
+		const float r				= g_pGamePersistent->hud_collim_prism.z;
+		g_scope_glass_hole.set		(r * float(Device.dwHeight) / float(_max(Device.dwWidth, 1u)), r, 0.5f, 0.5f);
+	}
 	
 	//PIX_EVENT(r_dsgraph_render_hud);
 
@@ -511,12 +559,27 @@ void R_dsgraph_structure::r_dsgraph_render_hud	()
 	if (hud_lens_mask_now && mapHUDLensMask.size())
 	{
 		mapHUDLensMask.getLR		(lstHUDLensLate);
-		for (u32 i = 0; i < lstHUDLensLate.size(); ++i)
-			r_dsgraph_draw_pass		(lstHUDLensLate[i], 1);
-		rmNormal					();
-		for (u32 i = 0; i < lstHUDLensLate.size(); ++i)
-			r_dsgraph_draw_pass		(lstHUDLensLate[i], 0);
-		rmNear						();
+		if (g_scope_prism_cut)		// (the lens-off prism mode's fade skips it every other frame, see above)
+		{
+			for (u32 i = 0; i < lstHUDLensLate.size(); ++i)
+				r_dsgraph_draw_pass		(lstHUDLensLate[i], 1);
+			rmNormal					();
+			for (u32 i = 0; i < lstHUDLensLate.size(); ++i)
+				r_dsgraph_draw_pass		(lstHUDLensLate[i], 0);
+			rmNear						();
+#ifndef USE_DX10
+			// DX9 (R2): a pass's state block sets its stencil and colour-write states behind RCache's back, and
+			// the world's passes, drawn next, set neither -- the cut's "stencil equal 128" and the mark's "write no
+			// colour" stayed on, and with an optic in hand the world was not drawn at all (only the sky and the
+			// particles showed). Put back what phase_scene_begin set just before this (the hud goes first only
+			// there, hud_lens_mask_now): through RCache, first to values that differ in every field so that its
+			// filter really sends each one. (DX10 state objects are whole: no leak there.)
+			RCache.set_Stencil			(TRUE, D3DCMP_NEVER, 0xfe, 0x00, 0x00, D3DSTENCILOP_ZERO, D3DSTENCILOP_ZERO, D3DSTENCILOP_ZERO);
+			RCache.set_Stencil			(TRUE, D3DCMP_ALWAYS, 0x01, 0xff, 0xff, D3DSTENCILOP_KEEP, D3DSTENCILOP_REPLACE, D3DSTENCILOP_KEEP);	// r2_rendertarget_phase_scene.cpp
+			RCache.set_ColorWriteEnable	(0);
+			RCache.set_ColorWriteEnable	();
+#endif
+		}
 	}
 	mapHUDLensMask.clear		();
 
