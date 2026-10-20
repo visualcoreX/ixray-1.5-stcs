@@ -19,6 +19,9 @@ struct HudRecoilData
 	float	ZoneDown;		// part of Radius the zone reaches below the centre (0 = upper half disc)
 	float	Roll;			// rad, peak of the per-shot roll wave, random side
 	float	RollTime;		// s, length of one roll wave
+	float	SettleRoll;		// rad, peak of the roll the weapon settles with when the shooting stops (to the side
+							// it comes back from, by how far it had gone)
+	float	SettleRollTime;	// s, how long that roll takes to die away
 	float	RiseFreq;		// Hz, spring that carries the weapon to a kick (and to the mouse)
 	float	RiseDamp;		// its damping ratio, 1 = no overshoot
 	float	RelaxDelay;		// s after the last shot / mouse move before the weapon starts back
@@ -41,6 +44,8 @@ struct HudRecoilData
 		ZoneDown	= 0.f;
 		Roll		= deg2rad(1.5f);
 		RollTime	= 0.3f;
+		SettleRoll		= deg2rad(1.f);
+		SettleRollTime	= 0.6f;
 		RiseFreq	= 10.f;
 		RiseDamp	= 1.f;
 		RelaxDelay	= 0.12f;
@@ -64,6 +69,8 @@ struct HudRecoilData
 		ZoneDown	= L(from.ZoneDown,		to.ZoneDown);
 		Roll		= L(from.Roll,			to.Roll);
 		RollTime	= L(from.RollTime,		to.RollTime);
+		SettleRoll		= L(from.SettleRoll,	to.SettleRoll);
+		SettleRollTime	= L(from.SettleRollTime,to.SettleRollTime);
 		RiseFreq	= L(from.RiseFreq,		to.RiseFreq);
 		RiseDamp	= L(from.RiseDamp,		to.RiseDamp);
 		RelaxDelay	= L(from.RelaxDelay,	to.RelaxDelay);

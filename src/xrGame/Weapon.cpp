@@ -449,6 +449,8 @@ namespace
 		d.ZoneDown		= clampr(hud_recoil_f(s, pfx, "zone_down",	def.ZoneDown), 0.f, 1.f);
 		d.Roll			= _abs(hud_recoil_deg(s, pfx, "roll",		def.Roll));
 		d.RollTime		= _max(hud_recoil_f(s, pfx, "roll_time",	def.RollTime), 0.f);
+		d.SettleRoll	= _abs(hud_recoil_deg(s, pfx, "settle_roll",	def.SettleRoll));
+		d.SettleRollTime= _max(hud_recoil_f(s, pfx, "settle_roll_time",	def.SettleRollTime), 0.f);
 		d.RiseFreq		= hud_recoil_f	(s, pfx, "rise_freq",		def.RiseFreq);
 		d.RiseDamp		= hud_recoil_f	(s, pfx, "rise_damping",	def.RiseDamp);
 		d.RelaxDelay	= _max(hud_recoil_f(s, pfx, "relax_delay",	def.RelaxDelay), 0.f);
@@ -488,6 +490,7 @@ void CWeapon::LoadHudRecoil(LPCSTR section)
 	def				= m_hud_recoil;
 	def.Radius		*= 0.5f;
 	def.Roll		*= 0.5f;
+	def.SettleRoll	*= 0.5f;
 	if (!hud_recoil_has(src, "hud_recoil_", "rise_freq"))
 		def.RiseFreq	= hud_recoil_rise_freq(zoom_cam_recoil.RiseTime);
 	hud_recoil_load	(m_hud_recoil_aim, src, "hud_recoil_aim_", def);
@@ -511,6 +514,7 @@ const HudRecoilData* CWeapon::CurrentHudRecoilData()
 		m_hud_recoil_blend.Inherit		*= k;
 		m_hud_recoil_blend.InheritHorz	*= k;
 		m_hud_recoil_blend.Roll			*= k;
+		m_hud_recoil_blend.SettleRoll	*= k;
 		m_hud_recoil_blend.Mouse		*= k;
 	}
 	return &m_hud_recoil_blend;

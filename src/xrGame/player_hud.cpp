@@ -1325,7 +1325,11 @@ void player_hud::update_inertion(Fmatrix& trans)
 
 		m_sway.step			(in, rate, dt);
 		if (ind)	m_sway_left.step(*ind, rate, dt);
-		if (rd)		m_recoil.step(*rd, dt);
+		if (rd)
+		{
+			const CHudItem* ri	= m_attached_items[0] ? m_attached_items[0]->m_parent_hud_item : NULL;
+			m_recoil.step		(*rd, dt, ri && ri->HudRecoilFiringNow());
+		}
 	}
 
 	// pitch compensation (vanilla)
@@ -1394,6 +1398,12 @@ void player_hud::SRecoil::reset()
 	push		= 0.f;
 	push_v		= 0.f;
 	wave_count	= 0;
+	settle_t	= 0.f;
+	settle_len	= 0.f;
+	settle_amp	= 0.f;
+	settle_cycles	= 1.25f;
+	settle_decay	= 2.f;
+	settle_armed= false;
 }
 
 // One sub-step of a damped spring, x chasing t: the same scheme as sway_spring, for one axis.
@@ -1413,7 +1423,7 @@ static void recoil_zone(Fvector2& t, float r, float lo)
 	if (m > r)		t.mul(r / m);
 }
 
-void player_hud::SRecoil::step(const HudRecoilData& d, float dt)
+void player_hud::SRecoil::step(const HudRecoilData& d, float dt, bool firing)
 {
 	const float now		= Device.fTimeGlobal;
 	const float lo		= -d.ZoneDown * d.Radius;
@@ -1432,6 +1442,32 @@ void player_hud::SRecoil::step(const HudRecoilData& d, float dt)
 		push_tgt		= _max(0.f, push_tgt - d.PushBack * rad2deg(d.RelaxSpeed) * dt);
 	}
 	push_tgt			= _min(push_tgt, d.PushMax);
+	// ...and as it starts back once the shooting has STOPPED it settles with a small roll that dies away: usually
+	// to the side it comes back from, mirrored now and then (a random side when it is straight above the centre),
+	// by how far it had gone -- a short burst barely tips it. No two alike: the length, the peak, how many swings
+	// and how fast they die away are drawn anew each time. Armed by a shot, fired once the trigger is let go and
+	// the way back has begun: "relaxing" alone also comes between the shots of a burst (600 rpm is 0.1 s).
+	if (relaxing && !firing && settle_armed)
+	{
+		settle_armed	= false;
+		const float m	= x.magnitude();
+		if (d.SettleRoll > EPS_S && d.SettleRollTime > EPS_S && m > EPS_S)
+		{
+			const float share	= _min(1.f, m / _max(d.Radius, EPS_S));
+			float side			= (_abs(x.x) > 0.1f * m) ? ((x.x > 0.f) ? 1.f : -1.f) : (::Random.randI(2) ? 1.f : -1.f);
+			if (::Random.randF(0.f, 1.f) < 0.4f)	side = -side;		// mirrored
+			settle_t			= 0.f;
+			settle_len			= d.SettleRollTime * ::Random.randF(0.8f, 1.2f);
+			settle_amp			= side * d.SettleRoll * _max(share, 0.35f) * ::Random.randF(0.8f, 1.15f);
+			settle_cycles		= ::Random.randF(1.f, 1.6f);			// 1: over and a little back; 1.6: one more swing
+			settle_decay		= ::Random.randF(1.6f, 2.6f);			// how fast the swings die away
+		}
+	}
+	if (settle_len > 0.f)
+	{
+		settle_t		+= dt;
+		if (settle_t >= settle_len)	settle_len = 0.f;
+	}
 
 	// a kick or the mouse is followed by the rise spring, the way back by the relax one
 	const bool rising	= (now - last_input) <= d.RelaxDelay;
@@ -1487,6 +1523,15 @@ float player_hud::SRecoil::roll() const
 		const float t	= waves[i].t / waves[i].len;
 		if (t < 1.f)	r += waves[i].amp * _sin(PI_MUL_2 * t) * (1.f - t);
 	}
+	// the settle roll: settle_cycles swings, eased in over its first 12% and dying away by (1 - u)^settle_decay --
+	// over to the side, past the centre once or twice, and still
+	if (settle_len > 0.f)
+	{
+		const float u	= settle_t / settle_len;
+		const float e	= _min(u / 0.12f, 1.f);
+		const float in	= e * e * (3.f - 2.f * e);
+		r				+= settle_amp * _sin(PI_MUL_2 * settle_cycles * u) * powf(1.f - u, settle_decay) * in;
+	}
 	return r;
 }
 
@@ -1535,6 +1580,7 @@ void player_hud::recoil_shot(float kick_vert, float kick_horz, float& over_vert,
 		m_recoil.push_tgt	= _min(m_recoil.push_tgt + d->PushBack * rad2deg(want.y), d->PushMax);
 	m_recoil.last_shot		= Device.fTimeGlobal;
 	m_recoil.last_input		= Device.fTimeGlobal;
+	m_recoil.settle_armed	= true;		// the settle roll comes once the trigger is let go
 
 	if (d->Roll > EPS_S && d->RollTime > EPS_S)
 	{

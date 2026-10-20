@@ -249,8 +249,12 @@ private:
 		enum { MAX_WAVES = 16 };
 		SWave		waves[MAX_WAVES];
 		int			wave_count;
+		// the roll the weapon settles with once the shooting stops (settle_roll): elapsed, length (0 = none),
+		// signed peak, swings, decay power -- each drawn anew -- and whether a shot has armed it
+		float		settle_t, settle_len, settle_amp, settle_cycles, settle_decay;
+		bool		settle_armed;
 		void		reset				();
-		void		step				(const HudRecoilData& d, float dt);
+		void		step				(const HudRecoilData& d, float dt, bool firing);
 		float		roll				() const;
 	};
 	SRecoil								m_recoil;

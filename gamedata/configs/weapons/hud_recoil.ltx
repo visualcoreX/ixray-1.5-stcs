@@ -36,6 +36,10 @@
 ;                   as fast as ever -- this is the spray control. 0 = off
 ;   roll            degrees, peak of the per-shot roll wave (random side)
 ;   roll_time       s, length of one roll wave
+;   settle_roll     degrees, peak of the roll the weapon settles with once the
+;                   shooting stops and it starts back (to the side it comes back
+;                   from, smaller after a short burst; dies away). 0 = off
+;   settle_roll_time  s, how long that roll takes to die away
 ;   rise_freq       Hz, spring that carries the weapon to a kick
 ;                   (default 0.75 / cam_rise_time, aim: / zoom_cam_rise_time)
 ;   rise_damping    its damping ratio, 1 = no overshoot
@@ -71,6 +75,8 @@ hud_recoil_zone_down        = 2.5
 hud_recoil_mouse            = 0.15
 hud_recoil_roll             = 2.0
 hud_recoil_roll_time        = 0.2
+hud_recoil_settle_roll      = 5.0
+hud_recoil_settle_roll_time = 0.6
 hud_recoil_rise_damping     = 1.0
 hud_recoil_relax_delay      = 0.086
 hud_recoil_relax_speed      = 50.0
