@@ -4,6 +4,7 @@
 #include "object_broker.h"
 #include "UICellItem.h"
 #include "UIProgressBar.h"
+#include "UIStatic.h"
 #include "../inventory_item.h"	// PIItem / IsUsingCondition
 
 #include "../Include/xrRender/UIRender.h"
@@ -27,6 +28,9 @@ CUIDragDropListEx::CUIDragDropListEx()
 	m_selected_item				= NULL;
 	m_bConditionProgBarVisible	= false;
 	m_condition_indicator		= NULL;
+	m_highlighter				= NULL;
+	m_hl_cell.set				(0.f, 0.f, 0.f, 0.f);
+	m_hl_limit					= -1;
 
 	SetCellSize					(Ivector2().set(50,50));
 	SetCellsCapacity			(Ivector2().set(0,0));
@@ -55,6 +59,38 @@ CUIDragDropListEx::~CUIDragDropListEx()
 	DestroyDragItem		();
 
 	delete_data					(m_container);
+}
+
+// OpenXRay's slot highlight: the menu hands the list a static from the xml; the list adopts it and draws
+// it -- custom draw, so the window's own child pass skips it and CUICellContainer::Draw puts it UNDER the
+// grid and the items. The frame drawn around a slot is bigger than the cells it holds (a quick slot's icon
+// sits in the corner of its box), so the xml may give that frame: `frames` in the menu's coordinates (the
+// lists' own space) -- one for a one-cell slot, one per cell where the boxes are spaced unevenly -- or
+// `cell`, an offset from each cell plus a size, for evenly spaced ones. Neither = the list / the cell.
+void CUIDragDropListEx::SetHighlighter(CUIStatic* highlighter, const xr_vector<Frect>& frames, const Frect& cell)
+{
+	m_highlighter			= highlighter;
+	m_hl_cell				= cell;
+	m_hl_rects.clear		();
+	const Fvector2 our		= GetWndPos();
+	for (u32 i = 0; i < frames.size(); ++i)
+	{
+		Frect r				= frames[i];
+		r.sub				(our.x, our.y);
+		m_hl_rects.push_back(r);
+	}
+	if (!m_highlighter)		return;
+	m_highlighter->Show		(false);
+	m_highlighter->SetCustomDraw(true);
+	m_highlighter->SetAutoDelete(true);
+	m_highlighter->SetStretchTexture(true);
+	AttachChild				(m_highlighter);
+}
+
+void CUIDragDropListEx::Highlight(bool highlight)
+{
+	if (m_highlighter)
+		m_highlighter->Show	(highlight);
 }
 
 void CUIDragDropListEx::SetAutoGrow(bool b)						
@@ -895,6 +931,62 @@ void CUICellContainer::Draw()
 	UI()->ClientToScreenScaled(sp_len, float(CellsSpacing().x), float(CellsSpacing().y) );
 
 	GetCellsInRange(tgt_cells,m_cells_to_draw);
+
+	// the slot highlight, under the grid and the items: the whole slot when it is one big virtual cell
+	// (weapons, outfit), else every cell where the grid draws it (belt, quick slots, detector)
+	CUIStatic* highlighter = m_pParentDragDropList->GetHighlighter();
+	if (highlighter && highlighter->IsShown())
+	{
+		Fvector2 list_abs;		m_pParentDragDropList->GetAbsolutePos(list_abs);
+		const xr_vector<Frect>& frames	= m_pParentDragDropList->GetHighlightRects();
+		if (m_pParentDragDropList->GetVirtualCells())
+		{
+			if (frames.size())
+			{
+				highlighter->SetWndPos	(frames[0].lt);
+				highlighter->SetWndSize	(Fvector2().set(frames[0].width(), frames[0].height()));
+			}
+			else
+			{
+				highlighter->SetWndPos	(Fvector2().set(0.f, 0.f));
+				highlighter->SetWndSize	(m_pParentDragDropList->GetWndSize());
+			}
+			highlighter->Draw		();
+		}
+		else
+		{
+			const Frect& hc			= m_pParentDragDropList->GetHighlightCell();
+			const Ivector2 csz		= CellSize();
+			const Ivector2 step		= Ivector2().set(csz.x + m_cellSpacing.x, csz.y + m_cellSpacing.y);
+			const Fvector2 sz		= Fvector2().set(hc.x2 > 0.f ? hc.x2 : float(csz.x), hc.y2 > 0.f ? hc.y2 : float(csz.y));
+			// every cell of the list, not just the ones the grid counts as visible: the belt and the quick
+			// slots never scroll, and the visible range comes from the client area, which for the quick
+			// slots (cells far apart, custom placement) covered the first cell only
+			const int cols			= cell_cnt.x;
+			for (int x = 0; x < cell_cnt.x; ++x)
+				for (int y = 0; y < cell_cnt.y; ++y)
+				{
+					const u32 k			= u32(y * cols + x);
+					// the belt keeps all five cells and only covers the ones the outfit does not give
+					// (m_belt_list_over) -- those must stay dark
+					const int lim		= m_pParentDragDropList->GetHighlightLimit();
+					if (lim >= 0 && int(k) >= lim)	continue;
+					if (k < frames.size())
+					{
+						highlighter->SetWndPos	(frames[k].lt);
+						highlighter->SetWndSize	(Fvector2().set(frames[k].width(), frames[k].height()));
+					}
+					else
+					{
+						highlighter->SetWndPos	(Fvector2().set(
+							lt_abs_pos.x - list_abs.x + float(step.x * x) + hc.x1,
+							lt_abs_pos.y - list_abs.y + float(step.y * y) + hc.y1));
+						highlighter->SetWndSize	(sz);
+					}
+					highlighter->Draw();
+				}
+		}
+	}
 
 	// fill cell buffer
 	u32 max_prim_cnt = ((tgt_cells.width()+1)*(tgt_cells.height()+1)*6);

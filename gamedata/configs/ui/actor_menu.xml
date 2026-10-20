@@ -386,4 +386,24 @@
 
   </actor_state_info>
 
+  <!-- Slot highlights (OpenXRay's highlight_item_slot): hover an item that is not equipped and the slots it
+       can go into light up. Only the look is read here -- texture and colour (r g b a on the texture); the
+       engine fits it to the slot (weapons, outfit) or to each of its cells (belt, quick slots, detector).
+       ui_slot_highlight is white, feathered to transparent at its edges (a soft glow, no hard frame); the colour below tints it. -->
+  <inv_slot2_highlight stretch="1">
+    <texture r="220" g="220" b="215" a="38">ui\ui_slot_highlight</texture>
+  </inv_slot2_highlight>
+  <inv_slot3_highlight stretch="1">
+    <texture r="220" g="220" b="215" a="38">ui\ui_slot_highlight</texture>
+  </inv_slot3_highlight>
+  <outfit_slot_highlight stretch="1">
+    <texture r="220" g="220" b="215" a="38">ui\ui_slot_highlight</texture>
+  </outfit_slot_highlight>
+  <detector_slot_highlight stretch="1">
+    <texture r="220" g="220" b="215" a="38">ui\ui_slot_highlight</texture>
+  </detector_slot_highlight>
+  <artefact_slot_highlight stretch="1">
+    <texture r="220" g="220" b="215" a="38">ui\ui_slot_highlight</texture>
+  </artefact_slot_highlight>
+
 </w>

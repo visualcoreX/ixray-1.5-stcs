@@ -9,6 +9,7 @@
 #	include "ResourceManager.h"
 #	include "dxRenderDeviceRender.h"
 #	include "../../xrEngine/Environment.h"
+#	include "../../xrEngine/igame_level.h"
 #endif
 
 using namespace PAPI;
@@ -79,6 +80,10 @@ CParticleEffect::CParticleEffect()
 	m_DestroyCallback		= 0;
 	m_CollisionCallback		= 0;
 	m_XFORM.identity		();
+	m_ShadeSun				= 1.f;
+	m_ShadeSky				= 1.f;
+	m_ShadeNext				= 0;
+	m_ShadeTarget.set		(1.f, 1.f);
 }
 CParticleEffect::~CParticleEffect()
 {
@@ -315,6 +320,10 @@ extern ENGINE_API float		psHUD_FOV;
 //    torches, muzzle flashes, lamps carried by the anomalies. Static lights are skipped, they are
 //    baked into the level lightmaps. There is no shadowing here: a torch lights the dust it points
 //    at, and a wall in between is not consulted -- their range is short enough for that to pass.
+//  * shade -- the sun's part of the ambient only counts while the sun is in sight of the effect, and
+//    the sky's part drops under a roof: one ray each from the centre of the effect through the static
+//    level geometry (particle_shade), so dust kicked off a wall in the shade, or inside a building,
+//    is no longer as bright as in the open sun. Same rays as dynamic objects use (CROS_impl).
 //
 // Only the BLEND pass is lit (oBlend==1: smoke, dust, steam). Additive effects -- fire, sparks, the
 // muzzle flash itself -- are self-luminous and must stay untouched, MUL ones darken by design, and
@@ -324,6 +333,33 @@ static const float	PARTICLE_SUN_WEIGHT		= 0.7f;		// how much of the sun counts t
 static const float	PARTICLE_LIGHT_NOON		= 0.96f;	// the same sum at noon in the stock clear weather
 static const float	PARTICLE_AMBIENT_FLOOR	= 0.13f;	// the night level, kept where it was tuned by eye:
 															// the sun weight above must not drag it down with it
+static const float	PARTICLE_ROOF_SKY		= 0.5f;		// the sky's share left under a roof (no sky straight up)
+static const u32	PARTICLE_SHADE_PERIOD	= 100;		// ms between ray tests of one effect
+static const float	PARTICLE_SHADE_SMOOTH	= 8.f;		// 1/s: how fast the shade follows a moving effect
+
+// Is the sun / the sky in sight from C? Static level geometry only ("shadow from the statics"), the
+// way dynamic objects ask it (CROS_impl::calc_sun_value / calc_sky_hemi_value). The ray starts a few cm
+// out towards the light: dust from a hit sits right on the wall, and a wall that faces away from the
+// sun must still shade it (the ray then runs into it), while one that faces the sun must not.
+static void particle_shade(const Fvector& C, float& sun, float& sky)
+{
+	sun = 1.f;	sky = 1.f;
+	if (!g_pGameLevel)						return;
+#if RENDER==R_R1
+	light*	L	= (light*)RImplementation.L_DB->sun_adapted._get();
+#else
+	light*	L	= (light*)RImplementation.Lights.sun_adapted._get();
+#endif
+	if (L)
+	{
+		Fvector	d;	d.set(L->direction).invert().normalize_safe();
+		Fvector	p;	p.mad(C, d, 0.05f);
+		sun		= g_pGameLevel->ObjectSpace.RayTest(p, d, 500.f, collide::rqtStatic, NULL, NULL) ? 0.f : 1.f;
+	}
+	Fvector	up;	up.set(0.f, 1.f, 0.f);
+	Fvector	p;	p.mad(C, up, 0.05f);
+	sky			= g_pGameLevel->ObjectSpace.RayTest(p, up, 50.f, collide::rqtStatic, NULL, NULL) ? 0.f : 1.f;
+}
 
 class particle_lighting
 {
@@ -340,11 +376,11 @@ class particle_lighting
 	float					m_ambient;
 public:
 							particle_lighting	() : m_ambient(1.f)	{}
-	void					begin				(const Fvector& C, float R);
+	void					begin				(const Fvector& C, float R, float sun_vis = 1.f, float sky_vis = 1.f);
 	u32						apply				(u32 clr, const Fvector& P) const;
 };
 
-void	particle_lighting::begin	(const Fvector& C, float R)
+void	particle_lighting::begin	(const Fvector& C, float R, float sun_vis, float sky_vis)
 {
 	m_lights.clear	();
 
@@ -356,7 +392,8 @@ void	particle_lighting::begin	(const Fvector& C, float R)
 	CEnvDescriptor&	E	= *g_pGamePersistent->Environment().CurrentEnv;
 	float	hemi		= (E.hemi_color.x + E.hemi_color.y + E.hemi_color.z) / 3.f;
 	float	sun			= (E.sun_color.x  + E.sun_color.y  + E.sun_color.z ) / 3.f;
-	float	k			= (hemi + PARTICLE_SUN_WEIGHT*sun) / PARTICLE_LIGHT_NOON;
+	// the shade: no sun where the level blocks it, and under a roof only part of the sky
+	float	k			= (hemi*(PARTICLE_ROOF_SKY + (1.f-PARTICLE_ROOF_SKY)*sky_vis) + PARTICLE_SUN_WEIGHT*sun*sun_vis) / PARTICLE_LIGHT_NOON;
 	clamp				(k, 0.f, 1.f);
 	m_ambient			= _max(k, PARTICLE_AMBIENT_FLOOR);
 
@@ -519,7 +556,20 @@ void CParticleEffect::Render(float )
 			{
 				Fvector	C	= vis.sphere.P;
 				if (m_RT_Flags.is(flRT_XFORM))	m_XFORM.transform_tiny(C);
-				PL.begin	(C, vis.sphere.R);
+				// the shade: ray-tested every PARTICLE_SHADE_PERIOD, eased in between; the first test
+				// is taken as it is -- a hit puff lives half a second and must not start out sunlit
+				if (Device.dwTimeGlobal >= m_ShadeNext)
+				{
+					float	sun, sky;
+					particle_shade	(C, sun, sky);
+					if (0==m_ShadeNext)	{ m_ShadeSun = sun; m_ShadeSky = sky; }
+					m_ShadeTarget.set	(sun, sky);
+					m_ShadeNext		= Device.dwTimeGlobal + PARTICLE_SHADE_PERIOD;
+				}
+				float	f	= _min(1.f, Device.fTimeDelta * PARTICLE_SHADE_SMOOTH);
+				m_ShadeSun	+= (m_ShadeTarget.x - m_ShadeSun) * f;
+				m_ShadeSky	+= (m_ShadeTarget.y - m_ShadeSky) * f;
+				PL.begin	(C, vis.sphere.R, m_ShadeSun, m_ShadeSky);
 			}
 #endif
 

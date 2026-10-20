@@ -1,0 +1,27 @@
+#include "common.h"
+#include "collim.h"
+
+// the lens-off prism mode's own constant (w = 1: cut this frame), not the prism sight's m_collim_prism
+uniform float4	m_scope_prism;
+
+// The lens-off prism mode of a magnifying optic (CWeapon::IsScopePrismCfg, models_zoom*.s l_special): its eyepiece
+// glass cuts the hud out, so the world -- drawn at the optic's magnification -- shows through it. The whole glass is
+// cut while the mode is on (m_scope_prism.w, raised by CActor only then); otherwise nothing at all. Writes the
+// G-buffer back to its cleared state where it cuts; the mark (pass 1) writes no colour. (r3/model_scope_mask.ps)
+struct gbuffer_clear
+{
+	float4	p	: COLOR0;
+	float4	n	: COLOR1;
+	float4	c	: COLOR2;
+};
+
+gbuffer_clear main( v2p_collim I )
+{
+	clip( m_scope_prism.w - 0.5 );
+
+	gbuffer_clear	o;
+	o.p		= 0;
+	o.n		= 0;
+	o.c		= 0;
+	return	o;
+}

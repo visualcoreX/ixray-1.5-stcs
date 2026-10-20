@@ -357,6 +357,9 @@ public:
 	// virtual there becomes an unresolved import at load time).
 	void							RenderPdaUIToRT				();
 	void							RenderScopeToRT				();	// 3D PiP scope: snapshot the scene into $user$scope for the lens
+	void							CaptureScopeHudLayer		();	// lens-off prism mode, fading: the tube under the glass, uncut
+	void							CaptureScopeLateLayer		(bool cut);	// ...the frame finished, by kind, for the fade's late pass
+	void							CaptureScopePrism			();	// lens-off prism mode: this frame's world -> $user$scope(ui), no second view
 	void							PresentBridgeLens			();	// 3D PiP: save/restore the backbuffer so lens frames present the last normal frame
 	void							CaptureLensUIToRT			();	// GS EndSecondVP_OnUIRender: world+UI of a lens frame -> $user$scopeui
 };

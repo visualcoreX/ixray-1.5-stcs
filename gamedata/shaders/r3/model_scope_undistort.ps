@@ -1,0 +1,15 @@
+#include "common.h"
+#include "collim.h"
+
+// Pass 3 of an optic's eyepiece (models_zoom*.s l_special), drawn over the distortion mask
+// (r_dsgraph_render_lens_undistort): the mask back to its cleared "no offset, not under the haze" over the glass,
+// so the reticle drawn on it does not ripple with the water or the haze behind. By how far the lens has come in --
+// from the hip the glass is see-through, and what is behind it ripples as everywhere else.
+uniform	float4	m_hud_params;	// .y aim, .w visibility: the lens's fade (model_scope_lense*.ps)
+
+float4 main( v2p_collim I ) : SV_Target
+{
+	const float	a	= saturate( min(m_hud_params.y, m_hud_params.w) );
+	clip( a - 0.001f );
+	return	float4( 127.0f/255.0f, 127.0f/255.0f, 0.0f, a );
+}

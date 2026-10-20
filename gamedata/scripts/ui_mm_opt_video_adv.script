@@ -14,6 +14,31 @@ r2.5	= 3
 r3		= 4
 ]]
 
+-- The scope mode list (scope_mode): on R1 only the 2D picture -- both 3D ways need render targets the static
+-- renderer does not have -- so the other two leave the list and the list is greyed out. The shown item is
+-- re-picked from the console variable, which reports 2D on R1 (console_commands.cpp CCC_ScopeMode).
+function scope_mode_by_renderer(ctrl, _id, _ssample_trb_val, _ssample_cb_val)
+	local r1		= _id==0
+	if r1 then
+		ctrl:disable_id	(0)		-- ui_mm_scope_pip
+		ctrl:disable_id	(1)		-- ui_mm_scope_fake3d
+	else
+		ctrl:enable_id	(0)
+		ctrl:enable_id	(1)
+	end
+	ctrl:Enable		(not r1)
+	ctrl:SetCurrentValue()
+end
+
+-- The lens redraw rate (lens_render_factor) belongs to the real PiP lens alone.
+function lens_factor_by_mode(ctrl, _id, _ssample_trb_val, _ssample_cb_val)
+	ctrl:Enable		(_id>=1 and get_console():get_string("scope_mode") == "ui_mm_scope_pip")
+end
+
+function on_scope_mode_changed(handler)
+	handler:UpdateDependControls()
+end
+
 -- R1 only
 function only_1_mode(ctrl, _id, _ssample_trb_val, _ssample_cb_val)
 	local bEnabled	= _id==0
@@ -358,22 +383,24 @@ function opt_video_adv:InitControls(x, y, xml, handler)
 
 
 
--- Gunslinger lens_enabled. The PiP lens needs the $user$scope render target, which only R2/R3 have,
--- so the row is greyed out on the static renderer.
+-- The scope mode (scope_mode): real PiP (the 3D lens, Gunslinger's lens_enabled), fake 3D (the lens-off prism
+-- mode) or the stock 2D picture. Both 3D ways need render targets only R2/R3 have, so on the static renderer the
+-- list keeps 2D alone and is greyed out (scope_mode_by_renderer).
 	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
-	xml:InitStatic								("video_adv:cap_lens_enabled",			_st)
-	local chk_lens = xml:InitCheck					("video_adv:check_lens_enabled",		_st)
-	handler.m_preconditions[chk_lens]		= only_2_and_more_mode
+	xml:InitStatic								("video_adv:cap_scope_mode",			_st)
+	ctl				= xml:InitComboBox			("video_adv:combo_scope_mode",			_st)
+	handler:Register(ctl, "cb_scope_mode")
+	handler.m_preconditions[ctl]		= scope_mode_by_renderer
+	-- the lens redraw slider below follows the mode at once, not on the next visit to this tab
+	handler:AddCallback("cb_scope_mode", ui_events.LIST_ITEM_SELECT, on_scope_mode_changed, handler)
 -- ...and how often that lens is redrawn (GS lens_render_factor): one lens frame out of N, and a lens
 -- frame is not presented -- so a smaller N means a livelier scope picture and fewer frames for the
 -- main view. Inverted like GS's, so the slider reads left-to-right as "more lens FPS".
 	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
 	xml:InitStatic								("video_adv:cap_lens_factor",			_st)
 	ctl			= xml:InitTrackBar				("video_adv:track_lens_factor",			_st)
-	handler.m_preconditions[ctl]		= only_2_and_more_mode
-	-- with the lens off there is nothing to set a redraw rate for, so the slider follows the
-	-- switch: CUICheckButton::Update greys its depend controls out, reading the PENDING tick
-	chk_lens:AddDependControl(ctl)
+	-- only the real PiP lens has a redraw rate to set
+	handler.m_preconditions[ctl]		= lens_factor_by_mode
 -- Gunslinger npc_lasers
 	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
 	xml:InitStatic								("video_adv:cap_npc_lasers",			_st)

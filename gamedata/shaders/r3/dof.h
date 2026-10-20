@@ -25,7 +25,9 @@ float3	dof_kernel;	// x,y - resolution pre-scaled z - just kernel size
 float4	dof_scope_hole;
 float DOFHole( float2 tc )
 {
-	float2	d	= (tc - float2(0.5f, 0.5f)) / max( dof_scope_hole.xy, float2(0.0001f, 0.0001f) );
+	// zw: the circle's centre when set (the lens-off prism mode's glass, wherever it is); else the screen's
+	float2	c	= (dof_scope_hole.z > 0.0f) ? dof_scope_hole.zw : float2(0.5f, 0.5f);
+	float2	d	= (tc - c) / max( dof_scope_hole.xy, float2(0.0001f, 0.0001f) );
 	float	h	= smoothstep( 1.0f, 1.12f, length(d) );
 	return	(dof_scope_hole.x > 0.0f) ? h : 1.0f;
 }

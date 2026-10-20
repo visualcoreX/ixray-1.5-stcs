@@ -3,6 +3,7 @@
 
 [wpn_fort_snag]:identity_immunities,weapon_probability,default_weapon_params
 reload_drop_bones	= mag:mag_drop_fort17	; a full reload lets the magazine fall: <hud bone>:<object>, the shown one counts
+reload_drop_frame	= 15	; ...let go on this frame of the full reload (30 a second) -- same motion as the Fort-12 (fort12_reload_full); without it the path-break rule never let go
 bullet_material				= objects\bullet	; wallmark/impact/ricochet pair on hit
 GroupControlSection	  		= spawn_group
 $spawn                  	= "weapons\wpn_fort_snag"					; option for Level Editor

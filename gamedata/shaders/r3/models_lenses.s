@@ -100,4 +100,10 @@ function l_special	(shader, t_base, t_second, t_detail)
 	shader:dx10texture	("s_mark",	"$user$collim_mark")
 	shader:dx10sampler	("smp_base")
 	shader:dx10sampler	("smp_rtlinear")
+
+	shader:begin	("model_collim_reflect","model_collim_undistort")	-- pass 3: the distortion mask (r_dsgraph_render_lens_undistort)
+			: fog		(false)
+			: zb		(true,false)
+			: blend		(false,blend.one,blend.zero)
+			: aref		(false,0)
 end
