@@ -92,6 +92,7 @@ player_legs_controller::player_legs_controller()
 	m_chest_sign		= 1.f;
 	m_has_fwd_offset	= false;
 	m_fwd_offset		= 0.f;
+	m_hands_busy_time	= -1.f;
 	m_legs_transform.identity();
 }
 
@@ -295,6 +296,15 @@ void player_legs_controller::copy_bones_from_actor(CActor* actor)
 		// technically free -- but the hud draws it in a pose of its own, and the body's idle arm
 		// next to it read wrong, so it goes too.
 		hide_left				= item_in_hand || det_in_hand;
+		// ...and for a moment after the hands are emptied: a weapon thrown away leaves the hud the same frame,
+		// and the body's arms popped up in front of the face before the hud's hands had gone from view.
+		// They come ARMS_FREE_DELAY after the hands were last busy.
+		const float ARMS_FREE_DELAY = 0.2f;
+		const float now			= Device.fTimeGlobal;
+		if (hide_left)
+			m_hands_busy_time	= now;
+		else if (m_hands_busy_time >= 0.f && now - m_hands_busy_time < ARMS_FREE_DELAY && now >= m_hands_busy_time)
+			hide_left			= true;
 		hide_right				= hide_left;
 	}
 

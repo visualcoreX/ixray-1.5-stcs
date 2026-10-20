@@ -45,4 +45,14 @@ float lens_field_stop(float3 pos_v, float3 axis_v, float2 uv)
 	float	f	= saturate((tf + 0.5f*w - t) / max(w, 0.00001f));
 	return	(a > 0.0f) ? f : 0.0f;
 }
+// The lens-off prism mode: the world under the glass is the frame's own (not a picture warped on its own, as the 3D
+// lens's), and the distortion mask over the glass is put back to "none" so the reticle does not ripple
+// (r_dsgraph_render_lens_undistort). The world still has to: its offset is read from the frame before's mask,
+// copied before the glass took itself out of it ($user$scopedistort), at the world's own point -- uv here is where
+// the lens samples the frame -- so the ripple is magnified with the world. The reticle is laid on afterwards.
+Texture2D	s_scope_distort;
+float2 lens_prism_distort(float2 uv)
+{
+	return	(s_scope_distort.SampleLevel(smp_base, uv, 0).xy - (127.0f/255.0f)) * def_distort;
+}
 #endif

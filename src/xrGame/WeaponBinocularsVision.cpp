@@ -101,7 +101,7 @@ void SBinocVisibleObj::Draw()
 	if (m_flags.test(flCornerRB))	m_rb.Draw();
 }
 
-void SBinocVisibleObj::Update(bool eyepiece)
+void SBinocVisibleObj::Update(bool eyepiece, const Fvector4* own_zc, float own_w)
 {
 	m_flags.set		(	flVisObjNotValid,TRUE);
 
@@ -111,7 +111,14 @@ void SBinocVisibleObj::Update(bool eyepiece)
 	// up yet clears it) -- without one the frames project exactly as before
 	Fvector4	zc;		zc.set(0.f, 0.f, 1.f, 0.f);
 	float		zw		= 0.f;
-	if (eyepiece && g_pGamePersistent && g_pGamePersistent->pp_zoom_circle.x > 0.f)
+	// the optic's own glass when it has one (the lens-off prism mode: CWeapon::UpdateScopeDetector), else the 2D
+	// scope's circle
+	if (eyepiece && own_zc && own_zc->x > 0.f)
+	{
+		zc	= *own_zc;
+		zw	= own_w;
+	}
+	else if (eyepiece && g_pGamePersistent && g_pGamePersistent->pp_zoom_circle.x > 0.f)
 	{
 		zc	= g_pGamePersistent->pp_zoom_circle;
 		zw	= g_pGamePersistent->pp_scope_shadow.w;
@@ -324,7 +331,7 @@ void CBinocularsVision::Update()
 		// GS/CoP: the frame crawls onto the target and then LOCKS -- that transition is what catch_snd
 		// announces (and what turns the corners opaque + relation-coloured, see SBinocVisibleObj::Update).
 		const bool was_locked = !!(*it)->m_flags.test(flTargetLocked);
-		(*it)->Update						(m_bEyepiece);
+		(*it)->Update						(m_bEyepiece, &m_own_zc, m_own_w);
 		if ((*it)->m_flags.test(flFoundSndPending) && !(*it)->m_flags.test(flVisObjNotValid))
 		{
 			(*it)->m_flags.set				(flFoundSndPending, FALSE);

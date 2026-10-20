@@ -74,6 +74,9 @@ public:
 	// mixes over the glass by the lens's fade (CaptureScopeLateLayer, model_scope_late.ps) -- as r3
 	ref_rt						rt_scope_late;
 	ref_rt						rt_scope_late_cut;
+	// ...and the distortion mask of the frame before the glass took itself out of it, for that lens to warp its
+	// world by (the lens-off prism mode; phase_combine, scope_field.h lens_prism_distort) -- as r3
+	ref_rt						rt_scope_distort;
 	ref_rt						rt_Bloom_1;			// 32bit, dim/4	(r,g,b,?)
 	ref_rt						rt_Bloom_2;			// 32bit, dim/4	(r,g,b,?)
 	ref_rt						rt_LUM_64;			// 64bit, 64x64,	log-average in all components

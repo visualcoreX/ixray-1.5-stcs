@@ -12,6 +12,7 @@ function normal   (shader, t_base, t_second, t_detail)
 	shader:sampler  ("s_base")		:texture	(t_base)
 	shader:sampler  ("s_vp2")		:texture	("$user$scopeui")
 	shader:sampler  ("s_scope_hud")	:texture	("$user$scopehud")	-- the prism mode: the look through the glass
+	shader:sampler	("s_scope_distort")	:texture	("$user$scopedistort")	-- the prism mode: the distortion behind the glass
 --	shader:sampler	("s_env0")		:texture	(tex_env0)   : clamp()
 --	shader:sampler	("s_env1")		:texture	(tex_env1)   : clamp()  
 end

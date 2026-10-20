@@ -101,6 +101,7 @@ half4 	main	( v2p I, float2 vpos : VPOS )	: COLOR
 	// the prism mode: no lens picture was rendered -- the frame copied just before the hud's glass
 	// (CRender::CaptureScopePrism), the world under the cut, sampled where this pixel is
 	if (prism)	I.tc0 = 0.5f + (px / screen_res.xy - 0.5f) / max(m_hud_params.x, 1.0f);
+	if (prism)	I.tc0 += lens_prism_distort(I.tc0);	// the world ripples with what is behind the glass, the reticle does not
 	I.tc0 = lens_warp_uv(I.tc0, uv_glass);	// the glass bends what it looks at
     half4 t_vp2 = tex2D(s_vp2, I.tc0);
 

@@ -367,10 +367,27 @@ void	CRenderTarget::phase_combine	()
 			HW.pDevice->ClearRenderTargetView( rt_Generic_1->pRT, ColorRGBA);
 			RImplementation.r_dsgraph_render_distort	();
 			phase_rain_distort							();
+			// the lens-off prism mode: its lens shows the world of the frame (not a picture warped on its own, as the 3D
+			// lens's), so the distortion behind the glass reaches it only through the mask -- copied here, before the
+			// glass takes itself out of it (r_dsgraph_render_lens_undistort), for the lens to warp its world by on the next
+			// frame while its reticle stays put (scope_field.h lens_prism_distort)
+			if (scope_prism)
+			{
+				if (RImplementation.o.dx10_msaa)
+					HW.pDevice->ResolveSubresource(rt_scope_distort->pSurface, 0, rt_Generic_1->pSurface, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
+				else
+					HW.pDevice->CopyResource(rt_scope_distort->pSurface, rt_Generic_1->pSurface);
+			}
 			RImplementation.r_dsgraph_render_lens_undistort	();	// reticles and dots do not ripple
 			if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_PP()	;	// PP-UI
 		}
 		rain_distort_end	(0);	// drawn or not, they were this frame's
+		// no distortion this frame: the lens-off prism mode's lens gets a mask with nothing in it
+		if (scope_prism && !bDistort)
+		{
+			FLOAT ColorRGBA[4] = { 127.0f/255.0f, 127.0f/255.0f, 0.0f, 0.0f};
+			HW.pDevice->ClearRenderTargetView(rt_scope_distort->pRT, ColorRGBA);
+		}
 	}
 
 	// 3D PiP scope: snapshot the scene into $user$scope. It sits HERE, after render_forward (so the
