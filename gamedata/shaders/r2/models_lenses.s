@@ -66,11 +66,15 @@ function l_special	(shader, t_base, t_second, t_detail)
 			: blend		(false,blend.one,blend.zero)
 			: aref		(false,0)
 
-	shader:begin	("model_collim_reflect","model_clip")
+	shader:begin	("model_collim_reflect","model_collim_late")	-- pass 2: the reticle's glow, after the distortion
 			: fog		(false)
 			: zb		(true,false)
-			: blend		(false,blend.one,blend.zero)
+			: blend		(true,blend.one,blend.invsrcalpha)
 			: aref		(false,0)
+			: color_write_enable	(true, true, true, true)
+			: stencil	(false, cmp_func.always, 255, 255, stencil_op.keep, stencil_op.keep, stencil_op.keep)
+	shader:sampler	("s_base")	:texture	(t_base)
+	shader:sampler	("s_mark")	:texture	("$user$collim_mark")	: clamp() : f_linear()
 
 	shader:begin	("model_collim_reflect","model_collim_undistort")	-- pass 3
 			: fog		(false)
