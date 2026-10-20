@@ -4541,6 +4541,17 @@ void CWeapon::UpdateScopeDetector()
 	if (IsLensedScope())	return;
 
 	m_pScopeVision->SetEyepiece(!IsLensedScope());	// 2D: frames mapped through the eyepiece and kept to its glass
+	// The lens-off prism mode has no 2D eyepiece circle (pp_zoom_circle): the frames were drawn over the whole screen,
+	// at the world's power. Its glass instead -- centred, the size the aim's DOF keeps sharp round it
+	// (scope_prism_dof_hole, share of the screen height), the zoom the lens adds about the centre, its curvature.
+	if (IsScopePrismNow())
+	{
+		const float	r	= ScopePrismDofHole();
+		Fvector4	zc;	zc.set(r * float(Device.dwHeight) / float(_max(Device.dwWidth, 1u)), r, ScopePrismLensZoom(), 0.f);
+		m_pScopeVision->SetEyepieceCircle(zc, g_pGamePersistent ? g_pGamePersistent->pp_scope_shadow.w : 0.f);
+	}
+	else
+		m_pScopeVision->SetEyepieceCircle(Fvector4().set(0.f, 0.f, 1.f, 0.f), 0.f);
 	m_pScopeVision->Update();
 }
 
