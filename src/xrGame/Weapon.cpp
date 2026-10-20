@@ -6200,6 +6200,9 @@ bool CWeapon::show_indicators()
 	// for a PiP optic. Includes the alter pose (backup 1x sight, lens faded out): the user wants the HUD
 	// gone for the whole aim on such a scope, not just while the eye is behind the lens.
 	if (IsZoomed() && IsLensedScope())	return false;
+	// ...the same for the lens-off prism mode (CWeapon::IsScopePrismCfg, the "fake 3D" scopes): an optic looked
+	// through all the same, only drawn differently -- the HUD went only for the 2D picture and the PiP lens
+	if (IsZoomed() && IsScopePrismCfg())	return false;
 	// ...and GS's own key for the flat-scope case (IsUIForceHiding, collimator.pas:301), which is what
 	// the very same optic falls back to once the 3D lens is switched off in the options.
 	// NOT for a collimator: a red dot leaves the whole screen visible, so blanking the indicators
