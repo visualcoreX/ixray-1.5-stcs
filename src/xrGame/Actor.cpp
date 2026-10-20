@@ -1394,7 +1394,9 @@ void CActor::UpdateCL	()
 		// distort() from the models_zoom blender).
 		float	aspect	= Device.dwWidth ? (float)Device.dwHeight / (float)Device.dwWidth : 0.75f;
 		CWeapon* wpn	= smart_cast<CWeapon*>(active_item);
-		if (wpn && wpn->IsLensedScope())
+		// ...the lens-off prism mode too (CWeapon::IsScopePrismCfg): its lens draws the reticle, and the shader
+		// shows the lens only while aim * visibility is above zero, as the 3D lens does
+		if (wpn && (wpn->IsLensedScope() || wpn->IsScopePrismCfg()))
 		{
 			float	aim		= wpn->GetInertionAimFactor();		// 0..1 ADS ramp; 0 when not aiming
 			// GS multi-scope: chromatic aberration is per-scope; read from the active scope section, weapon fallback.
@@ -1408,7 +1410,9 @@ void CActor::UpdateCL	()
 			// .w = GS lens visibility (collimator.pas GetZoomLensVisibilityFactor): 0 in the alter pose,
 			// cross-fading with the switch, so the ELCAN's lens goes dark when the eye moves to its
 			// backup 1x sight. Shader alpha = min(aim, this) -> 0 discards the lens quad entirely.
-			g_pGamePersistent->hud_scope_params.set(aspect, aim, abber, wpn->LensVisibility());
+			// .x: the lens-off prism mode's eyepiece zoom over the world's (CWeapon::ScopePrismLensZoom) -- the lens
+			// shaders read .x only in that mode, and resample the frame by it about the screen's centre
+			g_pGamePersistent->hud_scope_params.set(wpn->IsScopePrismCfg() ? wpn->ScopePrismLensZoom() : aspect, aim, abber, wpn->LensVisibility());
 			// GS scope illumination -> m_zoom_deviation.z = brightness, .w = jitter (used by the NV lens shader
 			// model_scope_lense_night). Day scopes ignore .z/.w and use the reticle-glow bones instead.
 			g_pGamePersistent->hud_zoom_deviation.set(0.f, 0.f, wpn->ScopeIllumValue(), wpn->ScopeIllumJitter());
@@ -1510,6 +1514,16 @@ void CActor::UpdateCL	()
 			g_pGamePersistent->hud_collim_mark.set(0.f, 0.f, 0.f, 0.f);
 			g_pGamePersistent->hud_collim_prism.set(0.f, 1.f, 0.f, 0.f);
 		}
+		// The lens-off prism mode (CWeapon::IsScopePrismNow): the optic's eyepiece cuts the hud out like the
+		// Rakurs's. Its field of view is made wider than any eyepiece can show, so the whole glass is cut and
+		// no black field stop is drawn -- the eyepiece's own ring is the stop. No reticle darkening, no veil.
+		// x = 171: every optic's lens works on the frame now (its share of the zoom, the curvature, the
+		// aberration, night vision...), so the frame is copied for it -- render_forward's marker for
+		// CaptureScopePrism (one GPU copy, no second view)
+		// .z: the circle the aim's DOF leaves sharp round the glass (CWeapon::ScopePrismDofHole; the lens shaders
+		// do not read .z, the collimator glass that does is not on an optic in this mode)
+		if (wpn && wpn->IsScopePrismNow())
+			g_pGamePersistent->hud_collim_prism.set(171.f, 1.f, wpn->ScopePrismDofHole(), 0.f);
 
 		// ...and how much sky the glass can see to mirror: the HUD sits at the eye, so the actor's own
 		// directional sky visibility is the glass's (the ROS smooths it as he walks in and out of cover)

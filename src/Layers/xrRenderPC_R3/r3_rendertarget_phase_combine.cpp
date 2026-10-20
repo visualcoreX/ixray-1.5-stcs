@@ -79,6 +79,37 @@ void	CRenderTarget::phase_combine	()
 	// GS's _buffer_index, which it patches into these same two places.
 	extern u32	g_frame_shown;
 	u32			gpu_id	= g_frame_shown%HW.Caps.iGPUNum;
+	// The lens-off prism mode while its lens fades: the frames without the eyepiece's cut (r__dsgraph_render.cpp
+	// g_scope_prism_cut) have the tube under the glass where the ones with it have the world. The adaptation runs
+	// as one chain per "GPU", taking turns by the shown frame -- two here, so with the cut ALSO taking turns every
+	// other frame, one chain saw only the world under the glass and the other only the tube, and the exposure
+	// flickered every other frame (measured by reading the exposure back every frame). One kind of frame measures nothing (scope_unmeasured: phase_bloom is skipped
+	// below) and do not advance their chain. And while the mode is on the chains are made ONE: every frame starts
+	// from the previous frame's value (left in its [+0] by its swap, or taken over there by an unmeasured frame) --
+	// as its starting point and, on a measured frame, as what it tone-maps by before measuring. Left as two, a cut
+	// frame tone-mapped by its own chain's older value while the frame before had the newer one, and with the
+	// exposure moving fast through a fade that zig-zagged by up to half a per cent every frame (measured).
+	extern bool	g_scope_prism_cut;
+	extern bool	g_scope_prism_fade;
+	const bool	scope_prism			= g_pGamePersistent && g_pGamePersistent->hud_collim_prism.x > 170.5f;
+	// WHICH frames of a fade measure: the ones WITHOUT the cut. A cut frame has the world under the glass in the
+	// HDR scene and the G-buffer -- the lens covers it with the frame before only in the LDR picture -- so its
+	// bloom (and its exposure) carried the bright world the screen does not show. Measured there and reused by
+	// the frames without the cut, that glow of the hidden world lay over the dark tube through the whole fade and
+	// went out the frame the mode did (the alter switch: "the lens snaps off bright at the end"). The frames
+	// without the cut look like the 3D lens: tube under a see-through lens. At full aim every frame is cut and
+	// measures, as before.
+	const bool	scope_unmeasured	= scope_prism && g_scope_prism_fade && g_scope_prism_cut;
+	if (scope_prism)
+	{
+		const u32	gpu_prev	= (g_frame_shown + HW.Caps.iGPUNum - 1) % HW.Caps.iGPUNum;
+		if (gpu_prev != gpu_id)
+			HW.pDevice->CopyResource(rt_LUM_pool[gpu_id*2+0]->pSurface, rt_LUM_pool[gpu_prev*2+0]->pSurface);
+		// ...into [+1] too, the one the frame tone-maps by: always the engine's own binding -- pointing
+		// $user$tonemap at [+0] on the unmeasured frames instead left the flicker in although the values read
+		// back were already even (suspected: a texture binding cached across the surface change)
+		HW.pDevice->CopyResource(rt_LUM_pool[gpu_id*2+1]->pSurface, rt_LUM_pool[gpu_id*2+0]->pSurface);
+	}
 	{
 		t_LUM_src->surface_set		(rt_LUM_pool[gpu_id*2+0]->pSurface);
 		t_LUM_dest->surface_set		(rt_LUM_pool[gpu_id*2+1]->pSurface);
@@ -288,13 +319,7 @@ void	CRenderTarget::phase_combine	()
 		//	TODO: DX10: CHeck this!
 		//g_pGamePersistent->Environment().RenderClouds	();
 		RImplementation.render_forward	();
-		// under MSAA, draw world tracers here (scene depth is bound) so the HUD occludes them;
-		// the game's UI-pass tracer render is skipped this frame. Non-MSAA keeps the UI-pass path --
-		// EXCEPT on a lens frame, which is snapshotted into $user$scope right below and never
-		// presented, so without this the 3D scope showed a world with no tracers in it (that is what
-		// R2 hit, where every frame takes the UI-pass path).
-		if (g_pGamePersistent && (RImplementation.o.dx10_msaa || g_pGamePersistent->m_bLensFrameNow))
-			g_pGamePersistent->OnRenderForward();
+		// (world tracers: inside render_forward, between the world and the hud)
 		if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_main()	;	// PP-UI
 	}
 
@@ -314,7 +339,9 @@ void	CRenderTarget::phase_combine	()
    }
 
    // for msaa we need a resolved color buffer - Holger
-	phase_bloom			( );												// HDR RT invalidated here
+	// (the lens-off prism mode's frames without the cut keep the last measured bloom and adaptation, see above)
+	if (!scope_unmeasured)
+		phase_bloom		( );												// HDR RT invalidated here
 
 	//RImplementation.rmNormal();
 	//u_setrt(rt_Generic_1,0,0,HW.pBaseZB);
@@ -340,6 +367,7 @@ void	CRenderTarget::phase_combine	()
 			HW.pDevice->ClearRenderTargetView( rt_Generic_1->pRT, ColorRGBA);
 			RImplementation.r_dsgraph_render_distort	();
 			phase_rain_distort							();
+			RImplementation.r_dsgraph_render_lens_undistort	();	// reticles and dots do not ripple
 			if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_PP()	;	// PP-UI
 		}
 		rain_distort_end	(0);	// drawn or not, they were this frame's
@@ -444,8 +472,13 @@ void	CRenderTarget::phase_combine	()
 //.		RCache.set_c				("dof_params",	ps_r2_dof.x, ps_r2_dof.y, ps_r2_dof.z, ps_r2_dof_sky);
 		RCache.set_c				("dof_kernel",	vDofKernel.x, vDofKernel.y, ps_r2_dof_kernel_size * g_pGamePersistent->dof_kernel_mul, 0);
 		// the glass of a flat scope is cut out of the DOF (dof.h, DOFHole): the eyepiece circle the
-		// weapon publishes for the post-process pass, 0 while there is no 2D picture
-		RCache.set_c				("dof_scope_hole",	g_pGamePersistent->pp_zoom_circle.x, g_pGamePersistent->pp_zoom_circle.y, 0, 0);
+		// weapon publishes for the post-process pass, 0 while there is no 2D picture -- or the lens-off prism
+		// mode's eyepiece glass, where it really is on screen (zw = its centre; r__dsgraph_render.cpp)
+		extern Fvector4				g_scope_glass_hole;
+		if (g_scope_glass_hole.x > 0.f)
+			RCache.set_c			("dof_scope_hole",	g_scope_glass_hole);
+		else
+			RCache.set_c			("dof_scope_hole",	g_pGamePersistent->pp_zoom_circle.x, g_pGamePersistent->pp_zoom_circle.y, 0, 0);
 		
 		RCache.set_Geometry			(g_aa_AA);
 		RCache.Render				(D3DPT_TRIANGLELIST,Offset,0,4,0,2);
@@ -455,6 +488,10 @@ void	CRenderTarget::phase_combine	()
 	// a prism sight's black field stop, over everything added after the hud's glass: the bloom, the sun's
 	// shafts (r_dsgraph_render_lens_late). Not over the lens flares, drawn next: they are the eye's, in front
 	// of the glass as of the gun around it.
+	// the lens-off prism mode: keep this frame's finished look by its kind (with the eyepiece's cut or without) for the
+	// fade's late pass to mix over the glass (CaptureScopeLateLayer, model_scope_late.ps)
+	if (scope_prism)
+		RImplementation.CaptureScopeLateLayer(g_scope_prism_cut);
 	RImplementation.r_dsgraph_render_lens_late();
 
 	//	if FP16-BLEND !not! supported - draw flares here, overwise they are already in the bloom target
@@ -486,7 +523,7 @@ void	CRenderTarget::phase_combine	()
 	//*** exposure-pipeline-clear
 	{
 		// ...and it does not advance the chain either: nothing was measured this frame
-		if (!(g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow))
+		if (!(g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow) && !scope_unmeasured)
 		{
 			phase_luminance_readback	(gpu_id);
 			std::swap			(rt_LUM_pool[gpu_id*2+0],rt_LUM_pool[gpu_id*2+1]);

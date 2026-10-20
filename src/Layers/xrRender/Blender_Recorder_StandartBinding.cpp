@@ -355,6 +355,10 @@ class cl_collim_prism : public R_constant_setup {
 		Fvector4 s;
 		if (g_pGamePersistent)	s = g_pGamePersistent->hud_collim_prism;
 		else					s.set(0.f, 1.f, 0.f, 0.f);
+		// x > 170.5 is the lens-off prism mode of a magnifying optic, not a prism sight: it has its own constant
+		// (m_scope_prism, below). Seen here it turned an ordinary collimator glass on the same gun -- the G36's
+		// -- into a prism sight, cut out every other frame of the lens's fade and darkened by .z: it flickered.
+		if (s.x > 170.5f)		s.set(0.f, 1.f, 0.f, 0.f);
 		const float k		= collim_hud_k();
 		const bool	prism	= s.x > 0.f;
 		const float lo		= prism ? tanf(deg2rad(_max(s.x - s.y, 0.f)) * 0.5f) * k : 0.f;
@@ -363,6 +367,21 @@ class cl_collim_prism : public R_constant_setup {
 	}
 };
 static cl_collim_prism	binder_collim_prism;
+
+// The lens-off prism mode of a magnifying optic (CWeapon::IsScopePrismCfg; CActor marks it with hud_collim_prism.x
+// = 171): w = 1 on a frame with the eyepiece's cut, 2 on one without it while the lens fades (r__dsgraph_render.cpp
+// g_scope_prism_cut), 0 off; x = 1 while the lens fades (the frames take turns). Read by models_zoom*.s only
+// (model_scope_lense*.ps, model_scope_mask.ps, model_scope_late.ps).
+class cl_scope_prism : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		extern bool g_scope_prism_cut;
+		extern bool g_scope_prism_fade;
+		const bool	on	= g_pGamePersistent && g_pGamePersistent->hud_collim_prism.x > 170.5f;
+		RCache.set_c (C, (on && g_scope_prism_fade) ? 1.f : 0.f, 0.f, 0.f, !on ? 0.f : (g_scope_prism_cut ? 1.f : 2.f));
+	}
+};
+static cl_scope_prism	binder_scope_prism;
 
 // The sun shafts' haze over a prism sight's black field stop (model_collim_late), drawn over the finished
 // picture: x = its share of their full strength, y = 1 while the sun's shafts are on at all.
@@ -617,6 +636,7 @@ void	CBlender_Compile::SetMapping	()
 	r_Constant				("m_collim_mark",	&binder_collim_mark);
 	r_Constant				("m_collim_mark_proj",	&binder_collim_mark_proj);
 	r_Constant				("m_collim_prism",	&binder_collim_prism);
+	r_Constant				("m_scope_prism",	&binder_scope_prism);
 	r_Constant				("m_collim_veil",	&binder_collim_veil);
 	r_Constant				("m_collim_lights",	&binder_collim_lights);
 	r_Constant				("m_collim_spec",	&binder_collim_spec);

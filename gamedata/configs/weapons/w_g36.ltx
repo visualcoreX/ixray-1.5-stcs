@@ -213,6 +213,9 @@ scope_2d_show_delay     = 0.1
 ; the engine default -- 2 x scope_nv_mask_radius, the glass diameter -- would give 0.21, so this key
 ; only trims that by five per cent and could be dropped if the two ever need to stay in step.
 scope_2d_pip_match      = 0.2
+; ...and the same share for the lens-off prism mode (CWeapon::ScopePrismPowers): its default 0.8 is a PSO-type
+; tube, which made this small window 15 x 0.8 = 12x instead of the 3D lens's 3x
+scope_prism_zoom_k      = 0.2	; orig 0.8 (engine default, no key)
 scope_abberation        = 0.005
 
 scope_x                 = 78

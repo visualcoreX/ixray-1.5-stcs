@@ -67,6 +67,13 @@ public:
 	// grabbed after the UI pass. Electronic optics sample that one instead of $user$scope -- the gauss's
 	// models_zoom_gauss.s binds s_vp2 to it, so without this RT its lens samples nothing and reads black.
 	ref_rt						rt_scope_ui;		// 32bit		(r,g,b,a)
+	// The lens-off prism mode while its lens fades: the finished look through the glass on the last frame WITHOUT
+	// the eyepiece's cut (CRender::CaptureScopeHudLayer), for the frame with the cut to show.
+	ref_rt						rt_scope_hud;
+	// ...and the FINISHED pictures of the last frame without the cut and of the last one with it, which the late pass
+	// mixes over the glass by the lens's fade (CaptureScopeLateLayer, model_scope_late.ps) -- as r3
+	ref_rt						rt_scope_late;
+	ref_rt						rt_scope_late_cut;
 	ref_rt						rt_Bloom_1;			// 32bit, dim/4	(r,g,b,?)
 	ref_rt						rt_Bloom_2;			// 32bit, dim/4	(r,g,b,?)
 	ref_rt						rt_LUM_64;			// 64bit, 64x64,	log-average in all components
@@ -257,6 +264,7 @@ public:
 	void						phase_luminance			();
 	void						phase_combine			();
 	void						phase_combine_volumetric();
+	void						phase_combine_volumetric_early();	// the lens-off prism mode: before the lens's world copy
 	void						phase_pp				();
 
 	virtual void				set_blur				(float	f)		{ param_blur=f;						}

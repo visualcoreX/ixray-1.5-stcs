@@ -1,0 +1,9 @@
+#include "common.h"
+
+// Pass 3 of a collimator's glass (models_lenses.s l_special), drawn over the distortion mask: the mask back to "no
+// offset, not under the haze" over the glass, so the dot does not ripple with the water or the haze behind.
+// (r3/model_collim_undistort.ps)
+float4 main() : COLOR
+{
+	return	float4( 127.0f/255.0f, 127.0f/255.0f, 0.0f, 1.0f );
+}

@@ -396,6 +396,7 @@ CRenderTarget::CRenderTarget		()
 		rt_scope.create(r2_RT_scope, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
 		rt_scope_save.create("$user$scope_save", s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
 		rt_scope_ui.create(r2_RT_scope_ui, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
+		rt_scope_hud.create("$user$scopehud", s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
 		// laser beams: smoke coverage + depth, half-res (it only has to follow puffs of smoke)
 		rt_laser_dens.create(r2_RT_laser_dens, _max(s_dwWidth / 2, 1u), _max(s_dwHeight / 2, 1u), D3DFMT_A16B16G16R16F, 1);
 		m_laser_dens_valid = false;
@@ -407,6 +408,12 @@ CRenderTarget::CRenderTarget		()
 			rt_Generic_1_r.create(r2_RT_generic1_r, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
 			rt_Generic.create(r2_RT_generic, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
 		}
+		// the format of the target the combine finishes the frame in (phase_combine: rt_Generic under MSAA, rt_Color
+		// otherwise -- FP16 on some paths), so CaptureScopeLateLayer is one plain copy
+		rt_scope_late.create("$user$scopelate", s_dwWidth, s_dwHeight,
+			RImplementation.o.dx10_msaa ? D3DFMT_A8R8G8B8 : rt_Color->fmt, 1);
+		rt_scope_late_cut.create("$user$scopelatec", s_dwWidth, s_dwHeight,
+			RImplementation.o.dx10_msaa ? D3DFMT_A8R8G8B8 : rt_Color->fmt, 1);
 
 		rt_Back_Buffer.create(r2_RT_backbuffer_final, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
 
@@ -1295,6 +1302,61 @@ void CRender::RenderScopeToRT()
 	// early on m_bLensFrameNow, or the gun would end up inside the scope picture. On normal frames neither
 	// function runs, so what the lens actually samples is always CaptureLensUIToRT's copy. Writing it here
 	// was a full-screen copy per lens frame whose result was overwritten before anyone looked at it.
+}
+
+// The lens-off prism mode (CWeapon::IsScopePrismCfg) for an optic whose lens shader works on the picture --
+// the night lens, the gauss's: no lens view is rendered at all. The ONE world render of the frame is copied,
+// as it stands right before the hud's glass is drawn (render_forward), into the textures those lenses
+// sample, and the lens samples it where its own pixel is (model_scope_lense_night.ps, model_scope_gauss.ps).
+// The eyepiece has cut the hud out (models_zoom*.s l_special), so it is the world that lies there. A plain
+// GPU copy per frame -- the day optics do not even need that, their lens draws the reticle alone.
+void CRender::CaptureScopePrism()
+{
+	if (!Target)									return;
+	CRT* src = Target->rt_Generic_0._get();
+	if (!src || !src->pSurface)						return;
+	CRT* dst[2] = { Target->rt_scope._get(), Target->rt_scope_ui._get() };	// the night lens / the gauss's
+	for (u32 i = 0; i < 2; ++i)
+	{
+		if (!dst[i] || !dst[i]->pSurface)			continue;
+		if (RImplementation.o.dx10_msaa)
+			HW.pDevice->ResolveSubresource(dst[i]->pSurface, 0, src->pSurface, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
+		else
+			HW.pDevice->CopyResource(dst[i]->pSurface, src->pSurface);
+	}
+}
+
+// The lens-off prism mode while its lens fades (r__dsgraph_render.cpp g_scope_prism_cut): a frame without the
+// eyepiece's cut has drawn its lens see-through over the live hud, the way the 3D lens is drawn -- keep that look
+// through the glass for the next frame, which has the cut and shows it (model_scope_lense*.ps lens_prism_behind).
+// The frames with the cut copy the world instead (CaptureScopePrism). One GPU copy a frame, only during the fade.
+// The frame's FINISHED picture, taken right before the late pass (phase_combine), into the slot of its kind (with
+// the eyepiece's cut or without). Everything the combine adds over the hud after the forward pass -- the bloom, the
+// sun's volumetric shafts -- is worked out from the HDR scene and the G-buffer, and those hold the world under the
+// glass on a frame with the cut, the tube on one without: the shafts ran on through the glass into the distance
+// and hazed it on one kind and not the other. While the lens fades the late pass puts over the glass the two mixed
+// by the fade (model_scope_late.ps) -- the same on both kinds of frame, and at either end exactly what the frames
+// that follow show: all cut at full aim, none once the mode is off. Taken on every frame of the mode, so the
+// other kind's is there at the first frame of a fade.
+void CRender::CaptureScopeLateLayer(bool cut)
+{
+	if (!Target)									return;
+	CRT* src = RImplementation.o.dx10_msaa ? Target->rt_Generic._get() : Target->rt_Color._get();
+	CRT* dst = cut ? Target->rt_scope_late_cut._get() : Target->rt_scope_late._get();
+	if (!src || !src->pSurface || !dst || !dst->pSurface)	return;
+	HW.pDevice->CopyResource(dst->pSurface, src->pSurface);
+}
+
+void CRender::CaptureScopeHudLayer()
+{
+	if (!Target)									return;
+	CRT* src = Target->rt_Generic_0._get();
+	CRT* dst = Target->rt_scope_hud._get();
+	if (!src || !src->pSurface || !dst || !dst->pSurface)	return;
+	if (RImplementation.o.dx10_msaa)
+		HW.pDevice->ResolveSubresource(dst->pSurface, 0, src->pSurface, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
+	else
+		HW.pDevice->CopyResource(dst->pSurface, src->pSurface);
 }
 
 // GS EndSecondVP_OnUIRender (LensDoubleRender.pas): GS fills TWO scope RTs -- `$user$scope` right after the

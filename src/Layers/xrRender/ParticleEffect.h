@@ -43,6 +43,12 @@ namespace PS
 			flRT_HUDworld		= (1<<4),	// a world effect drawn in the hud's slice while near (see Render)
 		};
 		Flags8				m_RT_Flags;
+		// is the sun / the sky in sight of this effect (0..1, smoothed): the static level geometry
+		// shades the lit (BLEND) particles -- see particle_shade in ParticleEffect.cpp
+		float				m_ShadeSun;
+		float				m_ShadeSky;
+		u32					m_ShadeNext;		// Device.dwTimeGlobal of the next ray test; 0 = never tested
+		Fvector2			m_ShadeTarget;		// the last ray results (sun, sky) the smoothed values head for
 	protected:
 		BOOL 				SaveActionList		(IWriter& F);
 		BOOL 				LoadActionList		(IReader& F);
