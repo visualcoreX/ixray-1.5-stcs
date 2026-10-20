@@ -71,6 +71,7 @@ private:
 	shared_str		m_last_model;
 
 	bool			m_has_fwd_offset;		// the outfit section carried its own legs_fwd_offset
+	float			m_hands_busy_time;		// Device.fTimeGlobal when the hud last had something in hand (-1 = never)
 	float			m_fwd_offset;
 	Fmatrix			m_legs_transform;
 
