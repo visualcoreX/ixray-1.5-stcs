@@ -270,9 +270,18 @@ void	CRenderTarget::phase_combine	()
 			// A = 0: every distorting draw raises it, so the combine can tell "under the haze" from "in front of it"
 			CHK_DX(HW.pDevice->Clear	( 0L, NULL, D3DCLEAR_TARGET, color_rgba(127,127,0,0), 1.0f, 0L));
 			RImplementation.r_dsgraph_render_distort	();
+			// the lens-off prism mode: its lens shows the world of the frame (not a picture warped on its own, as the 3D
+			// lens's), so the distortion behind the glass reaches it only through the mask -- copied here, before the
+			// glass takes itself out of it (r_dsgraph_render_lens_undistort), for the lens to warp its world by on the next
+			// frame while its reticle stays put (scope_field.h lens_prism_distort)
+			if (scope_prism)
+				HW.pDevice->StretchRect(rt_Generic_1->pRT, NULL, rt_scope_distort->pRT, NULL, D3DTEXF_NONE);
 			RImplementation.r_dsgraph_render_lens_undistort	();	// reticles and dots do not ripple
 			if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_PP()	;	// PP-UI
 		}
+		// no distortion this frame: the lens-off prism mode's lens gets a mask with nothing in it
+		else if (scope_prism)
+			HW.pDevice->ColorFill(rt_scope_distort->pRT, NULL, D3DCOLOR_ARGB(0, 127, 127, 0));
 	}
 
 	// 3D PiP scope: snapshot the scene into $user$scope. It sits HERE, after render_forward (so the
