@@ -22,15 +22,20 @@ Texture2D							s_vollight;		// the sun's shafts, a = the lit air before the eye
 Texture2DMS<float4, MSAA_SAMPLES>	s_vollight;
 #endif
 
+// ...and on every hud collimator, prism or not, the reticle's GLOW: model_collim_glass leaves it out, so that the
+// distortion (water, heat haze behind the sight), applied to the picture in between, ripples the world through the
+// glass but not the dot. Added (alpha 0) where the stop lets the view through, inside the replaced black as before.
 float4 main( v2p_collim I, float4 pos2d : SV_Position ) : SV_Target
 {
-	clip( m_collim_prism.w - 0.5 );
-
 	float3	v		= normalize( I.pos_w - eye_position );
 	float	ad;
 	float2	t		= collim_sight( v, I.axis_w, I.right_w, ad );
-	float	dark	= 1 - collim_field_stop( t, ad );
-	clip( dark - 0.001 );
+	float	dark	= (m_collim_prism.w > 0.5) ? (1 - collim_field_stop( t, ad )) : 0;
+	float4	t_base	= s_base.Sample( smp_base, I.tc0 );
+	float	a		= t_base.a * m_collim_glass.x;
+	float3	glow	= collim_glow( t, ad ) * (1 - a);
+	clip( max(dark - 0.001, dot(glow, float3(1, 1, 1)) - 0.0001) );
+	if ( dark < 0.001 )	return	float4( glow, 0 );
 
 	float	facing	= 0.8 * ( 0.5 * -dot( L_sun_dir_w, v ) + 0.5 ) + 0.2;
 #ifndef USE_MSAA
@@ -43,12 +48,10 @@ float4 main( v2p_collim I, float4 pos2d : SV_Position ) : SV_Target
 	float3	n		= normalize( I.norm_w );
 	float3	ng		= face_eye( n, v );
 	float3	na		= face_eye( normalize(I.axis_w), v );
-	float4	t_base	= s_base.Sample( smp_base, I.tc0 );
 	collim_lamps_t	lamps	= collim_lamps( I.pos_w, ng, v );
 	float3	glass	= collim_glass_light( n, lamps.diff ) * t_base.rgb;
-	float	a		= t_base.a * m_collim_glass.x;
 	float3	refl	= collim_reflection( v, ng, na, lamps.omni ) * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
 
-	float3	res		= collim_glow( t, ad ) * (1 - a) + glass * a + refl + collim_specular( v, ng, t_base.a, lamps.spec ) + haze;
-	return	float4( res * dark, dark );
+	float3	res		= glow + glass * a + refl + collim_specular( v, ng, t_base.a, lamps.spec ) + haze;
+	return	float4( res * dark + glow * (1 - dark), dark );
 }

@@ -12,6 +12,7 @@ function normal   (shader, t_base, t_second, t_detail)
 	shader:dx10texture	("s_base",	t_base)
 	shader:dx10texture 	("s_vp2",	"$user$scope")	 -- "$user$generic0" почему-то не работает <!>, заменить на $user$scope
 	shader:dx10texture	("s_scope_hud",	"$user$scopehud")	-- the prism mode: the tube under the glass
+	shader:dx10texture	("s_scope_distort",	"$user$scopedistort")	-- the prism mode: the distortion behind the glass
 	shader:dx10sampler	("smp_base")	
 end
 

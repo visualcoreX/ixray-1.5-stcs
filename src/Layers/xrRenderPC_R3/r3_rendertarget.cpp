@@ -414,6 +414,7 @@ CRenderTarget::CRenderTarget		()
 			RImplementation.o.dx10_msaa ? D3DFMT_A8R8G8B8 : rt_Color->fmt, 1);
 		rt_scope_late_cut.create("$user$scopelatec", s_dwWidth, s_dwHeight,
 			RImplementation.o.dx10_msaa ? D3DFMT_A8R8G8B8 : rt_Color->fmt, 1);
+		rt_scope_distort.create("$user$scopedistort", s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
 
 		rt_Back_Buffer.create(r2_RT_backbuffer_final, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
 

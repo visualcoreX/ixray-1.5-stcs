@@ -259,6 +259,7 @@ CRenderTarget::CRenderTarget		()
 		rt_scope_hud.create			("$user$scopehud",w,h,D3DFMT_A8R8G8B8	);
 		rt_scope_late.create		("$user$scopelate",w,h,D3DFMT_A8R8G8B8	);
 		rt_scope_late_cut.create	("$user$scopelatec",w,h,D3DFMT_A8R8G8B8	);
+		rt_scope_distort.create		("$user$scopedistort",w,h,D3DFMT_A8R8G8B8	);
 		//	Igor: for volumetric lights
 		//rt_Generic_2.create			(r2_RT_generic2,w,h,D3DFMT_A8R8G8B8		);
 		//	temp: for higher quality blends

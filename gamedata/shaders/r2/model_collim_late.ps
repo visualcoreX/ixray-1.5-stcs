@@ -1,0 +1,18 @@
+#include "common.h"
+#include "collim.h"
+
+// Pass 2 of a collimator's glass on r2 (models_lenses.s l_special), drawn over the FINISHED picture by
+// r_dsgraph_render_lens_late: the reticle's glow. model_collim_glass leaves it out on the hud, so the distortion
+// (water, heat haze behind the sight), applied to the picture in between, ripples the world through the glass but
+// not the dot. Added: blend one, invsrcalpha with alpha 0. (r3/model_collim_late.ps, without r3's prism sights)
+float4 main( v2p_collim I ) : COLOR
+{
+	float3	v		= normalize( I.pos_w - eye_position );
+	float	ad;
+	float2	t		= collim_sight( v, I.axis_w, I.right_w, ad );
+	float4	t_base	= tex2D( s_base, I.tc0 );
+	float	a		= t_base.a * m_collim_glass.x;
+	float3	glow	= collim_glow( t, ad ) * (1 - a);
+	clip( dot(glow, float3(1, 1, 1)) - 0.0001 );
+	return	float4( glow, 0 );
+}

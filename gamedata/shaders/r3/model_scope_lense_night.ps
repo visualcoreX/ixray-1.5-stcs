@@ -108,6 +108,7 @@ float4 main( v2p I ) : SV_Target
 	// this pixel is, zoomed about the screen's centre by the eyepiece's share (m_hud_params.x, the 2D scope's
 	// split), and let the glass's curvature and aberration below treat it as the lens picture.
 	if (prism)	I.tc0 = 0.5 + (I.hpos.xy / screen_res.xy - 0.5) / max(m_hud_params.x, 1.0);
+	if (prism)	I.tc0 += lens_prism_distort(I.tc0);	// the world ripples with what is behind the glass, the reticle does not
 	I.tc0 = lens_warp_uv(I.tc0, uv_glass);	// the glass bends what it looks at
 
 	float4	t_vp2	 = s_vp2.Sample	( smp_base, I.tc0); // Изображение со второго вьюпорта

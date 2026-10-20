@@ -45,4 +45,12 @@ float lens_field_stop(float3 pos_v, float3 axis_v, float2 uv)
 	float	f	= saturate((tf + 0.5f*w - t) / max(w, 0.00001f));
 	return	(a > 0.0f) ? f : 0.0f;
 }
+// The lens-off prism mode: the world under the glass is the frame's own, and the distortion mask over the glass is
+// put back to "none" so the reticle does not ripple; the world still has to, by the frame before's mask copied
+// before that ($user$scopedistort), read at the world's own point (uv: where the lens samples the frame). As r3.
+uniform	sampler2D	s_scope_distort;
+float2 lens_prism_distort(float2 uv)
+{
+	return	(tex2Dlod(s_scope_distort, float4(uv, 0, 0)).xy - (127.0f/255.0f)) * def_distort;
+}
 #endif

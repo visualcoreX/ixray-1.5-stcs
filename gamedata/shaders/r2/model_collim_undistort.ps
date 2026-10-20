@@ -1,9 +1,11 @@
 #include "common.h"
+#include "collim.h"
 
-// Pass 3 of a collimator's glass (models_lenses.s l_special), drawn over the distortion mask: the mask back to "no
-// offset, not under the haze" over the glass, so the dot does not ripple with the water or the haze behind.
-// (r3/model_collim_undistort.ps)
-float4 main() : COLOR
+// Pass 3 of a collimator's glass (models_lenses.s l_special), the distortion mask pass
+// (r_dsgraph_render_lens_undistort): draws nothing. The world behind the glass ripples as the world around, and
+// the reticle's glow is laid on only after the distortion, in the late pass (model_collim_late.ps), so it stays put.
+float4 main( v2p_collim I ) : COLOR
 {
-	return	float4( 127.0f/255.0f, 127.0f/255.0f, 0.0f, 1.0f );
+	clip( -1 );
+	return	0;
 }

@@ -94,6 +94,9 @@ public:
 	// by the lens's fade (CaptureScopeLateLayer, model_scope_late.ps)
 	ref_rt						rt_scope_late;
 	ref_rt						rt_scope_late_cut;
+	// ...and the distortion mask of the frame before the glass took itself out of it, for that lens to warp its
+	// world by (the lens-off prism mode; phase_combine, scope_field.h lens_prism_distort)
+	ref_rt						rt_scope_distort;
 	// Laser beams: how much blend-shaded smoke/dust (R, G) and rain (B, A) covers each pixel and how far
 	// away it is (coverage, coverage-weighted view depth). Half-res, 1-sample, sampled by laser_beam.ps.
 	ref_rt						rt_laser_dens;
