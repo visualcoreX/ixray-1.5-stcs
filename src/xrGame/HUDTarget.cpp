@@ -22,9 +22,14 @@
 
 #include "inventory_item.h"
 #include "inventory.h"
+#include "WeaponMagazined.h"
 
 #include "../Include/xrRender/UIRender.h"
 
+
+// hud_crosshair_detailed (options: game): 1 = the crosshair stands where the gun's shot would land and
+// follows its sway and recoil, 0 = the stock crosshair in the middle of the screen. The shot is the same.
+int g_hud_crosshair_detailed = 1;
 
 u32 C_ON_ENEMY = color_rgba(0xff,0,0,0x80);
 u32 C_ON_NEUTRAL = color_rgba(0xff,0xff,0x80,0x80);
@@ -33,6 +38,9 @@ constexpr u32 C_DEFAULT = color_rgba(0xff, 0xff, 0xff, 0x80);
 
 #define C_SIZE		0.025f
 #define NEAR_LIM	0.5f
+// the shot's ray starts at the muzzle, or right at a wall the barrel is in: a crosshair held 0.5 m out
+// along it would slide off the muzzle towards the middle of the screen
+#define FIRE_NEAR_LIM	0.01f
 
 #define SHOW_INFO_SPEED		0.5f
 #define HIDE_INFO_SPEED		10.f
@@ -58,6 +66,10 @@ CHUDTarget::CHUDTarget	()
 	hShader->create		("hud\\cursor","ui\\cursor");
 
 	PP.RQ.set				(NULL, 0.f, -1);
+	PPF						= PP;
+	m_fire_ray				= false;
+	m_fire_pos.set			(0.f, 0.f, 0.f);
+	m_fire_dir.set			(0.f, 0.f, 1.f);
 
 	Load				();
 	m_bShowCrosshair	= false;
@@ -132,6 +144,40 @@ void CHUDTarget::CursorOnFrame ()
 			clamp			(PP.RQ.range, NEAR_LIM, PP.RQ.range);
 	}
 
+	// A gun in first-person hands: the crosshair stands where its shot would land -- the first thing its
+	// ray meets, the same see-through rules as above -- and follows the weapon's recoil, and of its sway
+	// the part hud_crosshair_sway leaves it (player_hud::fire_ray_local).
+	m_fire_ray			= false;
+	CActor* A			= smart_cast<CActor*>(Level().CurrentEntity());
+	CHudItem* hi		= A ? smart_cast<CHudItem*>(A->inventory().ActiveItem()) : NULL;
+	float tdist			= -1.f;
+	CObject* tobj		= NULL;
+	if (g_hud_crosshair_detailed && hi && smart_cast<CWeaponMagazined*>(hi) && A->HudFireRay(hi, m_fire_pos, m_fire_dir, true, &tdist, &tobj))
+	{
+		PPF.RQ.O		= 0;
+		PPF.RQ.range	= g_pGamePersistent->Environment().CurrentEnv->far_plane*0.99f;
+		PPF.RQ.element	= -1;
+		PPF.power		= 1.0f;
+		PPF.pass		= 0;
+
+		collide::ray_defs	RD(m_fire_pos, m_fire_dir, PPF.RQ.range, CDB::OPT_CULL, collide::rqtBoth);
+		RQR.r_clear		();
+		if (Level().ObjectSpace.RayQuery(RQR, RD, pick_trace_callback, &PPF, NULL, A))
+			clamp		(PPF.RQ.range, FIRE_NEAR_LIM, PPF.RQ.range);
+		// Aimed at what the eye sees in the middle of the view: the crosshair stands there. The muzzle sits
+		// off the eye, and an edge only it sees -- a beam, a block just beside the line of sight -- would put
+		// the crosshair on that edge, a jump along the ray each time the view passes one; the same the other
+		// way round close up, where the aim slides towards the barrel and its ray can run past the edge of
+		// what the eye sees onto something behind. The round may still clip or miss such an edge; the
+		// crosshair does not jump to show it -- right up to the muzzle. With the barrel in a wall there is no
+		// target: the hit is shown, at the wall where the muzzle is.
+		if (tdist > 0.f)
+		{
+			PPF.RQ.range	= tdist;
+			PPF.RQ.O		= tobj;
+		}
+		m_fire_ray		= true;
+	}
 }
 
 extern ENGINE_API BOOL g_bRendering; 
@@ -150,8 +196,10 @@ void CHUDTarget::Render()
 	CEntity*	E		= smart_cast<CEntity*>(O);
 	if (0==E)	return;
 
-	Fvector p1				= Device.vCameraPosition;
-	Fvector dir				= Device.vCameraDirection;
+	// the shot's ray when there is one (CursorOnFrame), else the view's
+	SPickParam& PP			= m_fire_ray ? PPF : this->PP;
+	Fvector p1				= m_fire_ray ? m_fire_pos : Device.vCameraPosition;
+	Fvector dir				= m_fire_ray ? m_fire_dir : Device.vCameraDirection;
 	
 	// Render cursor
 	u32 C				= C_DEFAULT;
@@ -162,6 +210,10 @@ void CHUDTarget::Render()
 	Fvector4			pt;
 	Device.mFullTransform.transform(pt, p2);
 	pt.y = -pt.y;
+	if (pt.w <= EPS_L || !_valid(pt.x) || !_valid(pt.y))	// behind the eye: keep it in the middle
+		{ pt.x = pt.y = 0.f; pt.w = _max(pt.w, 1.f); }
+	clamp				(pt.x, -1.f, 1.f);
+	clamp				(pt.y, -1.f, 1.f);
 	//PT.transform		(p2,Device.mFullTransform);
 	//float				di_size = C_SIZE/powf(PT.p.w,.2f);
 	float				di_size = C_SIZE/powf(pt.w,.2f);
@@ -318,7 +370,7 @@ void CHUDTarget::Render()
 	}else{
 		//����������� ������
 		HUDCrosshair.cross_color	= C;
-		HUDCrosshair.OnRender		();
+		HUDCrosshair.OnRender		(Fvector2().set(pt.x, pt.y));
 	}
 }
 
@@ -326,6 +378,8 @@ void CHUDTarget::net_Relcase(CObject* O)
 {
 	if(PP.RQ.O == O)
 		PP.RQ.O = NULL;
+	if(PPF.RQ.O == O)
+		PPF.RQ.O = NULL;
 
 	RQR.r_clear	();
 }

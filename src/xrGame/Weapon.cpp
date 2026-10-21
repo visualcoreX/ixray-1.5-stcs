@@ -397,6 +397,140 @@ void CWeapon::ForceUpdateFireParticles()
 	}
 }
 
+namespace
+{
+	// Where a hud recoil key is looked up: the weapon section, its hud section, the profile either of
+	// them names (hud_recoil_profile = <section>), [hud_recoil], then the code default.
+	struct SHudRecoilSrc { LPCSTR wpn, hud, profile; };
+
+	bool hud_recoil_find(const SHudRecoilSrc& s, LPCSTR key, LPCSTR& sect)
+	{
+		if (pSettings->line_exist(s.wpn, key))								{ sect = s.wpn;			return true; }
+		if (s.hud && pSettings->line_exist(s.hud, key))						{ sect = s.hud;			return true; }
+		if (s.profile && pSettings->line_exist(s.profile, key))				{ sect = s.profile;		return true; }
+		if (pSettings->section_exist("hud_recoil") && pSettings->line_exist("hud_recoil", key))
+																			{ sect = "hud_recoil";	return true; }
+		return false;
+	}
+
+	bool hud_recoil_has(const SHudRecoilSrc& s, LPCSTR pfx, LPCSTR name)
+	{
+		string128 k;	xr_sprintf(k, "%s%s", pfx, name);
+		LPCSTR sect;
+		return hud_recoil_find(s, k, sect);
+	}
+
+	float hud_recoil_f(const SHudRecoilSrc& s, LPCSTR pfx, LPCSTR name, float def)
+	{
+		string128 k;	xr_sprintf(k, "%s%s", pfx, name);
+		LPCSTR sect;
+		return hud_recoil_find(s, k, sect) ? pSettings->r_float(sect, k) : def;
+	}
+
+	// degrees in the ltx, radians here
+	float hud_recoil_deg(const SHudRecoilSrc& s, LPCSTR pfx, LPCSTR name, float def)
+	{
+		return deg2rad(hud_recoil_f(s, pfx, name, rad2deg(def)));
+	}
+
+	// The rise spring is critically damped by default; 0.75 / rise_time Hz brings it to ~95% of a kick
+	// in about cam_rise_time, so the weapon climbs in step with the camera's own eased rise.
+	float hud_recoil_rise_freq(float rise_time)
+	{
+		return (rise_time > EPS_L) ? clampr(0.75f / rise_time, 2.f, 30.f) : 30.f;
+	}
+
+	void hud_recoil_load(HudRecoilData& d, const SHudRecoilSrc& s, LPCSTR pfx, const HudRecoilData& def)
+	{
+		d.Inherit		= hud_recoil_f	(s, pfx, "inherit",			def.Inherit);
+		d.InheritHorz	= hud_recoil_f	(s, pfx, "inherit_horz",
+										 hud_recoil_has(s, pfx, "inherit") ? d.Inherit : def.InheritHorz);
+		d.Radius		= _abs(hud_recoil_deg(s, pfx, "radius",		def.Radius));
+		d.ZoneDown		= clampr(hud_recoil_f(s, pfx, "zone_down",	def.ZoneDown), 0.f, 1.f);
+		d.Roll			= _abs(hud_recoil_deg(s, pfx, "roll",		def.Roll));
+		d.RollTime		= _max(hud_recoil_f(s, pfx, "roll_time",	def.RollTime), 0.f);
+		d.SettleRoll	= _abs(hud_recoil_deg(s, pfx, "settle_roll",	def.SettleRoll));
+		d.SettleRollTime= _max(hud_recoil_f(s, pfx, "settle_roll_time",	def.SettleRollTime), 0.f);
+		d.SettleRollMin	= clampr(hud_recoil_f(s, pfx, "settle_roll_min",	def.SettleRollMin), 0.f, 1.f);
+		d.RiseFreq		= hud_recoil_f	(s, pfx, "rise_freq",		def.RiseFreq);
+		d.RiseDamp		= hud_recoil_f	(s, pfx, "rise_damping",	def.RiseDamp);
+		d.RelaxDelay	= _max(hud_recoil_f(s, pfx, "relax_delay",	def.RelaxDelay), 0.f);
+		d.RelaxSpeed	= _abs(hud_recoil_deg(s, pfx, "relax_speed",def.RelaxSpeed));
+		d.RelaxFreq		= hud_recoil_f	(s, pfx, "relax_freq",		def.RelaxFreq);
+		d.RelaxDamp		= hud_recoil_f	(s, pfx, "relax_damping",	def.RelaxDamp);
+		d.Mouse			= clampr(hud_recoil_f(s, pfx, "mouse",		def.Mouse), 0.f, 1.f);
+		d.CameraSplit	= clampr(hud_recoil_f(s, pfx, "camera_split",	def.CameraSplit), 0.f, 1.f);
+		d.PushBack		= _max(hud_recoil_f(s, pfx, "push_back",	def.PushBack), 0.f);
+		d.PushMax		= _max(hud_recoil_f(s, pfx, "push_max",		def.PushMax), 0.f);
+		string128 k;	xr_sprintf(k, "%spivot", pfx);
+		LPCSTR sect;
+		d.HasPivot		= hud_recoil_find(s, k, sect);
+		d.Pivot			= d.HasPivot ? pSettings->r_fvector3(sect, k) : def.Pivot;
+		d.HasPivot		= d.HasPivot || def.HasPivot;
+	}
+}
+
+// hud_recoil_* (hip) and hud_recoil_aim_* (aiming); see HudRecoilData.h. Aim falls back to hip with
+// half the zone and half the roll; the rise springs follow cam_rise_time / zoom_cam_rise_time unless set.
+void CWeapon::LoadHudRecoil(LPCSTR section)
+{
+	LPCSTR hud		= hud_sect.size() ? hud_sect.c_str() : NULL;
+	LPCSTR prof		= READ_IF_EXISTS(pSettings, r_string, section, "hud_recoil_profile",
+					  hud ? READ_IF_EXISTS(pSettings, r_string, hud, "hud_recoil_profile", (LPCSTR)NULL) : (LPCSTR)NULL);
+	if (prof && !pSettings->section_exist(prof))
+	{
+		Msg("! [%s] hud_recoil_profile = %s: no such section", section, prof);
+		prof = NULL;
+	}
+	const SHudRecoilSrc src = { section, hud, prof };
+
+	HudRecoilData def;
+	def.RiseFreq	= hud_recoil_rise_freq(cam_recoil.RiseTime);
+	hud_recoil_load	(m_hud_recoil, src, "hud_recoil_", def);
+
+	def				= m_hud_recoil;
+	def.Radius		*= 0.5f;
+	def.Roll		*= 0.5f;
+	def.SettleRoll	*= 0.5f;
+	if (!hud_recoil_has(src, "hud_recoil_", "rise_freq"))
+		def.RiseFreq	= hud_recoil_rise_freq(zoom_cam_recoil.RiseTime);
+	hud_recoil_load	(m_hud_recoil_aim, src, "hud_recoil_aim_", def);
+
+	m_hud_recoil_blend	= m_hud_recoil;
+}
+
+const HudRecoilData* CWeapon::CurrentHudRecoilData()
+{
+	const float f = GetInertionAimFactor();
+	if (f <= 0.f)	m_hud_recoil_blend = m_hud_recoil;
+	else			m_hud_recoil_blend.lerp(m_hud_recoil, m_hud_recoil_aim, f);
+	// Through an optical sight the weapon takes no lead of its own -- neither from the kicks nor from the
+	// mouse, nor the roll: the 2D reticle and the 3D lens both show the middle of the view, and so does the
+	// shot (player_hud::update_fire_ray). The camera then takes the whole kick (camera_split has nothing to
+	// split). Faded over the aim-in, so nothing snaps.
+	const float o = HudOpticAimFactor();
+	if (o > 0.f)
+	{
+		const float k = 1.f - o;
+		m_hud_recoil_blend.Inherit		*= k;
+		m_hud_recoil_blend.InheritHorz	*= k;
+		m_hud_recoil_blend.Roll			*= k;
+		m_hud_recoil_blend.SettleRoll	*= k;
+		m_hud_recoil_blend.Mouse		*= k;
+	}
+	return &m_hud_recoil_blend;
+}
+
+// An optical sight: an attached (or built-in) scope that is not a collimator, the launcher's ladder not in
+// use, and not the backup sight next to it (alter zoom) -- by how far the aim-in has come.
+float CWeapon::HudOpticAimFactor() const
+{
+	if (!IsScopeAttached() || IsGrenadeMode() || IsCollimatorScope())	return 0.f;
+	float f = GetInertionAimFactor() * (1.f - AlterZoomBlend());
+	clamp(f, 0.f, 1.f);
+	return f;
+}
+
 void CWeapon::Load		(LPCSTR section)
 {
 	inherited::Load					(section);
@@ -595,6 +729,8 @@ void CWeapon::Load		(LPCSTR section)
 	if ( pSettings->line_exist( section, "zoom_cam_roll_amount" ) )	{
 		zoom_cam_recoil.RollAmount		= _abs( deg2rad( pSettings->r_float( section, "zoom_cam_roll_amount" ) ) );
 	}
+
+	LoadHudRecoil( section );
 
 	m_pdm.m_fPDM_disp_base			= pSettings->r_float( section, "PDM_disp_base"			);
 	m_pdm.m_fPDM_disp_vel_factor	= pSettings->r_float( section, "PDM_disp_vel_factor"	);

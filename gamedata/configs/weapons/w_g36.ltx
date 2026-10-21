@@ -455,6 +455,14 @@ fire_point		= 0,0.075,0.546
 fire_bone      	= wpn_body
 fire_point2		= 0.0,-0.017,0.592
 fire_bone2		= wpn_body
+
+hip_fire_point			= 0.115215, -0.114257, 1.110635
+hip_fire_dir			= -0.000000, 0.000061, 1.000000
+hud_recoil_pivot		= 0.115215, -0.154257, 0.1
+hud_recoil_aim_pivot	= 0.0, -0.05, 0.0
+hud_recoil_aim_push_back    	= -0.025
+hud_recoil_aim_push_max     	= -0.025
+
 ; ---- alternate (backup) aim pose. The lens is switched off while in it and cross-fades with the
 ; ---- pose ramp (GS behaviour for a 1x backup sight). These live in the HUD section because
 ; ---- AlterZoomSection() falls back here when the weapon has no scope ITEM -- a built-in optic.
@@ -1615,6 +1623,7 @@ anm_switch_burst                               = lr300_gl_deactivate, idle_burst
 anm_unload_mag_burst                           = lr300_draw, idle_burst
 anm_unload_mag_burst_empty                     = lr300_draw, idle_empty_burst
 anm_unload_mag_burst_jammed                    = lr300_draw, idle_jammed_burst
+
 [wpn_g36_minigame]:wpn_g36    ;new weapon for minigame "Shooting"
 shell_casing_override	= shell_casing_556x45	; the case of the real gun, not of the stand-in ammo_minigame round
 ammo_limit      = 100

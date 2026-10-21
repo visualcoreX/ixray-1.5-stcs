@@ -746,6 +746,9 @@ public:
 	// GS inertion: blend hip->aim params by the zoom transition factor; zoom_inertion kills sway in ADS
 	virtual	float			GetInertionAimFactor() const		{ float f = GetZoomRotationFactor(); clamp(f, 0.f, 1.f); return f; }
 	virtual	bool			InertionZoomedNow	() const		{ return IsZoomed(); }
+	virtual const HudRecoilData*	CurrentHudRecoilData();		// hip<->aim blend by the zoom factor (LoadHudRecoil)
+	virtual bool			HudRecoilFiringNow	() const		{ return !!IsWorking(); }
+	virtual float			HudOpticAimFactor	() const;
 	IC		bool			IsZoomKeyHeld		()	const		{return m_bZoomKeyHeld;}	// aim key physically held (CMD_START..CMD_STOP)
 	virtual bool			IsHudItemZoomed		()				{return IsZoomed();}	// see CHudItem
 	CUIWindow*				ZoomTexture			();	
@@ -931,6 +934,13 @@ public:
 public:
 	CameraRecoil			cam_recoil;			// simple mode (walk, run)
 	CameraRecoil			zoom_cam_recoil;	// using zoom =(ironsight or scope)
+
+protected:
+	// the weapon's own recoil on the hud (HudRecoilData.h), hip and aim, and this frame's blend
+	HudRecoilData			m_hud_recoil;
+	HudRecoilData			m_hud_recoil_aim;
+	HudRecoilData			m_hud_recoil_blend;
+	void					LoadHudRecoil		(LPCSTR section);
 
 protected:
 	//фактор увеличения дисперсии при максимальной изношености

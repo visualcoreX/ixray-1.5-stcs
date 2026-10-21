@@ -426,6 +426,9 @@
 	<string id="ui_mm_dyn_crosshair">
 		<text>Dynamic Crosshair</text>
 	</string>
+	<string id="ui_mm_detailed_crosshair">
+		<text>Detailed Crosshair</text>
+	</string>
 	<string id="ui_mm_dynamic_music">
 		<text>Dynamic Music</text>
 	</string>

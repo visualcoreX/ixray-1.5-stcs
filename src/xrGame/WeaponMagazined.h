@@ -102,6 +102,10 @@ protected:
 	virtual bool	SprintActionPending		() const	{ return m_bFirePendingSprint || m_bZoomPendingSprint; }
 	bool			DetectorCompanionOut	();	// a detector is out in the left hand (hud idx 1)
 public:
+	// the sprint keeps the weapon from shooting right now: sprinting, the sprint-enter one-shot still on
+	// screen, or the sprint-exit that holds the shot back (DeferFireForSprint) still playing. The
+	// crosshair is not drawn while it lasts (CActor::UpdateCL).
+	bool			SprintBlocksFireNow		();
 	// play the "take out / put away the detector" hand gesture on the weapon (anm_draw_detector /
 	// anm_prepare_detector) when the detector is toggled with this weapon in hand. Returns true if played.
 	bool			PlayDetectorGesture		(bool draw);
