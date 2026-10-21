@@ -249,9 +249,13 @@ private:
 		enum { MAX_WAVES = 16 };
 		SWave		waves[MAX_WAVES];
 		int			wave_count;
-		// the roll the weapon settles with once the shooting stops (settle_roll): elapsed, length (0 = none),
-		// signed peak, swings, decay power -- each drawn anew -- and whether a shot has armed it
-		float		settle_t, settle_len, settle_amp, settle_cycles, settle_decay;
+		// the rolls the weapon settles with once the shooting stops (settle_roll): each its own wave -- elapsed,
+		// length, signed peak, swings, decay power, all drawn anew -- so a new one adds to what is left of the
+		// last instead of cutting it off; and whether a shot has armed the next
+		struct SSettle { float t, len, amp, cycles, decay; };
+		enum { MAX_SETTLES = 4 };
+		SSettle		settles[MAX_SETTLES];
+		int			settle_count;
 		bool		settle_armed;
 		void		reset				();
 		void		step				(const HudRecoilData& d, float dt, bool firing);

@@ -1398,12 +1398,8 @@ void player_hud::SRecoil::reset()
 	push		= 0.f;
 	push_v		= 0.f;
 	wave_count	= 0;
-	settle_t	= 0.f;
-	settle_len	= 0.f;
-	settle_amp	= 0.f;
-	settle_cycles	= 1.25f;
-	settle_decay	= 2.f;
-	settle_armed= false;
+	settle_count	= 0;
+	settle_armed	= false;
 }
 
 // One sub-step of a damped spring, x chasing t: the same scheme as sway_spring, for one axis.
@@ -1444,29 +1440,45 @@ void player_hud::SRecoil::step(const HudRecoilData& d, float dt, bool firing)
 	push_tgt			= _min(push_tgt, d.PushMax);
 	// ...and as it starts back once the shooting has STOPPED it settles with a small roll that dies away: usually
 	// to the side it comes back from, mirrored now and then (a random side when it is straight above the centre),
-	// by how far it had gone -- a short burst barely tips it. No two alike: the length, the peak, how many swings
-	// and how fast they die away are drawn anew each time. Armed by a shot, fired once the trigger is let go and
-	// the way back has begun: "relaxing" alone also comes between the shots of a burst (600 rpm is 0.1 s).
+	// by how far it had gone -- in proportion, down to settle_roll_min of the full roll. No two alike: the length, the peak,
+	// how many swings and how fast they die away are drawn anew each time. Armed by a shot, fired once the shooting
+	// is over -- the weapon stopped working: the trigger let go, the magazine empty, or (pistols, the SVD) the one
+	// shot done -- and the way back has begun; "relaxing" alone also comes between the shots of a burst (600 rpm
+	// is 0.1 s). Only right then: a settle the shooting ends long after the last shot is dropped, so none ever plays
+	// on its own once the weapon is back at rest. Each roll is a wave of its own, added to whatever is left of the
+	// one before: tapping does not snap the weapon upright.
 	if (relaxing && !firing && settle_armed)
 	{
 		settle_armed	= false;
 		const float m	= x.magnitude();
-		if (d.SettleRoll > EPS_S && d.SettleRollTime > EPS_S && m > EPS_S)
+		const bool fresh	= (now - last_shot) <= d.RelaxDelay + 0.25f;
+		if (fresh && d.SettleRoll > EPS_S && d.SettleRollTime > EPS_S && m > EPS_S)
 		{
-			const float share	= _min(1.f, m / _max(d.Radius, EPS_S));
+			if (settle_count >= MAX_SETTLES)		// absurdly fast tapping: drop the oldest
+			{
+				for (int i = 1; i < MAX_SETTLES; ++i)	settles[i - 1] = settles[i];
+				--settle_count;
+			}
+			const float share	= _max(_min(1.f, m / _max(d.Radius, EPS_S)), d.SettleRollMin);
 			float side			= (_abs(x.x) > 0.1f * m) ? ((x.x > 0.f) ? 1.f : -1.f) : (::Random.randI(2) ? 1.f : -1.f);
 			if (::Random.randF(0.f, 1.f) < 0.4f)	side = -side;		// mirrored
-			settle_t			= 0.f;
-			settle_len			= d.SettleRollTime * ::Random.randF(0.8f, 1.2f);
-			settle_amp			= side * d.SettleRoll * _max(share, 0.35f) * ::Random.randF(0.8f, 1.15f);
-			settle_cycles		= ::Random.randF(1.f, 1.6f);			// 1: over and a little back; 1.6: one more swing
-			settle_decay		= ::Random.randF(1.6f, 2.6f);			// how fast the swings die away
+			SSettle& w			= settles[settle_count++];
+			w.t					= 0.f;
+			w.len				= d.SettleRollTime * ::Random.randF(0.8f, 1.2f);
+			w.amp				= side * d.SettleRoll * share * ::Random.randF(0.8f, 1.15f);
+			w.cycles			= ::Random.randF(1.f, 1.6f);			// 1: over and a little back; 1.6: one more swing
+			w.decay				= ::Random.randF(1.6f, 2.6f);			// how fast the swings die away
 		}
 	}
-	if (settle_len > 0.f)
 	{
-		settle_t		+= dt;
-		if (settle_t >= settle_len)	settle_len = 0.f;
+		int k = 0;
+		for (int i = 0; i < settle_count; ++i)
+		{
+			settles[i].t	+= dt;
+			if (settles[i].t < settles[i].len)
+				settles[k++]	= settles[i];
+		}
+		settle_count	= k;
 	}
 
 	// a kick or the mouse is followed by the rise spring, the way back by the relax one
@@ -1523,14 +1535,16 @@ float player_hud::SRecoil::roll() const
 		const float t	= waves[i].t / waves[i].len;
 		if (t < 1.f)	r += waves[i].amp * _sin(PI_MUL_2 * t) * (1.f - t);
 	}
-	// the settle roll: settle_cycles swings, eased in over its first 12% and dying away by (1 - u)^settle_decay --
-	// over to the side, past the centre once or twice, and still
-	if (settle_len > 0.f)
+	// the settle rolls: `cycles` swings each, eased in over the first 12% and dying away by (1 - u)^decay --
+	// over to the side, past the centre once or twice, and still. They add up.
+	for (int i = 0; i < settle_count; ++i)
 	{
-		const float u	= settle_t / settle_len;
+		const SSettle& w	= settles[i];
+		const float u	= w.t / w.len;
+		if (u >= 1.f)	continue;
 		const float e	= _min(u / 0.12f, 1.f);
 		const float in	= e * e * (3.f - 2.f * e);
-		r				+= settle_amp * _sin(PI_MUL_2 * settle_cycles * u) * powf(1.f - u, settle_decay) * in;
+		r				+= w.amp * _sin(PI_MUL_2 * w.cycles * u) * powf(1.f - u, w.decay) * in;
 	}
 	return r;
 }

@@ -451,6 +451,7 @@ namespace
 		d.RollTime		= _max(hud_recoil_f(s, pfx, "roll_time",	def.RollTime), 0.f);
 		d.SettleRoll	= _abs(hud_recoil_deg(s, pfx, "settle_roll",	def.SettleRoll));
 		d.SettleRollTime= _max(hud_recoil_f(s, pfx, "settle_roll_time",	def.SettleRollTime), 0.f);
+		d.SettleRollMin	= clampr(hud_recoil_f(s, pfx, "settle_roll_min",	def.SettleRollMin), 0.f, 1.f);
 		d.RiseFreq		= hud_recoil_f	(s, pfx, "rise_freq",		def.RiseFreq);
 		d.RiseDamp		= hud_recoil_f	(s, pfx, "rise_damping",	def.RiseDamp);
 		d.RelaxDelay	= _max(hud_recoil_f(s, pfx, "relax_delay",	def.RelaxDelay), 0.f);
