@@ -7,6 +7,7 @@
 #include "PhysicsShell.h"
 #include "PhysicsCommon.h"
 #include "level.h"
+#include "Actor.h"
 #include "xrserver_objects.h"
 #include "xrmessages.h"
 #include "Hit.h"
@@ -191,6 +192,28 @@ BOOL CShellCasing::net_Spawn(CSE_Abstract* DC)
 			R.transform_dir	(X.i);
 			R.transform_dir	(X.j);
 			R.transform_dir	(X.k);
+		}
+	}
+
+	// Thrown from the first-person view, it appears where the hud model's bone was -- and the hud model is drawn
+	// over the world, so standing at a wall or a crate the gun (and the magazine in it) reaches right through
+	// them: the body was made on the far side and fell there. Bring the point back to the near side of whatever
+	// lies between the eye and it, by the model's own radius.
+	if (m_hud)
+	{
+		Fmatrix& X			= XFORM();
+		const Fvector& eye	= Device.vCameraPosition;
+		Fvector v;			v.sub(X.c, eye);
+		const float dist	= v.magnitude();
+		if (dist > EPS_L)
+		{
+			Fvector dir;	dir.div(v, dist);
+			collide::rq_result R;
+			if (Level().ObjectSpace.RayPick(eye, dir, dist, collide::rqtBoth, R, Actor()) && R.range < dist)
+			{
+				const float rad	= Visual() ? Visual()->getVisData().sphere.R : 0.05f;
+				X.c.mad		(eye, dir, _max(R.range - rad - 0.01f, 0.f));
+			}
 		}
 	}
 
@@ -481,6 +504,23 @@ void CShellCasing::RenderHud()
 		Fmatrix M;				M.set(C->m_phys_xform);
 		Fvector v;				v.sub(M.c, cpos);
 		if (v.dotproduct(cdir) <= EPS_L)	continue;		// behind the camera
+		// ...but the hud pass draws over the WHOLE world, so a body that has gone behind a piece of the level --
+		// a dropped magazine falling past a table's edge, a case thrown at a wall a step away -- would show
+		// through it until the phase ran out. The moment the level stands between the eye and it, the phase ends
+		// for good and the world pass, which the level does hide it in, takes it on.
+		{
+			const float dist	= v.magnitude();
+			if (dist > EPS_L)
+			{
+				Fvector dir;	dir.div(v, dist);
+				collide::rq_result R;
+				if (Level().ObjectSpace.RayPick(cpos, dir, dist, collide::rqtStatic, R, NULL) && R.range < dist - 0.01f)
+				{
+					C->m_hud	= false;
+					continue;
+				}
+			}
+		}
 		Fmatrix S;				S.scale(C->m_draw_scale, C->m_draw_scale, C->m_draw_scale);
 		M.mulB_43				(S);
 		// Every point of it, not just its centre, goes where the hud projection shows what the world one would:

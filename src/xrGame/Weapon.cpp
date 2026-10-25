@@ -181,6 +181,9 @@ CWeapon::CWeapon()
 	m_dwScope2DReadyAt							= 0;
 	m_scope_prev_cam_dir.set					(0.f, 0.f, 0.f);
 	m_scope_shadow_shift.set					(0.f, 0.f);
+	m_hud_adj_scope_seeded					= false;
+	m_hud_adj_saved_pos.set					(0.f, 0.f, 0.f);
+	m_hud_adj_saved_rot.set					(0.f, 0.f, 0.f);
 	m_dwScopeKickAt								= 0;
 	m_scope_kick_dir.set						(0.f, 0.f);
 	m_scope_kick_zoom							= 0.f;
@@ -394,6 +397,140 @@ void CWeapon::ForceUpdateFireParticles()
 	}
 }
 
+namespace
+{
+	// Where a hud recoil key is looked up: the weapon section, its hud section, the profile either of
+	// them names (hud_recoil_profile = <section>), [hud_recoil], then the code default.
+	struct SHudRecoilSrc { LPCSTR wpn, hud, profile; };
+
+	bool hud_recoil_find(const SHudRecoilSrc& s, LPCSTR key, LPCSTR& sect)
+	{
+		if (pSettings->line_exist(s.wpn, key))								{ sect = s.wpn;			return true; }
+		if (s.hud && pSettings->line_exist(s.hud, key))						{ sect = s.hud;			return true; }
+		if (s.profile && pSettings->line_exist(s.profile, key))				{ sect = s.profile;		return true; }
+		if (pSettings->section_exist("hud_recoil") && pSettings->line_exist("hud_recoil", key))
+																			{ sect = "hud_recoil";	return true; }
+		return false;
+	}
+
+	bool hud_recoil_has(const SHudRecoilSrc& s, LPCSTR pfx, LPCSTR name)
+	{
+		string128 k;	xr_sprintf(k, "%s%s", pfx, name);
+		LPCSTR sect;
+		return hud_recoil_find(s, k, sect);
+	}
+
+	float hud_recoil_f(const SHudRecoilSrc& s, LPCSTR pfx, LPCSTR name, float def)
+	{
+		string128 k;	xr_sprintf(k, "%s%s", pfx, name);
+		LPCSTR sect;
+		return hud_recoil_find(s, k, sect) ? pSettings->r_float(sect, k) : def;
+	}
+
+	// degrees in the ltx, radians here
+	float hud_recoil_deg(const SHudRecoilSrc& s, LPCSTR pfx, LPCSTR name, float def)
+	{
+		return deg2rad(hud_recoil_f(s, pfx, name, rad2deg(def)));
+	}
+
+	// The rise spring is critically damped by default; 0.75 / rise_time Hz brings it to ~95% of a kick
+	// in about cam_rise_time, so the weapon climbs in step with the camera's own eased rise.
+	float hud_recoil_rise_freq(float rise_time)
+	{
+		return (rise_time > EPS_L) ? clampr(0.75f / rise_time, 2.f, 30.f) : 30.f;
+	}
+
+	void hud_recoil_load(HudRecoilData& d, const SHudRecoilSrc& s, LPCSTR pfx, const HudRecoilData& def)
+	{
+		d.Inherit		= hud_recoil_f	(s, pfx, "inherit",			def.Inherit);
+		d.InheritHorz	= hud_recoil_f	(s, pfx, "inherit_horz",
+										 hud_recoil_has(s, pfx, "inherit") ? d.Inherit : def.InheritHorz);
+		d.Radius		= _abs(hud_recoil_deg(s, pfx, "radius",		def.Radius));
+		d.ZoneDown		= clampr(hud_recoil_f(s, pfx, "zone_down",	def.ZoneDown), 0.f, 1.f);
+		d.Roll			= _abs(hud_recoil_deg(s, pfx, "roll",		def.Roll));
+		d.RollTime		= _max(hud_recoil_f(s, pfx, "roll_time",	def.RollTime), 0.f);
+		d.SettleRoll	= _abs(hud_recoil_deg(s, pfx, "settle_roll",	def.SettleRoll));
+		d.SettleRollTime= _max(hud_recoil_f(s, pfx, "settle_roll_time",	def.SettleRollTime), 0.f);
+		d.SettleRollMin	= clampr(hud_recoil_f(s, pfx, "settle_roll_min",	def.SettleRollMin), 0.f, 1.f);
+		d.RiseFreq		= hud_recoil_f	(s, pfx, "rise_freq",		def.RiseFreq);
+		d.RiseDamp		= hud_recoil_f	(s, pfx, "rise_damping",	def.RiseDamp);
+		d.RelaxDelay	= _max(hud_recoil_f(s, pfx, "relax_delay",	def.RelaxDelay), 0.f);
+		d.RelaxSpeed	= _abs(hud_recoil_deg(s, pfx, "relax_speed",def.RelaxSpeed));
+		d.RelaxFreq		= hud_recoil_f	(s, pfx, "relax_freq",		def.RelaxFreq);
+		d.RelaxDamp		= hud_recoil_f	(s, pfx, "relax_damping",	def.RelaxDamp);
+		d.Mouse			= clampr(hud_recoil_f(s, pfx, "mouse",		def.Mouse), 0.f, 1.f);
+		d.CameraSplit	= clampr(hud_recoil_f(s, pfx, "camera_split",	def.CameraSplit), 0.f, 1.f);
+		d.PushBack		= _max(hud_recoil_f(s, pfx, "push_back",	def.PushBack), 0.f);
+		d.PushMax		= _max(hud_recoil_f(s, pfx, "push_max",		def.PushMax), 0.f);
+		string128 k;	xr_sprintf(k, "%spivot", pfx);
+		LPCSTR sect;
+		d.HasPivot		= hud_recoil_find(s, k, sect);
+		d.Pivot			= d.HasPivot ? pSettings->r_fvector3(sect, k) : def.Pivot;
+		d.HasPivot		= d.HasPivot || def.HasPivot;
+	}
+}
+
+// hud_recoil_* (hip) and hud_recoil_aim_* (aiming); see HudRecoilData.h. Aim falls back to hip with
+// half the zone and half the roll; the rise springs follow cam_rise_time / zoom_cam_rise_time unless set.
+void CWeapon::LoadHudRecoil(LPCSTR section)
+{
+	LPCSTR hud		= hud_sect.size() ? hud_sect.c_str() : NULL;
+	LPCSTR prof		= READ_IF_EXISTS(pSettings, r_string, section, "hud_recoil_profile",
+					  hud ? READ_IF_EXISTS(pSettings, r_string, hud, "hud_recoil_profile", (LPCSTR)NULL) : (LPCSTR)NULL);
+	if (prof && !pSettings->section_exist(prof))
+	{
+		Msg("! [%s] hud_recoil_profile = %s: no such section", section, prof);
+		prof = NULL;
+	}
+	const SHudRecoilSrc src = { section, hud, prof };
+
+	HudRecoilData def;
+	def.RiseFreq	= hud_recoil_rise_freq(cam_recoil.RiseTime);
+	hud_recoil_load	(m_hud_recoil, src, "hud_recoil_", def);
+
+	def				= m_hud_recoil;
+	def.Radius		*= 0.5f;
+	def.Roll		*= 0.5f;
+	def.SettleRoll	*= 0.5f;
+	if (!hud_recoil_has(src, "hud_recoil_", "rise_freq"))
+		def.RiseFreq	= hud_recoil_rise_freq(zoom_cam_recoil.RiseTime);
+	hud_recoil_load	(m_hud_recoil_aim, src, "hud_recoil_aim_", def);
+
+	m_hud_recoil_blend	= m_hud_recoil;
+}
+
+const HudRecoilData* CWeapon::CurrentHudRecoilData()
+{
+	const float f = GetInertionAimFactor();
+	if (f <= 0.f)	m_hud_recoil_blend = m_hud_recoil;
+	else			m_hud_recoil_blend.lerp(m_hud_recoil, m_hud_recoil_aim, f);
+	// Through an optical sight the weapon takes no lead of its own -- neither from the kicks nor from the
+	// mouse, nor the roll: the 2D reticle and the 3D lens both show the middle of the view, and so does the
+	// shot (player_hud::update_fire_ray). The camera then takes the whole kick (camera_split has nothing to
+	// split). Faded over the aim-in, so nothing snaps.
+	const float o = HudOpticAimFactor();
+	if (o > 0.f)
+	{
+		const float k = 1.f - o;
+		m_hud_recoil_blend.Inherit		*= k;
+		m_hud_recoil_blend.InheritHorz	*= k;
+		m_hud_recoil_blend.Roll			*= k;
+		m_hud_recoil_blend.SettleRoll	*= k;
+		m_hud_recoil_blend.Mouse		*= k;
+	}
+	return &m_hud_recoil_blend;
+}
+
+// An optical sight: an attached (or built-in) scope that is not a collimator, the launcher's ladder not in
+// use, and not the backup sight next to it (alter zoom) -- by how far the aim-in has come.
+float CWeapon::HudOpticAimFactor() const
+{
+	if (!IsScopeAttached() || IsGrenadeMode() || IsCollimatorScope())	return 0.f;
+	float f = GetInertionAimFactor() * (1.f - AlterZoomBlend());
+	clamp(f, 0.f, 1.f);
+	return f;
+}
+
 void CWeapon::Load		(LPCSTR section)
 {
 	inherited::Load					(section);
@@ -592,6 +729,8 @@ void CWeapon::Load		(LPCSTR section)
 	if ( pSettings->line_exist( section, "zoom_cam_roll_amount" ) )	{
 		zoom_cam_recoil.RollAmount		= _abs( deg2rad( pSettings->r_float( section, "zoom_cam_roll_amount" ) ) );
 	}
+
+	LoadHudRecoil( section );
 
 	m_pdm.m_fPDM_disp_base			= pSettings->r_float( section, "PDM_disp_base"			);
 	m_pdm.m_fPDM_disp_vel_factor	= pSettings->r_float( section, "PDM_disp_vel_factor"	);
@@ -3357,7 +3496,9 @@ void CWeapon::RefreshZoomDOF()
 {
 	if (!IsZoomed())	return;
 
-	if (IsLensedScope() && !m_bAlterZoom)
+	// ...the lens-off prism mode too: the world round the tube blurs as with the 3D lens, and the renderer keeps
+	// the glass sharp (r__dsgraph_render.cpp g_scope_glass_hole -> dof_scope_hole)
+	if ((IsLensedScope() || IsScopePrismCfg()) && !m_bAlterZoom)
 	{
 		GamePersistent().SetEffectorDOF	(LensDof(), m_zoom_params.m_fZoomInDofSpeed);
 		return;
@@ -3502,12 +3643,13 @@ float CWeapon::AimSenseScale() const
 	// idea the world just got 8x bigger and the koef alone (0.3 on the G36) is far too weak. Use the real
 	// fov ratio, on the same ramp the override follows, so the slowdown arrives together with the
 	// magnification instead of stepping in after it.
-	const float lens = GetLensFOV();
+	const float lens = GetWorldLensFOV();
 	if (lens <= 0.f)				return ZoomMouseSenseKoef();
 	extern float g_fov;
 	if (g_fov <= 0.f)				return 1.f;
 	const float cur = g_fov + (lens - g_fov) * ScopeFadeFactor();
-	return cur / g_fov;
+	// ...and the lens-off prism mode's eyepiece adds its own share on top of the world's (ScopePrismLensZoom)
+	return cur / g_fov / ScopePrismLensZoom();
 }
 
 CUIWindow* CWeapon::ZoomTexture()
@@ -3524,8 +3666,40 @@ CUIWindow* CWeapon::ZoomTexture()
 // A collimator rides the same cascade to stay visible, but without any lens (see IsCollimatorScope).
 bool CWeapon::UseScopeTexture()
 {
-	return !IsLensedScope() && !IsCollimatorScope();
+	return !IsLensedScope() && !IsCollimatorScope() && !IsScopePrismCfg();
 }
+
+// The 3D lens switched OFF in the options. Instead of the stock 2D scope (the weapon hidden behind a
+// full-screen picture), a magnifying optic then works the way the Rakurs prism sight does: the weapon and
+// its eyepiece stay, the eyepiece glass cuts the hud out (models_zoom.s l_special, the prism's mask passes)
+// so the world -- already drawn at the optic's magnification, ComputeLensFrame's lens-off branch -- shows
+// through it, and the lens itself draws nothing but its reticle (model_scope_lense.ps, m_collim_prism.w).
+// R2 and R3: the eyepiece's cut exists there (r__dsgraph_render.cpp). lens_off_prism = false keeps an optic on the 2D
+// picture. Night optics and the gauss take part too: their lens shader works on the picture, so the one
+// world render of the frame is copied for it (IsScopePrismCapture) -- still no second view.
+bool CWeapon::IsScopePrismCfg() const
+{
+	if (IsLensedScope())								return false;	// the real 3D lens is on
+	extern u32 g_scope_mode;											// the options' scope mode: 1 = fake 3D
+	if (g_scope_mode != 1)								return false;	// (console_commands.cpp CCC_ScopeMode)
+	if (!IsLensedScopeCfg())							return false;	// not a magnifying optic
+	if (!psDeviceFlags.test(rsR2|rsR3))					return false;
+	shared_str sc = GetCurrentScopeSection();
+	if (sc.size() && pSettings->line_exist(*sc, "lens_off_prism"))
+		return !!pSettings->r_bool(*sc, "lens_off_prism");
+	return !!READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "lens_off_prism", TRUE);
+}
+
+// On from the first moment of the aim to the last of the aim-out, and through the walk to and from the alter
+// pose: the lens fades in and out over the cut (black -> the world, like the 3D lens over the tube), so the
+// cut has to be there for the whole of it, or the eyepiece would pop.
+bool CWeapon::IsScopePrismNow() const
+{
+	if (!IsScopePrismCfg())								return false;
+	if (AlterZoomBlend() >= 1.f)						return false;
+	return IsZoomed() || GetInertionAimFactor() > 0.001f;
+}
+
 
 // GS IsLensedScopeInstalled: the currently-attached scope (its addon section) is flagged need_lens_frame.
 // Fallback to the weapon section (for a permanent/built-in lensed optic). Only true while a scope is on.
@@ -3863,6 +4037,82 @@ float CWeapon::GetLensFOV() const
 	return rad2deg(2.0f * atanf(tanf(half) / factor));
 }
 
+// THE LENS-OFF PRISM MODE'S POWER, and how it is split. In total it is the 3D lens's apparent power: the 3D lens
+// stretches its whole frame over the glass, and the glass covers only ~0.8 of the screen's height, so the eye gets
+// the factor times that (scope_prism_zoom_k, scope section then the weapon's; 0.8 is read off the PSO-type tube).
+// The world takes a fixed share of it (scope_prism_world_share, default 0.7) and the eyepiece the rest, resampling
+// the frame inside the glass (model_scope_lense*.ps, m_hud_params.x) -- so through the glass things are bigger than
+// round the tube, as through a real optic. A fixed share: a change of power moves both together, nothing catches up
+// afterwards. The eyepiece can only zoom IN (zooming out would reach past the glass, where the hud is).
+void CWeapon::ScopePrismPowers(float& total, float& world) const
+{
+	shared_str sc = GetCurrentScopeSection();
+	float k = (sc.size() && pSettings->line_exist(*sc, "scope_prism_zoom_k"))
+			? pSettings->r_float(*sc, "scope_prism_zoom_k")
+			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_zoom_k", 0.8f);
+	clamp(k, 0.1f, 2.f);
+	float share = (sc.size() && pSettings->line_exist(*sc, "scope_prism_world_share"))
+			? pSettings->r_float(*sc, "scope_prism_world_share")
+			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_world_share", 0.7f);
+	clamp(share, 0.3f, 1.f);
+	extern float g_fov;
+	const float lens = GetLensFOV();
+	total	= (lens > 0.f) ? (tanf(deg2rad(g_fov) * 0.5f) / tanf(deg2rad(lens) * 0.5f)) * k : 1.f;
+	world	= total * share;
+	// A variable-power optic (the ELCAN's 1.8x..10x): the world follows the power only partly -- by
+	// scope_prism_power_follow in log space (0.5: the square root of the change, 1: all of it, 0: none) -- and the
+	// eyepiece takes the rest, so turning the power is seen mostly inside the glass. At its lowest power the split
+	// is the plain one above.
+	if (m_lens_steps > 0 && m_lens_min > 1.f)
+	{
+		float follow = (sc.size() && pSettings->line_exist(*sc, "scope_prism_power_follow"))
+				? pSettings->r_float(*sc, "scope_prism_power_follow")
+				: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_power_follow", 0.5f);
+		clamp(follow, 0.f, 1.f);
+		const float tmin	= _min(m_lens_min, m_lens_max) * k;
+		if (tmin > 0.f && total > tmin)
+			world			= tmin * share * powf(total / tmin, follow);
+	}
+	clamp(world, 1.02f, _max(total, 1.02f));		// never wider than the plain shouldered view (AimBaseFOV)
+}
+
+// The lens-off prism mode with the aim's DOF: the circle round the eyepiece glass it leaves sharp, as a share of the
+// screen's height -- scope_prism_dof_hole, scope section then the weapon's. The glass itself, not more: the depth
+// cannot tell the lens picture from the world past the tube (the cut gives both the world's), so a bigger circle
+// leaves that world sharp too. 0.36 covers the glasses measured (~0.30..0.37; its soft edge reaches 0.40).
+float CWeapon::ScopePrismDofHole() const
+{
+	shared_str sc = GetCurrentScopeSection();
+	float r = (sc.size() && pSettings->line_exist(*sc, "scope_prism_dof_hole"))
+			? pSettings->r_float(*sc, "scope_prism_dof_hole")
+			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_dof_hole", 0.36f);
+	clamp(r, 0.05f, 1.f);
+	return r;
+}
+
+float CWeapon::ScopePrismLensZoom() const
+{
+	if (!IsScopePrismCfg())							return 1.f;
+	float total, world;
+	ScopePrismPowers(total, world);
+	float z = total / world;
+	if (z < 1.f)	z = 1.f;
+	return 1.f + (z - 1.f) * ScopeFadeFactor();		// eased in with the aim, as the world's zoom is
+}
+
+// The world FOV for an optic with its lens switched off: GetLensFOV, except in the lens-off prism mode, where it is
+// the world's share of the power (above).
+float CWeapon::GetWorldLensFOV() const
+{
+	const float lens = GetLensFOV();
+	if (lens <= 0.f || !IsScopePrismCfg())			return lens;
+	extern float g_fov;
+	float total, world;
+	ScopePrismPowers(total, world);
+	const float fov = rad2deg(2.f * atanf(tanf(deg2rad(g_fov) * 0.5f) / world));
+	return _min(fov, AimBaseFOV());					// never wider than the plain shouldered view
+}
+
 // The world FOV a scoped weapon settles on when the optic itself adds NO magnification. GS's lensed
 // scope sections all carry scope_zoom_factor 1.02, so shouldering one still narrows the world by two
 // per cent -- the small "the world comes closer" cue every sight gives. Everything that decides the
@@ -4174,7 +4424,8 @@ float CWeapon::ScaleSenseByLensStep(float k) const
 // 0 => the lens quad is discarded (shader alpha = min(aim, this)) and the $user$scope capture is skipped.
 float CWeapon::LensVisibility() const
 {
-	if (!IsLensedScope())	return 0.f;
+	// ...the lens-off prism mode draws the lens too (its reticle, or the copied frame) -- IsScopePrismCfg
+	if (!IsLensedScope() && !IsScopePrismCfg())	return 0.f;
 	return 1.f - AlterZoomBlend();
 }
 
@@ -4426,6 +4677,17 @@ void CWeapon::UpdateScopeDetector()
 	if (IsLensedScope())	return;
 
 	m_pScopeVision->SetEyepiece(!IsLensedScope());	// 2D: frames mapped through the eyepiece and kept to its glass
+	// The lens-off prism mode has no 2D eyepiece circle (pp_zoom_circle): the frames were drawn over the whole screen,
+	// at the world's power. Its glass instead -- centred, the size the aim's DOF keeps sharp round it
+	// (scope_prism_dof_hole, share of the screen height), the zoom the lens adds about the centre, its curvature.
+	if (IsScopePrismNow())
+	{
+		const float	r	= ScopePrismDofHole();
+		Fvector4	zc;	zc.set(r * float(Device.dwHeight) / float(_max(Device.dwWidth, 1u)), r, ScopePrismLensZoom(), 0.f);
+		m_pScopeVision->SetEyepieceCircle(zc, g_pGamePersistent ? g_pGamePersistent->pp_scope_shadow.w : 0.f);
+	}
+	else
+		m_pScopeVision->SetEyepieceCircle(Fvector4().set(0.f, 0.f, 1.f, 0.f), 0.f);
 	m_pScopeVision->Update();
 }
 
@@ -4475,7 +4737,8 @@ bool CWeapon::Scope2DModeActive() const
 	// IsCollimatorScope both read false in grenade mode, so without this a lensed scope counted as a
 	// 2D one here -- CWeaponMagazinedWGrenade::UseScopeTexture says the same, but that one is not const.
 	if (IsGrenadeMode())									return false;
-	return m_UIScope && !IsLensedScope() && !IsCollimatorScope();
+	// not the lens-off prism mode: the world takes the whole magnification there, the lens adds none
+	return m_UIScope && !IsLensedScope() && !IsCollimatorScope() && !IsScopePrismCfg();
 }
 
 // HOW MUCH THE WORLD ITSELF NARROWS when the eye comes to a 2D optic -- the SAME amount for every
@@ -4800,7 +5063,9 @@ void CWeapon::UpdateScopePPZoom()
 	// that still had a quarter of a second to run. Publish through the fade and scale by it, and the
 	// two go out together.
 	float lens_fade = 0.f;
-	if (act && act == Actor() && IsLensedScope() && !IsCollimatorScope())
+	// ...the lens-off prism mode's lens too: it draws the eye-relief crescent and bends by the glass's
+	// curvature exactly as the 3D lens does
+	if (act && act == Actor() && (IsLensedScope() || IsScopePrismCfg()) && !IsCollimatorScope())
 	{
 		float rf = GetZoomRotationFactor();
 		clamp		(rf, 0.f, 1.f);
@@ -4935,7 +5200,9 @@ void CWeapon::UpdateScopeShadow(CActor* act, const Fvector& prev_dir, float dist
 			tgt.y += m_scope_kick_dir.y * SCOPE_SHADOW_SHOT * shadow_k * kick;
 		}
 
-		const float lag = _min(1.f, Device.fTimeDelta * 10.f);
+		// The lens-off prism mode follows at half the pace (user: the ring was too twitchy there): a flick of
+		// the mouse barely stirs it, a real turn, the walk and the shot still carry it the whole way.
+		const float lag = _min(1.f, Device.fTimeDelta * (IsScopePrismCfg() ? 5.f : 10.f));
 		m_scope_shadow_shift.x += (tgt.x - m_scope_shadow_shift.x) * lag;
 		m_scope_shadow_shift.y += (tgt.y - m_scope_shadow_shift.y) * lag;
 		// .w is the lens distortion: how far the glass pulls the image OUT towards its rim (the middle
@@ -5788,6 +6055,37 @@ void CWeapon::UpdateHudAdditonal		(Fmatrix& trans)
 		// While the in-game HUD tuner is active (hud_adj_mode, Mixed build: Shift+Num1/2) let it drive the
 		// aim offset directly -- otherwise the per-scope override swallows the tuner's changes.
 		extern u32 hud_adj_mode;
+		// ...but the tuner edits the hud measures' aim offset, which is the WEAPON's (its iron sights'), while
+		// with a scope on the scope's own aim_hud_offset_* is what is shown: switching the tuner on jumped the
+		// gun to the iron-sight pose (the TOZ-34's -0.006 for the PU's 0.001). So when it comes on with a scope,
+		// the scope's values (the alter pose's, if that is the one up) are put into the measures for it to start
+		// from -- and its printout is then the scope's keys --, and the weapon's own come back when it goes off.
+		if (idx == 1)
+		{
+			const bool	wide	= hi->m_measures.m_prop_flags.test(hud_item_measures::e_16x9_mode_now);
+			if (hud_adj_mode != 0 && !m_hud_adj_scope_seeded && IsScopeAttached())
+			{
+				Fvector		spos, srot;
+				shared_str	sc		= (AlterZoomBlend() >= 0.5f) ? AlterZoomSection() : GetCurrentScopeSection();
+				if (read_scope_aim_offset(sc.size() ? *sc : nullptr, *hi->m_sect_name, wide, spos, srot,
+										  AlterZoomBlend() >= 0.5f))
+				{
+					m_hud_adj_saved_pos					= hi->m_measures.m_hands_offset[0][1];
+					m_hud_adj_saved_rot					= hi->m_measures.m_hands_offset[1][1];
+					hi->m_measures.m_hands_offset[0][1]	= spos;
+					hi->m_measures.m_hands_offset[1][1]	= srot;
+					m_hud_adj_scope_seeded				= true;
+				}
+			}
+			else if (hud_adj_mode == 0 && m_hud_adj_scope_seeded)
+			{
+				hi->m_measures.m_hands_offset[0][1]		= m_hud_adj_saved_pos;
+				hi->m_measures.m_hands_offset[1][1]		= m_hud_adj_saved_rot;
+				m_hud_adj_scope_seeded					= false;
+			}
+			curr_offs	= hi->m_measures.m_hands_offset[0][1];
+			curr_rot	= hi->m_measures.m_hands_offset[1][1];
+		}
 		if (idx==1 && hud_adj_mode == 0)
 		{
 			bool	wide = hi->m_measures.m_prop_flags.test(hud_item_measures::e_16x9_mode_now);
@@ -6038,6 +6336,9 @@ bool CWeapon::show_indicators()
 	// for a PiP optic. Includes the alter pose (backup 1x sight, lens faded out): the user wants the HUD
 	// gone for the whole aim on such a scope, not just while the eye is behind the lens.
 	if (IsZoomed() && IsLensedScope())	return false;
+	// ...the same for the lens-off prism mode (CWeapon::IsScopePrismCfg, the "fake 3D" scopes): an optic looked
+	// through all the same, only drawn differently -- the HUD went only for the 2D picture and the PiP lens
+	if (IsZoomed() && IsScopePrismCfg())	return false;
 	// ...and GS's own key for the flat-scope case (IsUIForceHiding, collimator.pas:301), which is what
 	// the very same optic falls back to once the 3D lens is switched off in the options.
 	// NOT for a collimator: a red dot leaves the whole screen visible, so blanking the indicators

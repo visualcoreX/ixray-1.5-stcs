@@ -426,6 +426,9 @@
 	<string id="ui_mm_dyn_crosshair">
 		<text>Динамический прицел</text>
 	</string>
+	<string id="ui_mm_detailed_crosshair">
+		<text>Детализированный прицел</text>
+	</string>
 	<string id="ui_mm_dynamic_music">
 		<text>Динамическая музыка</text>
 	</string>
@@ -758,6 +761,18 @@
 	</string>
 	<string id="ui_mm_lens_factor">
 		<text>FPS 3D-линзы</text>
+	</string>
+	<string id="ui_mm_scope_mode">
+		<text>Прицелы</text>
+	</string>
+	<string id="ui_mm_scope_pip">
+		<text>Реальные PiP прицелы</text>
+	</string>
+	<string id="ui_mm_scope_fake3d">
+		<text>Фейковые 3D прицелы</text>
+	</string>
+	<string id="ui_mm_scope_2d">
+		<text>2D прицелы</text>
 	</string>
 	<string id="ui_mm_lens_enabled">
 		<text>Включить 3D-линзу</text>

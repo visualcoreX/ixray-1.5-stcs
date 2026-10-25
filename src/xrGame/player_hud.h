@@ -6,6 +6,7 @@
 #include "actor_defs.h"
 
 struct InertionData;
+struct HudRecoilData;
 
 class player_hud;
 class CHudItem;
@@ -49,6 +50,26 @@ struct hud_item_measures
 	Fvector							m_shell_point_offset;
 
 	Fvector							m_hands_attach[2];//pos,rot
+
+	// The hip shot's ray in the hands model's own space (player_hud::update_fire_ray): hip_fire_point /
+	// hip_fire_dir from the hud section or else the weapon's own section (load_hip_fire), or -- without
+	// them -- taken once off the weapon's fire point and
+	// barrel while it stands at rest, and kept: the shot is not tied to the bone after that, so the
+	// weapon's animations do not throw it about. hip_fire_converge > 0 turns the ray onto the middle of
+	// the view that far ahead (m) instead of along the barrel.
+	// hip_fire_zero_dist (m; < 0 = not set, the console's hud_fire_zero_dist then) aims the ray the way the
+	// laser's laserdot_zero_dist places its dot: at what lies under the middle of the view, whatever its
+	// distance, sliding back onto the barrel's own line closer than this past the muzzle. 0 = off. Wins
+	// over converge.
+	Fvector							m_hip_fire_point;
+	Fvector							m_hip_fire_dir;
+	float							m_hip_fire_converge;
+	float							m_hip_fire_zero_dist;
+	bool							m_hip_fire_set;		// the ray above is known (configured or taken)
+	bool							m_hip_fire_cfg;		// configured: never taken off the barrel
+	bool							m_hip_fire_dir_cfg;	// hip_fire_dir configured: the barrel gives the point only
+	shared_str						m_hip_fire_wpn;		// the weapon section the keys were last looked up in
+	void load_hip_fire				(const shared_str& sect_name, const shared_str& wpn_sect);
 
 	// uniform scale of the ITEM model only (the hands keep their size). `item_scale` in the
 	// hud section; 1.0 = as exported. For models that came out of the editor at the wrong unit
@@ -148,6 +169,40 @@ public:
 	// motion on it. With a detector in the left hand, that hand takes the motion back (see update()).
 	void			set_lowered_delta	(const Fmatrix& before, const Fmatrix& after)
 										{ m_lower_before.set(before); m_lower_after.set(after); m_lower_reported = true; }
+
+	// The weapon's own recoil (HudRecoilData.h). CActor::on_weapon_shot_start hands over each shot's
+	// camera kick (rad: up, and sideways as the shot effector counts it); IR_OnMouseMove passes the mouse
+	// through recoil_mouse (rad: right, up), which keeps the part the weapon takes inside its zone.
+	// over_vert/over_horz: the part of the camera's share the weapon took that its zone had no room for
+	// (camera_split), handed back to the camera in the shot effector's own terms.
+	void			recoil_shot			(float kick_vert, float kick_horz, float& over_vert, float& over_horz);
+	void			recoil_mouse		(float& right, float& up);
+	void			recoil_reset		();
+	// Where a shot of the hud weapon goes, in the hud camera's own axes and in world terms (the hud's fov
+	// taken out, so the line covers the barrel's pixels): from the hip along the barrel, aiming from the
+	// eye, blended by the aim factor -- carried by the sway and the recoil, never by the weapon's
+	// animation. False when there is none for this item (another item, nothing fresh).
+	// crosshair: the ray the crosshair is put on instead -- the same, with only hud_crosshair_sway of the
+	// sway in it (the recoil in full), so the crosshair trails the inertia less than the shot does.
+	// cam: the world camera the ray is asked in (the hud camera of that moment).
+	// target_dist / target_obj: aimed at the middle of the view from the hip, how far along the ray the point
+	// the eye sees there lies, and what is there (-1 / NULL: none) -- the crosshair stands there even when
+	// something only the muzzle sees is in the way (HUDTarget.cpp)
+	bool			fire_ray_local		(const CHudItem* item, const Fmatrix& cam, Fvector& pos, Fvector& dir, bool crosshair = false,
+										 float* target_dist = NULL, CObject** target_obj = NULL) const;
+	// a hip ray before its aim: the barrel's line (hp, hd) and the view's (ap, ad), hud camera axes, world terms
+	struct SFireRay
+	{
+		Fvector		hp, hd, ap, ad;
+		bool		aimed;			// along the barrel, to be aimed at the middle of the view (aim_ray)
+	};
+	// console: take the hip ray off the barrel again / print it for the hud section
+	void			fire_ray_resample	();
+	void			fire_ray_dump		();
+	// console: bake the hip ray off the FIRST frame of anm_idle (bake_hip_ray) -- the weapon in hand,
+	// applied at once, or every gun's hud section into $logs$\hud_fire_rays.ltx
+	void			fire_ray_bake		();
+	void			fire_ray_bake_all	();
 private:
 	void			update_inertion		(Fmatrix& trans);
 	void			update_additional	(Fmatrix& trans);
@@ -169,7 +224,8 @@ private:
 		Fvector		pos, pos_v;		// x, y (m); z unused
 		void		reset			();
 		void		step			(const InertionData& in, const Fvector& rate, float dt);
-		void		xform			(const InertionData& in, Fmatrix& L) const;	// v -> R (v - pivot) + pivot + shift
+		// v -> R (v - pivot) + pivot + shift; part < 1 = that share of the angles and the shift only
+		void		xform			(const InertionData& in, Fmatrix& L, float part = 1.f) const;
 	};
 	SSway								m_sway;						// the hud base: weapon, or the detector alone
 	SSway								m_sway_left;				// the detector next to a weapon (left arm)
@@ -178,6 +234,61 @@ private:
 	Fvector								m_sway_prev_dir;			// last frame's view direction
 	u32									m_sway_frame;				// Device.dwFrame of the last step, 0 = none
 	void			reset_sway			();
+
+	// the weapon's own recoil: a lead over the camera (screen terms, rad), chased by a spring
+	struct SRecoil
+	{
+		Fvector2	tgt;				// where the weapon heads for: x right, y up
+		Fvector2	x, v;				// where it is, and how fast it moves
+		float		last_shot;			// Device.fTimeGlobal of the last kick
+		float		last_input;			// ...of the last kick or mouse move
+		// the slide back (push_back): built up by the kicks alone, so steering the weapon with the
+		// mouse does not take it away; m, where it heads for, where it is, how fast it moves
+		float		push_tgt, push, push_v;
+		struct SWave { float t, len, amp; };	// one roll wave per shot (elapsed, length, signed peak)
+		enum { MAX_WAVES = 16 };
+		SWave		waves[MAX_WAVES];
+		int			wave_count;
+		// the rolls the weapon settles with once the shooting stops (settle_roll): each its own wave -- elapsed,
+		// length, signed peak, swings, decay power, all drawn anew -- so a new one adds to what is left of the
+		// last instead of cutting it off; and whether a shot has armed the next
+		struct SSettle { float t, len, amp, cycles, decay; };
+		enum { MAX_SETTLES = 4 };
+		SSettle		settles[MAX_SETTLES];
+		int			settle_count;
+		bool		settle_armed;
+		void		reset				();
+		void		step				(const HudRecoilData& d, float dt, bool firing);
+		float		roll				() const;
+	};
+	SRecoil								m_recoil;
+	const CHudItem*						m_recoil_item;		// whose recoil m_recoil is
+	void			recoil_xform		(const HudRecoilData& d, const InertionData& in, Fmatrix& L) const;
+
+	// this frame's hud camera and the camera with the sway and the recoil on it, before the item's own
+	// offsets (aim, lowering); the shot's ray (fire_ray_local), its frame and item
+	Fmatrix								m_cam_trans;
+	Fmatrix								m_proc_trans;
+	u32									m_fire_frame;
+	const CHudItem*						m_fire_item;
+	float								m_fire_rest_since;	// the weapon stands at rest since (hip ray sample)
+	// the crosshair's ray (fire_ray_local, crosshair): world, the sway part taken out of the shot's frame,
+	// put on from the left (update_inertion)
+	Fmatrix								m_xhair_corr;
+	// this frame's rays before the aim (update_fire_ray), [0] the shot's, [1] the crosshair's; the aim at
+	// what is under the middle of the view is taken when one is asked for (fire_ray_local)
+	SFireRay							m_ray[2];
+	float								m_ray_slide[2];		// eased w / D of aim_ray, -1 = start over
+	float								m_ray_zero;			// hip_fire_zero_dist in force, 0 = along the barrel
+	float								m_ray_aim;			// aim factor: barrel -> eye
+	float								m_ray_optic;		// optic factor: eye -> straight down the middle
+	u32									m_slide_frame;
+	void			update_fire_ray		();
+	float			aim_depth			(const Fmatrix& cam, const SFireRay& r, CObject** O = NULL) const;
+	float			aim_slide			(const SFireRay& r, float D) const;
+	void			aim_ray				(const SFireRay& r, float slide, float D, Fvector& hd, Fvector* target = NULL) const;
+	bool			bake_hip_ray		(attachable_hud_item* hi, Fvector& pos, Fvector& dir);
+	void			bake_restore		();
 
 	Fmatrix								m_transform;
 	IKinematicsAnimated*				m_model;

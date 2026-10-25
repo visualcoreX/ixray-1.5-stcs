@@ -3,7 +3,8 @@
 struct     v2p
 {
     float2 tc0: TEXCOORD0;    // base
-    half3  tc1: TEXCOORD1;    // environment
+    float3	pos_v:		TEXCOORD1;	// view space: the field stop (model_scope_eye.vs, scope_field.h)
+    float3	axis_v:		TEXCOORD2;	// view space: the scope's axis (model_scope_eye.vs)
     half4  c0:  COLOR0;       // sun.(fog*fog)
 };
 
@@ -32,6 +33,7 @@ uniform	float4 		m_scope_shadow;
 // quad's inscribed circle (0.5) instead put the whole falloff outside the hole -- the crescent was
 // computed, and never reached a pixel anyone could see.
 #define LENS_GLASS_R  0.44f
+#include "scope_field.h"
 #define LENS_DIST_R0  0.45f		// the middle of the glass this distortion does not touch at all
 
 // The GLASS CURVATURE, the same shape the flat scope gets (postprocess.ps pp_zoom_uv): the middle of the
@@ -67,10 +69,20 @@ float lens_scope_shadow(float2 uv)
 
 uniform sampler2D s_vp2;
 
-half4 main ( v2p I ) : COLOR
+// The lens-off prism mode (CWeapon::IsScopePrismCfg; r3/model_scope_lense.ps has the full story): m_scope_prism.w
+// = 1 on a frame with the eyepiece's cut, 2 on one without it while the lens fades; s_scope_hud = the look through
+// the glass the last frame without the cut ended up with (CRender::CaptureScopeHudLayer).
+uniform	float4		m_scope_prism;
+uniform	sampler2D	s_scope_hud;
+
+half4 	main	( v2p I, float2 vpos : VPOS )	: COLOR
 {
 	// the ocular's own uv, before the sway and the aspect squeeze below: the glass is 0..1 here
 	float2 uv_glass = I.tc0.xy;
+	const float field = lens_field_stop(I.pos_v, I.axis_v, uv_glass);	// first thing: it takes derivatives (scope_field.h)
+	// the lens-off prism mode, and this pixel in the frame (VPOS is the pixel's corner, not its centre)
+	const bool		prism	= m_scope_prism.w > 0.5f;
+	const float2	px		= vpos + 0.5f;
     // ���������� ������� ������ � ����� ������� �������� � ������
     half2 coords = I.tc0;
     coords.x *= 0.5;
@@ -86,6 +98,10 @@ half4 main ( v2p I ) : COLOR
 
     // ����������� �������� � ����� ���, ����� �� ����� ���������� ������ ���� ���������� ���������
     I.tc0.x = resize(I.tc0.x, screen_res.x/screen_res.y, 0);
+	// the prism mode: no lens picture was rendered -- the frame copied just before the hud's glass
+	// (CRender::CaptureScopePrism), the world under the cut, sampled where this pixel is
+	if (prism)	I.tc0 = 0.5f + (px / screen_res.xy - 0.5f) / max(m_hud_params.x, 1.0f);
+	if (prism)	I.tc0 += lens_prism_distort(I.tc0);	// the world ripples with what is behind the glass, the reticle does not
 	I.tc0 = lens_warp_uv(I.tc0, uv_glass);	// the glass bends what it looks at
     half4 t_vp2 = tex2D(s_vp2, I.tc0);
 
@@ -134,5 +150,13 @@ half4 main ( v2p I ) : COLOR
 	final	*= lens_scope_shadow(uv_glass);
 
     // out
-    return half4(final.r, final.g, final.b, min(m_hud_params.y, m_hud_params.a));
+    // the prism mode: opaque over the cut (showing the last uncut frame's look while the lens fades), or
+    // see-through over the live hud like the 3D lens on a frame without the cut
+    if (prism)
+    {
+    	const float a = saturate(min(m_hud_params.y, m_hud_params.a));
+    	if (m_scope_prism.w > 1.5f)	return float4(final * field, a);
+    	return half4(a >= 0.999f ? final * field : tex2Dlod(s_scope_hud, float4(px / screen_res.xy, 0, 0)).rgb, 1);
+    }
+    return half4(final * field, min(m_hud_params.y, m_hud_params.a));
 }

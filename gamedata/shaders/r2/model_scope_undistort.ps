@@ -1,0 +1,13 @@
+#include "common.h"
+
+// Pass 3 of an optic's eyepiece (models_zoom*.s l_special), drawn over the distortion mask: the mask back to "no
+// offset, not under the haze" over the glass by how far the lens has come in, so the reticle does not ripple with
+// the water or the haze behind. (r3/model_scope_undistort.ps)
+uniform	float4	m_hud_params;	// .y aim, .w visibility: the lens's fade
+
+float4 main() : COLOR
+{
+	const float	a	= saturate( min(m_hud_params.y, m_hud_params.w) );
+	clip( a - 0.001f );
+	return	float4( 127.0f/255.0f, 127.0f/255.0f, 0.0f, a );
+}

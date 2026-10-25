@@ -9,18 +9,31 @@
 #include "actoreffector.h"
 #include "../xrEngine/IGame_Persistent.h"
 #include "InertionData.h"
+#include "HudRecoilData.h"
+#include "WeaponLaserBeam.h"	// LaserBeam_HudToWorldK: the hud fov <-> world terms
 #include "CustomDetector.h"	// the deferred hands swap puts an out detector away and back
 #include "CustomOutfit.h"	// the hands section always follows the worn outfit
 #include "object_broker.h"	// READ_IF_EXISTS
 #include "Inventory.h"
 #include "HUDmanager.h"		// HUD().Font() for the animation debug overlay
 #include "../xrEngine/GameFont.h"
+#include "Level.h"			// the hip shot's aim looks at what is under the middle of the view
+#include "../xrEngine/gamemtllib.h"
 
 player_hud* g_player_hud = NULL;
 Fvector _ancor_pos;
 Fvector _wpn_root_pos;
 
 extern int g_block_wpn_switch;	// != 0 while an animated item-use / device gesture is playing (ActorInput.cpp)
+
+// The hip shot's aim (player_hud::aim_ray), console-tunable:
+//  hud_fire_zero_dist     m, the weapons' default hip_fire_zero_dist (0 = along the barrel, as before)
+//  hud_fire_slide_time    s, how quickly the aim slides between the middle of the view and the barrel's line
+//                         when what is in front of the weapon jumps nearer or further
+//  hud_crosshair_sway     0..1, share of the sway (inertia) the crosshair follows; the recoil it follows in full
+float g_hud_fire_zero_dist		= 0.5f;
+float g_hud_fire_slide_time		= 0.08f;
+float g_hud_crosshair_sway		= 0.2f;
 
 float CalcMotionSpeed(const shared_str& anim_name)
 {
@@ -327,7 +340,64 @@ void hud_item_measures::load(const shared_str& sect_name, IKinematics* K)
 
 	m_item_scale				= READ_IF_EXISTS(pSettings, r_float, sect_name, "item_scale", 1.0f);
 
+	// the hip shot's ray (player_hud::update_fire_ray); without hip_fire_point it is taken off the barrel
+	m_hip_fire_cfg				= false;
+	m_hip_fire_dir_cfg			= false;
+	m_hip_fire_set				= false;
+	m_hip_fire_point.set		(0.f, 0.f, 0.f);
+	m_hip_fire_dir.set			(0.f, 0.f, 1.f);
+	m_hip_fire_converge			= 0.f;
+	m_hip_fire_zero_dist		= -1.f;
+	load_hip_fire				(sect_name, m_hip_fire_wpn);
+
 	m_prop_flags.set(e_16x9_mode_now,is_16x9);
+}
+
+// hip_fire_point / hip_fire_dir / hip_fire_converge: the hud section first, then the weapon's own section
+// (several weapons can share one hud section). A ray already taken off the barrel is kept, unless a key
+// now says otherwise.
+void hud_item_measures::load_hip_fire(const shared_str& sect_name, const shared_str& wpn_sect)
+{
+	m_hip_fire_wpn				= wpn_sect;
+	LPCSTR hud					= sect_name.c_str();
+	LPCSTR wpn					= wpn_sect.size() ? wpn_sect.c_str() : NULL;
+	auto find = [hud, wpn](LPCSTR key) -> LPCSTR
+	{
+		if (pSettings->line_exist(hud, key))			return hud;
+		if (wpn && pSettings->line_exist(wpn, key))		return wpn;
+		return NULL;
+	};
+
+	LPCSTR s					= find("hip_fire_point");
+	if (s)
+	{
+		m_hip_fire_point		= pSettings->r_fvector3(s, "hip_fire_point");
+		m_hip_fire_set			= true;
+	}
+	else if (m_hip_fire_cfg)	// was configured for the weapon before, is not for this one: take it again
+		m_hip_fire_set			= false;
+	m_hip_fire_cfg				= (s != NULL);
+
+	// hip_fire_dir: configured; else straight ahead for a configured point, or the barrel's own (taken
+	// with the point -- so a dir that is configured no more has the barrel taken again)
+	s							= find("hip_fire_dir");
+	if (s)
+	{
+		m_hip_fire_dir			= pSettings->r_fvector3(s, "hip_fire_dir");
+		if (m_hip_fire_dir.square_magnitude() < EPS_S)	m_hip_fire_dir.set(0.f, 0.f, 1.f);
+		m_hip_fire_dir.normalize();
+	}
+	else if (m_hip_fire_cfg)
+		m_hip_fire_dir.set		(0.f, 0.f, 1.f);
+	else if (m_hip_fire_dir_cfg)
+		m_hip_fire_set			= false;
+	m_hip_fire_dir_cfg			= (s != NULL);
+
+	s							= find("hip_fire_converge");
+	m_hip_fire_converge			= s ? _max(0.f, pSettings->r_float(s, "hip_fire_converge")) : 0.f;
+
+	s							= find("hip_fire_zero_dist");
+	m_hip_fire_zero_dist		= s ? _max(0.f, pSettings->r_float(s, "hip_fire_zero_dist")) : -1.f;
 }
 
 attachable_hud_item::~attachable_hud_item()
@@ -547,6 +617,18 @@ player_hud::player_hud()
 	m_lower_after.identity	();
 	m_lower_reported		= false;
 	reset_sway				();
+	m_cam_trans.identity	();
+	m_proc_trans.identity	();
+	m_fire_frame			= 0;
+	m_fire_item				= NULL;
+	m_fire_rest_since		= -1.f;
+	m_xhair_corr.identity	();
+	m_ray_slide[0]			= -1.f;
+	m_ray_slide[1]			= -1.f;
+	m_ray_zero				= 0.f;
+	m_ray_aim				= 0.f;
+	m_ray_optic				= 0.f;
+	m_slide_frame			= 0;
 	m_left_hold.identity	();
 	m_left_hold_on			= false;
 }
@@ -974,6 +1056,8 @@ void player_hud::update(const Fmatrix& cam_trans)
 {
 	Fmatrix	trans					= cam_trans;
 	update_inertion					(trans);
+	m_cam_trans						= cam_trans;
+	m_proc_trans					= trans;
 	m_lower_reported				= false;
 	update_additional				(trans);
 
@@ -1073,6 +1157,8 @@ void player_hud::update(const Fmatrix& cam_trans)
 
 	if(m_attached_items[1])
 		m_attached_items[1]->update(true);
+
+	update_fire_ray						();
 }
 
 u32 player_hud::anim_play(u16 part, const MotionID& M, BOOL bMixIn, const CMotionDef*& md, float speed, float blend_accrue)
@@ -1121,8 +1207,11 @@ void player_hud::reset_sway()
 	m_sway_left.reset	();
 	m_sway_split		= false;
 	m_sway_left_corr.identity();
+	m_xhair_corr.identity();
 	m_sway_prev_dir.set	(0.f, 0.f, 1.f);
 	m_sway_frame		= 0;
+	m_recoil.reset		();
+	m_recoil_item		= NULL;
 }
 
 // One sub-step of a damped spring per axis, x chasing tgt. The spring term is semi-implicit and the
@@ -1169,11 +1258,11 @@ void player_hud::SSway::step(const InertionData& in, const Fvector& rate, float 
 	}
 }
 
-void player_hud::SSway::xform(const InertionData& in, Fmatrix& L) const
+void player_hud::SSway::xform(const InertionData& in, Fmatrix& L, float part) const
 {
-	L.setHPB			(rot.x, rot.y, rot.z);
+	L.setHPB			(rot.x * part, rot.y * part, rot.z * part);
 	Fvector rp;			L.transform_dir(rp, in.RotPivot);
-	L.c.set				(in.RotPivot.x - rp.x + pos.x, in.RotPivot.y - rp.y + pos.y, in.RotPivot.z - rp.z);
+	L.c.set				(in.RotPivot.x - rp.x + pos.x * part, in.RotPivot.y - rp.y + pos.y * part, in.RotPivot.z - rp.z);
 }
 
 // Spring-damper sway. How fast the view turned this frame, measured in the camera's own axes, sets
@@ -1205,6 +1294,15 @@ void player_hud::update_inertion(Fmatrix& trans)
 	m_sway_split			= split;
 	const InertionData* ind	= split ? &det->m_parent_hud_item->CurrentInertionData() : NULL;
 
+	// the weapon's own recoil: only a weapon (the right hand) has it, and it starts over with each one
+	CHudItem* wpn			= m_attached_items[0] ? m_attached_items[0]->m_parent_hud_item : NULL;
+	const HudRecoilData* rd	= wpn ? wpn->CurrentHudRecoilData() : NULL;
+	if (wpn != m_recoil_item)
+	{
+		m_recoil.reset		();
+		m_recoil_item		= wpn;
+	}
+
 	if (m_sway_frame != Device.dwFrame)		// once per frame, however often the hud is updated
 	{
 		// Last frame's view direction seen in this frame's axes. A skipped frame (menu, load, another
@@ -1227,6 +1325,11 @@ void player_hud::update_inertion(Fmatrix& trans)
 
 		m_sway.step			(in, rate, dt);
 		if (ind)	m_sway_left.step(*ind, rate, dt);
+		if (rd)
+		{
+			const CHudItem* ri	= m_attached_items[0] ? m_attached_items[0]->m_parent_hud_item : NULL;
+			m_recoil.step		(*rd, dt, ri && ri->HudRecoilFiringNow());
+		}
 	}
 
 	// pitch compensation (vanilla)
@@ -1238,6 +1341,27 @@ void player_hud::update_inertion(Fmatrix& trans)
 	origin.mad				(xform.j, -pitch * in.PitchOffsetN);
 
 	Fmatrix L;				m_sway.xform(in, L);
+	// The crosshair's frame: the same, with only hud_crosshair_sway of the sway in it. Kept as what turns
+	// the shot's frame into it, put on from the left: cam * Lx * L^-1 * cam^-1 (see m_sway_left_corr).
+	float xs				= g_hud_crosshair_sway;
+	clamp					(xs, 0.f, 1.f);
+	Fmatrix Lx;				m_sway.xform(in, Lx, xs);
+	// The recoil goes on after the sway, about the same pivot unless it has its own. It is part of L
+	// for the left arm below too, so a detector next to the weapon does not kick with it. The crosshair
+	// takes it in full.
+	if (rd)
+	{
+		Fmatrix R;			recoil_xform(*rd, in, R);
+		L.mulB_43			(R);
+		Lx.mulB_43			(R);
+	}
+	{
+		Fmatrix L_i;		L_i.invert(L);
+		Fmatrix cam_i;		cam_i.invert(trans);
+		m_xhair_corr.mul_43	(trans, Lx);
+		m_xhair_corr.mulB_43(L_i);
+		m_xhair_corr.mulB_43(cam_i);
+	}
 	if (ind)
 	{
 		// Everything after this point is multiplied on from the right, so the left arm, wanting
@@ -1254,6 +1378,770 @@ void player_hud::update_inertion(Fmatrix& trans)
 	trans.mulB_43			(L);
 }
 
+
+// ---- the weapon's own recoil ------------------------------------------------------------------------
+// Each shot the camera kicks (CWeaponShotEffector); the weapon takes HudRecoilData::Inherit of that same
+// kick on top of the camera and so leads it, inside a zone about the centre of the view. The lead is
+// kept in screen terms (world angles, the hud's own fov taken out): recoil_xform turns it into the hud
+// rotation that draws the barrel that far off the centre, and update_fire_ray widens it back, so the
+// shot leaves along the barrel as it is seen. A quick spring carries the weapon to a kick, a softer one
+// brings it back once the shooting has stopped, swinging a little past the centre.
+
+void player_hud::SRecoil::reset()
+{
+	tgt.set		(0.f, 0.f);
+	x.set		(0.f, 0.f);
+	v.set		(0.f, 0.f);
+	last_shot	= -1000.f;
+	last_input	= -1000.f;
+	push_tgt	= 0.f;
+	push		= 0.f;
+	push_v		= 0.f;
+	wave_count	= 0;
+	settle_count	= 0;
+	settle_armed	= false;
+}
+
+// One sub-step of a damped spring, x chasing t: the same scheme as sway_spring, for one axis.
+static void recoil_spring(float& x, float& v, float t, float freq, float damp, float h)
+{
+	const float w	= PI_MUL_2 * freq;
+	v				= (v + w * w * (t - x) * h) / (1.f + 2.f * damp * w * h);
+	x				+= v * h;
+}
+
+// Holds a lead inside a disc of radius r about the centre of the view, cut off at lo (rad, up) below it.
+static void recoil_zone(Fvector2& t, float r, float lo)
+{
+	if (r <= EPS_S)	{ t.set(0.f, 0.f); return; }
+	if (t.y < lo)	t.y = lo;
+	const float m	= t.magnitude();
+	if (m > r)		t.mul(r / m);
+}
+
+void player_hud::SRecoil::step(const HudRecoilData& d, float dt, bool firing)
+{
+	const float now		= Device.fTimeGlobal;
+	const float lo		= -d.ZoneDown * d.Radius;
+
+	// the zone can shrink under the lead (aiming in): it stays inside
+	recoil_zone			(tgt, d.Radius, lo);
+	// nothing has kicked it for RelaxDelay: the lead itself goes back to the centre, and the slide back
+	// with it, as fast as a lead of the same size would
+	const bool relaxing	= now - last_shot > d.RelaxDelay;
+	if (relaxing)
+	{
+		const float m	= tgt.magnitude();
+		const float s	= d.RelaxSpeed * dt;
+		if (m <= s)		tgt.set(0.f, 0.f);
+		else			tgt.mul((m - s) / m);
+		push_tgt		= _max(0.f, push_tgt - d.PushBack * rad2deg(d.RelaxSpeed) * dt);
+	}
+	push_tgt			= _min(push_tgt, d.PushMax);
+	// ...and as it starts back once the shooting has STOPPED it settles with a small roll that dies away: usually
+	// to the side it comes back from, mirrored now and then (a random side when it is straight above the centre),
+	// by how far it had gone -- in proportion, down to settle_roll_min of the full roll. No two alike: the length, the peak,
+	// how many swings and how fast they die away are drawn anew each time. Armed by a shot, fired once the shooting
+	// is over -- the weapon stopped working: the trigger let go, the magazine empty, or (pistols, the SVD) the one
+	// shot done -- and the way back has begun; "relaxing" alone also comes between the shots of a burst (600 rpm
+	// is 0.1 s). Only right then: a settle the shooting ends long after the last shot is dropped, so none ever plays
+	// on its own once the weapon is back at rest. Each roll is a wave of its own, added to whatever is left of the
+	// one before: tapping does not snap the weapon upright.
+	if (relaxing && !firing && settle_armed)
+	{
+		settle_armed	= false;
+		const float m	= x.magnitude();
+		const bool fresh	= (now - last_shot) <= d.RelaxDelay + 0.25f;
+		if (fresh && d.SettleRoll > EPS_S && d.SettleRollTime > EPS_S && m > EPS_S)
+		{
+			if (settle_count >= MAX_SETTLES)		// absurdly fast tapping: drop the oldest
+			{
+				for (int i = 1; i < MAX_SETTLES; ++i)	settles[i - 1] = settles[i];
+				--settle_count;
+			}
+			const float share	= _max(_min(1.f, m / _max(d.Radius, EPS_S)), d.SettleRollMin);
+			float side			= (_abs(x.x) > 0.1f * m) ? ((x.x > 0.f) ? 1.f : -1.f) : (::Random.randI(2) ? 1.f : -1.f);
+			if (::Random.randF(0.f, 1.f) < 0.4f)	side = -side;		// mirrored
+			SSettle& w			= settles[settle_count++];
+			w.t					= 0.f;
+			w.len				= d.SettleRollTime * ::Random.randF(0.8f, 1.2f);
+			w.amp				= side * d.SettleRoll * share * ::Random.randF(0.8f, 1.15f);
+			w.cycles			= ::Random.randF(1.f, 1.6f);			// 1: over and a little back; 1.6: one more swing
+			w.decay				= ::Random.randF(1.6f, 2.6f);			// how fast the swings die away
+		}
+	}
+	{
+		int k = 0;
+		for (int i = 0; i < settle_count; ++i)
+		{
+			settles[i].t	+= dt;
+			if (settles[i].t < settles[i].len)
+				settles[k++]	= settles[i];
+		}
+		settle_count	= k;
+	}
+
+	// a kick or the mouse is followed by the rise spring, the way back by the relax one
+	const bool rising	= (now - last_input) <= d.RelaxDelay;
+	float f				= rising ? d.RiseFreq : d.RelaxFreq;
+	float z				= rising ? d.RiseDamp : d.RelaxDamp;
+	clamp				(f, 0.1f, 40.f);
+	clamp				(z, 0.05f, 4.f);
+
+	const float span	= _min(dt, 0.1f);	// a hitch is not a long flight
+	const int n			= _max(1, _min(48, iCeil(span * 240.f)));
+	const float h		= span / float(n);
+	// the slide back follows the shots only: rises with the kicks, goes back once they stop
+	float pf			= relaxing ? d.RelaxFreq : d.RiseFreq;
+	float pz			= relaxing ? d.RelaxDamp : d.RiseDamp;
+	clamp				(pf, 0.1f, 40.f);
+	clamp				(pz, 0.05f, 4.f);
+	for (int s = 0; s < n && h > 0.f; ++s)
+	{
+		recoil_spring	(x.x, v.x, tgt.x, f, z, h);
+		recoil_spring	(x.y, v.y, tgt.y, f, z, h);
+		recoil_spring	(push, push_v, push_tgt, pf, pz, h);
+	}
+	// a swing past the rest may push it a little forward, not far
+	const float pmax	= d.PushMax * 1.25f, pmin = -d.PushMax * 0.25f;
+	if (push > pmax)		{ push = pmax;	if (push_v > 0.f) push_v = 0.f; }
+	else if (push < pmin)	{ push = pmin;	if (push_v < 0.f) push_v = 0.f; }
+	// a swing past the centre may leave the zone a little, not far
+	Fvector2 held		= x;
+	recoil_zone			(held, d.Radius * 1.25f, lo - 0.25f * d.Radius);
+	if (held.x != x.x || held.y != x.y)
+	{
+		x				= held;
+		v.set			(0.f, 0.f);
+	}
+
+	int w = 0;
+	for (int i = 0; i < wave_count; ++i)
+	{
+		waves[i].t		+= dt;
+		if (waves[i].t < waves[i].len)
+			waves[w++]	= waves[i];
+	}
+	wave_count			= w;
+}
+
+// The per-shot roll: one damped sine cycle per shot, to a random side, the camera's own shape
+// (CWeaponShotEffector::GetRoll). Overlapping shots add up.
+float player_hud::SRecoil::roll() const
+{
+	float r = 0.f;
+	for (int i = 0; i < wave_count; ++i)
+	{
+		const float t	= waves[i].t / waves[i].len;
+		if (t < 1.f)	r += waves[i].amp * _sin(PI_MUL_2 * t) * (1.f - t);
+	}
+	// the settle rolls: `cycles` swings each, eased in over the first 12% and dying away by (1 - u)^decay --
+	// over to the side, past the centre once or twice, and still. They add up.
+	for (int i = 0; i < settle_count; ++i)
+	{
+		const SSettle& w	= settles[i];
+		const float u	= w.t / w.len;
+		if (u >= 1.f)	continue;
+		const float e	= _min(u / 0.12f, 1.f);
+		const float in	= e * e * (3.f - 2.f * e);
+		r				+= w.amp * _sin(PI_MUL_2 * w.cycles * u) * powf(1.f - u, w.decay) * in;
+	}
+	return r;
+}
+
+// The lead as a hud rotation about the recoil's pivot (the sway's when it has none of its own).
+void player_hud::recoil_xform(const HudRecoilData& d, const InertionData& in, Fmatrix& L) const
+{
+	float k				= LaserBeam_HudToWorldK();
+	if (k < EPS_S)		k = 1.f;
+	// setHPB: +h turns the muzzle left, +p up
+	L.setHPB			(-m_recoil.x.x / k, m_recoil.x.y / k, m_recoil.roll());
+	const Fvector& pv	= d.HasPivot ? d.Pivot : in.RotPivot;
+	Fvector rp;			L.transform_dir(rp, pv);
+	L.c.sub				(pv, rp);
+	// the weapon slides back by the kicks upwards (push_back m per degree, up to push_max)
+	L.c.z				-= m_recoil.push;
+}
+
+void player_hud::recoil_shot(float kick_vert, float kick_horz, float& over_vert, float& over_horz)
+{
+	over_vert				= 0.f;
+	over_horz				= 0.f;
+	CHudItem* wpn			= m_attached_items[0] ? m_attached_items[0]->m_parent_hud_item : NULL;
+	const HudRecoilData* d	= wpn ? wpn->CurrentHudRecoilData() : NULL;
+	if (!d)					return;
+	if (wpn != m_recoil_item)
+	{
+		m_recoil.reset		();
+		m_recoil_item		= wpn;
+	}
+
+	// the shot effector's horizontal kick turns the camera left (ChangeHP: yaw -= ...)
+	Fvector2 want;			want.set(-kick_horz * d->InheritHorz, kick_vert * d->Inherit);
+	Fvector2 t;				t.set(m_recoil.tgt.x + want.x, m_recoil.tgt.y + want.y);
+	recoil_zone				(t, d->Radius, -d->ZoneDown * d->Radius);
+	// With camera_split the weapon's lead is the camera's kick taken away from it: what the zone had no
+	// room for goes back to the camera, so the shot as a whole still turns by the full kick.
+	if (d->CameraSplit > 0.f)
+	{
+		over_vert			=  (want.y - (t.y - m_recoil.tgt.y)) * d->CameraSplit;
+		over_horz			= -(want.x - (t.x - m_recoil.tgt.x)) * d->CameraSplit;
+	}
+	m_recoil.tgt			= t;
+	// the slide back takes the kick as the weapon was given it -- not what the zone or the mouse left of
+	// it -- so it builds up over a burst whether the climb is held down or not
+	if (want.y > 0.f)
+		m_recoil.push_tgt	= _min(m_recoil.push_tgt + d->PushBack * rad2deg(want.y), d->PushMax);
+	m_recoil.last_shot		= Device.fTimeGlobal;
+	m_recoil.last_input		= Device.fTimeGlobal;
+	m_recoil.settle_armed	= true;		// the settle roll comes once the trigger is let go
+
+	if (d->Roll > EPS_S && d->RollTime > EPS_S)
+	{
+		if (m_recoil.wave_count >= SRecoil::MAX_WAVES)		// absurdly fast fire: drop the oldest
+		{
+			for (int i = 1; i < SRecoil::MAX_WAVES; ++i)	m_recoil.waves[i - 1] = m_recoil.waves[i];
+			--m_recoil.wave_count;
+		}
+		SRecoil::SWave& w	= m_recoil.waves[m_recoil.wave_count++];
+		w.t					= 0.f;
+		w.len				= d->RollTime;
+		w.amp				= ::Random.randI(2) ? d->Roll : -d->Roll;
+	}
+}
+
+// While the trigger is held the weapon takes Mouse of the mouse inside its zone: the shot moves with the
+// mouse as fast as ever, the camera follows at the rest of the speed, and all of it once the weapon is at
+// the edge. right/up (rad) come back as what is left for the camera.
+void player_hud::recoil_mouse(float& right, float& up)
+{
+	CHudItem* wpn			= m_attached_items[0] ? m_attached_items[0]->m_parent_hud_item : NULL;
+	if (!wpn || wpn != m_recoil_item || !wpn->HudRecoilFiringNow())	return;
+	const HudRecoilData* d	= wpn->CurrentHudRecoilData();
+	if (!d || d->Mouse <= 0.f)	return;
+
+	Fvector2 t;				t.set(m_recoil.tgt.x + right * d->Mouse, m_recoil.tgt.y + up * d->Mouse);
+	recoil_zone				(t, d->Radius, -d->ZoneDown * d->Radius);
+	right					-= t.x - m_recoil.tgt.x;
+	up						-= t.y - m_recoil.tgt.y;
+	m_recoil.tgt			= t;
+	m_recoil.last_input		= Device.fTimeGlobal;
+}
+
+void player_hud::recoil_reset()
+{
+	m_recoil.reset			();
+}
+
+// ---- the shot's ray -----------------------------------------------------------------------------------
+
+// Where the hud weapon's shot goes this frame (fire_ray_local): from the hip, the hands model's own ray
+// (hud_item_measures::m_hip_fire_*), with every procedural offset on the hands -- sway, recoil, aim and
+// lowering offsets -- and none of the weapon's animation; aiming, the eye's own line, carried by the sway
+// and the recoil only, so the sights and the shot move together. Blended by the aim factor, then widened
+// out of the hud's fov into world terms (as LaserBeam_HudPointToWorld does), kept in the hud camera's axes.
+void player_hud::update_fire_ray()
+{
+	const CHudItem* prev	= m_fire_item;
+	m_fire_item				= NULL;
+	attachable_hud_item* hi	= m_attached_items[0];
+	if (!hi || !hi->m_parent_hud_item || !hi->m_model)	{ m_fire_rest_since = -1.f; return; }
+	CHudItem* item			= hi->m_parent_hud_item;
+	hud_item_measures& M	= hi->m_measures;
+	if (item != prev)
+	{
+		m_fire_rest_since	= -1.f;
+		const shared_str& ws = item->object().cNameSect();
+		if (ws != M.m_hip_fire_wpn)
+			M.load_hip_fire	(hi->m_sect_name, ws);	// the weapon's own section may set the hip ray
+	}
+
+	Fmatrix hands_i;		hands_i.invert(m_transform);
+
+	// No hip_fire_point: take the ray off the weapon's fire point and barrel (setup_firedeps -- fire_bone +
+	// fire_point, along the item's forward axis) once it has stood at rest for a moment, idle, not aiming,
+	// not lowered, the actor standing, and keep it in the hands' space from then on.
+	if (!M.m_hip_fire_cfg && M.m_prop_flags.test(hud_item_measures::e_fire_point))
+	{
+		bool rest			= item->GetState() == CHUDState::eIdle && item->GetInertionAimFactor() <= 0.f && !m_lower_reported;
+		if (rest)
+			if (CActor* A = Actor())	rest = !(A->MovingState() & (mcAnyMove | mcSprint | mcJump | mcFall));
+		const float now		= Device.fTimeGlobal;
+		if (!rest)							m_fire_rest_since = -1.f;
+		else if (m_fire_rest_since < 0.f)	m_fire_rest_since = now;
+		else if (!M.m_hip_fire_set && now - m_fire_rest_since > 0.5f)
+		{
+			firedeps fd;
+			hi->setup_firedeps		(fd);
+			hands_i.transform_tiny	(M.m_hip_fire_point, fd.vLastFP);
+			if (!M.m_hip_fire_dir_cfg)
+			{
+				hands_i.transform_dir	(M.m_hip_fire_dir, fd.vLastFD);
+				M.m_hip_fire_dir.normalize_safe();
+			}
+			M.m_hip_fire_set		= _valid(M.m_hip_fire_point) && _valid(M.m_hip_fire_dir);
+		}
+	}
+
+	if (item != prev)
+		m_ray_slide[0] = m_ray_slide[1] = -1.f;
+	const bool gl			= item->InertionGrenadeModeNow();
+	// the grenade launcher keeps its hip shot along the barrel: it is aimed with its own sight
+	m_ray_zero				= gl ? 0.f : (M.m_hip_fire_zero_dist >= 0.f ? M.m_hip_fire_zero_dist : g_hud_fire_zero_dist);
+	m_ray_aim				= gl ? 0.f : item->GetInertionAimFactor();
+	clamp					(m_ray_aim, 0.f, 1.f);
+	m_ray_optic				= item->HudOpticAimFactor();
+	const float k			= LaserBeam_HudToWorldK();
+	Fmatrix cam_i;			cam_i.invert(m_cam_trans);
+	// the slide eases once per frame, however often the hud is updated in it
+	const float slide_dt	= m_slide_frame != Device.dwFrame ? _min(Device.fTimeDelta, 0.1f) : 0.f;
+	m_slide_frame			= Device.dwFrame;
+
+	// One ray, given the hands' frame and the sway-and-recoil frame of the view it is taken in: the shot's
+	// own (m_transform, m_proc_trans) or the crosshair's (the same with m_xhair_corr on). Kept as it is
+	// before the aim: the barrel's line and the view's, in the hud camera's axes, world terms.
+	auto ray = [&](const Fmatrix& hands, const Fmatrix& view, SFireRay& r, float& slide)
+	{
+		r.aimed				= false;
+		if (M.m_hip_fire_set)
+		{
+			hands.transform_tiny		(r.hp, M.m_hip_fire_point);
+			if (m_ray_zero <= 0.f && M.m_hip_fire_converge > EPS_L)
+			{
+				Fvector c;	view.transform_tiny(c, Fvector().set(0.f, 0.f, M.m_hip_fire_converge));
+				r.hd.sub	(c, r.hp);
+			}
+			else
+			{
+				hands.transform_dir		(r.hd, M.m_hip_fire_dir);
+				r.aimed		= m_ray_zero > 0.f;
+			}
+		}
+		else	// not known yet: from the eye, as when aiming
+		{
+			r.hp.set		(view.c);
+			r.hd.set		(view.k);
+		}
+		r.ap				= view.c;
+		r.ad				= view.k;
+
+		cam_i.transform_tiny	(r.hp);
+		cam_i.transform_dir		(r.hd);
+		cam_i.transform_tiny	(r.ap);
+		cam_i.transform_dir		(r.ad);
+
+		// a hud point (x, y, z) is drawn over the pixel the world draws (x*k, y*k, z) on; a line maps onto a line
+		r.hp.x *= k;	r.hp.y *= k;	r.hd.x *= k;	r.hd.y *= k;	r.hd.normalize_safe();
+		r.ap.x *= k;	r.ap.y *= k;	r.ad.x *= k;	r.ad.y *= k;	r.ad.normalize_safe();
+
+		// the slide follows what is in front of the weapon now, eased (aim_slide)
+		if (r.aimed)
+		{
+			const float want	= aim_slide(r, aim_depth(m_cam_trans, r));
+			if (slide < 0.f)	slide = want;
+			else
+			{
+				const float tau	= _max(g_hud_fire_slide_time, 0.f);
+				slide			= tau > EPS_S ? slide + (want - slide) * (1.f - expf(-slide_dt / tau)) : want;
+			}
+		}
+		else
+			slide			= -1.f;
+	};
+
+	ray						(m_transform, m_proc_trans, m_ray[0], m_ray_slide[0]);
+	Fmatrix xh;				xh.mul_43(m_xhair_corr, m_transform);
+	Fmatrix xv;				xv.mul_43(m_xhair_corr, m_proc_trans);
+	ray						(xh, xv, m_ray[1], m_ray_slide[1]);
+
+	m_fire_item				= item;
+	m_fire_frame			= Device.dwFrame;
+}
+
+// hip_fire_zero_dist: the laser's parallax zero (laserdot_zero_dist), for the shot. Everything in the hud
+// camera's axes, world terms. The ray along the barrel (hp, hd) is turned onto a target point at the depth D
+// of whatever lies under the middle of the view (ap, ad):
+//     target = centre + (barrel - centre) * w,   w = 1 - (D - muzzle) / zero, held in 0..1
+// centre: the middle of the view at that depth; barrel: the barrel's own line at that depth; muzzle: how far
+// ahead of the eye the barrel's point is. From zero metres past the muzzle on, w = 0: the shot heads for the
+// middle of the view whatever the distance, so the crosshair stays where it is when the mouse sweeps over
+// things near and far. Closer, it slides back onto the barrel's line, and right at the muzzle it is on it --
+// where the round really comes out -- instead of jumping to the middle.
+// The slide is kept as w / D, the crosshair's angle off the middle per metre of the barrel's offset: eased
+// once a frame (update_fire_ray), so a pillar crossing the view does not snap it, while the depth itself is
+// taken again for every ray asked for (fire_ray_local), with the camera of that moment.
+// The middle of the view is the line from the eye itself (the camera's origin, 0 in these axes) along the
+// view's axis with the sway and recoil on it -- not from the hud frame's origin, which the pitch
+// compensation and the sway's shift move off the eye: a line beside the eye would put the target off the
+// middle by that offset over the distance, a little more for near things than for far ones.
+
+// see-through as the crosshair's own pick (HUDTarget.cpp): what is seen through -- leaves, nets, glass --
+// does not stop it, so the shot is aimed at the very surface the crosshair is drawn on
+struct SAimPick
+{
+	float				power;
+	float				range;
+	CObject*			O;
+};
+static BOOL aim_pick_callback(collide::rq_result& result, LPVOID params)
+{
+	SAimPick* pp		= (SAimPick*)params;
+	if (!result.O)
+	{
+		CDB::TRI* T		= Level().ObjectSpace.GetStaticTris() + result.element;
+		SGameMtl* mtl	= GMLib.GetMaterialByIdx(T->material);
+		pp->power		*= mtl->fVisTransparencyFactor;
+		if (pp->power > 0.4f)	return TRUE;
+	}
+	pp->range			= result.range;
+	pp->O				= result.O;
+	return				FALSE;
+}
+
+float player_hud::aim_depth(const Fmatrix& cam, const SFireRay& r, CObject** O) const
+{
+	const float range		= 200.f;
+	if (O)					*O = NULL;
+	CActor* A				= Actor();
+	if (!A)					return range;
+	const Fvector& wo		= cam.c;
+	Fvector wd;
+	cam.transform_dir		(wd, r.ad);
+	wd.normalize_safe		();
+	if (!_valid(wo) || !_valid(wd))	return range;
+
+	static collide::rq_results s_rqr;
+	SAimPick pp;			pp.power = 1.f;	pp.range = range;	pp.O = NULL;
+	collide::ray_defs RD	(wo, wd, range, CDB::OPT_CULL, collide::rqtBoth);
+	s_rqr.r_clear			();
+	Level().ObjectSpace.RayQuery(s_rqr, RD, aim_pick_callback, &pp, NULL, A);
+	if (O)					*O = pp.O;
+	return					pp.range;
+}
+
+// the barrel's point off the view's line: how far ahead of the eye (the muzzle's depth)
+static float aim_ahead(const player_hud::SFireRay& r)
+{
+	return					r.hp.dotproduct(r.ad);
+}
+
+// nothing is aimed at behind the muzzle (with the barrel in a wall the shot starts at the wall: HudFireRay):
+// held 2 cm past it, so the crosshair stands all but on the muzzle as the barrel meets a wall and the hit
+// there takes over
+static float aim_clamp_depth(const player_hud::SFireRay& r, float D)
+{
+	return					_max(_max(D, aim_ahead(r) + 0.02f), 0.1f);
+}
+
+float player_hud::aim_slide(const SFireRay& r, float D) const
+{
+	if (m_ray_zero <= EPS_L)	return 0.f;
+	D						= aim_clamp_depth(r, D);
+	return					_max(0.f, 1.f - (D - aim_ahead(r)) / m_ray_zero) / D;
+}
+
+void player_hud::aim_ray(const SFireRay& r, float slide, float D, Fvector& hd, Fvector* target_out) const
+{
+	D						= aim_clamp_depth(r, D);
+	const float ahead		= aim_ahead(r);
+	float w					= slide * D;
+	clamp					(w, 0.f, 1.f);
+
+	Fvector P;				P.mad(r.hp, r.ad, -ahead);
+	Fvector centre;			centre.mul(r.ad, D);
+	Fvector barrel;
+	const float c			= r.hd.dotproduct(r.ad);
+	if (c > 0.1f)			barrel.mad(r.hp, r.hd, (D - ahead) / c);
+	else					barrel.add(centre, P);
+	Fvector target;			target.sub(barrel, centre);
+	target.mad				(centre, target, w);
+	if (target_out)			*target_out = target;
+
+	Fvector nd;				nd.sub(target, r.hp);
+	if (nd.square_magnitude() < EPS_S)	return;
+	nd.normalize			();
+	if (_valid(nd))			hd = nd;
+}
+
+bool player_hud::fire_ray_local(const CHudItem* item, const Fmatrix& cam, Fvector& pos, Fvector& dir, bool crosshair,
+								 float* target_dist, CObject** target_obj) const
+{
+	if (target_dist)		*target_dist = -1.f;
+	if (target_obj)			*target_obj = NULL;
+	if (!item || item != m_fire_item || Device.dwFrame > m_fire_frame + 2)	return false;
+	const int i				= crosshair ? 1 : 0;
+	const SFireRay& r		= m_ray[i];
+	Fvector hp = r.hp, hd = r.hd, ap = r.ap, ad = r.ad;
+
+	// aimed at what lies under the middle of the view right now
+	bool have_target		= false;
+	Fvector target;
+	CObject* tobj			= NULL;
+	if (r.aimed && m_ray_slide[i] >= 0.f)
+	{
+		const float D		= aim_depth(cam, r, &tobj);
+		aim_ray				(r, m_ray_slide[i], D, hd, &target);
+		// Close up the target is held just past the muzzle, on the barrel's line: the crosshair moves along
+		// the line from the middle of the view to the muzzle and never off it onto what lies behind an edge.
+		// (With the barrel in a wall HudFireRay starts the ray at the wall and drops the target.)
+		have_target			= true;
+	}
+
+	// through an optical sight the shot goes straight down the middle of the view: the 2D reticle and the
+	// 3D lens show that, not the weapon's sway
+	if (m_ray_optic > 0.f)
+	{
+		ap.mul				(1.f - m_ray_optic);
+		ad.lerp				(ad, Fvector().set(0.f, 0.f, 1.f), m_ray_optic);
+		ad.normalize_safe	();
+	}
+
+	pos.lerp				(hp, ap, m_ray_aim);
+	dir.lerp				(hd, ad, m_ray_aim);
+	dir.normalize_safe		();
+	if (!_valid(pos) || !_valid(dir) || dir.z <= 0.f)	return false;	// a weapon pointing back at the eye is no shot
+
+	// from the hip, the ray runs through the target: how far along it, and what the eye sees there
+	if (have_target && m_ray_aim <= EPS_L && m_ray_optic <= EPS_L)
+	{
+		if (target_dist)	*target_dist = pos.distance_to(target);
+		if (target_obj)		*target_obj = tobj;
+	}
+	return					true;
+}
+
+void player_hud::fire_ray_resample()
+{
+	attachable_hud_item* hi	= m_attached_items[0];
+	if (!hi)				{ Msg("~ no hud weapon"); return; }
+	if (hi->m_measures.m_hip_fire_cfg)
+	{
+		Msg("~ [%s] hip_fire_point is set in the config, nothing to take", hi->m_sect_name.c_str());
+		return;
+	}
+	hi->m_measures.m_hip_fire_set	= false;
+	m_fire_rest_since				= -1.f;
+	Msg("~ [%s] the hip ray will be taken off the barrel again (stand still, not aiming)", hi->m_sect_name.c_str());
+}
+
+void player_hud::fire_ray_dump()
+{
+	attachable_hud_item* hi	= m_attached_items[0];
+	if (!hi)				{ Msg("~ no hud weapon"); return; }
+	const hud_item_measures& M = hi->m_measures;
+	Msg("~ [%s] hip ray: %s", hi->m_sect_name.c_str(),
+		M.m_hip_fire_cfg ? "configured" : (M.m_hip_fire_set ? "taken off the barrel" : "not taken yet"));
+	Msg("hip_fire_point			= %f, %f, %f", M.m_hip_fire_point.x, M.m_hip_fire_point.y, M.m_hip_fire_point.z);
+	Msg("hip_fire_dir			= %f, %f, %f", M.m_hip_fire_dir.x, M.m_hip_fire_dir.y, M.m_hip_fire_dir.z);
+	Msg("hip_fire_converge		= %f", M.m_hip_fire_converge);
+	if (M.m_hip_fire_zero_dist >= 0.f)	Msg("hip_fire_zero_dist		= %f", M.m_hip_fire_zero_dist);
+	else								Msg("; hip_fire_zero_dist	= %f (hud_fire_zero_dist)", g_hud_fire_zero_dist);
+}
+
+// ---- the hip ray baked off the first frame of the idle ------------------------------------------------
+
+// The hip ray as the weapon holds it at the very first frame of its idle (anm_idle), in the hands' own
+// space: the hands and the item are posed at that frame, read, and left so -- whoever calls this gives
+// the attached items their motions back (bake_restore). Nothing of what the idle does after that frame
+// (breathing) gets in, nor any procedural offset: those come on top through m_transform.
+bool player_hud::bake_hip_ray(attachable_hud_item* hi, Fvector& pos, Fvector& dir)
+{
+	hud_item_measures& M	= hi->m_measures;
+	if (!m_model || !hi->m_model || !M.m_prop_flags.test(hud_item_measures::e_fire_point))	return false;
+	if (hi->m_attach_place_idx >= m_ancors.size())						return false;
+	if (!pSettings->line_exist(hi->m_sect_name, "anm_idle"))			return false;
+
+	// anm_idle = <hands motion>[, <item motion>], as player_hud_motion_container::load reads it
+	LPCSTR anm				= pSettings->r_string(hi->m_sect_name, "anm_idle");
+	string512 hands_name, item_name;
+	_GetItem				(anm, 0, hands_name);
+	if (_GetItemCount(anm) >= 2)	_GetItem(anm, 1, item_name);
+	else							xr_strcpy(item_name, hands_name);
+
+	const MotionID hm		= m_model->ID_Cycle_Safe(hands_name);
+	if (!hm.valid())
+	{
+		Msg("! [%s] anm_idle: the hands have no motion [%s]", hi->m_sect_name.c_str(), hands_name);
+		return false;
+	}
+
+	// the hands at the idle's frame 0, every partition, full weight
+	const u16 hpc			= m_model->partitions().count();
+	for (u16 pid = 0; pid < hpc; ++pid)
+		if (CBlend* B = m_model->PlayCycle(pid, hm, FALSE))
+		{
+			B->timeCurrent	= 0.f;
+			B->blendAmount	= 1.f;
+			B->blendPower	= 1.f;
+		}
+	IKinematics* HK			= m_model->dcast_PKinematics();
+	HK->CalculateBones_Invalidate();
+	HK->CalculateBones		(TRUE);
+	const Fmatrix anchor	= HK->LL_GetTransform(m_ancors[hi->m_attach_place_idx]);
+
+	// the item at its own motion's frame 0 (its plain idle when it has no such motion), root held still
+	// as attachable_hud_item::anim_play holds it
+	if (IKinematicsAnimated* ka = hi->m_model->dcast_PKinematicsAnimated())
+	{
+		MotionID im			= ka->ID_Cycle_Safe(item_name);
+		if (!im.valid())	im = ka->ID_Cycle_Safe("idle");
+		if (im.valid())
+		{
+			CBoneInstance& root	= hi->m_model->LL_GetBoneInstance(hi->m_model->LL_GetBoneRoot());
+			root.set_callback_overwrite(TRUE);
+			root.mTransform.identity();
+			const u16 ipc	= ka->partitions().count();
+			for (u16 pid = 0; pid < ipc; ++pid)
+				if (CBlend* B = ka->PlayCycle(pid, im, FALSE))
+				{
+					B->timeCurrent	= 0.f;
+					B->blendAmount	= 1.f;
+					B->blendPower	= 1.f;
+				}
+		}
+	}
+	hi->m_model->CalculateBones_Invalidate();
+	hi->m_model->CalculateBones	(TRUE);
+
+	// the item in the hands' space: calc_transform and attachable_hud_item::update without m_transform
+	Fvector ypr				= M.m_item_attach[1];
+	ypr.mul					(PI / 180.f);
+	Fmatrix off;			off.setHPB(ypr.x, ypr.y, ypr.z);
+	off.translate_over		(M.m_item_attach[0]);
+	Fmatrix item;			item.mul_43(anchor, off);
+	if (!fsimilar(M.m_item_scale, 1.f))
+	{
+		Fmatrix s;			s.identity();
+		s.scale				(M.m_item_scale, M.m_item_scale, M.m_item_scale);
+		item.mulB_43		(s);
+	}
+
+	// as setup_firedeps: the fire point on its bone, the direction along the item's forward axis
+	Fvector p;
+	hi->m_model->LL_GetTransform(M.m_fire_bone).transform_tiny(p, M.m_fire_point_offset);
+	item.transform_tiny		(pos, p);
+	dir.set					(0.f, 0.f, 1.f);
+	item.transform_dir		(dir);
+	dir.normalize_safe		();
+	return					_valid(pos) && _valid(dir);
+}
+
+// The attached items take their motions back after a bake (the hands were posed for it).
+void player_hud::bake_restore()
+{
+	for (u16 i = 0; i < 2; ++i)
+	{
+		attachable_hud_item* a	= m_attached_items[i];
+		if (!a || !a->m_parent_hud_item)	continue;
+		const shared_str cur	= a->m_parent_hud_item->CurrentMotion();
+		if (cur.size())			a->m_parent_hud_item->PlayHUDMotion_noCB(cur, FALSE);
+	}
+	if (m_model)
+	{
+		m_model->dcast_PKinematics()->CalculateBones_Invalidate();
+		m_model->dcast_PKinematics()->CalculateBones	(TRUE);
+	}
+}
+
+static void bake_print(LPCSTR sect, const Fvector& p, const Fvector& d)
+{
+	Msg("[%s]", sect);
+	Msg("hip_fire_point			= %f, %f, %f", p.x, p.y, p.z);
+	Msg("hip_fire_dir			= %f, %f, %f", d.x, d.y, d.z);
+}
+
+// console hud_fire_ray_bake: the weapon in hand, applied at once and printed for its hud section
+void player_hud::fire_ray_bake()
+{
+	attachable_hud_item* hi	= m_attached_items[0];
+	if (!hi || !hi->m_parent_hud_item)	{ Msg("~ no hud weapon"); return; }
+	if (hi->m_parent_hud_item->GetState() != CHUDState::eIdle)
+	{
+		Msg("~ [%s] the weapon is busy: bake it while it stands idle", hi->m_sect_name.c_str());
+		return;
+	}
+	Fvector p, d;
+	const bool ok			= bake_hip_ray(hi, p, d);
+	bake_restore			();
+	if (!ok)				{ Msg("! [%s] no hip ray to bake (fire_bone / anm_idle)", hi->m_sect_name.c_str()); return; }
+
+	hud_item_measures& M	= hi->m_measures;
+	M.m_hip_fire_point		= p;
+	if (!M.m_hip_fire_dir_cfg)	M.m_hip_fire_dir = d;
+	M.m_hip_fire_set		= true;
+	Msg("~ [%s] hip ray baked off the first frame of anm_idle, in use now:", hi->m_sect_name.c_str());
+	bake_print				(hi->m_sect_name.c_str(), p, d);
+	if (M.m_hip_fire_dir_cfg)	Msg("~ (hip_fire_dir is set in the config and stays as it is)");
+}
+
+// console hud_fire_ray_bake_all: every hud section of a gun (a fire_bone, an anm_idle, a weapon section
+// naming it), written to $logs$\hud_fire_rays.ltx. Sections not in the pool get their model loaded for
+// the moment. The hands are the ones worn now: their motions are what the idle poses.
+void player_hud::fire_ray_bake_all()
+{
+	if (!m_model)			{ Msg("~ no hands"); return; }
+	for (u16 i = 0; i < 2; ++i)
+		if (m_attached_items[i] && m_attached_items[i]->m_parent_hud_item
+			&& m_attached_items[i]->m_parent_hud_item->GetState() != CHUDState::eIdle)
+		{
+			Msg("~ the item in hand is busy: bake while it stands idle (or with nothing in hand)");
+			return;
+		}
+
+	// the hud sections, once each, in the order the weapons come
+	xr_vector<shared_str>	huds;
+	CInifile::Root& R		= pSettings->sections();
+	for (CInifile::RootIt it = R.begin(); it != R.end(); ++it)
+	{
+		const shared_str& s	= (*it)->Name;
+		if (!pSettings->line_exist(s, "hud") || !pSettings->line_exist(s, "fire_point"))	continue;
+		const shared_str h	= pSettings->r_string(s, "hud");
+		if (!pSettings->section_exist(h) || !pSettings->line_exist(h, "fire_bone")
+			|| !pSettings->line_exist(h, "anm_idle") || !pSettings->line_exist(h, "item_visual"))	continue;
+		if (std::find(huds.begin(), huds.end(), h) == huds.end())	huds.push_back(h);
+	}
+
+	IWriter* F				= FS.w_open("$logs$", "hud_fire_rays.ltx");
+	if (!F)					{ Msg("! can't write $logs$\\hud_fire_rays.ltx"); return; }
+	F->w_string				("; hip_fire_point / hip_fire_dir off the first frame of each anm_idle (hud_fire_ray_bake_all)");
+	F->w_string				(make_string("; hands: %s", m_sect_name.c_str()).c_str());
+	F->w_string				("");
+
+	u32 done = 0, failed = 0;
+	for (u32 i = 0; i < huds.size(); ++i)
+	{
+		const shared_str& h	= huds[i];
+		attachable_hud_item* hi	= NULL;
+		bool temp			= false;
+		for (u32 k = 0; k < m_pool.size(); ++k)
+			if (m_pool[k]->m_sect_name == h)	{ hi = m_pool[k]; break; }
+		if (!hi)
+		{
+			hi				= xr_new<attachable_hud_item>(this);
+			hi->load		(h);
+			temp			= true;
+		}
+
+		Fvector p, d;
+		if (bake_hip_ray(hi, p, d))
+		{
+			F->w_string		(make_string("[%s]", h.c_str()).c_str());
+			F->w_string		(make_string("hip_fire_point			= %f, %f, %f", p.x, p.y, p.z).c_str());
+			F->w_string		(make_string("hip_fire_dir			= %f, %f, %f", d.x, d.y, d.z).c_str());
+			F->w_string		("");
+			++done;
+		}
+		else
+		{
+			F->w_string		(make_string("; [%s]: nothing baked (see the log)", h.c_str()).c_str());
+			++failed;
+		}
+		if (temp)			xr_delete(hi);
+	}
+	FS.w_close				(F);
+	bake_restore			();
+	Msg("~ hip rays baked for %d hud sections (%d without one) -> $logs$\\hud_fire_rays.ltx", done, failed);
+}
 
 attachable_hud_item* player_hud::create_hud_item(const shared_str& sect)
 {

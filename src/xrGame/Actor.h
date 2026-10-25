@@ -517,6 +517,10 @@ public:
 public:
 	virtual void						g_WeaponBones		(int &L, int &R1, int &R2);
 	virtual void						g_fireParams		(const CHudItem* pHudItem, Fvector& P, Fvector& D);
+	// The ray a shot of the gun in first-person hands takes (player_hud::fire_ray_local), in the world.
+	// False, and P/D untouched, when there is none: third person, another item, nothing fresh.
+			bool						HudFireRay			(const CHudItem* pHudItem, Fvector& P, Fvector& D, bool crosshair = false,
+																 float* target_dist = NULL, CObject** target_obj = NULL);
 	virtual bool						g_stateFire			() {return ! ((mstate_wishful & mcLookout) && !IsGameTypeSingle() );}
 
 	virtual BOOL						g_State				(SEntityState& state) const;

@@ -141,6 +141,49 @@ void CUIActorMenu::Construct()
 		m_pQuickSlot->Initialize(ofs);
 	}
 
+	// OpenXRay's slot highlights: hover an item and the slots it may go into light up
+	// (CUIActorMenu::highlight_item_slot). A static per list, optional like the bars below; only its
+	// texture and colour are read -- the list fits it to the slot or to each of its cells.
+	struct { CUIDragDropListEx* lst; LPCSTR sect; } highlighters[] =
+	{
+		{ m_pInventoryPistolList,					"inv_slot2_highlight" },
+		{ m_pInventoryAutomaticList,				"inv_slot3_highlight" },
+		{ m_pInventoryOutfitList,					"outfit_slot_highlight" },
+		{ m_pInventoryDetectorList,					"detector_slot_highlight" },
+		{ m_pInventoryBeltList,						"artefact_slot_highlight" },
+		{ (CUIDragDropListEx*)m_pQuickSlot,			"quick_slot_highlight" },
+	};
+	for (u32 i = 0; i < sizeof(highlighters)/sizeof(highlighters[0]); ++i)
+	{
+		if (!highlighters[i].lst || !uiXml.NavigateToNode(highlighters[i].sect, 0))	continue;
+		LPCSTR sect				= highlighters[i].sect;
+		CUIStatic* st			= xr_new<CUIStatic>();
+		CUIXmlInit::InitStatic	(uiXml, sect, 0, st);
+		// the drawn frame: x y width height on the node (one-cell slot), or one <cell x y width height/>
+		// per cell, all in the menu's coordinates; or cell_dx cell_dy cell_w cell_h from each cell
+		xr_vector<Frect> frames;
+		const float fw			= uiXml.ReadAttribFlt(sect, 0, "width", 0.f);
+		if (fw > 0.f)
+		{
+			const float fx = uiXml.ReadAttribFlt(sect, 0, "x", 0.f), fy = uiXml.ReadAttribFlt(sect, 0, "y", 0.f);
+			frames.push_back(Frect().set(fx, fy, fx + fw, fy + uiXml.ReadAttribFlt(sect, 0, "height", 0.f)));
+		}
+		// read the cells FROM the highlight node: CXml takes the index of a "a:b" path for its first node,
+		// so "quick_slot_highlight:cell", c asked for the c-th quick_slot_highlight and cells 2..4 came back 0
+		XML_NODE* hnode			= uiXml.NavigateToNode(sect, 0);
+		const int ncell			= uiXml.GetNodesNum(hnode, "cell");
+		for (int c = 0; c < ncell; ++c)
+		{
+			const float cx = uiXml.ReadAttribFlt(hnode, "cell", c, "x", 0.f), cy = uiXml.ReadAttribFlt(hnode, "cell", c, "y", 0.f);
+			frames.push_back(Frect().set(cx, cy, cx + uiXml.ReadAttribFlt(hnode, "cell", c, "width", 0.f),
+										cy + uiXml.ReadAttribFlt(hnode, "cell", c, "height", 0.f)));
+		}
+		Frect cell;
+		cell.set(uiXml.ReadAttribFlt(sect, 0, "cell_dx", 0.f), uiXml.ReadAttribFlt(sect, 0, "cell_dy", 0.f),
+				 uiXml.ReadAttribFlt(sect, 0, "cell_w", 0.f),  uiXml.ReadAttribFlt(sect, 0, "cell_h", 0.f));
+		highlighters[i].lst->SetHighlighter(st, frames, cell);
+	}
+
 	// GSC's slot condition indicators (Call of Pripyat): a condition bar per equipment slot, drawn
 	// under the slot frame. It belongs to the MENU, not to the cell inside the slot -- the cell's own
 	// bar is a child of the list container, which scissors everything to the slot rect, so a bar sat

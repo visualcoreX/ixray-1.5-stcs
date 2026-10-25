@@ -1,0 +1,96 @@
+;==============================================================================
+; The weapon's own recoil on the hud (player_hud, CWeapon::LoadHudRecoil)
+;
+; Each shot the camera kicks (cam_dispersion / cam_step_angle_horz, the shot
+; effector); the weapon takes a part of that same kick ON TOP of the camera, so
+; it leads the view instead of being glued to it, and comes back once the
+; shooting stops. The lead is in screen terms: 1 degree puts the barrel -- and
+; the shot, and the crosshair -- 1 degree off the centre of the screen.
+;
+; Every key is looked up in this order:
+;   1. the weapon section                         (wpn_xxx)
+;   2. its hud section                            (wpn_xxx_hud)
+;   3. the profile either names: hud_recoil_profile = <section below>
+;   4. [hud_recoil]
+;   5. the engine default (the values written in [hud_recoil])
+; Prefixes: hud_recoil_ = hip, hud_recoil_aim_ = aiming.
+; Aim falls back to hip with half the radius and half the roll.
+;
+; Keys (after the prefix):
+;   inherit         part of the camera's per-shot vertical kick the weapon rises
+;                   above the camera (0.25 = a quarter higher than the camera)
+;   inherit_horz    the same sideways (default = inherit)
+;   camera_split    0..1: the weapon's part is taken OUT of the camera's kick
+;                   instead of added on top: the camera kicks by
+;                   1 - inherit * camera_split (inherit 0.25 -> camera 75%,
+;                   weapon 25%: the shot as a whole still turns by 100%).
+;                   What the zone has no room for goes back to the camera.
+;                   0 = the weapon leads on top of the full camera kick
+;   radius          degrees, how far the weapon may lead the camera: a half disc
+;                   of this radius about the centre of the screen
+;   zone_down       0..1, part of the radius the zone reaches below the centre
+;                   (0 = the upper half disc only)
+;   mouse           0..1, part of the mouse the weapon takes inside the zone while
+;                   the trigger is held; the camera gets the rest, and all of it
+;                   once the weapon is at the edge. The shot moves with the mouse
+;                   as fast as ever -- this is the spray control. 0 = off
+;   roll            degrees, peak of the per-shot roll wave (random side)
+;   roll_time       s, length of one roll wave
+;   settle_roll     degrees, peak of the roll the weapon settles with once the
+;                   shooting stops and it starts back (to the side it comes back
+;                   from, smaller after a short burst; dies away). 0 = off
+;   settle_roll_time  s, how long that roll takes to die away
+;   rise_freq       Hz, spring that carries the weapon to a kick
+;                   (default 0.75 / cam_rise_time, aim: / zoom_cam_rise_time)
+;   rise_damping    its damping ratio, 1 = no overshoot
+;   relax_delay     s after the last shot before the weapon starts back
+;   relax_speed     degrees/s, how fast the lead itself goes back to the centre
+;   relax_freq      Hz, spring that brings the weapon back
+;   relax_damping   <1 swings past the centre on the way back (0.45 ~ 20%)
+;   push_back       m the weapon slides back (translate Z) per degree it
+;                   leads upwards; follows the lead, springs and all. 0 = off
+;   push_max        m, limit of that slide
+;   pivot           x,y,z in camera space (m) the weapon turns about;
+;                   default: the sway's own inertia_rot_pivot / inertia_aim_rot_pivot
+;
+; The hip shot's ray, the hud section (wpn_xxx_hud), else the weapon section:
+;   hip_fire_point      x,y,z in the hands model's own space (m). Without it the
+;                       ray is taken once off the weapon's fire_bone/fire_point and
+;                       barrel while it stands still at hip, and kept.
+;   hip_fire_dir        x,y,z, the same space (default: taken off the barrel too)
+;   hip_fire_converge   m; >0 turns the hip ray onto the centre of the view this
+;                       far ahead instead of along the barrel. 0 = along the barrel
+; Console: hud_fire_ray_dump prints the ray of the weapon in hand in this form,
+; hud_fire_ray_resample takes it off the barrel again.
+;==============================================================================
+
+[hud_recoil]
+hud_recoil_inherit          = 0.5
+hud_recoil_inherit_horz		= 0.75
+hud_recoil_camera_split     = 0.75
+hud_recoil_push_back        = 0.02
+hud_recoil_push_max         = 0.05
+hud_recoil_radius           = 5.0
+hud_recoil_zone_down        = 2.5
+hud_recoil_mouse            = 0.25
+hud_recoil_roll             = 2.0
+hud_recoil_roll_time        = 0.2
+hud_recoil_settle_roll      = 5.0
+hud_recoil_settle_roll_time = 0.6
+hud_recoil_settle_roll_min	= 0.3
+hud_recoil_rise_damping     = 1.0
+hud_recoil_relax_delay      = 0.086
+hud_recoil_relax_speed      = 50.0
+hud_recoil_relax_freq       = 3.0
+hud_recoil_relax_damping    = 0.4
+
+hud_recoil_aim_radius       	= 2.0
+hud_recoil_aim_zone_down    	= 0.5
+hud_recoil_aim_roll         	= 0.3
+hud_recoil_aim_settle_roll      = 1.0
+hud_recoil_aim_settle_roll_time = 0.6
+hud_recoil_aim_push_back    	= 0.002
+hud_recoil_aim_push_max     	= 0.02
+hud_recoil_aim_relax_speed      = 30.0
+hud_recoil_aim_mouse        	= 0.2
+hud_recoil_aim_relax_damping    = 0.6

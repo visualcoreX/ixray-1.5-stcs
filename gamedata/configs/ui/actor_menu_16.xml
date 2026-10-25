@@ -458,4 +458,38 @@
 
   </actor_state_info>
 
+  <!-- Slot highlights (OpenXRay's highlight_item_slot): hover an item that is not equipped and the slots it
+       can go into light up. ui_slot_highlight is white, feathered to transparent at its edges; the colour on
+       the texture tints it. Where: x y width height = the slot's drawn frame (menu coordinates, like the
+       lists'), <cell .../> = one frame per cell (the quick slots' boxes are not evenly spaced), cell_dx cell_dy
+       cell_w cell_h = a frame around each cell (the belt: evenly spaced, as many as the outfit gives).
+       Frames measured off ui_inGame2_inventory_back (ui_ingame2_common, x 299..1024 drawn into 604 wide at
+       x=249: ui x = 249 + (tex x - 299) * 0.8331, y 1:1), border line to border line, condition bar
+       inside. The belt's frames are round: ui_slot_highlight_round, a radially feathered disc. The wide
+       bottom weapon slot has ui_slot_highlight_wide: its own 168:71 shape, so its soft edge is as wide
+       at the top and bottom as at the sides (the square one, stretched, faded 47 px at the sides, 20 at the top).
+       The outfit slot: ui_slot_highlight_outfit, 80:126, a narrower 14 px edge so the glow fills more of it. -->
+  <inv_slot2_highlight x="372.3" y="301" width="168.3" height="71" stretch="1">
+    <texture r="220" g="220" b="215" a="38">ui\ui_slot_highlight_wide</texture>
+  </inv_slot2_highlight>
+  <inv_slot3_highlight x="460.6" y="94" width="80.0" height="187" stretch="1">
+    <texture r="220" g="220" b="215" a="38">ui\ui_slot_highlight</texture>
+  </inv_slot3_highlight>
+  <outfit_slot_highlight x="372.3" y="155" width="80.0" height="126" stretch="1">
+    <texture r="220" g="220" b="215" a="38">ui\ui_slot_highlight_outfit</texture>
+  </outfit_slot_highlight>
+  <detector_slot_highlight x="372.3" y="95" width="80.0" height="49" stretch="1">
+    <texture r="220" g="220" b="215" a="38">ui\ui_slot_highlight</texture>
+  </detector_slot_highlight>
+  <artefact_slot_highlight cell_dx="-6.7" cell_dy="-7" cell_w="38.3" cell_h="46" stretch="1">
+    <texture r="220" g="220" b="215" a="38">ui\ui_slot_highlight_round</texture>
+  </artefact_slot_highlight>
+  <quick_slot_highlight stretch="1">
+    <texture r="220" g="220" b="215" a="38">ui\ui_slot_highlight</texture>
+    <cell x="297.3" y="27" width="45.8" height="50"/>
+    <cell x="365.6" y="27" width="45.9" height="50"/>
+    <cell x="432.3" y="27" width="46.6" height="50"/>
+    <cell x="495.6" y="27" width="45.8" height="50"/>
+  </quick_slot_highlight>
+
 </w>

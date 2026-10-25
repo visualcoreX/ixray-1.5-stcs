@@ -341,6 +341,18 @@ snd_indoor_fadeout_start          = 0.1
 snd_indoor_fadeout_end            = 0.5
 snd_indoor_fadeout_db             = 6
 
+;low ammo sounds
+snd_low_ammo			= weapons\mag_rattle\ak74_mag_rattle_01, -1.05, 0.0
+snd_low_ammo1			= weapons\mag_rattle\ak74_mag_rattle_02, -1.05, 0.0
+snd_low_ammo2			= weapons\mag_rattle\ak74_mag_rattle_03, -1.05, 0.0
+snd_low_ammo3			= weapons\mag_rattle\ak74_mag_rattle_04, -1.05, 0.0
+volume_snd_low_ammo		= 125
+snd_low_ammo_threshold	= 15
+snd_low_ammo_gain		= 0.05, 1.0
+snd_low_ammo_db			= 12				; 0 - linear
+snd_low_ammo_duck		= 3					; ут очка
+snd_low_ammo_duck_time	= 0.04, 0.02, 0.125	; delay, attack, release (s)
+
 ;настройки для глушителя
 ; silencer ballistics come from the addon section (GS has none inline here)
 
@@ -415,6 +427,10 @@ fire_point					= 0.0,0.007,0.572
 fire_bone                   = wpn_body
 fire_point2                 = 0.0,0.007,0.765
 fire_bone2                	= wpn_body
+hip_fire_point			= 0.091771, -0.100912, 0.968288
+hip_fire_dir			= 0.000000, 0.000305, 1.000000
+hud_recoil_pivot		= 0.091771, -0.150912, 0.1
+hud_recoil_aim_pivot	= 0.0, -0.05, 0.0
 aim_hud_offset_pos				= 0.0009500,0.02100,0.0
 aim_hud_offset_rot				= 0.000000,0.000000,0.0
 aim_hud_offset_pos_16x9				= 0.0009500,0.02100,0.0

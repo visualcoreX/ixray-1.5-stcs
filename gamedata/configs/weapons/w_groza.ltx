@@ -205,6 +205,18 @@ snd_reload_grenade      = weapons\ak74\ak74_gl_reload
 snd_switch              = weapons\groza\groza_gl_activate
 snd_bore				= $silent
 
+;low ammo sounds
+snd_low_ammo			= weapons\mag_rattle\ak74_mag_rattle_01, -1.05, 0.0
+snd_low_ammo1			= weapons\mag_rattle\ak74_mag_rattle_02, -1.05, 0.0
+snd_low_ammo2			= weapons\mag_rattle\ak74_mag_rattle_03, -1.05, 0.0
+snd_low_ammo3			= weapons\mag_rattle\ak74_mag_rattle_04, -1.05, 0.0
+volume_snd_low_ammo		= 125
+snd_low_ammo_threshold	= 10
+snd_low_ammo_gain		= 0.05, 1.0
+snd_low_ammo_db			= 12				; 0 - linear
+snd_low_ammo_duck		= 3					; ут очка
+snd_low_ammo_duck_time	= 0.04, 0.02, 0.125	; delay, attack, release (s)
+
 ;��������� ��� ���������
 silencer_hit_power      = 0.55, 0.55, 0.55, 0.55
 silencer_hit_impulse    = 120
@@ -465,6 +477,10 @@ fire_point		= 0,0.006,0.315
 fire_bone      	      = wpn_body
 fire_point2             = 0,-0.054,0.358	; orig 0,-0.054,0.3581 (GS wpn_groza)
 fire_bone2					= wpn_body
+hip_fire_point			= 0.113183, -0.132548, 0.840157
+hip_fire_dir			= 0.000000, 0.000000, 1.000000
+hud_recoil_pivot		= 0.113183, -0.182548, 0.1
+hud_recoil_aim_pivot	= 0.0, -0.05, 0.0
 aim_hud_offset_pos				= 0.000220,0.000800,0.0
 aim_hud_offset_rot				= 0.0,0.0,0.0
 aim_hud_offset_pos_16x9				= 0.000220,0.000800,0.0

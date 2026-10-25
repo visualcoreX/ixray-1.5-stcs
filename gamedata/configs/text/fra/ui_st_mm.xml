@@ -417,6 +417,9 @@
 	<string id="ui_mm_dyn_crosshair">
 		<text>Réticule dynamique</text>
 	</string>
+	<string id="ui_mm_detailed_crosshair">
+		<text>Detailed Crosshair</text>
+	</string>
 	<string id="ui_mm_dynamic_music">
 		<text>Musique dynamique</text>
 	</string>

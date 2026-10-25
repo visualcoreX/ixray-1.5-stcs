@@ -47,3 +47,40 @@ function normal		(shader, t_base, t_second, t_detail)
 			: aref		(false,0)
 	shader:sampler	("s_mark")	:texture	("$user$collim_mark")	: clamp() : f_linear()
 end
+
+-- The hud's glass over the distortion mask (r_dsgraph_render_lens_undistort draws pass 3 of every masked glass): a
+-- collimator's glass puts the mask back to "no offset" over itself, so its dot does not ripple with the water or
+-- the haze behind. Passes 0..2 are r3's prism-sight passes -- r2 has no prism mode, they draw nothing.
+-- Only the collimator glass gets lens_mask, as on r3.
+function l_special	(shader, t_base, t_second, t_detail)
+	shader:begin	("model_collim_reflect","model_clip")
+			: fog		(false)
+			: zb		(true,false)
+			: blend		(false,blend.one,blend.zero)
+			: aref		(false,0)
+			: lens_mask	(string.lower(t_base) == "wpn\\lenses")
+
+	shader:begin	("model_collim_reflect","model_clip")
+			: fog		(false)
+			: zb		(true,false)
+			: blend		(false,blend.one,blend.zero)
+			: aref		(false,0)
+
+	shader:begin	("model_collim_reflect","model_collim_late")	-- pass 2: the reticle's glow, after the distortion
+			: fog		(false)
+			: zb		(true,false)
+			: blend		(true,blend.one,blend.invsrcalpha)
+			: aref		(false,0)
+			: color_write_enable	(true, true, true, true)
+			: stencil	(false, cmp_func.always, 255, 255, stencil_op.keep, stencil_op.keep, stencil_op.keep)
+	shader:sampler	("s_base")	:texture	(t_base)
+	shader:sampler	("s_mark")	:texture	("$user$collim_mark")	: clamp() : f_linear()
+
+	shader:begin	("model_collim_reflect","model_collim_undistort")	-- pass 3
+			: fog		(false)
+			: zb		(true,false)
+			: blend		(false,blend.one,blend.zero)
+			: aref		(false,0)
+			: color_write_enable	(true, true, true, true)
+			: stencil	(false, cmp_func.always, 255, 255, stencil_op.keep, stencil_op.keep, stencil_op.keep)
+end

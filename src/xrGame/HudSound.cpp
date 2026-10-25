@@ -394,6 +394,14 @@ void HUD_SOUND_ITEM::LimitVoices(float delay)
 	}
 }
 
+void HUD_SOUND_ITEM::Duck(float delay, float attack, float hold, float release, float db)
+{
+	if (m_activeSnd && m_activeSnd->snd._feedback())
+		m_activeSnd->snd.duck		(delay, attack, hold, release, db);
+	for (xr_vector<SVoice>::iterator it = m_voices.begin(); it != m_voices.end(); ++it)
+		it->snd.duck				(delay, attack, hold, release, db);		// one that is over has no feedback
+}
+
 void HUD_SOUND_ITEM::StopSound(HUD_SOUND_ITEM& hud_snd)
 {
 	xr_vector<SSnd>::iterator it = hud_snd.sounds.begin();

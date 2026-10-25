@@ -877,6 +877,7 @@ bool	CWeaponMagazinedWGrenade::UseScopeTexture()
 	if (IsGrenadeLauncherAttached() && m_bGrenadeMode) return false;
 	if (IsLensedScope())	return false;	// 3D PiP lens scope -> skip the 2D scope texture, keep the weapon visible
 	if (IsCollimatorScope())	return false;	// collimator: reticle is on the model -> same, but with no lens
+	if (IsScopePrismCfg())	return false;	// 3D lens off, R3: the optic works like the prism sight (CWeapon::IsScopePrismCfg)
 	return true;
 };
 

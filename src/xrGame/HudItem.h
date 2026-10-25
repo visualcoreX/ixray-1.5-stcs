@@ -11,6 +11,7 @@ class CActor;
 #include "inventory_space.h"
 #include "hudsound.h"
 #include "InertionData.h"
+#include "HudRecoilData.h"
 
 struct attachable_hud_item;
 class motion_marks;
@@ -415,6 +416,14 @@ public:
 	virtual float				GetInertionAimFactor	() const		{ return 0.f; }	// CWeapon: zoom rotation factor
 	virtual bool				InertionZoomedNow		() const		{ return false; }
 	virtual bool				InertionGrenadeModeNow	() const		{ return false; }	// CWeaponMagazinedWGrenade: m_bGrenadeMode
+	// The weapon's own recoil on the hud (HudRecoilData.h): this frame's set, NULL for an item that has
+	// none. HudRecoilFiringNow: the trigger is held, so the mouse moves the weapon inside its zone.
+	virtual const HudRecoilData*	CurrentHudRecoilData	()				{ return NULL; }
+	virtual bool				HudRecoilFiringNow		() const		{ return false; }
+	// 0..1: how far the item is aimed through an OPTICAL sight (a 2D scope picture or the 3D lens -- not a
+	// collimator, not iron sights). There the shot goes down the middle of the view and the weapon on the
+	// hud takes no recoil lead of its own, so the reticle and the tracer stay together.
+	virtual float				HudOpticAimFactor		() const		{ return 0.f; }
 
 	virtual void				on_renderable_Render	() = 0;
 	virtual void				debug_draw_firedeps		() {};

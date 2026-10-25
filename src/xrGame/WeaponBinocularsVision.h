@@ -27,7 +27,7 @@ struct SBinocVisibleObj{
 	Flags8					m_flags;
 	void					create_default			(u32 color);
 	void					Draw					();
-	void					Update					(bool eyepiece);
+	void					Update					(bool eyepiece, const Fvector4* own_zc = NULL, float own_w = 0.f);
 	bool					operator <				(const SBinocVisibleObj& other) const{ return  m_flags.test(flVisObjNotValid) < other.m_flags.test(flVisObjNotValid);} //move non-actual to tail
 };
 
@@ -45,6 +45,9 @@ public:
 	// true = the frames are seen through a 2D scope's eyepiece (see SBinocVisibleObj::Update); the
 	// binoculars never set it
 	void	SetEyepiece			(bool on)	{ m_bEyepiece = on; }
+	// ...and the glass to keep them to when it is not the 2D scope's (pp_zoom_circle): the lens-off prism mode's
+	// lens -- radii in screen uv, z = the zoom the lens adds about the centre; w = its curvature. zc.x <= 0: none.
+	void	SetEyepieceCircle	(const Fvector4& zc, float w)	{ m_own_zc = zc; m_own_w = w; }
 
 protected :
 	Fcolor						m_frame_color;
@@ -56,4 +59,6 @@ protected :
 	// params section has no catch_snd.
 	ref_sound					m_snd_catch;
 	bool						m_bEyepiece = false;
+	Fvector4					m_own_zc = { 0.f, 0.f, 1.f, 0.f };
+	float						m_own_w = 0.f;
 };

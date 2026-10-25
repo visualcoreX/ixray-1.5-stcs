@@ -810,8 +810,8 @@ void CLevel::OnRender()
 	Game().OnRender();
 	//���������� ������ ����
 	//Device.Statistic->TEST1.Begin();
-	// under MSAA the tracers were already drawn in the R3 forward phase (correct depth vs HUD);
-	// only draw them here otherwise, to keep the non-MSAA look (post-tonemap) unchanged.
+	// R2/R3 draw the tracers in render_forward, between the world and the hud (correct depth vs the hud and
+	// the scope's glass); this is the fallback for a renderer that did not (R1).
 	if (!BulletManager().WasRenderedThisFrame())
 		BulletManager().Render();
 	//Device.Statistic->TEST1.End();

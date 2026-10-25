@@ -33,6 +33,8 @@
 #include "../CustomOutfit.h"
 #include "../WeaponMagazinedWGrenade.h"
 #include "../CustomDetector.h"
+#include "../eatable_item.h"
+#include "../Artefact.h"
 #include "../GrenadeLauncher.h"
 #include "../trade.h"
 #include "../trade_parameters.h"
@@ -496,6 +498,13 @@ void CUIActorMenu::clear_highlight_lists()
 	for (u8 i = 0; i < e_af_count; i++)
 		m_ArtefactSlotsHighlight[i]->Show(false);*/
 
+	m_pInventoryPistolList->Highlight(false);
+	m_pInventoryAutomaticList->Highlight(false);
+	m_pInventoryOutfitList->Highlight(false);
+	m_pInventoryDetectorList->Highlight(false);
+	m_pInventoryBeltList->Highlight(false);
+	if (m_pQuickSlot)
+		m_pQuickSlot->Highlight(false);
 	m_pInventoryBagList->clear_select_armament();
 
 	switch (m_currMenuMode)
@@ -527,6 +536,37 @@ void CUIActorMenu::highlight_item_slot(CUICellItem* cell_item)
 
 	if (CUIDragDropListEx::m_drag_item)
 		return;
+
+	// OpenXRay's highlight_item_slot, on our slots. Only for an item NOT already equipped: one in a
+	// slot, on the belt or in a quick slot lights nothing up. The weapon slots are interchangeable here
+	// (either takes a pistol or a primary, CUIActorMenu::OnItemDrop), so they light up by CanGoInSlot --
+	// the very test the drop runs -- not by the item's base slot.
+	CUIDragDropListEx* own = cell_item->OwnerList();
+	if (own)
+	{
+		const EDDListType t = GetListType(own);
+		if (t == iActorSlot || t == iActorBelt || t == iQuickSlot)
+			return;
+	}
+	struct { CUIDragDropListEx* lst; u32 slot; } slots[] =
+	{
+		{ m_pInventoryPistolList,		PISTOL_SLOT },
+		{ m_pInventoryAutomaticList,	RIFLE_SLOT },
+		{ m_pInventoryOutfitList,		OUTFIT_SLOT },
+		{ m_pInventoryDetectorList,		DETECTOR_SLOT },
+	};
+	for (u32 i = 0; i < sizeof(slots)/sizeof(slots[0]); ++i)
+		if (slots[i].lst != own && item->CanGoInSlot(slots[i].slot))
+			slots[i].lst->Highlight(true);
+
+	// the quick slots take what ToQuickSlot takes: food and medicine, a 1x1 icon (the sleeping bag is an
+	// "antirad" by class, but 2x2 -- the drop refuses it, so must the highlight)
+	if (m_pQuickSlot && smart_cast<CEatableItem*>(item) && !CActor::IsGesturePhantom(item)
+		&& cell_item->GetGridSize().x <= 1 && cell_item->GetGridSize().y <= 1)
+		m_pQuickSlot->Highlight(true);
+
+	if (smart_cast<CArtefact*>(item) && item->Belt() && own != m_pInventoryBeltList)
+		m_pInventoryBeltList->Highlight(true);
 
 /*	CWeapon* weapon = smart_cast<CWeapon*>(item);
 	CWeaponPistol* pistol = smart_cast<CWeaponPistol*>(item);

@@ -273,6 +273,18 @@ snd_indoor_fadeout_start          = 0.1
 snd_indoor_fadeout_end            = 0.5
 snd_indoor_fadeout_db             = 6
 
+;low ammo sounds
+snd_low_ammo			= weapons\mag_rattle\ak74_mag_rattle_01, -1.05, 0.0
+snd_low_ammo1			= weapons\mag_rattle\ak74_mag_rattle_02, -1.05, 0.0
+snd_low_ammo2			= weapons\mag_rattle\ak74_mag_rattle_03, -1.05, 0.0
+snd_low_ammo3			= weapons\mag_rattle\ak74_mag_rattle_04, -1.05, 0.0
+volume_snd_low_ammo		= 80
+snd_low_ammo_threshold	= 10
+snd_low_ammo_gain		= 0.05, 1.0
+snd_low_ammo_db			= 18				; 0 - linear
+snd_low_ammo_duck		= 3					; ут очка
+snd_low_ammo_duck_time	= 0.04, 0.02, 0.125	; delay, attack, release (s)
+
 ;настройки для глушителя
 silencer_hit_power      = 0.55, 0.55, 0.55, 0.55
 silencer_hit_impulse    = 120
@@ -947,6 +959,10 @@ lock_time_anm_changefiremode_from_3_to_1_empty = 1.17
 lock_time_anm_changefiremode_from_a_to_3 = 1.17
 lock_time_anm_changefiremode_from_a_to_3_jammed = 1.17
 lock_time_anm_changefiremode_from_a_to_3_empty = 1.17
+hip_fire_point			= 0.112187, -0.100578, 1.235711
+hip_fire_dir			= -0.000004, 0.000004, 1.000000
+hud_recoil_pivot		= 0.112187, -0.100578, 0.1
+hud_recoil_aim_pivot	= 0.0, -0.15, 0.0
 [wpn_val_minigame]:wpn_val    ;new weapon for minigame "Shooting"
 shell_casing_override	= shell_casing_9x39	; the case of the real gun, not of the stand-in ammo_minigame round
 ammo_limit      = 100

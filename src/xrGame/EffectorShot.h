@@ -68,6 +68,17 @@ protected:
 	// is applied against this, not the total accumulated angle.
 	float			m_last_kick_vert;
 
+	// What the last shot kicked by BEFORE the max-angle clamps (rad): vertical up, horizontal as
+	// m_angle_horz counts it. The hud's own recoil leads the camera by a part of this (player_hud) and
+	// keeps getting it once the camera itself has reached cam_max_angle.
+	float			m_raw_kick_vert;
+	float			m_raw_kick_horz;
+
+	// The camera's own share of each kick (1 = all of it). With hud_recoil_camera_split the weapon on the
+	// hud takes the rest (CActor::on_weapon_shot_start sets it before every shot).
+	float			m_kick_scale_vert;
+	float			m_kick_scale_horz;
+
 	// Roll (Z-axis) shake: one full damped sine cycle per shot, amplitude cam_roll_amount (or
 	// cam_dispersion*0.5 as a fallback), duration cam_rise_time*1.25 -- see GetRoll(). Each shot
 	// starts its OWN independent wave instead of restarting a shared timer, so overlapping shots
@@ -104,6 +115,10 @@ public:
 		void	GetLastDelta		(Fvector& delta_angle);
 		void	ChangeHP			(float* pitch, float* yaw);
 		float	GetRoll				() const;
+		void	GetLastKick			(float& vert, float& horz) const	{ vert = m_raw_kick_vert; horz = m_raw_kick_horz; }
+		void	SetKickScale		(float vert, float horz)			{ m_kick_scale_vert = vert; m_kick_scale_horz = horz; }
+		// a kick on top of the last shot's, in the same rise (what the hud weapon had no room left for)
+		void	AddKick				(float vert, float horz);
 
 protected:
 		void	BeginRelax			();

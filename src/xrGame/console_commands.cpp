@@ -60,6 +60,7 @@
 #include "xrServer_Objects_ALife_Monsters.h"
 
 #include "hudmanager.h"
+#include "player_hud.h"
 
 string_path		g_last_saved_game;
 
@@ -171,6 +172,26 @@ CUIOptConCom g_OptConCom;
 #ifdef SEVERAL_ALLOCATORS
 	extern		u32 game_lua_memory_usage	();
 #endif // SEVERAL_ALLOCATORS
+
+// The hip shot's ray of the weapon in hand (player_hud::update_fire_ray): print it, in the form the hud
+// section takes (hip_fire_point / hip_fire_dir), or have it taken off the barrel again.
+// bake: off the first frame of anm_idle -- the weapon in hand, or every gun into $logs$\hud_fire_rays.ltx.
+class CCC_HudFireRay : public IConsole_Command {
+	int			m_mode;		// 0 dump, 1 resample, 2 bake, 3 bake all
+public:
+				CCC_HudFireRay(LPCSTR N, int mode) : IConsole_Command(N), m_mode(mode)	{ bEmptyArgsHandled = true; };
+	virtual void	Execute	(LPCSTR args)
+	{
+		if (!g_player_hud)	return;
+		switch (m_mode)
+		{
+		case 1:		g_player_hud->fire_ray_resample();	break;
+		case 2:		g_player_hud->fire_ray_bake();		break;
+		case 3:		g_player_hud->fire_ray_bake_all();	break;
+		default:	g_player_hud->fire_ray_dump();		break;
+		}
+	}
+};
 
 class CCC_MemStats : public IConsole_Command
 {
@@ -2194,6 +2215,63 @@ public:
 	}
 };
 
+// THE SCOPE MODE (the video options' list): 0 = real PiP -- the 3D lens, the world drawn again at the optic's
+// power (AF_LENS_3D, CWeapon::IsLensedScope); 1 = fake 3D -- the lens-off prism mode, the weapon stays and the
+// eyepiece shows the zoomed world (CWeapon::IsScopePrismCfg); 2 = the stock full-screen 2D picture. R1 has the
+// render target for neither 3D way: there it reads 2D, while the choice itself is kept for the other renderers
+// (Save writes it, not what R1 reports).
+u32			g_scope_mode		= 0;
+xr_token	scope_mode_token[]	= {
+	{ "ui_mm_scope_pip",	0 },
+	{ "ui_mm_scope_fake3d",	1 },
+	{ "ui_mm_scope_2d",		2 },
+	{ 0,					0 }
+};
+
+static bool scope_mode_r1_running()
+{
+	return	::Render && ::Render->get_generation() == IRender_interface::GENERATION_R1;
+}
+
+class CCC_ScopeMode : public CCC_Token
+{
+public:
+	CCC_ScopeMode(LPCSTR N) : CCC_Token(N, &g_scope_mode, scope_mode_token) {}
+	virtual void	Execute	(LPCSTR args)
+	{
+		CCC_Token::Execute	(args);
+		psActorFlags.set	(AF_LENS_3D, g_scope_mode == 0);
+	}
+	virtual void	Status	(TStatus& S)
+	{
+		if (scope_mode_r1_running())	{ xr_strcpy(S, "ui_mm_scope_2d"); return; }
+		CCC_Token::Status	(S);
+	}
+	virtual void	Save	(IWriter* F)
+	{
+		TStatus		S;
+		CCC_Token::Status	(S);
+		F->w_printf			("%s %s\r\n", cName, S);
+	}
+};
+
+// The old switch (lens_enabled on / off), for a user.ltx written before the list: on = real PiP, off = fake 3D.
+// Not saved -- scope_mode is, and comes after it in the file, so it has the last word.
+class CCC_LensEnabledCompat : public IConsole_Command
+{
+public:
+	CCC_LensEnabledCompat(LPCSTR N) : IConsole_Command(N) {}
+	virtual void	Execute	(LPCSTR args)
+	{
+		const bool on		= (0 == xr_strcmp(args, "on")) || (0 == xr_strcmp(args, "1"));
+		g_scope_mode		= on ? 0 : 1;
+		psActorFlags.set	(AF_LENS_3D, on);
+	}
+	virtual void	Status	(TStatus& S)	{ xr_strcpy(S, (g_scope_mode == 0) ? "on" : "off"); }
+	virtual void	Info	(TInfo& I)		{ xr_strcpy(I, "on/off -- old name, use scope_mode"); }
+	virtual void	Save	(IWriter* F)	{}
+};
+
 void CCC_RegisterCommands()
 {
 	// options
@@ -2412,7 +2490,8 @@ void CCC_RegisterCommands()
 		// frame is a SECOND scene render, i.e. a real performance knob. Ours renders the scene once
 		// either way, so the framerate does not move and the slider read as broken -- it only trades
 		// main-view smoothness against lens refresh rate. Left here for tuning.
-		CMD3(CCC_Mask,			"lens_enabled",			&psActorFlags,	AF_LENS_3D);
+		CMD1(CCC_ScopeMode,			"scope_mode");			// the video options' list: real PiP / fake 3D / 2D
+		CMD1(CCC_LensEnabledCompat,	"lens_enabled");		// its old switch, for an older user.ltx
 		extern int g_lens_render_factor;
 		CMD4(CCC_Integer,		"lens_render_factor",	&g_lens_render_factor,	1, 4);
 		// how close the 3D PDA is held: lowered / at the face. 0 = use the config value.
@@ -2635,6 +2714,18 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	// Top-left overlay for every playing hud blend: source .omf, motion name, time and state.
 	// Registered here rather than in the DEBUG block so it works in a Release build.
 	CMD4(CCC_Integer,		"hud_dbg_anim",		&g_show_hud_anim_info,	0, 1);
+	// the crosshair where the shot lands (1) or in the middle of the screen (0) -- HUDTarget.cpp
+	extern int g_hud_crosshair_detailed;
+	CMD4(CCC_Integer,		"hud_crosshair_detailed",	&g_hud_crosshair_detailed,	0, 1);
+	// the hip shot's aim and the crosshair's share of the sway -- player_hud.cpp (aim_hip_ray)
+	extern float g_hud_fire_zero_dist, g_hud_fire_slide_time, g_hud_crosshair_sway;
+	CMD4(CCC_Float,			"hud_fire_zero_dist",		&g_hud_fire_zero_dist,		0.f, 50.f);
+	CMD4(CCC_Float,			"hud_fire_slide_time",		&g_hud_fire_slide_time,		0.f, 1.f);
+	CMD4(CCC_Float,			"hud_crosshair_sway",		&g_hud_crosshair_sway,		0.f, 1.f);
+	CMD2(CCC_HudFireRay,		"hud_fire_ray_dump",		0);
+	CMD2(CCC_HudFireRay,		"hud_fire_ray_resample",	1);
+	CMD2(CCC_HudFireRay,		"hud_fire_ray_bake",		2);
+	CMD2(CCC_HudFireRay,		"hud_fire_ray_bake_all",	3);
 	CMD4(CCC_Integer,		"snd_shot_overlap",	&g_snd_shot_overlap,		0, 1);
 	CMD4(CCC_Integer,		"snd_overlap_voices",	&g_snd_overlap_voices,	0, 32);
 	CMD4(CCC_Float,			"snd_overlap_fade",		&g_snd_overlap_fade,	0.f, 2.f);

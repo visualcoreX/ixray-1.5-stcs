@@ -1,0 +1,20 @@
+#include "common.h"
+
+// models_zoom*.s l_special pass 2, drawn over the finished picture (r_dsgraph_render_lens_late). An optic in the
+// lens-off prism mode has no field stop; while its lens fades it puts over the glass the finished pictures of the
+// two kinds of frame the fade takes turns with (with the eyepiece's cut and without), mixed by the fade. The bloom
+// and the sun's volumetric shafts come from the HDR scene and the G-buffer, which hold the world under the glass on
+// one kind and the tube on the other: in the sun the lens flickered. As r3/model_scope_late.ps.
+uniform	float4		m_scope_prism;		// w = 1 / 2 on a frame with / without the cut, x = 1 while the lens fades
+uniform	float4		m_hud_params;		// the lens's fade: min(.y aim, .w visibility)
+uniform	float4		screen_res;
+uniform	sampler2D	s_scope_late;		// the last frame without the cut, finished (CRender::CaptureScopeLateLayer)
+uniform	sampler2D	s_scope_latec;		// ...and the last one with it
+
+float4 main( float2 vpos : VPOS ) : COLOR
+{
+	clip( (m_scope_prism.x > 0.5f && m_scope_prism.w > 0.5f) ? 1.0f : -1.0f );
+	const float		a	= saturate( min(m_hud_params.y, m_hud_params.w) );
+	const float4	uv	= float4( (vpos + 0.5f) / screen_res.xy, 0, 0 );
+	return	float4( lerp(tex2Dlod(s_scope_late, uv).rgb, tex2Dlod(s_scope_latec, uv).rgb, a), 1.0f );
+}

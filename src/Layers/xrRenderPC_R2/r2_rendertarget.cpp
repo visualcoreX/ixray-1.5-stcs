@@ -256,6 +256,10 @@ CRenderTarget::CRenderTarget		()
 		rt_scope.create				(r2_RT_scope,	w,h,D3DFMT_A8R8G8B8		);
 		rt_scope_save.create		("$user$scope_save",	w,h,D3DFMT_A8R8G8B8	);
 		rt_scope_ui.create			(r2_RT_scope_ui,w,h,D3DFMT_A8R8G8B8		);
+		rt_scope_hud.create			("$user$scopehud",w,h,D3DFMT_A8R8G8B8	);
+		rt_scope_late.create		("$user$scopelate",w,h,D3DFMT_A8R8G8B8	);
+		rt_scope_late_cut.create	("$user$scopelatec",w,h,D3DFMT_A8R8G8B8	);
+		rt_scope_distort.create		("$user$scopedistort",w,h,D3DFMT_A8R8G8B8	);
 		//	Igor: for volumetric lights
 		//rt_Generic_2.create			(r2_RT_generic2,w,h,D3DFMT_A8R8G8B8		);
 		//	temp: for higher quality blends
@@ -861,4 +865,53 @@ void CRender::PresentBridgeLens()
 		D3DXLoadSurfaceFromSurface(save->pRT, NULL, NULL, HW.pBaseRT, NULL, NULL, D3DX_DEFAULT, 0);	// save this normal frame
 		g_pGamePersistent->m_bLensSaveValid = true;		// a real frame is now saved -> lens frames may present it
 	}
+}
+
+// The lens-off prism mode (CWeapon::IsScopePrismCfg; r3_rendertarget.cpp has the full story). No lens view is
+// rendered: the ONE world render of the frame, as it stands right before the hud's glass (render_forward), is
+// copied into the textures the lens shaders sample -- the eyepiece has cut the hud out, so the world lies there.
+// A plain GPU copy per frame.
+void CRender::CaptureScopePrism()
+{
+	if (!Target)									return;
+	CRT* src = Target->rt_Generic_0._get();
+	if (!src || !src->pRT)							return;
+	CRT* dst[2] = { Target->rt_scope._get(), Target->rt_scope_ui._get() };	// the night lens / the gauss's
+	for (u32 i = 0; i < 2; ++i)
+		if (dst[i] && dst[i]->pRT)
+			HW.pDevice->StretchRect(src->pRT, NULL, dst[i]->pRT, NULL, D3DTEXF_NONE);
+}
+
+// ...and while its lens fades (r__dsgraph_render.cpp g_scope_prism_cut): a frame without the eyepiece's cut has
+// drawn its lens see-through over the live hud, the way the 3D lens is drawn -- keep that look through the glass
+// for the next frame, which has the cut and shows it (model_scope_lense*.ps). One GPU copy a frame, only then.
+// The frame's FINISHED picture by its kind (with the eyepiece's cut or without), right before the late pass: what the
+// combine adds after the hud -- the bloom, the sun's volumetric shafts -- comes from the HDR scene and the G-buffer,
+// which hold the world under the glass on a frame with the cut and the tube on one without, so in the sun the lens
+// flickered while it faded. The late pass mixes the two over the glass by the fade (model_scope_late.ps). As r3.
+// The picture is in rt_Color, or in the back buffer itself when no post-process is on (phase_combine's PP_Complex).
+void CRender::CaptureScopeLateLayer(bool cut, bool pp)
+{
+	if (!Target)									return;
+	CRT* dst = cut ? Target->rt_scope_late_cut._get() : Target->rt_scope_late._get();
+	if (!dst || !dst->pRT)							return;
+	IDirect3DSurface9* src = nullptr;
+	if (pp)
+	{
+		CRT* c = Target->rt_Color._get();
+		if (c)	src = c->pRT;
+	}
+	else
+		src = HW.pBaseRT;
+	if (!src)										return;
+	HW.pDevice->StretchRect(src, NULL, dst->pRT, NULL, D3DTEXF_NONE);
+}
+
+void CRender::CaptureScopeHudLayer()
+{
+	if (!Target)									return;
+	CRT* src = Target->rt_Generic_0._get();
+	CRT* dst = Target->rt_scope_hud._get();
+	if (!src || !src->pRT || !dst || !dst->pRT)		return;
+	HW.pDevice->StretchRect(src->pRT, NULL, dst->pRT, NULL, D3DTEXF_NONE);
 }

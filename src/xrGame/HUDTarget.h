@@ -19,7 +19,12 @@ class CHUDTarget
 private:
 	ui_shader				hShader;
 	float					fuzzyShowInfo;
-	SPickParam				PP;
+	SPickParam				PP;			// along the view: what is looked at (GetRQ -- use, pick up, dof)
+	// along the shot's ray (CActor::HudFireRay) while a gun is in first-person hands: where the crosshair
+	// is drawn, and whom it is coloured for
+	SPickParam				PPF;
+	bool					m_fire_ray;
+	Fvector					m_fire_pos, m_fire_dir;
 
 	bool					m_bShowCrosshair;
 	CHUDCrosshair			HUDCrosshair;

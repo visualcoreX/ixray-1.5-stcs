@@ -684,12 +684,18 @@
 
 
 
-		<cap_lens_enabled x="20" y="10" width="143" height="21">
-			<text font="letterica16" color="ui_6" vert_align="c">ui_mm_lens_enabled</text>
-		</cap_lens_enabled>
-		<check_lens_enabled x="194" y="10" width="30" height="21">
-			<options_item entry="lens_enabled" group="mm_opt_video_adv"/>
-		</check_lens_enabled>
+		<cap_scope_mode x="20" y="10" width="143" height="21">
+			<text font="letterica16" color="ui_6" vert_align="c">ui_mm_scope_mode</text>
+		</cap_scope_mode>
+		<combo_scope_mode x="194" y="10" width="245" height="21" list_length="3" always_show_scroll="0">
+			<options_item entry="scope_mode" group="mm_opt_video_adv"/>
+			<text_color>
+				<e r="216" g="186" b="140"/>
+				<d color="ui_gray"/>
+			</text_color>
+			<list_font_s r="240" g="217" b="182"/>
+			<list_font r="216" g="186" b="140" font="letterica16"/>
+		</combo_scope_mode>
 
 		<cap_lens_factor x="20" y="10" width="143" height="21">
 			<text font="letterica16" color="ui_6" vert_align="c">ui_mm_lens_factor</text>
@@ -873,7 +879,7 @@
 			<list_font r="216" g="186" b="140" font="letterica16"/>
 		</list_difficulty>
 
-		<check_tips x="20" y="180" width="30" height="21">
+		<check_tips x="20" y="205" width="30" height="21">
 			<options_item entry="hud_info" group="mm_opt_gameplay"/>
 			<text font="letterica16" color="ui_6">ui_mm_tips</text>
 		</check_tips>
@@ -888,12 +894,17 @@
 			<text font="letterica16" color="ui_6">ui_mm_dyn_crosshair</text>
 		</check_dyn_crosshair>
 
-		<check_show_weapon x="20" y="130" width="30" height="21">
+		<check_detailed_crosshair x="20" y="130" width="30" height="21">
+			<options_item entry="hud_crosshair_detailed" group="mm_opt_gameplay"/>
+			<text font="letterica16" color="ui_6">ui_mm_detailed_crosshair</text>
+		</check_detailed_crosshair>
+
+		<check_show_weapon x="20" y="155" width="30" height="21">
 			<options_item entry="hud_weapon" group="mm_opt_gameplay"/>
 			<text font="letterica16" color="ui_6">ui_mm_show_weapon</text>
 		</check_show_weapon>
 
-		<check_dist x="20" y="155" width="30" height="21">
+		<check_dist x="20" y="180" width="30" height="21">
 			<options_item entry="hud_crosshair_dist" group="mm_opt_gameplay"/>
 			<text font="letterica16" color="ui_6">ui_mm_crosshair_distance</text>
 		</check_dist>
@@ -929,12 +940,12 @@
 			<text font="letterica16" color="ui_6">ui_mm_intoxication</text>
 		</check_intoxication>
 
-		<check_sprint_on_hold x="20" y="205" width="30" height="21">
+		<check_sprint_on_hold x="20" y="230" width="30" height="21">
 			<options_item entry="g_sprint_on_hold" group="mm_opt_gameplay"/>
 			<text font="letterica16" color="ui_6">ui_mm_sprint_on_hold</text>
 		</check_sprint_on_hold>
 
-		<check_reload_in_sprint x="20" y="230" width="30" height="21">
+		<check_reload_in_sprint x="20" y="255" width="30" height="21">
 			<options_item entry="g_reload_in_sprint" group="mm_opt_gameplay"/>
 			<text font="letterica16" color="ui_6">ui_mm_reload_in_sprint</text>
 		</check_reload_in_sprint>

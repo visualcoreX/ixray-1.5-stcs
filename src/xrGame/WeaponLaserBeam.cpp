@@ -137,15 +137,25 @@ void SLaserBeamParams::Publish(const Fvector& from, const Fvector& axis, const F
 	// Only what lies IN FRONT of the emitter along its axis. Pressed against a wall, the HUD gun passes
 	// through it and the emitter ends up beyond the surface the trace stops at: the dot lands behind the
 	// emitter and the beam would turn round towards the camera. Then there is no beam (it is stopped at
-	// the aperture), and the dot fades out over its last few centimetres in front of the emitter.
-	const float	front_fade	= 0.05f;
-	float		dot_fade	= 1.f;
+	// the aperture), and the dot stays lit on the aperture itself: over its last few centimetres in
+	// front of the emitter it closes in on it -- along the axis never nearer than the emitter, across it
+	// onto the emitter's centre -- and anything at or behind the aperture is drawn right on it. It never
+	// shows behind the emitter, so the laser cannot seem to shine backwards.
+	const float	front		= 0.05f;
+	const float	dot_fade	= 1.f;
 	dot_ok			= dot_ok && dot && _valid(dot_pos);
+	Fvector		dp			= dot_pos;
 	if (dot_ok)
 	{
-		dot_fade	= Fvector().sub(dot_pos, from).dotproduct(axis) / front_fade;
-		clamp		(dot_fade, 0.f, 1.f);
-		dot_ok		= dot_fade > 0.f;
+		Fvector rel;	rel.sub(dot_pos, from);
+		const float t	= rel.dotproduct(axis);
+		if (t < front)
+		{
+			const float ta	= _max(t, 0.f);
+			Fvector perp;	perp.mad(rel, axis, -t);
+			dp.mad			(from, axis, ta);
+			dp.mad			(perp, ta / front);
+		}
 	}
 	Fvector d;		d.sub(to, from);
 	float len =		d.magnitude();
@@ -155,6 +165,15 @@ void SLaserBeamParams::Publish(const Fvector& from, const Fvector& axis, const F
 	else			{ d.set(0.f, 0.f, 1.f); len = 0.f; }
 	float fend =	hit ? fade_end_hit : fade_end_far;
 	if (len > max_length)	{ len = max_length; fend = fade_end_far; }
+	// A beam shorter than its fade-in and fade-out together (the gun up against a wall) would be all fade
+	// and show nothing: both shrink to fit, so a short beam keeps its middle lit.
+	float fstart =	fade_start;
+	if (len > EPS_L && fstart + fend > len * 0.6f)
+	{
+		const float k	= (len * 0.6f) / _max(fstart + fend, EPS_L);
+		fstart			*= k;
+		fend			*= k;
+	}
 
 	CEnvDescriptor& E	= *g_pGamePersistent->Environment().CurrentEnv;
 
@@ -181,7 +200,7 @@ void SLaserBeamParams::Publish(const Fvector& from, const Fvector& axis, const F
 	B.view_boost	= view_boost;
 	B.fade_cam_start= fade_cam_start;
 	B.fade_cam_end	= fade_cam_end;
-	B.fade_start	= fade_start;
+	B.fade_start	= fstart;
 	B.fade_end		= fend;
 	B.dust_scale	= dust_scale;
 	B.dust_threshold= dust_threshold;
@@ -201,7 +220,7 @@ void SLaserBeamParams::Publish(const Fvector& from, const Fvector& axis, const F
 	B.texture		= texture;
 
 	B.dot_show		= dot_ok ? dot_fade : 0.f;
-	B.dot_pos		= dot_ok ? dot_pos : from;
+	B.dot_pos		= dot_ok ? dp : from;
 	B.dot_color.mul	(color, dot_intensity);
 	B.dot_core		= dot_core;
 	B.dot_halo		= dot_halo;
@@ -223,8 +242,8 @@ void SLaserBeamParams::Publish(const Fvector& from, const Fvector& axis, const F
 			light->set_volumetric(false);
 			light->set_hud_mode	(false);
 		}
-		Fvector back;	back.sub(from, dot_pos);	back.normalize_safe();
-		Fvector lp;		lp.mad(dot_pos, back, dot_light_offset);
+		Fvector back;	back.sub(from, dp);	back.normalize_safe();
+		Fvector lp;		lp.mad(dp, back, dot_light_offset);
 		light->set_position	(lp);
 		light->set_range	(dot_light_range);
 		const float lb		= dot_light_bright * dot_fade;
@@ -244,7 +263,7 @@ void SLaserBeamParams::Publish(const Fvector& from, const Fvector& axis, const F
 
 // tan(world fov / 2) / tan(hud fov / 2): how much further off the view axis a HUD point has to be put
 // for the world projection to draw it over the same pixel
-static float hud_to_world_k()
+float LaserBeam_HudToWorldK()
 {
 	const float th	= tanf(deg2rad(0.5f * psHUD_FOV * Device.fFOV_HUD));
 	const float tw	= tanf(deg2rad(0.5f * Device.fFOV));
@@ -256,7 +275,7 @@ void LaserBeam_HudDirToWorld(Fvector& d)
 	const Fvector& cdir	= Device.vCameraDirection;
 	Fvector par;	par.mul(cdir, d.dotproduct(cdir));
 	Fvector perp;	perp.sub(d, par);
-	perp.mul		(hud_to_world_k());
+	perp.mul		(LaserBeam_HudToWorldK());
 	d.add			(par, perp);
 	d.normalize_safe();
 }
@@ -383,7 +402,7 @@ void LaserBeam_HudPointToWorld(Fvector& p)
 	if (along <= EPS_L)		return;
 	Fvector par;	par.mul(cdir, along);
 	Fvector perp;	perp.sub(v, par);
-	perp.mul		(hud_to_world_k());
+	perp.mul		(LaserBeam_HudToWorldK());
 	p.add			(cpos, par);
 	p.add			(perp);
 }

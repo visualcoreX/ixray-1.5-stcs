@@ -1121,6 +1121,7 @@ void CUIActorMenu::UpdateOutfit()
 	}
 	u32 af_count = m_pActorInvOwner->inventory().BeltWidth();
 	VERIFY( 0 <= af_count && af_count <= 5 );
+	m_pInventoryBeltList->SetHighlightLimit( 0 );	// the slot highlight: no outfit, no belt (set below)
 
 	VERIFY( m_pInventoryBeltList );
 	PIItem         ii_outfit = m_pActorInvOwner->inventory().m_slots[OUTFIT_SLOT].m_pIItem;
@@ -1140,6 +1141,7 @@ void CUIActorMenu::UpdateOutfit()
 	{
 		m_belt_list_over[i]->SetVisible( false );
 	}
+	m_pInventoryBeltList->SetHighlightLimit( int(af_count) );	// only the uncovered cells light up
 }
 
 void CUIActorMenu::MoveArtefactsToBag()
