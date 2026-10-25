@@ -40,6 +40,8 @@ CSoundRender_Emitter::CSoundRender_Emitter(void)
 	cut.start					= 0.f;
 	cut.end						= 0.f;
 	cut.db						= 0.f;
+	m_duck.from					= m_duck.depth = 0.f;
+	m_duck.start				= m_duck.down = m_duck.up = m_duck.end = 0.f;
 	occluder[0].set				(0,0,0);
 	occluder[1].set				(0,0,0);
 	occluder[2].set				(0,0,0);
@@ -108,21 +110,27 @@ void CSoundRender_Emitter::set_fade_out(const sound_fade_out& fade)
 
 // Fades the instance out from <delay> seconds from now over <length>. Kept apart from fade_out so a shot
 // that already fades by its config (the indoor fade) goes on doing so, the cut merely multiplying in.
+// Own play time at this moment, as update_fade_out counts it (negative while a delayed start waits).
+bool CSoundRender_Emitter::own_time(float& now) const
+{
+	switch (m_current_state)
+	{
+	case stPlaying: case stPlayingLooped: case stSimulating: case stSimulatingLooped:
+		now						= SoundRender->fTimer_Value-fTimeStarted;	return true;
+	case stStartingDelayed: case stStartingLoopedDelayed:
+		now						= -starting_delay;							return true;
+	case stStarting: case stStartingLooped:
+		now						= 0.f;										return true;
+	default:					return false;
+	}
+}
+
 void CSoundRender_Emitter::cut_out(float delay, float length)
 {
 	if (!_valid(delay) || !_valid(length))	return;
 
-	float		now;			// own play time at this moment, as update_fade_out counts it
-	switch (m_current_state)
-	{
-	case stPlaying: case stPlayingLooped: case stSimulating: case stSimulatingLooped:
-		now						= SoundRender->fTimer_Value-fTimeStarted;	break;
-	case stStartingDelayed: case stStartingLoopedDelayed:
-		now						= -starting_delay;							break;
-	case stStarting: case stStartingLooped:
-		now						= 0.f;										break;
-	default:					return;		// over already
-	}
+	float		now;
+	if (!own_time(now))			return;		// over already
 
 	const float	start			= now+_max(delay, 0.f);
 	const float	end				= start+_max(length, 0.f);
@@ -131,6 +139,33 @@ void CSoundRender_Emitter::cut_out(float delay, float length)
 
 	cut.start					= _max(start, 0.f);
 	cut.end						= end;
+}
+
+void CSoundRender_Emitter::duck(float delay, float attack, float hold, float release, float db)
+{
+	if (!_valid(delay) || !_valid(attack) || !_valid(hold) || !_valid(release) || !_valid(db))	return;
+
+	float		now;
+	if (!own_time(now))			return;
+
+	m_duck.from					= (m_duck.end>0.f) ? duck_db(now) : 0.f;	// on from the one still going
+	m_duck.depth				= -_abs(db);
+	m_duck.start				= now+_max(delay, 0.f);
+	m_duck.down					= m_duck.start+_max(attack, 0.f);
+	m_duck.up					= m_duck.down+_max(hold, 0.f);
+	m_duck.end					= m_duck.up+_max(release, 0.f);
+	if (m_duck.end<=0.f)		m_duck.end = 0.f;		// all of it before the sound is heard
+}
+
+// The duck's level at play time <t>, in dB; the ramps are straight lines in decibels.
+float CSoundRender_Emitter::duck_db(float t) const
+{
+	const SDuck&	d			= m_duck;
+	if (t<=d.start)				return d.from;
+	if (t<d.down)				return d.from+(d.depth-d.from)*(t-d.start)/(d.down-d.start);
+	if (t<=d.up)				return d.depth;
+	if (t<d.end)				return d.depth*(1.f-(t-d.up)/(d.end-d.up));
+	return						0.f;
 }
 
 // How much of a sound one fade leaves at play time <t>: 1 before <start>, 0 from <end> on.
@@ -156,7 +191,7 @@ static float fade_gain(const sound_fade_out& f, float t)
 bool CSoundRender_Emitter::update_fade_out()
 {
 	envelope_volume				= 1.f;
-	if (fade_out.end<=0.f && cut.end<=0.f)	return true;
+	if (fade_out.end<=0.f && cut.end<=0.f && m_duck.end<=0.f)	return true;
 
 	switch (m_current_state)
 	{
@@ -172,6 +207,11 @@ bool CSoundRender_Emitter::update_fade_out()
 	}
 	if (fade_out.end>0.f)		envelope_volume *= fade_gain(fade_out, t);
 	if (cut.end>0.f)			envelope_volume *= fade_gain(cut, t);
+	if (m_duck.end>0.f)
+	{
+		if (t>=m_duck.end)		m_duck.end = 0.f;		// back up, done
+		else					envelope_volume *= powf(10.f, duck_db(t)/20.f);
+	}
 	return						true;
 }
 

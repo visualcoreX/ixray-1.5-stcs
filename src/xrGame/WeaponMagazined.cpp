@@ -54,6 +54,13 @@ CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 	m_eSoundReload				= ESoundTypes(SOUND_TYPE_WEAPON_RECHARGING | eSoundType);
 	
 	m_sSndShotCurrent			= NULL;
+	m_bLowAmmoSnd				= false;
+	m_iLowAmmoThreshold			= 0;
+	m_fLowAmmoGainMin			= 0.f;
+	m_fLowAmmoGainMax			= 1.f;
+	m_fLowAmmoDb				= 0.f;
+	m_fLowAmmoDuckDb			= 0.f;
+	m_vLowAmmoDuckTime.set		(0.f, 0.f, 0.f);
 	m_sSilencerFlameParticles	= m_sSilencerSmokeParticles = NULL;
 	m_vMuzzleDeviceFxOffset.set	(0.f, 0.f, 0.f);
 	m_vMuzzleDeviceFxOffsetHud.set(0.f, 0.f, 0.f);
@@ -294,6 +301,30 @@ void CWeaponMagazined::Load	(LPCSTR section)
 		m_sounds.LoadSound(section, "snd_torch_on", "sndFlashOn", false, m_eSoundReload);
 	if (WeaponSoundExist(section, "snd_torch_off"))
 		m_sounds.LoadSound(section, "snd_torch_off", "sndFlashOff", false, m_eSoundReload);
+
+	// Low ammo (see the header): snd_low_ammo, snd_low_ammo1, ... is the pool, the threshold is required
+	// with it. Mechanical, like the rest of the magazine's noises.
+	m_bLowAmmoSnd = false;
+	if (WeaponSoundExist(section, "snd_low_ammo"))
+	{
+		m_iLowAmmoThreshold		= READ_IF_EXISTS(pSettings, r_s32, section, "snd_low_ammo_threshold", 0);
+		if (m_iLowAmmoThreshold <= 0)
+			Msg("! [%s] snd_low_ammo without a positive snd_low_ammo_threshold -- no low ammo sound", section);
+		else
+		{
+			m_sounds.LoadSound(section, "snd_low_ammo", "sndLowAmmo", false, m_eSoundReload);
+			const Fvector2 gain	= READ_IF_EXISTS(pSettings, r_fvector2, section, "snd_low_ammo_gain", Fvector2().set(0.f, 1.f));
+			m_fLowAmmoGainMin	= _max(gain.x, 0.f);
+			m_fLowAmmoGainMax	= _max(gain.y, 0.f);
+			m_fLowAmmoDb		= READ_IF_EXISTS(pSettings, r_float, section, "snd_low_ammo_db", 0.f);
+			m_fLowAmmoDuckDb	= _abs(READ_IF_EXISTS(pSettings, r_float, section, "snd_low_ammo_duck", 0.f));
+			m_vLowAmmoDuckTime	= READ_IF_EXISTS(pSettings, r_fvector3, section, "snd_low_ammo_duck_time", Fvector().set(0.03f, 0.02f, 0.15f));
+			m_vLowAmmoDuckTime.x	= _max(m_vLowAmmoDuckTime.x, 0.f);
+			m_vLowAmmoDuckTime.y	= _max(m_vLowAmmoDuckTime.y, 0.f);
+			m_vLowAmmoDuckTime.z	= _max(m_vLowAmmoDuckTime.z, 0.f);
+			m_bLowAmmoSnd		= true;
+		}
+	}
 
 	m_sSndShotCurrent = "sndShot";
 		
@@ -2492,6 +2523,10 @@ void CWeaponMagazined::state_Fire(float dt)
 			// This is Gunslinger's forced ProcessAmmo right after the shot (WeaponAnims), same idea.
 			gwr_UpdateBones			(true);
 
+			// ...and the magazine rattles the emptier it gets. Here and not in OnShot, which the pistols and
+			// shotguns override without calling inherited; a shot that is about to jam has spent its round too.
+			PlayLowAmmoSound		();
+
 			// jam (misfire) can only occur AFTER a shot has actually been fired -
 			// the fired round leaves the barrel, then the action jams (stovepipe /
 			// failure-to-eject). Rolled here (post-shot) instead of before the shot so
@@ -2655,6 +2690,58 @@ void CWeaponMagazined::OnShot()
 	StartSmokeParticles			(get_MuzzleFxPoint(), vel);
 }
 
+
+// Called right after a shot has taken its round: iAmmoElapsed is what is left in the magazine.
+void CWeaponMagazined::PlayLowAmmoSound()
+{
+	if (!m_bLowAmmoSnd || !GetHUDmode() || IsGrenadeMode())
+		return;
+	if (iAmmoElapsed > m_iLowAmmoThreshold)
+		return;
+
+	// 0 at the threshold, 1 at an empty magazine; with a db the same curve as the indoor fade's
+	// (fade_gain in SoundRender_Emitter.cpp), run the other way: slow at first, the steepest at the end
+	const float		x		= 1.f - float(iAmmoElapsed) / float(m_iLowAmmoThreshold);
+	float			k		= x;
+	if (m_fLowAmmoDb > 0.f)
+	{
+		const float	floor_g	= powf(10.f, -m_fLowAmmoDb / 20.f);
+		k					= (powf(10.f, m_fLowAmmoDb * (x - 1.f) / 20.f) - floor_g) / (1.f - floor_g);
+	}
+	clamp					(k, 0.f, 1.f);
+	const float		gain	= m_fLowAmmoGainMin + (m_fLowAmmoGainMax - m_fLowAmmoGainMin) * k;
+	if (gain <= EPS_L)
+		return;
+
+	// 2D, straight into the collection: no 1P/distant/indoor twins to pick between. Unlocked, so in a
+	// burst each rattle rings out under the next instead of being restarted. The variant is picked here
+	// so that its length is known to the duck below.
+	HUD_SOUND_ITEM*	rattle	= m_sounds.FindSoundItem("sndLowAmmo", true);
+	if (rattle->sounds.empty())
+		return;
+	const u8		idx		= (u8)Random.randI(rattle->sounds.size());
+	m_sounds.PlaySound		("sndLowAmmo", get_LastFP(), H_Root(), true, false, idx, true, gain);
+
+	if (m_fLowAmmoDuckDb <= 0.f || m_fLowAmmoGainMax <= EPS_L)
+		return;
+
+	// Every shot recording still ringing -- the one that just went off included, its attack spared by the
+	// delay -- dips under the rattle: the plain and the 1P take, and the indoor tails of both.
+	const HUD_SOUND_ITEM::SSnd&	s	= rattle->sounds[idx];
+	const float		db		= m_fLowAmmoDuckDb * _min(gain / m_fLowAmmoGainMax, 1.f);
+	const float		delay	= s.delay + m_vLowAmmoDuckTime.x;
+	const float		attack	= m_vLowAmmoDuckTime.y;
+	const float		hold	= _max(s.delay + s.snd.get_length_sec() - delay - attack, 0.f);
+	LPCSTR			shot	= m_sSndShotCurrent.c_str();
+	LPCSTR			suffix[4] = { "", "1P", "Indoor", "1PIndoor" };
+	for (int i = 0; i < 4; ++i)
+	{
+		string64			alias;
+		strconcat			(sizeof(alias), alias, shot, suffix[i]);
+		if (HUD_SOUND_ITEM* item = m_sounds.FindSoundItem(alias, false))
+			item->Duck		(delay, attack, hold, m_vLowAmmoDuckTime.z, db);
+	}
+}
 
 void CWeaponMagazined::OnEmptyClick	()
 {

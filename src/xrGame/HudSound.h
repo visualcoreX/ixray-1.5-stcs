@@ -84,6 +84,10 @@ struct HUD_SOUND_ITEM
 	// Make room for one more overlapping copy that starts sounding <delay> seconds from now.
 	void			LimitVoices		(	float delay);
 
+	// Lower whatever of this item is still ringing -- the locked sound and the overlapping copies -- by <db>
+	// for a while (ref_sound::duck), so that another sound comes through it.
+	void			Duck			(	float delay, float attack, float hold, float release, float db);
+
 	ICF BOOL		playing			()
 	{
 		if (m_activeSnd)	return	m_activeSnd->snd._feedback()?TRUE:FALSE;

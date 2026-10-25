@@ -20,6 +20,25 @@ protected:
 	//звук текущего выстрела
 	shared_str		m_sSndShotCurrent;
 
+	// Low ammo: the follower and the last rounds rattling in a nearly empty magazine, rising in volume as
+	// it runs dry -- the shooter's own cue, heard in first person only. Each shot that leaves no more than
+	// snd_low_ammo_threshold rounds plays one of snd_low_ammo[N] at random, over the shot, at a gain going
+	// from the first number of snd_low_ammo_gain (at the threshold) to the second (at an empty magazine);
+	// snd_low_ammo_db > 0 makes the rise exponential -- linear in decibels, the steepest near empty --
+	// mirroring the indoor fade (sound_fade_out), else it is linear. No snd_low_ammo = off.
+	// The shots' own tails would bury it, so while it plays they are ducked: snd_low_ammo_duck dB at an
+	// empty magazine, less as the rattle is quieter (by its gain over the top one). snd_low_ammo_duck_time =
+	// delay, attack, release: the delay past the rattle's start keeps the attack of the shot that has just
+	// gone off whole; the duck then holds to the rattle's end and comes back over the release.
+	bool			m_bLowAmmoSnd;
+	int				m_iLowAmmoThreshold;
+	float			m_fLowAmmoGainMin;
+	float			m_fLowAmmoGainMax;
+	float			m_fLowAmmoDb;
+	float			m_fLowAmmoDuckDb;			// 0: no duck
+	Fvector			m_vLowAmmoDuckTime;			// delay, attack, release
+	void			PlayLowAmmoSound	();
+
 	//дополнительная информация о глушителе
 	LPCSTR			m_sSilencerFlameParticles;
 	LPCSTR			m_sSilencerSmokeParticles;

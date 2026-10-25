@@ -47,6 +47,11 @@ public:
 	float						envelope_volume;		// the fade-out laid over this instance (set_fade_out), into AL_GAIN; 1 without one
 	sound_fade_out				fade_out;				// end <= 0: none
 	sound_fade_out				cut;					// cut_out's linear fade, same time base; end <= 0: none
+	struct SDuck				{						// duck(), same time base, levels in dB (<= 0); end <= 0: none
+		float					from, depth;			// the level before <start>, and the one held
+		float					start, down, up, end;	// starts down / is down / starts up / is back
+	}							m_duck;
+	float						duck_db					(float t) const;
 	Fvector						occluder	[3];
 
 	State						m_current_state;
@@ -87,6 +92,8 @@ public:
 	virtual void				set_priority			(float p)				{ priority_scale = p;									}
 	virtual void				set_fade_out			(const sound_fade_out& fade);
 	virtual void				cut_out					(float delay, float length);
+	virtual void				duck					(float delay, float attack, float hold, float release, float db);
+	bool						own_time				(float& now) const;	// false: over already
 	virtual	const CSound_params* get_params				()						{ return &p_source;										}
 
 	void						fill_block				(void*	ptr, u32 size);
