@@ -187,6 +187,8 @@ scope_zoom_factor       = 100                                                ; f
 scope_name              = wpn_addon_scope
 scope_x              	= 28                 ; offset in inventory icon
 scope_y                 = 5
+snd_scope_brightness_plus  = weapons\nv_intensity   ; GS: click when the reticle/NV brightness step (or a collimator mark) goes up
+snd_scope_brightness_minus = weapons\nv_intensity   ; GS: click when it goes down
 silencer_name              = wpn_addon_silencer    ; section name for the attachable silencer
 silencer_x              = 198	; orig 228 (GS an94)
 silencer_y              = 10	; orig 9 (GS an94)
@@ -315,6 +317,18 @@ volume_snd_silncer_shot_indoor_1p = 60
 snd_indoor_fadeout_start          = 0.1
 snd_indoor_fadeout_end            = 0.5
 snd_indoor_fadeout_db             = 6
+
+;low ammo sounds
+snd_low_ammo			= weapons\mag_rattle\ak74_mag_rattle_01, -1.05, 0.0
+snd_low_ammo1			= weapons\mag_rattle\ak74_mag_rattle_02, -1.05, 0.0
+snd_low_ammo2			= weapons\mag_rattle\ak74_mag_rattle_03, -1.05, 0.0
+snd_low_ammo3			= weapons\mag_rattle\ak74_mag_rattle_04, -1.05, 0.0
+volume_snd_low_ammo		= 125
+snd_low_ammo_threshold	= 15
+snd_low_ammo_gain		= 0.05, 1.0
+snd_low_ammo_db			= 12				; 0 - linear
+snd_low_ammo_duck		= 3					; ут очка
+snd_low_ammo_duck_time	= 0.04, 0.02, 0.125	; delay, attack, release (s)
 
 ;настройки для глушителя
 silencer_hit_power      = 0.55, 0.55, 0.55, 0.55

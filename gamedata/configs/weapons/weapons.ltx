@@ -166,11 +166,13 @@ explode_particles				= explosions\expl_bullet,explosions\expl_bullet_00,explosio
 
 
 [tracers_color_table]
-color_0 = 255, 132, 	32, 	255	; yellow
-color_1 = 255, 255, 	255, 	255	; white
-color_2 = 255, 25, 	0,	255	; red
-color_3 = 77, 	255, 	77,	255	; green
-color_4 = 0, 	0, 	25,	255	; blue
+color_0 = 255,	136, 	32, 	255	; yellow
+color_1 = 255,	255, 	255, 	255	; white
+color_2 = 255,	25, 	0,		255	; red
+color_3 = 77,	255, 	77,		255	; green
+color_4 = 0, 	0, 		25,		255	; blue
+color_5 = 255,	84, 	16, 	255	; Тестовый цвет для бронебоек, этакая цветовая индикация. Всякие зелёные не юзаю, а то получится новогодняя гирлянда
+color_6 = 255,	132, 	64, 	255	; Альтернативный подтип для особых патронов типа экспансивок, снайперских пулек, дротиков и т.д.
 
 ;color_0 = 255, 	255, 	255, 	255	; white
 ;color_1 = 255, 	255, 	255, 	255	; white
@@ -259,6 +261,7 @@ k_ap			= 0.35	; orig 0.25 -- PBP is the armour-piercing 9x18; GS only ships FMJ 
 impair			= 1
 buck_shot		= 1
 tracer			= on
+tracer_color_ID = 6
 wm_size         = 0.05
 k_air_resistance = 1.5
 
@@ -297,6 +300,7 @@ k_ap			= 0.25	; orig 0.1 (GS)
 impair			= 1.8	; orig 1 (GS)
 buck_shot		= 1
 tracer			= on
+tracer_color_ID = 5
 wm_size         = 0.05
 k_air_resistance = 1.4	; orig 1.5 (GS)
 
@@ -335,7 +339,7 @@ k_pierce		= 0.1
 k_ap			= 0.2	; orig 0.1 (GS)
 impair			= 1
 buck_shot		= 1
-tracer			= off
+tracer			= on
 wm_size         = 0.05
 k_air_resistance = 1.45	; orig 1.5 (GS)
 
@@ -374,6 +378,7 @@ k_ap			= 0.35	; orig 0.1 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= on
+tracer_color_ID = 6
 wm_size         = 0.05
 k_air_resistance = 1.35	; orig 1.5 (GS)
 
@@ -412,7 +417,7 @@ k_pierce		= 0.1
 k_ap			= 0.15	; orig 0.1 (GS)
 impair			= 1
 buck_shot		= 1
-tracer			= off
+tracer			= on
 wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -450,7 +455,8 @@ k_pierce		= 0.1
 k_ap			= 0.45	; orig 0.1 (GS)
 impair			= 1
 buck_shot		= 1
-tracer			= off
+tracer			= on
+tracer_color_ID = 6
 wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -529,6 +535,7 @@ k_ap			= 0.65	; orig 0.8 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= on
+tracer_color_ID = 5
 wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -606,6 +613,7 @@ k_ap			= 0.65	; orig 0.8 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= on
+tracer_color_ID = 5
 wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -720,6 +728,7 @@ k_ap			= 0.9	; orig 0.83 -- no GS counterpart; sits between 7H1 (1.5/0.83) and 7
 impair			= 1
 buck_shot		= 1
 tracer			= on
+tracer_color_ID = 5
 wm_size         = 0.05
 explosive		= on
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -757,6 +766,7 @@ k_ap			= 0.97	; orig 0.83 -- 7H14 is the armour-piercing sniper load and the dea
 impair			= 1
 buck_shot		= 1
 tracer			= on
+tracer_color_ID = 5
 wm_size         = 0.05
 explosive		= on
 
@@ -930,6 +940,7 @@ k_ap			= 0.85	; orig 0.9 (GS)
 impair			= 1
 buck_shot		= 1
 tracer			= on
+tracer_color_ID = 5
 wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -967,6 +978,7 @@ k_ap			= 0.3	; orig 0.45 -- SP-5 is the ball load: GS has no counterpart, so it 
 impair			= 1
 buck_shot		= 1
 tracer			= on
+tracer_color_ID = 6
 wm_size         = 0.05
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1087,6 +1099,7 @@ k_ap			= 0.53	; orig 0.96 -- picked for whole hits to kill (see memory cs-gs-dam
 impair			= 1
 buck_shot		= 1
 tracer			= on
+tracer_color_ID = 6
 wm_size         = 0.05
 explosive		= off	; orig on. Not a detonation: CBulletManager::FireShotmark takes this as
 					; "on every STATIC surface hit, also play the explode particle system"
@@ -2612,7 +2625,7 @@ k_disp           = 1
 k_impulse        = 1
 impair           = 1
 buck_shot        = 1
-tracer           = off
+tracer           = on
 wm_size          = 0.05
 
 ; --- 7.62x25 TT (GS ammo/7.62x25.ltx), fed by the TT-33 ---
@@ -2630,7 +2643,7 @@ k_disp                = 1
 k_impulse             = 1
 impair                = 1
 buck_shot             = 1
-tracer                = off
+tracer                = on
 wm_size               = 0.05
 $spawn			= "weapons\ammo\ammo_9x21_sp10" ; option for Level Editor
 visual          = dynamics\weapons\wpn_ammo\ammo_9x21_sp10.ogf
@@ -2686,7 +2699,7 @@ k_disp            = 1
 k_impulse         = 1
 impair            = 1
 buck_shot         = 1
-tracer            = off
+tracer            = on
 wm_size           = 0.05
 
 ; ---- .50 Action Express (GS deagle caliber), ported from GS ammo\.50ae.ltx ----
@@ -2723,5 +2736,5 @@ k_disp            = 1
 k_impulse         = 1
 impair            = 1
 buck_shot         = 1
-tracer            = off
+tracer            = on
 wm_size           = 0.05
