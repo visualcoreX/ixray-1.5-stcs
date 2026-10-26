@@ -7,6 +7,9 @@ class IParticleCustom
 public:
 	virtual ~IParticleCustom() {;}
 
+	// the particle simulation tick, ms (60 a second); the pre-roll of a freshly started effect is one tick
+	enum { TICK_MS = 16 };
+
 	virtual void 	OnDeviceCreate		()=0;
 	virtual void 	OnDeviceDestroy		()=0;
 

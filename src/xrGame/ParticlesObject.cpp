@@ -125,7 +125,7 @@ void CParticlesObject::Play		(bool bHudMode)
 		V->SetHudMode			(bHudMode);
 
 	V->Play						();
-	dwLastTime					= Device.dwTimeGlobal-33ul;
+	dwLastTime					= Device.dwTimeGlobal-IParticleCustom::TICK_MS;
 	mt_dt						= 0;
 	PerformAllTheWork			(0);
 	m_bStopping					= false;
@@ -147,7 +147,7 @@ void CParticlesObject::play_at_pos(const Fvector& pos, BOOL xform)
 	Fmatrix m; m.translate		(pos); 
 	V->UpdateParent				(m,zero_vel,xform);
 	V->Play						();
-	dwLastTime					= Device.dwTimeGlobal-33ul;
+	dwLastTime					= Device.dwTimeGlobal-IParticleCustom::TICK_MS;
 	mt_dt						= 0;
 	PerformAllTheWork			(0);
 	m_bStopping					= false;
