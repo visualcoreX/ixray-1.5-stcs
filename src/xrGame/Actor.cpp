@@ -2987,19 +2987,23 @@ void CActor::UpdateArtefactsOnBeltAndOutfit()
 
 float	CActor::HitArtefactsOnBelt(float hit_power, ALife::EHitType hit_type)
 {
-	TIItemContainer::iterator it  = inventory().m_belt.begin(); 
-	TIItemContainer::iterator ite = inventory().m_belt.end() ;
-	for( ; it != ite; ++it )
+	// For the anomaly types the belt's *_immunity is in the outfit's units: a flat protection*0.1 off
+	// every hit, or the share of it the HUD shows, whichever leaves less (CEntityCondition::
+	// AnomalyProtectionShare). For the rest it is still the raw flat cut.
+	float protect		= GetProtection_ArtefactsOnBelt( hit_type );
+	float res			= hit_power;
+	if ( CEntityCondition::IsAnomalyHitType( hit_type ) )
 	{
-		CArtefact*	artefact = smart_cast<CArtefact*>(*it);
-		if ( artefact )
-		{
-			hit_power -= artefact->m_ArtefactHitImmunities.AffectHit( 1.0f, hit_type );
-		}
+		res				-= protect * 0.1f;
+		res				= _min( res, hit_power * (1.0f - CEntityCondition::AnomalyProtectionShare( protect, hit_type )) );
 	}
-	clamp(hit_power, 0.0f, flt_max);
+	else
+	{
+		res				-= protect;
+	}
+	clamp(res, 0.0f, flt_max);
 
-	return hit_power;
+	return res;
 
 /*
 	float res_hit_power_k		= 1.0f;

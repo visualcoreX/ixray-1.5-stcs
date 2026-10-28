@@ -6,6 +6,18 @@
 
 using namespace PAPI;
 
+// The effects were authored against a 33 ms tick, where "this fraction of the way to the target per
+// tick" came out as scale*dt = scale*0.033. dt-proportional steps do not add up across ticks of another
+// length (a fade of scale 24 keeps 21% of a value per 33 ms but 62% per 16 ms: 30/s instead of 47/s), so
+// the share of one 33 ms tick is compounded to the tick actually run: the same curve at any tick.
+static const float	PA_AUTHORED_DT	= 0.033f;
+static IC float	TickKeep(float share_per_authored_tick, float dt)
+{
+	const float keep = 1.f - share_per_authored_tick;
+	if (keep <= 0.f)	return 0.f;
+	return powf(keep, dt / PA_AUTHORED_DT);
+}
+
 void PAPI::PAAvoid::Execute(ParticleEffect *effect, const float dt, float& tm_max)
 {
 	float magdt = magnitude * dt;
@@ -702,8 +714,9 @@ void PACopyVertexB::Transform(const Fmatrix&){;}
 void PADamping::Execute(ParticleEffect *effect, const float dt, float& tm_max)
 {
 	// This is important if dt is != 1.
-	pVector one(1,1,1);
-	pVector scale(one - ((one - damping) * dt));
+	pVector scale(	TickKeep((1.f - damping.x) * PA_AUTHORED_DT, dt),
+					TickKeep((1.f - damping.y) * PA_AUTHORED_DT, dt),
+					TickKeep((1.f - damping.z) * PA_AUTHORED_DT, dt));
 	
 	for(u32 i = 0; i < effect->p_count; i++)
 	{
@@ -1454,7 +1467,7 @@ void PASpeedLimit::Transform(const Fmatrix&){;}
 // Change color of all particles toward the specified color
 void PATargetColor::Execute(ParticleEffect *effect, const float dt, float& tm_max)
 {
-	float scaleFac = scale * dt;
+	float scaleFac = 1.f - TickKeep(scale * PA_AUTHORED_DT, dt);
     Fcolor c_p,c_t; 
 	
 	for(u32 i = 0; i < effect->p_count; i++)
@@ -1473,9 +1486,9 @@ void PATargetColor::Transform(const Fmatrix&){;}
 // Change sizes of all particles toward the specified size
 void PATargetSize::Execute(ParticleEffect *effect, const float dt, float& tm_max)
 {
-	float scaleFac_x = scale.x * dt;
-	float scaleFac_y = scale.y * dt;
-	float scaleFac_z = scale.z * dt;
+	float scaleFac_x = 1.f - TickKeep(scale.x * PA_AUTHORED_DT, dt);
+	float scaleFac_y = 1.f - TickKeep(scale.y * PA_AUTHORED_DT, dt);
+	float scaleFac_z = 1.f - TickKeep(scale.z * PA_AUTHORED_DT, dt);
 	
 	for(u32 i = 0; i < effect->p_count; i++)
 	{
@@ -1493,7 +1506,7 @@ void PATargetSize::Transform(const Fmatrix&){;}
 // Change rotation of all particles toward the specified velocity
 void PATargetRotate::Execute(ParticleEffect *effect, const float dt, float& tm_max)
 {
-	float scaleFac = scale * dt;
+	float scaleFac = 1.f - TickKeep(scale * PA_AUTHORED_DT, dt);
 
 	pVector r = pVector(_abs(rot.x),_abs(rot.y),_abs(rot.z));
 
@@ -1512,7 +1525,7 @@ void PATargetRotate::Transform(const Fmatrix&){;}
 // Change velocity of all particles toward the specified velocity
 void PATargetVelocity::Execute(ParticleEffect *effect, const float dt, float& tm_max)
 {
-	float scaleFac = scale * dt;
+	float scaleFac = 1.f - TickKeep(scale * PA_AUTHORED_DT, dt);
 	
 	for(u32 i = 0; i < effect->p_count; i++)
 	{
