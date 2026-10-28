@@ -173,6 +173,12 @@ function faction_brain_human:get_sim_targets_advance()
 				self:register_target_point(smart, TASK_POINT_NONE, 2)
 			end
 		end
+		for k, smart_name in pairs (exp_table[i].precondition_target_optional) do
+			local smart = smarts_by_name[smart_name]
+			if smart.player_name == faction_name then
+				self:register_target_point(smart, TASK_POINT_NONE, 2)
+			end
+		end
 	end
 
 	for i = 0, cur_exp do
@@ -188,6 +194,13 @@ function faction_brain_human:get_sim_targets_advance()
 
 		for k, smart_name in pairs (expansion.precondition_target) do
 			self:register_target_point(smarts_by_name[smart_name], TASK_POINT_CAPTURE, 2, is_actor_in_faction and i == cur_exp)
+		end
+
+		-- same as above, but check_sim_targets_advance does not wait for them (sim_faction.script). Never the
+		-- "current priority": that keeps one slot free for the respawn, and a squad_capacity = 1 point (Stoyanka
+		-- pod nasypyu) would be left with none -- no squad was ever sent there until the next stage
+		for k, smart_name in pairs (expansion.precondition_target_optional) do
+			self:register_target_point(smarts_by_name[smart_name], TASK_POINT_CAPTURE, 2, false)
 		end
 	end
 end
