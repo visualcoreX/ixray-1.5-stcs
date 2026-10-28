@@ -655,7 +655,7 @@ void CParticleEffect::Render(float )
 					Device.mFullTransform.mul	(Device.mProject, Device.mView);
 					RCache.set_xform_project	(Device.mProject);
 					RImplementation.rmNear		();
-					// The soft-particle shaders (particle_add, particle_distort...) look the scene's position
+					// The soft-particle shaders (particle, particle_distort...) look the scene's position
 					// buffer up through this texgen, at the pixel the particle covers. In the hud's slice the
 					// particle is drawn through W as well (m_WVP), so the texgen must have it too: without it the
 					// lookup landed K times further from the middle of the screen than the sprite, and the sprite
@@ -672,7 +672,7 @@ void CParticleEffect::Render(float )
 
 #ifndef _EDITOR
 				RCache.set_xform_world	(bHudWorld ? W : Fidentity);
-				// in the hud's slice no soft fade (particle_add.ps): it is ~0.8 m deep, and at the scale of the
+				// in the hud's slice no soft fade (particle.ps): it is ~0.8 m deep, and at the scale of the
 				// weapon in hand it ate every sprite lying on the gun. Set on every draw, both ways: a shader
 				// constant keeps whatever the last draw left in it.
 				RCache.set_c			("particle_hud_slice", (GetHudMode() || bHudWorld) ? 1.f : 0.f, 0.f, 0.f, 0.f);

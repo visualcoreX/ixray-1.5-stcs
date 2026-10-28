@@ -14,37 +14,14 @@ struct v2p
     float fog : FOG;
 };
 
-// 1 while the particle is drawn in the hud's depth slice (set by CParticleEffect::Render), 0 in the world.
-// The soft fade below takes ~0.8 m to come in full -- made for the world, where fire sinks softly into the
-// ground; at the scale of the weapon in hand it ate every sprite lying on the gun but what stuck out past
-// its outline, and the sprite read as shifted off its point. There the sprite is clipped by the geometry,
-// as particle.ps does everywhere.
-uniform float4	particle_hud_slice;
-
-//	Must be less than view near
-#define	DEPTH_EPSILON 0.1h
+// No soft fade here (the soft-particle texgen still comes in, as particle.vs puts it out). The glow --
+// sparks, flashes, fire -- is small and lives right at the surfaces: a hit's sparks (hit_fx), a muzzle
+// flash at a wall. The fade, ~0.8 m to come in full, ate it there; clipped by the geometry it reads right.
+// The smoke (particles\blend, particle.ps) keeps it.
 
 float4 main( v2p I ) : SV_Target
 {
 	float4 result = I.c * s_base.Sample(smp_base, I.tc0);
-
-	//	Igor: additional depth test
-#ifdef	USE_SOFT_PARTICLES
-	float2 tcProj	= I.tctexgen.xy / I.tctexgen.w;
-#ifdef GBUFFER_OPTIMIZATION
-	gbuffer_data gbd = gbuffer_load_data(tcProj, I.hpos);
-#else
-	gbuffer_data gbd = gbuffer_load_data(tcProj);
-#endif
-	float4 _P = float4(gbd.P, gbd.mtl);
-	float spaceDepth = _P.z-I.tctexgen.z-DEPTH_EPSILON;
-	if (spaceDepth < -2*DEPTH_EPSILON) {
-        spaceDepth = 100000.0f; //  Skybox doesn't draw into position buffer
-    }
-	float fade = lerp( Contrast( saturate(spaceDepth*1.3h), 2), 1.0f, particle_hud_slice.x );
-	result.a *= fade;
-	result.rgb *= fade;
-#endif	//	USE_SOFT_PARTICLES
 
 	clip(result.a - (0.01f / 255.0f));
     result.w *= I.fog;

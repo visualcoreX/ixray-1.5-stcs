@@ -14,6 +14,11 @@ struct v2p
     float fog : FOG;
 };
 
+// 1 while the particle is drawn in the hud's depth slice (set by CParticleEffect::Render), 0 in the world.
+// The soft fade below takes ~0.8 m to come in full -- made for the world, where smoke sinks softly into the
+// ground; at the scale of the weapon in hand it eats every sprite lying on the gun. There the sprite is
+// clipped by the geometry.
+uniform float4	particle_hud_slice;
 
 //	Must be less than view near
 #define	DEPTH_EPSILON	0.1h
@@ -37,9 +42,11 @@ float4 main( v2p I ) : SV_Target
 	float spaceDepth = _P.z-I.tctexgen.z-DEPTH_EPSILON;
 	if (spaceDepth < -2*DEPTH_EPSILON ) spaceDepth = 100000.0h; //  Skybox doesn't draw into position buffer
 	//result.a *= saturate(spaceDepth*0.3h);
-	// soft-particle depth fade OFF (user) -- particles hard-clip at geometry like GS's shipped particle.ps.
-	//result.a *= Contrast( saturate(spaceDepth*1.3h), 2);
-	//result.rgb *= Contrast( saturate(spaceDepth*1.3h), 2);
+	// The alpha only. The blend states this shader serves (BLEND, ALPHA-ADD) weight the colour by the alpha
+	// themselves; the stock code faded the colour as well, so near geometry the colour went as fade^2 against
+	// the coverage's fade -- smoke turned grey-black where it met the ground and the walls (most likely why the
+	// fade had been switched off here). MUL (particles\dark) ignores the alpha and is not affected.
+	result.a *= lerp( Contrast( saturate(spaceDepth*1.3h), 2), 1.0f, particle_hud_slice.x );
 //	result = Contrast( saturate(spaceDepth*1.3h), 2);
 //	result = saturate (spaceDepth*5.0);
 //	result.rgb = float3(1,0,0);
