@@ -114,6 +114,13 @@ protected:
 	//��������� ���� ���� � ����������� �� �������� �������
 	//(������ ��� InventoryOwner)
 	float					HitOutfitEffect			(float hit_power, ALife::EHitType hit_type, s16 element, float ap, bool& add_wound );
+public:
+	// burn/shock/chemical_burn/radiation/telepatic: the hits an outfit's or artefact's protection is
+	// in field units for (see the .cpp)
+	static bool				IsAnomalyHitType		(ALife::EHitType hit_type);
+	// the share of a hit (0..1) such a protection also takes off, 0 for the other types
+	static float			AnomalyProtectionShare	(float protection, ALife::EHitType hit_type);
+protected:
 	//��������� ������ ��� � ����������� �� �������� �������
 	float					HitPowerEffect			(float power_loss);
 	
