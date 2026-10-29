@@ -206,6 +206,91 @@ snd_change_grenade      = weapons\m203\m203_changegrenade	; GS base.ltx:220 -- t
 snd_changecartridgetype = weapons\sig550\sig550_reload	; GS base.ltx:217 -- the RIFLE ammo-type change
 snd_switch              = weapons\m203\m203_activate
 
+;firing sounds (3rd person)
+;snd_shoot          = weapons\g36\g36_shoot_3p_01, -0.9
+;snd_shoot1         = weapons\g36\g36_shoot_3p_02, -0.9
+;snd_shoot2         = weapons\g36\g36_shoot_3p_03, -0.9
+;snd_shoot3         = weapons\g36\g36_shoot_3p_04, -0.9
+;snd_shoot4         = weapons\g36\g36_shoot_3p_05, -0.9
+;snd_shoot5         = weapons\g36\g36_shoot_3p_06, -0.9
+
+snd_shoot_dist          = weapons\shared\gen_rifle_556_shoot_dist_01, -0.9
+snd_shoot_dist1         = weapons\shared\gen_rifle_556_shoot_dist_02, -0.9
+snd_shoot_dist2         = weapons\shared\gen_rifle_556_shoot_dist_03, -0.9
+snd_shoot_dist3         = weapons\shared\gen_rifle_556_shoot_dist_04, -0.9
+snd_shoot_dist4         = weapons\shared\gen_rifle_556_shoot_dist_05, -0.9
+snd_shoot_dist5         = weapons\shared\gen_rifle_556_shoot_dist_06, -0.9
+
+volume_snd_shoot           = 150
+volume_snd_silncer_shot    = 150
+
+snd_shoot_blend_dist_start = 30
+snd_shoot_blend_dist_end   = 60
+
+;snd_silncer_shot          = weapons\g36\g36_shoot_sil_3p_01, -0.9
+;snd_silncer_shot1         = weapons\g36\g36_shoot_sil_3p_02, -0.9
+;;snd_silncer_shot2         = weapons\g36\g36_shoot_sil_3p_03, -0.9
+;snd_silncer_shot3         = weapons\g36\g36_shoot_sil_3p_04, -0.9
+;snd_silncer_shot4         = weapons\g36\g36_shoot_sil_3p_05, -0.9
+;snd_silncer_shot5         = weapons\g36\g36_shoot_sil_3p_06, -0.9
+
+;grenade launcher sounds
+snd_shoot_grenade_1p    = weapons\shared\gen_launcher_shoot_1p_01
+snd_shoot_grenade_1p1   = weapons\shared\gen_launcher_shoot_1p_02
+snd_shoot_grenade_1p2   = weapons\shared\gen_launcher_shoot_1p_03
+snd_shoot_grenade_1p3   = weapons\shared\gen_launcher_shoot_1p_04
+snd_shoot_grenade       = weapons\shared\gen_launcher_shoot_3p_01
+snd_shoot_grenade1      = weapons\shared\gen_launcher_shoot_3p_02
+snd_shoot_grenade2      = weapons\shared\gen_launcher_shoot_3p_03
+snd_shoot_grenade3      = weapons\shared\gen_launcher_shoot_3p_04
+volume_snd_shoot_grenade    = 150
+volume_snd_shoot_grenade_1p = 150
+
+;indoor sounds
+snd_shoot_indoor_1p               = weapons\shared\gen_tail_indoor_medium_1p_01
+snd_shoot_indoor_1p1              = weapons\shared\gen_tail_indoor_medium_1p_02
+snd_shoot_indoor_1p2              = weapons\shared\gen_tail_indoor_medium_1p_03
+snd_shoot_indoor_1p3              = weapons\shared\gen_tail_indoor_medium_1p_04
+snd_shoot_indoor_1p4              = weapons\shared\gen_tail_indoor_medium_1p_05
+snd_shoot_indoor_1p5              = weapons\shared\gen_tail_indoor_medium_1p_06
+snd_shoot_indoor                  = weapons\shared\gen_tail_indoor_medium_3p_01
+snd_shoot_indoor1                 = weapons\shared\gen_tail_indoor_medium_3p_02
+snd_shoot_indoor2                 = weapons\shared\gen_tail_indoor_medium_3p_03
+snd_shoot_indoor3                 = weapons\shared\gen_tail_indoor_medium_3p_04
+snd_shoot_indoor4                 = weapons\shared\gen_tail_indoor_medium_3p_05
+snd_shoot_indoor5                 = weapons\shared\gen_tail_indoor_medium_3p_06
+snd_silncer_shot_indoor_1p        = weapons\shared\gen_tail_indoor_suppressed_1p_01
+snd_silncer_shot_indoor_1p1       = weapons\shared\gen_tail_indoor_suppressed_1p_02
+snd_silncer_shot_indoor_1p2       = weapons\shared\gen_tail_indoor_suppressed_1p_03
+snd_silncer_shot_indoor_1p3       = weapons\shared\gen_tail_indoor_suppressed_1p_04
+snd_silncer_shot_indoor_1p4       = weapons\shared\gen_tail_indoor_suppressed_1p_05
+snd_silncer_shot_indoor_1p5       = weapons\shared\gen_tail_indoor_suppressed_1p_06
+snd_silncer_shot_indoor           = weapons\shared\gen_tail_indoor_suppressed_3p_01
+snd_silncer_shot_indoor1          = weapons\shared\gen_tail_indoor_suppressed_3p_02
+snd_silncer_shot_indoor2          = weapons\shared\gen_tail_indoor_suppressed_3p_03
+snd_silncer_shot_indoor3          = weapons\shared\gen_tail_indoor_suppressed_3p_04
+snd_silncer_shot_indoor4          = weapons\shared\gen_tail_indoor_suppressed_3p_05
+snd_silncer_shot_indoor5          = weapons\shared\gen_tail_indoor_suppressed_3p_06
+volume_snd_shoot_indoor           = 100
+volume_snd_shoot_indoor_1p        = 125
+volume_snd_silncer_shot_indoor    = 40
+volume_snd_silncer_shot_indoor_1p = 60
+snd_indoor_fadeout_start          = 0.1
+snd_indoor_fadeout_end            = 0.5
+snd_indoor_fadeout_db             = 6
+
+;low ammo sounds
+snd_low_ammo			= weapons\mag_rattle\ak74_mag_rattle_01, 1.05, 0.0 ; от АК, потому что полимерный магаз лучше стакается с этим звуком
+snd_low_ammo1			= weapons\mag_rattle\ak74_mag_rattle_02, 1.05, 0.0
+snd_low_ammo2			= weapons\mag_rattle\ak74_mag_rattle_03, 1.05, 0.0
+snd_low_ammo3			= weapons\mag_rattle\ak74_mag_rattle_04, 1.05, 0.0
+volume_snd_low_ammo		= 125
+snd_low_ammo_threshold	= 15
+snd_low_ammo_gain		= 0.05, 1.0
+snd_low_ammo_db			= 12				; 0 - linear
+snd_low_ammo_duck		= 5					; d u c k
+snd_low_ammo_duck_time	= 0.05, 0.01, 0.1	; delay, attack, release (s)
+snd_low_ammo_duck_hold	= 0.01
 
 ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 silencer_hit_power      = 0.55, 0.55, 0.55, 0.55

@@ -206,16 +206,17 @@ snd_switch              = weapons\groza\groza_gl_activate
 snd_bore				= $silent
 
 ;low ammo sounds
-snd_low_ammo			= weapons\mag_rattle\ak74_mag_rattle_01, -1.05, 0.0
-snd_low_ammo1			= weapons\mag_rattle\ak74_mag_rattle_02, -1.05, 0.0
-snd_low_ammo2			= weapons\mag_rattle\ak74_mag_rattle_03, -1.05, 0.0
-snd_low_ammo3			= weapons\mag_rattle\ak74_mag_rattle_04, -1.05, 0.0
+snd_low_ammo			= weapons\mag_rattle\ar15_mag_rattle_01, 1.05, 0.0 ; От АРки, потому что магазин стальной
+snd_low_ammo1			= weapons\mag_rattle\ar15_mag_rattle_02, 1.05, 0.0
+snd_low_ammo2			= weapons\mag_rattle\ar15_mag_rattle_03, 1.05, 0.0
+snd_low_ammo3			= weapons\mag_rattle\ar15_mag_rattle_04, 1.05, 0.0
 volume_snd_low_ammo		= 125
-snd_low_ammo_threshold	= 10
+snd_low_ammo_threshold	= 12 ; булл-пап, поэтому лязг магазина слышно отчётливее (раньше)
 snd_low_ammo_gain		= 0.05, 1.0
 snd_low_ammo_db			= 12				; 0 - linear
-snd_low_ammo_duck		= 3					; ут очка
-snd_low_ammo_duck_time	= 0.04, 0.02, 0.125	; delay, attack, release (s)
+snd_low_ammo_duck		= 5					; ут очка
+snd_low_ammo_duck_time	= 0.05, 0.01, 0.1	; delay, attack, release (s)
+snd_low_ammo_duck_hold	= 0.01
 
 ;��������� ��� ���������
 silencer_hit_power      = 0.55, 0.55, 0.55, 0.55

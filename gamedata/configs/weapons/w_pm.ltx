@@ -193,6 +193,16 @@ snd_holster						= weapons\m1911\hide
 snd_shoot						= weapons\pm\pm_shoot, -1.1
 snd_silncer_shot				= weapons\pm\pm_shoot_sil, -1.1
 
+snd_empty						= weapons\pistol_empty
+snd_changefiremode	= weapons\vss\vss_firemode
+snd_reload						= weapons\pm\pm_reload
+snd_reload_empty				= weapons\pm\pm_reload_full
+snd_reload_jammed				= weapons\grach\grach_revival
+; the jam-clear with a detector is a different motion (pm_det_revival, 1 token) with its
+; own timing -> its own sound, like Gunslinger's snd_reload_jammed_detector
+snd_reload_jammed_detector	= weapons\grach\grach_revival_det
+snd_close						= $silent
+
 ;ghost
 ;snd_shoot						= weapons\pm\makarov_shoot_01
 ;snd_shoot1						= weapons\pm\makarov_shoot_02
@@ -213,18 +223,21 @@ snd_shoot_dist2         = weapons\shared\gen_pistol_shoot_dist_03, -1.1
 snd_shoot_dist3         = weapons\shared\gen_pistol_shoot_dist_04, -1.1
 snd_shoot_dist4         = weapons\shared\gen_pistol_shoot_dist_05, -1.1
 snd_shoot_dist5         = weapons\shared\gen_pistol_shoot_dist_06, -1.1
-snd_shoot_blend_dist_start = 30   ; необязательно, по умолчанию 40
-snd_shoot_blend_dist_end   = 60   ; необязательно, по умолчанию 60
+snd_shoot_blend_dist_start = 30
+snd_shoot_blend_dist_end   = 60
 
-snd_empty						= weapons\pistol_empty
-snd_changefiremode	= weapons\vss\vss_firemode
-snd_reload						= weapons\pm\pm_reload
-snd_reload_empty				= weapons\pm\pm_reload_full
-snd_reload_jammed				= weapons\grach\grach_revival
-; the jam-clear with a detector is a different motion (pm_det_revival, 1 token) with its
-; own timing -> its own sound, like Gunslinger's snd_reload_jammed_detector
-snd_reload_jammed_detector	= weapons\grach\grach_revival_det
-snd_close						= $silent
+;low ammo sounds
+snd_low_ammo			= weapons\mag_rattle\smg_mag_rattle_01, 1.05, 0.08
+snd_low_ammo1			= weapons\mag_rattle\smg_mag_rattle_02, 1.05, 0.08
+snd_low_ammo2			= weapons\mag_rattle\smg_mag_rattle_03, 1.05, 0.08
+snd_low_ammo3			= weapons\mag_rattle\smg_mag_rattle_04, 1.05, 0.08
+volume_snd_low_ammo		= 110
+snd_low_ammo_threshold	= 5
+snd_low_ammo_gain		= 0.05, 1.0
+snd_low_ammo_db			= 12				; 0 - linear
+snd_low_ammo_duck		= 6					; d u c k
+snd_low_ammo_duck_time	= 0.115, 0.01, 0.1	; delay, attack, release (s)
+snd_low_ammo_duck_hold	= 0.01
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; silencer

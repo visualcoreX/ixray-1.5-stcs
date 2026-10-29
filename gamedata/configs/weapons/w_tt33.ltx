@@ -239,6 +239,19 @@ snd_shoot_dist5         = weapons\shared\gen_pistol_shoot_dist_06, -1.1
 snd_shoot_blend_dist_start = 30   ; необязательно, по умолчанию 40
 snd_shoot_blend_dist_end   = 60   ; необязательно, по умолчанию 60
 
+;low ammo sounds
+snd_low_ammo			= weapons\mag_rattle\smg_mag_rattle_01, 1.05, 0.08
+snd_low_ammo1			= weapons\mag_rattle\smg_mag_rattle_02, 1.05, 0.08
+snd_low_ammo2			= weapons\mag_rattle\smg_mag_rattle_03, 1.05, 0.08
+snd_low_ammo3			= weapons\mag_rattle\smg_mag_rattle_04, 1.05, 0.08
+volume_snd_low_ammo		= 125
+snd_low_ammo_threshold	= 5
+snd_low_ammo_gain		= 0.05, 1.0
+snd_low_ammo_db			= 12				; 0 - linear
+snd_low_ammo_duck		= 6					; ут очка
+snd_low_ammo_duck_time	= 0.115, 0.01, 0.1	; delay, attack, release (s)
+snd_low_ammo_duck_hold	= 0.01
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; silencer
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

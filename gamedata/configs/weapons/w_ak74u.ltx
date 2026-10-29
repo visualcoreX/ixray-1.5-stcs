@@ -31,8 +31,8 @@ reload_dof           = 0.0, 0.5, 5, 2.85
 ;-------------------------------------------------------------------------------
 
 ;-------------------------------------------------------------------------------
-holder_range_modifier   = 1.0                       ; во сколько раз увеличивается eye_range
-holder_fov_modifier     = 0.7              ; во сколько раз увеличивается eye_fov
+holder_range_modifier   = 1.0                       ; пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ eye_range
+holder_fov_modifier     = 0.7              ; пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ eye_fov
 ;-------------------------------------------------------------------------------
 ; ---- GS upgrade tree (15 nodes / 12 vartrees), see upgrades\w_ak74u_up.ltx ----
 upgrades                = vartree_aks74u_barrel, vartree_aks74u_tsevie, vartree_aks74u_mag45, vartree_aks74u_sights, vartree_aks74u_priklad, vartree_aks74u_handle, vartree_aks74u_lastochka	; orig up_gr_ab_ak74u, up_gr_cd_ak74u, up_gr_ef_ak74u, up_gr_i_ak74u
@@ -88,18 +88,18 @@ kill_msg_height		= 30
 
 ;-------------------------------------------------------------------------------
 ;params of weapon recoil
-fire_dispersion_base       = 0.25	; orig 0.9 (GS) ;угол (в градусах) базовой дисперсии оружия (оружия зажатого в тисках)
+fire_dispersion_base       = 0.25	; orig 0.9 (GS) ;пїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
 control_inertion_factor    = 1.0	; orig 1.1f (GS)
 crosshair_inertion		   = 5.50	; GS
 
-;отдача
+;пїЅпїЅпїЅпїЅпїЅпїЅ
 cam_return				= 1
-cam_relax_speed         = 5	; orig 5 (GS) ;скорость возврата в исходное положение
+cam_relax_speed         = 5	; orig 5 (GS) ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 cam_relax_speed_ai     	= 120.75
-cam_dispersion          = 1.2	; orig 0.5 (GS) ;увеличения угла (в градусах) с первым выстрелом
-cam_dispersion_inc      = 0.6	; orig 0.5 (GS) ;увеличениe cam_dispersion с каждым выстрелом
-cam_dispersion_frac     = 1.0	; orig 0.7 (GS) ;ствол будет подыматься на cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
-cam_max_angle			= 50.0	; orig 5.0 (GS) ;максимальный угол отдачи
+cam_dispersion          = 1.2	; orig 0.5 (GS) ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+cam_dispersion_inc      = 0.6	; orig 0.5 (GS) ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅe cam_dispersion пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+cam_dispersion_frac     = 1.0	; orig 0.7 (GS) ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
+cam_max_angle			= 50.0	; orig 5.0 (GS) ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 cam_max_angle_horz      = 5.0	; orig 10.0 (GS) ;(degree) maximum shot horizontal degree
 cam_step_angle_horz     = 1.5		;(degree) size of step camera moved in horizontal position while shooting
 
@@ -159,7 +159,7 @@ rpm                     = 650	; orig 600 (GS) ; max round per minute
 rpm_empty_click         = 200
 ; end ttc
 
-use_aim_bullet          = false	; orig true (GS) ;Поддерживается ли первая суппер пуля
+use_aim_bullet          = false	; orig true (GS) ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 time_to_aim             = 1.0
 
 ; silencer ballistics dropped (GS has no inline silencer_* ballistics here); orig 0.55x4 / 120 / 250 / 600
@@ -167,7 +167,7 @@ time_to_aim             = 1.0
 hud                        = wpn_ak74u_hud            ; name of the section of the hud
 
 ;--STRAP PARAMETERS-----------------------------------------------------------------
-;под мишкой
+;пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 strap_position         		= -0.18,-0.45,0.2			; position (offset) and orientation of the weapon when it is strapped
 strap_orientation      		= -10,-5,10					; (3rd person view in degrees)
 strap_bone0             = bip01_spine2
@@ -208,7 +208,7 @@ grenade_launcher_name   = wpn_addon_grenade_launcher_m203	; GS
 grenade_launcher_x      = 109	; GS
 grenade_launcher_y      = 30	; GS
 
-;звуки
+;пїЅпїЅпїЅпїЅпїЅ
 snd_draw                = weapons\p90\p90_draw
 snd_holster             = weapons\p90\p90_hide
 snd_shoot               = weapons\aks74u\aks74u_shoot, -0.9
@@ -342,18 +342,19 @@ snd_indoor_fadeout_end            = 0.5
 snd_indoor_fadeout_db             = 6
 
 ;low ammo sounds
-snd_low_ammo			= weapons\mag_rattle\ak74_mag_rattle_01, -1.05, 0.0
-snd_low_ammo1			= weapons\mag_rattle\ak74_mag_rattle_02, -1.05, 0.0
-snd_low_ammo2			= weapons\mag_rattle\ak74_mag_rattle_03, -1.05, 0.0
-snd_low_ammo3			= weapons\mag_rattle\ak74_mag_rattle_04, -1.05, 0.0
+snd_low_ammo			= weapons\mag_rattle\ak74_mag_rattle_01, 1.05, 0.0
+snd_low_ammo1			= weapons\mag_rattle\ak74_mag_rattle_02, 1.05, 0.0
+snd_low_ammo2			= weapons\mag_rattle\ak74_mag_rattle_03, 1.05, 0.0
+snd_low_ammo3			= weapons\mag_rattle\ak74_mag_rattle_04, 1.05, 0.0
 volume_snd_low_ammo		= 125
 snd_low_ammo_threshold	= 15
 snd_low_ammo_gain		= 0.05, 1.0
 snd_low_ammo_db			= 12				; 0 - linear
-snd_low_ammo_duck		= 3					; ут очка
-snd_low_ammo_duck_time	= 0.04, 0.02, 0.125	; delay, attack, release (s)
+snd_low_ammo_duck		= 5					; d u c k
+snd_low_ammo_duck_time	= 0.05, 0.01, 0.1	; delay, attack, release (s)
+snd_low_ammo_duck_hold	= 0.01
 
-;настройки для глушителя
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 ; silencer ballistics come from the addon section (GS has none inline here)
 
 ;silencer_flame_particles  = weapons\generic_weapon01
@@ -981,7 +982,7 @@ lock_time_start_anm_reload_ammochange = 1.2
 lock_time_start_anm_reload_empty = 1.2
 lock_time_start_anm_reload_empty_ammochange = 1.2
 
-[wpn_ak74u_m1]:wpn_ak74u	;АК-74у спецназ
+[wpn_ak74u_m1]:wpn_ak74u	;пїЅпїЅ-74пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 $spawn             				= "weapons\uniq\wpn_ak74u_m1"
 description						= enc_weapons1_wpn-ak74u_m1
 inv_name	        			= wpn-ak74u_m1
