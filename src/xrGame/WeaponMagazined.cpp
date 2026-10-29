@@ -61,6 +61,7 @@ CWeaponMagazined::CWeaponMagazined(ESoundTypes eSoundType) : CWeapon()
 	m_fLowAmmoDb				= 0.f;
 	m_fLowAmmoDuckDb			= 0.f;
 	m_vLowAmmoDuckTime.set		(0.f, 0.f, 0.f);
+	m_fLowAmmoDuckHold			= -1.f;
 	m_sSilencerFlameParticles	= m_sSilencerSmokeParticles = NULL;
 	m_vMuzzleDeviceFxOffset.set	(0.f, 0.f, 0.f);
 	m_vMuzzleDeviceFxOffsetHud.set(0.f, 0.f, 0.f);
@@ -322,6 +323,7 @@ void CWeaponMagazined::Load	(LPCSTR section)
 			m_vLowAmmoDuckTime.x	= _max(m_vLowAmmoDuckTime.x, 0.f);
 			m_vLowAmmoDuckTime.y	= _max(m_vLowAmmoDuckTime.y, 0.f);
 			m_vLowAmmoDuckTime.z	= _max(m_vLowAmmoDuckTime.z, 0.f);
+			m_fLowAmmoDuckHold	= READ_IF_EXISTS(pSettings, r_float, section, "snd_low_ammo_duck_hold", -1.f);
 			m_bLowAmmoSnd		= true;
 		}
 	}
@@ -2731,7 +2733,8 @@ void CWeaponMagazined::PlayLowAmmoSound()
 	const float		db		= m_fLowAmmoDuckDb * _min(gain / m_fLowAmmoGainMax, 1.f);
 	const float		delay	= s.delay + m_vLowAmmoDuckTime.x;
 	const float		attack	= m_vLowAmmoDuckTime.y;
-	const float		hold	= _max(s.delay + s.snd.get_length_sec() - delay - attack, 0.f);
+	const float		hold	= (m_fLowAmmoDuckHold >= 0.f) ? m_fLowAmmoDuckHold
+							: _max(s.delay + s.snd.get_length_sec() - delay - attack, 0.f);
 	LPCSTR			shot	= m_sSndShotCurrent.c_str();
 	LPCSTR			suffix[4] = { "", "1P", "Indoor", "1PIndoor" };
 	for (int i = 0; i < 4; ++i)
