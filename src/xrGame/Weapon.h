@@ -251,7 +251,8 @@ public:
 	shared_str CollimatorParamSection(LPCSTR key) const;	// scope section / addon item / weapon holding `key`
 	float GetLensFOV() const;	// 3D PiP double-render: magnified world FOV (deg) for the lens frame; 0 = disabled
 	float GetWorldLensFOV() const;	// ...the same for the lens switched off (the world's share of the zoom); 0 = disabled
-	void  ScopePrismPowers(float& total, float& world) const;	// the lens-off prism mode: its power, and the world's share
+	void  ScopePrismPowers(float& total, float& world) const;
+	float ScopeWorldPower(float total, float share, float k) const;	// the world's share of a power (prism and 2D)	// the lens-off prism mode: its power, and the world's share
 	float ScopePrismDofHole() const;	// ...the circle the aim's DOF leaves sharp round its glass (share of the screen height)
 	float ScopePrismLensZoom() const;	// ...and what the eyepiece adds on top of the world, eased in with the aim (1 = nothing)
 	bool UseScopeAnims() const;	// Gunslinger use_scope_anims: play the "_scope" anim variants while a scope is attached
@@ -347,6 +348,7 @@ public:
 	void			UpdateScopeShadow	(CActor* act, const Fvector& prev_dir, float dist, float strength = 1.f);
 	float		Scope2DDigitalZoom	() const;	// the share the eyepiece resamples
 	float		Scope2DTotalZoom	() const;
+	void		Scope2DPowers		(float& total, float& world) const;	// the prism mode's scheme for the 2D picture
 	float		Scope2DPeakZoom		() const;	// ...at its STRONGEST setting: what fixes the camera's share
 	float		Scope2DPipMatch		() const;	// what the 3D lens ACTUALLY shows, as a share of scope_lens_factor
 	float		Scope2DWorldShare	() const;	// how much of it the CAMERA renders for real (linear factor)	// what the optic magnifies altogether
