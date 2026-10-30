@@ -5759,7 +5759,6 @@ static void load_anim_omf(SLowerAnim& A, LPCSTR name, bool ref_last)
 		string_path	anm, ce;
 		strconcat	(sizeof(anm), anm, "camera_effects\\weapon\\", base, ".anm");
 		A.cam				= FS.exist(ce, "$game_anims$", anm) ? shared_str(anm) : shared_str();
-		if (A.cam.size())	Msg("* [weapon_lowered] camera animation %s", anm);
 	}
 	string_path	fn;
 	xr_sprintf	(fn, "%s.omf", name);
@@ -5819,7 +5818,7 @@ static void load_anim_omf(SLowerAnim& A, LPCSTR name, bool ref_last)
 			}
 			A.valid			= true;
 		}
-		Msg("* [weapon_lowered] %s: motion \"%s\", %d frames%s", fn, *mname, n, A.valid ? "" : " -- too short, not used");
+		if (!A.valid)	Msg("! [weapon_lowered] %s: motion \"%s\" has %d frames -- too short, not used", fn, *mname, n);
 		M->close();
 	}
 	else
