@@ -1042,7 +1042,10 @@ void CWeapon::gwr_ShellCasingFollow(u32 idx, bool force)
 
 	// Per weapon, the point can be nudged for the pose out of the sights: metres to the right, up and
 	// forward of the view, in the hud's own space. It fades out as the weapon comes up to the eye.
-	if (pSettings->line_exist(cNameSect().c_str(), "shell_casing_hip_offset"))
+	// Only a shot's case: it corrects where the shot animation lets the bone go. A case racked out by hand
+	// (clearing a jam) or a dropped magazine already leaves from the right place, and the nudge put the
+	// Val/VSS's unjammed case off to the left of the port.
+	if (!T.drop && !T.by_hand && pSettings->line_exist(cNameSect().c_str(), "shell_casing_hip_offset"))
 	{
 		const Fvector o	= pSettings->r_fvector3(cNameSect().c_str(), "shell_casing_hip_offset");
 		float k			= 1.f - GetZoomRotationFactor();
