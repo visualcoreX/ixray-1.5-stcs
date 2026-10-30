@@ -266,37 +266,50 @@ volume_snd_shoot_grenade    = 150
 volume_snd_shoot_grenade_1p = 150
 
 ;indoor sounds
-snd_shoot_indoor_1p               = weapons\shared\gen_tail_indoor_medium_1p_01
-snd_shoot_indoor_1p1              = weapons\shared\gen_tail_indoor_medium_1p_02
-snd_shoot_indoor_1p2              = weapons\shared\gen_tail_indoor_medium_1p_03
-snd_shoot_indoor_1p3              = weapons\shared\gen_tail_indoor_medium_1p_04
-snd_shoot_indoor_1p4              = weapons\shared\gen_tail_indoor_medium_1p_05
-snd_shoot_indoor_1p5              = weapons\shared\gen_tail_indoor_medium_1p_06
+snd_shoot_1p_indoor               = weapons\shared\gen_tail_indoor_medium_1p_01
+snd_shoot_1p_indoor1              = weapons\shared\gen_tail_indoor_medium_1p_02
+snd_shoot_1p_indoor2              = weapons\shared\gen_tail_indoor_medium_1p_03
+snd_shoot_1p_indoor3              = weapons\shared\gen_tail_indoor_medium_1p_04
+snd_shoot_1p_indoor4              = weapons\shared\gen_tail_indoor_medium_1p_05
+snd_shoot_1p_indoor5              = weapons\shared\gen_tail_indoor_medium_1p_06
 snd_shoot_indoor                  = weapons\shared\gen_tail_indoor_medium_3p_01
 snd_shoot_indoor1                 = weapons\shared\gen_tail_indoor_medium_3p_02
 snd_shoot_indoor2                 = weapons\shared\gen_tail_indoor_medium_3p_03
 snd_shoot_indoor3                 = weapons\shared\gen_tail_indoor_medium_3p_04
 snd_shoot_indoor4                 = weapons\shared\gen_tail_indoor_medium_3p_05
 snd_shoot_indoor5                 = weapons\shared\gen_tail_indoor_medium_3p_06
-snd_silncer_shot_indoor_1p        = weapons\shared\gen_tail_indoor_suppressed_1p_01
-snd_silncer_shot_indoor_1p1       = weapons\shared\gen_tail_indoor_suppressed_1p_02
-snd_silncer_shot_indoor_1p2       = weapons\shared\gen_tail_indoor_suppressed_1p_03
-snd_silncer_shot_indoor_1p3       = weapons\shared\gen_tail_indoor_suppressed_1p_04
-snd_silncer_shot_indoor_1p4       = weapons\shared\gen_tail_indoor_suppressed_1p_05
-snd_silncer_shot_indoor_1p5       = weapons\shared\gen_tail_indoor_suppressed_1p_06
+snd_silncer_shot_1p_indoor        = weapons\shared\gen_tail_indoor_suppressed_1p_01
+snd_silncer_shot_1p_indoor1       = weapons\shared\gen_tail_indoor_suppressed_1p_02
+snd_silncer_shot_1p_indoor2       = weapons\shared\gen_tail_indoor_suppressed_1p_03
+snd_silncer_shot_1p_indoor3       = weapons\shared\gen_tail_indoor_suppressed_1p_04
+snd_silncer_shot_1p_indoor4       = weapons\shared\gen_tail_indoor_suppressed_1p_05
+snd_silncer_shot_1p_indoor5       = weapons\shared\gen_tail_indoor_suppressed_1p_06
 snd_silncer_shot_indoor           = weapons\shared\gen_tail_indoor_suppressed_3p_01
 snd_silncer_shot_indoor1          = weapons\shared\gen_tail_indoor_suppressed_3p_02
 snd_silncer_shot_indoor2          = weapons\shared\gen_tail_indoor_suppressed_3p_03
 snd_silncer_shot_indoor3          = weapons\shared\gen_tail_indoor_suppressed_3p_04
 snd_silncer_shot_indoor4          = weapons\shared\gen_tail_indoor_suppressed_3p_05
 snd_silncer_shot_indoor5          = weapons\shared\gen_tail_indoor_suppressed_3p_06
-volume_snd_shoot_indoor           = 80
-volume_snd_shoot_indoor_1p        = 100
-volume_snd_silncer_shot_indoor    = 40
-volume_snd_silncer_shot_indoor_1p = 60
+volume_snd_shoot_indoor           = 75
+volume_snd_shoot_1p_indoor        = 75
+volume_snd_silncer_shot_indoor    = 60
+volume_snd_silncer_shot_1p_indoor = 60
 snd_indoor_fadeout_start          = 0.1
 snd_indoor_fadeout_end            = 0.5
 snd_indoor_fadeout_db             = 6
+
+;low ammo sounds
+snd_low_ammo			= weapons\mag_rattle\ar15_mag_rattle_01, 1.05, 0.015
+snd_low_ammo1			= weapons\mag_rattle\ar15_mag_rattle_02, 1.05, 0.015
+snd_low_ammo2			= weapons\mag_rattle\ar15_mag_rattle_03, 1.05, 0.015
+snd_low_ammo3			= weapons\mag_rattle\ar15_mag_rattle_04, 1.05, 0.015
+volume_snd_low_ammo		= 125
+snd_low_ammo_threshold	= 15
+snd_low_ammo_gain		= 0.05, 1.0
+snd_low_ammo_db			= 12				; 0 - linear
+snd_low_ammo_duck		= 4					; ут очка
+snd_low_ammo_duck_time	= 0.05, 0.01, 0.3	; delay, attack, release (s)
+snd_low_ammo_duck_hold	= 0.01
 
 snd_draw                = weapons\sig550\sig550_draw
 snd_holster       = weapons\p90\p90_hide
@@ -308,7 +321,6 @@ snd_reload_jammed        = weapons\lr300\lr300_revival
 snd_shoot_grenade       = weapons\m203\m203_shoot
 snd_reload_grenade      = weapons\m203\m203_reload
 snd_switch              = weapons\m203\m203_deactivate	; orig m203_activate -- sndSwitch is the lower-the-GL direction
-
 
 ;настройки для глушителя
 silencer_hit_power      = 0.9, 0.9, 0.9, 0.9	; orig 0.55, 0.55, 0.55, 0.55 (xrMPE)
@@ -329,7 +341,7 @@ silencer_light_var_color= 0.05
 silencer_light_var_range= 0.01	; orig 0.5 (xrMPE)
 silencer_light_time     = 0.01	; orig 0.2 (xrMPE)
 silencer_muzzle_fx_offset		= 0, 0, 0.061	; how far the silencer sticks out past the fire point on THIS gun (world model;
-silencer_muzzle_fx_offset_hud	= 0, 0.012, 0.104	; ...hud model) -- overrides the silencer section's muzzle_fx_offset(_hud)
+;silencer_muzzle_fx_offset_hud	= 0, 0.012, 0.104	; ...hud model) -- overrides the silencer section's muzzle_fx_offset(_hud)
 
 ; --- GS/xrMPE condition + jam model
 condition_queue_shot_dec    = 0.0007	; balance 5.56: L85 < LR300 < G36 (was 0.0015)
@@ -378,7 +390,7 @@ snd_scope_brightness_minus  = weapons\nv_intensity
 zoom_hide_crosshair        = true
 attach_place_idx        = 0
 item_visual                = dynamics\weapons\wpn_lr300\wpn_lr300_hud.ogf
-; fire_mode_bone= firemode_triple	; off: this weapon uses the GS mask_firemode _auto
+; fire_mode_bone = firemode_triple	; off: this weapon uses the GS mask_firemode _auto
 ; GS firemode marks: the base aliases are the SINGLE-posed set, the _auto variants get the
 ; auto-posed item motions. Existence-gated, so aliases for motions that do not exist yet
 ; simply fall back to the base.
@@ -398,7 +410,7 @@ shell_bone                	= wpn_body
 ;fire_bone                  = wpn_body
 ;fire_point2				= 0,-0.034,0.586
 ;fire_bone2                	= wpn_body
-fire_point					= 0,0.06,0.56
+fire_point					= 0,0.07,0.56
 fire_bone                   = wpn_body
 fire_point2					= 0,-0.034,0.586
 fire_bone2                	= wpn_body

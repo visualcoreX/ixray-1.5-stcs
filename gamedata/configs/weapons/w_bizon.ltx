@@ -206,7 +206,7 @@ grenade_launcher_name   = wpn_addon_grenade_launcher_m203
 grenade_launcher_x      = 109
 grenade_launcher_y      = 30
 
-;звуки
+;пїЅпїЅпїЅпїЅпїЅ
 snd_draw		= weapons\p90\p90_draw
 snd_holster		= weapons\p90\p90_hide
 snd_shoot		= weapons\bizon\bizon_shoot, -1.1
@@ -246,7 +246,51 @@ snd_nv_off              = weapons\nv_deact
 snd_scope_brightness_plus = weapons\nv_intensity
 snd_scope_brightness_minus = weapons\nv_intensity
 
+;indoor sounds
+snd_shoot_1p_indoor               = weapons\shared\gen_tail_indoor_medium_1p_01
+snd_shoot_1p_indoor1              = weapons\shared\gen_tail_indoor_medium_1p_02
+snd_shoot_1p_indoor2              = weapons\shared\gen_tail_indoor_medium_1p_03
+snd_shoot_1p_indoor3              = weapons\shared\gen_tail_indoor_medium_1p_04
+snd_shoot_1p_indoor4              = weapons\shared\gen_tail_indoor_medium_1p_05
+snd_shoot_1p_indoor5              = weapons\shared\gen_tail_indoor_medium_1p_06
+snd_shoot_indoor                  = weapons\shared\gen_tail_indoor_medium_3p_01
+snd_shoot_indoor1                 = weapons\shared\gen_tail_indoor_medium_3p_02
+snd_shoot_indoor2                 = weapons\shared\gen_tail_indoor_medium_3p_03
+snd_shoot_indoor3                 = weapons\shared\gen_tail_indoor_medium_3p_04
+snd_shoot_indoor4                 = weapons\shared\gen_tail_indoor_medium_3p_05
+snd_shoot_indoor5                 = weapons\shared\gen_tail_indoor_medium_3p_06
+snd_silncer_shot_1p_indoor        = weapons\shared\gen_tail_indoor_suppressed_1p_01
+snd_silncer_shot_1p_indoor1       = weapons\shared\gen_tail_indoor_suppressed_1p_02
+snd_silncer_shot_1p_indoor2       = weapons\shared\gen_tail_indoor_suppressed_1p_03
+snd_silncer_shot_1p_indoor3       = weapons\shared\gen_tail_indoor_suppressed_1p_04
+snd_silncer_shot_1p_indoor4       = weapons\shared\gen_tail_indoor_suppressed_1p_05
+snd_silncer_shot_1p_indoor5       = weapons\shared\gen_tail_indoor_suppressed_1p_06
+snd_silncer_shot_indoor           = weapons\shared\gen_tail_indoor_suppressed_3p_01
+snd_silncer_shot_indoor1          = weapons\shared\gen_tail_indoor_suppressed_3p_02
+snd_silncer_shot_indoor2          = weapons\shared\gen_tail_indoor_suppressed_3p_03
+snd_silncer_shot_indoor3          = weapons\shared\gen_tail_indoor_suppressed_3p_04
+snd_silncer_shot_indoor4          = weapons\shared\gen_tail_indoor_suppressed_3p_05
+snd_silncer_shot_indoor5          = weapons\shared\gen_tail_indoor_suppressed_3p_06
+volume_snd_shoot_indoor           = 75
+volume_snd_shoot_1p_indoor        = 75
+volume_snd_silncer_shot_indoor    = 60
+volume_snd_silncer_shot_1p_indoor = 60
+snd_indoor_fadeout_start          = 0.1
+snd_indoor_fadeout_end            = 0.5
+snd_indoor_fadeout_db             = 6
 
+;low ammo sounds
+snd_low_ammo			= weapons\mag_rattle\smg_mag_rattle_01, 1.05, 0.015
+snd_low_ammo1			= weapons\mag_rattle\smg_mag_rattle_02, 1.05, 0.015
+snd_low_ammo2			= weapons\mag_rattle\smg_mag_rattle_03, 1.05, 0.015
+snd_low_ammo3			= weapons\mag_rattle\smg_mag_rattle_04, 1.05, 0.015
+volume_snd_low_ammo		= 125
+snd_low_ammo_threshold	= 15
+snd_low_ammo_gain		= 0.05, 1.0
+snd_low_ammo_db			= 12				; 0 - linear
+snd_low_ammo_duck		= 4					; d u c k
+snd_low_ammo_duck_time	= 0.05, 0.01, 0.3	; delay, attack, release (s)
+snd_low_ammo_duck_hold	= 0.01
 
 ;silencer_flame_particles  = weapons\generic_weapon01
 silencer_smoke_particles 	= ghost_particles\weapons\suppressor_smoke_pistol_common
@@ -356,17 +400,17 @@ mask_firemode_1 =
 mask_firemode_a = ;_auto
 
 
-disable_bore = true                                            ;отключение анимации скуки
+disable_bore = true                                            ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 use_advanced_ammo_bones = true
 ammo_params_section = wpn_bizon_ammo_bones
 
-mix_shoot_after_idle = true                                    ;микс первого выстрела с анимациями idle
-mix_shoot_after_shoot_in_queue = true                          ;микс между серией выстрелов
+mix_shoot_after_idle = true                                    ;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ idle
+mix_shoot_after_shoot_in_queue = true                          ;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-prohibit_suicide = false		;включаем суицид
-suicide_by_animation=true		;кроме смещения будет играться анимация
-custom_suicide_shot = true		; показываем, что необходима особая анимация самоубийственного выстрела
+prohibit_suicide = false		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+suicide_by_animation=true		;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+custom_suicide_shot = true		; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
 anm_suicide			= bizon_suicide
 lock_time_anm_suicide 		= 7.37
@@ -387,17 +431,17 @@ hud_move_suicide_offset_rot_16x9 = 0,0,0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-;Доставание///////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ///////////////////////////////////////////////////
 anm_show                   = bizon_draw
 anm_show_empty             = bizon_draw
 anm_show_jammed            = bizon_draw, idle_jammed
 
-;Убирание/////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ/////////////////////////////////////////////////////
 anm_hide                   = bizon_hide
 anm_hide_empty             = bizon_hide
 anm_hide_jammed            = bizon_hide, idle_jammed
 
-;Бездействие//////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////
 anm_idle                            = bizon_idle
 anm_idle_empty                      = bizon_idle
 anm_idle_jammed                     = bizon_idle, idle_jammed
@@ -412,9 +456,9 @@ anm_idle_crouch_jammed              = bizon_idle, idle_jammed
 anm_idle_crouch_slow_jammed         = bizon_idle, idle_jammed
 
 
-;Бездействие в прицеливании///////////////////////////////////
-autoshoot_anm_idle_aim_start = true         ;команда заставляет произвести выстрел с задержкой на lock_time, если кнопка выстрела будет нажата раньше заданного времени в lock_time
-lock_time_anm_idle_aim_start = 0.2          ;команда блокирует все действия (кроме выбрасывания оружия) во время отыгрывания обозначенной анимации до окончания заданного времени
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ///////////////////////////////////
+autoshoot_anm_idle_aim_start = true         ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ lock_time, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ lock_time
+lock_time_anm_idle_aim_start = 0.2          ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ) пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 autoshoot_anm_idle_aim_start_empty = true
 lock_time_anm_idle_aim_start_empty = 0.2
 autoshoot_anm_idle_aim_start_jammed = true
@@ -447,79 +491,79 @@ anm_idle_aim_end_jammed        = bizon_aim_end, bizon_aim_end_jammed
 ;enable_directions_anm_idle = true
 enable_directions_anm_idle_aim = true
 
-;Ходьба ВПЕРЕД//////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
 anm_idle_moving 					    = bizon_walk
 anm_idle_moving_jammed 					= bizon_walk, idle_jammed
 anm_idle_moving_empty					= bizon_walk
 
-;Ходьба медленная (SHIFT) ВПЕРЕД//////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (SHIFT) пїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
 anm_idle_moving_slow 					    = bizon_walk_slow
 anm_idle_moving_slow_jammed 				= bizon_walk_slow, idle_jammed
 anm_idle_moving_slow_empty				    = bizon_walk_slow
 
-;Ходьба в полуприсяди (CTRL) ВПЕРЕД//////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (CTRL) пїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
 anm_idle_moving_crouch 					        = bizon_walk_slow_down
 anm_idle_moving_crouch_jammed 					= bizon_walk_slow_down, idle_jammed
 anm_idle_moving_crouch_empty					= bizon_walk_slow_down
 
-;Ходьба в присяде (CTRL+SHIFT) ВПЕРЕД/////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ (CTRL+SHIFT) пїЅпїЅпїЅпїЅпїЅпїЅ/////////////////////////////////////////////////////////////////////////
 anm_idle_moving_crouch_slow 					= bizon_walk_slow_super
 anm_idle_moving_crouch_slow_jammed 				= bizon_walk_slow_super, idle_jammed
 anm_idle_moving_crouch_slow_empty				= bizon_walk_slow_super
 
-;ходьба в прицеливании ВПЕРЕД//////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////
 anm_idle_aim_moving_forward                   = bizon_aim_walk, idle_aim
 anm_idle_aim_moving_forward_empty             = bizon_aim_walk, idle_aim
 anm_idle_aim_moving_forward_jammed            = bizon_aim_walk, idle_aim_jammed
 
-;ходьба в прицеливании НАЗАД//////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////
 anm_idle_aim_moving_back                   = bizon_aim_walk, idle_aim
 anm_idle_aim_moving_back_empty             = bizon_aim_walk, idle_aim
 anm_idle_aim_moving_back_jammed            = bizon_aim_walk, idle_aim_jammed
 
 
-;ходьба в прицеливании ВЛЕВО//////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////
 anm_idle_aim_moving_left                   = bizon_aim_walk_left, idle_aim  
 anm_idle_aim_moving_left_empty             = bizon_aim_walk_left, idle_aim
 anm_idle_aim_moving_left_jammed            = bizon_aim_walk_left, idle_aim_jammed
 
 
-;ходьба в прицеливании ВПРАВО//////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////
 anm_idle_aim_moving_right                   = bizon_aim_walk_right, idle_aim
 anm_idle_aim_moving_right_empty             = bizon_aim_walk_right, idle_aim
 anm_idle_aim_moving_right_jammed            = bizon_aim_walk_right, idle_aim_jammed
  
 
-;ходьба в прицеливании ВПЕРЕД+ВЛЕВО////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ+пїЅпїЅпїЅпїЅпїЅ////////////////////////////////////////////////////////////
 anm_idle_aim_moving_forward_left                   = bizon_aim_walk, idle_aim
 anm_idle_aim_moving_forward_left_empty             = bizon_aim_walk, idle_aim
 anm_idle_aim_moving_forward_left_jammed            = bizon_aim_walk, idle_aim_jammed
 
 
-;ходьба в прицеливании ВПЕРЕД+ВПРАВО///////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ+пїЅпїЅпїЅпїЅпїЅпїЅ///////////////////////////////////////////////////////////
 anm_idle_aim_moving_forward_right                   = bizon_aim_walk, idle_aim
 anm_idle_aim_moving_forward_right_empty             = bizon_aim_walk, idle_aim
 anm_idle_aim_moving_forward_right_jammed            = bizon_aim_walk, idle_aim_jammed
 
 
-;ходьба в прицеливании НАЗАД+ВЛЕВО/////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ+пїЅпїЅпїЅпїЅпїЅ/////////////////////////////////////////////////////////////
 anm_idle_aim_moving_back_left                   = bizon_aim_walk, idle_aim
 anm_idle_aim_moving_back_left_empty             = bizon_aim_walk, idle_aim
 anm_idle_aim_moving_back_left_jammed            = bizon_aim_walk, idle_aim_jammed
 
 
-;ходьба в прицеливании НАЗАД+ВПРАВО////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ+пїЅпїЅпїЅпїЅпїЅпїЅ////////////////////////////////////////////////////////////
 anm_idle_aim_moving_back_right                   = bizon_aim_walk, idle_aim
 anm_idle_aim_moving_back_right_empty             = bizon_aim_walk, idle_aim
 anm_idle_aim_moving_back_right_jammed            = bizon_aim_walk, idle_aim_jammed
 
-;ходьба в прицеливании при надетом прицеле////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ////////////////////////////////////////////////////
 anm_idle_aim_scope_moving	              = bizon_aim_walk_scope, idle_aim
 anm_idle_aim_scope_moving_empty		      = bizon_aim_walk_scope, idle_aim
 anm_idle_aim_scope_moving_jammed	      = bizon_aim_walk_scope, idle_aim_jammed
 
 
-;Бег//////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅ//////////////////////////////////////////////////////////////////
 lock_time_anm_idle_sprint_start = 0.15
 lock_time_anm_idle_sprint_start_empty = 0.15
 lock_time_anm_idle_sprint_start_jammed = 0.15
@@ -541,13 +585,13 @@ anm_idle_sprint_end_empty       = bizon_sprint_end
 anm_idle_sprint_end_jammed      = bizon_sprint_end, idle_jammed
 
 
-;Скука////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅ////////////////////////////////////////////////////////////////////
 anm_bore                   = bizon_draw
 anm_bore_empty             = bizon_draw
 anm_bore_jammed            = bizon_draw, idle_jammed
 
 
-;Выстрелы обычными патронами/////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ/////////////////////////////////////////////////////////////////////
 anm_shoot                = bizon_shoot
 anm_shoot_sil            = bizon_shoot
 anm_shoot_jammed	     = bizon_shoot, idle_jammed
@@ -567,7 +611,7 @@ anm_shoot_aim_scope_last_sil   = bizon_aim_shoot_scope, bizon_aim_shoot
 anm_shoot_aim_scope_jammed     = bizon_aim_shoot_scope, idle_aim_jammed
 anm_shoot_aim_scope_jammed_sil = bizon_aim_shoot_scope, idle_aim_jammed
 
-;Осечка//////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////
 ; BARE probe targets: SelectDryFireAnim (WeaponMagazined.cpp) tests these with
 ; isHUDAnimationExist and only then does PlayHUDMotion append _jammed/_empty. GS ships
 ; only the _empty/_jammed variants, so without these the jam-inspect gesture never plays
@@ -584,7 +628,7 @@ anm_fakeshoot_jammed     = bizon_dry, idle_jammed
 lock_time_anm_fakeshoot_aim_jammed = 0.20
 anm_fakeshoot_aim_jammed     = bizon_aim_dry, idle_aim_jammed
 
-;Перезарядка/////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ/////////////////////////////////////////////////////////////////////
 anm_reload                           = bizon_reload
 lock_time_start_anm_reload_empty = 1.8
 lock_time_end_anm_reload_empty = 0.8
@@ -599,7 +643,7 @@ anm_reload_ammochange                = bizon_reload
 anm_reload_empty_ammochange          = bizon_reload_empty
 
 
-;Смена режима огня//////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
 use_firemode_change_anim = true
 
 ;1-a
@@ -622,7 +666,7 @@ anm_changefiremode_from_a_to_1_empty		     = bizon_firemode_a_to_1
 
 
 
-;Разрядка//////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
 use_unloadmag_anim = true
 lock_time_anm_unload_mag = 0.8
 anm_unload_mag                               = bizon_draw
@@ -631,7 +675,7 @@ anm_unload_mag_jammed                        = bizon_draw
 lock_time_anm_unload_mag_empty = 0.8
 anm_unload_mag_empty                         = bizon_draw
 
-;Включение ЛЦУ//////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
 anm_laser_on = bizon_lam
 lock_time_start_anm_laser_on = 0.45
 lock_time_end_anm_laser_on = 0.65
@@ -645,7 +689,7 @@ lock_time_start_anm_laser_on_jammed = 0.45
 lock_time_end_anm_laser_on_jammed = 0.65
 
 
-;Выключение ЛЦУ//////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
 anm_laser_off = bizon_lam
 lock_time_start_anm_laser_off = 0.45
 lock_time_end_anm_laser_off = 0.65
@@ -658,7 +702,7 @@ anm_laser_off_jammed = bizon_lam, idle_jammed
 lock_time_start_anm_laser_off_jammed = 0.45
 lock_time_end_anm_laser_off_jammed = 0.65
 
-;Включение фонаря//////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
 anm_torch_on = bizon_lam
 lock_time_start_anm_torch_on = 0.45
 lock_time_end_anm_torch_on = 0.65
@@ -672,7 +716,7 @@ lock_time_start_anm_torch_on_jammed = 0.45
 lock_time_end_anm_torch_on_jammed = 0.65
 
 
-;Выключение фонаря//////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
 anm_torch_off = bizon_lam
 lock_time_start_anm_torch_off = 0.45
 lock_time_end_anm_torch_off = 0.65
@@ -686,7 +730,7 @@ lock_time_start_anm_torch_off_jammed = 0.45
 lock_time_end_anm_torch_off_jammed = 0.65
 
 
-;включение налобника//////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
 anm_headlamp_on = bizon_headflash
 lock_time_start_anm_headlamp_on = 0.58
 lock_time_end_anm_headlamp_on = 0.5
@@ -699,7 +743,7 @@ anm_headlamp_on_jammed = bizon_headflash, idle_jammed
 lock_time_start_anm_headlamp_on_jammed = 0.58
 lock_time_end_anm_headlamp_on_jammed = 0.5
 
-;выключение налобника//////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
 anm_headlamp_off = bizon_headflash
 lock_time_start_anm_headlamp_off = 0.58
 lock_time_end_anm_headlamp_off = 0.5
@@ -713,13 +757,13 @@ lock_time_start_anm_headlamp_off_jammed = 0.58
 lock_time_end_anm_headlamp_off_jammed = 0.5
 
 
-;включение пнв//////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
 anm_nv_on = bizon_headflash
 anm_nv_on_empty = bizon_headflash
 anm_nv_on_jammed = bizon_headflash, idle_jammed
 
 
-;выключение пнв//////////////////////////////////////////////////////////////////////////
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ//////////////////////////////////////////////////////////////////////////
 anm_nv_off = bizon_headflash
 anm_nv_off_empty = bizon_headflash
 anm_nv_off_jammed = bizon_headflash, idle_jammed
@@ -729,7 +773,7 @@ anm_nv_off_jammed = bizon_headflash, idle_jammed
 ; when pointing away".
 laserdot_hud_treshold	= 90
 hud_recalc_koef		= 1.2
-hip_fire_point			= 0.091805, -0.102039, 0.880327
+hip_fire_point			= 0.091805, -0.102039, 0.480327
 hip_fire_dir			= 0.000000, 0.000000, 1.000000
 hud_recoil_pivot		= 0.091805, -0.102039, 0.1
 hud_recoil_aim_pivot	= 0.0, -0.15, 0.0
@@ -739,10 +783,10 @@ hud_recoil_aim_pivot	= 0.0, -0.15, 0.0
 
 additional_ammo_bone_when_jammed = true
 
-;все кости участвующие в формировании визуальных патронов
+;пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 all_bones = ammo_barrel, ammo, ammo2
 
-;конфигурации для каждого из значений счетчика патронов: какие из костей, указанных в all_bones, отображать при таком значении
+;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ all_bones, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 configuration_0 =
 configuration_1 = ammo_barrel
 configuration_2 = ammo_barrel, ammo
@@ -943,7 +987,7 @@ torch_r2_omni_range = 0.25
 torch_spot_angle = 60
 torch_spot_texture    = internal\internal_light_torch_tactical_r2
 
-torch_breaking_params = 0.3, 0.25, 0.0 //состояние, при котором начнутся проблемы, состояние, при котором все совсем поломается, стартовая вероятность проблемы (конечная - конечно же, 1)
+torch_breaking_params = 0.3, 0.25, 0.0 //пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ, 1)
 
 ; --- atlas rect for the layered icon --------------------------------------------------
 [icon_element_bizon_body]

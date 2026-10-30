@@ -426,6 +426,8 @@ float CEntityCondition::HitOutfitEffect( float hit_power, ALife::EHitType hit_ty
 
 		float protect				= pOutfit->GetHitTypeProtection(hit_type,element);
 		new_hit_power				-= protect * one;
+		// ...or, for the anomaly types, the share of the hit it shows as -- whichever leaves less
+		new_hit_power				= _min(new_hit_power, hit_power * (1.0f - AnomalyProtectionShare(protect, hit_type)));
 		if( new_hit_power < 0.0f ) { new_hit_power = 0.0f; }
 		
 		//��������� ������������ �������
@@ -434,6 +436,52 @@ float CEntityCondition::HitOutfitEffect( float hit_power, ALife::EHitType hit_ty
 	if( bDebug )	Msg( "new_hit_power = %.3f  hit_type = %s  ap = %.3f", new_hit_power, ALife::g_cafHitType2String(hit_type), ap );
 
 	return							new_hit_power;
+}
+
+bool CEntityCondition::IsAnomalyHitType(ALife::EHitType hit_type)
+{
+	return hit_type == ALife::eHitTypeRadiation || hit_type == ALife::eHitTypeBurn || hit_type == ALife::eHitTypeChemicalBurn
+		|| hit_type == ALife::eHitTypeTelepatic || hit_type == ALife::eHitTypeShock;
+}
+
+// The anomaly protections -- an outfit's burn/shock/chemical_burn/radiation/telepatic_protection, the
+// belt's summed *_immunity -- are a flat cut off every hit, tuned against the field anomalies (Z_RADIO),
+// which hit 10 times a second with power*0.1: protection*0.1 comes off each tick. Against a one-off
+// anomaly hit (an electra or fuzz burst, power 0.15..2) that same flat cut is next to nothing. So they
+// also count as a SHARE of the hit: protection over the strongest field's power (the actor condition's
+// *_zone_max_power, 0.166 -- what the inventory and the HUD already show them as), which right at that
+// field's centre takes off exactly the flat cut. The caller keeps whichever leaves less of the hit: the
+// fields play as they always did, a burst loses the share the HUD shows.
+float CEntityCondition::AnomalyProtectionShare(float protection, ALife::EHitType hit_type)
+{
+	ALife::EInfluenceType infl;
+	switch (hit_type)
+	{
+	case ALife::eHitTypeRadiation:		infl = ALife::infl_rad;		break;
+	case ALife::eHitTypeBurn:			infl = ALife::infl_fire;	break;
+	case ALife::eHitTypeChemicalBurn:	infl = ALife::infl_acid;	break;
+	case ALife::eHitTypeTelepatic:		infl = ALife::infl_psi;		break;
+	case ALife::eHitTypeShock:			infl = ALife::infl_electra;	break;
+	default:							return 0.0f;
+	}
+
+	// read once, from the same section CActorCondition takes them from (NPC outfits use the actor's too)
+	static float	s_max_power[ALife::infl_max_count];
+	static bool		s_read		= false;
+	if (!s_read)
+	{
+		LPCSTR keys[ALife::infl_max_count] = { "radio_zone_max_power", "fire_zone_max_power", "acid_zone_max_power", "psi_zone_max_power", "electra_zone_max_power" };
+		LPCSTR sect		= READ_IF_EXISTS(pSettings, r_string, "actor", "condition_sect", "actor");
+		for (int i = 0; i < ALife::infl_max_count; ++i)
+			s_max_power[i]	= READ_IF_EXISTS(pSettings, r_float, sect, keys[i], 1.0f);
+		s_read			= true;
+	}
+
+	if (s_max_power[infl] < EPS)
+		return 0.0f;
+	float share			= protection / s_max_power[infl];
+	clamp				(share, 0.0f, 1.0f);
+	return share;
 }
 
 float CEntityCondition::HitPowerEffect(float power_loss)

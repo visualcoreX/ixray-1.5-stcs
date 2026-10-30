@@ -186,6 +186,7 @@ scope_zoom_factor	    		= 98
 snd_draw							= weapons\p99\p99_draw
 snd_holster						= weapons\m1911\hide
 snd_shoot						= weapons\p99\p99_shoot, -1.1
+snd_silncer_shot				= weapons\p99\p99_sil_shoot, -1.1
 snd_empty						= weapons\glock17\glock17_dry
 snd_reload						= weapons\p99\p99_reload
 snd_reload_empty				= weapons\p99\p99_reload_full
@@ -194,6 +195,98 @@ snd_reload_jammed				= weapons\grach\grach_revival
 ; own timing -> its own sound, like Gunslinger's snd_reload_jammed_detector
 snd_reload_jammed_detector	= weapons\grach\grach_revival_det
 snd_close						= $silent
+
+;firing sounds (1st person)
+snd_shoot_1p          = weapons\p99\p99_shoot_1p_01, -0.9
+snd_shoot_1p1         = weapons\p99\p99_shoot_1p_02, -0.9
+snd_shoot_1p2         = weapons\p99\p99_shoot_1p_03, -0.9
+snd_shoot_1p3         = weapons\p99\p99_shoot_1p_04, -0.9
+snd_shoot_1p4         = weapons\p99\p99_shoot_1p_05, -0.9
+snd_shoot_1p5         = weapons\p99\p99_shoot_1p_06, -0.9
+
+snd_silncer_shot_1p          = weapons\p99\p99_shoot_sil_1p_01, -0.9
+snd_silncer_shot_1p1         = weapons\p99\p99_shoot_sil_1p_02, -0.9
+snd_silncer_shot_1p2         = weapons\p99\p99_shoot_sil_1p_03, -0.9
+snd_silncer_shot_1p3         = weapons\p99\p99_shoot_sil_1p_04, -0.9
+snd_silncer_shot_1p4         = weapons\p99\p99_shoot_sil_1p_05, -0.9
+snd_silncer_shot_1p5         = weapons\p99\p99_shoot_sil_1p_06, -0.9
+
+volume_snd_shoot_1p          = 110
+volume_snd_silncer_shot_1p   = 110
+
+;firing sounds (3rd person)
+snd_shoot          = weapons\p99\p99_shoot_3p_01, -0.9
+snd_shoot1         = weapons\p99\p99_shoot_3p_02, -0.9
+snd_shoot2         = weapons\p99\p99_shoot_3p_03, -0.9
+snd_shoot3         = weapons\p99\p99_shoot_3p_04, -0.9
+snd_shoot4         = weapons\p99\p99_shoot_3p_05, -0.9
+snd_shoot5         = weapons\p99\p99_shoot_3p_06, -0.9
+
+snd_shoot_dist          = weapons\shared\gen_pistol_shoot_dist_01, -1.1
+snd_shoot_dist1         = weapons\shared\gen_pistol_shoot_dist_02, -1.1
+snd_shoot_dist2         = weapons\shared\gen_pistol_shoot_dist_03, -1.1
+snd_shoot_dist3         = weapons\shared\gen_pistol_shoot_dist_04, -1.1
+snd_shoot_dist4         = weapons\shared\gen_pistol_shoot_dist_05, -1.1
+snd_shoot_dist5         = weapons\shared\gen_pistol_shoot_dist_06, -1.1
+
+volume_snd_shoot           = 150
+volume_snd_silncer_shot    = 150
+
+snd_shoot_blend_dist_start = 30
+snd_shoot_blend_dist_end   = 60
+
+snd_silncer_shot          = weapons\p99\p99_shoot_sil_3p_01, -0.9
+snd_silncer_shot1         = weapons\p99\p99_shoot_sil_3p_02, -0.9
+snd_silncer_shot2         = weapons\p99\p99_shoot_sil_3p_03, -0.9
+snd_silncer_shot3         = weapons\p99\p99_shoot_sil_3p_04, -0.9
+snd_silncer_shot4         = weapons\p99\p99_shoot_sil_3p_05, -0.9
+snd_silncer_shot5         = weapons\p99\p99_shoot_sil_3p_06, -0.9
+
+;indoor sounds
+snd_shoot_1p_indoor               = weapons\shared\gen_tail_indoor_medium_1p_01
+snd_shoot_1p_indoor1              = weapons\shared\gen_tail_indoor_medium_1p_02
+snd_shoot_1p_indoor2              = weapons\shared\gen_tail_indoor_medium_1p_03
+snd_shoot_1p_indoor3              = weapons\shared\gen_tail_indoor_medium_1p_04
+snd_shoot_1p_indoor4              = weapons\shared\gen_tail_indoor_medium_1p_05
+snd_shoot_1p_indoor5              = weapons\shared\gen_tail_indoor_medium_1p_06
+snd_shoot_indoor                  = weapons\shared\gen_tail_indoor_medium_3p_01
+snd_shoot_indoor1                 = weapons\shared\gen_tail_indoor_medium_3p_02
+snd_shoot_indoor2                 = weapons\shared\gen_tail_indoor_medium_3p_03
+snd_shoot_indoor3                 = weapons\shared\gen_tail_indoor_medium_3p_04
+snd_shoot_indoor4                 = weapons\shared\gen_tail_indoor_medium_3p_05
+snd_shoot_indoor5                 = weapons\shared\gen_tail_indoor_medium_3p_06
+snd_silncer_shot_1p_indoor        = weapons\shared\gen_tail_indoor_suppressed_1p_01
+snd_silncer_shot_1p_indoor1       = weapons\shared\gen_tail_indoor_suppressed_1p_02
+snd_silncer_shot_1p_indoor2       = weapons\shared\gen_tail_indoor_suppressed_1p_03
+snd_silncer_shot_1p_indoor3       = weapons\shared\gen_tail_indoor_suppressed_1p_04
+snd_silncer_shot_1p_indoor4       = weapons\shared\gen_tail_indoor_suppressed_1p_05
+snd_silncer_shot_1p_indoor5       = weapons\shared\gen_tail_indoor_suppressed_1p_06
+snd_silncer_shot_indoor           = weapons\shared\gen_tail_indoor_suppressed_3p_01
+snd_silncer_shot_indoor1          = weapons\shared\gen_tail_indoor_suppressed_3p_02
+snd_silncer_shot_indoor2          = weapons\shared\gen_tail_indoor_suppressed_3p_03
+snd_silncer_shot_indoor3          = weapons\shared\gen_tail_indoor_suppressed_3p_04
+snd_silncer_shot_indoor4          = weapons\shared\gen_tail_indoor_suppressed_3p_05
+snd_silncer_shot_indoor5          = weapons\shared\gen_tail_indoor_suppressed_3p_06
+volume_snd_shoot_indoor           = 75
+volume_snd_shoot_1p_indoor        = 75
+volume_snd_silncer_shot_indoor    = 60
+volume_snd_silncer_shot_1p_indoor = 60
+snd_indoor_fadeout_start          = 0.1
+snd_indoor_fadeout_end            = 0.5
+snd_indoor_fadeout_db             = 6
+
+;low ammo sounds
+snd_low_ammo			= weapons\mag_rattle\smg_mag_rattle_01, 1.05, 0.08
+snd_low_ammo1			= weapons\mag_rattle\smg_mag_rattle_02, 1.05, 0.08
+snd_low_ammo2			= weapons\mag_rattle\smg_mag_rattle_03, 1.05, 0.08
+snd_low_ammo3			= weapons\mag_rattle\smg_mag_rattle_04, 1.05, 0.08
+volume_snd_low_ammo		= 110
+snd_low_ammo_threshold	= 8
+snd_low_ammo_gain		= 0.05, 1.0
+snd_low_ammo_db			= 12				; 0 - linear
+snd_low_ammo_duck		= 4					; d u c k
+snd_low_ammo_duck_time	= 0.115, 0.01, 0.3	; delay, attack, release (s)
+snd_low_ammo_duck_hold	= 0.01
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; silencer
@@ -208,7 +301,6 @@ silencer_y 						= -19
 
 ;silencer_flame_particles 	= weapons\generic_weapon01
 silencer_smoke_particles 	= ghost_particles\weapons\suppressor_smoke_pistol_common
-snd_silncer_shot				= weapons\p99\p99_sil_shoot, -1.1
 silencer_light_color			= 0.6,0.5,0.3
 silencer_light_range			= 0.01
 silencer_light_var_color	= 0.05

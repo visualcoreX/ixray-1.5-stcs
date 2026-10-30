@@ -15,9 +15,7 @@
 using namespace PAPI;
 using namespace PS;
 
-const u32	PS::uDT_STEP 	= 16;			// the particle simulation tick, ms (60 a second; was 33 = 30)
-static const u32	uDT_STEP_BURST	= 33;	// ...but a one-shot burst keeps the old one, see OnFrame
-static const float	fBURST_LIMIT	= 0.25f;	// "one-shot" = a time limit no longer than this, seconds
+const u32	PS::uDT_STEP 	= IParticleCustom::TICK_MS;	// was 33 (30 a second); the actions keep their 33ms look at any tick, see particle_actions_collection.cpp
 const float	PS::fDT_STEP 	= float(uDT_STEP)/1000.f;
 
 static void ApplyTexgen( const Fmatrix &mVP )
@@ -129,30 +127,20 @@ void CParticleEffect::OnFrame(u32 frame_dt)
 	if (m_Def && m_RT_Flags.is(flRT_Playing)){
 		m_MemDT			+= frame_dt;
 
-		// A one-shot burst -- a muzzle flash, a spark hit -- is a different animal from a plume of
-		// smoke. The source emits its particles PER TICK while the effect is drawn once per frame,
-		// so a finer tick puts fewer particles on screen at the instant the flash is at its
-		// brightest: the same number is born over the whole life, but the peak thins out and the
-		// flash reads as weaker and more transparent. Those effects were authored against the old
-		// 33ms tick and keep it; everything longer-lived (smoke, dust, steam) gains from 60Hz.
-		const bool	burst		= m_Def->m_Flags.is(CPEDef::dfTimeLimit) && (m_Def->m_fTimeLimit <= fBURST_LIMIT);
-		const u32	dt_step		= burst ? uDT_STEP_BURST : uDT_STEP;
-		const float	fdt_step	= float(dt_step)/1000.f;
-
 		int	StepCount	= 0;
-		if (m_MemDT>=(s32)dt_step)	{
+		if (m_MemDT>=(s32)uDT_STEP)	{
 			// allow maximum of ~99ms worth of steps to avoid slowdown after loading
 			// it will really skip updates at less than 10fps, which is unplayable
 			// (the cap is in STEPS, so it has to follow the tick to keep the same catch-up window)
-			StepCount	= m_MemDT/dt_step;
-			m_MemDT		= m_MemDT%dt_step;
-			clamp		(StepCount,0,burst ? 3 : 6);
+			StepCount	= m_MemDT/uDT_STEP;
+			m_MemDT		= m_MemDT%uDT_STEP;
+			clamp		(StepCount,0,int(99/uDT_STEP));
 		}
 
 		for (;StepCount; StepCount--)	{
 			if (m_Def->m_Flags.is(CPEDef::dfTimeLimit)){ 
 				if (!m_RT_Flags.is(flRT_DefferedStop)){
-					m_fElapsedLimit -= fdt_step;
+					m_fElapsedLimit -= fDT_STEP;
 					if (m_fElapsedLimit<0.f){
 						m_fElapsedLimit = m_Def->m_fTimeLimit;
 						Stop		(true);
@@ -160,15 +148,15 @@ void CParticleEffect::OnFrame(u32 frame_dt)
 					}
 				}
 			}
-            ParticleManager()->Update(m_HandleEffect,m_HandleActionList,fdt_step);
+            ParticleManager()->Update(m_HandleEffect,m_HandleActionList,fDT_STEP);
 
             PAPI::Particle* particles;
             u32 p_cnt;
             ParticleManager()->GetParticles(m_HandleEffect,particles,p_cnt);
             
 			// our actions
-			if (m_Def->m_Flags.is(CPEDef::dfFramed|CPEDef::dfAnimated))	m_Def->ExecuteAnimate	(particles,p_cnt,fdt_step);
-			if (m_Def->m_Flags.is(CPEDef::dfCollision)) 				m_Def->ExecuteCollision	(particles,p_cnt,fdt_step,this,m_CollisionCallback);
+			if (m_Def->m_Flags.is(CPEDef::dfFramed|CPEDef::dfAnimated))	m_Def->ExecuteAnimate	(particles,p_cnt,fDT_STEP);
+			if (m_Def->m_Flags.is(CPEDef::dfCollision)) 				m_Def->ExecuteCollision	(particles,p_cnt,fDT_STEP,this,m_CollisionCallback);
 
 			//-move action
 			if (p_cnt)	
@@ -667,7 +655,7 @@ void CParticleEffect::Render(float )
 					Device.mFullTransform.mul	(Device.mProject, Device.mView);
 					RCache.set_xform_project	(Device.mProject);
 					RImplementation.rmNear		();
-					// The soft-particle shaders (particle_add, particle_distort...) look the scene's position
+					// The soft-particle shaders (particle, particle_distort...) look the scene's position
 					// buffer up through this texgen, at the pixel the particle covers. In the hud's slice the
 					// particle is drawn through W as well (m_WVP), so the texgen must have it too: without it the
 					// lookup landed K times further from the middle of the screen than the sprite, and the sprite
@@ -684,7 +672,7 @@ void CParticleEffect::Render(float )
 
 #ifndef _EDITOR
 				RCache.set_xform_world	(bHudWorld ? W : Fidentity);
-				// in the hud's slice no soft fade (particle_add.ps): it is ~0.8 m deep, and at the scale of the
+				// in the hud's slice no soft fade (particle.ps): it is ~0.8 m deep, and at the scale of the
 				// weapon in hand it ate every sprite lying on the gun. Set on every draw, both ways: a shader
 				// constant keeps whatever the last draw left in it.
 				RCache.set_c			("particle_hud_slice", (GetHudMode() || bHudWorld) ? 1.f : 0.f, 0.f, 0.f, 0.f);

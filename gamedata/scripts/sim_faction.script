@@ -92,7 +92,8 @@ function se_sim_faction:read_params()
 
 			precondition_power            = get_number(ini, section, "precondition_power", nil, false, 0),
 			precondition_target           = parse_names(get_string(ini, section, "precondition_target", nil, false, "", "")),
---			precondition_target_optional  = parse_names(get_string(ini, section, "precondition_target_optional", nil, false, "", "")),
+			-- captured and held like precondition_target, but not needed to reach the next expansion level
+			precondition_target_optional  = parse_names(get_string(ini, section, "precondition_target_optional", nil, false, "", "")),
 			precondition_target_eliminate = parse_names(get_string(ini, section, "precondition_target_eliminate", nil, false, "", "")),
 --			precondition_target_order     = get_string(ini, section, "precondition_target_order", nil, false, "", "free"),
 			precondition_actor_in_faction = utils.cfg_get_bool(ini, section, "precondition_actor_in_faction", nil, false, false),
@@ -171,6 +172,9 @@ function se_sim_faction:init_targets()
 
 	for _, expansion in pairs (self.expansion_level) do
 		for _, target_name in pairs (expansion.precondition_target) do
+			precondition_targets[smarts_by_name[target_name].id] = true
+		end
+		for _, target_name in pairs (expansion.precondition_target_optional) do
 			precondition_targets[smarts_by_name[target_name].id] = true
 		end
 	end

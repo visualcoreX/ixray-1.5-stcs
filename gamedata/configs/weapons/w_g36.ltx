@@ -246,6 +246,15 @@ grenade_launcher_name   = wpn_addon_grenade_launcher_m203
 grenade_launcher_x      = 130
 grenade_launcher_y      = 31
 
+snd_empty               = weapons\glock17\glock17_dry
+snd_changefiremode	= weapons\vss\vss_firemode
+snd_reload              = weapons\g36\g36_reload
+snd_reload_empty        = weapons\g36\g36_reload_empty
+snd_reload_jammed		= weapons\g36\g36_revival
+snd_shoot_grenade       = weapons\m203\m203_shoot
+snd_reload_grenade      = weapons\m203\m203_reload
+snd_switch              = weapons\m203\m203_activate
+
 ;firing sounds (1st person)
 snd_shoot_1p          = weapons\g36\g36_shoot_1p_01, -0.9
 snd_shoot_1p1         = weapons\g36\g36_shoot_1p_02, -0.9
@@ -317,47 +326,50 @@ volume_snd_shoot_grenade    = 150
 volume_snd_shoot_grenade_1p = 150
 
 ;indoor sounds
-snd_shoot_indoor_1p               = weapons\shared\gen_tail_indoor_medium_1p_01
-snd_shoot_indoor_1p1              = weapons\shared\gen_tail_indoor_medium_1p_02
-snd_shoot_indoor_1p2              = weapons\shared\gen_tail_indoor_medium_1p_03
-snd_shoot_indoor_1p3              = weapons\shared\gen_tail_indoor_medium_1p_04
-snd_shoot_indoor_1p4              = weapons\shared\gen_tail_indoor_medium_1p_05
-snd_shoot_indoor_1p5              = weapons\shared\gen_tail_indoor_medium_1p_06
+snd_shoot_1p_indoor               = weapons\shared\gen_tail_indoor_medium_1p_01
+snd_shoot_1p_indoor1              = weapons\shared\gen_tail_indoor_medium_1p_02
+snd_shoot_1p_indoor2              = weapons\shared\gen_tail_indoor_medium_1p_03
+snd_shoot_1p_indoor3              = weapons\shared\gen_tail_indoor_medium_1p_04
+snd_shoot_1p_indoor4              = weapons\shared\gen_tail_indoor_medium_1p_05
+snd_shoot_1p_indoor5              = weapons\shared\gen_tail_indoor_medium_1p_06
 snd_shoot_indoor                  = weapons\shared\gen_tail_indoor_medium_3p_01
 snd_shoot_indoor1                 = weapons\shared\gen_tail_indoor_medium_3p_02
 snd_shoot_indoor2                 = weapons\shared\gen_tail_indoor_medium_3p_03
 snd_shoot_indoor3                 = weapons\shared\gen_tail_indoor_medium_3p_04
 snd_shoot_indoor4                 = weapons\shared\gen_tail_indoor_medium_3p_05
 snd_shoot_indoor5                 = weapons\shared\gen_tail_indoor_medium_3p_06
-snd_silncer_shot_indoor_1p        = weapons\shared\gen_tail_indoor_suppressed_1p_01
-snd_silncer_shot_indoor_1p1       = weapons\shared\gen_tail_indoor_suppressed_1p_02
-snd_silncer_shot_indoor_1p2       = weapons\shared\gen_tail_indoor_suppressed_1p_03
-snd_silncer_shot_indoor_1p3       = weapons\shared\gen_tail_indoor_suppressed_1p_04
-snd_silncer_shot_indoor_1p4       = weapons\shared\gen_tail_indoor_suppressed_1p_05
-snd_silncer_shot_indoor_1p5       = weapons\shared\gen_tail_indoor_suppressed_1p_06
+snd_silncer_shot_1p_indoor        = weapons\shared\gen_tail_indoor_suppressed_1p_01
+snd_silncer_shot_1p_indoor1       = weapons\shared\gen_tail_indoor_suppressed_1p_02
+snd_silncer_shot_1p_indoor2       = weapons\shared\gen_tail_indoor_suppressed_1p_03
+snd_silncer_shot_1p_indoor3       = weapons\shared\gen_tail_indoor_suppressed_1p_04
+snd_silncer_shot_1p_indoor4       = weapons\shared\gen_tail_indoor_suppressed_1p_05
+snd_silncer_shot_1p_indoor5       = weapons\shared\gen_tail_indoor_suppressed_1p_06
 snd_silncer_shot_indoor           = weapons\shared\gen_tail_indoor_suppressed_3p_01
 snd_silncer_shot_indoor1          = weapons\shared\gen_tail_indoor_suppressed_3p_02
 snd_silncer_shot_indoor2          = weapons\shared\gen_tail_indoor_suppressed_3p_03
 snd_silncer_shot_indoor3          = weapons\shared\gen_tail_indoor_suppressed_3p_04
 snd_silncer_shot_indoor4          = weapons\shared\gen_tail_indoor_suppressed_3p_05
 snd_silncer_shot_indoor5          = weapons\shared\gen_tail_indoor_suppressed_3p_06
-volume_snd_shoot_indoor           = 80
-volume_snd_shoot_indoor_1p        = 100
-volume_snd_silncer_shot_indoor    = 40
-volume_snd_silncer_shot_indoor_1p = 60
+volume_snd_shoot_indoor           = 75
+volume_snd_shoot_1p_indoor        = 75
+volume_snd_silncer_shot_indoor    = 60
+volume_snd_silncer_shot_1p_indoor = 60
 snd_indoor_fadeout_start          = 0.1
 snd_indoor_fadeout_end            = 0.5
 snd_indoor_fadeout_db             = 6
 
-snd_empty               = weapons\glock17\glock17_dry
-snd_changefiremode	= weapons\vss\vss_firemode
-snd_reload              = weapons\g36\g36_reload
-snd_reload_empty        = weapons\g36\g36_reload_empty
-snd_reload_jammed		= weapons\g36\g36_revival
-snd_shoot_grenade       = weapons\m203\m203_shoot
-snd_reload_grenade      = weapons\m203\m203_reload
-snd_switch              = weapons\m203\m203_activate
-
+;low ammo sounds
+snd_low_ammo			= weapons\mag_rattle\ak74_mag_rattle_01, 1.05, 0.0 ; от АК, потому что полимерный магаз лучше стакается с этим звуком
+snd_low_ammo1			= weapons\mag_rattle\ak74_mag_rattle_02, 1.05, 0.0
+snd_low_ammo2			= weapons\mag_rattle\ak74_mag_rattle_03, 1.05, 0.0
+snd_low_ammo3			= weapons\mag_rattle\ak74_mag_rattle_04, 1.05, 0.0
+volume_snd_low_ammo		= 125
+snd_low_ammo_threshold	= 15
+snd_low_ammo_gain		= 0.05, 1.0
+snd_low_ammo_db			= 12				; 0 - linear
+snd_low_ammo_duck		= 4					; d u c k
+snd_low_ammo_duck_time	= 0.05, 0.01, 0.3	; delay, attack, release (s)
+snd_low_ammo_duck_hold	= 0.01
 
 ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 silencer_hit_power      = 0.9, 0.9, 0.9, 0.9 ; orig 0.55, 0.55, 0.55, 0.55
@@ -378,7 +390,7 @@ silencer_light_var_color= 0.05
 silencer_light_var_range= 0.5
 silencer_light_time     = 0.2
 silencer_muzzle_fx_offset		= 0, -0.006, 0.083	; how far the silencer sticks out past the fire point on THIS gun (world model;
-silencer_muzzle_fx_offset_hud	= 0, -0.018, 0.116	; ...hud model) -- overrides the silencer section's muzzle_fx_offset(_hud)
+;silencer_muzzle_fx_offset_hud	= 0, -0.018, 0.116	; ...hud model) -- overrides the silencer section's muzzle_fx_offset(_hud)
 
 ; --- GS/xrMPE condition + jam model
 condition_queue_shot_dec    = 0.0006	; balance 5.56: L85 < LR300 < G36 (was 0.0015)
@@ -434,7 +446,7 @@ snd_scope_brightness_minus  = weapons\nv_intensity
 zoom_hide_crosshair        = true
 attach_place_idx        = 0
 item_visual		= dynamics\weapons\wpn_g36\wpn_g36_hud.ogf
-; fire_mode_bone= firemode_triple	; off: this weapon uses the GS mask_firemode _auto
+; fire_mode_bone = firemode_triple	; off: this weapon uses the GS mask_firemode _auto
 ; GS firemode marks: the base aliases are the SINGLE-posed set, the _auto variants get the
 ; auto-posed item motions. Existence-gated, so aliases for motions that do not exist yet
 ; simply fall back to the base.
@@ -460,7 +472,7 @@ hip_fire_point			= 0.115215, -0.114257, 1.110635
 hip_fire_dir			= -0.000000, 0.000061, 1.000000
 hud_recoil_pivot		= 0.115215, -0.154257, 0.1
 hud_recoil_aim_pivot	= 0.0, -0.05, 0.0
-;hud_recoil_aim_push_back    	= 0.005	;В оптике не работает, поэтому юзать для компенсации клиппинга смысла нет
+;hud_recoil_aim_push_back    	= 0.005	;пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
 ;hud_recoil_aim_push_max     	= 0.01
 
 ; ---- alternate (backup) aim pose. The lens is switched off while in it and cross-fades with the

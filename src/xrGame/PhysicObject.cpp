@@ -33,6 +33,94 @@ CPhysicObject::~CPhysicObject(void)
 	xr_delete(m_net_updateData);
 }
 
+// A museum gun (a prop borrowing a weapon's model) shows that model the way a weapon with no upgrades and no
+// attachments shows it: `weapon_bones_section = wpn_x` in the prop's section takes that weapon's def_hide_bones /
+// def_show_bones, so the lists live in one place. Same order as CWeapon's world-model pass: hide, show, then hide
+// again every def_hide_bones entry the recursive show dragged out with its parent.
+static void WeaponDefaultBones_Collect(LPCSTR csv, xr_vector<shared_str>& out)
+{
+	if (!csv || !csv[0])	return;
+	string256 name;
+	LPCSTR p = csv;
+	while (*p)
+	{
+		while (*p == ' ' || *p == ',' || *p == '\t')	++p;
+		LPCSTR s = p;
+		while (*p && *p != ',')	++p;
+		u32 n = (u32)(p - s);
+		while (n && (s[n - 1] == ' ' || s[n - 1] == '\t'))	--n;
+		if (n && n < sizeof(name))
+		{
+			strncpy_s(name, sizeof(name), s, n);
+			name[n] = 0;
+			shared_str bone = name;
+			if (std::find(out.begin(), out.end(), bone) == out.end())
+				out.push_back(bone);
+		}
+	}
+}
+
+static void WeaponDefaultBones_Set(IKinematics* K, const xr_vector<shared_str>& bones, BOOL show)
+{
+	for (const shared_str& bone : bones)
+	{
+		u16 id = K->LL_BoneID(bone);
+		if (id != BI_NONE && K->LL_GetBoneVisible(id) != show)
+			K->LL_SetBoneVisible(id, show, TRUE);
+	}
+}
+
+static void WeaponDefaultBones_Apply(IKinematics* K, LPCSTR prop_sect)
+{
+	if (!K || !pSettings->line_exist(prop_sect, "weapon_bones_section"))
+		return;
+	LPCSTR wsect = pSettings->r_string(prop_sect, "weapon_bones_section");
+	if (!pSettings->section_exist(wsect))
+	{
+		Msg("! [%s] weapon_bones_section: no section [%s]", prop_sect, wsect);
+		return;
+	}
+	xr_vector<shared_str> hide, show;
+	if (pSettings->line_exist(wsect, "def_hide_bones"))	WeaponDefaultBones_Collect(pSettings->r_string(wsect, "def_hide_bones"), hide);
+	if (pSettings->line_exist(wsect, "def_show_bones"))	WeaponDefaultBones_Collect(pSettings->r_string(wsect, "def_show_bones"), show);
+	WeaponDefaultBones_Set(K, hide, FALSE);
+	WeaponDefaultBones_Set(K, show, TRUE);
+	xr_vector<shared_str> rehide;
+	for (const shared_str& bone : hide)
+		if (std::find(show.begin(), show.end(), bone) == show.end())
+			rehide.push_back(bone);
+	WeaponDefaultBones_Set(K, rehide, FALSE);
+
+	// the stock addon bones, which CWeapon::UpdateAddonsVisibility handles on its own: on a bare weapon each is
+	// shown only when that addon is built in (status 1), else hidden -- the AKS-74U's silencer is one of these
+	static const LPCSTR addon_bone[] = { "wpn_scope", "wpn_silencer", "wpn_launcher" };
+	static const LPCSTR addon_status[] = { "scope_status", "silencer_status", "grenade_launcher_status" };
+	for (int i = 0; i < 3; ++i)
+	{
+		u16 id = K->LL_BoneID(addon_bone[i]);
+		if (id == BI_NONE)
+			continue;
+		BOOL show = READ_IF_EXISTS(pSettings, r_s32, wsect, addon_status[i], 0) == 1;
+		if (K->LL_GetBoneVisible(id) != show)
+			K->LL_SetBoneVisible(id, show, TRUE);
+	}
+
+	// GS world models (use_world_anims) keep their parts piled at the origin in the bind pose: the weapon's idle
+	// world motion is what lays them out, so the prop plays it too
+	IKinematicsAnimated* A = smart_cast<IKinematicsAnimated*>(K);
+	if (A && READ_IF_EXISTS(pSettings, r_bool, wsect, "use_world_anims", false) && pSettings->line_exist(wsect, "wanm_idle"))
+	{
+		MotionID m = A->ID_Cycle_Safe(pSettings->r_string(wsect, "wanm_idle"));
+		if (m.valid())
+			A->PlayCycle(m, TRUE);
+		else
+			Msg("! [%s] weapon_bones_section [%s]: no world motion [%s]", prop_sect, wsect, pSettings->r_string(wsect, "wanm_idle"));
+	}
+
+	K->CalculateBones_Invalidate();
+	K->CalculateBones(TRUE);
+}
+
 BOOL CPhysicObject::net_Spawn(CSE_Abstract* DC)
 {
 	CSE_Abstract			*e	= (CSE_Abstract*)(DC);
@@ -48,6 +136,7 @@ BOOL CPhysicObject::net_Spawn(CSE_Abstract* DC)
 
 
 	CPHSkeleton::Spawn(e);
+	WeaponDefaultBones_Apply(smart_cast<IKinematics*>(Visual()), cNameSect().c_str());
 	setVisible(TRUE);
 	setEnabled(TRUE);
 

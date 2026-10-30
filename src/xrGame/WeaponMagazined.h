@@ -29,7 +29,8 @@ protected:
 	// The shots' own tails would bury it, so while it plays they are ducked: snd_low_ammo_duck dB at an
 	// empty magazine, less as the rattle is quieter (by its gain over the top one). snd_low_ammo_duck_time =
 	// delay, attack, release: the delay past the rattle's start keeps the attack of the shot that has just
-	// gone off whole; the duck then holds to the rattle's end and comes back over the release.
+	// gone off whole; the duck then holds -- snd_low_ammo_duck_hold seconds after the attack, else to the
+	// end of the rattle's file -- and comes back over the release.
 	bool			m_bLowAmmoSnd;
 	int				m_iLowAmmoThreshold;
 	float			m_fLowAmmoGainMin;
@@ -37,6 +38,7 @@ protected:
 	float			m_fLowAmmoDb;
 	float			m_fLowAmmoDuckDb;			// 0: no duck
 	Fvector			m_vLowAmmoDuckTime;			// delay, attack, release
+	float			m_fLowAmmoDuckHold;			// < 0: to the end of the rattle's file
 	void			PlayLowAmmoSound	();
 
 	//дополнительная информация о глушителе
