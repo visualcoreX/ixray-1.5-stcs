@@ -147,14 +147,17 @@ function bloodsucker_attack:update(delta)
 			db.del_obj(self.bloodsucker_obj)
 			bind_stalker.delayed_alife_release_objects[self.bloodsucker.id] = nil
 			_G.sim:release(self.bloodsucker, true)
---[[
+			-- the creature takes the body with it, as in the original: without this the corpse it carried off
+			-- was left lying at the vanishing spot for good
 			local se_npc = _G.sim:object(self.victim_id)
-			if se_npc.squad_id == nil then
-				_G.sim:release(se_npc, true)
-			else
-				sim_board.get_sim_board().squads[se_npc.squad_id]:remove_npc(se_npc.id)
+			if se_npc ~= nil then
+				local squad = se_npc.squad_id and sim_board.get_sim_board().squads[se_npc.squad_id]
+				if squad ~= nil then
+					squad:remove_npc(se_npc.id)
+				else
+					_G.sim:release(se_npc, true)
+				end
 			end
-]]
 			xr_motivator.bloodsucker_zone_enter[restr_id] = nil
 --			self:disable_reaction_final() -- only necessary if next line doesn't cause section switch
 			st.signals["scene_end"] = true -- always causes section switch on next update in vanilla
