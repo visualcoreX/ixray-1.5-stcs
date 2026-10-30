@@ -84,6 +84,8 @@ CHudItem::CHudItem()
 	m_bLowerGoingDown			= false;
 	m_bLowerModeOn				= false;
 	m_fLowerFromBlend			= 0.f;
+	m_bLowerAnimUp				= false;
+	m_fLowerRate				= 0.f;
 	m_lower_cur_q.identity		();	m_lower_from_q.identity();
 	m_lower_cur_p.set			(0, 0, 0);	m_lower_from_p.set(0, 0, 0);
 //	m_hud_item_shared_data		= NULL;

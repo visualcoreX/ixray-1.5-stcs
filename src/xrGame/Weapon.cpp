@@ -5901,6 +5901,8 @@ void CHudItem::ResetLoweredPose()
 	m_bLowerGoingDown		= false;
 	m_bLowerModeOn			= false;
 	m_fLowerFromBlend		= 0.f;
+	m_bLowerAnimUp			= false;
+	m_fLowerRate			= 0.f;
 	if (CActor* a = smart_cast<CActor*>(object().H_Parent()))
 		if (a->InBaseZone() && CActor::IsLowerable(&item()))
 		{
@@ -5908,6 +5910,22 @@ void CHudItem::ResetLoweredPose()
 			m_bLowerGoingDown	= true;
 			m_bLowerModeOn		= true;	// came out already down: nothing was pressed
 		}
+}
+
+bool CHudItem::LoweredBlocksWeapon() const
+{
+	if (m_fLoweredFactor <= 0.f)	return false;
+	if (m_bLowerGoingDown)			return true;
+	// on the way up: the factor runs linearly in time at the length of the animation driving the move, and the
+	// move always starts from the bottom (the key waits for the end), so the time since the raise began is
+	// (1 - factor) * length
+	const SLowerPair&	P	= lower_anims(HudSection());
+	const SLowerAnim&	A	= P.down ? *P.down : s_no_anim;
+	const SLowerAnim&	U	= P.up ? *P.up : s_no_anim;
+	const float t	= !A.valid ? 0.3f : (m_bLowerAnimUp && U.valid) ? U.length() : A.length();
+	const float lt	= READ_IF_EXISTS(pSettings, r_float, HudSection(), "lock_time_lowered_up",
+						READ_IF_EXISTS(pSettings, r_float, "weapon_lowered", "lock_time_up", 0.3f));
+	return (1.f - m_fLoweredFactor) * t < lt;
 }
 
 void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
@@ -5925,8 +5943,10 @@ void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 		if (mode != m_bLowerModeOn)
 		{
 			m_bLowerModeOn		= mode;
+			// ...and only from a rest at an end: pressed again halfway (the key spammed), the hand would start
+			// its holster or draw over again for a move that only turns back
 			const bool	moves	= !(pActor->MovingState() & mcSprint) &&
-								  (mode ? m_fLoweredFactor < 1.f : m_fLoweredFactor > 0.f);
+								  (mode ? m_fLoweredFactor <= 0.f : m_fLoweredFactor >= 1.f);
 			if (moves && pActor->inventory().ActiveItem() == &item())
 				TryPlayDetectorCompanion(shared_str(mode ? "anm_hide" : "anm_show"));
 		}
@@ -5937,24 +5957,48 @@ void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 	// the weapon-down factor runs at the length of the animation of the way it is going
 	// (no animation: the weapon stays where it is on the hud, the mode itself still works -- a short ramp
 	// for what goes by the factor: the crosshair, the blocked actions)
-	const float t	= !A.valid ? 0.3f : (!down && U.valid) ? U.length() : A.length();
 	if (down != m_bLowerGoingDown)
 	{
-		// a change of direction: the other animation does not start where this one stands (a change of mind
-		// halfway, or two animations that do not quite meet) -- fade over from the pose the hud is in now
 		m_bLowerGoingDown	= down;
-		// the camera animation of the move that starts now (the way up only when the weapon is not up already)
-		const SLowerAnim*	C	= down ? (A.valid ? &A : 0) : ((m_fLoweredFactor > 0.f && U.valid) ? &U : 0);
-		if (C && C->cam.size())	play_lower_cam(pActor, C->cam);
-		if (m_fLoweredFactor > 0.f && A.valid && U.valid)
+		// A move that starts from a rest at an end takes the animation of its way, and its camera animation (the
+		// way up only when the weapon is not up already). A change of mind HALFWAY keeps the animation that is
+		// playing and runs it back -- the other one does not stand where this one does, and handing over to it
+		// (with a fade) dragged the hud across to a pose of its own on every press of a spammed key -- and starts
+		// no camera animation: that one would play the whole move from its start for a part of it.
+		const bool	from_end	= down ? (m_fLoweredFactor <= 0.f) : (m_fLoweredFactor >= 1.f);
+		if (from_end)
 		{
-			m_lower_from_q	= m_lower_cur_q;
-			m_lower_from_p	= m_lower_cur_p;
-			m_fLowerFromBlend = 1.f;
+			const bool	want_up	= !down && U.valid;
+			const SLowerAnim*	C	= down ? (A.valid ? &A : 0) : ((m_fLoweredFactor > 0.f && U.valid) ? &U : 0);
+			if (C && C->cam.size())	play_lower_cam(pActor, C->cam);
+			// the two animations should meet at the ends; where they do not, fade over from the pose the hud is in
+			if (want_up != m_bLowerAnimUp && m_fLoweredFactor > 0.f && A.valid && U.valid)
+			{
+				m_lower_from_q	= m_lower_cur_q;
+				m_lower_from_p	= m_lower_cur_p;
+				m_fLowerFromBlend = 1.f;
+			}
+			m_bLowerAnimUp		= want_up;
+			m_fLowerRate		= down ? 1.f : -1.f;		// from a rest: at the animation's own pace at once
 		}
 	}
-	m_fLoweredFactor += (down ? 1.f : -1.f) * Device.fTimeDelta / _max(t, 0.01f);
+	// the move's speed turns over smoothly ([weapon_lowered] reverse_time): it slows down, stops and comes back,
+	// instead of jumping from full speed one way to full speed the other
+	{
+		const float rt		= READ_IF_EXISTS(pSettings, r_float, "weapon_lowered", "reverse_time", 0.12f);
+		const float target	= down ? 1.f : -1.f;
+		const float step	= Device.fTimeDelta / _max(rt, 0.01f);
+		if (m_fLowerRate < target)	m_fLowerRate = _min(m_fLowerRate + step, target);
+		else						m_fLowerRate = _max(m_fLowerRate - step, target);
+	}
+	// the factor runs at the length of the animation that drives the move
+	// (no animation: the weapon stays where it is on the hud, the mode itself still works -- a short ramp
+	// for what goes by the factor: the crosshair, the blocked actions)
+	const float t	= !A.valid ? 0.3f : (m_bLowerAnimUp && U.valid) ? U.length() : A.length();
+	m_fLoweredFactor += m_fLowerRate * Device.fTimeDelta / _max(t, 0.01f);
 	clamp(m_fLoweredFactor, 0.f, 1.f);
+	if (m_fLoweredFactor <= 0.f && m_fLowerRate < 0.f)	m_fLowerRate = 0.f;		// at rest at an end
+	if (m_fLoweredFactor >= 1.f && m_fLowerRate > 0.f)	m_fLowerRate = 0.f;
 	if (m_fLowerFromBlend > 0.f)
 	{
 		const float bt		= READ_IF_EXISTS(pSettings, r_float, "weapon_lowered", "anim_blend", 0.15f);
@@ -5972,8 +6016,8 @@ void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 		// the way down at the factor, up = the way up at 1 - factor (or the way down played backwards)
 		Fquaternion	q;
 		Fvector		p;
-		if (!down && U.valid)	U.sample(1.f - m_fLoweredFactor, q, p);
-		else					A.sample(m_fLoweredFactor, q, p);
+		if (m_bLowerAnimUp && U.valid)	U.sample(1.f - m_fLoweredFactor, q, p);
+		else							A.sample(m_fLoweredFactor, q, p);
 		if (m_fLowerFromBlend > 0.f)
 		{
 			const float w	= m_fLowerFromBlend * m_fLowerFromBlend * (3.f - 2.f * m_fLowerFromBlend);	// smoothstep
@@ -6306,7 +6350,7 @@ u32 CWeapon::Cost() const
 
 bool CWeapon::show_crosshair()
 {
-	if (m_fLoweredFactor > 0.f)	return false;		// weapon down: nothing to aim with
+	if (LoweredBlocksWeapon())	return false;		// weapon down: nothing to aim with until a shot could leave
 	// GS: an enabled laser designator replaces the crosshair -- you aim with the dot, so hide it
 	if (m_bLaserInstalled && m_bLaserEnabled)	return false;
 	return !IsPending() && ( !IsZoomed() || !ZoomHideCrosshair() );

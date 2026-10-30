@@ -265,6 +265,12 @@ public:
 	// hud (call it from UpdateHudAdditonal), ResetLoweredPose starts over on a draw (from OnActiveItem): up --
 	// or already down on a base.
 	float						LoweredFactor		() const	{ return m_fLoweredFactor; }
+	// a move down or up is under way: the key waits for it to play to its end (CActor::ToggleWeaponLowered)
+	bool						LoweredMoving		() const	{ return m_fLoweredFactor > 0.f && m_fLoweredFactor < 1.f; }
+	// the weapon is still too low to work: down, on the way down, or on the way up for less than
+	// lock_time_lowered_up (hud section) / [weapon_lowered] lock_time_up -- the raise's counterpart of the
+	// aim-out's lock_time_anm_idle_aim_end: a shot may leave before the motion has quite finished
+	bool						LoweredBlocksWeapon	() const;
 	void						UpdateLoweredPose	(Fmatrix& trans, CActor* pActor);
 	void						ResetLoweredPose	();
 	float						m_fLoweredFactor;
@@ -275,6 +281,11 @@ public:
 	// unlike a change of direction (a sprint lifts the weapon too), is the player pressing the key
 	bool						m_bLowerModeOn;
 	float						m_fLowerFromBlend;
+	// the animation driving the move (the way up, or the way down), kept through a change of mind halfway: it is
+	// then run back instead of handing over to the other one -- and the move's signed speed (-1 up .. 1 down),
+	// which turns over in [weapon_lowered] reverse_time rather than at once
+	bool						m_bLowerAnimUp;
+	float						m_fLowerRate;
 	Fquaternion					m_lower_cur_q,	m_lower_from_q;
 	Fvector						m_lower_cur_p,	m_lower_from_p;
 
