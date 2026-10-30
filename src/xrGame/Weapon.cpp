@@ -4039,7 +4039,10 @@ float CWeapon::GetLensFOV() const
 
 // THE LENS-OFF PRISM MODE'S POWER, and how it is split. In total it is the 3D lens's apparent power: the 3D lens
 // stretches its whole frame over the glass, and the glass covers only ~0.8 of the screen's height, so the eye gets
-// the factor times that (scope_prism_zoom_k, scope section then the weapon's; 0.8 is read off the PSO-type tube).
+// the factor times that (scope_prism_zoom_k, scope section then the weapon's). The default was 0.8, read off the PSO-type
+// tube; most glasses are smaller on screen, so the fake 3D and the 2D picture came out a little stronger than the PiP
+// lens: 0.6, measured against the PiP lens on the PSO-1 (side-by-side screenshots: 0.72 was still 1.19x too strong).
+// An optic far off it gets its own key (the G36's porthole: 0.2).
 // The world takes a fixed share of it (scope_prism_world_share, default 0.7) and the eyepiece the rest, resampling
 // the frame inside the glass (model_scope_lense*.ps, m_hud_params.x) -- so through the glass things are bigger than
 // round the tube, as through a real optic. A fixed share: a change of power moves both together, nothing catches up
@@ -4049,7 +4052,7 @@ void CWeapon::ScopePrismPowers(float& total, float& world) const
 	shared_str sc = GetCurrentScopeSection();
 	float k = (sc.size() && pSettings->line_exist(*sc, "scope_prism_zoom_k"))
 			? pSettings->r_float(*sc, "scope_prism_zoom_k")
-			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_zoom_k", 0.8f);
+			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_zoom_k", 0.6f);
 	clamp(k, 0.1f, 2.f);
 	float share = (sc.size() && pSettings->line_exist(*sc, "scope_prism_world_share"))
 			? pSettings->r_float(*sc, "scope_prism_world_share")
@@ -4058,13 +4061,20 @@ void CWeapon::ScopePrismPowers(float& total, float& world) const
 	extern float g_fov;
 	const float lens = GetLensFOV();
 	total	= (lens > 0.f) ? (tanf(deg2rad(g_fov) * 0.5f) / tanf(deg2rad(lens) * 0.5f)) * k : 1.f;
-	world	= total * share;
-	// A variable-power optic (the ELCAN's 1.8x..10x): the world follows the power only partly -- by
-	// scope_prism_power_follow in log space (0.5: the square root of the change, 1: all of it, 0: none) -- and the
-	// eyepiece takes the rest, so turning the power is seen mostly inside the glass. At its lowest power the split
-	// is the plain one above.
-	if (m_lens_steps > 0 && m_lens_min > 1.f)
+	world	= ScopeWorldPower(total, share, k);
+}
+
+// The world's share of an optic's power: the lens-off prism mode's split, which the 2D picture uses as well
+// (Scope2DPowers). A fixed share of the total; a variable-power optic (the ELCAN's 1.8x..10x) has the world follow
+// the power only partly -- by scope_prism_power_follow in log space (0.5: the square root of the change, 1: all of
+// it, 0: none) -- and the eyepiece takes the rest, so turning the power is seen mostly inside the glass. At its
+// lowest power the split is the plain one. k = what the lens factor is scaled by to reach `total` (0 = no lens).
+float CWeapon::ScopeWorldPower(float total, float share, float k) const
+{
+	float world	= total * share;
+	if (k > 0.f && m_lens_steps > 0 && m_lens_min > 1.f)
 	{
+		shared_str sc = GetCurrentScopeSection();
 		float follow = (sc.size() && pSettings->line_exist(*sc, "scope_prism_power_follow"))
 				? pSettings->r_float(*sc, "scope_prism_power_follow")
 				: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_power_follow", 0.5f);
@@ -4074,6 +4084,7 @@ void CWeapon::ScopePrismPowers(float& total, float& world) const
 			world			= tmin * share * powf(total / tmin, follow);
 	}
 	clamp(world, 1.02f, _max(total, 1.02f));		// never wider than the plain shouldered view (AimBaseFOV)
+	return world;
 }
 
 // The lens-off prism mode with the aim's DOF: the circle round the eyepiece glass it leaves sharp, as a share of the
@@ -4741,23 +4752,6 @@ bool CWeapon::Scope2DModeActive() const
 	return m_UIScope && !IsLensedScope() && !IsCollimatorScope() && !IsScopePrismCfg();
 }
 
-// HOW MUCH THE WORLD ITSELF NARROWS when the eye comes to a 2D optic -- the SAME amount for every
-// scope, whatever its power. A LENS FACTOR, read in the same convention as min_lens_factor /
-// scope_lens_factor and applied through the same fov = 2*atan(tan(base/2)/factor). It sits BETWEEN the
-// ELCAN's two settings (min_lens_factor 1.8, max_lens_factor 10), nearer the low one: the ELCAN's own
-// 1.8 was too little for the strong scopes -- everything past the share falls to the eyepiece, and a 15x
-// had to be resampled more than eight times to get there, which is what made those optics look like a
-// smeared crop. The figure is a BALANCE, and it is the only knob between two things that pull opposite
-// ways: raise it and the strong sights sharpen (the camera renders more of their magnification for
-// real), lower it and a variable optic keeps more of its wide notch (see Scope2DPeakZoom -- a notch
-// weaker than this share cannot be shown as weaker). At 2.7 the ELCAN reads as 2.7x <-> 10x and the
-// 15x sights are left with 5.5x of glass instead of 8.3x.
-// Everything above it belongs to the optic, and the optic is the circle: the eyepiece resamples it, the
-// world outside the glass does not move. So shouldering a 4x and a 15x change the view by exactly as
-// much, and what tells them apart is what you see inside the tube. An optic WEAKER than this share
-// hands the camera only what it has and keeps nothing back.
-static const float SCOPE_2D_WORLD_ZOOM = 2.7f;
-
 float CWeapon::Scope2DDigitalZoom() const
 {
 	if (!Scope2DModeActive())				return 1.f;
@@ -4789,13 +4783,39 @@ float CWeapon::Scope2DDigitalZoom() const
 // travel); everything else uses its plain zoom factor.
 float CWeapon::Scope2DTotalZoom() const
 {
+	float total, world;
+	Scope2DPowers(total, world);
+	return total;
+}
+
+// THE 2D PICTURE'S POWER AND ITS SPLIT -- the lens-off prism mode's scheme (by request: the same zoom in both modes).
+// An optic with a lens config gets exactly the prism mode's numbers (ScopePrismPowers: the lens factor x
+// scope_prism_zoom_k, the world scope_prism_world_share of it, a variable power followed by half), so switching
+// the options' scope mode between fake 3D and 2D changes the picture, not the magnification. A plain 2D optic
+// (scope_zoom_factor, no lens config) keeps its own power and is split the same way. The camera renders the world
+// share for real; the eyepiece resamples the rest inside the glass (Scope2DDigitalZoom).
+void CWeapon::Scope2DPowers(float& total, float& world) const
+{
 	extern float g_fov;
-	const float aim_fov = IsLensedScopeCfg() ? GetLensFOV() : ZoomFactorFOV(GetZoomFactor(), g_fov);
-	if (aim_fov <= 0.1f || g_fov <= 0.f)			return 1.f;
-	const float t_base = tanf(deg2rad(g_fov)   * 0.5f);
-	const float t_aim  = tanf(deg2rad(aim_fov) * 0.5f);
-	if (t_aim <= EPS_S)								return 1.f;
-	return (t_base / t_aim) * Scope2DPipMatch();
+	if (IsLensedScopeCfg() && GetLensFOV() > 0.f)
+	{
+		ScopePrismPowers(total, world);
+		return;
+	}
+	total = 1.f;
+	const float aim_fov = ZoomFactorFOV(GetZoomFactor(), g_fov);
+	if (aim_fov > 0.1f && g_fov > 0.f)
+	{
+		const float t_aim = tanf(deg2rad(aim_fov) * 0.5f);
+		if (t_aim > EPS_S)
+			total = (tanf(deg2rad(g_fov) * 0.5f) / t_aim) * Scope2DPipMatch();
+	}
+	shared_str sc = GetCurrentScopeSection();
+	float share = (sc.size() && pSettings->line_exist(*sc, "scope_prism_world_share"))
+			? pSettings->r_float(*sc, "scope_prism_world_share")
+			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_world_share", 0.7f);
+	clamp(share, 0.3f, 1.f);
+	world = ScopeWorldPower(total, share, 0.f);
 }
 
 // WHAT THE 3D LENS ACTUALLY PUTS IN FRONT OF THE EYE, as a share of scope_lens_factor.
@@ -4839,47 +4859,13 @@ float CWeapon::Scope2DPeakZoom() const
 	return Scope2DTotalZoom();
 }
 
-// HOW MUCH OF THAT THE CAMERA RENDERS FOR REAL, as a linear factor. The rest is the eyepiece's.
-// A VARIABLE optic gets the shared constant, and nothing else will do: its share must be the same on
-// every notch or the world jumps as the wheel is turned (Scope2DPeakZoom).
-// A FIXED optic cannot step its magnification, so nothing can move the world under it -- and there the
-// constant is simply left behind by the strong sights, which then hand the glass everything above it (a
-// 15x resampled 5.5 times). Those get HALF their power rendered for real instead, which pins the
-// eyepiece at 2x no matter how strong the sight is: 15x -> 7.5x of camera, 10x -> 5x, 6x -> 3x. The
-// shared constant stays the floor (a 4x still gets 2.7), and the optic's own power stays the ceiling --
-// a sight weaker than the floor hands over what it has and no more, or the world would end up magnified
-// past what the sight can actually see.
+// HOW MUCH OF THAT THE CAMERA RENDERS FOR REAL, as a linear factor: the world's share of Scope2DPowers. The rest is
+// the eyepiece's (Scope2DDigitalZoom).
 float CWeapon::Scope2DWorldShare() const
 {
-	const float peak = Scope2DPeakZoom();
-	// "Variable" is min != max, NOT the mere presence of a step count. The G36 carries the whole GS lens
-	// block -- lens_factor_levels_count 1 with min_lens_factor == max_lens_factor == 8 -- so it declares a
-	// step it cannot actually take. Reading the step count alone filed it with the ELCAN and left it on
-	// the shared 2.7, i.e. 3x of resampling inside that little porthole, when nothing about it can ever
-	// move the world.
-	if (m_lens_steps > 0 && m_lens_max > m_lens_min * 1.001f)
-	{
-		// scope_2d_fov_follows_lens (scope section, then the weapon): the opposite trade, by request for the
-		// gauss's `zoom` node (5x..30x). The WORLD follows the wheel: the camera's share is the fixed-optic
-		// split taken at the strongest notch, scaled down with the current power, so the eyepiece keeps one
-		// constant ratio on every notch and the view outside the tube narrows in proportion to the step.
-		// It travels with lens_speed, because Scope2DTotalZoom reads the travelling position. Floored just
-		// above 1: at exactly 1 Scope2DCameraFOV reports "no share" and CActor::currentFOV would hand the
-		// world the whole scope_zoom_factor instead.
-		shared_str sc = GetCurrentScopeSection();
-		const bool follows = (sc.size() && pSettings->line_exist(*sc, "scope_2d_fov_follows_lens"))
-			? !!pSettings->r_bool(*sc, "scope_2d_fov_follows_lens")
-			: !!READ_IF_EXISTS(pSettings, r_bool, cNameSect(), "scope_2d_fov_follows_lens", FALSE);
-		if (follows && peak > 1.001f)
-		{
-			const float peak_share	= _min(peak, _max(SCOPE_2D_WORLD_ZOOM, peak * 0.5f));
-			float share				= peak_share * Scope2DTotalZoom() / peak;
-			clamp					(share, 1.01f, peak_share);
-			return share;
-		}
-		return _min(SCOPE_2D_WORLD_ZOOM, peak);
-	}
-	return _min(peak, _max(SCOPE_2D_WORLD_ZOOM, peak * 0.5f));
+	float total, world;
+	Scope2DPowers(total, world);
+	return world;
 }
 
 // The world fov for the camera's share of that magnification (0 = the eyepiece mode is not running,
