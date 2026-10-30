@@ -1331,10 +1331,34 @@ static float pp_pulse_update(float& phase, float& pulse, float level, float peri
 	return pulse;
 }
 
+// GS IsTacticHudInstalled: the actor's suit carries an upgrade with nearest_enemies_show_dist (GS: the tactical
+// helmet's "infrared scanner"). It brings the interface back on master and the minimap from veteran up.
+bool gwr_tactical_hud()
+{
+	if (!g_pGameLevel || !IsGameTypeSingle())	return false;
+	CActor* a = smart_cast<CActor*>(Level().CurrentEntity());
+	if (!a || !a->g_Alive())					return false;
+	CCustomOutfit* o = a->GetOutfit();
+	return o && o->TacticalHud();
+}
+
+// The scanner's range (the same key): enemies this close to the actor are on the minimap and the PDA map without
+// being seen -- in the dark, behind cover (CRelationMapLocation::Update). 0: no scanner.
+float gwr_tactical_scan_dist()
+{
+	if (!gwr_tactical_hud())	return 0.f;
+	return float(smart_cast<CActor*>(Level().CurrentEntity())->GetOutfit()->TacticalScanDist());
+}
+
 void CActor::UpdateCL	()
 {
 	UpdateInventoryOwner			(Device.dwTimeDelta);
 	UpdateWeaponLowered				();
+	if (Level().CurrentControlEntity() == this)
+	{
+		extern void gwr_refresh_hud_lock();
+		gwr_refresh_hud_lock		();		// the master interface lock follows the suit (gwr_tactical_hud)
+	}
 
 	// Actor self-shadow suppression, decided in ONE place and read by the renderer through
 	// IGame_Persistent (it cannot see game state itself). Two cases, both of them "the actor is not a

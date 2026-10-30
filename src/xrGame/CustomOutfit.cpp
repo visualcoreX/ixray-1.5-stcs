@@ -22,6 +22,7 @@ CCustomOutfit::CCustomOutfit()
 
 	m_boneProtection = xr_new<SBoneProtections>();
 	m_artefact_count = 0;
+	m_tactical_hud_dist = 0;
 	m_BonesProtectionSect = NULL;
 }
 
@@ -104,6 +105,7 @@ void CCustomOutfit::Load(LPCSTR section)
 	m_full_icon_name	= pSettings->r_string( section, "full_icon_name" );
 	m_artefact_count 	= READ_IF_EXISTS( pSettings, r_u32, section, "artefact_count", 0 );
 	clamp( m_artefact_count, (u32)0, (u32)5 );
+	m_tactical_hud_dist	= READ_IF_EXISTS( pSettings, r_u32, section, "nearest_enemies_show_dist", 0 );
 
 	if ( pSettings->line_exist( cNameSect(), "bones_koeff_protection") )
 	{
@@ -355,6 +357,7 @@ bool CCustomOutfit::install_upgrade_impl( LPCSTR section, bool test )
 	clamp( m_fPowerLoss, 0.0f, 1.0f );
 
 	result |= process_if_exists( section, "artefact_count", &CInifile::r_u32, m_artefact_count, test );
+	result |= process_if_exists( section, "nearest_enemies_show_dist", &CInifile::r_u32, m_tactical_hud_dist, test );
 	clamp( m_artefact_count, (u32)0, (u32)5 );
 
 	return result;

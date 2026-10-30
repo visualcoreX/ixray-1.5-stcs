@@ -262,6 +262,7 @@
 			<cell x="220" y="105"/>
 			<cell x="220" y="205"/>
 			<cell x="220" y="305"/>
+			<cell x="220" y="355"/>	<!-- infrared scanner (tactical hud) -->
 		</column>
 
 	</template>
@@ -360,6 +361,7 @@
 			<cell x="220" y="105"/>
 			<cell x="220" y="205"/>
 			<cell x="220" y="305"/>
+			<cell x="220" y="355"/>	<!-- infrared scanner (tactical hud) -->
 		</column>
 
 	</template>

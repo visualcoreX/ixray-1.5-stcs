@@ -42,6 +42,11 @@ protected:
 protected:
 	u32						m_ef_equipment_type;
 	u32						m_artefact_count;
+	// GS nearest_enemies_show_dist (its tactical helmet's "infrared scanner"): above 0 the tactical hud is on --
+	// the interface comes back on master and the minimap from veteran up (gwr_tactical_hud). The distance
+	// itself is not used by GS (the key is a flag there); here it is also the scanner's range -- enemies that
+	// close are on the map without being seen (CRelationMapLocation::Update, gwr_tactical_scan_dist).
+	u32						m_tactical_hud_dist;
 
 public:
 	float					m_additional_weight;
@@ -65,6 +70,8 @@ public:
 	virtual	BOOL			BonePassBullet			(int boneID);
 	const shared_str&		GetFullIconName			() const	{ return m_full_icon_name; }
 	u32						get_artefact_count		() const	{ return m_artefact_count; }
+	bool						TacticalHud				() const	{ return m_tactical_hud_dist > 0; }
+	u32							TacticalScanDist		() const	{ return m_tactical_hud_dist; }
 
 	virtual BOOL			net_Spawn				(CSE_Abstract* DC);
 	virtual void			net_Export				(NET_Packet& P);

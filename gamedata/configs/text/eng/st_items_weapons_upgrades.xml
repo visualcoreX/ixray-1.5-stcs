@@ -595,4 +595,14 @@
 	<string id="st_prop_night_vision_2">
 		<text>Night Vision Mk. 2</text>
 	</string>
+
+	<string id="st_upg_tactical_hud">
+		<text>Infrared scanner</text>
+	</string>
+	<string id="st_upg_tactical_hud_descr">
+		<text>The infrared scanner reliably picks up people nearby, even in the dark: enemies within 35 m are marked on the minimap and the PDA map even when they cannot be seen. The helmet visor projection shows suit status, ammunition and a map of the area on the glass.</text>
+	</string>
+	<string id="st_prop_tactical_hud">
+		<text>Tactical HUD</text>
+	</string>
 </string_table>
