@@ -51,6 +51,15 @@ Texture2D	s_mark;			// $user$collim_mark: the reticle picked
 #define	COLLIM_SKY0(tc)		s_sky0.SampleLevel( smp_rtlinear, tc, 0 )
 #define	COLLIM_SKY1(tc)		s_sky1.SampleLevel( smp_rtlinear, tc, 0 )
 
+// The world round the camera, a real cubemap (lens_cube.h, CRender::render_lens_cube): where it is drawn, the mirror
+// shows it instead of the weather's sky alone. Unbound (R2, the world's glass) it reads 0: the sky, as before.
+#include "lens_cube.h"
+#define	LENS_CUBE_GAIN	1.0		// the cube's mirror against the sky's, both in the coating's colour
+#define	LENS_CUBE_CURVE	2.5		// the dome the cube is mirrored by: 1 = the glass's own, more = rounder. A flat glass
+								// shows a small piece of the world large, as if zoomed in; a convex one shrinks it
+#define	LENS_CUBE_BLUR	0.035	// the blur, as the tangent of its radius (~2 degrees): a coated glass's reflection is dim
+								// and soft, and the cube's 128 texels a face would show as pixels
+
 struct v2p_collim
 {
 	float2	tc0		: TEXCOORD0;
@@ -228,8 +237,16 @@ float3	collim_reflection( float3 v, float3 ng, float3 na, float3 dyn )
 	// the sun's side stay, so the mirror reads as highlights over the view rather than a wash
 	float	lum		= max( dot(sky, float3(0.299, 0.587, 0.114)), 0.0001 );
 	sky				*= pow( lum, m_collim_reflect_shape.y - 1 );
+	float3	sky_m	= sky * f * ( vis * direct + ind );
 
-	return	sky * f * ( vis * direct + ind );
+	// the cube: the world that way as it really is, lit already -- only the coating's colour, the Fresnel and the
+	// same contrast go on it; no open-sky test either, the cube has the roof in it
+	// mirrored by a rounder dome than the sky is (LENS_CUBE_CURVE): the world wide and small, as a convex glass shows it
+	float3	nc		= normalize( lerp(na, ng, LENS_CUBE_CURVE) );
+	float4	cube	= lens_cube_soft( reflect(v, nc), LENS_CUBE_BLUR );
+	float	clum	= max( dot(cube.rgb, float3(0.299, 0.587, 0.114)), 0.0001 );
+	float3	cube_m	= cube.rgb * pow( clum, m_collim_reflect_shape.y - 1 ) * f * m_collim_reflect.rgb * LENS_CUBE_GAIN;
+	return	lerp( sky_m, cube_m, cube.a );
 }
 
 // The reticle's glow (its etched lines are the tint pass's darkening). 0 outside the hud (the binder).

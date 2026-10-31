@@ -104,6 +104,16 @@ public:
 	xr_map<shared_str, ref_shader>	s_laser_beam;	// one per noise texture
 	ref_shader					s_laser_dens_rain;
 	ref_shader					s_laser_dot;		// the procedural dot at the end of a beam
+	// The cubemap the hud's glass mirrors (CRender::render_lens_cube; shaders lens_cube.h): a face's own small
+	// G-buffer (position, normal -- unused with the G-buffer optimisation --, colour, depth) and the six faces lit,
+	// side by side in one 6 x 1 atlas
+	ref_rt						rt_cube_P;
+	ref_rt						rt_cube_N;
+	ref_rt						rt_cube_C;
+	ref_rt						rt_cube_Z;
+	ref_rt						rt_lens_cube;
+	ref_shader					s_lens_cube;
+	bool						m_lens_cube_clear;	// the atlas cleared once (alpha 0 = a face not drawn yet)
 	xr_map<shared_str, ref_shader>	s_torch_dust;	// dust in handheld torches' cones, one per noise texture
 	bool						m_laser_dens_valid;	// the density buffer holds this frame's smoke
 	// Rain refraction: dxRainRender keeps here the streaks it drew this frame, phase_rain_distort draws
@@ -308,6 +318,9 @@ public:
 	// the sorted list, which drawing it clears), the beams after the world's transparent geometry.
 	void						phase_laser_density		();
 	void						phase_laser_beams		();
+	void						lens_cube_clear_once	();
+	void						lens_cube_begin			();
+	void						lens_cube_combine		(u32 face, const Fvector& R, const Fvector& U, const Fvector& F, float far_);
 	// Dust in handheld torches' light cones (IGame_Persistent::GetTorchDust), right after the beams.
 	void						phase_torch_dust		();
 	// dxRainRender, right after drawing the rain streaks: the same vertices once more into the density buffer

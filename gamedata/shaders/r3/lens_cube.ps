@@ -1,0 +1,49 @@
+#include "common.h"
+#include "collim.h"
+
+// One face of $user$lens_cube lit into its place in the atlas (CRenderTarget::lens_cube_combine; lens_cube.h). The face
+// was drawn with the level's own deferred shaders into its own small G-buffer; this lights it the simple way, as the
+// New Vegas "Dynamic Reflections" mod draws its cubemap with the diffuse and ambient passes alone: the colour times
+// the sky's light by the surface's hemi and the sun's by the facing (no shadows, held by the hemi so a room lit by
+// the sun through the walls does not glow), no lamps. Far off it fades into the sky, and where nothing was drawn it
+// is the sky.
+uniform	float4	m_cube_r;		// xyz = the face's right in the world
+uniform	float4	m_cube_u;		// xyz = its up
+uniform	float4	m_cube_f;		// xyz = its forward, w = its range
+Texture2D	s_cube_p;
+Texture2D	s_cube_n;
+Texture2D	s_cube_c;
+
+#define	LENS_CUBE_EXPOSURE	1.0		// the face's brightness against the frame's
+
+float4 main( p_TL I ) : SV_Target
+{
+	int3	px		= int3( I.Tex0 * LENS_CUBE_N, 0 );
+	float2	ndc		= float2( I.Tex0.x * 2 - 1, 1 - I.Tex0.y * 2 );
+	float3	dir		= normalize( m_cube_f.xyz + ndc.x * m_cube_r.xyz + ndc.y * m_cube_u.xyz );
+	float3	tc		= sky_tc( dir );
+	float3	sky		= m_sky_params.rgb * lerp( COLLIM_SKY0(tc).rgb, COLLIM_SKY1(tc).rgb, m_sky_params.w );
+
+	float4	P		= s_cube_p.Load( px );
+#ifdef GBUFFER_OPTIMIZATION
+	float	z		= P.z;
+	float3	nv		= gbuf_unpack_normal( P.xy );
+	float	hemi	= gbuf_unpack_hemi( P.w );
+#else
+	float4	N		= s_cube_n.Load( px );
+	float	z		= P.z;
+	float3	nv		= N.xyz;
+	float	hemi	= N.w;
+#endif
+	if ( z <= 0.001 )	return	float4( sky, 1 );		// nothing drawn there
+
+	float3	C		= s_cube_c.Load( px ).rgb;
+	float3	nw		= normalize( nv.x * m_cube_r.xyz + nv.y * m_cube_u.xyz + nv.z * m_cube_f.xyz );
+	float	ndl		= saturate( dot(nw, -L_sun_dir_w) );
+	float3	light	= L_hemi_color.rgb * hemi + L_sun_color.rgb * ndl * hemi;
+	float3	col		= C * light * LENS_CUBE_EXPOSURE;
+
+	float	far_	= m_cube_f.w;
+	col				= lerp( col, sky, saturate((z - far_ * 0.5) / (far_ * 0.5)) );
+	return	float4( col, 1 );
+}

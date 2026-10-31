@@ -242,6 +242,7 @@ void CBlender_Model_EbB::Compile( CBlender_Compile& C )
 				C.r_Pass			("model_collim_reflect", "model_sniperlens", FALSE, TRUE, FALSE, TRUE, D3DBLEND_ONE, D3DBLEND_ONE, FALSE, 0);
 				C.r_dx10Texture		("s_sky0",		"$user$sky0");
 				C.r_dx10Texture		("s_sky1",		"$user$sky1");
+				C.r_dx10Texture		("s_lens_cube",	"$user$lens_cube");	// the world round the camera (CRender::render_lens_cube)
 				C.r_dx10Sampler		("smp_rtlinear");
 				C.r_End				();
 				C.SH->flags.bHudOverlay	= TRUE;

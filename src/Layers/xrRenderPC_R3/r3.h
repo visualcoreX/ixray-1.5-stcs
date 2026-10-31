@@ -182,6 +182,7 @@ public:
 	void							render_lights				(light_Package& LP	);
 	void							render_menu					();
 	void							render_rain					();
+	void							render_lens_cube			();
 
 	void							render_sun_cascade			(u32 cascade_ind);
 	void							init_cacades				();

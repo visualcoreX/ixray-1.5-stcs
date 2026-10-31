@@ -157,6 +157,8 @@ int ps_r1_use_terrain_mask = 0;
 // R2
 float		ps_r2_ssaLOD_A				= 48.f	;
 float		ps_r2_ssaLOD_B				= 32.f	;
+// R3: the range of the cubemap the hud's glass mirrors (CRender::render_lens_cube), metres; 0 = no cubemap
+float		ps_r3_lens_cube_far			= 50.f	;
 
 // R2-specific
 Flags32		ps_r2_ls_flags				= { R2FLAG_SUN 
@@ -741,6 +743,7 @@ void		xrRender_initconsole	()
 	CMD4(CCC_Integer,	"r__lsleep_frames",		&ps_r__LightSleepFrames,	4,		30		);
 	CMD4(CCC_Float,		"r__ssa_glod_start",	&ps_r__GLOD_ssa_start,		128,	512		);
 	CMD4(CCC_Float,		"r__ssa_glod_end",		&ps_r__GLOD_ssa_end,		16,		96		);
+	CMD4(CCC_Float,		"r3_lens_cube_far",		&ps_r3_lens_cube_far,		0,		300		);
 	CMD4(CCC_Float,		"r__wallmark_shift_pp",	&ps_r__WallmarkSHIFT,		0.0f,	1.f		);
 	CMD4(CCC_Float,		"r__wallmark_shift_v",	&ps_r__WallmarkSHIFT_V,		0.0f,	1.f		);
 	CMD1(CCC_ModelPoolStat,"stat_models"		);

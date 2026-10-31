@@ -534,6 +534,10 @@ void CRender::Render		()
 		RImplementation.r_dsgraph_render_emissive();
 	}
 
+	// one face of the cubemap the hud's glass mirrors -- here, with the frame's own deferred lists drawn and its
+	// emissive pass done, before the lights (which set their own targets)
+	render_lens_cube						();
+
 	// Lighting, non dependant on OCCQ
 	{
 		PIX_EVENT(DEFER_LIGHT_NO_OCCQ);
@@ -601,4 +605,65 @@ void CRender::render_forward				()
 	}
 
 	RImplementation.o.distortion				= FALSE;				// disable distorion
+}
+
+// The cubemap the hud's glass mirrors ($user$lens_cube; shaders lens_cube.h), as the New Vegas "Dynamic Reflections"
+// mod makes its own: one face a frame, the whole cube in six, from the camera, out to r3_lens_cube_far metres. The
+// face's view is gathered like a light's shadow map (r_dsgraph_render_subspace: the sectors through the portals, then
+// the objects) but drawn with the level's own deferred shaders into a small G-buffer of its own, and lit the simple
+// way, sky and sun, no lamps, no shadows (lens_cube.ps) -- the mod draws its cubemap with the diffuse and ambient
+// passes alone. The actor is left out (his camera). Called after the frame's deferred lists and its emissive pass,
+// so what the face's view adds to those lists is drawn or dropped here and the frame's own are never touched.
+extern float		ps_r3_lens_cube_far;
+extern CObject*		g_subspace_skip;
+void CRender::render_lens_cube()
+{
+	if (!Target->rt_lens_cube || !Target->rt_cube_Z)					return;
+	Target->lens_cube_clear_once();
+	if (ps_r3_lens_cube_far <= 0.f || !pLastSector)						return;
+	if (g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow)		return;	// the 3D scope's world-only frame
+
+	PIX_EVENT(lens_cube);
+
+	// the faces as a cube texture lays them out (+x -x +y -y +z -z): forward and up; right = up x forward
+	Fvector	F[6], U[6];
+	F[0].set( 1, 0, 0);	U[0].set(0, 1, 0);
+	F[1].set(-1, 0, 0);	U[1].set(0, 1, 0);
+	F[2].set( 0, 1, 0);	U[2].set(0, 0,-1);
+	F[3].set( 0,-1, 0);	U[3].set(0, 0, 1);
+	F[4].set( 0, 0, 1);	U[4].set(0, 1, 0);
+	F[5].set( 0, 0,-1);	U[5].set(0, 1, 0);
+	const u32	face		= Device.dwFrame % 6;
+	Fvector		pos			= Device.vCameraPosition;
+	Fmatrix		mV;			mV.build_camera_dir(pos, F[face], U[face]);
+	Fmatrix		mP;			mP.build_projection(PI_DIV_2, 1.f, 0.1f, ps_r3_lens_cube_far);
+	Fmatrix		mVP;		mVP.mul(mP, mV);
+
+	// gather: the deferred geometry only (priority 0), without the main view's occlusion (another view)
+	HOM.Disable				();
+	phase					= PHASE_NORMAL;
+	r_pmask					(true, false);
+	g_subspace_skip			= g_pGameLevel ? g_pGameLevel->CurrentViewEntity() : nullptr;
+	r_dsgraph_render_subspace(pLastSector, mVP, pos, TRUE);
+	g_subspace_skip			= nullptr;
+
+	// draw into the face's G-buffer
+	Target->lens_cube_begin	();
+	RCache.set_xform_world	(Fidentity);
+	RCache.set_xform_view	(mV);
+	RCache.set_xform_project(mP);
+	r_dsgraph_render_graph	(0);
+	// what else the face's view put in the lists: emissive surfaces and LODs. The frame drew its own already.
+	mapEmissive.clear		();
+	mapLOD.clear			();
+
+	// light it into the atlas
+	Fvector		R;			R.crossproduct(U[face], F[face]);
+	Target->lens_cube_combine(face, R, U[face], F[face], ps_r3_lens_cube_far);
+
+	// back to the frame's camera; the lights set their own targets
+	RCache.set_xform_world	(Fidentity);
+	RCache.set_xform_view	(Device.mView);
+	RCache.set_xform_project(Device.mProject);
+	rmNormal				();
 }
