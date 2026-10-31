@@ -3144,3 +3144,16 @@ pp_nv_2d_max_gain = 2.5
 ; with the suit's NV on too, the goggles grade the picture and this optic only amplifies: the step's
 ; gain times this (2.0 = the green gain this ppe's own tint gave)
 pp_nv_2d_chain_gain = 2.0
+
+; The optics' glass (models\sniperlenses on a scope's body) mirrors as a collimator's glass does (model_sniperlens.ps,
+; R3 only). A scope, its addon or its weapon may carry these keys itself; the ones it lacks come from here
+; (CWeapon::CollimatorParamSection). The values are the Rakurs's: a neutral coating.
+[optic_glass_reflect]
+collimator_reflect			= 146,132,128
+collimator_reflect_indirect	= 64,128,116
+collimator_reflect_strength	= 2.0, 0.25
+collimator_reflect_limit	= 2
+collimator_reflect_f0		= 0.75
+collimator_reflect_curve    = 0.1
+collimator_reflect_contrast = 2.5
+collimator_specular			= 0.04, 120

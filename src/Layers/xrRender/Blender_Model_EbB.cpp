@@ -227,6 +227,27 @@ void CBlender_Model_EbB::Compile( CBlender_Compile& C )
 			C.r_ColorWriteEnable(false, false, false, false);
 			C.r_End			();
 			break;
+#if RENDER==R_R3
+		case 4:
+			// The optics' glass (models\sniperlenses: wpn\lenses on a scope's body): drawn above as it always was,
+			// into the G-buffer with the rest of the hud -- so everything after the lighting (the DOF, the distortion,
+			// the fog) takes it for the near glass it is. What it mirrors is a second pass laid over it with the hud's
+			// glass (bHudOverlay: r__dsgraph_build.cpp puts it into mapHUDSorted): additive, depth-tested against the
+			// glass's own depth, no depth written. model_sniperlens.ps -- the collimators' mirror (collim.h), keyed
+			// by the same collimator_reflect* / collimator_specular (CWeapon::CollimatorParamSection).
+			// (Drawn as a forward glass instead, from a script, the glass was missing from the G-buffer: the post
+			// effects took its pixels for the floor behind it and blurred the floor into it.)
+			if (C.L_textures.size() && 0==xr_strcmp(*C.L_textures[0], "wpn\\lenses"))
+			{
+				C.r_Pass			("model_collim_reflect", "model_sniperlens", FALSE, TRUE, FALSE, TRUE, D3DBLEND_ONE, D3DBLEND_ONE, FALSE, 0);
+				C.r_dx10Texture		("s_sky0",		"$user$sky0");
+				C.r_dx10Texture		("s_sky1",		"$user$sky1");
+				C.r_dx10Sampler		("smp_rtlinear");
+				C.r_End				();
+				C.SH->flags.bHudOverlay	= TRUE;
+			}
+			break;
+#endif
 		}
 	}
 }

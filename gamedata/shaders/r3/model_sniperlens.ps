@@ -1,0 +1,23 @@
+#include "common.h"
+#include "collim.h"
+
+// The optics' glass (models\sniperlenses: wpn\lenses on a scope's body) mirrors as a collimator's glass does. The
+// glass itself is drawn as shaders.xr always drew it, into the G-buffer with the rest of the hud; this is E[4] of its
+// blender (Blender_Model_EbB, R3), a second pass laid over it with the hud's sorted glass, additive (one, one), tested
+// against the glass's own depth. What it adds is the collimators' own (collim.h): the weather's sky in the coating's
+// colour where the glass looks at open sky, lit by the sun and the sky (collim_reflection), and the highlights of the
+// sun and the lamps near the eye (collim_specular). Its keys are theirs too -- collimator_reflect*,
+// collimator_specular -- from the scope, its addon or the weapon, else [optic_glass_reflect] (gunsl_scopes.ltx).
+// The aim takes it away: through the lens it would cover the view (m_hud_params.y, the aim into a lensed scope).
+uniform	float4	m_hud_params;
+
+float4 main( v2p_collim I ) : SV_Target
+{
+	float3	v		= normalize( I.pos_w - eye_position );
+	float3	ng		= face_eye( normalize(I.norm_w), v );
+	float3	na		= face_eye( normalize(I.axis_w), v );
+
+	collim_lamps_t	lamps	= collim_lamps( I.pos_w, ng, v );
+	float3	res		= collim_reflection( v, ng, na, lamps.omni ) + collim_specular( v, ng, 0, lamps.spec );
+	return	float4( res * ( 1 - saturate(m_hud_params.y) ), 0 );
+}

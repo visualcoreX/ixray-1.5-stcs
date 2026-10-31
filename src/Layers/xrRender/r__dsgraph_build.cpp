@@ -81,6 +81,24 @@ void R_dsgraph_structure::r_dsgraph_insert_dynamic	(dxRender_Visual *pVisual, Fv
 		}
 	}
 
+	// A hud mesh drawn the ordinary way that also lays a pass over itself with the hud's sorted glass (E[4] with
+	// flags.bHudOverlay -- the optics' glass mirror, Blender_Model_EbB). Gathered by the forward pass, as the rest of
+	// the sorted hud is, and here, ahead of the priority mask: the mesh's own element is deferred and the forward
+	// pass's mask would turn it away below.
+	if (RI.val_bHUD && pmask[1])
+	{
+		ShaderElement*	sh_o	= &*pVisual->shader->E[4];
+		if (sh_o && sh_o->flags.bHudOverlay)
+		{
+			mapSorted_Node* N		= mapHUDSorted.insertInAnyWay	(distSQ);
+			N->val.ssa				= SSA;
+			N->val.pObject			= RI.val_pObject;
+			N->val.pVisual			= pVisual;
+			N->val.Matrix			= *RI.val_pTransform;
+			N->val.se				= sh_o;
+		}
+	}
+
 	// Select shader
 	ShaderElement*	sh		=	RImplementation.rimp_select_sh_dynamic	(pVisual,distSQ);
 	if (0==sh)								return;

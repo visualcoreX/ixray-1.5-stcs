@@ -4005,6 +4005,14 @@ shared_str CWeapon::CollimatorParamSection(LPCSTR key) const
 	// scope_status = 0) has no scope section at all, its keys sit in the weapon's
 	if (pSettings->line_exist(cNameSect(), key))
 		return cNameSect();
+	// An optic (a scope that is not a collimator) with no mirror keys of its own: its glass mirrors as the shared
+	// [optic_glass_reflect] says (gunsl_scopes.ltx) -- the optics' glass draws the collimators' mirror over itself
+	// (Blender_Model_EbB, model_sniperlens.ps). Only the mirror's keys: nothing else of a collimator's is lent out.
+	static const char* s_optic_glass = "optic_glass_reflect";
+	if (IsScopeAttached() && !IsCollimatorScope()
+		&& (0 == strncmp(key, "collimator_reflect", 18) || 0 == strncmp(key, "collimator_specular", 19))
+		&& pSettings->section_exist(s_optic_glass) && pSettings->line_exist(s_optic_glass, key))
+		return shared_str(s_optic_glass);
 	return shared_str();
 }
 
