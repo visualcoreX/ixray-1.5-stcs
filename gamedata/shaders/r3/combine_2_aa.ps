@@ -14,10 +14,13 @@ struct 	v2p
 */
 
 //////////////////////////////////////////////////////////////////////////////////////////
-Texture2D			s_distort;
 uniform float4 		e_barrier;	// x=norm(.8f), y=depth(.1f), z=clr
 uniform float4 		e_weights;	// x=norm, y=depth, z=clr
 uniform float4 		e_kernel;	// x=norm, y=depth, z=clr
+
+#ifdef 	USE_DISTORT
+#include "distort_combine.h"	// s_distort, distort_smooth, distort_center
+#endif // USE_DISTORT
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Pixel
@@ -98,20 +101,11 @@ float4 main ( v_aa_AA I ) : SV_Target
 
 #ifdef 	USE_DISTORT
 //	float4 	distort	= tex2D		(s_distort, I.tc0);
-	float4 	distort	= s_distort.Sample( smp_nofilter, I.Tex0);
+	float4 	distort	= distort_smooth(I.Tex0);
 	float2	doffs	= (distort.xy-(127.0h/255.0h))*def_distort;	// the mask is cleared to 127, not 128
-	float2	center	= I.Tex0 + doffs;
-
-	// Same as combine_2_NAA: don't pull a surface that is IN FRONT of the haze (nearer than this pixel
-	// and not covered by the mask -- its alpha is 0 where nothing distorting was drawn) into it.
-	// Sky has depth 0 and is never in front.
-#ifdef GBUFFER_OPTIMIZATION
-	gbuffer_data gbdx	= gbuffer_load_data_offset(I.Tex0, center, pos2d);
-#else
-	gbuffer_data gbdx	= gbuffer_load_data(center);
-#endif
-	float	cover_x	= s_distort.Sample( smp_nofilter, center).a;
-	if (cover_x<(0.5h/255.0h) && gbdx.P.z>0.001 && (gbdx.P.z+0.001)<dc.z)	center	= I.Tex0;	// discard new sample
+	// Same as combine_2_NAA: a surface IN FRONT of the haze is not pulled into it -- the offset is cut
+	// back to where it meets it (distort_center). Sky has depth 0 and is never in front.
+	float2	center	= distort_center(I.Tex0, doffs, dc.z, distort.a);
 #else
 	float2	center 	= I.Tex0;
 #endif

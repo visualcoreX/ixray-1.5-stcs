@@ -59,6 +59,7 @@ public:
 	u32					Pass				()  { return SH->passes.size(); }
 	void				PassSET_ZB			(BOOL bZTest,	BOOL bZWrite, BOOL bInvertZTest=FALSE);
 	void				PassSET_ablend_mode	(BOOL bABlend,	u32 abSRC, u32 abDST);
+	void				PassSET_ablend_alpha(u32 abSRC, u32 abDST);
 	void				PassSET_ablend_aref	(BOOL aTest,	u32 aRef);
 	void				PassSET_Blend		(BOOL bABlend,	u32 abSRC, u32 abDST, BOOL aTest, u32 aRef);
 	void				PassSET_Blend_BLEND	(BOOL bAref=FALSE, u32 ref=0)	{ PassSET_Blend	(TRUE,D3DBLEND_SRCALPHA,D3DBLEND_INVSRCALPHA,bAref,ref);	}
