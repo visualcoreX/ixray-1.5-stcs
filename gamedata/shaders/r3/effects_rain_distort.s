@@ -4,6 +4,7 @@
 function normal		(shader, t_base, t_second, t_detail)
 	shader:begin	("stub_default",	"rain_distort")
 			: blend		(true, blend.srcalpha, blend.invsrcalpha)
+			: alpha_blend	(blend.one,blend.one)	-- the mask alpha counts the distorting draws over a pixel (distort_combine.h)
 			: aref		(false, 0)
 			: zb		(true, false)
 			: fog		(false)

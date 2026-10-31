@@ -15,16 +15,14 @@ struct 	v2p
 */
 
 //////////////////////////////////////////////////////////////////////////////////////////
-#ifndef USE_MSAA
-Texture2D 			s_distort;
 #define	EPSDEPTH	0.001
-#else
-TEXTURE2DMS(float4, MSAA_SAMPLES) s_distort;
-#define	EPSDEPTH	0.001
-#endif
 uniform float4 		e_barrier;	// x=norm(.8f), y=depth(.1f), z=clr
 uniform float4 		e_weights;	// x=norm, y=depth, z=clr
 uniform float4 		e_kernel;	// x=norm, y=depth, z=clr
+
+#ifdef 	USE_DISTORT
+#include "distort_combine.h"
+#endif // USE_DISTORT
 //////////////////////////////////////////////////////////////////////////////////////////
 // Pixel
 float4 main( v2p_aa_AA I ) : SV_Target
@@ -51,33 +49,14 @@ float4 main( v2p_aa_AA I ) : SV_Target
 //  	float 	depth 	= tex2D 	(s_position, 	I.tc0).z;
 //	float4 	distort	= tex2D		(s_distort, 	I.tc0);
   	float 	depth 	= gbd.P.z;
-#ifndef USE_MSAA
-	float4 	distort	= s_distort.Sample(smp_nofilter, I.Tex0);
-#else // USE_MSAA
-	float4 	distort	= s_distort.Load( int3( I.Tex0 * pos_decompression_params2.xy, 0 ), iSample );
-#endif // USE_MSAA
+	float4 	distort	= distort_smooth(I.Tex0);
 	float2	offset	= (distort.xy-(127.0h/255.0h))*def_distort;  // fix newtral offset
-	float2	center	= I.Tex0 + offset;
-
-#ifdef GBUFFER_OPTIMIZATION
-	gbuffer_data gbdx	= gbuffer_load_data_offset(I.Tex0, center, I.HPos, iSample );
-#else
-	gbuffer_data gbdx	= gbuffer_load_data_offset(I.Tex0, center, iSample);
-#endif
-
-//	float 	depth_x	= tex2D 	(s_position, center).z	;
-	float 	depth_x	= gbdx.P.z;
 	// Only a surface IN FRONT of the haze must not be pulled into it. Such a surface hid the haze from
-	// the depth-tested mask pass, so the mask's alpha (cleared to 0, raised by every distorting draw)
-	// is empty there. The old test -- anything nearer than this pixel -- also caught trees and poles
-	// BEHIND the haze and, as the sky has depth 0, every edge against the sky: the object stayed put
-	// on its own pixels while its neighbours pulled a shifted copy in, i.e. it doubled.
-#ifndef USE_MSAA
-	float	cover_x	= s_distort.Sample(smp_nofilter, center).a;
-#else // USE_MSAA
-	float	cover_x	= s_distort.Load( int3( center * pos_decompression_params2.xy, 0 ), iSample ).a;
-#endif // USE_MSAA
-	if (cover_x<(0.5h/255.0h) && depth_x>EPSDEPTH && (depth_x+EPSDEPTH)<depth)	center	= I.Tex0;	// discard new sample
+	// the depth-tested mask pass, so the mask is empty there. The old test -- anything nearer than this
+	// pixel -- also caught trees and poles BEHIND the haze and, as the sky has depth 0, every edge
+	// against the sky: the object stayed put while its neighbours pulled a shifted copy in. See
+	// distort_center for how the offset is cut back at such a surface instead of dropped.
+	float2	center	= distort_center(I.Tex0, offset, depth, distort.a);
 #else // USE_DISTORT
 	float2	center 	= I.Tex0;
 #endif
