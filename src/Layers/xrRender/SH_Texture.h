@@ -38,6 +38,9 @@ public:
 	IC BOOL								isUser			()		{ return flags.bUser;					}
 	IC u32								get_Width		()		{ desc_enshure(); return desc.Width;	}
 	IC u32								get_Height		()		{ desc_enshure(); return desc.Height;	}
+#ifdef	USE_DX10
+	IC ID3D10ShaderResourceView*		get_SRView		()		{ return m_pSRView;						}
+#endif	//	USE_DX10
 
 	void								video_Sync		(u32 _time){m_play_time=_time;}
 	void								video_Play		(BOOL looped, u32 _time=0xFFFFFFFF);

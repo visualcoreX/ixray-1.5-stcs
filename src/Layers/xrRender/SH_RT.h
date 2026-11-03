@@ -8,8 +8,12 @@ public:
 	CRT();
 	~CRT();
 
-	void	create(LPCSTR Name, u32 w, u32 h, D3DFORMAT f, u32 SampleCount = 1 );
+	// MipLevels: a mip chain the GPU fills from the top level (generate_mips), DX10 only; 0 = all the way down
+	void	create(LPCSTR Name, u32 w, u32 h, D3DFORMAT f, u32 SampleCount = 1, u32 MipLevels = 1 );
 	void	destroy();
+#ifdef	USE_DX10
+	void	generate_mips();
+#endif	//	USE_DX10
 	void	reset_begin();
 	void	reset_end();
 	IC BOOL	valid()	{ return !!pTexture; }
@@ -25,12 +29,13 @@ public:
 	u32						dwWidth;
 	u32						dwHeight;
 	D3DFORMAT				fmt;
+	u32						dwMips;
 
 	u64						_order;
 };
 struct 		resptrcode_crt	: public resptr_base<CRT>
 {
-	void				create			(LPCSTR Name, u32 w, u32 h, D3DFORMAT f, u32 SampleCount = 1 );
+	void				create			(LPCSTR Name, u32 w, u32 h, D3DFORMAT f, u32 SampleCount = 1, u32 MipLevels = 1 );
 	void				destroy			()	{ _set(NULL);		}
 };
 typedef	resptr_core<CRT,resptrcode_crt>		ref_rt;
