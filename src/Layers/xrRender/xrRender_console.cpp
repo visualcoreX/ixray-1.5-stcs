@@ -182,7 +182,7 @@ Flags32		ps_r2_ls_flags_ext			= {
 // the first-person actor is invisible in the normal
 // pass, so the SMAP pass renders it explicitly (r__dsgraph_render.cpp) to get a self shadow. Toggle:
 // the "actor shadow" checkbox in the advanced video options, or `r__actor_shadow` in the console.
-Flags32 ps_r__common_flags = { R2FLAG_USE_BUMP | RFLAG_ACTOR_SHADOW };
+Flags32 ps_r__common_flags = { R2FLAG_USE_BUMP | RFLAG_ACTOR_SHADOW | RFLAG_LENS_CUBE };
 
 // HUD contact shadows. Lengths are metres of TRUE geometry, not of the HUD-FOV picture: the models
 // really are a few dm across, so 0.35 already reaches across the whole weapon.
@@ -931,6 +931,9 @@ void		xrRender_initconsole	()
 	// the "SSS" checkbox in the advanced video options. Master switch for phase_hud_shadow -- the
 	// r2_hud_shadow* floats stay as the tuning knobs behind it.
 	CMD3(CCC_Mask, "r__hud_shadow", &ps_r__common_flags, RFLAG_HUD_SHADOW);
+	// the "lens reflections" checkbox in the advanced video options: the R3 cube the hud's glass mirrors
+	// (CRender::render_lens_cube); off, the glass mirrors the weather's sky alone. r3_lens_cube_far is its range.
+	CMD3(CCC_Mask, "r3_lens_cube", &ps_r__common_flags, RFLAG_LENS_CUBE);
 	CMD3(CCC_Token,		"r2_sun_quality",				&ps_r_sun_quality,			qsun_quality_token);
 	CMD3(CCC_Token,		"r2_smapsize",					&ps_r_smapsize,				qsmapsize_token);
 	CMD4(CCC_Float,		"r2_sun_cascade_scale",			&ps_r_sun_cascade_scale,	0.25f,	4.0f);

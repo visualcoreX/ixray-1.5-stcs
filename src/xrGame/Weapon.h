@@ -188,6 +188,12 @@ public:
 	// ...and the mirror lit by the sky alone, not the sun: collimator_reflect_indirect = r,g,b (0..255), its
 	// own colour, the same strength for the aim. Zero when the optic has no such key.
 	Fvector4 CollimatorReflectIndirect() const;
+	// The dome R3's cube of the world is mirrored by, apart from the sky's: collimator_reflect_cube_curve = curve[,
+	// the most tilt] -- the glass's own tilt off its flat axis times the curve (1 = the model's, more = rounder: the
+	// world wide and small; less = a close-up that pans; default 2.5), and the most that tilt may come to, degrees
+	// (default 50): past 3/4 of it more adds less and less, so a lens whose rim bends away steeply (the Elcan's)
+	// does not throw the world inside out there. x = curve, y = the most tilt in radians (hud_collim_cube).
+	Fvector4 CollimatorCube() const;
 	float	 CollimatorReflectStrength() const;
 	bool	 CollimatorReflectColor(LPCSTR key, Fvector& col) const;
 	// ...and its shape: x = collimator_reflect_curve (how much of the glass's dome the mirror keeps: 0 = a flat

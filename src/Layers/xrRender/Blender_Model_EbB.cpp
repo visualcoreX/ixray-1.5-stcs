@@ -244,6 +244,7 @@ void CBlender_Model_EbB::Compile( CBlender_Compile& C )
 				C.r_dx10Texture		("s_sky1",		"$user$sky1");
 				C.r_dx10Texture		("s_lens_cube",	"$user$lens_cube");	// the world round the camera (CRender::render_lens_cube)
 				C.r_dx10Sampler		("smp_rtlinear");
+				C.r_dx10Sampler		("smp_linear");	// the cube's mips (lens_cube.h)
 				C.r_End				();
 				C.SH->flags.bHudOverlay	= TRUE;
 			}

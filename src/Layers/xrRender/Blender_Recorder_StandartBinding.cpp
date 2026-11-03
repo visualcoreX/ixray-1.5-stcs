@@ -289,6 +289,16 @@ class cl_collim_reflect_ind : public R_constant_setup {
 };
 static cl_collim_reflect_ind	binder_collim_reflect_ind;
 
+// The dome the R3 cube is mirrored by (collim.h collim_cube_normal): x = curve, y = the most tilt, radians
+class cl_collim_cube : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	RCache.set_c (C, g_pGamePersistent->hud_collim_cube);
+		else												RCache.set_c (C, 0.f, 1.f, 0.f, 0.f);
+	}
+};
+static cl_collim_cube	binder_collim_cube;
+
 class cl_collim_reflect_shape : public R_constant_setup {
 	virtual void setup(R_constant* C)
 	{
@@ -631,6 +641,7 @@ void	CBlender_Compile::SetMapping	()
 	r_Constant				("m_collim_tint",	&binder_collim_tint);
 	r_Constant				("m_collim_reflect",	&binder_collim_reflect);
 	r_Constant				("m_collim_reflect_ind",	&binder_collim_reflect_ind);
+	r_Constant				("m_collim_cube",	&binder_collim_cube);
 	r_Constant				("m_collim_reflect_shape",	&binder_collim_reflect_shape);
 	r_Constant				("m_collim_glass",	&binder_collim_glass);
 	r_Constant				("m_collim_mark",	&binder_collim_mark);

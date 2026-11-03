@@ -422,8 +422,12 @@ CRenderTarget::CRenderTarget		()
 			rt_cube_N.create("$user$cube_n", N, N, D3DFMT_A16B16G16R16F, 1);
 			rt_cube_C.create("$user$cube_c", N, N, D3DFMT_A8R8G8B8, 1);
 			rt_cube_Z.create("$user$cube_z", N, N, D3DFMT_D24S8, 1);
-			rt_lens_cube.create("$user$lens_cube", N * 6, N, D3DFMT_A8R8G8B8, 1);
+			// with mips down to 4x4 a face (lens_cube.h LENS_CUBE_MIPS): the glass blurs it by reading a smaller one.
+			// The faces sit side by side, 128 wide, so each level halves them in place -- none bleeds into the next
+			rt_lens_cube.create("$user$lens_cube", N * 6, N, D3DFMT_A8R8G8B8, 1, 6);
 			m_lens_cube_clear = false;
+			m_lens_cube_face = 0;
+			lens_cube_clear();
 		}
 
 		rt_Back_Buffer.create(r2_RT_backbuffer_final, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
@@ -1410,13 +1414,17 @@ void CRender::PresentBridgeLens()
 	_RELEASE(pBuffer);
 }
 
-// The atlas cleared once: alpha 0 = no face drawn, the glass keeps the sky (also with the cube off from the start)
-void CRenderTarget::lens_cube_clear_once()
+// The atlas emptied: alpha 0 = no face drawn, the glass keeps the sky. Once when it is made, and whenever the cube
+// stops being drawn (CRender::render_lens_cube: nothing in hand mirrors it, r3_lens_cube_far 0) -- when it comes
+// back, the glass shows the sky until the faces are in, not the place they were drawn last.
+void CRenderTarget::lens_cube_clear()
 {
 	if (m_lens_cube_clear || !rt_lens_cube)	return;
 	FLOAT zero[4]			= { 0.f, 0.f, 0.f, 0.f };
 	HW.pDevice->ClearRenderTargetView(rt_lens_cube->pRT, zero);
+	rt_lens_cube->generate_mips();	// the clear reaches the top level alone
 	m_lens_cube_clear		= true;
+	m_lens_cube_face		= 0;
 }
 
 // The cubemap the hud's glass mirrors (CRender::render_lens_cube): a face's G-buffer, as phase_scene_begin sets the
@@ -1444,7 +1452,7 @@ void CRenderTarget::lens_cube_begin()
 void CRenderTarget::lens_cube_combine(u32 face, const Fvector& R, const Fvector& U, const Fvector& F, float far_)
 {
 	if (!s_lens_cube)		s_lens_cube.create("effects\\lens_cube", "$user$cube_p");
-	lens_cube_clear_once	();
+	m_lens_cube_clear		= false;
 	const u32 N				= rt_cube_P->dwWidth;
 	u_setrt					(rt_lens_cube, nullptr, nullptr, nullptr);
 	D3D_VIEWPORT VP			= { INT(face * N), 0, N, N, 0.f, 1.f };
@@ -1469,4 +1477,5 @@ void CRenderTarget::lens_cube_combine(u32 face, const Fvector& R, const Fvector&
 	RCache.set_Geometry		(g_combine);
 	RCache.Render			(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
 	RCache.set_CullMode		(CULL_CCW);
+	rt_lens_cube->generate_mips();	// the smaller faces the glass blurs it with (lens_cube.h)
 }

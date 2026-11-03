@@ -3799,6 +3799,20 @@ Fvector4 CWeapon::CollimatorReflectIndirect() const
 	return res;
 }
 
+Fvector4 CWeapon::CollimatorCube() const
+{
+	// curve, the most tilt (degrees)
+	float v[2] = { 2.5f, 50.f };
+	shared_str sc = CollimatorParamSection("collimator_reflect_cube_curve");
+	if (sc.size())
+		sscanf(pSettings->r_string(*sc, "collimator_reflect_cube_curve"), "%f,%f", &v[0], &v[1]);
+	clamp(v[0], 0.f, 10.f);
+	clamp(v[1], 1.f, 89.f);
+	Fvector4 res;
+	res.set(v[0], deg2rad(v[1]), 0.f, 0.f);
+	return res;
+}
+
 // collimator_reflect_strength = hip, aim, for the current aim (default 1, 0.3)
 float CWeapon::CollimatorReflectStrength() const
 {

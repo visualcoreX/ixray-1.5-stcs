@@ -10,6 +10,7 @@
 //   m_collim_reflect        rgb = coating colour * strength for the current aim, w = F0 -- in the light that
 //                           falls on the glass (the sun, the way model_def_lq lights it)
 //   m_collim_reflect_ind    rgb = the same mirror's colour in the sky's light alone (0 = none)
+//   m_collim_cube           the dome the cube is mirrored by (collim_cube_normal): x = curve, y = the most tilt, radians
 //   m_collim_reflect_shape  x = how much of the glass's dome the mirror keeps (0 = flat), y = contrast,
 //                           z = how much the glass texture's alpha masks the mirror (0 = not at all),
 //                           w = the most indirect light the mirror takes (0 = no limit)
@@ -31,6 +32,7 @@ uniform	float4	m_collim_tint;
 uniform	float4	m_collim_reflect;
 uniform	float4	m_collim_reflect_ind;
 uniform	float4	m_collim_reflect_shape;
+uniform	float4	m_collim_cube;
 uniform	float4	m_collim_hemi_pos;
 uniform	float4	m_collim_hemi_neg;
 uniform	float4	m_sky_params;
@@ -55,10 +57,10 @@ Texture2D	s_mark;			// $user$collim_mark: the reticle picked
 // shows it instead of the weather's sky alone. Unbound (R2, the world's glass) it reads 0: the sky, as before.
 #include "lens_cube.h"
 #define	LENS_CUBE_GAIN	1.0		// the cube's mirror against the sky's, both in the coating's colour
-#define	LENS_CUBE_CURVE	2.5		// the dome the cube is mirrored by: 1 = the glass's own, more = rounder. A flat glass
-								// shows a small piece of the world large, as if zoomed in; a convex one shrinks it
-#define	LENS_CUBE_BLUR	0.035	// the blur, as the tangent of its radius (~2 degrees): a coated glass's reflection is dim
-								// and soft, and the cube's 128 texels a face would show as pixels
+#define	LENS_CUBE_BLUR	0.07	// the blur, as the tangent of its radius (~4 degrees): a coated glass's reflection is dim
+								// and soft, and the cube's 128 texels a face would show as pixels. Read from the cube's
+								// smaller levels (lens_cube_blur), not spread over the big one: 0 = as sharp as the
+								// glass's pixels allow
 
 struct v2p_collim
 {
@@ -202,6 +204,22 @@ float3	collim_glass_light( float3 n, float3 lamps )
 	return	calc_model_lq_lighting( n ) * 2 + collim_limit( lamps, m_collim_reflect_shape.w );
 }
 
+// The normal the cube is mirrored by (ng: the glass's own, na: its flat axis, both facing the eye): the glass's tilt
+// off the axis, as an angle, times the curve (m_collim_cube.x), and held under the most tilt (m_collim_cube.y) as
+// collim_limit holds a light -- as it is up to 3/4 of it, then easing toward it. Bent by lerp(na, ng, curve) as the
+// sky's is, a rim that falls away steeply (the Elcan's) tilted past the eye's line and mirrored the world inside out.
+float3	collim_cube_normal( float3 ng, float3 na )
+{
+	float	c		= dot( ng, na );
+	float3	t		= ng - na * c;
+	float	s		= length( t );
+	float	a		= atan2( s, c ) * m_collim_cube.x;
+	float	l		= m_collim_cube.y;
+	float	k		= 0.75 * l;
+	a				= ( a <= k ) ? a : k + (a - k) / ( 1 + (a - k) / (l - k) );
+	return	na * cos(a) + t * ( sin(a) / max(s, 0.0001) );
+}
+
 // The sky the coating mirrors, in its colour (v: from the eye; ng: the glass's own normal, facing the eye;
 // na: its flat axis; dyn: the lamps from any side, collim_lamps' omni). A domed lens is a convex mirror: the full dome shrinks the sky into a wide, still
 // picture; bent toward the flat axis it becomes a close-up that pans as the gun sways -- the mirror turns
@@ -241,9 +259,12 @@ float3	collim_reflection( float3 v, float3 ng, float3 na, float3 dyn )
 
 	// the cube: the world that way as it really is, lit already -- only the coating's colour, the Fresnel and the
 	// same contrast go on it; no open-sky test either, the cube has the roof in it
-	// mirrored by a rounder dome than the sky is (LENS_CUBE_CURVE): the world wide and small, as a convex glass shows it
-	float3	nc		= normalize( lerp(na, ng, LENS_CUBE_CURVE) );
-	float4	cube	= lens_cube_soft( reflect(v, nc), LENS_CUBE_BLUR );
+	// mirrored by a dome of its own (collim_cube_normal), rounder than the sky's as a rule: a flat glass shows a
+	// small piece of the world large, as if zoomed in, a convex one the world wide and small
+	float3	nc		= collim_cube_normal( ng, na );
+	float3	rc		= reflect( v, nc );
+	float	drc		= max( length(ddx(rc)), length(ddy(rc)) );
+	float4	cube	= lens_cube_blur( rc, lens_cube_lod(LENS_CUBE_BLUR, drc) );
 	float	clum	= max( dot(cube.rgb, float3(0.299, 0.587, 0.114)), 0.0001 );
 	float3	cube_m	= cube.rgb * pow( clum, m_collim_reflect_shape.y - 1 ) * f * m_collim_reflect.rgb * LENS_CUBE_GAIN;
 	return	lerp( sky_m, cube_m, cube.a );

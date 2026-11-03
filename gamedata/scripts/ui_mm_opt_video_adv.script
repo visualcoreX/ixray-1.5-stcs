@@ -401,6 +401,12 @@ function opt_video_adv:InitControls(x, y, xml, handler)
 	ctl			= xml:InitTrackBar				("video_adv:track_lens_factor",			_st)
 	-- only the real PiP lens has a redraw rate to set
 	handler.m_preconditions[ctl]		= lens_factor_by_mode
+-- The world round the camera mirrored in the hud's glass (r3_lens_cube, CRender::render_lens_cube): a cubemap
+-- drawn a face a frame, R3 only. Off, the glass mirrors the weather's sky alone.
+	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
+	xml:InitStatic								("video_adv:cap_lens_cube",			_st)
+	ctl			= xml:InitCheck					("video_adv:check_lens_cube",			_st)
+	handler.m_preconditions[ctl]		= only_3_and_more_mode
 -- Gunslinger npc_lasers
 	_st				= xml:InitStatic			("video_adv:templ_item",				self.scroll_v)
 	xml:InitStatic								("video_adv:cap_npc_lasers",			_st)

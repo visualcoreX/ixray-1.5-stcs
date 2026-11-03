@@ -618,10 +618,20 @@ extern float		ps_r3_lens_cube_far;
 extern CObject*		g_subspace_skip;
 void CRender::render_lens_cube()
 {
-	if (!Target->rt_lens_cube || !Target->rt_cube_Z)					return;
-	Target->lens_cube_clear_once();
-	if (ps_r3_lens_cube_far <= 0.f || !pLastSector)						return;
-	if (g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow)		return;	// the 3D scope's world-only frame
+	if (!Target->rt_lens_cube || !Target->rt_cube_Z || !g_pGamePersistent)	return;
+	// the 3D scope's world-only frame: the face waits for the next presented one (the faces go by a count of their
+	// own, not the frame's: lens frames fall on every second frame, and three faces never came round)
+	if (g_pGamePersistent->m_bLensFrameNow)								return;
+	// only while what is in hand mirrors anything -- the glass's mirror is the coating's colour times the strength
+	// (CWeapon::CollimatorReflect, 0 for a gun with no such glass, a knife, empty hands) -- and the options have it
+	// on (r3_lens_cube): cleared, the glass mirrors the weather's sky alone
+	const Fvector4&	refl	= g_pGamePersistent->hud_collim_reflect;
+	if (!ps_r__common_flags.test(RFLAG_LENS_CUBE) || ps_r3_lens_cube_far <= 0.f || !pLastSector
+		|| refl.x + refl.y + refl.z <= 0.f)
+	{
+		Target->lens_cube_clear();
+		return;
+	}
 
 	PIX_EVENT(lens_cube);
 
@@ -633,7 +643,8 @@ void CRender::render_lens_cube()
 	F[3].set( 0,-1, 0);	U[3].set(0, 0, 1);
 	F[4].set( 0, 0, 1);	U[4].set(0, 1, 0);
 	F[5].set( 0, 0,-1);	U[5].set(0, 1, 0);
-	const u32	face		= Device.dwFrame % 6;
+	const u32	face		= Target->m_lens_cube_face;
+	Target->m_lens_cube_face	= (face + 1) % 6;
 	Fvector		pos			= Device.vCameraPosition;
 	Fmatrix		mV;			mV.build_camera_dir(pos, F[face], U[face]);
 	Fmatrix		mP;			mP.build_projection(PI_DIV_2, 1.f, 0.1f, ps_r3_lens_cube_far);

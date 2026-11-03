@@ -44,6 +44,7 @@ IGame_Persistent::IGame_Persistent	()
 	hud_collim_reflect.set			(0.f, 0.f, 0.f, 0.25f);	// ...that mirrors nothing
 	hud_collim_reflect_ind.set		(0.f, 0.f, 0.f, 0.f);
 	hud_collim_reflect_shape.set	(0.35f, 1.f, 0.f, 0.f);
+	hud_collim_cube.set				(2.5f, deg2rad(50.f), 0.f, 0.f);
 	hud_collim_spec.set				(0.f, 64.f, 0.f, 0.f);	// no highlight
 	hud_collim_glass.set			(1.f, 1.f, 1.f, 0.f);	// the glass's texture as the model has it
 	hud_collim_mark.set				(0.f, 0.f, 0.f, 0.f);	// no shader reticle

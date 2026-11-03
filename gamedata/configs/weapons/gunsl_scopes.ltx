@@ -46,6 +46,7 @@ collimator_reflect_strength	= 2.0, 0.25	; hip, aim: the aim fades the mirror so 
 collimator_reflect_limit	= 2
 collimator_reflect_f0		= 0.75		; share mirrored looking straight in; grazing angles get all of it
 collimator_reflect_curve    = 0.08  ; 0 = плоское зеркало (крупно, подвижно), 1 = купол модели (мелко)
+collimator_reflect_cube_curve = 0.5 ; R3: the dome the cube of the world is mirrored by, apart from the sky's: curve[, the most tilt in degrees, default 50]. The glass's own tilt times the curve -- 1 = the model's, more = rounder (the world wide and small), less = a close-up that pans -- held under the most tilt, so a steep rim does not turn the world inside out
 collimator_reflect_contrast = 2.5   ; степень яркости неба, 1 = без изменений
 collimator_reflect_mask		= 1.0		; 0..1: the clearer the glass texture, the stronger the mirror (0 = the whole glass alike)
 collimator_specular			= 0.04, 120	; the glass's highlight from the sun and lamps: strength, glossiness (higher = smaller, sharper)
@@ -77,6 +78,7 @@ collimator_reflect_strength	= 2.0, 0.25
 collimator_reflect_limit	= 1
 collimator_reflect_f0		= 0.75
 collimator_reflect_curve    = 0.08
+collimator_reflect_cube_curve = 1.0
 collimator_reflect_contrast = 2.5
 collimator_reflect_mask		= 1.0
 collimator_specular			= 0.02, 120
@@ -121,6 +123,7 @@ collimator_reflect_strength	= 2.0, 0.25
 collimator_reflect_limit	= 2
 collimator_reflect_f0		= 0.75
 collimator_reflect_curve    = 0.1 ;0.125
+collimator_reflect_cube_curve = 1.5
 collimator_reflect_contrast = 2.5
 collimator_reflect_mask		= 1.0
 collimator_specular			= 0.04, 120
@@ -557,6 +560,7 @@ collimator_reflect_strength	= 2.0, 0.25
 collimator_reflect_limit	= 1
 collimator_reflect_f0		= 0.75
 collimator_reflect_curve    = 0.08
+collimator_reflect_cube_curve = 0.5
 collimator_reflect_contrast = 2.5
 collimator_reflect_mask		= 1.0
 collimator_specular			= 0.02, 120
@@ -600,6 +604,8 @@ need_lens_frame		= true
 scope_lens_factor	= 4.0	; our engine takes ONE factor; GS had min 1.8 / max 10 / levels 1 (its alter-zoom)
 zoom_mouse_sense_koef = 0.5
 scope_abberation	= 0.005
+
+collimator_reflect_cube_curve = 1.0, 15
 
 [wpn_addon_scope_susat_night]:wpn_addon_scope_x2.7	; PN-23 night scope (2D reticle + PiP lens)
 $spawn			= "weapons\addons\scope_pn23"
@@ -3149,11 +3155,12 @@ pp_nv_2d_chain_gain = 2.0
 ; R3 only). A scope, its addon or its weapon may carry these keys itself; the ones it lacks come from here
 ; (CWeapon::CollimatorParamSection). The values are the Rakurs's: a neutral coating.
 [optic_glass_reflect]
-collimator_reflect			= 146,132,128
+collimator_reflect			= 128,156,128
 collimator_reflect_indirect	= 64,128,116
 collimator_reflect_strength	= 2.0, 0.25
 collimator_reflect_limit	= 2
 collimator_reflect_f0		= 0.75
-collimator_reflect_curve    = 0.1
+collimator_reflect_curve    = 0.125
+collimator_reflect_cube_curve = 1.0, 60	; the glass's rim falls away steeply: the world in it held flatter there
 collimator_reflect_contrast = 2.5
 collimator_specular			= 0.04, 120

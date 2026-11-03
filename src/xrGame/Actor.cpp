@@ -1473,6 +1473,7 @@ void CActor::UpdateCL	()
 			g_pGamePersistent->hud_collim_reflect = wpn->CollimatorReflect();
 			g_pGamePersistent->hud_collim_reflect_ind = wpn->CollimatorReflectIndirect();
 			g_pGamePersistent->hud_collim_reflect_shape = wpn->CollimatorReflectShape();
+			g_pGamePersistent->hud_collim_cube = wpn->CollimatorCube();
 			g_pGamePersistent->hud_collim_spec = wpn->CollimatorSpecular();
 			// .y: the model's reticle, off while the glass draws one itself
 			shared_str mark = wpn->CollimatorMarkTexture();

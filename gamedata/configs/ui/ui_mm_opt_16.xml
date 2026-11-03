@@ -632,6 +632,13 @@
 			<options_item entry="lens_render_factor" group="mm_opt_video_adv"/>
 		</track_lens_factor>
 
+		<cap_lens_cube x="17" y="0" width="119" height="21">
+			<text font="letterica16" color="ui_6" vert_align="c">ui_mm_lens_cube</text>
+		</cap_lens_cube>
+		<check_lens_cube x="162" y="0" width="27" height="21" stretch="1">
+			<options_item entry="r3_lens_cube" group="mm_opt_video_adv"/>
+		</check_lens_cube>
+
 		<cap_npc_lasers x="17" y="0" width="119" height="21">
 			<text font="letterica16" color="ui_6" vert_align="c">ui_mm_npc_lasers</text>
 		</cap_npc_lasers>
