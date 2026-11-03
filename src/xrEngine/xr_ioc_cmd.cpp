@@ -693,6 +693,46 @@ public		:
 };
 
 
+// rs_fps_limit: "off"/0, or a cap of 30 fps and up with no ceiling. A value under the floor is raised
+// to it rather than refused -- the player asked for a cap, so they get the lowest one there is.
+extern ENGINE_API int	ps_fps_limit;		// device.cpp
+
+class CCC_FpsLimit : public IConsole_Command
+{
+public:
+	enum { min_limit = 30 };
+
+	CCC_FpsLimit(LPCSTR N) : IConsole_Command(N) {}
+
+	virtual void	Execute	(LPCSTR args)
+	{
+		if (EQ(args,"off") || EQ(args,"0"))	{ ps_fps_limit = 0; return; }
+
+		const int	v	= atoi(args);
+		if (v <= 0)							{ InvalidSyntax(); return; }
+		if (v < min_limit)
+			Msg		("~ %s: %d is below the minimum, set to %d", cName, v, int(min_limit));
+		ps_fps_limit	= _max(v, int(min_limit));
+	}
+	virtual void	Status	(TStatus& S)
+	{
+		if (ps_fps_limit > 0)	_itoa(ps_fps_limit, S, 10);
+		else					xr_strcpy(S, "off");
+	}
+	virtual void	Info	(TInfo& I)
+	{
+		xr_sprintf(I, sizeof(I), "'off' or frames per second, %d and up", int(min_limit));
+	}
+	virtual void	fill_tips(vecTips& tips, u32 mode)
+	{
+		TStatus		S;	Status(S);
+		TStatus		str;
+		xr_sprintf	(str, sizeof(str), "%s  (current)  [off, %d+]", S, int(min_limit));
+		tips.push_back	(str);
+		IConsole_Command::fill_tips(tips, mode);
+	}
+};
+
 ENGINE_API float psHUD_FOV_def = 0.66f;	// hud fov multiplier; x `fov` = the hud's own fov in degrees
 ENGINE_API float psHUD_FOV = psHUD_FOV_def;
 
@@ -769,6 +809,7 @@ void CCC_Register()
 	CMD3(CCC_Mask, "read_sun_config", &psEnvironmentFlags, ENABLE_READ_SUN_CONFIG);
 
 	CMD3(CCC_Mask,		"rs_v_sync",			&psDeviceFlags,		rsVSync				);
+	CMD1(CCC_FpsLimit,	"rs_fps_limit"											);
 //	CMD3(CCC_Mask,		"rs_disable_objects_as_crows",&psDeviceFlags,	rsDisableObjectsAsCrows	);
 	// Two ways of filling the screen, and they cannot both be on -- whichever was asked for last
 	// wins and takes the other down. Both take effect on the next vid_restart.
