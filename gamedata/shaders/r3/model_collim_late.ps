@@ -52,6 +52,6 @@ float4 main( v2p_collim I, float4 pos2d : SV_Position ) : SV_Target
 	float3	glass	= collim_glass_light( n, lamps.diff ) * t_base.rgb;
 	float3	refl	= collim_reflection( v, ng, na, lamps.omni ) * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
 
-	float3	res		= glow + glass * a + refl + collim_specular( v, ng, t_base.a, lamps.spec ) + haze;
+	float3	res		= glow + glass * a + refl + collim_specular( v, ng, t_base.a, COLLIM_SPEC_MAP(I.tc0).rgb, lamps.spec ) + haze;
 	return	float4( res * dark + glow * (1 - dark), dark );
 }

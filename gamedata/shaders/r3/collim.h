@@ -25,8 +25,12 @@
 //   m_collim_lights         the lights besides the sun that reach the hud's glass, COLLIM_LIGHTS triples:
 //                           position (w = 1/range^2), colour (w = 1 for a spot), spot axis (w = cos of half
 //                           its cone) -- collim_gather_lights; black for the world's glass
-//   m_collim_spec           x = the highlight's strength (0 = none), y = glossiness (its exponent), z = how
-//                           the glass texture's alpha picks the glossy parts (+1 clear, -1 opaque, 0 all)
+//   m_collim_spec           x = the highlight's strength (0 = none), y = glossiness (a Blinn exponent: the GGX
+//                           highlight is made as wide), z = how the glass texture's alpha picks the glossy parts
+//                           (+1 clear, -1 opaque, 0 all), w = the lamps' share of it against the sun's (the inner
+//                           lenses' glints take it too): a campfire's lights, stacked, outshone the sun
+//   m_collim_spec_color     rgb = the highlight's tint (1 = the light's own colour), w = the world's share of it --
+//                           the cube's, else the sky's light the same lobe gathers (collim_env; 0 = the lights' alone)
 // All the angles are the hud's: the binders turn the configs' degrees of the world's view into them.
 uniform	float4	m_collim_tint;
 uniform	float4	m_collim_reflect;
@@ -45,11 +49,17 @@ uniform	float4	m_collim_glass;		// x = how much of the glass's texture shows (th
 #define	COLLIM_LOOP		[unroll]		// collim_lamps: unrolled, SM4 has the registers
 uniform	float4	m_collim_lights[COLLIM_LIGHTS*3];
 uniform	float4	m_collim_spec;
+uniform	float4	m_collim_spec_color;
 
 TextureCube	s_sky0;
 TextureCube	s_sky1;
 Texture2D	s_mark;			// $user$collim_mark: the reticle picked
+Texture2D	s_spec;			// wpn\lenses_spec: rgb = the outer glass's highlight -- where it shines and in what
+							// colour (black = not at all, white = the light's own); a = where an optic's inner lenses
+							// glint through it (model_sniperlens.ps; collimators have none).
+							// Laid out as the wpn\lenses atlas is, so one map serves every sight's glass
 #define	COLLIM_MARK(tc)		s_mark.SampleLevel( smp_rtlinear, tc, 0 )
+#define	COLLIM_SPEC_MAP(tc)	s_spec.Sample( smp_base, tc )
 #define	COLLIM_SKY0(tc)		s_sky0.SampleLevel( smp_rtlinear, tc, 0 )
 #define	COLLIM_SKY1(tc)		s_sky1.SampleLevel( smp_rtlinear, tc, 0 )
 
@@ -133,9 +143,30 @@ float3	collim_lamp( int i, float3 p, out float3 l )
 	return	lc.rgb * att * spot;
 }
 
+// The GGX roughness of a glossiness given as a Blinn exponent (collimator_specular, optic_glint_N): a highlight
+// as wide as Blinn's at that exponent was.
+float	collim_alpha( float g )		{ return max( sqrt(2 / (g + 2)), 0.02 ); }
+
+// One light's GGX highlight on the glass (n: facing the eye, v: from the eye, l: to the light, a: the
+// roughness), D * visibility * N.L, times pi: a light of colour c shines c * this at the highlight -- as bright
+// as Blinn's (g+8)/8 made it, so the configs' strengths keep their meaning. Against Blinn's plain lobe it has
+// a long soft tail round a small hot core, as glass shows it.
+float	collim_ggx( float3 n, float3 v, float3 l, float a )
+{
+	float3	h		= normalize( l - v );
+	float	nh		= saturate( dot(n, h) );
+	float	nl		= saturate( dot(n, l) );
+	float	nv		= max( dot(n, -v), 0.001 );
+	float	a2		= a * a;
+	float	d		= nh * nh * (a2 - 1) + 1;
+	float	k		= a * 0.5;
+	float	vis		= 0.25 / ( (nl * (1 - k) + k) * (nv * (1 - k) + k) );
+	return	a2 / ( d * d ) * vis * nl;
+}
+
 // All of them at once, in one pass over the lamps (n: the glass's normal facing the eye, v: from the eye):
 // diff -- as a surface facing them is lit (the glass's texture), omni -- from any side (the mirror's indirect
-// light, as the sky's is), spec -- their Blinn highlight at m_collim_spec.y's glossiness. One loop, not one
+// light, as the sky's is), spec -- their GGX highlight at m_collim_spec.y's glossiness. One loop, not one
 // per use: on R2 (ps_3_0, 32 temporaries) three unrolled ones ran out of registers.
 struct collim_lamps_t
 {
@@ -150,7 +181,7 @@ collim_lamps_t	collim_lamps( float3 p, float3 n, float3 v )
 	r.diff			= 0;
 	r.omni			= 0;
 	r.spec			= 0;
-	float	g		= m_collim_spec.y;
+	float	ra		= collim_alpha( m_collim_spec.y );
 	COLLIM_LOOP
 	for ( int i = 0; i < COLLIM_LIGHTS; ++i )
 	{
@@ -159,30 +190,62 @@ collim_lamps_t	collim_lamps( float3 p, float3 n, float3 v )
 		float	ndl		= saturate( dot(n, l) );
 		r.diff			+= c * ndl;
 		r.omni			+= c;
-		r.spec			+= c * pow( saturate(dot(n, normalize(l - v))), g ) * ndl;
+		r.spec			+= c * collim_ggx( n, v, l, ra );
 	}
 	return	r;
 }
 
-// The glass's highlight (Blinn), from the sun -- as much of it as reaches the actor, the same share the
-// glass's diffuse light takes (L_material.y) -- and from the lights near the eye (collim_lamps' spec). The
-// model's lighting has no specular at all, and in a direct light the glass's texture alone read flat and
-// matte. v: from the eye; ng: the glass's normal facing the eye; a: the glass texture's alpha, picking the
-// glossy parts as m_collim_spec.z says. Glossier means a smaller, sharper highlight, kept as bright:
-// (gloss+8)/8. It fades for the aim with the glass's texture (m_collim_glass.x): through the sight it would
-// cover the view.
-float3	collim_specular( float3 v, float3 ng, float a, float3 lamps )
+// The lamps' GGX highlight alone, at a roughness of its own (an optic's inner glass, optic_glints)
+float3	collim_lamps_spec( float3 p, float3 n, float3 v, float a )
 {
-	if ( m_collim_spec.x <= 0 )	return 0;
-	float	g		= m_collim_spec.y;
+	float3	res		= 0;
+	COLLIM_LOOP
+	for ( int i = 0; i < COLLIM_LIGHTS; ++i )
+	{
+		float3	l;
+		float3	c		= collim_lamp( i, p, l );
+		res				+= c * collim_ggx( n, v, l, a );
+	}
+	return	res;
+}
 
-	float3	ls		= -L_sun_dir_w;
-	float3	res		= L_sun_color * L_material.y * pow( saturate(dot(ng, normalize(ls - v))), g ) * saturate( dot(ng, ls) )
-					+ lamps;
+// The world the way r looks, as soft as a highlight's lobe of roughness a (dr: how far r turns from one pixel to
+// the next): the cube's smaller levels where it is drawn (lens_cube_blur), else the weather's sky where the glass
+// looks at open sky (the mirror's own test) -- the light a worn patch of glass scatters
+float3	collim_env( float3 r, float a, float dr )
+{
+	float4	cube	= lens_cube_blur( r, lens_cube_lod(a, dr) );
+	float3	tc		= sky_tc( r );
+	float3	sky		= m_sky_params.rgb * lerp( COLLIM_SKY0(tc).rgb, COLLIM_SKY1(tc).rgb, m_sky_params.w );
+	float3	hc		= ( r < 0 ) ? m_collim_hemi_neg.xyz : m_collim_hemi_pos.xyz;
+	float	vis		= saturate( dot(hc, abs(r)) );
+	return	lerp( sky * vis, cube.rgb, cube.a );
+}
+
+// The glass's highlight (GGX), from the sun -- as much of it as reaches the actor, the same share the glass's
+// diffuse light takes (L_material.y) -- and from the lights near the eye (collim_lamps' spec), as much of theirs
+// as m_collim_spec.w lets through, and, as much as m_collim_spec_color.w says, the world round it the same lobe
+// gathers (collim_env): in the shade, with no light to shine with, the specular map's wear still shows against
+// the lit walls and the sky. The model's lighting has no specular at all, and in a direct light the glass's
+// texture alone read flat and matte. v: from the eye; ng: the glass's normal facing the eye; a: the glass
+// texture's alpha, picking the glossy parts as m_collim_spec.z says; sm: the specular map's rgb
+// (COLLIM_SPEC_MAP), where the glass shines and in what colour, over m_collim_spec_color's. It fades for the
+// aim with the glass's texture (m_collim_glass.x): through the sight it would cover the view. (The inner
+// lenses' glints, model_sniperlens.ps, keep to the lights.)
+float3	collim_specular( float3 v, float3 ng, float a, float3 sm, float3 lamps )
+{
+	float3	r		= reflect( v, ng );
+	float	dr		= max( length(ddx(r)), length(ddy(r)) );
+	if ( m_collim_spec.x <= 0 )	return 0;
+	float	ra		= collim_alpha( m_collim_spec.y );
+
+	float3	res		= L_sun_color * L_material.y * collim_ggx( ng, v, -L_sun_dir_w, ra ) + lamps * m_collim_spec.w;
+	if ( m_collim_spec_color.w > 0 )
+		res			+= collim_env( r, ra, dr ) * m_collim_spec_color.w;
 
 	float	m		= m_collim_spec.z;
 	float	mask	= ( m >= 0 ) ? lerp( 1, 1 - a, m ) : lerp( 1, a, -m );
-	return	res * m_collim_spec.x * m_collim_glass.x * mask * (g + 8) / 8;
+	return	res * m_collim_spec_color.rgb * m_collim_spec.x * m_collim_glass.x * mask * sm;
 }
 
 // A light's brightness held under c (0 = not held), hue kept: as it is up to 3/4 of c, then easing toward c.

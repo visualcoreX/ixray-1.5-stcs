@@ -25,7 +25,9 @@
 //                           position (w = 1/range^2), colour (w = 1 for a spot), spot axis (w = cos of half
 //                           its cone) -- collim_gather_lights; black for the world's glass
 //   m_collim_spec           x = the highlight's strength (0 = none), y = glossiness (its exponent), z = how
-//                           the glass texture's alpha picks the glossy parts (+1 clear, -1 opaque, 0 all)
+//                           the glass texture's alpha picks the glossy parts (+1 clear, -1 opaque, 0 all), w = the
+//                           lamps' share of it against the sun's
+//   m_collim_spec_color     rgb = the highlight's tint (1 = the light's own colour)
 // All the angles are the hud's: the binders turn the configs' degrees of the world's view into them.
 uniform	float4	m_collim_tint;
 uniform	float4	m_collim_reflect;
@@ -43,11 +45,14 @@ uniform	float4	m_collim_glass;		// x = how much of the glass's texture shows (th
 #define	COLLIM_LOOP		[loop]		// collim_lamps: a real loop -- unrolled, ps_3_0 runs out of temporaries
 uniform	float4	m_collim_lights[COLLIM_LIGHTS*3];
 uniform	float4	m_collim_spec;
+uniform	float4	m_collim_spec_color;
 
 uniform samplerCUBE	s_sky0;
 uniform samplerCUBE	s_sky1;
 uniform sampler2D	s_mark;		// $user$collim_mark: the reticle picked
 #define	COLLIM_MARK(tc)		tex2D( s_mark, tc )
+uniform sampler2D	s_spec;		// wpn\lenses_spec: rgb = where the glass shines and in what colour (laid out as the wpn\lenses atlas is)
+#define	COLLIM_SPEC_MAP(tc)	tex2D( s_spec, tc )
 #define	COLLIM_SKY0(tc)		texCUBE( s_sky0, tc )
 #define	COLLIM_SKY1(tc)		texCUBE( s_sky1, tc )
 
@@ -154,24 +159,25 @@ collim_lamps_t	collim_lamps( float3 p, float3 n, float3 v )
 }
 
 // The glass's highlight (Blinn), from the sun -- as much of it as reaches the actor, the same share the
-// glass's diffuse light takes (L_material.y) -- and from the lights near the eye (collim_lamps' spec). The
-// model's lighting has no specular at all, and in a direct light the glass's texture alone read flat and
-// matte. v: from the eye; ng: the glass's normal facing the eye; a: the glass texture's alpha, picking the
-// glossy parts as m_collim_spec.z says. Glossier means a smaller, sharper highlight, kept as bright:
-// (gloss+8)/8. It fades for the aim with the glass's texture (m_collim_glass.x): through the sight it would
-// cover the view.
-float3	collim_specular( float3 v, float3 ng, float a, float3 lamps )
+// glass's diffuse light takes (L_material.y) -- and from the lights near the eye (collim_lamps' spec), as much
+// of theirs as m_collim_spec.w lets through. The model's lighting has no specular at all, and in a direct light
+// the glass's texture alone read flat and matte. v: from the eye; ng: the glass's normal facing the eye; a: the
+// glass texture's alpha, picking the glossy parts as m_collim_spec.z says; sm: the specular map's rgb
+// (COLLIM_SPEC_MAP), where the glass shines and in what colour. Glossier means a smaller, sharper highlight,
+// kept as bright: (gloss+8)/8. It fades for the aim with the glass's texture (m_collim_glass.x): through the
+// sight it would cover the view. (R3 draws it GGX.)
+float3	collim_specular( float3 v, float3 ng, float a, float3 sm, float3 lamps )
 {
 	if ( m_collim_spec.x <= 0 )	return 0;
 	float	g		= m_collim_spec.y;
 
 	float3	ls		= -L_sun_dir_w;
 	float3	res		= L_sun_color * L_material.y * pow( saturate(dot(ng, normalize(ls - v))), g ) * saturate( dot(ng, ls) )
-					+ lamps;
+					+ lamps * m_collim_spec.w;
 
 	float	m		= m_collim_spec.z;
 	float	mask	= ( m >= 0 ) ? lerp( 1, 1 - a, m ) : lerp( 1, a, -m );
-	return	res * m_collim_spec.x * m_collim_glass.x * mask * (g + 8) / 8;
+	return	res * m_collim_spec_color.rgb * m_collim_spec.x * m_collim_glass.x * mask * sm * (g + 8) / 8;
 }
 
 // A light's brightness held under c (0 = not held), hue kept: as it is up to 3/4 of c, then easing toward c.

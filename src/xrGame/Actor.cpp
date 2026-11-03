@@ -1475,6 +1475,9 @@ void CActor::UpdateCL	()
 			g_pGamePersistent->hud_collim_reflect_shape = wpn->CollimatorReflectShape();
 			g_pGamePersistent->hud_collim_cube = wpn->CollimatorCube();
 			g_pGamePersistent->hud_collim_spec = wpn->CollimatorSpecular();
+			const Fvector spec_col = wpn->CollimatorSpecularColor();
+			g_pGamePersistent->hud_collim_spec_color.set(spec_col.x, spec_col.y, spec_col.z, wpn->CollimatorSpecularWorld());
+			wpn->OpticGlints(g_pGamePersistent->hud_optic_glints);
 			// .y: the model's reticle, off while the glass draws one itself
 			shared_str mark = wpn->CollimatorMarkTexture();
 			// .z: a sight's front aperture (crosshair_contur), off on a prism -- its field stop is the aperture
@@ -1534,6 +1537,9 @@ void CActor::UpdateCL	()
 			g_pGamePersistent->hud_collim_reflect.set(0.f, 0.f, 0.f, 0.25f);
 			g_pGamePersistent->hud_collim_reflect_ind.set(0.f, 0.f, 0.f, 0.f);
 			g_pGamePersistent->hud_collim_spec.set(0.f, 64.f, 0.f, 0.f);
+			g_pGamePersistent->hud_collim_spec_color.set(1.f, 1.f, 1.f, 0.f);
+			for (u32 i = 0; i < IGame_Persistent::HUD_OPTIC_GLINTS*2; ++i)
+				g_pGamePersistent->hud_optic_glints[i].set(0.f, 0.f, 0.f, 0.f);
 			g_pGamePersistent->hud_collim_glass.set(1.f, 1.f, 1.f, 0.f);
 			g_pGamePersistent->hud_collim_mark_tex = shared_str();
 			g_pGamePersistent->hud_collim_mark.set(0.f, 0.f, 0.f, 0.f);

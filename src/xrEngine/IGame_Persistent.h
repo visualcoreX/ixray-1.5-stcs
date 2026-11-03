@@ -95,9 +95,17 @@ public:
 	// 3/4 of it more adds less and less, so a lens whose rim bends away steeply does not throw the world inside out.
 	Fvector4						hud_collim_cube;
 	// The glass's highlight (m_collim_spec): x = strength (0 = none), y = glossiness (the highlight's exponent),
-	// z = how the glass texture's alpha picks the glossy parts (+1 the clear ones, -1 the opaque, 0 all alike).
+	// z = how the glass texture's alpha picks the glossy parts (+1 the clear ones, -1 the opaque, 0 all alike),
+	// w = the lamps' share of it against the sun's (the inner lenses' glints take it too).
 	// The shader also fades it with the glass's texture for the aim (m_collim_glass.x).
 	Fvector4						hud_collim_spec;
+	// ...and its tint (m_collim_spec_color): rgb = collimator_specular_color / 255, 1 = the light's own colour;
+	// w = the world's share of it (collimator_specular_world, R3: the cube's light, else the sky's; 0 = none).
+	Fvector4						hud_collim_spec_color;
+	// An optic's inner lenses (m_optic_glints, model_sniperlens.ps): HUD_OPTIC_GLINTS pairs -- x = curvature,
+	// y = glossiness, z = strength (0 = none); then rgb = colour.
+	enum { HUD_OPTIC_GLINTS = 4 };
+	Fvector4						hud_optic_glints[HUD_OPTIC_GLINTS*2];
 	// The glass's own texture (m_collim_glass.x): multiplies its alpha, so the aim can fade it out.
 	// Only the HUD's strict-sorted pass gets it -- the binder gives the world's guns 1.
 	Fvector4						hud_collim_glass;

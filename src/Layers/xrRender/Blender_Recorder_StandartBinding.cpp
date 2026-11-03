@@ -405,7 +405,7 @@ class cl_collim_veil : public R_constant_setup {
 static cl_collim_veil	binder_collim_veil;
 
 // The collimator glass's highlight (collim.h collim_specular): x = strength, y = glossiness, z = the texture
-// alpha's mask. The hud's glass only -- none on the world's.
+// alpha's mask, w = the lamps' share. The hud's glass only -- none on the world's.
 class cl_collim_spec : public R_constant_setup {
 	virtual void setup(R_constant* C)
 	{
@@ -414,6 +414,31 @@ class cl_collim_spec : public R_constant_setup {
 	}
 };
 static cl_collim_spec	binder_collim_spec;
+
+// ...its tint (collim.h m_collim_spec_color): rgb, 1 = the light's own colour; w = the world's share
+class cl_collim_spec_color : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	RCache.set_c (C, g_pGamePersistent->hud_collim_spec_color);
+		else												RCache.set_c (C, 1.f, 1.f, 1.f, 0.f);
+	}
+};
+static cl_collim_spec_color	binder_collim_spec_color;
+
+// An optic's inner lenses' glints (model_sniperlens.ps m_optic_glints): IGame_Persistent::HUD_OPTIC_GLINTS pairs, see
+// hud_optic_glints. The hud's glass only.
+class cl_optic_glints : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		const u32 n = IGame_Persistent::HUD_OPTIC_GLINTS*2;
+		for (u32 i = 0; i < n; ++i)
+		{
+			if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	RCache.set_ca(C, i, g_pGamePersistent->hud_optic_glints[i]);
+			else												RCache.set_ca(C, i, 0.f, 0.f, 0.f, 0.f);
+		}
+	}
+};
+static cl_optic_glints	binder_optic_glints;
 
 // The lights besides the sun that reach a collimator's glass on the hud (collim.h collim_dynlight): an array of
 // COLLIM_LIGHTS triples, see collim_gather_lights. The hud's glass only -- black for the world's.
@@ -651,6 +676,8 @@ void	CBlender_Compile::SetMapping	()
 	r_Constant				("m_collim_veil",	&binder_collim_veil);
 	r_Constant				("m_collim_lights",	&binder_collim_lights);
 	r_Constant				("m_collim_spec",	&binder_collim_spec);
+	r_Constant				("m_collim_spec_color",	&binder_collim_spec_color);
+	r_Constant				("m_optic_glints",	&binder_optic_glints);
 	r_Constant				("m_collim_hemi_pos",	&binder_collim_hemi_pos);
 	r_Constant				("m_collim_hemi_neg",	&binder_collim_hemi_neg);
 #ifndef _EDITOR

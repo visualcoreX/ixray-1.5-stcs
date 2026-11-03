@@ -6,10 +6,38 @@
 // blender (Blender_Model_EbB, R3), a second pass laid over it with the hud's sorted glass, additive (one, one), tested
 // against the glass's own depth. What it adds is the collimators' own (collim.h): the weather's sky in the coating's
 // colour where the glass looks at open sky, lit by the sun and the sky (collim_reflection), and the highlights of the
-// sun and the lamps near the eye (collim_specular). Its keys are theirs too -- collimator_reflect*,
-// collimator_specular -- from the scope, its addon or the weapon, else [optic_glass_reflect] (gunsl_scopes.ltx).
-// The aim takes it away: through the lens it would cover the view (m_hud_params.y, the aim into a lensed scope).
+// sun and the lamps near the eye (collim_specular), where the specular map's rgb (wpn\lenses_spec) lets the glass shine.
+// Its keys are theirs too -- collimator_reflect*, collimator_specular* -- from the scope, its addon or the weapon,
+// else [optic_glass_reflect] (gunsl_scopes.ltx).
+// Then the glints of the lenses inside (optic_glints), where the specular map's alpha lets them through. The aim takes it all away: through the lens it would cover
+// the view (m_hud_params.y, the aim into a lensed scope).
 uniform	float4	m_hud_params;
+
+// The optic's inner lenses: up to OPTIC_GLINTS faint highlights seen through the outer glass, each a surface of
+// its own -- [i*2]: x = its curvature against the glass's (1 = the outer glass's dome, 0 = flat, < 0 = hollow:
+// the glint runs the other way as the gun sways), y = glossiness (a Blinn exponent, as collimator_specular's),
+// z = strength (0 = none); [i*2+1].rgb = its colour. CWeapon::OpticGlints, from optic_glint_1.. of the scope, its
+// addon or the weapon, else [optic_glass_reflect].
+#define	OPTIC_GLINTS	4
+uniform	float4	m_optic_glints[OPTIC_GLINTS*2];
+
+// The sun's and the lamps' highlights on those surfaces -- the lamps' as much as the outer glass's (m_collim_spec.w)
+float3	optic_glints( float3 p, float3 v, float3 ng, float3 na )
+{
+	float3	res		= 0;
+	[unroll]
+	for ( int i = 0; i < OPTIC_GLINTS; ++i )
+	{
+		float4	g		= m_optic_glints[i*2];
+		if ( g.z <= 0 )	continue;
+		float3	n		= face_eye( normalize(lerp(na, ng, g.x)), v );
+		float	a		= collim_alpha( g.y );
+		float3	c		= L_sun_color * L_material.y * collim_ggx( n, v, -L_sun_dir_w, a )
+						+ collim_lamps_spec( p, n, v, a ) * m_collim_spec.w;
+		res				+= c * m_optic_glints[i*2+1].rgb * g.z;
+	}
+	return	res;
+}
 
 float4 main( v2p_collim I ) : SV_Target
 {
@@ -18,6 +46,9 @@ float4 main( v2p_collim I ) : SV_Target
 	float3	na		= face_eye( normalize(I.axis_w), v );
 
 	collim_lamps_t	lamps	= collim_lamps( I.pos_w, ng, v );
-	float3	res		= collim_reflection( v, ng, na, lamps.omni ) + collim_specular( v, ng, 0, lamps.spec );
+	float4	sm		= COLLIM_SPEC_MAP( I.tc0 );
+	float3	res		= collim_reflection( v, ng, na, lamps.omni )
+					+ collim_specular( v, ng, 0, sm.rgb, lamps.spec )
+					+ optic_glints( I.pos_w, v, ng, na ) * sm.a;
 	return	float4( res * ( 1 - saturate(m_hud_params.y) ), 0 );
 }

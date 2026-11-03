@@ -49,8 +49,11 @@ collimator_reflect_curve    = 0.08  ; 0 = плоское зеркало (крупно, подвижно), 1 
 collimator_reflect_cube_curve = 0.5 ; R3: the dome the cube of the world is mirrored by, apart from the sky's: curve[, the most tilt in degrees, default 50]. The glass's own tilt times the curve -- 1 = the model's, more = rounder (the world wide and small), less = a close-up that pans -- held under the most tilt, so a steep rim does not turn the world inside out
 collimator_reflect_contrast = 2.5   ; степень яркости неба, 1 = без изменений
 collimator_reflect_mask		= 1.0		; 0..1: the clearer the glass texture, the stronger the mirror (0 = the whole glass alike)
-collimator_specular			= 0.04, 120	; the glass's highlight from the sun and lamps: strength, glossiness (higher = smaller, sharper)
-collimator_specular_mask	= 1.0		; -1..1: +1 only the clear parts of the glass texture shine, -1 only the opaque ones, 0 all alike
+collimator_specular			= 0.06, 360	; the glass's highlight from the sun and lamps: strength, glossiness (higher = smaller, sharper) where it shines and in what colour: wpn\lenses_spec's rgb (black = not at all, white = the light's own)
+collimator_specular_color	= 255,225,200	; its tint (0..255), the light's own colour by default; wpn\lenses_spec's rgb tints it further
+collimator_specular_world	= 5	; R3: the world round the glass (the cube; the sky where it is not drawn) the highlight's lobe gathers, under the same strength, tint and wpn\lenses_spec: the wear shows in the shade too. 0 = the lights' highlight alone; the sun's own peak is about (glossiness + 8) / 8 -- a share that big shines the world as bright as it
+collimator_specular_mask	= 0.0		; -1..1: +1 only the clear parts of the glass texture shine, -1 only the opaque ones, 0 all alike
+collimator_specular_lamps	= 0.25		; the lamps' share of the highlight against the sun's (a campfire's lights, stacked, outshone it); the inner lenses' glints take it too
 ; reticle drawn by the glass instead of the model, at infinity on the sight line (Numpad +/- while aiming picks it)
 collimator_marks			= wpn\sight_marks\mark_cobra_01, wpn\sight_marks\mark_cobra_02, wpn\sight_marks\mark_cobra_03, wpn\sight_marks\mark_cobra_04
 collimator_mark_size		= 4.0		; width of the whole texture, degrees of the world's view
@@ -81,8 +84,11 @@ collimator_reflect_curve    = 0.08
 collimator_reflect_cube_curve = 1.0
 collimator_reflect_contrast = 2.5
 collimator_reflect_mask		= 1.0
-collimator_specular			= 0.02, 120
-collimator_specular_mask	= 1.0
+collimator_specular			= 0.06, 360
+collimator_specular_color	= 255,225,200
+collimator_specular_world	= 5
+collimator_specular_mask	= 0
+collimator_specular_lamps	= 0.25
 collimator_marks			= wpn\sight_marks\mark_dot_01
 collimator_mark_size		= 4
 collimator_mark_color		= 255,128,128
@@ -109,6 +115,15 @@ inv_grid_height    = 1
 inv_grid_x         = 22
 inv_grid_y         = 21
 
+collimator_reflect			= 160,128,128
+collimator_reflect_indirect	= 128,128,156
+collimator_reflect_cube_curve = 1.0
+collimator_specular			= 0.06, 360
+collimator_specular_color	= 255,245,225
+collimator_specular_world	= 5
+optic_glint_1				= -0.8, 400, 0.033, 255,128,64
+optic_glint_2				= -1.6, 1600, 0.0075, 100,150,255
+
 [wpn_addon_scope_rakurs]:wpn_addon_scope_x2.7
 $spawn			= "weapons\addons\scope_rakurs"
 visual          = dynamics\weapons\addons\scopes\rakurs.ogf
@@ -126,8 +141,11 @@ collimator_reflect_curve    = 0.1 ;0.125
 collimator_reflect_cube_curve = 1.5
 collimator_reflect_contrast = 2.5
 collimator_reflect_mask		= 1.0
-collimator_specular			= 0.04, 120
-collimator_specular_mask	= 1.0
+collimator_specular			= 0.06, 360
+collimator_specular_color	= 255,255,255
+collimator_specular_world	= 5
+collimator_specular_mask	= 0
+collimator_specular_lamps	= 0.25
 ; a 1x prism sight: the glass shows the world with the body cut out behind the eyepiece (r3), inside a field stop
 collimator_prism			= true
 collimator_prism_fov		= 13		; full angle, degrees (spec: 13)
@@ -525,8 +543,11 @@ collimator_reflect_f0		= 0.75
 collimator_reflect_curve    = 0.08
 collimator_reflect_contrast = 2.5
 collimator_reflect_mask		= 1.0
-collimator_specular			= 0.01, 100
-collimator_specular_mask	= 1.0
+collimator_specular			= 0.02, 600
+collimator_specular_color	= 255,255,255
+collimator_specular_world	= 5
+collimator_specular_mask	= 0
+collimator_specular_lamps	= 0.25
 collimator_marks			= wpn\sight_marks\mark_eotech_01, wpn\sight_marks\mark_eotech_02, wpn\sight_marks\mark_eotech_03, wpn\sight_marks\mark_eotech_04
 collimator_marks_bright_first	= true		; the marks are brightness levels, brightest first: Num+ steps back towards it
 collimator_mark_size		= 4.0
@@ -563,8 +584,11 @@ collimator_reflect_curve    = 0.08
 collimator_reflect_cube_curve = 0.5
 collimator_reflect_contrast = 2.5
 collimator_reflect_mask		= 1.0
-collimator_specular			= 0.02, 120
-collimator_specular_mask	= 1.0
+collimator_specular			= 0.06, 360
+collimator_specular_color	= 255,225,200
+collimator_specular_world	= 5
+collimator_specular_mask	= 0
+collimator_specular_lamps	= 0.25
 collimator_marks			= wpn\sight_marks\mark_dot_01
 collimator_mark_size		= 4
 collimator_mark_color		= 255,255,255
@@ -3163,4 +3187,14 @@ collimator_reflect_f0		= 0.75
 collimator_reflect_curve    = 0.125
 collimator_reflect_cube_curve = 1.0, 60	; the glass's rim falls away steeply: the world in it held flatter there
 collimator_reflect_contrast = 2.5
-collimator_specular			= 0.04, 120
+collimator_specular			= 0.06, 360
+collimator_specular_color	= 215,225,255
+collimator_specular_world	= 5
+collimator_specular_lamps	= 0.25
+; The lenses inside, glinting through the outer glass (model_sniperlens.ps, R3; optics only): optic_glint_1 .. optic_glint_4 =
+; curvature, glossiness, strength, r, g, b. Curvature against the outer glass's dome: 1 = the same, 0 = flat,
+; < 0 = hollow -- the glint runs the other way as the gun sways. Glossiness as collimator_specular's (higher = smaller).
+; Colour 0..255. Where they show through the outer glass: wpn\lenses_spec's alpha. A scope that has optic_glint_1
+; itself takes all its lines from there, none from here.
+optic_glint_1				= -0.8, 400, 0.033, 128,200,255 ; curve, reflectivity (scale), strength, color
+optic_glint_2				= -1.6, 1600, 0.0075, 255,115,100

@@ -3864,21 +3864,67 @@ Fvector4 CWeapon::CollimatorReflectShape() const
 Fvector4 CWeapon::CollimatorSpecular() const
 {
 	Fvector4 res;
-	res.set(0.f, 64.f, 0.f, 0.f);
+	res.set(0.f, 64.f, 0.f, 0.5f);
 	shared_str ss = CollimatorParamSection("collimator_specular");
 	if (ss.size())
 	{
-		const Fvector2 v = pSettings->r_fvector2(*ss, "collimator_specular");
-		res.x = v.x;
-		res.y = v.y;
+		// strength, glossiness
+		float v[2] = { 0.f, 64.f };
+		sscanf(pSettings->r_string(*ss, "collimator_specular"), "%f,%f", &v[0], &v[1]);
+		res.x = v[0];
+		res.y = v[1];
 	}
 	shared_str sm = CollimatorParamSection("collimator_specular_mask");
 	if (sm.size())
 		res.z = pSettings->r_float(*sm, "collimator_specular_mask");
+	shared_str sl = CollimatorParamSection("collimator_specular_lamps");
+	if (sl.size())
+		res.w = pSettings->r_float(*sl, "collimator_specular_lamps");
 	clamp(res.x, 0.f, 100.f);
 	clamp(res.y, 1.f, 4096.f);
 	clamp(res.z, -1.f, 1.f);
+	clamp(res.w, 0.f, 10.f);
 	return res;
+}
+
+Fvector CWeapon::CollimatorSpecularColor() const
+{
+	Fvector col;
+	if (!CollimatorReflectColor("collimator_specular_color", col))
+		col.set(1.f, 1.f, 1.f);
+	return col;
+}
+
+float CWeapon::CollimatorSpecularWorld() const
+{
+	float w = 0.f;
+	shared_str sw = CollimatorParamSection("collimator_specular_world");
+	if (sw.size())
+		w = pSettings->r_float(*sw, "collimator_specular_world");
+	clamp(w, 0.f, 1000.f);
+	return w;
+}
+
+void CWeapon::OpticGlints(Fvector4* out) const
+{
+	const u32 n = IGame_Persistent::HUD_OPTIC_GLINTS;
+	for (u32 i = 0; i < n*2; ++i)
+		out[i].set(0.f, 0.f, 0.f, 0.f);
+	shared_str sect = CollimatorParamSection("optic_glint_1");
+	if (!sect.size())	return;
+	for (u32 i = 0; i < n; ++i)
+	{
+		string32 key;
+		xr_sprintf(key, "optic_glint_%d", i + 1);
+		if (!pSettings->line_exist(*sect, key))	continue;
+		// curvature, glossiness, strength, r, g, b
+		float v[6] = { 0.f, 64.f, 0.f, 255.f, 255.f, 255.f };
+		sscanf(pSettings->r_string(*sect, key), "%f,%f,%f,%f,%f,%f", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
+		clamp(v[1], 1.f, 4096.f);
+		clamp(v[2], 0.f, 100.f);
+		out[i*2].set(v[0], v[1], v[2], 0.f);
+		out[i*2+1].set(_max(v[3], 0.f) / 255.f, _max(v[4], 0.f) / 255.f, _max(v[5], 0.f) / 255.f, 0.f);
+	}
 }
 
 float CWeapon::CollimatorGlassStrength() const
@@ -4021,10 +4067,12 @@ shared_str CWeapon::CollimatorParamSection(LPCSTR key) const
 		return cNameSect();
 	// An optic (a scope that is not a collimator) with no mirror keys of its own: its glass mirrors as the shared
 	// [optic_glass_reflect] says (gunsl_scopes.ltx) -- the optics' glass draws the collimators' mirror over itself
-	// (Blender_Model_EbB, model_sniperlens.ps). Only the mirror's keys: nothing else of a collimator's is lent out.
+	// (Blender_Model_EbB, model_sniperlens.ps). Only the mirror's keys and the inner lenses' glints (optic_glint_N):
+	// nothing else of a collimator's is lent out.
 	static const char* s_optic_glass = "optic_glass_reflect";
 	if (IsScopeAttached() && !IsCollimatorScope()
-		&& (0 == strncmp(key, "collimator_reflect", 18) || 0 == strncmp(key, "collimator_specular", 19))
+		&& (0 == strncmp(key, "collimator_reflect", 18) || 0 == strncmp(key, "collimator_specular", 19)
+			|| 0 == strncmp(key, "optic_glint_", 12))
 		&& pSettings->section_exist(s_optic_glass) && pSettings->line_exist(s_optic_glass, key))
 		return shared_str(s_optic_glass);
 	return shared_str();

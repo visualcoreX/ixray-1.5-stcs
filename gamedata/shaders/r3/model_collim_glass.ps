@@ -28,6 +28,6 @@ float4 main( v2p_collim I ) : SV_Target
 	float3	refl	= collim_reflection( v, ng, na, lamps.omni ) * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
 	// the reticle's glow is NOT here: the late pass lays it on after the distortion (model_collim_late.ps), which
 	// would otherwise ripple the dot with the world behind the glass (on the world's guns it is black anyway)
-	float3	res		= glass * a + refl + collim_specular( v, ng, t_base.a, lamps.spec );
+	float3	res		= glass * a + refl + collim_specular( v, ng, t_base.a, COLLIM_SPEC_MAP(I.tc0).rgb, lamps.spec );
 	return	float4( res, a );
 }
