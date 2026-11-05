@@ -106,14 +106,16 @@ public:
 	ref_shader					s_laser_dot;		// the procedural dot at the end of a beam
 	// The cubemap the hud's glass mirrors (CRender::render_lens_cube; shaders lens_cube.h): a face's own small
 	// G-buffer (position, normal -- unused with the G-buffer optimisation --, colour, depth) and the six faces lit,
-	// side by side in one 6 x 1 atlas
+	// in a real cube texture with mips (a ref_rt has neither faces nor mips)
 	ref_rt						rt_cube_P;
 	ref_rt						rt_cube_N;
 	ref_rt						rt_cube_C;
 	ref_rt						rt_cube_Z;
-	ref_rt						rt_lens_cube;
+	ID3DTexture2D*				t_lens_cube_surf = nullptr;
+	ID3DRenderTargetView*		rt_lens_cube[6] = {};	// a view of each face's top level
+	ref_texture					t_lens_cube;
 	ref_shader					s_lens_cube;
-	bool						m_lens_cube_clear;	// the atlas holds no face (alpha 0 everywhere: the glass keeps the sky)
+	bool						m_lens_cube_clear;	// the cube holds no face (alpha 0 everywhere: the glass keeps the sky)
 	u32							m_lens_cube_face;	// the face drawn next (+x -x +y -y +z -z)
 	xr_map<shared_str, ref_shader>	s_torch_dust;	// dust in handheld torches' cones, one per noise texture
 	bool						m_laser_dens_valid;	// the density buffer holds this frame's smoke

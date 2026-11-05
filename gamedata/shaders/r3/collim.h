@@ -68,7 +68,7 @@ Texture2D	s_spec;			// wpn\lenses_spec: rgb = the outer glass's highlight -- whe
 #include "lens_cube.h"
 #define	LENS_CUBE_GAIN	1.0		// the cube's mirror against the sky's, both in the coating's colour
 #define	LENS_CUBE_BLUR	0.07	// the blur, as the tangent of its radius (~4 degrees): a coated glass's reflection is dim
-								// and soft, and the cube's 128 texels a face would show as pixels. Read from the cube's
+								// and soft, and the cube's texels would show as pixels. Read from the cube's
 								// smaller levels (lens_cube_blur), not spread over the big one: 0 = as sharp as the
 								// glass's pixels allow
 

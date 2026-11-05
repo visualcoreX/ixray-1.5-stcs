@@ -1,7 +1,7 @@
 #include "common.h"
 #include "collim.h"
 
-// One face of $user$lens_cube lit into its place in the atlas (CRenderTarget::lens_cube_combine; lens_cube.h). The face
+// One face of $user$lens_cube lit into its place in the cube (CRenderTarget::lens_cube_combine; lens_cube.h). The face
 // was drawn with the level's own deferred shaders into its own small G-buffer; this lights it the simple way, as the
 // New Vegas "Dynamic Reflections" mod draws its cubemap with the diffuse and ambient passes alone: the colour times
 // the sky's light by the surface's hemi and the sun's by the facing (no shadows, held by the hemi so a room lit by

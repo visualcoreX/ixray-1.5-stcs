@@ -15,7 +15,6 @@ CRT::CRT			()
 	dwWidth			= 0;
 	dwHeight		= 0;
 	fmt				= D3DFMT_UNKNOWN;
-	dwMips			= 1;
 }
 CRT::~CRT			()
 {
@@ -25,7 +24,7 @@ CRT::~CRT			()
 	DEV->_DeleteRT	(this);
 }
 
-void CRT::create	(LPCSTR Name, u32 w, u32 h,	D3DFORMAT f, u32 SampleCount, u32 MipLevels )
+void CRT::create	(LPCSTR Name, u32 w, u32 h,	D3DFORMAT f, u32 SampleCount )
 {
 	if (pSurface)	return;
 
@@ -37,7 +36,6 @@ void CRT::create	(LPCSTR Name, u32 w, u32 h,	D3DFORMAT f, u32 SampleCount, u32 M
 	dwWidth		= w;
 	dwHeight	= h;
 	fmt			= f;
-	dwMips		= MipLevels;
 
 	// Get caps
 	//D3DCAPS9	caps;
@@ -106,7 +104,7 @@ void CRT::create	(LPCSTR Name, u32 w, u32 h,	D3DFORMAT f, u32 SampleCount, u32 M
 	ZeroMemory( &desc, sizeof(desc) );
 	desc.Width = dwWidth;
 	desc.Height = dwHeight;
-	desc.MipLevels = (bUseAsDepth || SampleCount > 1) ? 1 : MipLevels;
+	desc.MipLevels = 1;
 	desc.ArraySize = 1;
 	desc.Format = dx10FMT;
 	desc.SampleDesc.Count = SampleCount;
@@ -121,9 +119,6 @@ void CRT::create	(LPCSTR Name, u32 w, u32 h,	D3DFORMAT f, u32 SampleCount, u32 M
          desc.SampleDesc.Quality = UINT(D3D10_STANDARD_MULTISAMPLE_PATTERN);
       }
    }
-
-	if (desc.MipLevels != 1)
-		desc.MiscFlags = D3D10_RESOURCE_MISC_GENERATE_MIPS;	// the rest of the chain from the top level (generate_mips)
 
 	CHK_DX( HW.pDevice->CreateTexture2D( &desc, NULL, &pSurface ) );
 	// OK
@@ -174,24 +169,17 @@ void CRT::destroy		()
 	_RELEASE	(pZRT		);
 	_RELEASE	(pSurface	);
 }
-// The mips filled from the top level, as drawn (a target made with MipLevels != 1; the draws go to the top level)
-void CRT::generate_mips	()
-{
-	if (dwMips == 1 || !pTexture._get())	return;
-	if (ID3D10ShaderResourceView* srv = pTexture->get_SRView())
-		HW.pDevice->GenerateMips(srv);
-}
 void CRT::reset_begin	()
 {
 	destroy		();
 }
 void CRT::reset_end		()
 {
-	create		(*cName,dwWidth,dwHeight,fmt,1,dwMips);
+	create		(*cName,dwWidth,dwHeight,fmt);
 }
-void resptrcode_crt::create(LPCSTR Name, u32 w, u32 h, D3DFORMAT f, u32 SampleCount, u32 MipLevels )
+void resptrcode_crt::create(LPCSTR Name, u32 w, u32 h, D3DFORMAT f, u32 SampleCount )
 {
-	_set			(DEV->_CreateRT(Name,w,h,f, SampleCount, MipLevels ));
+	_set			(DEV->_CreateRT(Name,w,h,f, SampleCount ));
 }
 
 //////////////////////////////////////////////////////////////////////////

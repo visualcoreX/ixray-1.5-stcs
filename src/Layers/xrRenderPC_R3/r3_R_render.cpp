@@ -618,7 +618,7 @@ extern float		ps_r3_lens_cube_far;
 extern CObject*		g_subspace_skip;
 void CRender::render_lens_cube()
 {
-	if (!Target->rt_lens_cube || !Target->rt_cube_Z || !g_pGamePersistent)	return;
+	if (!Target->t_lens_cube_surf || !Target->rt_cube_Z || !g_pGamePersistent)	return;
 	// the 3D scope's world-only frame: the face waits for the next presented one (the faces go by a count of their
 	// own, not the frame's: lens frames fall on every second frame, and three faces never came round)
 	if (g_pGamePersistent->m_bLensFrameNow)								return;
@@ -668,7 +668,7 @@ void CRender::render_lens_cube()
 	mapEmissive.clear		();
 	mapLOD.clear			();
 
-	// light it into the atlas
+	// light it into the cube
 	Fvector		R;			R.crossproduct(U[face], F[face]);
 	Target->lens_cube_combine(face, R, U[face], F[face], ps_r3_lens_cube_far);
 

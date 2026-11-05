@@ -12,7 +12,6 @@ CRT::CRT			()
 	dwWidth			= 0;
 	dwHeight		= 0;
 	fmt				= D3DFMT_UNKNOWN;
-	dwMips			= 1;
 }
 CRT::~CRT			()
 {
@@ -22,7 +21,7 @@ CRT::~CRT			()
 	DEV->_DeleteRT	(this);
 }
 
-void CRT::create	(LPCSTR Name, u32 w, u32 h,	D3DFORMAT f, u32 SampleCount, u32 MipLevels )
+void CRT::create	(LPCSTR Name, u32 w, u32 h,	D3DFORMAT f, u32 SampleCount )
 {
 	if (pSurface)	return;
 
@@ -97,11 +96,11 @@ void CRT::reset_begin	()
 }
 void CRT::reset_end		()
 {
-	create		(*cName,dwWidth,dwHeight,fmt,1,dwMips);
+	create		(*cName,dwWidth,dwHeight,fmt);
 }
-void resptrcode_crt::create(LPCSTR Name, u32 w, u32 h, D3DFORMAT f, u32 SampleCount, u32 MipLevels )
+void resptrcode_crt::create(LPCSTR Name, u32 w, u32 h, D3DFORMAT f, u32 SampleCount )
 {
-	_set			(DEV->_CreateRT(Name,w,h,f));	// no mips on DX9
+	_set			(DEV->_CreateRT(Name,w,h,f));
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -1,5 +1,5 @@
 -- $user$lens_cube (CRenderTarget::lens_cube_combine, lens_cube.h): one face of the cubemap the hud's glass mirrors,
--- lit from its own small G-buffer into its place in the atlas
+-- lit from its own small G-buffer into its place in the cube
 function normal		(shader, t_base, t_second, t_detail)
 	shader:begin	("stub_notransform_t",	"lens_cube")
 			: blend		(false, blend.one, blend.zero)
