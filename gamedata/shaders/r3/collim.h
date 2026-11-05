@@ -10,7 +10,7 @@
 //   m_collim_reflect        rgb = coating colour * strength for the current aim, w = F0 -- in the light that
 //                           falls on the glass (the sun, the way model_def_lq lights it)
 //   m_collim_reflect_ind    rgb = the same mirror's colour in the sky's light alone (0 = none)
-//   m_collim_cube           the dome the cube is mirrored by (collim_cube_normal): x = curve, y = the most tilt, radians
+//   m_collim_cube           the dome the cube is mirrored by (collim_cube_normal): x = curve
 //   m_collim_reflect_shape  x = how much of the glass's dome the mirror keeps (0 = flat), y = contrast,
 //                           z = how much the glass texture's alpha masks the mirror (0 = not at all),
 //                           w = the most indirect light the mirror takes (0 = no limit)
@@ -267,20 +267,13 @@ float3	collim_glass_light( float3 n, float3 lamps )
 	return	calc_model_lq_lighting( n ) * 2 + collim_limit( lamps, m_collim_reflect_shape.w );
 }
 
-// The normal the cube is mirrored by (ng: the glass's own, na: its flat axis, both facing the eye): the glass's tilt
-// off the axis, as an angle, times the curve (m_collim_cube.x), and held under the most tilt (m_collim_cube.y) as
-// collim_limit holds a light -- as it is up to 3/4 of it, then easing toward it. Bent by lerp(na, ng, curve) as the
-// sky's is, a rim that falls away steeply (the Elcan's) tilted past the eye's line and mirrored the world inside out.
+// The normal the cube is mirrored by (ng: the glass's own, na: its flat axis, both facing the eye): the tangent of the
+// glass's tilt off the axis times the curve (m_collim_cube.x). The tangent is what the lens's normals keep even across
+// its triangles (CSkeletonX_ext::_LensGlassNormals), and however large it gets, the tilt stays under 90 degrees.
 float3	collim_cube_normal( float3 ng, float3 na )
 {
 	float	c		= dot( ng, na );
-	float3	t		= ng - na * c;
-	float	s		= length( t );
-	float	a		= atan2( s, c ) * m_collim_cube.x;
-	float	l		= m_collim_cube.y;
-	float	k		= 0.75 * l;
-	a				= ( a <= k ) ? a : k + (a - k) / ( 1 + (a - k) / (l - k) );
-	return	na * cos(a) + t * ( sin(a) / max(s, 0.0001) );
+	return	normalize( na + (ng - na * c) * m_collim_cube.x / max(c, 0.001) );
 }
 
 // The sky the coating mirrors, in its colour (v: from the eye; ng: the glass's own normal, facing the eye;
