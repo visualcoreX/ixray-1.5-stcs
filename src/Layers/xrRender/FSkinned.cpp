@@ -391,7 +391,168 @@ void CSkeletonX_ST::Release()
 	inherited1::Release();
 }
 //////////////////////////////////////////////////////////////////////
-void CSkeletonX_PM::Load(const char* N, IReader *data, u32 dwFlags) 
+// The vertex normals of a lens's glass, made even as it is loaded. They come from the modeller's smoothing and are
+// interpolated across a few dozen triangles: continuous, but how fast they turn jumps at every edge, by 20% and more
+// -- and a mirror's magnification is how fast its normal turns, so straight lines in the reflection broke at the
+// triangles' edges. A tilt that is an affine function of the position stays that across any triangles, so a glass
+// with such normals mirrors evenly on the same mesh:
+// - a flat one (thin against its size) has its normals straight along the axis. Its rim's bevel had bent them all,
+//   and the long triangles over its middle carried that across the glass;
+// - a dome has the affine tilt nearest to its own, 1-2 degrees off as a rule, up to 13 on a steep rim. The normals are
+//   left unnormalized, (tilt, 1): normalized at the vertices they would no longer interpolate into that tilt. The
+//   glass's own passes normalize them; the G-buffer pass's hemi sees them up to 40% longer at the rim.
+// A piece is one lens: its vertices joined by triangles, or on the same spot facing the same way. Lenses face along the
+// model's Z, as the shaders take them to (model_collim_reflect.vs). What does not -- or has walls, or is too far
+// from any dome -- is left as the model has it.
+template <class TVert>
+static void lens_piece_normals(TVert* V, const u32* id, u32 count)
+{
+	const float	k_off_axis	= 0.1f;		// the mean normal's sideways part against its Z: not facing along Z
+	const float	k_wall		= 0.05f;	// the least Z of a normal, against the piece's facing: below it, a wall
+	const float	k_flat		= 0.03f;	// thickness against size: a flat glass
+	const float	k_tilt		= 0.00873f;	// tan(0.5 deg): no tilt to speak of
+	const float	k_fit		= 0.966f;	// cos(15 deg): the most a dome's normal may move
+
+	float	mx = 0.f, my = 0.f, mz = 0.f, cx = 0.f, cy = 0.f, tilt = 0.f;
+	float	lo[3] = { flt_max, flt_max, flt_max }, hi[3] = { -flt_max, -flt_max, -flt_max };
+	for (u32 i = 0; i < count; ++i)
+	{
+		const TVert& v	= V[id[i]];
+		mx += v.N.x;	my += v.N.y;	mz += v.N.z;
+		cx += v.P.x;	cy += v.P.y;
+		lo[0] = _min(lo[0], v.P.x);	lo[1] = _min(lo[1], v.P.y);	lo[2] = _min(lo[2], v.P.z);
+		hi[0] = _max(hi[0], v.P.x);	hi[1] = _max(hi[1], v.P.y);	hi[2] = _max(hi[2], v.P.z);
+	}
+	const float	inv		= 1.f / float(count);
+	mx *= inv;	my *= inv;	mz *= inv;	cx *= inv;	cy *= inv;
+	if (_abs(mz) < 0.001f || _sqrt(mx*mx + my*my) > k_off_axis * _abs(mz))	return;
+	const float	s		= (mz > 0.f) ? 1.f : -1.f;
+	for (u32 i = 0; i < count; ++i)
+	{
+		const TVert& v	= V[id[i]];
+		if (v.N.z * s < k_wall)	return;
+		tilt			= _max(tilt, _sqrt(v.N.x*v.N.x + v.N.y*v.N.y) / _abs(v.N.z));
+	}
+	const float	size	= _max(hi[0] - lo[0], hi[1] - lo[1]);
+	if (size <= 0.f || tilt <= k_tilt)		return;
+
+	if (hi[2] - lo[2] < k_flat * size)
+	{
+		for (u32 i = 0; i < count; ++i)		V[id[i]].N.set(0.f, 0.f, s);
+		return;
+	}
+
+	// least squares about the centre: tilt = t0 + a * (x - cx) + b * (y - cy), for each of its two parts
+	float	sxx = 0.f, sxy = 0.f, syy = 0.f, sxu = 0.f, syu = 0.f, sxv = 0.f, syv = 0.f, u0 = 0.f, v0 = 0.f;
+	for (u32 i = 0; i < count; ++i)
+	{
+		const TVert& v	= V[id[i]];
+		const float	x	= v.P.x - cx, y = v.P.y - cy, tu = v.N.x / v.N.z, tv = v.N.y / v.N.z;
+		sxx += x*x;		sxy += x*y;		syy += y*y;
+		sxu += x*tu;	syu += y*tu;	sxv += x*tv;	syv += y*tv;
+		u0 += tu;		v0 += tv;
+	}
+	u0 *= inv;	v0 *= inv;
+	const float	det		= sxx*syy - sxy*sxy;
+	if (det <= 1e-6f * sxx*syy)				return;
+	const float	ua		= (syy*sxu - sxy*syu) / det, ub = (sxx*syu - sxy*sxu) / det;
+	const float	va		= (syy*sxv - sxy*syv) / det, vb = (sxx*syv - sxy*sxv) / det;
+
+	float	most		= 0.f;
+	for (u32 i = 0; i < count; ++i)
+	{
+		const TVert& v	= V[id[i]];
+		const float	x	= v.P.x - cx, y = v.P.y - cy;
+		const float	tu	= u0 + ua*x + ub*y, tv = v0 + va*x + vb*y;
+		const float	d	= (tu*v.N.x + tv*v.N.y) * v.N.z + v.N.z*v.N.z;			// (tu, tv, 1) * N.z against N
+		const float	len	= _sqrt(tu*tu + tv*tv + 1.f) * _abs(v.N.z) * _sqrt(v.N.x*v.N.x + v.N.y*v.N.y + v.N.z*v.N.z);
+		if (d < k_fit * len)				return;
+		most			= _max(most, _sqrt(tu*tu + tv*tv));
+	}
+	const float	z		= s / _max(most, 1.f);									// each part has to fit -1..1 (q_N)
+	for (u32 i = 0; i < count; ++i)
+	{
+		TVert& v		= V[id[i]];
+		const float	x	= v.P.x - cx, y = v.P.y - cy;
+		v.N.set			((u0 + ua*x + ub*y) * z, (v0 + va*x + vb*y) * z, z);
+	}
+}
+
+template <class TVert>
+static void lens_glass_normals(TVert* V, u32 count, const u16* ind, u32 ind_count)
+{
+	xr_vector<u32>	parent(count), order(count);
+	for (u32 i = 0; i < count; ++i)			parent[i] = order[i] = i;
+	auto	find	= [&parent](u32 x) {
+		while (parent[x] != x) { parent[x] = parent[parent[x]]; x = parent[x]; }
+		return x;
+	};
+
+	// the same spot, facing the same way (a double-sided glass's two sides stay apart)
+	const float	eps	= 0.0001f;
+	std::sort(order.begin(), order.end(), [V](u32 a, u32 b) { return V[a].P.x < V[b].P.x; });
+	for (u32 a = 0; a < count; ++a)
+	{
+		const TVert& va	= V[order[a]];
+		for (u32 b = a + 1; b < count; ++b)
+		{
+			const TVert& vb	= V[order[b]];
+			if (vb.P.x - va.P.x > eps)		break;
+			if (_abs(vb.P.y - va.P.y) < eps && _abs(vb.P.z - va.P.z) < eps
+				&& va.N.x*vb.N.x + va.N.y*vb.N.y + va.N.z*vb.N.z > 0.f)
+				parent[find(order[b])]		= find(order[a]);
+		}
+	}
+	for (u32 i = 0; i + 2 < ind_count; i += 3)
+	{
+		if (ind[i] >= count || ind[i+1] >= count || ind[i+2] >= count)	continue;
+		const u32	r	= find(ind[i]);
+		parent[find(ind[i+1])]				= r;
+		parent[find(ind[i+2])]				= find(r);
+	}
+
+	for (u32 i = 0; i < count; ++i)			parent[i] = find(i);
+	std::sort(order.begin(), order.end(), [&parent](u32 a, u32 b) { return parent[a] < parent[b]; });
+	for (u32 a = 0; a < count; )
+	{
+		u32	b	= a + 1;
+		while (b < count && parent[order[b]] == parent[order[a]])	++b;
+		lens_piece_normals(V, &order[a], b - a);
+		a		= b;
+	}
+}
+
+// Only the glass that mirrors: models\lightplanes takes the same texture and fades by its normals. The vertices in hand
+// may be a read-only mapping of the file, so the normals go into a copy, which has to outlive _Load_hw.
+void* CSkeletonX_ext::_LensGlassNormals(u32 vCount, void* verts, IReader* data, xr_vector<u8>& copy)
+{
+	if (RenderMode == RM_SKINNING_SOFT || !data->find_chunk(OGF_TEXTURE))	return verts;
+	string256	texture, shader;
+	data->r_stringZ	(texture, sizeof(texture));
+	data->r_stringZ	(shader, sizeof(shader));
+	if (0 != stricmp(texture, "wpn\\lenses")
+		|| (0 != stricmp(shader, "models\\lenses") && 0 != stricmp(shader, "models\\sniperlenses")))	return verts;
+	if (!data->find_chunk(OGF_INDICES))		return verts;
+	const u32	ind_count	= data->r_u32();
+	const u16*	ind			= (const u16*)data->pointer();
+
+	u32	size	= sizeof(vertBoned1W);
+	if (RenderMode == RM_SKINNING_2B)		size = sizeof(vertBoned2W);
+	else if (RenderMode == RM_SKINNING_3B)	size = sizeof(vertBoned3W);
+	else if (RenderMode == RM_SKINNING_4B)	size = sizeof(vertBoned4W);
+	copy.assign((const u8*)verts, (const u8*)verts + vCount*size);
+	void*	dst	= &*copy.begin();
+	switch (RenderMode)
+	{
+	case RM_SKINNING_2B:	lens_glass_normals((vertBoned2W*)dst, vCount, ind, ind_count);	break;
+	case RM_SKINNING_3B:	lens_glass_normals((vertBoned3W*)dst, vCount, ind, ind_count);	break;
+	case RM_SKINNING_4B:	lens_glass_normals((vertBoned4W*)dst, vCount, ind, ind_count);	break;
+	default:				lens_glass_normals((vertBoned1W*)dst, vCount, ind, ind_count);	break;
+	}
+	return dst;
+}
+//////////////////////////////////////////////////////////////////////
+void CSkeletonX_PM::Load(const char* N, IReader *data, u32 dwFlags)
 {
 	_Load							(N,data,vCount);
 	void*	_verts_					= data->pointer	();
@@ -401,7 +562,8 @@ void CSkeletonX_PM::Load(const char* N, IReader *data, u32 dwFlags)
 	_DuplicateIndices(N, data);
 #endif	//	USE_DX10
 	vBase							= 0;
-	_Load_hw						(*this,_verts_);
+	xr_vector<u8>	lens;
+	_Load_hw						(*this,_LensGlassNormals(vCount,_verts_,data,lens));
 }
 void CSkeletonX_ST::Load(const char* N, IReader *data, u32 dwFlags) 
 {
@@ -413,7 +575,8 @@ void CSkeletonX_ST::Load(const char* N, IReader *data, u32 dwFlags)
 	_DuplicateIndices(N, data);
 #endif	//	USE_DX10
 	vBase							= 0;
-	_Load_hw						(*this,_verts_);
+	xr_vector<u8>	lens;
+	_Load_hw						(*this,_LensGlassNormals(vCount,_verts_,data,lens));
 }
 
 #ifdef	USE_DX10
