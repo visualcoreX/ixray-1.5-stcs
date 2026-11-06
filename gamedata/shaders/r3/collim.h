@@ -165,13 +165,11 @@ float	collim_ggx( float3 n, float3 v, float3 l, float a )
 }
 
 // All of them at once, in one pass over the lamps (n: the glass's normal facing the eye, v: from the eye):
-// diff -- as a surface facing them is lit (the glass's texture), omni -- from any side (the mirror's indirect
-// light, as the sky's is), spec -- their GGX highlight at m_collim_spec.y's glossiness. One loop, not one
+// diff -- as a surface facing them is lit (the glass's texture), spec -- their GGX highlight at m_collim_spec.y's glossiness. One loop, not one
 // per use: on R2 (ps_3_0, 32 temporaries) three unrolled ones ran out of registers.
 struct collim_lamps_t
 {
 	float3	diff;
-	float3	omni;
 	float3	spec;
 };
 
@@ -179,7 +177,6 @@ collim_lamps_t	collim_lamps( float3 p, float3 n, float3 v )
 {
 	collim_lamps_t	r;
 	r.diff			= 0;
-	r.omni			= 0;
 	r.spec			= 0;
 	float	ra		= collim_alpha( m_collim_spec.y );
 	COLLIM_LOOP
@@ -189,7 +186,6 @@ collim_lamps_t	collim_lamps( float3 p, float3 n, float3 v )
 		float3	c		= collim_lamp( i, p, l );
 		float	ndl		= saturate( dot(n, l) );
 		r.diff			+= c * ndl;
-		r.omni			+= c;
 		r.spec			+= c * collim_ggx( n, v, l, ra );
 	}
 	return	r;
@@ -277,10 +273,10 @@ float3	collim_cube_normal( float3 ng, float3 na )
 }
 
 // The sky the coating mirrors, in its colour (v: from the eye; ng: the glass's own normal, facing the eye;
-// na: its flat axis; dyn: the lamps from any side, collim_lamps' omni). A domed lens is a convex mirror: the full dome shrinks the sky into a wide, still
+// na: its flat axis). A domed lens is a convex mirror: the full dome shrinks the sky into a wide, still
 // picture; bent toward the flat axis it becomes a close-up that pans as the gun sways -- the mirror turns
 // twice as fast as the glass does. 0 outside the hud (the binder).
-float3	collim_reflection( float3 v, float3 ng, float3 na, float3 dyn )
+float3	collim_reflection( float3 v, float3 ng, float3 na )
 {
 	float3	n		= normalize( lerp(na, ng, m_collim_reflect_shape.x) );
 	float3	r		= reflect( v, n );
@@ -297,12 +293,11 @@ float3	collim_reflection( float3 v, float3 ng, float3 na, float3 dyn )
 	// own diffuse lighting (model_def_lq: light*base*2): bright where the sun falls on it. The indirect one is
 	// the sky's light, whatever way the glass faces -- model_def_lq's hemi term lights only what faces up, so
 	// a glass looking at the sun's far side got next to nothing and went flat black. Both still need open sky
-	// the way the glass looks (vis): under a roof they go out together. The lamps near the eye add to the
-	// indirect one, and not by the open sky: their light is right there, roof or not. The indirect light,
-	// the sky's and the lamps' together, is held under m_collim_reflect_shape.w -- a torch, a fire and the
-	// sky stacked made the mirror brighter than anything around it, the glass seemed to glow.
+	// the way the glass looks (vis): under a roof they go out together. The lamps near the eye light
+	// neither: this is a picture of the sky, and a shot or a torch beside the gun flared all of it at once (they
+	// have their own highlight, collim_lamps' spec). The indirect light is held under m_collim_reflect_shape.w.
 	float3	direct	= calc_model_lq_lighting( ng ) * 2 * m_collim_reflect.rgb;
-	float3	ind		= collim_limit( (L_hemi_color.rgb * vis + dyn) * 2, m_collim_reflect_shape.w ) * m_collim_reflect_ind.rgb;
+	float3	ind		= collim_limit( L_hemi_color.rgb * vis * 2, m_collim_reflect_shape.w ) * m_collim_reflect_ind.rgb;
 
 	float3	tc		= sky_tc( r );
 	float3	sky		= m_sky_params.rgb * lerp( COLLIM_SKY0(tc).rgb, COLLIM_SKY1(tc).rgb, m_sky_params.w );
