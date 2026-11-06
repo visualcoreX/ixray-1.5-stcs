@@ -188,19 +188,16 @@ public:
 	// ...and the mirror lit by the sky alone, not the sun: collimator_reflect_indirect = r,g,b (0..255), its
 	// own colour, the same strength for the aim. Zero when the optic has no such key.
 	Fvector4 CollimatorReflectIndirect() const;
-	// The dome R3's cube of the world is mirrored by, apart from the sky's: collimator_reflect_cube_curve = the tangent
+	// The dome the glass mirrors by, the sky and the cube of the world alike: collimator_reflect_cube_curve = the tangent
 	// of the glass's own tilt off its flat axis times this (1 = the model's, more = rounder: the world wide and small;
-	// less = a close-up that pans; default 2.5). x = curve (hud_collim_cube).
+	// less = a close-up that pans; default 1). x = curve (hud_collim_cube).
 	Fvector4 CollimatorCube() const;
 	float	 CollimatorReflectStrength() const;
 	bool	 CollimatorReflectColor(LPCSTR key, Fvector& col) const;
-	// ...and its shape: x = collimator_reflect_curve (how much of the glass's dome the mirror keeps: 0 = a flat
-	// mirror, a close-up of the sky that pans with every sway; 1 = the model's normals, a wide shrunken view;
-	// default 0.35), y = collimator_reflect_contrast (exponent on the sky's brightness, 1 = as is), z =
+	// ...and its shape: y = collimator_reflect_contrast (exponent on the sky's brightness, 1 = as is), z =
 	// collimator_reflect_mask (0..1: how much the glass texture's alpha masks the mirror -- the clearer the
-	// glass, the stronger; 0 = the whole glass alike), w = collimator_reflect_limit (the most indirect light --
-	// the sky's and the lamps' together -- the mirror takes: past 3/4 of it more light adds less and less, so a
-	// torch, a fire and the sky stacked do not set the glass glowing; daylight's sky alone is about 1..1.6;
+	// glass, the stronger; 0 = the whole glass alike), w = collimator_reflect_limit (the most indirect light
+	// the mirror takes: past 3/4 of it more light adds less and less; daylight's sky alone is about 1..1.6;
 	// the lamps' light on the glass's texture is held under it as well; default 2, 0 = no limit).
 	Fvector4 CollimatorReflectShape() const;
 	// The glass's highlight from the sun and the lights near the eye (GGX on R3, Blinn on R2), where the specular

@@ -43,8 +43,8 @@ IGame_Persistent::IGame_Persistent	()
 	hud_collim_tint.set				(0.5f, 0.5f, 0.5f, 0.5f);	// clear collimator glass
 	hud_collim_reflect.set			(0.f, 0.f, 0.f, 0.25f);	// ...that mirrors nothing
 	hud_collim_reflect_ind.set		(0.f, 0.f, 0.f, 0.f);
-	hud_collim_reflect_shape.set	(0.35f, 1.f, 0.f, 0.f);
-	hud_collim_cube.set				(2.5f, 0.f, 0.f, 0.f);
+	hud_collim_reflect_shape.set	(0.f, 1.f, 0.f, 0.f);
+	hud_collim_cube.set				(1.f, 0.f, 0.f, 0.f);
 	hud_collim_spec.set				(0.f, 64.f, 0.f, 0.f);	// no highlight
 	hud_collim_spec_color.set		(1.f, 1.f, 1.f, 0.f);	// ...in the light's own colour
 	for (u32 i = 0; i < HUD_OPTIC_GLINTS*2; ++i)

@@ -3801,7 +3801,7 @@ Fvector4 CWeapon::CollimatorReflectIndirect() const
 
 Fvector4 CWeapon::CollimatorCube() const
 {
-	float curve = 2.5f;
+	float curve = 1.f;
 	shared_str sc = CollimatorParamSection("collimator_reflect_cube_curve");
 	if (sc.size())
 		curve = pSettings->r_float(*sc, "collimator_reflect_cube_curve");
@@ -3838,10 +3838,7 @@ bool CWeapon::CollimatorReflectColor(LPCSTR key, Fvector& col) const
 Fvector4 CWeapon::CollimatorReflectShape() const
 {
 	Fvector4 res;
-	res.set(0.35f, 1.f, 0.f, 0.f);
-	shared_str sc = CollimatorParamSection("collimator_reflect_curve");
-	if (sc.size())
-		res.x = pSettings->r_float(*sc, "collimator_reflect_curve");
+	res.set(0.f, 1.f, 0.f, 0.f);
 	shared_str sk = CollimatorParamSection("collimator_reflect_contrast");
 	if (sk.size())
 		res.y = pSettings->r_float(*sk, "collimator_reflect_contrast");
@@ -3852,7 +3849,6 @@ Fvector4 CWeapon::CollimatorReflectShape() const
 	shared_str sl = CollimatorParamSection("collimator_reflect_limit");
 	if (sl.size())
 		res.w = pSettings->r_float(*sl, "collimator_reflect_limit");
-	clamp(res.x, 0.f, 1.f);
 	clamp(res.y, 0.1f, 8.f);
 	clamp(res.z, 0.f, 1.f);
 	clamp(res.w, 0.f, 100.f);

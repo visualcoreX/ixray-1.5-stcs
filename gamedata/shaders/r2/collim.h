@@ -10,7 +10,8 @@
 //   m_collim_reflect        rgb = coating colour * strength for the current aim, w = F0 -- in the light that
 //                           falls on the glass (the sun, the way model_def_lq lights it)
 //   m_collim_reflect_ind    rgb = the same mirror's colour in the sky's light alone (0 = none)
-//   m_collim_reflect_shape  x = how much of the glass's dome the mirror keeps (0 = flat), y = contrast,
+//   m_collim_cube           the dome the glass mirrors by (collim_cube_normal): x = curve
+//   m_collim_reflect_shape  y = contrast,
 //                           z = how much the glass texture's alpha masks the mirror (0 = not at all),
 //                           w = the most indirect light the mirror takes (0 = no limit)
 //   m_collim_hemi_*         the actor's sky visibility along +x+y+z / -x-y-z: no sky to mirror under a roof
@@ -32,6 +33,7 @@
 uniform	float4	m_collim_tint;
 uniform	float4	m_collim_reflect;
 uniform	float4	m_collim_reflect_ind;
+uniform	float4	m_collim_cube;
 uniform	float4	m_collim_reflect_shape;
 uniform	float4	m_collim_hemi_pos;
 uniform	float4	m_collim_hemi_neg;
@@ -224,17 +226,25 @@ float3	collim_glass_light( float3 n, float3 lamps )
 	return	calc_model_lq_lighting( n ) * 2 + collim_limit( lamps, m_collim_reflect_shape.w );
 }
 
+// The normal the glass mirrors by (ng: the glass's own, na: its flat axis, both facing the eye): the tangent of the
+// glass's tilt off the axis times the curve (m_collim_cube.x). The tangent is what the lens's normals keep even across
+// its triangles (CSkeletonX_ext::_LensGlassNormals), and however large it gets, the tilt stays under 90 degrees.
+float3	collim_cube_normal( float3 ng, float3 na )
+{
+	float	c		= dot( ng, na );
+	return	normalize( na + (ng - na * c) * m_collim_cube.x / max(c, 0.001) );
+}
+
 // The sky the coating mirrors, in its colour (v: from the eye; ng: the glass's own normal, facing the eye;
 // na: its flat axis). A domed lens is a convex mirror: the full dome shrinks the sky into a wide, still
 // picture; bent toward the flat axis it becomes a close-up that pans as the gun sways -- the mirror turns
 // twice as fast as the glass does. 0 outside the hud (the binder).
 float3	collim_reflection( float3 v, float3 ng, float3 na )
 {
-	float3	n		= normalize( lerp(na, ng, m_collim_reflect_shape.x) );
-	float3	r		= reflect( v, n );
+	float3	r		= reflect( v, collim_cube_normal(ng, na) );
 
-	// Schlick: F0 looking straight in, all of it at a grazing angle
-	float	c		= saturate( dot(-v, n) );
+	// Schlick: F0 looking straight in, all of it at a grazing angle -- by the flat axis: the dome is the curve's, not the glass's
+	float	c		= saturate( dot(-v, na) );
 	float	f		= lerp( m_collim_reflect.w, 1, pow(1 - c, 5) );
 
 	// how much open sky lies the way the glass looks

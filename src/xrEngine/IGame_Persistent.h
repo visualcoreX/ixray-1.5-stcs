@@ -90,7 +90,7 @@ public:
 	// y = contrast exponent on the mirrored sky's brightness (1 = as is), z = how much the glass texture's
 	// alpha masks it (0 = not at all), w = the most indirect light it takes (0 = no limit).
 	Fvector4						hud_collim_reflect_shape;
-	// The dome R3's cube of the world is mirrored by (m_collim_cube): x = the curve -- the tangent of the glass's own
+	// The dome the glass mirrors by, the sky and R3's cube of the world alike (m_collim_cube): x = the curve -- the tangent of the glass's own
 	// tilt off its flat axis times x (1 = the model's, 0 = a flat mirror).
 	Fvector4						hud_collim_cube;
 	// The glass's highlight (m_collim_spec): x = strength (0 = none), y = glossiness (the highlight's exponent),
