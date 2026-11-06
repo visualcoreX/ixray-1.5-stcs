@@ -62,6 +62,13 @@ Texture2D	s_spec;			// wpn\lenses_spec: rgb = the outer glass's highlight -- whe
 #define	COLLIM_SPEC_MAP(tc)	s_spec.Sample( smp_base, tc )
 #define	COLLIM_SKY0(tc)		s_sky0.SampleLevel( smp_rtlinear, tc, 0 )
 #define	COLLIM_SKY1(tc)		s_sky1.SampleLevel( smp_rtlinear, tc, 0 )
+#define	COLLIM_SKY_N	512.0	// the sky cubes' pixels a face: the stock ones. They have all their mips: D3DX10's default makes them
+#define	COLLIM_SKY_MIPS	10
+#define	COLLIM_SKY_BLUR	6.0		// the blur: a texel of the level read as this many of the glass's pixels (the tent spans 1.5 texels
+								// each way). Counted on the glass, so that it stays the same share of it whatever the mirror
+								// shows: a flat glass sees a few degrees of sky, and a blur fixed in degrees left it one flat colour.
+								// 0 = as sharp as the glass's pixels allow
+#define	COLLIM_SKY_TEXEL	0.03125	// the blur's largest texel, level 3: as on r2, whose cube has seams at smaller levels
 
 // The world round the camera, a real cubemap (lens_cube.h, CRender::render_lens_cube): where it is drawn, the mirror
 // shows it instead of the weather's sky alone. Unbound (R2, the world's glass) it reads 0: the sky, as before.
@@ -90,6 +97,29 @@ float3	sky_tc( float3 d )
 	float3	p	= s / max( max( abs(s.x), abs(s.y) ), abs(s.z) );
 	p.y			= max( p.y*2 - 1, -1 );
 	return	p;
+}
+
+// The weather's two skies at mip level lod. Below the horizon stays on the side faces' bottom row, as sky_tc puts it.
+float3	collim_sky( float3 tc, float s, float lod )
+{
+	tc.y		= max( tc.y, s - 1 );
+	return	lerp( s_sky0.SampleLevel(smp_linear, tc, lod).rgb, s_sky1.SampleLevel(smp_linear, tc, lod).rgb, m_sky_params.w );
+}
+
+// The sky round tc, as lens_cube_blur reads its cube: four bilinear taps half a texel of the level off it -- a tent
+// three texels wide. tc lies on the cube's surface, so whichever face it is on, two of these three axes are that face's
+// plane and make the tent's four corners, and the third only moves the point along its own line. The level: the blur's
+// own, or a smaller one where the glass squeezes the sky so small that its pixels would skip texels.
+float3	collim_sky_blur( float3 tc )
+{
+	float	dr	= max( length(ddx(tc)), length(ddy(tc)) );					// how far tc moves from one pixel to the next
+	float	t	= max( min(COLLIM_SKY_BLUR * dr, COLLIM_SKY_TEXEL), dr );		// a texel's size
+	float	lod	= clamp( log2(t * COLLIM_SKY_N * 0.5), 0, COLLIM_SKY_MIPS - 1 );
+	float	s	= exp2( lod ) / COLLIM_SKY_N;								// half a texel: a face's 1 is N/2 texels
+	return	( collim_sky(tc + float3( s,  s,  s), s, lod)
+			+ collim_sky(tc + float3( s, -s, -s), s, lod)
+			+ collim_sky(tc + float3(-s,  s, -s), s, lod)
+			+ collim_sky(tc + float3(-s, -s,  s), s, lod) ) / 4;
 }
 
 float3	face_eye( float3 n, float3 v )	{ return ( dot(n, v) > 0 ) ? -n : n; }
@@ -299,8 +329,7 @@ float3	collim_reflection( float3 v, float3 ng, float3 na )
 	float3	direct	= calc_model_lq_lighting( ng ) * 2 * m_collim_reflect.rgb;
 	float3	ind		= collim_limit( L_hemi_color.rgb * vis * 2, m_collim_reflect_shape.w ) * m_collim_reflect_ind.rgb;
 
-	float3	tc		= sky_tc( r );
-	float3	sky		= m_sky_params.rgb * lerp( COLLIM_SKY0(tc).rgb, COLLIM_SKY1(tc).rgb, m_sky_params.w );
+	float3	sky		= m_sky_params.rgb * collim_sky_blur( sky_tc(r) );
 
 	// contrast: the brightness raised to a power, hue kept -- dark sky adds less, the bright clouds and
 	// the sun's side stay, so the mirror reads as highlights over the view rather than a wash
