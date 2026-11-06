@@ -1,0 +1,29 @@
+#include "common.h"
+#include "collim_sky.h"
+
+// The optics' glass on R1 (models\sniperlenses, wpn\lenses on a scope's body; Blender_Model_EbB): opaque, as shaders.xr
+// always drew it, but in place of its fixed environment map (sky\sky_cube_weapons, at full strength over the clear parts
+// of the texture) it mirrors what a collimator's glass mirrors (model_collim_glass, model_collim_reflect.vs): the
+// weather's sky in the coating's colour, per vertex, by the same collimator_reflect* keys. The aim takes the mirror
+// away: through the lens it would cover the view (m_hud_params.y, the aim into a lensed scope).
+struct v2p
+{
+	float3	tc0		: TEXCOORD0;
+	float3	c0		: TEXCOORD1;
+	float3	pos_w	: TEXCOORD2;
+	float3	axis_w	: TEXCOORD3;
+	float3	right_w	: TEXCOORD4;
+	float2	tcb		: TEXCOORD5;
+	float3	glight	: TEXCOORD6;
+	float	fog		: TEXCOORD7;
+};
+
+float4 main( v2p I ) : COLOR
+{
+	float4	t_base	= tex2D( s_base, I.tcb );
+	float3	glass	= lerp( fog_color.xyz, I.glight * t_base.rgb * 2.0f, I.fog );
+
+	float3	refl	= collim_mirror( I.tc0 ) * I.c0 * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
+
+	return	float4( glass + refl * ( 1 - saturate(m_hud_params.y) ), 1 );
+}
