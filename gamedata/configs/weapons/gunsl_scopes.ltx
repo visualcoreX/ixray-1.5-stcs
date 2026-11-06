@@ -31,8 +31,8 @@ inv_grid_width		= 2
 inv_grid_height		= 1
 inv_grid_x			= 18
 inv_grid_y			= 2
-optic_glint_1				= -0.8, 400, 0.033, 160,160,255
-optic_glint_2				= -1.2, 1600, 0.0075, 160,160,255
+optic_glint_1				= -1.0, 250, 0.06, 160,160,255
+optic_glint_2				= -1.6, 1600, 0.005, 160,160,255
 
 [wpn_addon_scope_cobra]:wpn_addon_scope_x2.7
 $spawn			= "weapons\addons\scope_cobra"
@@ -121,7 +121,7 @@ collimator_reflect_cube_curve = 0.5
 collimator_specular			= 0.06, 400
 collimator_specular_color	= 255,245,225
 collimator_specular_world	= 5
-optic_glint_1				= -0.8, 400, 0.033, 255,128,64
+optic_glint_1				= -1.0, 250, 0.06, 255,128,64
 optic_glint_2				= -1.6, 1600, 0.0075, 100,150,255
 
 [wpn_addon_scope_rakurs]:wpn_addon_scope_x2.7
@@ -177,8 +177,8 @@ inv_grid_height    = 1
 inv_grid_x         = 20
 inv_grid_y         = 22
 collimator_reflect_cube_curve = 0.5
-optic_glint_1				= -0.8, 400, 0.033, 128,255,128 ; curve, reflectivity (scale), strength, color
-optic_glint_2				= -1.2, 1600, 0.0075, 128,255,128
+optic_glint_1				= -1.0, 250, 0.06, 128,255,128 ; curve, reflectivity (scale), strength, color
+optic_glint_2				= -1.6, 1600, 0.005, 128,255,128
 
 [wpn_addon_scope_detector]:wpn_addon_scope_x2.7
 zoom_hide_ui		= true	; GS parity (its std_*.ltx set this); blanks the indicators while aimed
@@ -195,8 +195,8 @@ inv_grid_x         = 20
 inv_grid_y         = 21
 
 collimator_reflect_cube_curve = 0.5
-optic_glint_1				= -0.8, 300, 0.033, 128,255,128 ; curve, reflectivity (scale), strength, color
-optic_glint_2				= -1.2, 1600, 0.0075, 128,255,128
+optic_glint_1				= -1.0, 250, 0.06, 128,255,128 ; curve, reflectivity (scale), strength, color
+optic_glint_2				= -1.6, 1600, 0.005, 128,255,128
 
 ; ------------------------------------------------- per-weapon SCOPE SECTIONS (ak74)
 ; shared defaults: PiP lens, weapon stays visible, _scope anims, reticle illum on the
@@ -414,8 +414,8 @@ scope_texture		= wpn_crosshair
 zoom_hide_ui		= true	; GS parity (its std_*.ltx set this); blanks the indicators while aimed
 scope_zoom_factor	= 30		;pso-1 2X
 
-optic_glint_1				= -0.8, 400, 0.033, 128,142,255 ; curve, reflectivity (scale), strength, color
-optic_glint_2				= -1.2, 1600, 0.0075, 255,115,100
+optic_glint_1				= -1.0, 250, 0.06, 128,142,255 ; curve, reflectivity (scale), strength, color
+optic_glint_2				= -1.6, 1600, 0.005, 255,115,100
 
 ; ---- stock CS generic SUSAT scope addon (moved here from weapons.ltx 2026-07-24) ----
 [wpn_addon_scope_susat]:identity_immunities
@@ -531,8 +531,8 @@ max_lens_factor			= 6
 lens_factor_levels_count = 5
 zoom_mouse_sense_koef	= 0.5
 scope_abberation		= 0.008
-optic_glint_1				= -0.8, 400, 0.033, 160,160,255
-optic_glint_2				= -1.2, 1600, 0.0075, 160,160,255
+optic_glint_1				= -1.0, 250, 0.06, 160,160,255
+optic_glint_2				= -1.6, 1600, 0.005, 160,160,255
 
 ; ===== Wincheaster 1300 optics (ported from GS addons\scopes\weaver\std_{eotech,aimpoint,elcan,night}.ltx)
 ; Items inherit OUR local scope parent (GS's `base_addon` does not exist here). inv_grid_* are OUR atlas
@@ -640,8 +640,8 @@ zoom_mouse_sense_koef = 0.5
 scope_abberation	= 0.005
 
 collimator_reflect_cube_curve = 0.5
-optic_glint_1				= -0.8, 400, 0.033, 128,200,255 ; curve, reflectivity (scale), strength, color
-optic_glint_2				= -1.6, 1600, 0.0075, 255,115,100
+optic_glint_1				= -1.0, 250, 0.06, 128,200,255 ; curve, reflectivity (scale), strength, color
+optic_glint_2				= -1.6, 1600, 0.005, 255,115,100
 
 [wpn_addon_scope_susat_night]:wpn_addon_scope_x2.7	; PN-23 night scope (2D reticle + PiP lens)
 $spawn			= "weapons\addons\scope_pn23"
@@ -665,8 +665,8 @@ scope_lens_factor	= 15	; GS min = max = 15
 zoom_mouse_sense_koef = 0.13
 scope_abberation	= 0
 collimator_reflect_cube_curve = 0.5
-optic_glint_1				= -0.8, 400, 0.033, 128,255,128 ; curve, reflectivity (scale), strength, color
-optic_glint_2				= -1.2, 1600, 0.0075, 128,255,128
+optic_glint_1				= -1.0, 250, 0.06, 128,255,128 ; curve, reflectivity (scale), strength, color
+optic_glint_2				= -1.6, 1600, 0.005, 128,255,128
 
 ; ===== Wincheaster 1300 per-weapon scope sections (GS shotguns/wincheaster1300/scopes.ltx) =====
 ; Mandatory for us: scope_texture + scope_zoom_factor (read unconditionally from the ACTIVE scope section).
@@ -1928,8 +1928,8 @@ need_lens_frame		= true
 scope_lens_factor	= 6	; GS min = max = 6
 zoom_mouse_sense_koef = 0.5
 scope_abberation	= 0.011
-optic_glint_1				= -0.8, 400, 0.033, 160,160,255
-optic_glint_2				= -1.2, 1600, 0.0075, 160,160,255
+optic_glint_1				= -1.0, 250, 0.06, 160,160,255
+optic_glint_2				= -1.6, 1600, 0.005, 160,160,255
 
 ;==============================================================================
 ; OC-14 Groza optics -- GS assault/oc14/scopes.ltx.
@@ -2457,8 +2457,8 @@ min_night_brightness	= 0.0
 steps_brightness		= 1
 default_brightness_step	= 0
 jitter_brightness		= 0.0
-optic_glint_1				= -0.8, 400, 0.033, 160,160,255
-optic_glint_2				= -1.2, 1600, 0.0075, 160,160,255
+optic_glint_1				= -1.0, 250, 0.06, 160,160,255
+optic_glint_2				= -1.6, 1600, 0.005, 160,160,255
 
 ; ---- mount: PGO-7V on the RPG-7 (GS heavy/rpg-7/scopes.ltx) ----
 [scope_pgo7v_rpg7]
@@ -3215,5 +3215,5 @@ collimator_specular_lamps	= 0.25
 ; < 0 = hollow -- the glint runs the other way as the gun sways. Glossiness as collimator_specular's (higher = smaller).
 ; Colour 0..255. Where they show through the outer glass: wpn\lenses_spec's alpha. A scope that has optic_glint_1
 ; itself takes all its lines from there, none from here.
-optic_glint_1				= -0.8, 400, 0.033, 160,160,255 ; curve, reflectivity (scale), strength, color
-optic_glint_2				= -1.2, 1600, 0.0075, 160,160,255
+optic_glint_1				= -1.0, 250, 0.06, 160,160,255 ; curve, reflectivity (scale), strength, color
+optic_glint_2				= -1.6, 1600, 0.005, 160,160,255
