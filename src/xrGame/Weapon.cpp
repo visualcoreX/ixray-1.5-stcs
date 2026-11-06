@@ -1419,16 +1419,19 @@ void CWeapon::UpdateLaserDot()
 	if (!_valid(pos) || !_valid(dir))											{ StopLaserDot(); return; }
 
 	// Part of the gun standing in the beam's way (laser_stop_bones: the launcher's leaf sight, which comes up
-	// right in front of the emitter): the beam ends on it and the dot sits there. Tested against the model's
+	// right in front of the emitter) or the hands passing through it (the left hand raising that leaf, a
+	// thumb on the LAM's switch): the beam ends on it and the dot sits there. Tested against the models'
 	// posed triangles, so it follows the animation -- the beam is cut when the leaf actually swings into it
 	// while the launcher is being raised, and freed when it folds away. This comes before all the ray work
 	// below, none of which applies to a point on the gun. The hud->world fix keeps depth, so the procedural
-	// dot lands on the sight's own pixels; the particle dot is drawn with the world, behind the HUD model, so
-	// it goes.
+	// dot lands on the pixels of what it hit; the particle dot is drawn with the world, behind the HUD
+	// models, so it goes.
 	if (m_LaserBeam.enabled)
 	{
-		float stop = LASER_BEAM_GUN_RANGE;
-		if (LaserBeam_PickBones(K, hi->m_item_transform, m_sLaserStopBones.c_str(), beam_from, beam_dir, stop))
+		float stop			= LASER_BEAM_GUN_RANGE;
+		bool blocked		= LaserBeam_PickBones(K, hi->m_item_transform, m_sLaserStopBones.c_str(), beam_from, beam_dir, stop);
+		if (hi->m_parent->pick_hands(beam_from, beam_dir, stop))	blocked = true;
+		if (blocked)
 		{
 			Fvector hit;	hit.mad(beam_from, beam_dir, stop);
 			LaserBeam_HudPointToWorld	(hit);

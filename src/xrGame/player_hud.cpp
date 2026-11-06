@@ -19,6 +19,7 @@
 #include "../xrEngine/GameFont.h"
 #include "Level.h"			// the hip shot's aim looks at what is under the middle of the view
 #include "../xrEngine/gamemtllib.h"
+#include "../xrEngine/EnnumerateVertices.h"	// the hands' geometry per bone, for pick_hands
 
 player_hud* g_player_hud = NULL;
 Fvector _ancor_pos;
@@ -768,6 +769,7 @@ void player_hud::load_now(const shared_str& player_hud_sect)
 		IRenderVisual* v			= m_model->dcast_RenderVisual();
 		::Render->model_Delete		(v);
 	}
+	m_hand_bounds.clear			();
 
 	m_sect_name					= player_hud_sect;
 	const shared_str& model_name= pSettings->r_string(player_hud_sect, "visual");
@@ -2251,6 +2253,76 @@ void player_hud::calc_transform(u16 attach_slot_idx, const Fmatrix& offset, Fmat
 	Fmatrix ancor_m			= m_model->dcast_PKinematics()->LL_GetTransform(m_ancors[attach_slot_idx]);
 	result.mul				(m_transform, ancor_m);
 	result.mulB_43			(offset);
+}
+
+namespace
+{
+	struct SHandBoundCollect : public SEnumVerticesCallback
+	{
+		Fmatrix				to_bone;	// bind-pose model space -> bone space
+		xr_vector<Fvector>	points;
+		virtual void operator () (const Fvector& p)	{ Fvector q; to_bone.transform_tiny(q, p); points.push_back(q); }
+	};
+}
+
+void player_hud::build_hand_bounds()
+{
+	IKinematics* K			= m_model->dcast_PKinematics();
+	xr_vector<Fmatrix> binds;
+	K->LL_GetBindTransform	(binds);
+
+	m_hand_bounds.resize	(K->LL_BoneCount());
+	for (u16 b = 0; b < K->LL_BoneCount(); ++b)
+	{
+		SHandBound& S		= m_hand_bounds[b];
+		S.center.set		(0.f, 0.f, 0.f);
+		S.radius			= 0.f;
+
+		SHandBoundCollect C;
+		C.to_bone.invert	(binds[b]);
+		K->EnumBoneVertices	(C, b);
+		if (C.points.empty())	continue;
+
+		Fbox box;			box.invalidate();
+		for (const Fvector& p : C.points)	box.modify(p);
+		box.getcenter		(S.center);
+		float r2			= 0.f;
+		for (const Fvector& p : C.points)	r2 = _max(r2, p.distance_to_sqr(S.center));
+		// a bit of slack: a vertex shared with the next bone leaves this one's rigid pose as the joint bends
+		S.radius			= _sqrt(r2) + 0.02f;
+	}
+}
+
+bool player_hud::pick_hands(const Fvector& from, const Fvector& dir, float& dist)
+{
+	if (!m_model)					return false;
+	if (m_hand_bounds.empty())		build_hand_bounds();
+
+	IKinematics* K	= m_model->dcast_PKinematics();
+	bool hit		= false;
+	for (u16 b = 0; b < (u16)m_hand_bounds.size(); ++b)
+	{
+		const SHandBound& S	= m_hand_bounds[b];
+		if (S.radius <= 0.f || !K->LL_GetBoneVisible(b))	continue;
+
+		Fmatrix M;			M.mul_43(m_transform, K->LL_GetTransform(b));
+		Fvector c;			M.transform_tiny(c, S.center);
+		Fvector v;			v.sub(c, from);
+		float t				= v.dotproduct(dir);
+		clamp				(t, 0.f, dist);
+		Fvector q;			q.mad(from, dir, t);
+		if (q.distance_to_sqr(c) > S.radius * S.radius)		continue;
+
+		// PickBone stops at the first triangle within its range, which need not be the nearest: ask again
+		// with that distance as the range until nothing is closer
+		IKinematics::pick_result r;
+		for (int i = 0; i < 8 && K->PickBone(m_transform, r, dist, from, dir, b); ++i)
+		{
+			dist	= r.dist;
+			hit		= true;
+		}
+	}
+	return hit;
 }
 
 void player_hud::OnMovementChanged(ACTOR_DEFS::EMoveCommand cmd)

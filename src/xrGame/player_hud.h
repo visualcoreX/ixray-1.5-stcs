@@ -157,6 +157,9 @@ public:
 	void			detach_all_items	(){m_attached_items[0]=NULL; m_attached_items[1]=NULL;};
 
 	void			calc_transform		(u16 attach_slot_idx, const Fmatrix& offset, Fmatrix& result);
+	// Does a ray in the hud's own space (unit dir) run into the hands' posed mesh nearer than dist?
+	// dist comes down to the hit. For the laser designator's beam: valid after update() this frame.
+	bool			pick_hands			(const Fvector& from, const Fvector& dir, float& dist);
 	void			tune				(Ivector values);
 	u32				motion_length		(const MotionID& M, const CMotionDef*& md, float speed);
 	u32				motion_length		(const shared_str& anim_name, const shared_str& hud_name, const CMotionDef*& md);
@@ -293,6 +296,17 @@ private:
 	Fmatrix								m_transform;
 	IKinematicsAnimated*				m_model;
 	xr_vector<u16>						m_ancors;
+
+	// pick_hands: a sphere around each bone's geometry, in bone space, so that a ray tests the triangles of
+	// only the few bones it passes near. Worked out on first use, for the current hands model. Not the OGF's
+	// bone boxes: in the hands models those are empty or miss the mesh by most of a metre.
+	struct SHandBound
+	{
+		Fvector	center;
+		float	radius;		// <= 0: the bone has no geometry
+	};
+	xr_vector<SHandBound>				m_hand_bounds;
+	void			build_hand_bounds	();
 
 	// Weapon down with a detector out: the left arm is kept where it would be without the motion.
 	Fmatrix								m_lower_before, m_lower_after;	// see set_lowered_delta
