@@ -928,6 +928,7 @@ void CWeapon::LoadLaserParams()
 	m_bLaserInstalled	= !!READ_IF_EXISTS(pSettings, r_bool, cNameSect().c_str(), "laser_installed", FALSE);
 	m_sLaserBone		= NULL;
 	m_LaserParticles.clear	();
+	m_sLaserStopBones	= NULL;
 	m_LaserSwitchDist.clear	();
 	m_iLaserParticleIdx	= -1;
 	m_vLaserOffset.set	(0.f,0.f,0.f);
@@ -955,6 +956,7 @@ void CWeapon::LoadLaserParams()
 	// dot is suppressed (GS ProcessLaserdot SetWeaponMultipleBonesStatus(ray_bones, ...)). Statically shown by
 	// the laser upgrade's show_bones; UpdateLaserDot takes over their visibility while the laser is enabled.
 	if (pSettings->line_exist(lp, "laser_ray_bones"))		m_sLaserRayBones = pSettings->r_string(lp, "laser_ray_bones");
+	if (pSettings->line_exist(lp, "laser_stop_bones"))		m_sLaserStopBones = pSettings->r_string(lp, "laser_stop_bones");
 	// distance-switched dot: laserdot_particle_0 (default) + _1,_2,... each swapped in at laserdot_dist_<i>
 	for (int i = 0; ; ++i)
 	{
@@ -1315,7 +1317,10 @@ void CWeapon::UpdateLaserDot()
 	// "линия короче"). GS times the dot to the raise/lower anim, not instantly: it stays through the FIRST
 	// laser_switch_time_to_gl ms of the switch-to-GL anim, then hides; on the way back it reappears only in the
 	// LAST laser_switch_time_from_gl ms. m_dwGLSwitch* is the switch window (PlayAnimModeSwitch).
-	if (m_bLaserDotOffInGL)
+	// R1/R2 only: there the mesh beam is separate and stays lit through this. The volumetric beam and its dot
+	// are published further down, so returning here would put the whole laser out; they stop on the raised
+	// sight by themselves instead (laser_stop_bones).
+	if (m_bLaserDotOffInGL && !m_LaserBeam.enabled)
 	{
 		const bool switching = (m_dwGLSwitchEndTm && Device.dwTimeGlobal < m_dwGLSwitchEndTm);
 		if (switching)
@@ -1366,6 +1371,14 @@ void CWeapon::UpdateLaserDot()
 				rf.transform_dir(baxis, m_LaserBeam.world.dir);
 				baxis.normalize_safe();
 			}
+			float stop = LASER_BEAM_GUN_RANGE;
+			if (LaserBeam_PickBones(WK, X, m_sLaserStopBones.c_str(), bfrom, baxis, stop))
+			{
+				Fvector hit;	hit.mad(bfrom, baxis, stop);
+				m_LaserBeam.Publish(bfrom, baxis, hit, true, true, hit);
+				if (m_pLaserDot)	CParticlesObject::Destroy(m_pLaserDot);
+				return;
+			}
 			m_LaserBeam.Publish(bfrom, baxis, wdot, wdist < 197.f, wdist < 197.f, wdot);	// wdist is already *0.99
 		}
 		PlaceLaserDot(wdot, 0);
@@ -1404,6 +1417,28 @@ void CWeapon::UpdateLaserDot()
 	beam_dir.normalize_safe();
 	Fvector dir;	dir.set(full.k);	dir.normalize_safe();
 	if (!_valid(pos) || !_valid(dir))											{ StopLaserDot(); return; }
+
+	// Part of the gun standing in the beam's way (laser_stop_bones: the launcher's leaf sight, which comes up
+	// right in front of the emitter): the beam ends on it and the dot sits there. Tested against the model's
+	// posed triangles, so it follows the animation -- the beam is cut when the leaf actually swings into it
+	// while the launcher is being raised, and freed when it folds away. This comes before all the ray work
+	// below, none of which applies to a point on the gun. The hud->world fix keeps depth, so the procedural
+	// dot lands on the sight's own pixels; the particle dot is drawn with the world, behind the HUD model, so
+	// it goes.
+	if (m_LaserBeam.enabled)
+	{
+		float stop = LASER_BEAM_GUN_RANGE;
+		if (LaserBeam_PickBones(K, hi->m_item_transform, m_sLaserStopBones.c_str(), beam_from, beam_dir, stop))
+		{
+			Fvector hit;	hit.mad(beam_from, beam_dir, stop);
+			LaserBeam_HudPointToWorld	(hit);
+			LaserBeam_HudPointToWorld	(beam_from);
+			LaserBeam_HudDirToWorld		(beam_dir);
+			m_LaserBeam.Publish			(beam_from, beam_dir, hit, true, true, hit);
+			if (m_pLaserDot)	CParticlesObject::Destroy(m_pLaserDot);
+			return;
+		}
+	}
 
 	// GS ProcessLaserdot 1st-person ray setup (WeaponUpdate.pas:153-177). Note GS's condition:
 	// `if (IsAimNow or IsHolderInAimState) and (not IsGrenadeMode)` -- aiming the GRENADE LAUNCHER

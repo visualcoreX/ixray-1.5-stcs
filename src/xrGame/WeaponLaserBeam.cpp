@@ -306,6 +306,29 @@ static void split_bone_csv(LPCSTR csv, xr_vector<shared_str>& out)
 	}
 }
 
+bool LaserBeam_PickBones(IKinematics* K, const Fmatrix& xform, LPCSTR bones, const Fvector& from, const Fvector& dir, float& dist)
+{
+	if (!K || !bones || !bones[0])	return false;
+
+	bool	hit		= false;
+	string256 item;
+	for (int b = 0, n = _GetItemCount(bones); b < n; ++b)
+	{
+		_GetItem(bones, b, item);
+		const u16 id = K->LL_BoneID(item);
+		if (id == BI_NONE || !K->LL_GetBoneVisible(id))	continue;	// a hidden bone's matrix is stale, too
+		// PickBone stops at the first triangle within its range, which need not be the nearest: ask again
+		// with that distance as the range until nothing is closer
+		IKinematics::pick_result r;
+		for (int i = 0; i < 8 && K->PickBone(xform, r, dist, from, dir, id); ++i)
+		{
+			dist	= r.dist;
+			hit		= true;
+		}
+	}
+	return hit;
+}
+
 bool SLaserEmitter::Update(IKinematics* K, LPCSTR ray_bones, LPCSTR attach_bone)
 {
 	if (K == model)		return valid;

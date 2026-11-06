@@ -134,5 +134,11 @@ void	LaserBeam_HudDirToWorld		(Fvector& d);
 // tan(world fov / 2) / tan(hud fov / 2), the factor both of them put on the off-axis part
 float	LaserBeam_HudToWorldK		();
 
+// Does the ray from `from` along unit `dir` run into the posed geometry of these bones (CSV, may be NULL)
+// of model K, drawn at `xform`, nearer than `dist`? Hidden bones do not count. `dist` comes down to the hit.
+bool	LaserBeam_PickBones			(IKinematics* K, const Fmatrix& xform, LPCSTR bones, const Fvector& from, const Fvector& dir, float& dist);
+// How far along the beam to look for what stops it on the gun or the hands: anything further is the world's.
+const float LASER_BEAM_GUN_RANGE	= 2.f;
+
 // What CGamePersistent::GetLaserBeams returns: the beams published this frame.
 u32		LaserBeams_Get				(const SLaserBeamRender*& beams);

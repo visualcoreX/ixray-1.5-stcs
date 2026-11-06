@@ -545,6 +545,7 @@ protected:
 			bool			m_bLaserPendingState;
 			// GL-mode switch window (set by CWeaponMagazinedWGrenade::PlayAnimModeSwitch) so the laser dot can
 			// fade out/in relative to the raise/lower anim like GS (laser_switch_time_to_gl/from_gl), not instantly.
+			// R1/R2 only, as is disable_laserdot_when_gl_enabled: the volumetric beam uses laser_stop_bones.
 			u32				m_dwGLSwitchStartTm;
 			u32				m_dwGLSwitchEndTm;
 			// read once at Load (LoadLaserParams) -- UpdateLaserDot / gwr_UpdateBones run every render frame
@@ -558,6 +559,7 @@ protected:
 			mutable u32		m_dwLaserEmisFrame;
 			shared_str		m_sLaserBone;				// laserdot_attach_bone
 			shared_str		m_sLaserRayBones;			// laser_ray_bones (the visible beam bones, e.g. "line, line2")
+			shared_str		m_sLaserStopBones;			// laser_stop_bones: bones of the gun the volumetric beam stops on when they cross it (the raised GL sight)
 			xr_vector<shared_str>	m_LaserParticles;	// laserdot_particle_0..N (distance-switched dot)
 			xr_vector<float>		m_LaserSwitchDist;	// laserdot_dist_1..N: switch to particle j+1 at >= [j]
 			xr_vector<float>		m_LaserScaleDist;	// laserdot_dist_treshold_N (camera-pull remap segments)
