@@ -37,6 +37,8 @@ namespace
 //-----------------------------------------------------------------------------
 CWeaponShotEffector::CWeaponShotEffector()
 {
+	m_kick_scale_vert	= 1.0f;
+	m_kick_scale_horz	= 1.0f;
 	Reset();
 //	m_first_shot_pos = 0.0f;
 }
@@ -44,6 +46,8 @@ CWeaponShotEffector::CWeaponShotEffector()
 void CWeaponShotEffector::Initialize( const CameraRecoil& cam_recoil )
 {
 	m_cam_recoil.Clone( cam_recoil );
+	m_kick_scale_vert	= 1.0f;
+	m_kick_scale_horz	= 1.0f;
 	Reset();
 }
 
@@ -77,8 +81,7 @@ void CWeaponShotEffector::Reset()
 	m_last_kick_vert	= 0.0f;
 	m_raw_kick_vert		= 0.0f;
 	m_raw_kick_horz		= 0.0f;
-	m_kick_scale_vert	= 1.0f;
-	m_kick_scale_horz	= 1.0f;
+	// not the kick scale: Shot() resets on the queue's first round, after the actor has set it for that round
 
 	m_roll_count		= 0;
 }
