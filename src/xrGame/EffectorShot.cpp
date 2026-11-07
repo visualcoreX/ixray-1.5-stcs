@@ -355,6 +355,7 @@ CCameraShotEffector::CCameraShotEffector(const CameraRecoil& cam_recoil)
 {
 	CWeaponShotEffector::Initialize( cam_recoil );
 	m_pActor		= NULL;
+	m_WeaponID		= u16(-1);	// the stationary guns never set it
 }
 
 CCameraShotEffector::~CCameraShotEffector()

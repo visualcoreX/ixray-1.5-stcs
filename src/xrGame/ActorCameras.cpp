@@ -489,9 +489,14 @@ void CActor::update_camera (CCameraShotEffector* effector)
 	if (pACam->bClampYaw)	clamp(pACam->yaw,pACam->lim_yaw[0],pACam->lim_yaw[1]);
 	if (pACam->bClampPitch)	clamp(pACam->pitch,pACam->lim_pitch[0],pACam->lim_pitch[1]);
 
+	// Finished animating, but the queue may not be over: this effector holds the climb cam_max_angle is
+	// measured against, and a new one would start it from zero with the camera still up. It waits for the
+	// next round for as long as its weapon keeps firing.
 	if (effector && !effector->IsActive())
 	{
-		Cameras().RemoveCamEffector(eCEShot);
+		CWeapon* weapon = smart_cast<CWeapon*>(inventory().ActiveItem());
+		if (!weapon || weapon->ID() != effector->m_WeaponID || !weapon->IsWorking())
+			Cameras().RemoveCamEffector(eCEShot);
 	}
 }
 
