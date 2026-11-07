@@ -30,6 +30,13 @@ namespace
 		float inv = x - 1.0f;
 		return 1.0f + c3 * inv * inv * inv + c1 * inv * inv;
 	}
+
+	// Nod: up fast, peaking about 30% in, then a smooth way back to exactly 0.
+	IC float nod_wave( float x )
+	{
+		float inv = 1.0f - x;
+		return _sin( PI * (1.0f - inv * inv) );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -39,6 +46,7 @@ CWeaponShotEffector::CWeaponShotEffector()
 {
 	m_kick_scale_vert	= 1.0f;
 	m_kick_scale_horz	= 1.0f;
+	m_nod_count			= 0;
 	Reset();
 //	m_first_shot_pos = 0.0f;
 }
@@ -56,7 +64,7 @@ void CWeaponShotEffector::Reset()
 	m_angle_vert	= 0.0f;
 	m_angle_horz	= 0.0f;
 
-	m_prev_angle_vert = 0.0f;
+	m_prev_angle_vert = GetNod();	// nods still in flight carry on and bring the camera back
 	m_prev_angle_horz = 0.0f;
 
 	m_delta_vert	= 0.0f;
@@ -82,6 +90,12 @@ void CWeaponShotEffector::Reset()
 	m_raw_kick_vert		= 0.0f;
 	m_raw_kick_horz		= 0.0f;
 	// not the kick scale: Shot() resets on the queue's first round, after the actor has set it for that round
+
+	m_limit_kick		= 0.0f;
+	m_since_shot		= 0.0f;
+	m_spray				= 0.0f;
+	m_spray_from		= 0.0f;
+	m_spray_target		= 0.0f;
 
 	m_roll_count		= 0;
 }
@@ -114,13 +128,27 @@ void CWeaponShotEffector::Shot2( float angle )
 
 	m_raw_kick_vert = angle * ( m_cam_recoil.DispersionFrac + m_Random.randF(-1.0f, 1.0f) * (1.0f - m_cam_recoil.DispersionFrac) );
 	// the camera takes its own share of the kick, the hud weapon the rest (SetKickScale)
-	float new_target_vert = old_target_vert + m_raw_kick_vert * m_kick_scale_vert;
+	float kick = m_raw_kick_vert * m_kick_scale_vert;
+	float new_target_vert = old_target_vert + kick;
 
-	clamp( new_target_vert, -m_cam_recoil.MaxAngleVert, m_cam_recoil.MaxAngleVert );
-	if ( fis_zero(new_target_vert - m_cam_recoil.MaxAngleVert) )
+	const bool soft_limit = m_cam_recoil.LimitNod > 0.0f || m_cam_recoil.LimitCreep > 0.0f || m_cam_recoil.LimitSpray > 0.0f;
+	if ( soft_limit && kick > 0.0f && new_target_vert > m_cam_recoil.MaxAngleVert )
 	{
-		new_target_vert *= m_Random.randF( 0.96f, 1.04f );
+		new_target_vert = KickPastLimit( old_target_vert, kick, _abs(angle) * m_kick_scale_vert );
 	}
+	else if ( soft_limit )
+	{
+		new_target_vert = _max( new_target_vert, -m_cam_recoil.MaxAngleVert );
+	}
+	else
+	{
+		clamp( new_target_vert, -m_cam_recoil.MaxAngleVert, m_cam_recoil.MaxAngleVert );
+		if ( fis_zero(new_target_vert - m_cam_recoil.MaxAngleVert) )
+		{
+			new_target_vert *= m_Random.randF( 0.96f, 1.04f );
+		}
+	}
+	m_since_shot = 0.0f;
 
 	// What THIS shot actually added, after the max-angle clamp -- cam_relax_amount later gives back
 	// only a fraction of this, not of the whole accumulated angle.
@@ -168,14 +196,46 @@ void CWeaponShotEffector::Shot2( float angle )
 	m_shot_end		= false;
 }
 
+float CWeaponShotEffector::KickPastLimit( float old_target, float kick, float full_kick )
+{
+	if ( m_limit_kick <= 0.0f )
+		m_limit_kick = full_kick;
+
+	float room	= _max( m_cam_recoil.MaxAngleVert - old_target, 0.0f );
+	float cut	= _min( kick - room, m_limit_kick );
+
+	float amplitude = cut * m_cam_recoil.LimitNod * m_Random.randF( 0.7f, 1.0f );
+	if ( amplitude > 0.0f && m_nod_count < MAX_NOD_INSTANCES )
+	{
+		SNod& nod		= m_nods[m_nod_count++];
+		nod.elapsed		= 0.0f;
+		// a queue's first shot has no gap to go by yet
+		nod.duration	= ( m_since_shot > 0.0f ) ? clampr( m_since_shot, 0.05f, 0.25f ) : 0.1f;
+		nod.amplitude	= amplitude;
+	}
+
+	float spray_limit	= _abs( m_cam_recoil.MaxAngleHorz );
+	m_spray_from		= m_spray;
+	m_spray_target		= clampr( m_spray_target + m_Random.randF(-1.0f, 1.0f) * cut * m_cam_recoil.LimitSpray, -spray_limit, spray_limit );
+
+	float creep			= cut * m_cam_recoil.LimitCreep;
+	RDBG("~recoil  past limit: cut=%.3f nod=%.3f creep=%.3f spray=%.3f deg",
+		 rad2deg(cut), rad2deg(amplitude), rad2deg(creep), rad2deg(m_spray_target));
+
+	return _max( old_target, m_cam_recoil.MaxAngleVert ) + creep;
+}
+
 void CWeaponShotEffector::AddKick( float vert, float horz )
 {
 	if ( fis_zero(vert) && fis_zero(horz) )
 		return;
 
 	float old_target_vert	= m_angle_vert_target;
-	m_angle_vert_target		+= vert;
-	clamp( m_angle_vert_target, -m_cam_recoil.MaxAngleVert, m_cam_recoil.MaxAngleVert );
+	// up to the ceiling but never down onto it: the climb can be past it by now
+	if ( vert > 0.0f )
+		m_angle_vert_target	= _max( old_target_vert, _min(old_target_vert + vert, m_cam_recoil.MaxAngleVert) );
+	else
+		m_angle_vert_target	= _max( old_target_vert + vert, -m_cam_recoil.MaxAngleVert );
 	m_last_kick_vert		+= m_angle_vert_target - old_target_vert;	// relaxed like the rest of the shot
 
 	m_angle_horz_target		+= horz;
@@ -206,6 +266,19 @@ void CWeaponShotEffector::Update()
 {
 	float dt = Device.fTimeDelta;
 
+	m_since_shot += dt;
+
+	{
+		int write = 0;
+		for ( int i = 0; i < m_nod_count; ++i )
+		{
+			m_nods[i].elapsed += dt;
+			if ( m_nods[i].elapsed < m_nods[i].duration )
+				m_nods[write++] = m_nods[i];
+		}
+		m_nod_count = write;
+	}
+
 	if ( m_roll_count > 0 )
 	{
 		float duration = m_cam_recoil.RiseTime * 1.25f;
@@ -232,6 +305,7 @@ void CWeaponShotEffector::Update()
 		// Horizontal has no relax phase -- just a linear rise synced to the same duration as the
 		// vertical kick, and it stays wherever it lands.
 		m_angle_horz = m_angle_horz_from + (m_angle_horz_target - m_angle_horz_from) * t;
+		m_spray = m_spray_from + (m_spray_target - m_spray_from) * t;
 
 		if ( t >= 1.0f )
 		{
@@ -266,10 +340,12 @@ void CWeaponShotEffector::Update()
 		m_actived = false;
 	}
 
-	m_delta_vert = m_angle_vert - m_prev_angle_vert;
+	float shown_vert = m_angle_vert + m_spray + GetNod();
+
+	m_delta_vert = shown_vert - m_prev_angle_vert;
 	m_delta_horz = m_angle_horz - m_prev_angle_horz;
 
-	m_prev_angle_vert = m_angle_vert;
+	m_prev_angle_vert = shown_vert;
 	m_prev_angle_horz = m_angle_horz;
 
 	// negative delta = the camera is being pulled back DOWN this frame
@@ -283,7 +359,7 @@ void CWeaponShotEffector::Update()
 
 void CWeaponShotEffector::GetDeltaAngle		(Fvector& angle)
 {
-	angle.x			= -m_angle_vert;
+	angle.x			= -m_prev_angle_vert;	// as shown, nod and spray included
 	angle.y			= -m_angle_horz;
 	angle.z			= 0.0f;
 }
@@ -303,6 +379,14 @@ void CWeaponShotEffector::SetRndSeed	(s32 Seed)
 //		m_Random.seed		(Seed);
 		m_Random.seed		(Device.dwFrame);
 	}
+}
+
+float CWeaponShotEffector::GetNod() const
+{
+	float nod = 0.0f;
+	for ( int i = 0; i < m_nod_count; ++i )
+		nod += m_nods[i].amplitude * nod_wave( m_nods[i].elapsed / m_nods[i].duration );
+	return nod;
 }
 
 float CWeaponShotEffector::GetRoll() const

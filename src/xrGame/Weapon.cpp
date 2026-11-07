@@ -662,6 +662,11 @@ void CWeapon::Load		(LPCSTR section)
 		? _abs( deg2rad( pSettings->r_float( section, "cam_roll_amount" ) ) )
 		: -1.0f;
 
+	// What a kick past cam_max_angle turns into, as parts of the part cut off (see CameraRecoil).
+	cam_recoil.LimitNod		= _abs( READ_IF_EXISTS( pSettings, r_float, section, "cam_limit_nod",   0.2f  ) );
+	cam_recoil.LimitCreep	= _abs( READ_IF_EXISTS( pSettings, r_float, section, "cam_limit_creep", 0.05f ) );
+	cam_recoil.LimitSpray	= _abs( READ_IF_EXISTS( pSettings, r_float, section, "cam_limit_spray", 0.1f  ) );
+
 	//подбрасывание камеры во время отдачи в режиме zoom ==> ironsight or scope
 	//zoom_cam_recoil.Clone( cam_recoil ); ==== нельзя !!!!!!!!!!
 	zoom_cam_recoil.RelaxSpeed		= cam_recoil.RelaxSpeed;
@@ -673,6 +678,9 @@ void CWeapon::Load		(LPCSTR section)
 	zoom_cam_recoil.RiseTime		= cam_recoil.RiseTime;
 	zoom_cam_recoil.RelaxAmount		= cam_recoil.RelaxAmount;
 	zoom_cam_recoil.RollAmount		= cam_recoil.RollAmount;
+	zoom_cam_recoil.LimitNod		= cam_recoil.LimitNod;
+	zoom_cam_recoil.LimitCreep		= cam_recoil.LimitCreep;
+	zoom_cam_recoil.LimitSpray		= cam_recoil.LimitSpray;
 
 	zoom_cam_recoil.ReturnMode		= cam_recoil.ReturnMode;
 	zoom_cam_recoil.StopReturn		= cam_recoil.StopReturn;
@@ -728,6 +736,15 @@ void CWeapon::Load		(LPCSTR section)
 	}
 	if ( pSettings->line_exist( section, "zoom_cam_roll_amount" ) )	{
 		zoom_cam_recoil.RollAmount		= _abs( deg2rad( pSettings->r_float( section, "zoom_cam_roll_amount" ) ) );
+	}
+	if ( pSettings->line_exist( section, "zoom_cam_limit_nod" ) )	{
+		zoom_cam_recoil.LimitNod		= _abs( pSettings->r_float( section, "zoom_cam_limit_nod" ) );
+	}
+	if ( pSettings->line_exist( section, "zoom_cam_limit_creep" ) )	{
+		zoom_cam_recoil.LimitCreep		= _abs( pSettings->r_float( section, "zoom_cam_limit_creep" ) );
+	}
+	if ( pSettings->line_exist( section, "zoom_cam_limit_spray" ) )	{
+		zoom_cam_recoil.LimitSpray		= _abs( pSettings->r_float( section, "zoom_cam_limit_spray" ) );
 	}
 
 	LoadHudRecoil( section );

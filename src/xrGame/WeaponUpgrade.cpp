@@ -138,6 +138,9 @@ bool CWeapon::install_upgrade_disp( LPCSTR section, bool test )
 	result |= process_if_exists(         section, "cam_dispersion_frac",  &CInifile::r_float, cam_recoil.DispersionFrac, test );
 	result |= process_if_exists(         section, "cam_rise_time",        &CInifile::r_float, cam_recoil.RiseTime,       test );
 	result |= process_if_exists(         section, "cam_relax_amount",     &CInifile::r_float, cam_recoil.RelaxAmount,    test );
+	result |= process_if_exists(         section, "cam_limit_nod",        &CInifile::r_float, cam_recoil.LimitNod,       test );
+	result |= process_if_exists(         section, "cam_limit_creep",      &CInifile::r_float, cam_recoil.LimitCreep,     test );
+	result |= process_if_exists(         section, "cam_limit_spray",      &CInifile::r_float, cam_recoil.LimitSpray,     test );
 
 	result |= process_if_exists_deg2rad( section, "cam_max_angle",        cam_recoil.MaxAngleVert,  test );
 	result |= process_if_exists_deg2rad( section, "cam_max_angle_horz",   cam_recoil.MaxAngleHorz,  test );
@@ -156,6 +159,9 @@ bool CWeapon::install_upgrade_disp( LPCSTR section, bool test )
 	result |= process_if_exists(         section, "zoom_cam_dispersion_frac",  &CInifile::r_float, zoom_cam_recoil.DispersionFrac, test );
 	result |= process_if_exists(         section, "zoom_cam_rise_time",        &CInifile::r_float, zoom_cam_recoil.RiseTime,       test );
 	result |= process_if_exists(         section, "zoom_cam_relax_amount",     &CInifile::r_float, zoom_cam_recoil.RelaxAmount,    test );
+	result |= process_if_exists(         section, "zoom_cam_limit_nod",        &CInifile::r_float, zoom_cam_recoil.LimitNod,       test );
+	result |= process_if_exists(         section, "zoom_cam_limit_creep",      &CInifile::r_float, zoom_cam_recoil.LimitCreep,     test );
+	result |= process_if_exists(         section, "zoom_cam_limit_spray",      &CInifile::r_float, zoom_cam_recoil.LimitSpray,     test );
 
 	result |= process_if_exists_deg2rad( section, "zoom_cam_max_angle",        zoom_cam_recoil.MaxAngleVert,  test );
 	result |= process_if_exists_deg2rad( section, "zoom_cam_max_angle_horz",   zoom_cam_recoil.MaxAngleHorz,  test );
