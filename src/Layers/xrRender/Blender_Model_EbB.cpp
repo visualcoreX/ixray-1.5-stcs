@@ -224,18 +224,22 @@ void CBlender_Model_EbB::Compile( CBlender_Compile& C )
 	else 
 	{
 		// deferred
-		switch(C.iElement) 
+		// The optics' glass marks itself dry (CRenderTarget::STENCIL_DRY): the rain on the hud would lay a gloss over it
+		// that its mirror (case 4) is not made to sit on.
+		const bool	dry	= C.L_textures.size() && 0==xr_strcmp(*C.L_textures[0], "wpn\\lenses");
+		const u32	ref	= 0x01 | (dry ? CRenderTarget::STENCIL_DRY : 0);
+		switch(C.iElement)
 		{
 		case SE_R2_NORMAL_HQ: 	// deffer
 			uber_deffer		(C,true,	"model","base",false,0,true);
 			C.r_Stencil		( TRUE,D3DCMP_ALWAYS,0xff,0x7f,D3DSTENCILOP_KEEP,D3DSTENCILOP_REPLACE,D3DSTENCILOP_KEEP);
-			C.r_StencilRef	(0x01);
+			C.r_StencilRef	(ref);
 			C.r_End			();
 			break;
 		case SE_R2_NORMAL_LQ: 	// deffer
 			uber_deffer		(C,false,	"model","base",false,0,true);
 			C.r_Stencil		( TRUE,D3DCMP_ALWAYS,0xff,0x7f,D3DSTENCILOP_KEEP,D3DSTENCILOP_REPLACE,D3DSTENCILOP_KEEP);
-			C.r_StencilRef	(0x01);
+			C.r_StencilRef	(ref);
 			C.r_End			();
 			break;
 		case SE_R2_SHADOW:		// smap

@@ -23,7 +23,13 @@ public:
 	};
 
 	u32							dwLightMarkerID;
-	// 
+	// Stencil bit 0x02, "keep it dry": the optics' glass (wpn\lenses, Blender_Model_EbB) writes it with the G-buffer's
+	// 0x01, and the dynamic wet surfaces (draw_rain) leave its pixels out -- the rain's gloss there was a flat sheen the
+	// glass's own mirror (model_sniperlens.ps) knows nothing of, lit up by any lamp nearby. The bit is free until the
+	// rain has run: the G-buffer writes ref 0x01 through mask 0x7f, so it is 0 elsewhere; the MSAA edges take 0x80;
+	// everything after tests bit 0 (and 0x80), or ">= 1", or a light's marker -- odd and >= 5, written over it.
+	static constexpr u32		STENCIL_DRY			= 0x02;
+	//
 	IBlender*					b_occq;
 	IBlender*					b_accum_mask;
 	IBlender*					b_accum_direct;
