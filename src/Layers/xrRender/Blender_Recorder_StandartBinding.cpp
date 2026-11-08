@@ -471,6 +471,17 @@ class cl_collim_hemi_neg : public R_constant_setup {
 };
 static cl_collim_hemi_neg	binder_collim_hemi_neg;
 
+// The rain on an optic's outer glass (lens_wet.h m_lens_wet): IGame_Persistent::hud_lens_wet. The hud's glass only --
+// the world's guns stay dry.
+class cl_lens_wet : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	RCache.set_c (C, g_pGamePersistent->hud_lens_wet);
+		else												RCache.set_c (C, 0.f, 0.f, 0.f, 0.f);
+	}
+};
+static cl_lens_wet	binder_lens_wet;
+
 #ifndef _EDITOR
 // The weather's sky, for a forward shader that samples $user$sky0/1 itself the way the skybox does
 // (dxEnvironmentRender::RenderSky): xyz = sky colour, w = blend from sky0 to sky1.
@@ -680,6 +691,7 @@ void	CBlender_Compile::SetMapping	()
 	r_Constant				("m_optic_glints",	&binder_optic_glints);
 	r_Constant				("m_collim_hemi_pos",	&binder_collim_hemi_pos);
 	r_Constant				("m_collim_hemi_neg",	&binder_collim_hemi_neg);
+	r_Constant				("m_lens_wet",		&binder_lens_wet);
 #ifndef _EDITOR
 	r_Constant				("m_sky_params",	&binder_sky_params);
 	r_Constant				("m_sky_rotation",	&binder_sky_rotation);

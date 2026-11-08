@@ -186,6 +186,7 @@ void	CBlender_Model_EbB::Compile(CBlender_Compile& C)
 				C.r_Sampler		("s_sky0",	"$user$sky0", false, D3DTADDRESS_CLAMP, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);	// read through its mips (collim_sky_blur)
 				C.r_Sampler		("s_sky1",	"$user$sky1", false, D3DTADDRESS_CLAMP, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
 				C.r_Sampler		("s_spec",	"wpn\\lenses_spec");	// where the glass shines (collim.h COLLIM_SPEC_MAP)
+				C.r_Sampler		("s_wet",	"wpn\\lenses_rain");	// the rain's drops on it (lens_wet.h)
 				C.r_End			();
 				C.SH->flags.bHudOverlay	= TRUE;
 			}
@@ -271,6 +272,7 @@ void CBlender_Model_EbB::Compile( CBlender_Compile& C )
 				C.r_dx10Texture		("s_sky1",		"$user$sky1");
 				C.r_dx10Texture		("s_lens_cube",	"$user$lens_cube");	// the world round the camera (CRender::render_lens_cube)
 				C.r_dx10Texture		("s_spec",		"wpn\\lenses_spec");	// where the glass shines (collim.h COLLIM_SPEC_MAP)
+				C.r_dx10Texture		("s_wet",		"wpn\\lenses_rain");	// the rain's drops on it (lens_wet.h)
 				C.r_dx10Sampler		("smp_base");
 				C.r_dx10Sampler		("smp_rtlinear");
 				C.r_dx10Sampler		("smp_linear");	// the cube's mips (lens_cube.h)

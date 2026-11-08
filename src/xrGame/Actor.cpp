@@ -1911,6 +1911,34 @@ void CActor::UpdateCL	()
 			lens_droplet_step(s_rain[i], LD_RAIN, g_pGamePersistent->pp_droplets[RAIN_FIRST + i], true);
 	}
 
+	// THE RAIN ON AN OPTIC'S GLASS (hud_lens_wet, lens_wet.h): the drops the scope's outer glass gathers. The rain falling
+	// on it is the weather's density over a heavy rain's, as much as the sky over the camera is open (the rain effect's
+	// sky factor, open from LENS_SKY_FROM on, fully at LENS_SKY_FULL), eased over LENS_RAIN_EASE. Wet, the glass gathers
+	// drops up to what the rain gives, from dry to soaked in LENS_WET_RISE seconds, and under a roof (or in a rain
+	// lighter than it was) loses them, from soaked to dry in LENS_WET_DRY. The clock the drops live by runs only while
+	// rain falls on the glass, as fast as it is heavy: they come and go under the rain, and keep still under a roof.
+	if (g_pGamePersistent)
+	{
+		const float		LENS_RAIN_HEAVY		= 1.f;		// rain_density of a heavy rain: all the drops
+		const float		LENS_SKY_FROM		= 0.4f;		// the sky factor from which rain reaches the glass...
+		const float		LENS_SKY_FULL		= 0.8f;		// ...and all of it (4 of the 5 rays clear)
+		const float		LENS_RAIN_EASE		= 1.5f;		// seconds
+		const float		LENS_WET_RISE		= 20.f;		// seconds from dry to soaked
+		const float		LENS_WET_DRY		= 90.f;		// seconds from soaked to dry
+		static float	s_rain = 0.f, s_wet = 0.f, s_clock = 0.f;
+		CEnvironment&	env		= g_pGamePersistent->Environment();
+		const float		density	= env.CurrentEnv ? env.CurrentEnv->rain_density : 0.f;
+		const float		sky		= env.eff_Rain ? env.eff_Rain->SkyFactor() : 0.f;
+		const float		dt		= Device.fTimeDelta;
+		const float		target	= clampr(density / LENS_RAIN_HEAVY, 0.f, 1.f)
+								* clampr((sky - LENS_SKY_FROM) / (LENS_SKY_FULL - LENS_SKY_FROM), 0.f, 1.f);
+		s_rain			+= (target - s_rain) * _min(1.f, dt / LENS_RAIN_EASE);
+		if (s_wet < s_rain)	s_wet = _min(s_rain, s_wet + dt / LENS_WET_RISE);
+		else				s_wet = _max(s_rain, s_wet - dt / LENS_WET_DRY);
+		s_clock			= fmodf(s_clock + dt * s_rain, float(IGame_Persistent::HUD_LENS_WET_WRAP));
+		g_pGamePersistent->hud_lens_wet.set(s_wet, s_clock, s_rain, 0.f);
+	}
+
 	// HIT FLASH: a one-off hit (CActor::Hit -> s_hit_flash_pending) blurs the whole picture for a moment, flushes
 	// its edges dark red and darkens its corners, all snapping in over HIT_FLASH_IN and dropping away over
 	// HIT_FLASH_OUT. The blur is the pp pass's blur over the finished picture (pp_blur: PP_BLUR_R of the screen
