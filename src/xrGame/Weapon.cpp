@@ -6469,7 +6469,7 @@ u32 CWeapon::Cost() const
 
 bool CWeapon::show_crosshair()
 {
-	if (LoweredBlocksWeapon())	return false;		// weapon down: nothing to aim with until a shot could leave
+	if (LoweredBlocksWeapon())	return false;		// weapon down: no cross until a shot could leave (the actor shows the dot)
 	// GS: an enabled laser designator replaces the crosshair -- you aim with the dot, so hide it
 	if (m_bLaserInstalled && m_bLaserEnabled)	return false;
 	return !IsPending() && ( !IsZoomed() || !ZoomHideCrosshair() );

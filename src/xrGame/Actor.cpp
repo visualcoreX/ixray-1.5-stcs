@@ -2014,16 +2014,16 @@ void CActor::UpdateCL	()
 			fire_disp_full = m_fdisp_controller.GetCurrentDispertion();
 
 			HUD().SetCrosshairDisp(fire_disp_full, 0.02f);
-			// weapon down: no dot in place of the cross (user 2026-10-31) -- nothing while it cannot shoot
-			// (no_shot below), the ordinary crosshair the moment it can
-			HUD().ShowCrosshair(pWeapon->use_crosshair());
-			// No crosshair at all while the weapon cannot shoot: running (the sprint, its enter and the exit
-			// that holds the shot back) or down -- down until it is as far back up as the fire key needs
-			// (WeaponLoweredBlocksAction). It comes back the moment a shot could leave.
-			CWeaponMagazined* pWM	= smart_cast<CWeaponMagazined*>(pWeapon);
-			const bool no_shot		= (pWM && pWM->SprintBlocksFireNow())
-									|| (IsWeaponLowered() && IsLowerable(pWeapon))
+			// Weapon down -- until it is as far back up as the fire key needs (WeaponLoweredBlocksAction): the
+			// dot in the middle of the screen in place of the cross (CHUDTarget::Render keeps the dot there),
+			// the cross following the weapon again the moment a shot could leave.
+			const bool lowered		= (IsWeaponLowered() && IsLowerable(pWeapon))
 									|| pWeapon->LoweredBlocksWeapon();
+			HUD().ShowCrosshair(pWeapon->use_crosshair() && !lowered);
+			// No crosshair at all while running with the weapon up: the sprint, its enter and the exit that
+			// holds the shot back.
+			CWeaponMagazined* pWM	= smart_cast<CWeaponMagazined*>(pWeapon);
+			const bool no_shot		= pWM && pWM->SprintBlocksFireNow();
 #ifdef DEBUG
 			HUD().SetFirstBulletCrosshairDisp(pWeapon->GetFirstBulletDisp());
 #endif
@@ -2032,7 +2032,7 @@ void CActor::UpdateCL	()
 
 			psHUD_Flags.set( HUD_WEAPON_RT, B );
 
-			B = B && pWeapon->show_crosshair() && !no_shot;
+			B = B && (lowered || (pWeapon->show_crosshair() && !no_shot));
 
 			psHUD_Flags.set( HUD_CROSSHAIR_RT2, B );
 			
