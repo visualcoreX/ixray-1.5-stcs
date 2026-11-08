@@ -1,8 +1,10 @@
 #ifndef LENS_WET_H
 #define LENS_WET_H
 
-// The rain on an optic's outer glass (model_sniperlens.ps; after collim.h). The glass keeps out of the rain's wet
-// G-buffer (CRenderTarget::STENCIL_DRY): its own drops are drawn here instead, over its mirror. A map of drops
+// The rain on an optic's outer glass and on a collimator's (model_sniperlens.ps, model_collim_glass.ps; after
+// collim.h). The optic's glass keeps out of the rain's wet G-buffer (CRenderTarget::STENCIL_DRY): its own drops are
+// drawn here instead, over its mirror. On a collimator's clear glass the drops' rims also hide some of the view behind
+// (lens_wet_shade). A map of drops
 // (wpn\lenses_rain) lies on the glass in the model's own x, y -- the same size on every sight, whatever part of the
 // wpn\lenses atlas its glass takes -- and bends the normal the glass mirrors and shines by. The water itself mirrors
 // the world and catches the highlights of the sun and the lamps, sharper than the coated glass under it, in its own
@@ -29,6 +31,8 @@ Texture2D	s_wet;		// wpn\lenses_rain: rg = the drop's normal xy (*0.5+0.5), b = 
 #define	LENS_WET_SPEC		1.0					// the highlights of the sun and the lamps on the water
 #define	LENS_WET_ENV		2.0					// the world the water mirrors
 #define	LENS_WET_FILM		0.25				// the film over the whole soaked glass: its share of a drop's look
+#define	LENS_WET_SHADE		1.5					// a clear glass (a collimator's): how dark a drop's steep rim shows against the view
+												// behind -- it bends the view away there (0 = not at all)
 
 struct	lens_wet_t
 {
@@ -90,5 +94,12 @@ float3	lens_water( float3 p, float3 v, lens_wet_t w )
 	return	( hl * LENS_WET_SPEC + env * LENS_WET_ENV ) * f * w.m;
 }
 
+
+// On a clear glass (a collimator's), how much of the view behind a drop hides -- as alpha: its steep rim bends the
+// view away from the eye and shows dark, its flat middle lets it through
+float	lens_wet_shade( lens_wet_t w, float3 ng )
+{
+	return	saturate( LENS_WET_SHADE * (1 - dot(w.n, ng)) );
+}
 
 #endif

@@ -1,5 +1,6 @@
 #include "common.h"
 #include "collim.h"
+#include "lens_wet.h"
 
 // Pass 0 of the collimator glass (models_lenses, wpn\lenses): what lies on the glass and what shows
 // through it, in one premultiplied-alpha pass (blend one, invsrcalpha):
@@ -10,6 +11,9 @@
 // Pass 1 (model_collim_tint: the tint, a prism's field stop, the etched lines) is drawn first, under it all:
 // it darkens the view behind the glass, never the glass. The world draws this pass alone, and there the
 // binders give a plain glass: full texture, no sky, no reticle.
+// In the rain, drops lie on it (lens_wet.h): they bend the normal the glass mirrors and shines by, add the water's
+// own mirror and highlights, and their rims hide some of the view behind (lens_wet_shade: alpha). The world's glass
+// stays dry (the binder).
 float4 main( v2p_collim I ) : SV_Target
 {
 	float3	v		= normalize( I.pos_w - eye_position );
@@ -18,16 +22,18 @@ float4 main( v2p_collim I ) : SV_Target
 	float3	na		= face_eye( normalize(I.axis_w), v );
 
 	float4	t_base	= s_base.Sample( smp_base, I.tc0 );
-	collim_lamps_t	lamps	= collim_lamps( I.pos_w, ng, v );
+	lens_wet_t		w		= lens_wet( I.obj, I.pos_w, ng );
+	collim_lamps_t	lamps	= collim_lamps( I.pos_w, w.n, v );
 	float3	glass	= collim_glass_light( n, lamps.diff ) * t_base.rgb;
 	float	a		= t_base.a * m_collim_glass.x;
 
 	float	ad;
 	float2	t		= collim_sight( v, I.axis_w, I.right_w, ad );
 
-	float3	refl	= collim_reflection( v, ng, na ) * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
+	float3	refl	= collim_reflection_dn( v, ng, na, w.n - ng ) * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
 	// the reticle's glow is NOT here: the late pass lays it on after the distortion (model_collim_late.ps), which
 	// would otherwise ripple the dot with the world behind the glass (on the world's guns it is black anyway)
-	float3	res		= glass * a + refl + collim_specular( v, ng, t_base.a, COLLIM_SPEC_MAP(I.tc0).rgb, lamps.spec );
-	return	float4( res, a );
+	float3	res		= glass * a + refl + collim_specular( v, w.n, t_base.a, COLLIM_SPEC_MAP(I.tc0).rgb, lamps.spec )
+					+ lens_water( I.pos_w, v, w );
+	return	float4( res, a + (1 - a) * lens_wet_shade(w, ng) );
 }

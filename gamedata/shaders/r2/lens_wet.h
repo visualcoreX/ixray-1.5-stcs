@@ -1,8 +1,8 @@
 #ifndef LENS_WET_H
 #define LENS_WET_H
 
-// The rain on an optic's outer glass (model_sniperlens.ps; after collim.h) -- r3's lens_wet.h, see there. R2 has no
-// cube of the world and no GGX in collim.h: the water mirrors the weather's sky where the glass looks at open sky,
+// The rain on an optic's outer glass and on a collimator's (model_sniperlens.ps, model_collim_glass.ps; after
+// collim.h) -- r3's lens_wet.h, see there. R2 has no cube of the world and no GGX in collim.h: the water mirrors the weather's sky where the glass looks at open sky,
 // and its highlights are GGX of its own here.
 //
 //   m_lens_wet   x = how wet the glass is, 0 dry .. 1 soaked: the drops whose id is under it are there;
@@ -25,6 +25,8 @@ uniform sampler2D	s_wet;		// wpn\lenses_rain: rg = the drop's normal xy (*0.5+0.
 #define	LENS_WET_ENV		2.0					// the sky the water mirrors
 #define	LENS_WET_SKY_LOD	3.0					// ...as soft as the sky cube's level 3
 #define	LENS_WET_FILM		0.25				// the film over the whole soaked glass: its share of a drop's look
+#define	LENS_WET_SHADE		1.5					// a clear glass (a collimator's): how dark a drop's steep rim shows against the view
+												// behind -- it bends the view away there (0 = not at all)
 
 struct	lens_wet_t
 {
@@ -105,5 +107,12 @@ float3	lens_water( float3 p, float3 v, lens_wet_t w )
 	return	( hl * LENS_WET_SPEC + sky * LENS_WET_ENV ) * f * w.m;
 }
 
+
+// On a clear glass (a collimator's), how much of the view behind a drop hides -- as alpha: its steep rim bends the
+// view away from the eye and shows dark, its flat middle lets it through
+float	lens_wet_shade( lens_wet_t w, float3 ng )
+{
+	return	saturate( LENS_WET_SHADE * (1 - dot(w.n, ng)) );
+}
 
 #endif
