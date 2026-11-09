@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="st_agr_quest_duty_lam_case">
+		<text>Army case</text>
+	</string>
+	<string id="st_agr_quest_duty_lam_case_descr">
+		<text>A rugged army case from a Duty convoy the bandits looted. Bedded inside are tactical blocks: laser designators, some of them with a flashlight in the same housing. Under them lies a folder of blueprints for putting them together. The case must be delivered to Gromov, the mechanic at the Duty base.</text>
+	</string>
+	<string id="agr_duty_lam_case_1_name">
+		<text>Take the case from the bandits</text>
+	</string>
+	<string id="agr_duty_lam_case_1_text">
+		<text>Bandits looted a Duty convoy that was bringing a batch of tactical blocks to the base, and hid from Duty in the Agroprom Research Institute underground. Duty tracked them down, but there was no order to go in after them. Find the case of blocks the bandits took.</text>
+	</string>
+	<string id="agr_duty_lam_case_2_name">
+		<text>Bring the case to Gromov</text>
+	</string>
+	<string id="agr_duty_lam_case_2_text">
+		<text>Take the case to Gromov, the mechanic at the Duty base.</text>
+	</string>
+	<string id="agr_duty_mechanic_lam_case_0">
+		<text>Gromov, got any work for me?</text>
+	</string>
+	<string id="agr_duty_mechanic_lam_case_1">
+		<text>I do. A couple of days ago bandits looted our convoy - it was bringing a batch of tactical blocks to the base. Our boys tracked the scum down: they've crawled into the underground beneath the Institute and are sitting it out there - they know that up top we'd crush them in no time. Only there was no order to go in - the general won't risk men over a box. But you're your own man. Bring me the case of blocks and you won't be sorry.</text>
+	</string>
+	<string id="agr_duty_mechanic_lam_case_11">
+		<text>I'm on it.</text>
+	</string>
+	<string id="agr_duty_mechanic_lam_case_111">
+		<text>Good. By the way, the general was just looking for someone to send down into the underground. Only mind you: besides the bandits, there's all sorts of filth down there, so don't stick your neck out. The case is army issue and sealed - bring it straight to me.</text>
+	</string>
+	<string id="agr_duty_mechanic_lam_case_112">
+		<text>Good. I hear you've already been down there, so you know the way - you shouldn't run into much trouble. The case is army issue and sealed - bring it straight to me.</text>
+	</string>
+	<string id="agr_duty_mechanic_lam_case_12">
+		<text>I can't right now.</text>
+	</string>
+	<string id="agr_duty_mechanic_lam_case_121">
+		<text>If you change your mind, come back. Just don't take too long.</text>
+	</string>
+	<string id="agr_duty_mechanic_lam_case_done_0">
+		<text>I took your case off the bandits.</text>
+	</string>
+	<string id="agr_duty_mechanic_lam_case_done_1">
+		<text>Well done! Hand it over. Let's see... intact, not opened - they didn't get round to it, I guess. Look: tactical blocks, army issue. A laser designator, some with a flashlight in the same housing. And this is the real prize - the blueprints for putting them together. With these I can build such blocks myself, not just hand out this one batch.</text>
+	</string>
+	<string id="agr_duty_mechanic_lam_case_done_11">
+		<text>Will you fit one for me?</text>
+	</string>
+	<string id="agr_duty_mechanic_lam_case_done_111">
+		<text>I will, why not. The block mounts on a tactical rail: if your gun has one, that's half the job done. No rail - no trouble either, I'll pick one and fit it like it came from the factory. The work isn't free, mind you. And for the case - here, you've earned it.</text>
+	</string>
+	<string id="agr_duty_mechanic_lam_case_done_1111">
+		<text>Deal.</text>
+	</string>
+</string_table>
