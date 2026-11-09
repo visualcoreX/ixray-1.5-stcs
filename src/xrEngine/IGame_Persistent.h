@@ -163,7 +163,9 @@ public:
 	// (no blood tint). Slots 0..PP_DROPLETS_BLOOD-1 are the bleeding's, the rest the rain's.
 	enum							{ PP_DROPLETS = 20, PP_DROPLETS_BLOOD = 8 };	// the rain's 12
 	// The hit flash (CActor): x = how strongly the edges are flushed dark red (the injury's mask), y = the
-	// vignette, how much of the light leaves the corners. Both 0 = nothing.
+	// vignette, how much of the light leaves the corners. Both 0 = nothing. z, w are the INJURY's (not the hit's):
+	// the beat of its masks' reach, a multiplier of pp_injury_mask's power -- z for the red and the vessels, w for
+	// the drops; 0 = 1 (CActor::UpdateCL, INJURY_REACH_*).
 	Fvector4						pp_hit;
 	Fvector4						pp_droplets[PP_DROPLETS];
 

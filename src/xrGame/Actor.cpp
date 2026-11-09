@@ -1741,6 +1741,15 @@ void CActor::UpdateCL	()
 		// stays): with their masks no longer creeping in (the shader's pp_injury_mask) the beat has to swell
 		// more to be seen running in from the edges. The drops take it only as far as they pulse (with bleeding).
 		const float		INJURY_PULSE_PEAK		= 1.2f;
+		// The beat is carried mostly by the masks' REACH, not their strength (which beating made the whole effect
+		// pulse as one): the strength only swings between INJURY_PULSE_FLOOR of the way from the trough to the peak
+		// and the peak, and the shader's pp_injury_mask power is multiplied by INJURY_REACH_TROUGH between the beats
+		// (the middle clears, the corners -- 1 at any power -- stay) down to INJURY_REACH_PEAK at a beat's peak (it
+		// floods in). Passed in pp_hit.z (the red, the vessels) and pp_hit.w (the drops: only as far as they beat,
+		// with bleeding); 0 there = a power of 1.
+		const float		INJURY_PULSE_FLOOR		= 0.6f;
+		const float		INJURY_REACH_TROUGH		= 1.3f;
+		const float		INJURY_REACH_PEAK		= 0.75f;
 		const float		INJURY_PERIOD_SLOW		= 1.6f;		// seconds per pulse as it just shows...
 		const float		INJURY_PERIOD_FAST		= 1.1f;		// ...and at full injury
 		const float		INJURY_FADE_OUT			= 3.5f;		// seconds for a full fade back out
@@ -1816,11 +1825,17 @@ void CActor::UpdateCL	()
 		const float		trough	= _max(INJURY_DROPS_TROUGH * high, INJURY_DROPS_HEALTH_DIP * s_health_drops);
 		const float		low		= s_health_drops + (trough - s_health_drops) * dip;
 		const float		peak	= high * (1.f + (INJURY_PULSE_PEAK - 1.f) * dip);
-		g_pGamePersistent->pp_injury.set((s_tint * INJURY_TINT + s_tint * s_tint * INJURY_TINT_PULSE * s_pulse)
-											* (1.f + (INJURY_PULSE_PEAK - 1.f) * s_pulse),
-										 low + (peak - low) * s_pulse,
+		// the strength's beat, held up towards the peak (the reach below does the rest)
+		const float		amp		= INJURY_PULSE_FLOOR + (1.f - INJURY_PULSE_FLOOR) * s_pulse;
+		g_pGamePersistent->pp_injury.set((s_tint * INJURY_TINT + s_tint * s_tint * INJURY_TINT_PULSE * amp)
+											* (1.f + (INJURY_PULSE_PEAK - 1.f) * amp),
+										 low + (peak - low) * amp,
 										 INJURY_BLUR * s_blur + s_blur_bleed * (INJURY_BLUR_TROUGH + (INJURY_BLUR_PULSE - INJURY_BLUR_TROUGH) * s_pulse),
-										 s_vessels * (INJURY_VESSELS_TROUGH + (INJURY_PULSE_PEAK - INJURY_VESSELS_TROUGH) * s_pulse));
+										 s_vessels * (INJURY_VESSELS_TROUGH + (INJURY_PULSE_PEAK - INJURY_VESSELS_TROUGH) * amp));
+		// the masks' reach: their power's multiplier (0 = 1, nothing showing)
+		const float		reach	= INJURY_REACH_TROUGH + (INJURY_REACH_PEAK - INJURY_REACH_TROUGH) * s_pulse;
+		g_pGamePersistent->pp_hit.z	= (s_tint > 0.f || s_vessels > 0.f) ? reach : 0.f;
+		g_pGamePersistent->pp_hit.w	= (s_health_drops > 0.f || s_bleeding > 0.f) ? 1.f + (reach - 1.f) * dip : 0.f;
 
 		// LENS DROPLETS while bleeding -- blood running down off the brows (their look and run: lens_droplet_*).
 		// They appear at DROPLET_RATE_MIN a second for the lightest bleeding, up to DROPLET_RATE_MAX at
@@ -1976,10 +1991,11 @@ void CActor::UpdateCL	()
 		if (s_flash > 0.001f)
 		{
 			g_pGamePersistent->pp_blur	= _max(g_pGamePersistent->pp_blur, HIT_FLASH_BLUR * s_flash);
-			g_pGamePersistent->pp_hit.set(HIT_FLASH_RED * s_flash, HIT_FLASH_VIGNETTE * s_flash, 0.f, 0.f);
+			g_pGamePersistent->pp_hit.x	= HIT_FLASH_RED * s_flash;
+			g_pGamePersistent->pp_hit.y	= HIT_FLASH_VIGNETTE * s_flash;
 		}
 		else
-			g_pGamePersistent->pp_hit.set(0.f, 0.f, 0.f, 0.f);
+			g_pGamePersistent->pp_hit.x	= g_pGamePersistent->pp_hit.y = 0.f;	// (z, w: the injury's beat, set above)
 	}
 
 	UpdatePlannedMonsterKick	();
