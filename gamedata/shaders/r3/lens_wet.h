@@ -18,14 +18,22 @@
 //                CActor; the hud's glass only.
 uniform	float4	m_lens_wet;
 Texture2D	s_wet;		// wpn\lenses_rain: rg = the drop's normal xy (*0.5+0.5), b = the water's depth, a = the drop's id (1 = none)
+						// -- one id over the whole drop and a texel round it: its phase, its life and the wetness it
+						// shows at all come of it, and a soft id has its rim and its patches live at times of their own
 
-#define	LENS_WET_TILE		25.0				// the map's repeats a metre of the model: a tile 4 cm across
+#define	LENS_WET_TILE		30.0				// the map's repeats a metre of the model: a tile 3.3 cm across
 #define	LENS_WET_BUMP		1.0					// how steep the drops' sides are (1 = as the map has them)
-#define	LENS_WET_LIFE		7.0					// rain-clock seconds a drop lives: it lands, sits, then dries or runs off
+#define	LENS_WET_CYCLE		5.0					// rain-clock seconds from a drop's landing to the next at its place (3600
+												// times a whole number, or they jump as the clock wraps)...
+#define	LENS_WET_LIFE		float2( 2.5, 3.75 )	// ...of which it lives these (each drop its own): it lands, sits, then dries
+												// or runs off, and the glass stays dry there the rest -- 1.25..2.5 s
 #define	LENS_WET_RUN		0.2					// the share of the drops that run, in a heavy rain
 #define	LENS_WET_RUN_SHAPE	float2( 1.4, 0.3 )	// the runlets: the map squeezed across, drawn out down the glass
 #define	LENS_WET_RUN_SPEED	0.06				// their crawl: drawn-out tiles a rain-clock second (3600 times it a whole number,
-												// or they jump as the clock wraps)
+												// or they jump as the clock wraps) -- 6.7 mm of the glass
+#define	LENS_WET_RUN_CYCLE	4.0					// rain-clock seconds from a runlet's start to the next of it (3600 times...)
+#define	LENS_WET_RUN_LIFE	float2( 1.5, 2.5 )	// ...of which it runs these (each its own), fading out over the last two
+												// thirds: gone 1..1.7 cm down the glass, before its edge
 #define	LENS_WET_ROUGH		0.05				// the water's GGX roughness: sharper than any coating
 #define	LENS_WET_F0			0.02				// water's Fresnel looking straight in
 #define	LENS_WET_SPEC		1.0					// the highlights of the sun and the lamps on the water
@@ -59,17 +67,22 @@ lens_wet_t	lens_wet( float2 obj, float3 p, float3 ng )
 	gu				*= s;
 	gv				*= s;
 
-	// the drops sitting still: the ones the wetness lets in, each living LENS_WET_LIFE -- landing at once, drying
-	// over the last fifth of it -- each at a time of its own
+	// the drops sitting still: the ones the wetness lets in, each landing once a LENS_WET_CYCLE at a time of its own,
+	// at once, living its LENS_WET_LIFE and drying over the last fifth of it, then leaving the glass dry till the next
 	float4	d		= s_wet.Sample( smp_base, uv );
 	float	on		= saturate( (m_lens_wet.x - d.a) * 16 );
-	float	life	= frac( m_lens_wet.y / LENS_WET_LIFE + d.a * 37.1 );
+	float	t		= frac( m_lens_wet.y / LENS_WET_CYCLE + d.a * 37.1 ) * LENS_WET_CYCLE;
+	float	life	= t / lerp( LENS_WET_LIFE.x, LENS_WET_LIFE.y, frac(d.a * 91.7) );	// 0..1, then over 1 dry
 	on				*= saturate( life * 40 ) * saturate( (1 - life) * 5 );
 
-	// the runlets: the map drawn out down the glass (the model's -y) and crawling down it, while the rain falls
+	// the runlets: the map drawn out down the glass (the model's -y) and crawling down it, while the rain falls --
+	// each starting once a LENS_WET_RUN_CYCLE at a time of its own and fading out as it runs
 	float2	q		= uv * LENS_WET_RUN_SHAPE + float2( 0.37, m_lens_wet.y * LENS_WET_RUN_SPEED );
 	float4	r		= s_wet.Sample( smp_base, q );
 	float	ron		= saturate( (m_lens_wet.z * LENS_WET_RUN - r.a) * 16 );
+	float	rt		= frac( m_lens_wet.y / LENS_WET_RUN_CYCLE + r.a * 29.3 ) * LENS_WET_RUN_CYCLE;
+	float	run		= rt / lerp( LENS_WET_RUN_LIFE.x, LENS_WET_RUN_LIFE.y, frac(r.a * 71.3) );	// 0..1, then over 1 gone
+	ron				*= saturate( run * 40 ) * saturate( (1 - run) * 1.5 );
 
 	float2	nxy		= ( (d.rg * 2 - 1) * on + (r.rg * 2 - 1) * LENS_WET_RUN_SHAPE * ron ) * LENS_WET_BUMP;
 	float	nz		= sqrt( saturate(1 - dot(nxy, nxy)) );
