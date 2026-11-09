@@ -1968,7 +1968,9 @@ void CActor::UpdateCL	()
 		if (s_wet < s_rain)	s_wet = _min(s_rain, s_wet + dt / LENS_WET_RISE);
 		else				s_wet = _max(s_rain, s_wet - dt / LENS_WET_DRY);
 		s_clock			= fmodf(s_clock + dt * s_rain, float(IGame_Persistent::HUD_LENS_WET_WRAP));
-		g_pGamePersistent->hud_lens_wet.set(s_wet, s_clock, s_rain, 0.f);
+		// .w: the held weapon's aim -- a collimator's drops fade in it, sitting right before the eye
+		CWeapon*		wpn		= smart_cast<CWeapon*>(inventory().ActiveItem());
+		g_pGamePersistent->hud_lens_wet.set(s_wet, s_clock, s_rain, wpn ? wpn->GetInertionAimFactor() : 0.f);
 	}
 
 	// HIT FLASH: a one-off hit (CActor::Hit -> s_hit_flash_pending) blurs the whole picture for a moment, flushes

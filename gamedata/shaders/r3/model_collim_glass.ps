@@ -22,7 +22,7 @@ float4 main( v2p_collim I ) : SV_Target
 	float3	na		= face_eye( normalize(I.axis_w), v );
 
 	float4	t_base	= s_base.Sample( smp_base, I.tc0 );
-	lens_wet_t		w		= lens_wet( I.obj, I.pos_w, ng );
+	lens_wet_t		w		= lens_wet( I.obj, I.pos_w, ng, LENS_WET_COLLIM );
 	collim_lamps_t	lamps	= collim_lamps( I.pos_w, w.n, v );
 	float3	glass	= collim_glass_light( n, lamps.diff ) * t_base.rgb;
 	float	a		= t_base.a * m_collim_glass.x;

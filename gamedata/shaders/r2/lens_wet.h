@@ -7,7 +7,8 @@
 //
 //   m_lens_wet   x = how wet the glass is, 0 dry .. 1 soaked: the drops whose id is under it are there;
 //                y = the rain's clock, seconds (runs only while the rain falls on the glass, as fast as it is heavy;
-//                wraps at IGame_Persistent::HUD_LENS_WET_WRAP, 3600); z = the rain falling on it now, 0..1.
+//                wraps at IGame_Persistent::HUD_LENS_WET_WRAP, 3600); z = the rain falling on it now, 0..1;
+//                w = the held weapon's aim, 0..1 (a collimator's drops fade by LENS_WET_COLLIM_AIM in it).
 //                CActor; the hud's glass only.
 uniform	float4		m_lens_wet;
 uniform sampler2D	s_wet;		// wpn\lenses_rain: rg = the drop's normal xy (*0.5+0.5), b = the water's depth, a = the drop's id (1 = none)
@@ -19,6 +20,9 @@ uniform sampler2D	s_wet;		// wpn\lenses_rain: rg = the drop's normal xy (*0.5+0.
 												// times a whole number, or they jump as the clock wraps)...
 #define	LENS_WET_LIFE		float2( 2.5, 3.75 )	// ...of which it lives these (each drop its own): it lands, sits, then dries
 												// or runs off, and the glass stays dry there the rest -- 1.25..2.5 s
+#define	LENS_WET_COLLIM_AIM	0.5					// how much of a collimator's drops fade as the eye comes to it: in the aim
+												// they sit right before it, and over the whole sight's glass
+#define	LENS_WET_COLLIM		( 1 - LENS_WET_COLLIM_AIM * m_lens_wet.w )	// lens_wet's k on a collimator
 #define	LENS_WET_RUN		0.2					// the share of the drops that run, in a heavy rain
 #define	LENS_WET_RUN_SHAPE	float2( 1.4, 0.3 )	// the runlets: the map squeezed across, drawn out down the glass
 #define	LENS_WET_RUN_SPEED	0.06				// their crawl: drawn-out tiles a rain-clock second (3600 times it a whole number,
@@ -41,8 +45,9 @@ struct	lens_wet_t
 	float	m;			// how much water lies there, 0..1
 };
 
-// The drops at p (the world position) on the glass of normal ng (facing the eye), obj: the model's x, y there.
-lens_wet_t	lens_wet( float2 obj, float3 p, float3 ng )
+// The drops at p (the world position) on the glass of normal ng (facing the eye), obj: the model's x, y there; k: how
+// strong they are (1 on an optic's glass, LENS_WET_COLLIM on a collimator's).
+lens_wet_t	lens_wet( float2 obj, float3 p, float3 ng, float k )
 {
 	float2	uv		= obj * LENS_WET_TILE;
 
@@ -75,12 +80,12 @@ lens_wet_t	lens_wet( float2 obj, float3 p, float3 ng )
 	float	run		= rt / lerp( LENS_WET_RUN_LIFE.x, LENS_WET_RUN_LIFE.y, frac(r.a * 71.3) );	// 0..1, then over 1 gone
 	ron				*= saturate( run * 40 ) * saturate( (1 - run) * 1.5 );
 
-	float2	nxy		= ( (d.rg * 2 - 1) * on + (r.rg * 2 - 1) * LENS_WET_RUN_SHAPE * ron ) * LENS_WET_BUMP;
+	float2	nxy		= ( (d.rg * 2 - 1) * on + (r.rg * 2 - 1) * LENS_WET_RUN_SHAPE * ron ) * LENS_WET_BUMP * k;
 	float	nz		= sqrt( saturate(1 - dot(nxy, nxy)) );
 
 	lens_wet_t	w;
 	w.n				= normalize( ng * nz + gu * nxy.x + gv * nxy.y );
-	w.m				= max( saturate(d.b * on + r.b * ron), LENS_WET_FILM * m_lens_wet.x );
+	w.m				= max( saturate(d.b * on + r.b * ron), LENS_WET_FILM * m_lens_wet.x ) * k;
 	return	w;
 }
 

@@ -128,7 +128,8 @@ public:
 	// The rain on an optic's outer glass (m_lens_wet, lens_wet.h): x = how wet it is, 0 dry .. 1 soaked (the share of
 	// the drops on it), y = the rain's clock, seconds wrapping at HUD_LENS_WET_WRAP -- it runs only while rain falls on
 	// the glass, as fast as the rain is heavy: the drops' lives and the runlets' crawl -- z = the rain falling on it
-	// now, 0..1, eased (the runlets). CActor, from the weather and the rain effect's sky factor.
+	// now, 0..1, eased (the runlets), w = the held weapon's aim, 0..1 (a collimator's drops fade in it). CActor, from
+	// the weather and the rain effect's sky factor.
 	enum							{ HUD_LENS_WET_WRAP = 3600 };
 	Fvector4						hud_lens_wet;
 	// The frame's average brightness as the eye has adapted to it (the tonemap's measure), read back from the

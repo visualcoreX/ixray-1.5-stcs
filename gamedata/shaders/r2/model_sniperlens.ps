@@ -21,7 +21,7 @@ float4 main( v2p_collim I ) : COLOR
 	float3	ng		= face_eye( normalize(I.norm_w), v );
 	float3	na		= face_eye( normalize(I.axis_w), v );
 
-	lens_wet_t		w		= lens_wet( I.obj, I.pos_w, ng );
+	lens_wet_t		w		= lens_wet( I.obj, I.pos_w, ng, 1 );
 	collim_lamps_t	lamps	= collim_lamps( I.pos_w, w.n, v );
 	float	t_a		= tex2D( s_base, I.tc0 ).a;
 	float3	res		= collim_reflection_dn( v, ng, na, w.n - ng ) * lerp( 1, 1 - t_a, m_collim_reflect_shape.z )

@@ -37,7 +37,7 @@ float4 main( v2p_collim I, float4 pos2d : SV_Position ) : SV_Target
 	float	a		= t_base.a * m_collim_glass.x;
 	float3	n		= normalize( I.norm_w );
 	float3	ng		= face_eye( n, v );
-	lens_wet_t		w		= lens_wet( I.obj, I.pos_w, ng );		// before the clip: it takes the screen's derivatives
+	lens_wet_t		w		= lens_wet( I.obj, I.pos_w, ng, LENS_WET_COLLIM );		// before the clip: it takes the screen's derivatives
 	float3	glow	= collim_glow( t, ad ) * (1 - a) * (1 - lens_wet_shade(w, ng));
 	float3	water	= lens_water( I.pos_w, v, w );
 	clip( max(dark - 0.001, dot(glow, float3(1, 1, 1)) - 0.0001) );
