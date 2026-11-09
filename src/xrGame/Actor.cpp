@@ -1672,7 +1672,7 @@ void CActor::UpdateCL	()
 		// (the beat still shows, only flatter).
 		const float		FATIGUE_VIGNETTE_KNEE	= 0.7f;
 		const float		FATIGUE_VIGNETTE_MAX	= 0.9f;
-		const float		FATIGUE_SHARP			= 1.25f;	// edge sharpening at full (unsharp mask amount; was 0.5 against a
+		const float		FATIGUE_SHARP			= 0.75f;	// edge sharpening at full (unsharp mask amount, 1.25 too much; was 0.5 against a
 															// wide blur -- the fine one now, 4 px, needs more to warp the picture)
 		// the EXHAUSTION's radial chromatic aberration (pp_fatigue_ca, postprocess.ps pp_fatigue_ca): from
 		// FATIGUE_CA_LEAD above the stamina where running stops (conditions().CantSprintPowerBegin(), 0.2), full
