@@ -427,6 +427,29 @@ Texture2D	s_blood_glare;
 #define PP_GLARE_LO			0.03f	// lower and the sky lit the glare everywhere
 #define PP_GLARE_HI			0.15f
 #define PP_GLARE_GAIN		1.0f
+
+// The LIGHTS' glare (glare_gather_lights): the bloom above never sees a fire, a glow or a torch's beam (it is
+// built before the forward pass) and seldom a lamp's bulb (under its threshold), so the engine hands over the
+// strongest PP_GLARE_LIGHTS of this frame's lights itself: m_pp_glare_lights[2i] = where it stands (screen uv,
+// off the screen too), [2i + 1] = its colour x weight (black = none; fading in and out as it shows or hides).
+// Each lights the glare around it out to PP_GLARE_LIGHT_R of the screen height, falling off as (1 - d / R)^2,
+// in its own colour; the sum goes through 1 - exp(-x), so a cluster of lamps never burns it out, times
+// PP_GLARE_LIGHT_GAIN. Both the drops' glare and the droplets' take it, on top of the bloom's.
+#define PP_GLARE_LIGHTS		8
+#define PP_GLARE_LIGHT_R	0.6f
+#define PP_GLARE_LIGHT_GAIN	1.0f
+uniform float4 m_pp_glare_lights[PP_GLARE_LIGHTS * 2];
+float3 pp_glare_lights(float2 uv)
+{
+	float2 asp	= float2(screen_res.x * screen_res.w, 1.0f);	// uv to screen heights
+	float3 sum	= float3(0.0f, 0.0f, 0.0f);
+	for (int i = 0; i < PP_GLARE_LIGHTS; i++)
+	{
+		float  f	= saturate(1.0f - length((uv - m_pp_glare_lights[i * 2].xy) * asp) / PP_GLARE_LIGHT_R);
+		sum += m_pp_glare_lights[i * 2 + 1].rgb * (f * f);
+	}
+	return (1.0f - exp(-sum)) * PP_GLARE_LIGHT_GAIN;
+}
 float3 pp_overlay(float3 a, float3 b)
 {
 	a = saturate(a);
@@ -465,7 +488,8 @@ float3 pp_injury_drops(float3 c, float2 uv)
 	float4 b4	= s_bloom.SampleLevel(smp_rtlinear, uv + float2(-rad.x, -rad.y), 0.0f);
 	float3 lit	= b0.rgb * b0.a * 0.4f + (b1.rgb * b1.a + b2.rgb * b2.a + b3.rgb * b3.a + b4.rgb * b4.a) * 0.15f;
 	float  b	= sqrt(saturate((dot(lit, float3(0.299f, 0.587f, 0.114f)) - PP_GLARE_LO) / (PP_GLARE_HI - PP_GLARE_LO)));
-	return c + s_blood_glare.Sample(smp_rtlinear, uv).rgb * (PP_GLARE_GAIN * b * m);
+	float3 g	= s_blood_glare.Sample(smp_rtlinear, uv).rgb;
+	return c + g * ((PP_GLARE_GAIN * b + pp_glare_lights(uv)) * m);
 }
 
 // The VESSELS: fx_blood_vessels_00, a grey (0.5) plate with the vessels darker/redder towards the rim, laid
@@ -514,7 +538,8 @@ float3 pp_injury_rblur1(float2 uv, float3 c, float2 at)
 // pp_droplets_refract bends the scene's sampling through them (before everything else -- the drop refracts
 // the plain picture); pp_droplets_colour tints them and adds the glare over everything, on the lens. The glare
 // is lit like the big drops' one, by the bloom through PP_GLARE_LO..HI -- but read once, at the droplet's
-// centre, for the whole droplet: one cheap sample, and the drop lights up or dims as a whole.
+// centre, for the whole droplet: one cheap sample, and the drop lights up or dims as a whole. So are the
+// lights' (pp_glare_lights), there too.
 #define PP_DROPLETS			20		// the bleeding's 8 and the rain's 12
 #define PP_DROPLET_REFRACT	1.0f	// how strongly a drop bends what is behind it
 #define PP_DROPLET_TINT		float3(70.0f, 7.0f, 5.0f) / 255.0f	// was (140, 15, 10), halved
@@ -560,7 +585,7 @@ float3 pp_droplets_colour(float3 c, float2 uv)
 		else				c = lerp(c, dot(c, float3(0.299f, 0.587f, 0.114f)) * 0.9f, t.r * a * PP_RAIN_DROPLET_MIX);
 		float4 bl	= s_bloom.SampleLevel(smp_rtlinear, dr.xy, 0.0f);
 		float  lit	= sqrt(saturate((dot(bl.rgb * bl.a, float3(0.299f, 0.587f, 0.114f)) - PP_GLARE_LO) / (PP_GLARE_HI - PP_GLARE_LO)));
-		c	+= t.a * a * lit * PP_DROPLET_GLARE;
+		c	+= t.a * a * (lit + pp_glare_lights(dr.xy)) * PP_DROPLET_GLARE;
 	}
 	return c;
 }
