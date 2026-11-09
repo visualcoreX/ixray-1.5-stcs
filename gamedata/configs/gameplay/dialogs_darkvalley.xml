@@ -971,6 +971,7 @@
 				<next>3</next>
 				<next>4</next>
 				<next>5</next>
+				<next>6</next>
 			</phrase>
 			<phrase id="1">
 				<text/>
@@ -989,7 +990,14 @@
 			<phrase id="3">
 				<text/>
 				<has_info>val_night_bloodsucker_reward_complete</has_info>
+				<has_info>val_freedom_fixer_tac_blocks_told</has_info>
 				<next>31</next>
+			</phrase>
+			<phrase id="6">
+				<text/>
+				<has_info>val_night_bloodsucker_reward_complete</has_info>
+				<dont_has_info>val_freedom_fixer_tac_blocks_told</dont_has_info>
+				<next>61</next>
 			</phrase>
 			<phrase id="4">
 				<text/>
@@ -1095,6 +1103,22 @@
 			</phrase>
 			<phrase id="21211">
 				<text>val_freedom_fixer_hello_dialog_21211</text>
+			</phrase>
+			<phrase id="61">
+				<text>val_freedom_fixer_hello_dialog_61</text>
+				<next>611</next>
+			</phrase>
+			<phrase id="611">
+				<text>val_freedom_fixer_hello_dialog_611</text>
+				<next>6111</next>
+			</phrase>
+			<phrase id="6111">
+				<text>val_freedom_fixer_hello_dialog_6111</text>
+				<give_info>val_freedom_fixer_tac_blocks_told</give_info>
+				<next>61111</next>
+			</phrase>
+			<phrase id="61111">
+				<text>val_freedom_fixer_hello_dialog_61111</text>
 			</phrase>
 		</phrase_list>
 	</dialog>
