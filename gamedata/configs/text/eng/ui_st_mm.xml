@@ -745,7 +745,7 @@
 		<text>Ultra</text>
 	</string>
 	<string id="ui_mm_lens_cube">
-		<text>Lens reflections</text>
+		<text>Dynamic lens reflections</text>
 	</string>
 	<string id="ui_mm_lens_factor">
 		<text>3D-lens FPS</text>
