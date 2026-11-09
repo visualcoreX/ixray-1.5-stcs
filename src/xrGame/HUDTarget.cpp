@@ -146,13 +146,14 @@ void CHUDTarget::CursorOnFrame ()
 
 	// A gun in first-person hands: the crosshair stands where its shot would land -- the first thing its
 	// ray meets, the same see-through rules as above -- and follows the weapon's recoil, and of its sway
-	// the part hud_crosshair_sway leaves it (player_hud::fire_ray_local).
+	// the part hud_crosshair_sway leaves it (player_hud::fire_ray_local). Only the cross: the dot (weapon
+	// down, binoculars, bolt, empty hands) stays in the middle of the screen.
 	m_fire_ray			= false;
 	CActor* A			= smart_cast<CActor*>(Level().CurrentEntity());
 	CHudItem* hi		= A ? smart_cast<CHudItem*>(A->inventory().ActiveItem()) : NULL;
 	float tdist			= -1.f;
 	CObject* tobj		= NULL;
-	if (g_hud_crosshair_detailed && hi && smart_cast<CWeaponMagazined*>(hi) && A->HudFireRay(hi, m_fire_pos, m_fire_dir, true, &tdist, &tobj))
+	if (g_hud_crosshair_detailed && m_bShowCrosshair && hi && smart_cast<CWeaponMagazined*>(hi) && A->HudFireRay(hi, m_fire_pos, m_fire_dir, true, &tdist, &tobj))
 	{
 		PPF.RQ.O		= 0;
 		PPF.RQ.range	= g_pGamePersistent->Environment().CurrentEnv->far_plane*0.99f;
@@ -196,10 +197,12 @@ void CHUDTarget::Render()
 	CEntity*	E		= smart_cast<CEntity*>(O);
 	if (0==E)	return;
 
-	// the shot's ray when there is one (CursorOnFrame), else the view's
-	SPickParam& PP			= m_fire_ray ? PPF : this->PP;
-	Fvector p1				= m_fire_ray ? m_fire_pos : Device.vCameraPosition;
-	Fvector dir				= m_fire_ray ? m_fire_dir : Device.vCameraDirection;
+	// the shot's ray when there is one (CursorOnFrame) and the cross is drawn, else the view's: the dot
+	// never follows the weapon (ShowCrosshair may have switched since CursorOnFrame)
+	const bool fire_ray		= m_fire_ray && m_bShowCrosshair;
+	SPickParam& PP			= fire_ray ? PPF : this->PP;
+	Fvector p1				= fire_ray ? m_fire_pos : Device.vCameraPosition;
+	Fvector dir				= fire_ray ? m_fire_dir : Device.vCameraDirection;
 	
 	// Render cursor
 	u32 C				= C_DEFAULT;
@@ -212,6 +215,7 @@ void CHUDTarget::Render()
 	pt.y = -pt.y;
 	if (pt.w <= EPS_L || !_valid(pt.x) || !_valid(pt.y))	// behind the eye: keep it in the middle
 		{ pt.x = pt.y = 0.f; pt.w = _max(pt.w, 1.f); }
+	if (!fire_ray)		pt.x = pt.y = 0.f;		// the view's ray: exactly the middle of the screen
 	clamp				(pt.x, -1.f, 1.f);
 	clamp				(pt.y, -1.f, 1.f);
 	//PT.transform		(p2,Device.mFullTransform);

@@ -14,6 +14,11 @@ const	int					lt_hemisamples	= 26	;
 #define COLLIM_LIGHTS	8
 void	collim_gather_lights	(Fvector4* out);
 
+// the lights the blood and rain on the lens catch a glare from, besides the bloom (LightTrack.cpp, phase_PP ->
+// postprocess.ps m_pp_glare_lights)
+#define GLARE_LIGHTS	8
+void	glare_gather_lights		(Fvector4* out);
+
 class	CROS_impl			: public IRender_ObjectSpecific
 {
 public:

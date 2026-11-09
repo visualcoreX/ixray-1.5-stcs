@@ -24,6 +24,7 @@ struct vf
 	float3	norm_w	: TEXCOORD2;
 	float3	axis_w	: TEXCOORD3;
 	float3	right_w	: TEXCOORD4;
+	float2	obj		: TEXCOORD5;	// the model's x, y: where the rain's drops lie on the glass (lens_wet.h)
 };
 
 vf _main( v_model v )
@@ -36,6 +37,7 @@ vf _main( v_model v )
 #endif
 	o.tc0		= v.tc.xy;
 	o.pos_w		= mul( m_W, v.P );
+	o.obj		= v.P.xy;										// skinned: the model's own space, still with the gun
 	o.norm_w	= mul( (float3x3)m_W, v.N );
 	o.axis_w	= mul( (float3x3)m_W, v.T );					// the lens axis, see AXIS_PACKED
 	o.right_w	= mul( (float3x3)m_W, v.B );					// the scope's right, see RIGHT_PACKED

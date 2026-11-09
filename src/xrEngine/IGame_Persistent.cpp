@@ -55,11 +55,13 @@ IGame_Persistent::IGame_Persistent	()
 	hud_collim_prism.set			(0.f, 1.f, 0.f, 0.f);	// not a prism
 	hud_collim_hemi_pos.set			(1.f, 1.f, 1.f, 0.f);	// open sky all round
 	hud_collim_hemi_neg.set			(1.f, 1.f, 1.f, 0.f);
+	hud_lens_wet.set				(0.f, 0.f, 0.f, 0.f);	// dry glass
 	frame_luminance					= -1.f;					// none measured yet
 	pp_screen_warp.set				(0.f, 1.f, 0.f, 0.f);	// no fisheye, fov untouched, no colour (z was the aspect once -- 1 here lit the colour swim in the menu)
 	dof_kernel_mul					= 1.f;					// the DOF blur exactly as r2_dof_kernel says
 	pp_blur							= 0.f;					// no blur over the final picture
 	pp_fatigue.set					(0.f, 0.f, 0.f, 0.f);	// no fatigue grading
+	pp_fatigue_ca.set				(0.f, 0.f, 0.f, 0.f);	// no exhaustion aberration
 	pp_injury.set					(0.f, 0.f, 0.f, 0.f);	// no injury grading
 	pp_hit.set						(0.f, 0.f, 0.f, 0.f);	// no hit flash
 	for (int i = 0; i < PP_DROPLETS; ++i)	pp_droplets[i].set(0.f, 0.f, 0.f, 0.f);	// no droplets

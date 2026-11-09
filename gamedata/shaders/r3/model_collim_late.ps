@@ -1,5 +1,6 @@
 #include "common.h"
 #include "collim.h"
+#include "lens_wet.h"
 
 // A prism sight's black field stop over the FINISHED picture -- pass 1 of the eyepiece's l_special
 // (models_lenses.s), drawn by r_dsgraph_render_lens_late once the bloom, the sun's shafts and the lens
@@ -25,6 +26,7 @@ Texture2DMS<float4, MSAA_SAMPLES>	s_vollight;
 // ...and on every hud collimator, prism or not, the reticle's GLOW: model_collim_glass leaves it out, so that the
 // distortion (water, heat haze behind the sight), applied to the picture in between, ripples the world through the
 // glass but not the dot. Added (alpha 0) where the stop lets the view through, inside the replaced black as before.
+// The rain's drops (lens_wet.h) as model_collim_glass has them: their rims hide the glow behind as they hide the view.
 float4 main( v2p_collim I, float4 pos2d : SV_Position ) : SV_Target
 {
 	float3	v		= normalize( I.pos_w - eye_position );
@@ -33,7 +35,11 @@ float4 main( v2p_collim I, float4 pos2d : SV_Position ) : SV_Target
 	float	dark	= (m_collim_prism.w > 0.5) ? (1 - collim_field_stop( t, ad )) : 0;
 	float4	t_base	= s_base.Sample( smp_base, I.tc0 );
 	float	a		= t_base.a * m_collim_glass.x;
-	float3	glow	= collim_glow( t, ad ) * (1 - a);
+	float3	n		= normalize( I.norm_w );
+	float3	ng		= face_eye( n, v );
+	lens_wet_t		w		= lens_wet( I.obj, I.pos_w, ng, LENS_WET_COLLIM );		// before the clip: it takes the screen's derivatives
+	float3	glow	= collim_glow( t, ad ) * (1 - a) * (1 - lens_wet_shade(w, ng));
+	float3	water	= lens_water( I.pos_w, v, w );
 	clip( max(dark - 0.001, dot(glow, float3(1, 1, 1)) - 0.0001) );
 	if ( dark < 0.001 )	return	float4( glow, 0 );
 
@@ -45,13 +51,11 @@ float4 main( v2p_collim I, float4 pos2d : SV_Position ) : SV_Target
 #endif
 	float3	haze	= L_sun_color * sun_shafts_intensity.x * facing * sunlit * m_collim_veil.x * m_collim_veil.y;
 
-	float3	n		= normalize( I.norm_w );
-	float3	ng		= face_eye( n, v );
 	float3	na		= face_eye( normalize(I.axis_w), v );
-	collim_lamps_t	lamps	= collim_lamps( I.pos_w, ng, v );
+	collim_lamps_t	lamps	= collim_lamps( I.pos_w, w.n, v );
 	float3	glass	= collim_glass_light( n, lamps.diff ) * t_base.rgb;
-	float3	refl	= collim_reflection( v, ng, na ) * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
+	float3	refl	= collim_reflection_dn( v, ng, na, w.n - ng ) * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
 
-	float3	res		= glow + glass * a + refl + collim_specular( v, ng, t_base.a, COLLIM_SPEC_MAP(I.tc0).rgb, lamps.spec ) + haze;
+	float3	res		= glow + glass * a + refl + collim_specular( v, w.n, t_base.a, COLLIM_SPEC_MAP(I.tc0).rgb, lamps.spec ) + water + haze;
 	return	float4( res * dark + glow * (1 - dark), dark );
 }

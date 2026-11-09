@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "../xrRender/LightTrack.h"
 #include "r2_rendertarget.h"
 
 void	CRenderTarget::u_calc_tc_noise		(Fvector2& p0, Fvector2& p1)
@@ -198,6 +199,10 @@ void CRenderTarget::phase_pp		()
 		static	shared_str	s_pp_fatigue	= "m_pp_fatigue";
 		const Fvector4 fa = g_pGamePersistent ? g_pGamePersistent->pp_fatigue : Fvector4().set(0.f,0.f,0.f,0.f);
 		RCache.set_c		(s_pp_fatigue, fa.x, fa.y, fa.z, fa.w);
+		// the exhaustion's radial chromatic aberration (pp_fatigue_ca, CActor): x = pixels in the corners
+		static	shared_str	s_pp_fatigue_ca	= "m_pp_fatigue_ca";
+		const Fvector4 fc = g_pGamePersistent ? g_pGamePersistent->pp_fatigue_ca : Fvector4().set(0.f,0.f,0.f,0.f);
+		RCache.set_c		(s_pp_fatigue_ca, fc.x, fc.y, fc.z, fc.w);
 		// the injury grading (pp_injury, CActor): x = red edges, y = blood drops on the lens
 		static	shared_str	s_pp_injury		= "m_pp_injury";
 		const Fvector4 ij = g_pGamePersistent ? g_pGamePersistent->pp_injury : Fvector4().set(0.f,0.f,0.f,0.f);
@@ -206,11 +211,21 @@ void CRenderTarget::phase_pp		()
 		static	shared_str	s_pp_hit		= "m_pp_hit";
 		const Fvector4 ht = g_pGamePersistent ? g_pGamePersistent->pp_hit : Fvector4().set(0.f,0.f,0.f,0.f);
 		RCache.set_c		(s_pp_hit, ht.x, ht.y, ht.z, ht.w);
+		bool	glare	= ij.y > 0.f;
 		// the bleeding's lens droplets (pp_droplets, CActor): centre, radius (signed: mirrored), opacity
 		for (int i = 0; i < IGame_Persistent::PP_DROPLETS; ++i)
 		{
 			const Fvector4 dr = g_pGamePersistent ? g_pGamePersistent->pp_droplets[i] : Fvector4().set(0.f,0.f,0.f,0.f);
 			RCache.set_ca	("m_pp_droplets", i, dr.x, dr.y, dr.z, dr.w);
+			if (dr.w != 0.f)	glare	= true;
+		}
+		// the lights the drops and droplets catch a glare from, besides the bloom (glare_gather_lights): screen
+		// uv, then colour x weight, GLARE_LIGHTS pairs -- worked out only while there is a drop to catch it
+		if (glare)
+		{
+			Fvector4	gl	[GLARE_LIGHTS*2];
+			glare_gather_lights	(gl);
+			for (u32 i = 0; i < GLARE_LIGHTS*2; ++i)	RCache.set_ca	("m_pp_glare_lights", i, gl[i]);
 		}
 	}
 	static	shared_str	s_brightness	= "c_brightness";

@@ -1,5 +1,6 @@
 #include "common.h"
 #include "collim.h"
+#include "lens_wet.h"
 
 // The optics' glass (models\sniperlenses: wpn\lenses on a scope's body) mirrors as a collimator's glass does. The
 // glass itself is drawn as shaders.xr always drew it, into the G-buffer with the rest of the hud; this is E[4] of its
@@ -10,6 +11,8 @@
 // near the eye (collim_specular). Its keys are theirs too -- collimator_reflect*, collimator_specular* -- from the
 // scope, its addon or the weapon, else [optic_glass_reflect] (gunsl_scopes.ltx). The inner lenses' glints are r3's.
 // The aim takes it all away: through the lens it would cover the view (m_hud_params.y, the aim into a lensed scope).
+// In the rain, drops lie on it (lens_wet.h): they bend the normal the glass mirrors and shines by, and add the water's
+// own mirror and highlights.
 uniform	float4	m_hud_params;
 
 float4 main( v2p_collim I ) : COLOR
@@ -18,9 +21,11 @@ float4 main( v2p_collim I ) : COLOR
 	float3	ng		= face_eye( normalize(I.norm_w), v );
 	float3	na		= face_eye( normalize(I.axis_w), v );
 
-	collim_lamps_t	lamps	= collim_lamps( I.pos_w, ng, v );
+	lens_wet_t		w		= lens_wet( I.obj, I.pos_w, ng, 1 );
+	collim_lamps_t	lamps	= collim_lamps( I.pos_w, w.n, v );
 	float	t_a		= tex2D( s_base, I.tc0 ).a;
-	float3	res		= collim_reflection( v, ng, na ) * lerp( 1, 1 - t_a, m_collim_reflect_shape.z )
-					+ collim_specular( v, ng, 0, COLLIM_SPEC_MAP(I.tc0).rgb, lamps.spec );
+	float3	res		= collim_reflection_dn( v, ng, na, w.n - ng ) * lerp( 1, 1 - t_a, m_collim_reflect_shape.z )
+					+ collim_specular( v, w.n, 0, COLLIM_SPEC_MAP(I.tc0).rgb, lamps.spec )
+					+ lens_water( I.pos_w, v, w );
 	return	float4( res * ( 1 - saturate(m_hud_params.y) ), 0 );
 }

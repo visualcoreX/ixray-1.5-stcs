@@ -187,6 +187,7 @@ void			CLight_DB::add_rain_light	(light* L)
 	R.color.mul								(L->get_LOD());
 	R.direction.set							(L->direction);
 	R.cone_cos								= (L->flags.type==IRender_Light::SPOT) ? _cos(L->cone*0.5f) : -2.f;
+	R.source								= L;
 }
 
 #if RENDER==R_R1

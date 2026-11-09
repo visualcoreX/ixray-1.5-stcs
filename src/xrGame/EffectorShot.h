@@ -79,6 +79,28 @@ protected:
 	float			m_kick_scale_vert;
 	float			m_kick_scale_horz;
 
+	// Past cam_max_angle (CameraRecoil::Limit*). The kick that first got there caps every later cut, so
+	// cam_dispersion_inc stops mattering at the ceiling.
+	float			m_limit_kick;
+	// Time since the last shot: a nod lasts one gap between rounds, so it comes back before the next one.
+	float			m_since_shot;
+	// One wave per shot like the roll's, drawn on top of m_angle_vert: they end at 0 by themselves and
+	// never touch the climb. Reset() leaves them running, the camera is still displaced by them.
+	enum { MAX_NOD_INSTANCES = 16 };
+	struct SNod
+	{
+		float		elapsed;
+		float		duration;
+		float		amplitude;
+	};
+	SNod			m_nods[MAX_NOD_INSTANCES];
+	int				m_nod_count;
+	// The random vertical offset, also on top of m_angle_vert. Eases along with the rise, and like the
+	// sideways sway it stays where it lands.
+	float			m_spray;
+	float			m_spray_from;
+	float			m_spray_target;
+
 	// Roll (Z-axis) shake: one full damped sine cycle per shot, amplitude cam_roll_amount (or
 	// cam_dispersion*0.5 as a fallback), duration cam_rise_time*1.25 -- see GetRoll(). Each shot
 	// starts its OWN independent wave instead of restarting a shared timer, so overlapping shots
@@ -100,7 +122,7 @@ public:
 
 	// Also true while a roll wave from an already-finished burst is still decaying, so the camera
 	// effector isn't torn down (and the roll cut off mid-wave) before it reaches 0 on its own.
-	IC	bool	IsActive			(){return m_actived || m_roll_count > 0;}
+	IC	bool	IsActive			(){return m_actived || m_roll_count > 0 || m_nod_count > 0;}
 //		void	SetActive			(bool Active)		{			m_actived = Active;		}
 	IC	void	StopShoting			()	{ m_shot_end = true; }
 
@@ -122,6 +144,9 @@ public:
 
 protected:
 		void	BeginRelax			();
+		float	GetNod				() const;
+		// the level a kick past cam_max_angle leaves the climb at; starts its nod and spray step
+		float	KickPastLimit		(float old_target, float kick, float full_kick);
 };
 
 class CCameraShotEffector : public CWeaponShotEffector, public CEffectorCam

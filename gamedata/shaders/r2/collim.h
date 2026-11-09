@@ -71,6 +71,7 @@ struct v2p_collim
 	float3	norm_w	: TEXCOORD2;
 	float3	axis_w	: TEXCOORD3;
 	float3	right_w	: TEXCOORD4;
+	float2	obj		: TEXCOORD5;	// the model's x, y (lens_wet.h)
 };
 
 // World direction -> the sky cubemaps' texcoord, as dxEnvironmentRender lays the skybox out: rotated
@@ -238,10 +239,11 @@ float3	collim_cube_normal( float3 ng, float3 na )
 // The sky the coating mirrors, in its colour (v: from the eye; ng: the glass's own normal, facing the eye;
 // na: its flat axis). A domed lens is a convex mirror: the full dome shrinks the sky into a wide, still
 // picture; bent toward the flat axis it becomes a close-up that pans as the gun sways -- the mirror turns
-// twice as fast as the glass does. 0 outside the hud (the binder).
-float3	collim_reflection( float3 v, float3 ng, float3 na )
+// twice as fast as the glass does. 0 outside the hud (the binder). dn: what the rain's drops on it turn the
+// mirror's normal by (lens_wet.h; collim_reflection: none).
+float3	collim_reflection_dn( float3 v, float3 ng, float3 na, float3 dn )
 {
-	float3	r		= reflect( v, collim_cube_normal(ng, na) );
+	float3	r		= reflect( v, normalize(collim_cube_normal(ng, na) + dn) );
 
 	// Schlick: F0 looking straight in, all of it at a grazing angle -- by the flat axis: the dome is the curve's, not the glass's
 	float	c		= saturate( dot(-v, na) );
@@ -270,6 +272,8 @@ float3	collim_reflection( float3 v, float3 ng, float3 na )
 
 	return	sky * f * ( vis * direct + ind );
 }
+
+float3	collim_reflection( float3 v, float3 ng, float3 na )	{ return collim_reflection_dn( v, ng, na, 0 ); }
 
 // The reticle's glow (its etched lines are the tint pass's darkening). 0 outside the hud (the binder).
 float3	collim_glow( float2 t, float a )

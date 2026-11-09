@@ -760,7 +760,7 @@
 		<text>Ультра</text>
 	</string>
 	<string id="ui_mm_lens_cube">
-		<text>Отражения в линзах</text>
+		<text>Динамич. отражения в линзах</text>
 	</string>
 	<string id="ui_mm_lens_factor">
 		<text>FPS 3D-линзы</text>

@@ -108,6 +108,9 @@ zoom_cam_max_angle           = 60.0
 zoom_cam_max_angle_horz      = 5.0
 zoom_cam_step_angle_horz     = 0.3
 
+;cam_limit_nod				= 0.2		; past cam_max_angle, as parts of the cut-off kick: an up-and-back nod per shot (no lasting climb)
+;cam_limit_creep			= 0.05		; what still climbs for good, up to the camera's pitch limit
+;cam_limit_spray			= 0.1		; random vertical step per shot, within cam_max_angle_horz. All three 0 = the old hard ceiling. zoom_cam_limit_* the same in zoom
 ;cam_rise_time				= 0.075		; ���� �� ������ � �������, �� ����������� �������� �� ��������� �� ����, 0.075
 ;cam_roll_amount			= 0.8		; ���� �� ������ � �������, �� ����������� �� cam_dispersion * 0.75
 ;cam_relax_amount			= 0.5 		; ���� �� ������ � �������, �� ����������� �������� �� ��������� �� ����, 0.5
