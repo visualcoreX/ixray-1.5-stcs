@@ -1706,7 +1706,7 @@ void CActor::UpdateCL	()
 	// replaces GS's bloodscreen overlay (CActorCondition::UpdateBloodScreen, no longer called).
 	//  - The RED: the edges of the picture dyed red (see pp_injury_tint), pulsing like the stamina vignette
 	//    with the swing growing with its strength. Health: from INJURY_TINT_FROM, full at INJURY_TINT_FULL.
-	//  - The DROPS on the lens, creeping in from the corners towards the middle and catching a glare where the
+	//  - The DROPS on the lens, fading in from the corners towards the middle and catching a glare where the
 	//    scene behind is bright (see pp_injury_drops). Health: from INJURY_DROPS_FROM, furthest in at
 	//    INJURY_DROPS_FULL.
 	//  - The BLEEDING drives both: any at all shows INJURY_BLEED_MIN of each, rising in a straight line to full
@@ -1719,9 +1719,10 @@ void CActor::UpdateCL	()
 	//    INJURY_BLUR_PULSE on top) from INJURY_BLUR_BLEED_FROM of bleeding up, full at INJURY_BLEED_FULL.
 	//  - The VESSELS (fx_blood_vessels_00, overlay): from INJURY_VESSELS_FROM of bleeding up, full at
 	//    INJURY_BLEED_FULL -- and from INJURY_VESSELS_HEALTH_FROM of health down too, up to
-	//    INJURY_VESSELS_HEALTH_MAX of that at INJURY_VESSELS_HEALTH_FULL; the stronger wins. They creep in from
+	//    INJURY_VESSELS_HEALTH_MAX of that at INJURY_VESSELS_HEALTH_FULL; the stronger wins. They fade in from
 	//    the corners like the drops and beat the same way, only deeper: down to INJURY_VESSELS_TROUGH of their
 	//    reach between the beats.
+	//  - At a beat's peak the red, the drops and the vessels swell to INJURY_PULSE_PEAK of their former peak.
 	// A hit or a fresh wound comes in fast; healing/bandaging fades it no faster than INJURY_FADE_OUT seconds.
 	if (g_pGamePersistent)
 	{
@@ -1736,6 +1737,10 @@ void CActor::UpdateCL	()
 		// the red's strength, 0..1 -- the shader's PP_INJURY_MIX_* say how much colour that is
 		const float		INJURY_TINT				= 1.f / 3.f;	// at full, steady part...
 		const float		INJURY_TINT_PULSE		= 1.f / 6.f;	// ...and what a pulse's peak adds on top (0.5 in all; was 1)
+		// a beat's peak of the red, the drops and the vessels, as a share of what it was before this (the trough
+		// stays): with their masks no longer creeping in (the shader's pp_injury_mask) the beat has to swell
+		// more to be seen running in from the edges. The drops take it only as far as they pulse (with bleeding).
+		const float		INJURY_PULSE_PEAK		= 1.2f;
 		const float		INJURY_PERIOD_SLOW		= 1.6f;		// seconds per pulse as it just shows...
 		const float		INJURY_PERIOD_FAST		= 1.1f;		// ...and at full injury
 		const float		INJURY_FADE_OUT			= 3.5f;		// seconds for a full fade back out
@@ -1810,10 +1815,12 @@ void CActor::UpdateCL	()
 		const float		high	= _max(s_health_drops, s_bleeding);
 		const float		trough	= _max(INJURY_DROPS_TROUGH * high, INJURY_DROPS_HEALTH_DIP * s_health_drops);
 		const float		low		= s_health_drops + (trough - s_health_drops) * dip;
-		g_pGamePersistent->pp_injury.set(s_tint * INJURY_TINT + s_tint * s_tint * INJURY_TINT_PULSE * s_pulse,
-										 low + (high - low) * s_pulse,
+		const float		peak	= high * (1.f + (INJURY_PULSE_PEAK - 1.f) * dip);
+		g_pGamePersistent->pp_injury.set((s_tint * INJURY_TINT + s_tint * s_tint * INJURY_TINT_PULSE * s_pulse)
+											* (1.f + (INJURY_PULSE_PEAK - 1.f) * s_pulse),
+										 low + (peak - low) * s_pulse,
 										 INJURY_BLUR * s_blur + s_blur_bleed * (INJURY_BLUR_TROUGH + (INJURY_BLUR_PULSE - INJURY_BLUR_TROUGH) * s_pulse),
-										 s_vessels * (INJURY_VESSELS_TROUGH + (1.f - INJURY_VESSELS_TROUGH) * s_pulse));
+										 s_vessels * (INJURY_VESSELS_TROUGH + (INJURY_PULSE_PEAK - INJURY_VESSELS_TROUGH) * s_pulse));
 
 		// LENS DROPLETS while bleeding -- blood running down off the brows (their look and run: lens_droplet_*).
 		// They appear at DROPLET_RATE_MIN a second for the lightest bleeding, up to DROPLET_RATE_MAX at
