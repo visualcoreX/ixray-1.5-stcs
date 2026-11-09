@@ -223,6 +223,7 @@ enum
 	RFLAG_ACTOR_SHADOW = (1 << 9),
 	R2FLAG_USE_BUMP = (1 << 10),
 	RFLAG_HUD_SHADOW = (1 << 11),	// screen-space contact shadows on the HUD models
+	RFLAG_LENS_CUBE = (1 << 12),	// R3: the world round the camera mirrored in the hud's glass, else the sky alone
 };
 
 extern void						xrRender_initconsole	();

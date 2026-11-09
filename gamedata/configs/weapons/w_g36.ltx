@@ -88,24 +88,24 @@ actor_anim_group_gl_on    = ar_glon
 ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 fire_dispersion_base	   = 0.19	; пїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ); orig 0.7 ; balance 5.56: L85 < LR300 < G36 (was 0.27)
 control_inertion_factor    = 1.2f
-;пїЅпїЅпїЅпїЅпїЅпїЅ
-cam_relax_speed        = 5		;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
-cam_relax_speed_ai     = 120.75
-cam_dispersion         = 0.2	;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ (пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ) пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
-cam_dispersion_inc     = 0.2    ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅe cam_dispersion пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
-cam_dispersion_frac    = 0.7    ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
-cam_max_angle          = 7.0    ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
-cam_max_angle_horz     = 7.0   ;(degree) maximum shot horizontal degree
-cam_step_angle_horz    = 1.0    ; (degree) size of step camera moved in horizontal position while shooting
+;отдача
+cam_relax_speed            	= 5	;скорость возврата в исходное положение
+cam_relax_speed_ai      	= 360
+cam_dispersion             	= 0.2
+cam_dispersion_inc      	= 0.2
+cam_dispersion_frac     	= 0.7	;ствол будет подыматься на cam_dispersion*cam_dispersion_frac +- cam_dispersion*(1-cam_dispersion_frac)
+cam_max_angle        		= 45.0
+cam_max_angle_horz      	= 10.0	;(degree) maximum shot horizontal degree
+cam_step_angle_horz     	= 1.5
 
-zoom_cam_relax_speed         = 5     ; scope & ironsight
-zoom_cam_relax_speed_ai      = 360
-zoom_cam_dispersion          = 0.1
-zoom_cam_dispersion_inc      = 0.1
-zoom_cam_dispersion_frac     = 0.7
-zoom_cam_max_angle           = 7.0
-zoom_cam_max_angle_horz      = 7.0
-zoom_cam_step_angle_horz     = 0.7
+zoom_cam_relax_speed        = 5    ; scope & ironsight
+zoom_cam_relax_speed_ai     = 360
+zoom_cam_dispersion         = 0.125
+zoom_cam_dispersion_inc     = 0.1
+zoom_cam_dispersion_frac    = 0.8
+zoom_cam_max_angle          = 30.0
+zoom_cam_max_angle_horz     = 10.0
+zoom_cam_step_angle_horz    = 1
 
 fire_dispersion_condition_factor = 9	; пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ; orig 5 ; balance 5.56: L85 < LR300 < G36 (was 17)
 misfire_probability     = 0.003        ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
@@ -228,17 +228,20 @@ collimator_reflect_indirect	= 64,72,96
 collimator_reflect_strength	= 2.0, 0.25
 collimator_reflect_limit	= 1
 collimator_reflect_f0		= 0.75
-collimator_reflect_curve    = 0.05
+collimator_reflect_cube_curve = 0.5
 collimator_reflect_contrast = 2.5
 collimator_reflect_mask		= 1.0
-collimator_specular			= 0.02, 120
-collimator_specular_mask	= 1.0
+collimator_specular			= 0.04, 240
+collimator_specular_mask	= 1
 collimator_marks			= wpn\sight_marks\mark_dot_01
 collimator_mark_size		= 4
 collimator_mark_color		= 255,225,225
 collimator_mark_intensity	= 1.0
 collimator_mark_offset		= 0, 0
 collimator_wear		= 0.9, 0.4, 0.25	; the reticle dims below condition 0.8 (to 30% of its brightness at 0, never out), flickers like a failing lamp below 0.25
+optic_glint_1				= -1.0, 250, 0.06, 128,142,255 ; curve, reflectivity (scale), strength, color
+optic_glint_2				= -1.0, 1600, 0.0075, 255,115,100
+
 silencer_name           = wpn_silencer_m4_2000	; orig wpn_addon_silencer -- that is the pistol can; the other 5.56 rifles (L85, SIG550/552, FN2000, LR300) all use this one
 silencer_x              = 195
 silencer_y              = 16

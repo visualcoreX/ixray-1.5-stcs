@@ -95,6 +95,7 @@ public:
 	adopt_compiler&			_fog			(bool	_fog)							{	C->PassSET_LightFog	(FALSE,_fog);			return	*this;		}
 	adopt_compiler&			_ZB				(bool	_test,	bool _write)			{	C->PassSET_ZB		(_test,_write);			return	*this;		}
 	adopt_compiler&			_blend			(bool	_blend, u32 abSRC, u32 abDST)	{	C->PassSET_ablend_mode(_blend,abSRC,abDST);	return 	*this;		}
+	adopt_compiler&			_alpha_blend	(u32 abSRC, u32 abDST)					{	C->PassSET_ablend_alpha(abSRC,abDST);		return 	*this;		}	// after blend()
 	adopt_compiler&			_aref			(bool	_aref,  u32 aref)				{	C->PassSET_ablend_aref(_aref,aref);			return 	*this;		}
 	adopt_compiler&			_dx10texture	(LPCSTR _resname, LPCSTR _texname)		{	C->r_dx10Texture(_resname, _texname);		return	*this;		}
 	adopt_dx10sampler		_dx10sampler	(LPCSTR _name)							{	u32 s = C->r_dx10Sampler(_name);			return	adopt_dx10sampler(C,s);	}
@@ -239,6 +240,7 @@ void	CResourceManager::LS_Load			()
 			.def("fog",							&adopt_compiler::_fog			,return_reference_to(_1))
 			.def("zb",							&adopt_compiler::_ZB			,return_reference_to(_1))
 			.def("blend",						&adopt_compiler::_blend			,return_reference_to(_1))
+			.def("alpha_blend",					&adopt_compiler::_alpha_blend	,return_reference_to(_1))
 			.def("aref",						&adopt_compiler::_aref			,return_reference_to(_1))
 			//	For compatibility only
 			.def("dx10color_write_enable",		&adopt_compiler::_dx10color_write_enable,return_reference_to(_1))

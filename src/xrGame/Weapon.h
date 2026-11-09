@@ -188,23 +188,40 @@ public:
 	// ...and the mirror lit by the sky alone, not the sun: collimator_reflect_indirect = r,g,b (0..255), its
 	// own colour, the same strength for the aim. Zero when the optic has no such key.
 	Fvector4 CollimatorReflectIndirect() const;
+	// The dome the glass mirrors by, the sky and the cube of the world alike: collimator_reflect_cube_curve = the tangent
+	// of the glass's own tilt off its flat axis times this (1 = the model's, more = rounder: the world wide and small;
+	// less = a close-up that pans; default 1). x = curve (hud_collim_cube).
+	Fvector4 CollimatorCube() const;
 	float	 CollimatorReflectStrength() const;
 	bool	 CollimatorReflectColor(LPCSTR key, Fvector& col) const;
-	// ...and its shape: x = collimator_reflect_curve (how much of the glass's dome the mirror keeps: 0 = a flat
-	// mirror, a close-up of the sky that pans with every sway; 1 = the model's normals, a wide shrunken view;
-	// default 0.35), y = collimator_reflect_contrast (exponent on the sky's brightness, 1 = as is), z =
+	// ...and its shape: y = collimator_reflect_contrast (exponent on the sky's brightness, 1 = as is), z =
 	// collimator_reflect_mask (0..1: how much the glass texture's alpha masks the mirror -- the clearer the
-	// glass, the stronger; 0 = the whole glass alike), w = collimator_reflect_limit (the most indirect light --
-	// the sky's and the lamps' together -- the mirror takes: past 3/4 of it more light adds less and less, so a
-	// torch, a fire and the sky stacked do not set the glass glowing; daylight's sky alone is about 1..1.6;
+	// glass, the stronger; 0 = the whole glass alike), w = collimator_reflect_limit (the most indirect light
+	// the mirror takes: past 3/4 of it more light adds less and less; daylight's sky alone is about 1..1.6;
 	// the lamps' light on the glass's texture is held under it as well; default 2, 0 = no limit).
 	Fvector4 CollimatorReflectShape() const;
-	// The glass's highlight from the sun and the lights near the eye (Blinn): collimator_specular = strength,
-	// glossiness (the highlight's exponent: higher = smaller and sharper; default 64), collimator_specular_mask
-	// = -1..1 (how the glass texture's alpha picks the glossy parts: +1 the clear ones, -1 the opaque ones,
-	// 0 the whole glass alike). x = 0 when the optic has no collimator_specular. It fades for the aim with the
-	// glass's texture (collimator_glass_strength).
+	// The glass's highlight from the sun and the lights near the eye (GGX on R3, Blinn on R2), where the specular
+	// map (wpn\lenses_spec's rgb) lets it shine: collimator_specular = strength, glossiness (a Blinn exponent:
+	// higher = smaller and sharper; default 64), collimator_specular_mask = -1..1 (how the glass texture's
+	// alpha picks the glossy parts: +1 the clear ones, -1 the opaque ones, 0 the whole glass alike),
+	// collimator_specular_lamps = the lamps' share of it against the sun's, the inner lenses' glints' too (default
+	// 0.5: a campfire's few lights, stacked, outshone the sun). x = 0 when the optic has no collimator_specular. It
+	// fades for the aim with the glass's texture (collimator_glass_strength).
 	Fvector4 CollimatorSpecular() const;
+	// ...its tint: collimator_specular_color = r, g, b (0..255; default 255, 255, 255 -- the light's own colour)
+	Fvector CollimatorSpecularColor() const;
+	// ...and the world round the glass in it (R3): collimator_specular_world = how much of the cube's light -- the
+	// sky's where the cube is not drawn -- the same lobe gathers, against the lights' (default 0 = none). It adds to
+	// the sun's and the lamps' under the same strength, tint and specular map, so the map's wear shows in the shade
+	// too. The highlight's own peak is about (glossiness + 8) / 8 times its light: a share that big shines the world
+	// as bright as the sun's highlight would. The inner lenses' glints keep to the lights.
+	float	CollimatorSpecularWorld() const;
+	// An optic's inner lenses, glinting through its outer glass (R3, model_sniperlens.ps): optic_glint_1 ..
+	// optic_glint_4 = curvature, glossiness, strength, r, g, b -- curvature against the outer glass's (1 = its
+	// dome, 0 = flat, < 0 = hollow: the glint runs the other way as the gun sways), glossiness as
+	// collimator_specular's, colour 0..255; where they show through: wpn\lenses_spec's alpha. All the lines from
+	// the first section that has optic_glint_1 (the scope, its addon, the weapon, [optic_glass_reflect]). out: HUD_OPTIC_GLINTS pairs as IGame_Persistent::hud_optic_glints.
+	void OpticGlints(Fvector4* out) const;
 	// How much of the glass's own texture shows (its pass 0 alpha): collimator_glass_strength = hip, aim,
 	// slid by the aim like the reflection; default 1, 1 = as the model has it.
 	float CollimatorGlassStrength() const;
@@ -528,6 +545,7 @@ protected:
 			bool			m_bLaserPendingState;
 			// GL-mode switch window (set by CWeaponMagazinedWGrenade::PlayAnimModeSwitch) so the laser dot can
 			// fade out/in relative to the raise/lower anim like GS (laser_switch_time_to_gl/from_gl), not instantly.
+			// R1/R2 only, as is disable_laserdot_when_gl_enabled: the volumetric beam uses laser_stop_bones.
 			u32				m_dwGLSwitchStartTm;
 			u32				m_dwGLSwitchEndTm;
 			// read once at Load (LoadLaserParams) -- UpdateLaserDot / gwr_UpdateBones run every render frame
@@ -541,6 +559,7 @@ protected:
 			mutable u32		m_dwLaserEmisFrame;
 			shared_str		m_sLaserBone;				// laserdot_attach_bone
 			shared_str		m_sLaserRayBones;			// laser_ray_bones (the visible beam bones, e.g. "line, line2")
+			shared_str		m_sLaserStopBones;			// laser_stop_bones: bones of the gun the volumetric beam stops on when they cross it (the raised GL sight)
 			xr_vector<shared_str>	m_LaserParticles;	// laserdot_particle_0..N (distance-switched dot)
 			xr_vector<float>		m_LaserSwitchDist;	// laserdot_dist_1..N: switch to particle j+1 at >= [j]
 			xr_vector<float>		m_LaserScaleDist;	// laserdot_dist_treshold_N (camera-pull remap segments)

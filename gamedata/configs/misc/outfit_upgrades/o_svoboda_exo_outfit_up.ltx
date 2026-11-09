@@ -370,7 +370,7 @@ icon				= ui_am_upgrade_12
 [up_g2_svoboda_exo_outfit]
 scheme_index			= 1, 4
 known				= 1
-effects				= 
+effects				= up_gr_ir_svoboda_exo_outfit
 section				= up_sect_g2_svoboda_exo_outfit
 property			= prop_night_vision_2	; gen 2 -- own icon, was prop_night_vision (shared with gen 1)
 
@@ -519,3 +519,29 @@ elements			= up_bd2_svoboda_exo_outfit
 elements			= up_e3_svoboda_exo_outfit
 [up_gr_f2h2_svoboda_exo_outfit]
 elements			= up_f2h2_svoboda_exo_outfit
+
+; GS tactical helmet's "infrared scanner" (helmets\tactic, up_sect_secone_helm_tactic): with it the interface
+; comes back on master and the minimap from veteran up (CCustomOutfit::TacticalHud, gwr_tactical_hud).
+[up_sect_ir_svoboda_exo_outfit]
+cost				= 8000
+nearest_enemies_show_dist	= 35	; GS value; only "above 0" matters (GS does not use the distance either)
+
+[up_ir_svoboda_exo_outfit]
+scheme_index		= 2, 4
+known			= 1
+effects			= 
+section			= up_sect_ir_svoboda_exo_outfit
+property		= prop_tactical_hud
+precondition_functor	= inventory_upgrades.precondition_functor_a
+precondition_parameter	= a & b
+effect_functor		= inventory_upgrades.effect_functor_a
+effect_parameter	= something_here
+prereq_functor		= inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor	= inventory_upgrades.prereq_tooltip_functor_a
+prereq_params		= money(1000), item(habar)
+name			= st_upg_tactical_hud
+description		= st_upg_tactical_hud_descr
+icon			= ui_am_upgrade_29
+
+[up_gr_ir_svoboda_exo_outfit]
+elements		= up_ir_svoboda_exo_outfit

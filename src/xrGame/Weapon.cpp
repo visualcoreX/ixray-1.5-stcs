@@ -662,6 +662,11 @@ void CWeapon::Load		(LPCSTR section)
 		? _abs( deg2rad( pSettings->r_float( section, "cam_roll_amount" ) ) )
 		: -1.0f;
 
+	// What a kick past cam_max_angle turns into, as parts of the part cut off (see CameraRecoil).
+	cam_recoil.LimitNod		= _abs( READ_IF_EXISTS( pSettings, r_float, section, "cam_limit_nod",   0.2f  ) );
+	cam_recoil.LimitCreep	= _abs( READ_IF_EXISTS( pSettings, r_float, section, "cam_limit_creep", 0.05f ) );
+	cam_recoil.LimitSpray	= _abs( READ_IF_EXISTS( pSettings, r_float, section, "cam_limit_spray", 0.1f  ) );
+
 	//подбрасывание камеры во время отдачи в режиме zoom ==> ironsight or scope
 	//zoom_cam_recoil.Clone( cam_recoil ); ==== нельзя !!!!!!!!!!
 	zoom_cam_recoil.RelaxSpeed		= cam_recoil.RelaxSpeed;
@@ -673,6 +678,9 @@ void CWeapon::Load		(LPCSTR section)
 	zoom_cam_recoil.RiseTime		= cam_recoil.RiseTime;
 	zoom_cam_recoil.RelaxAmount		= cam_recoil.RelaxAmount;
 	zoom_cam_recoil.RollAmount		= cam_recoil.RollAmount;
+	zoom_cam_recoil.LimitNod		= cam_recoil.LimitNod;
+	zoom_cam_recoil.LimitCreep		= cam_recoil.LimitCreep;
+	zoom_cam_recoil.LimitSpray		= cam_recoil.LimitSpray;
 
 	zoom_cam_recoil.ReturnMode		= cam_recoil.ReturnMode;
 	zoom_cam_recoil.StopReturn		= cam_recoil.StopReturn;
@@ -728,6 +736,15 @@ void CWeapon::Load		(LPCSTR section)
 	}
 	if ( pSettings->line_exist( section, "zoom_cam_roll_amount" ) )	{
 		zoom_cam_recoil.RollAmount		= _abs( deg2rad( pSettings->r_float( section, "zoom_cam_roll_amount" ) ) );
+	}
+	if ( pSettings->line_exist( section, "zoom_cam_limit_nod" ) )	{
+		zoom_cam_recoil.LimitNod		= _abs( pSettings->r_float( section, "zoom_cam_limit_nod" ) );
+	}
+	if ( pSettings->line_exist( section, "zoom_cam_limit_creep" ) )	{
+		zoom_cam_recoil.LimitCreep		= _abs( pSettings->r_float( section, "zoom_cam_limit_creep" ) );
+	}
+	if ( pSettings->line_exist( section, "zoom_cam_limit_spray" ) )	{
+		zoom_cam_recoil.LimitSpray		= _abs( pSettings->r_float( section, "zoom_cam_limit_spray" ) );
 	}
 
 	LoadHudRecoil( section );
@@ -928,6 +945,7 @@ void CWeapon::LoadLaserParams()
 	m_bLaserInstalled	= !!READ_IF_EXISTS(pSettings, r_bool, cNameSect().c_str(), "laser_installed", FALSE);
 	m_sLaserBone		= NULL;
 	m_LaserParticles.clear	();
+	m_sLaserStopBones	= NULL;
 	m_LaserSwitchDist.clear	();
 	m_iLaserParticleIdx	= -1;
 	m_vLaserOffset.set	(0.f,0.f,0.f);
@@ -955,6 +973,7 @@ void CWeapon::LoadLaserParams()
 	// dot is suppressed (GS ProcessLaserdot SetWeaponMultipleBonesStatus(ray_bones, ...)). Statically shown by
 	// the laser upgrade's show_bones; UpdateLaserDot takes over their visibility while the laser is enabled.
 	if (pSettings->line_exist(lp, "laser_ray_bones"))		m_sLaserRayBones = pSettings->r_string(lp, "laser_ray_bones");
+	if (pSettings->line_exist(lp, "laser_stop_bones"))		m_sLaserStopBones = pSettings->r_string(lp, "laser_stop_bones");
 	// distance-switched dot: laserdot_particle_0 (default) + _1,_2,... each swapped in at laserdot_dist_<i>
 	for (int i = 0; ; ++i)
 	{
@@ -1315,7 +1334,10 @@ void CWeapon::UpdateLaserDot()
 	// "линия короче"). GS times the dot to the raise/lower anim, not instantly: it stays through the FIRST
 	// laser_switch_time_to_gl ms of the switch-to-GL anim, then hides; on the way back it reappears only in the
 	// LAST laser_switch_time_from_gl ms. m_dwGLSwitch* is the switch window (PlayAnimModeSwitch).
-	if (m_bLaserDotOffInGL)
+	// R1/R2 only: there the mesh beam is separate and stays lit through this. The volumetric beam and its dot
+	// are published further down, so returning here would put the whole laser out; they stop on the raised
+	// sight by themselves instead (laser_stop_bones).
+	if (m_bLaserDotOffInGL && !m_LaserBeam.enabled)
 	{
 		const bool switching = (m_dwGLSwitchEndTm && Device.dwTimeGlobal < m_dwGLSwitchEndTm);
 		if (switching)
@@ -1366,6 +1388,14 @@ void CWeapon::UpdateLaserDot()
 				rf.transform_dir(baxis, m_LaserBeam.world.dir);
 				baxis.normalize_safe();
 			}
+			float stop = LASER_BEAM_GUN_RANGE;
+			if (LaserBeam_PickBones(WK, X, m_sLaserStopBones.c_str(), bfrom, baxis, stop))
+			{
+				Fvector hit;	hit.mad(bfrom, baxis, stop);
+				m_LaserBeam.Publish(bfrom, baxis, hit, true, true, hit);
+				if (m_pLaserDot)	CParticlesObject::Destroy(m_pLaserDot);
+				return;
+			}
 			m_LaserBeam.Publish(bfrom, baxis, wdot, wdist < 197.f, wdist < 197.f, wdot);	// wdist is already *0.99
 		}
 		PlaceLaserDot(wdot, 0);
@@ -1404,6 +1434,31 @@ void CWeapon::UpdateLaserDot()
 	beam_dir.normalize_safe();
 	Fvector dir;	dir.set(full.k);	dir.normalize_safe();
 	if (!_valid(pos) || !_valid(dir))											{ StopLaserDot(); return; }
+
+	// Part of the gun standing in the beam's way (laser_stop_bones: the launcher's leaf sight, which comes up
+	// right in front of the emitter) or the hands passing through it (the left hand raising that leaf, a
+	// thumb on the LAM's switch): the beam ends on it and the dot sits there. Tested against the models'
+	// posed triangles, so it follows the animation -- the beam is cut when the leaf actually swings into it
+	// while the launcher is being raised, and freed when it folds away. This comes before all the ray work
+	// below, none of which applies to a point on the gun. The hud->world fix keeps depth, so the procedural
+	// dot lands on the pixels of what it hit; the particle dot is drawn with the world, behind the HUD
+	// models, so it goes.
+	if (m_LaserBeam.enabled)
+	{
+		float stop			= LASER_BEAM_GUN_RANGE;
+		bool blocked		= LaserBeam_PickBones(K, hi->m_item_transform, m_sLaserStopBones.c_str(), beam_from, beam_dir, stop);
+		if (hi->m_parent->pick_hands(beam_from, beam_dir, stop))	blocked = true;
+		if (blocked)
+		{
+			Fvector hit;	hit.mad(beam_from, beam_dir, stop);
+			LaserBeam_HudPointToWorld	(hit);
+			LaserBeam_HudPointToWorld	(beam_from);
+			LaserBeam_HudDirToWorld		(beam_dir);
+			m_LaserBeam.Publish			(beam_from, beam_dir, hit, true, true, hit);
+			if (m_pLaserDot)	CParticlesObject::Destroy(m_pLaserDot);
+			return;
+		}
+	}
 
 	// GS ProcessLaserdot 1st-person ray setup (WeaponUpdate.pas:153-177). Note GS's condition:
 	// `if (IsAimNow or IsHolderInAimState) and (not IsGrenadeMode)` -- aiming the GRENADE LAUNCHER
@@ -1753,6 +1808,22 @@ void CWeapon::UpdateFlashlight()
 		omnipos = pos;
 		dir.set(full.k);	dir.normalize_safe();
 		right.set(full.i);	right.normalize_safe();
+		// GS CorrectDirFromWorldToHud (ActorUtils.pas): the hud is drawn at its own, narrower field of view, so a gun
+		// turned by an angle on the hud looks turned further on the screen than a beam at that angle in the world --
+		// the beam lagged behind the barrel, short of a few degrees, as the gun swung aside. Its lean off the camera's
+		// axis is scaled by the world's fov over the hud's, times the hud section's hud_recalc_koef (default 1).
+		{
+			const float	hud_fov		= psHUD_FOV * Device.fFOV_HUD;
+			const float	koef		= READ_IF_EXISTS(pSettings, r_float, HudSection(), "hud_recalc_koef", 1.f);
+			if (hud_fov > EPS_L)
+			{
+				const Fvector&	cd	= Device.vCameraDirection;
+				dir.sub(cd).mul(koef * Device.fFOV / hud_fov).add(cd);
+				dir.normalize_safe();
+				right.mad(dir, -right.dotproduct(dir));		// square again with the new direction
+				right.normalize_safe();
+			}
+		}
 	}
 	else
 	{
@@ -3799,6 +3870,18 @@ Fvector4 CWeapon::CollimatorReflectIndirect() const
 	return res;
 }
 
+Fvector4 CWeapon::CollimatorCube() const
+{
+	float curve = 1.f;
+	shared_str sc = CollimatorParamSection("collimator_reflect_cube_curve");
+	if (sc.size())
+		curve = pSettings->r_float(*sc, "collimator_reflect_cube_curve");
+	clamp(curve, 0.f, 10.f);
+	Fvector4 res;
+	res.set(curve, 0.f, 0.f, 0.f);
+	return res;
+}
+
 // collimator_reflect_strength = hip, aim, for the current aim (default 1, 0.3)
 float CWeapon::CollimatorReflectStrength() const
 {
@@ -3826,10 +3909,7 @@ bool CWeapon::CollimatorReflectColor(LPCSTR key, Fvector& col) const
 Fvector4 CWeapon::CollimatorReflectShape() const
 {
 	Fvector4 res;
-	res.set(0.35f, 1.f, 0.f, 0.f);
-	shared_str sc = CollimatorParamSection("collimator_reflect_curve");
-	if (sc.size())
-		res.x = pSettings->r_float(*sc, "collimator_reflect_curve");
+	res.set(0.f, 1.f, 0.f, 0.f);
 	shared_str sk = CollimatorParamSection("collimator_reflect_contrast");
 	if (sk.size())
 		res.y = pSettings->r_float(*sk, "collimator_reflect_contrast");
@@ -3840,7 +3920,6 @@ Fvector4 CWeapon::CollimatorReflectShape() const
 	shared_str sl = CollimatorParamSection("collimator_reflect_limit");
 	if (sl.size())
 		res.w = pSettings->r_float(*sl, "collimator_reflect_limit");
-	clamp(res.x, 0.f, 1.f);
 	clamp(res.y, 0.1f, 8.f);
 	clamp(res.z, 0.f, 1.f);
 	clamp(res.w, 0.f, 100.f);
@@ -3850,21 +3929,67 @@ Fvector4 CWeapon::CollimatorReflectShape() const
 Fvector4 CWeapon::CollimatorSpecular() const
 {
 	Fvector4 res;
-	res.set(0.f, 64.f, 0.f, 0.f);
+	res.set(0.f, 64.f, 0.f, 0.5f);
 	shared_str ss = CollimatorParamSection("collimator_specular");
 	if (ss.size())
 	{
-		const Fvector2 v = pSettings->r_fvector2(*ss, "collimator_specular");
-		res.x = v.x;
-		res.y = v.y;
+		// strength, glossiness
+		float v[2] = { 0.f, 64.f };
+		sscanf(pSettings->r_string(*ss, "collimator_specular"), "%f,%f", &v[0], &v[1]);
+		res.x = v[0];
+		res.y = v[1];
 	}
 	shared_str sm = CollimatorParamSection("collimator_specular_mask");
 	if (sm.size())
 		res.z = pSettings->r_float(*sm, "collimator_specular_mask");
+	shared_str sl = CollimatorParamSection("collimator_specular_lamps");
+	if (sl.size())
+		res.w = pSettings->r_float(*sl, "collimator_specular_lamps");
 	clamp(res.x, 0.f, 100.f);
 	clamp(res.y, 1.f, 4096.f);
 	clamp(res.z, -1.f, 1.f);
+	clamp(res.w, 0.f, 10.f);
 	return res;
+}
+
+Fvector CWeapon::CollimatorSpecularColor() const
+{
+	Fvector col;
+	if (!CollimatorReflectColor("collimator_specular_color", col))
+		col.set(1.f, 1.f, 1.f);
+	return col;
+}
+
+float CWeapon::CollimatorSpecularWorld() const
+{
+	float w = 0.f;
+	shared_str sw = CollimatorParamSection("collimator_specular_world");
+	if (sw.size())
+		w = pSettings->r_float(*sw, "collimator_specular_world");
+	clamp(w, 0.f, 1000.f);
+	return w;
+}
+
+void CWeapon::OpticGlints(Fvector4* out) const
+{
+	const u32 n = IGame_Persistent::HUD_OPTIC_GLINTS;
+	for (u32 i = 0; i < n*2; ++i)
+		out[i].set(0.f, 0.f, 0.f, 0.f);
+	shared_str sect = CollimatorParamSection("optic_glint_1");
+	if (!sect.size())	return;
+	for (u32 i = 0; i < n; ++i)
+	{
+		string32 key;
+		xr_sprintf(key, "optic_glint_%d", i + 1);
+		if (!pSettings->line_exist(*sect, key))	continue;
+		// curvature, glossiness, strength, r, g, b
+		float v[6] = { 0.f, 64.f, 0.f, 255.f, 255.f, 255.f };
+		sscanf(pSettings->r_string(*sect, key), "%f,%f,%f,%f,%f,%f", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
+		clamp(v[1], 1.f, 4096.f);
+		clamp(v[2], 0.f, 100.f);
+		out[i*2].set(v[0], v[1], v[2], 0.f);
+		out[i*2+1].set(_max(v[3], 0.f) / 255.f, _max(v[4], 0.f) / 255.f, _max(v[5], 0.f) / 255.f, 0.f);
+	}
 }
 
 float CWeapon::CollimatorGlassStrength() const
@@ -4005,6 +4130,16 @@ shared_str CWeapon::CollimatorParamSection(LPCSTR key) const
 	// scope_status = 0) has no scope section at all, its keys sit in the weapon's
 	if (pSettings->line_exist(cNameSect(), key))
 		return cNameSect();
+	// An optic (a scope that is not a collimator) with no mirror keys of its own: its glass mirrors as the shared
+	// [optic_glass_reflect] says (gunsl_scopes.ltx) -- the optics' glass draws the collimators' mirror over itself
+	// (Blender_Model_EbB, model_sniperlens.ps). Only the mirror's keys and the inner lenses' glints (optic_glint_N):
+	// nothing else of a collimator's is lent out.
+	static const char* s_optic_glass = "optic_glass_reflect";
+	if (IsScopeAttached() && !IsCollimatorScope()
+		&& (0 == strncmp(key, "collimator_reflect", 18) || 0 == strncmp(key, "collimator_specular", 19)
+			|| 0 == strncmp(key, "optic_glint_", 12))
+		&& pSettings->section_exist(s_optic_glass) && pSettings->line_exist(s_optic_glass, key))
+		return shared_str(s_optic_glass);
 	return shared_str();
 }
 
@@ -5901,6 +6036,8 @@ void CHudItem::ResetLoweredPose()
 	m_bLowerGoingDown		= false;
 	m_bLowerModeOn			= false;
 	m_fLowerFromBlend		= 0.f;
+	m_bLowerAnimUp			= false;
+	m_fLowerRate			= 0.f;
 	if (CActor* a = smart_cast<CActor*>(object().H_Parent()))
 		if (a->InBaseZone() && CActor::IsLowerable(&item()))
 		{
@@ -5908,6 +6045,22 @@ void CHudItem::ResetLoweredPose()
 			m_bLowerGoingDown	= true;
 			m_bLowerModeOn		= true;	// came out already down: nothing was pressed
 		}
+}
+
+bool CHudItem::LoweredBlocksWeapon() const
+{
+	if (m_fLoweredFactor <= 0.f)	return false;
+	if (m_bLowerGoingDown)			return true;
+	// on the way up: the factor runs linearly in time at the length of the animation driving the move, and the
+	// move always starts from the bottom (the key waits for the end), so the time since the raise began is
+	// (1 - factor) * length
+	const SLowerPair&	P	= lower_anims(HudSection());
+	const SLowerAnim&	A	= P.down ? *P.down : s_no_anim;
+	const SLowerAnim&	U	= P.up ? *P.up : s_no_anim;
+	const float t	= !A.valid ? 0.3f : (m_bLowerAnimUp && U.valid) ? U.length() : A.length();
+	const float lt	= READ_IF_EXISTS(pSettings, r_float, HudSection(), "lock_time_lowered_up",
+						READ_IF_EXISTS(pSettings, r_float, "weapon_lowered", "lock_time_up", 0.3f));
+	return (1.f - m_fLoweredFactor) * t < lt;
 }
 
 void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
@@ -5925,8 +6078,10 @@ void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 		if (mode != m_bLowerModeOn)
 		{
 			m_bLowerModeOn		= mode;
+			// ...and only from a rest at an end: pressed again halfway (the key spammed), the hand would start
+			// its holster or draw over again for a move that only turns back
 			const bool	moves	= !(pActor->MovingState() & mcSprint) &&
-								  (mode ? m_fLoweredFactor < 1.f : m_fLoweredFactor > 0.f);
+								  (mode ? m_fLoweredFactor <= 0.f : m_fLoweredFactor >= 1.f);
 			if (moves && pActor->inventory().ActiveItem() == &item())
 				TryPlayDetectorCompanion(shared_str(mode ? "anm_hide" : "anm_show"));
 		}
@@ -5937,24 +6092,48 @@ void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 	// the weapon-down factor runs at the length of the animation of the way it is going
 	// (no animation: the weapon stays where it is on the hud, the mode itself still works -- a short ramp
 	// for what goes by the factor: the crosshair, the blocked actions)
-	const float t	= !A.valid ? 0.3f : (!down && U.valid) ? U.length() : A.length();
 	if (down != m_bLowerGoingDown)
 	{
-		// a change of direction: the other animation does not start where this one stands (a change of mind
-		// halfway, or two animations that do not quite meet) -- fade over from the pose the hud is in now
 		m_bLowerGoingDown	= down;
-		// the camera animation of the move that starts now (the way up only when the weapon is not up already)
-		const SLowerAnim*	C	= down ? (A.valid ? &A : 0) : ((m_fLoweredFactor > 0.f && U.valid) ? &U : 0);
-		if (C && C->cam.size())	play_lower_cam(pActor, C->cam);
-		if (m_fLoweredFactor > 0.f && A.valid && U.valid)
+		// A move that starts from a rest at an end takes the animation of its way, and its camera animation (the
+		// way up only when the weapon is not up already). A change of mind HALFWAY keeps the animation that is
+		// playing and runs it back -- the other one does not stand where this one does, and handing over to it
+		// (with a fade) dragged the hud across to a pose of its own on every press of a spammed key -- and starts
+		// no camera animation: that one would play the whole move from its start for a part of it.
+		const bool	from_end	= down ? (m_fLoweredFactor <= 0.f) : (m_fLoweredFactor >= 1.f);
+		if (from_end)
 		{
-			m_lower_from_q	= m_lower_cur_q;
-			m_lower_from_p	= m_lower_cur_p;
-			m_fLowerFromBlend = 1.f;
+			const bool	want_up	= !down && U.valid;
+			const SLowerAnim*	C	= down ? (A.valid ? &A : 0) : ((m_fLoweredFactor > 0.f && U.valid) ? &U : 0);
+			if (C && C->cam.size())	play_lower_cam(pActor, C->cam);
+			// the two animations should meet at the ends; where they do not, fade over from the pose the hud is in
+			if (want_up != m_bLowerAnimUp && m_fLoweredFactor > 0.f && A.valid && U.valid)
+			{
+				m_lower_from_q	= m_lower_cur_q;
+				m_lower_from_p	= m_lower_cur_p;
+				m_fLowerFromBlend = 1.f;
+			}
+			m_bLowerAnimUp		= want_up;
+			m_fLowerRate		= down ? 1.f : -1.f;		// from a rest: at the animation's own pace at once
 		}
 	}
-	m_fLoweredFactor += (down ? 1.f : -1.f) * Device.fTimeDelta / _max(t, 0.01f);
+	// the move's speed turns over smoothly ([weapon_lowered] reverse_time): it slows down, stops and comes back,
+	// instead of jumping from full speed one way to full speed the other
+	{
+		const float rt		= READ_IF_EXISTS(pSettings, r_float, "weapon_lowered", "reverse_time", 0.12f);
+		const float target	= down ? 1.f : -1.f;
+		const float step	= Device.fTimeDelta / _max(rt, 0.01f);
+		if (m_fLowerRate < target)	m_fLowerRate = _min(m_fLowerRate + step, target);
+		else						m_fLowerRate = _max(m_fLowerRate - step, target);
+	}
+	// the factor runs at the length of the animation that drives the move
+	// (no animation: the weapon stays where it is on the hud, the mode itself still works -- a short ramp
+	// for what goes by the factor: the crosshair, the blocked actions)
+	const float t	= !A.valid ? 0.3f : (m_bLowerAnimUp && U.valid) ? U.length() : A.length();
+	m_fLoweredFactor += m_fLowerRate * Device.fTimeDelta / _max(t, 0.01f);
 	clamp(m_fLoweredFactor, 0.f, 1.f);
+	if (m_fLoweredFactor <= 0.f && m_fLowerRate < 0.f)	m_fLowerRate = 0.f;		// at rest at an end
+	if (m_fLoweredFactor >= 1.f && m_fLowerRate > 0.f)	m_fLowerRate = 0.f;
 	if (m_fLowerFromBlend > 0.f)
 	{
 		const float bt		= READ_IF_EXISTS(pSettings, r_float, "weapon_lowered", "anim_blend", 0.15f);
@@ -5972,8 +6151,8 @@ void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 		// the way down at the factor, up = the way up at 1 - factor (or the way down played backwards)
 		Fquaternion	q;
 		Fvector		p;
-		if (!down && U.valid)	U.sample(1.f - m_fLoweredFactor, q, p);
-		else					A.sample(m_fLoweredFactor, q, p);
+		if (m_bLowerAnimUp && U.valid)	U.sample(1.f - m_fLoweredFactor, q, p);
+		else							A.sample(m_fLoweredFactor, q, p);
 		if (m_fLowerFromBlend > 0.f)
 		{
 			const float w	= m_fLowerFromBlend * m_fLowerFromBlend * (3.f - 2.f * m_fLowerFromBlend);	// smoothstep
@@ -6306,7 +6485,7 @@ u32 CWeapon::Cost() const
 
 bool CWeapon::show_crosshair()
 {
-	if (m_fLoweredFactor > 0.f)	return false;		// weapon down: nothing to aim with
+	if (LoweredBlocksWeapon())	return false;		// weapon down: no cross until a shot could leave (the actor shows the dot)
 	// GS: an enabled laser designator replaces the crosshair -- you aim with the dot, so hide it
 	if (m_bLaserInstalled && m_bLaserEnabled)	return false;
 	return !IsPending() && ( !IsZoomed() || !ZoomHideCrosshair() );

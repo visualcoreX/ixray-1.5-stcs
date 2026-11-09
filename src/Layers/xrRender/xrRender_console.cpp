@@ -157,6 +157,8 @@ int ps_r1_use_terrain_mask = 0;
 // R2
 float		ps_r2_ssaLOD_A				= 48.f	;
 float		ps_r2_ssaLOD_B				= 32.f	;
+// R3: the range of the cubemap the hud's glass mirrors (CRender::render_lens_cube), metres; 0 = no cubemap
+float		ps_r3_lens_cube_far			= 50.f	;
 
 // R2-specific
 Flags32		ps_r2_ls_flags				= { R2FLAG_SUN 
@@ -180,7 +182,7 @@ Flags32		ps_r2_ls_flags_ext			= {
 // the first-person actor is invisible in the normal
 // pass, so the SMAP pass renders it explicitly (r__dsgraph_render.cpp) to get a self shadow. Toggle:
 // the "actor shadow" checkbox in the advanced video options, or `r__actor_shadow` in the console.
-Flags32 ps_r__common_flags = { R2FLAG_USE_BUMP | RFLAG_ACTOR_SHADOW };
+Flags32 ps_r__common_flags = { R2FLAG_USE_BUMP | RFLAG_ACTOR_SHADOW | RFLAG_LENS_CUBE };
 
 // HUD contact shadows. Lengths are metres of TRUE geometry, not of the HUD-FOV picture: the models
 // really are a few dm across, so 0.35 already reaches across the whole weapon.
@@ -741,6 +743,7 @@ void		xrRender_initconsole	()
 	CMD4(CCC_Integer,	"r__lsleep_frames",		&ps_r__LightSleepFrames,	4,		30		);
 	CMD4(CCC_Float,		"r__ssa_glod_start",	&ps_r__GLOD_ssa_start,		128,	512		);
 	CMD4(CCC_Float,		"r__ssa_glod_end",		&ps_r__GLOD_ssa_end,		16,		96		);
+	CMD4(CCC_Float,		"r3_lens_cube_far",		&ps_r3_lens_cube_far,		0,		300		);
 	CMD4(CCC_Float,		"r__wallmark_shift_pp",	&ps_r__WallmarkSHIFT,		0.0f,	1.f		);
 	CMD4(CCC_Float,		"r__wallmark_shift_v",	&ps_r__WallmarkSHIFT_V,		0.0f,	1.f		);
 	CMD1(CCC_ModelPoolStat,"stat_models"		);
@@ -928,6 +931,9 @@ void		xrRender_initconsole	()
 	// the "SSS" checkbox in the advanced video options. Master switch for phase_hud_shadow -- the
 	// r2_hud_shadow* floats stay as the tuning knobs behind it.
 	CMD3(CCC_Mask, "r__hud_shadow", &ps_r__common_flags, RFLAG_HUD_SHADOW);
+	// the "lens reflections" checkbox in the advanced video options: the R3 cube the hud's glass mirrors
+	// (CRender::render_lens_cube); off, the glass mirrors the weather's sky alone. r3_lens_cube_far is its range.
+	CMD3(CCC_Mask, "r3_lens_cube", &ps_r__common_flags, RFLAG_LENS_CUBE);
 	CMD3(CCC_Token,		"r2_sun_quality",				&ps_r_sun_quality,			qsun_quality_token);
 	CMD3(CCC_Token,		"r2_smapsize",					&ps_r_smapsize,				qsmapsize_token);
 	CMD4(CCC_Float,		"r2_sun_cascade_scale",			&ps_r_sun_cascade_scale,	0.25f,	4.0f);

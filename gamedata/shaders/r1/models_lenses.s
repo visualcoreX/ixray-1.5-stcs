@@ -30,7 +30,7 @@ function normal    	(shader, t_base, t_second, t_detail)
       : aref		(false,0)
       : sorting		(2, true)
   shader:sampler	("s_base")      :texture  (t_base)
-  shader:sampler	("s_sky0")      :texture  ("$user$sky0")	: clamp() : f_linear()
+  shader:sampler	("s_sky0")      :texture  ("$user$sky0")	: clamp() : f_trilinear()	-- read through its mips (collim_sky.h)
   shader:sampler	("s_mark")      :texture  ("$user$collim_mark")	: clamp() : f_linear()
 
   -- pass 1, drawn first by the hud: the coating's tint over the view behind the glass

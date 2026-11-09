@@ -31,6 +31,8 @@ inv_grid_width		= 2
 inv_grid_height		= 1
 inv_grid_x			= 18
 inv_grid_y			= 2
+optic_glint_1				= -1.0, 250, 0.06, 160,160,255
+optic_glint_2				= -1.6, 1600, 0.005, 160,160,255
 
 [wpn_addon_scope_cobra]:wpn_addon_scope_x2.7
 $spawn			= "weapons\addons\scope_cobra"
@@ -38,18 +40,21 @@ visual          = dynamics\weapons\addons\scopes\cobra.ogf
 inv_name		= st_scope_cobra
 inv_name_short	= st_scope_cobra
 description		= st_scope_cobra_descr
-collimator_tint	= 106,128,130
+collimator_tint	= 100,128,130
 collimator_glass_strength	= 1.0, 0.25   ; от бедра, в прицеле: множитель видимости текстуры стекла
 collimator_reflect			= 255,96,0	; the sky mirrored in the coating, in its colour (0..255; none = no reflection)
-collimator_reflect_indirect	= 80,128,144	; the same mirror in the sky's light alone (shade, against the sun): its own colour
+collimator_reflect_indirect	= 255,96,0	; the same mirror in the sky's light alone (shade, against the sun): its own colour
 collimator_reflect_strength	= 2.0, 0.25	; hip, aim: the aim fades the mirror so it does not wash out the view
 collimator_reflect_limit	= 2
 collimator_reflect_f0		= 0.75		; share mirrored looking straight in; grazing angles get all of it
-collimator_reflect_curve    = 0.08  ; 0 = плоское зеркало (крупно, подвижно), 1 = купол модели (мелко)
+collimator_reflect_cube_curve = 0.25 ; the dome the glass mirrors by, the sky and R3's cube of the world alike: the tangent of the glass's own tilt times this -- 1 = the model's, more = rounder (the world wide and small), less = a close-up that pans, 0 = a flat mirror
 collimator_reflect_contrast = 2.5   ; степень яркости неба, 1 = без изменений
 collimator_reflect_mask		= 1.0		; 0..1: the clearer the glass texture, the stronger the mirror (0 = the whole glass alike)
-collimator_specular			= 0.04, 120	; the glass's highlight from the sun and lamps: strength, glossiness (higher = smaller, sharper)
-collimator_specular_mask	= 1.0		; -1..1: +1 only the clear parts of the glass texture shine, -1 only the opaque ones, 0 all alike
+collimator_specular			= 0.06, 400	; the glass's highlight from the sun and lamps: strength, glossiness (higher = smaller, sharper) where it shines and in what colour: wpn\lenses_spec's rgb (black = not at all, white = the light's own)
+collimator_specular_color	= 255,225,200	; its tint (0..255), the light's own colour by default; wpn\lenses_spec's rgb tints it further
+collimator_specular_world	= 5	; R3: the world round the glass (the cube; the sky where it is not drawn) the highlight's lobe gathers, under the same strength, tint and wpn\lenses_spec: the wear shows in the shade too. 0 = the lights' highlight alone; the sun's own peak is about (glossiness + 8) / 8 -- a share that big shines the world as bright as it
+collimator_specular_mask	= 0.0		; -1..1: +1 only the clear parts of the glass texture shine, -1 only the opaque ones, 0 all alike
+collimator_specular_lamps	= 0.25		; the lamps' share of the highlight against the sun's (a campfire's lights, stacked, outshone it); the inner lenses' glints take it too
 ; reticle drawn by the glass instead of the model, at infinity on the sight line (Numpad +/- while aiming picks it)
 collimator_marks			= wpn\sight_marks\mark_cobra_01, wpn\sight_marks\mark_cobra_02, wpn\sight_marks\mark_cobra_03, wpn\sight_marks\mark_cobra_04
 collimator_mark_size		= 4.0		; width of the whole texture, degrees of the world's view
@@ -69,18 +74,21 @@ visual          = dynamics\weapons\addons\scopes\pka.ogf
 inv_name		= st_scope_pka
 inv_name_short	= st_scope_pka
 description		= st_scope_pka_descr
-collimator_tint	= 84,128,136
+collimator_tint	= 80,128,136
 collimator_glass_strength	= 1.0, 0.25
 collimator_reflect			= 255,128,0
-collimator_reflect_indirect	= 64,100,128
+collimator_reflect_indirect	= 255,128,64
 collimator_reflect_strength	= 2.0, 0.25
 collimator_reflect_limit	= 1
 collimator_reflect_f0		= 0.75
-collimator_reflect_curve    = 0.08
+collimator_reflect_cube_curve = 0.5
 collimator_reflect_contrast = 2.5
 collimator_reflect_mask		= 1.0
-collimator_specular			= 0.02, 120
-collimator_specular_mask	= 1.0
+collimator_specular			= 0.06, 360
+collimator_specular_color	= 255,225,200
+collimator_specular_world	= 5
+collimator_specular_mask	= 0
+collimator_specular_lamps	= 0.25
 collimator_marks			= wpn\sight_marks\mark_dot_01
 collimator_mark_size		= 4
 collimator_mark_color		= 255,128,128
@@ -107,6 +115,15 @@ inv_grid_height    = 1
 inv_grid_x         = 22
 inv_grid_y         = 21
 
+collimator_reflect			= 160,128,128
+collimator_reflect_indirect	= 128,128,128
+collimator_reflect_cube_curve = 0.5
+collimator_specular			= 0.06, 400
+collimator_specular_color	= 255,245,225
+collimator_specular_world	= 5
+optic_glint_1				= -1.0, 250, 0.06, 255,128,64
+optic_glint_2				= -1.6, 1600, 0.0075, 100,150,255
+
 [wpn_addon_scope_rakurs]:wpn_addon_scope_x2.7
 $spawn			= "weapons\addons\scope_rakurs"
 visual          = dynamics\weapons\addons\scopes\rakurs.ogf
@@ -115,16 +132,19 @@ inv_name_short	= st_scope_rakurs
 description		= st_scope_rakurs_descr
 collimator_tint	= 126,128,122
 collimator_glass_strength	= 1.0, 0.25
-collimator_reflect			= 146,132,128
-collimator_reflect_indirect	= 64,128,116
+collimator_reflect			= 128,132,146
+collimator_reflect_indirect	= 128,132,146
 collimator_reflect_strength	= 2.0, 0.25
 collimator_reflect_limit	= 2
 collimator_reflect_f0		= 0.75
-collimator_reflect_curve    = 0.1 ;0.125
+collimator_reflect_cube_curve = 0.5
 collimator_reflect_contrast = 2.5
 collimator_reflect_mask		= 1.0
-collimator_specular			= 0.04, 120
-collimator_specular_mask	= 1.0
+collimator_specular			= 0.06, 400
+collimator_specular_color	= 255,255,255
+collimator_specular_world	= 5
+collimator_specular_mask	= 0
+collimator_specular_lamps	= 0.25
 ; a 1x prism sight: the glass shows the world with the body cut out behind the eyepiece (r3), inside a field stop
 collimator_prism			= true
 collimator_prism_fov		= 13		; full angle, degrees (spec: 13)
@@ -156,6 +176,9 @@ inv_grid_width     = 2
 inv_grid_height    = 1
 inv_grid_x         = 20
 inv_grid_y         = 22
+collimator_reflect_cube_curve = 0.5
+optic_glint_1				= -1.0, 250, 0.06, 128,255,128 ; curve, reflectivity (scale), strength, color
+optic_glint_2				= -1.6, 1600, 0.005, 128,255,128
 
 [wpn_addon_scope_detector]:wpn_addon_scope_x2.7
 zoom_hide_ui		= true	; GS parity (its std_*.ltx set this); blanks the indicators while aimed
@@ -170,6 +193,10 @@ inv_grid_width     = 2
 inv_grid_height    = 1
 inv_grid_x         = 20
 inv_grid_y         = 21
+
+collimator_reflect_cube_curve = 0.5
+optic_glint_1				= -1.0, 250, 0.06, 128,255,128 ; curve, reflectivity (scale), strength, color
+optic_glint_2				= -1.6, 1600, 0.005, 128,255,128
 
 ; ------------------------------------------------- per-weapon SCOPE SECTIONS (ak74)
 ; shared defaults: PiP lens, weapon stays visible, _scope anims, reticle illum on the
@@ -387,6 +414,9 @@ scope_texture		= wpn_crosshair
 zoom_hide_ui		= true	; GS parity (its std_*.ltx set this); blanks the indicators while aimed
 scope_zoom_factor	= 30		;pso-1 2X
 
+optic_glint_1				= -1.0, 250, 0.06, 128,142,255 ; curve, reflectivity (scale), strength, color
+optic_glint_2				= -1.6, 1600, 0.005, 255,115,100
+
 ; ---- stock CS generic SUSAT scope addon (moved here from weapons.ltx 2026-07-24) ----
 [wpn_addon_scope_susat]:identity_immunities
 GroupControlSection	= spawn_group
@@ -501,6 +531,8 @@ max_lens_factor			= 6
 lens_factor_levels_count = 5
 zoom_mouse_sense_koef	= 0.5
 scope_abberation		= 0.008
+optic_glint_1				= -1.0, 250, 0.06, 160,160,255
+optic_glint_2				= -1.6, 1600, 0.005, 160,160,255
 
 ; ===== Wincheaster 1300 optics (ported from GS addons\scopes\weaver\std_{eotech,aimpoint,elcan,night}.ltx)
 ; Items inherit OUR local scope parent (GS's `base_addon` does not exist here). inv_grid_* are OUR atlas
@@ -519,11 +551,14 @@ collimator_reflect_indirect	= 64,66,68
 collimator_reflect_strength	= 1.0, 0.15
 collimator_reflect_limit	= 1
 collimator_reflect_f0		= 0.75
-collimator_reflect_curve    = 0.08
+collimator_reflect_cube_curve = 0.5
 collimator_reflect_contrast = 2.5
 collimator_reflect_mask		= 1.0
-collimator_specular			= 0.01, 100
-collimator_specular_mask	= 1.0
+collimator_specular			= 0.02, 800
+collimator_specular_color	= 255,255,255
+collimator_specular_world	= 3
+collimator_specular_mask	= 0
+collimator_specular_lamps	= 0.25
 collimator_marks			= wpn\sight_marks\mark_eotech_01, wpn\sight_marks\mark_eotech_02, wpn\sight_marks\mark_eotech_03, wpn\sight_marks\mark_eotech_04
 collimator_marks_bright_first	= true		; the marks are brightness levels, brightest first: Num+ steps back towards it
 collimator_mark_size		= 4.0
@@ -549,18 +584,21 @@ visual          = dynamics\weapons\addons\scopes\aimpoint.ogf
 inv_name		= gunsl_addon_scope_aimpoint
 inv_name_short	= gunsl_addon_scope_aimpoint
 description		= gunsl_addon_scope_aimpoint_descr
-collimator_tint	= 118,136,128
+collimator_tint	= 108,136,128
 collimator_glass_strength	= 1.0, 0.25
 collimator_reflect			= 255,100,0
-collimator_reflect_indirect	= 64,110,128
+collimator_reflect_indirect	= 255,100,64
 collimator_reflect_strength	= 2.0, 0.25
 collimator_reflect_limit	= 1
 collimator_reflect_f0		= 0.75
-collimator_reflect_curve    = 0.08
+collimator_reflect_cube_curve = 0.5
 collimator_reflect_contrast = 2.5
 collimator_reflect_mask		= 1.0
-collimator_specular			= 0.02, 120
-collimator_specular_mask	= 1.0
+collimator_specular			= 0.06, 400
+collimator_specular_color	= 255,225,200
+collimator_specular_world	= 5
+collimator_specular_mask	= 0
+collimator_specular_lamps	= 0.25
 collimator_marks			= wpn\sight_marks\mark_dot_01
 collimator_mark_size		= 4
 collimator_mark_color		= 255,255,255
@@ -601,6 +639,10 @@ scope_lens_factor	= 4.0	; our engine takes ONE factor; GS had min 1.8 / max 10 /
 zoom_mouse_sense_koef = 0.5
 scope_abberation	= 0.005
 
+collimator_reflect_cube_curve = 0.5
+optic_glint_1				= -1.0, 250, 0.06, 128,200,255 ; curve, reflectivity (scale), strength, color
+optic_glint_2				= -1.6, 1600, 0.005, 255,115,100
+
 [wpn_addon_scope_susat_night]:wpn_addon_scope_x2.7	; PN-23 night scope (2D reticle + PiP lens)
 $spawn			= "weapons\addons\scope_pn23"
 visual          = dynamics\weapons\addons\scopes\pn23.ogf
@@ -622,6 +664,9 @@ need_lens_frame		= true
 scope_lens_factor	= 15	; GS min = max = 15
 zoom_mouse_sense_koef = 0.13
 scope_abberation	= 0
+collimator_reflect_cube_curve = 0.5
+optic_glint_1				= -1.0, 250, 0.06, 128,255,128 ; curve, reflectivity (scale), strength, color
+optic_glint_2				= -1.6, 1600, 0.005, 128,255,128
 
 ; ===== Wincheaster 1300 per-weapon scope sections (GS shotguns/wincheaster1300/scopes.ltx) =====
 ; Mandatory for us: scope_texture + scope_zoom_factor (read unconditionally from the ACTIVE scope section).
@@ -1883,6 +1928,8 @@ need_lens_frame		= true
 scope_lens_factor	= 6	; GS min = max = 6
 zoom_mouse_sense_koef = 0.5
 scope_abberation	= 0.011
+optic_glint_1				= -1.0, 250, 0.06, 160,160,255
+optic_glint_2				= -1.6, 1600, 0.005, 160,160,255
 
 ;==============================================================================
 ; OC-14 Groza optics -- GS assault/oc14/scopes.ltx.
@@ -2410,6 +2457,8 @@ min_night_brightness	= 0.0
 steps_brightness		= 1
 default_brightness_step	= 0
 jitter_brightness		= 0.0
+optic_glint_1				= -1.0, 250, 0.06, 160,160,255
+optic_glint_2				= -1.6, 1600, 0.005, 160,160,255
 
 ; ---- mount: PGO-7V on the RPG-7 (GS heavy/rpg-7/scopes.ltx) ----
 [scope_pgo7v_rpg7]
@@ -3144,3 +3193,27 @@ pp_nv_2d_max_gain = 2.5
 ; with the suit's NV on too, the goggles grade the picture and this optic only amplifies: the step's
 ; gain times this (2.0 = the green gain this ppe's own tint gave)
 pp_nv_2d_chain_gain = 2.0
+
+; The optics' glass (models\sniperlenses on a scope's body) mirrors as a collimator's glass does (model_sniperlens.ps;
+; on R2 and R1 the sky alone, with no cube). A scope, its addon or its weapon may carry these keys itself; the ones it lacks come from here
+; (CWeapon::CollimatorParamSection). The values are the Rakurs's: a neutral coating.
+[optic_glass_reflect]
+collimator_reflect			= 128,156,128
+collimator_reflect_indirect	= 64,128,116
+collimator_reflect_strength	= 2.0, 0.25
+collimator_reflect_limit	= 2
+collimator_reflect_f0		= 0.75
+collimator_reflect_cube_curve = 0.5
+collimator_reflect_contrast = 2.5
+collimator_reflect_mask		= 0.75
+collimator_specular			= 0.06, 400
+collimator_specular_color	= 215,225,255
+collimator_specular_world	= 3
+collimator_specular_lamps	= 0.25
+; The lenses inside, glinting through the outer glass (model_sniperlens.ps, R3; optics only): optic_glint_1 .. optic_glint_4 =
+; curvature, glossiness, strength, r, g, b. Curvature against the outer glass's dome: 1 = the same, 0 = flat,
+; < 0 = hollow -- the glint runs the other way as the gun sways. Glossiness as collimator_specular's (higher = smaller).
+; Colour 0..255. Where they show through the outer glass: wpn\lenses_spec's alpha. A scope that has optic_glint_1
+; itself takes all its lines from there, none from here.
+optic_glint_1				= -1.0, 250, 0.06, 160,160,255 ; curve, reflectivity (scale), strength, color
+optic_glint_2				= -1.6, 1600, 0.005, 160,160,255

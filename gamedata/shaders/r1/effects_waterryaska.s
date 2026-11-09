@@ -12,7 +12,7 @@ function normal                (shader, t_base, t_second, t_detail)
               : distort        (true)
               : fog                (true)
   shader:sampler        ("s_base")       :texture  (tex_base)
-  shader:sampler        ("s_env")        :texture  (tex_env)   : clamp()
+  shader:sampler        ("s_env")        :texture  (tex_env)   : clamp() : fmip_none()
 end
 
 function l_special        (shader, t_base, t_second, t_detail)

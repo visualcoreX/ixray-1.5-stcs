@@ -11,3 +11,6 @@ anim_up			= dynamics\weapons\weapon_lowered\weapon_raised		; frame 0 = down, las
 																	; way down plays backwards
 anim_blend		= 0.15			; s: a change of direction mid-move (or a way up that does not start exactly where
 								; the way down ends) fades over from the current pose in this long
+lock_time_up	= 0.3			; s from the start of the raise until the weapon keys (fire first of all) work again --
+								; like lock_time_anm_idle_aim_end after an aim-out. A hud section can set its own
+								; lock_time_lowered_up. The key T itself waits for the move to play to its end.

@@ -1557,6 +1557,9 @@ void CActor::ToggleWeaponLowered()
 		m_bWeaponLowered = false;
 		return;
 	}
+	// the move down or up plays to its end before the key is listened to again (user 2026-10-31: spamming it
+	// turned the motion back and forth halfway)
+	if (w->LoweredMoving())	return;
 	if (m_bWeaponLowered)
 	{
 		m_bWeaponLowered = false;
@@ -1601,14 +1604,14 @@ void CActor::UpdateWeaponLowered()
 		m_bWeaponLowered = false;
 }
 
-// The keys that work the weapon in hand. Swallowed while it is down and until it is most of the way back
-// up, so a shot cannot leave from the hip while the pose is still lowered. Switching weapons, grenades,
-// the inventory etc. stay free.
+// The keys that work the weapon in hand. Swallowed while it is down and on the way back up until
+// CHudItem::LoweredBlocksWeapon lets go (a timer from the start of the raise, as after an aim-out), so a shot
+// cannot leave while the pose is still well down. Switching weapons, grenades, the inventory etc. stay free.
 bool CActor::WeaponLoweredBlocksAction(int cmd)
 {
 	CHudItem* w = smart_cast<CHudItem*>(inventory().ActiveItem());
 	if (!w)																return false;
-	if (!IsWeaponLowered() && w->LoweredFactor() <= 0.25f)				return false;
+	if (!IsWeaponLowered() && !w->LoweredBlocksWeapon())				return false;
 	switch (cmd)
 	{
 	case kWPN_FIRE:

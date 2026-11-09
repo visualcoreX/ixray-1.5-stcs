@@ -486,6 +486,8 @@ void set_actor_invulnerable(bool b)
 // only answers for CCustomMonster, i.e. NPCs), and the three light sources are three unrelated
 // classes. Exposed as plain facts so a script can decide what counts as "hidden".
 // Weapon down (CActor::ToggleWeaponLowered): xr_meet asks to put the weapon away only when it is up.
+extern bool gwr_tactical_hud();	// Actor.cpp: GS level.is_tactical_hud()
+
 bool actor_weapon_lowered()
 {
 	CActor* actor = smart_cast<CActor*>(Level().CurrentEntity());
@@ -935,6 +937,7 @@ void CLevel::script_register(lua_State *L)
 		def("set_actor_invulnerable",			set_actor_invulnerable),
 		def("actor_crouch",						actor_crouch),
 		def("actor_weapon_lowered",				actor_weapon_lowered),
+		def("is_tactical_hud",					gwr_tactical_hud),
 		def("actor_set_in_base",				actor_set_in_base),
 		def("actor_set_weapon_lowered",			actor_set_weapon_lowered),
 		def("actor_light_on",					actor_light_on),

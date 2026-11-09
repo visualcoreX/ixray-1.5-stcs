@@ -415,6 +415,43 @@ CRenderTarget::CRenderTarget		()
 		rt_scope_late_cut.create("$user$scopelatec", s_dwWidth, s_dwHeight,
 			RImplementation.o.dx10_msaa ? D3DFMT_A8R8G8B8 : rt_Color->fmt, 1);
 		rt_scope_distort.create("$user$scopedistort", s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
+		// the cubemap the hud's glass mirrors (lens_cube.h LENS_CUBE_N)
+		{
+			const u32 N = 128;
+			rt_cube_P.create("$user$cube_p", N, N, D3DFMT_A16B16G16R16F, 1);
+			rt_cube_N.create("$user$cube_n", N, N, D3DFMT_A16B16G16R16F, 1);
+			rt_cube_C.create("$user$cube_c", N, N, D3DFMT_A8R8G8B8, 1);
+			rt_cube_Z.create("$user$cube_z", N, N, D3DFMT_D24S8, 1);
+			// with mips down to 4x4 a face (lens_cube.h LENS_CUBE_MIPS): the glass blurs it by reading a smaller one,
+			// and a real cube is filtered across its faces' edges by the hardware, so they show no seam at any level
+			D3D10_TEXTURE2D_DESC desc;
+			ZeroMemory(&desc, sizeof(desc));
+			desc.Width = N;
+			desc.Height = N;
+			desc.MipLevels = 6;
+			desc.ArraySize = 6;
+			desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			desc.SampleDesc.Count = 1;
+			desc.Usage = D3D10_USAGE_DEFAULT;
+			desc.BindFlags = D3D10_BIND_RENDER_TARGET | D3D10_BIND_SHADER_RESOURCE;
+			desc.MiscFlags = D3D10_RESOURCE_MISC_TEXTURECUBE | D3D10_RESOURCE_MISC_GENERATE_MIPS;
+			R_CHK(HW.pDevice->CreateTexture2D(&desc, NULL, &t_lens_cube_surf));
+			for (u32 face = 0; face < 6; ++face)
+			{
+				D3D10_RENDER_TARGET_VIEW_DESC view;
+				ZeroMemory(&view, sizeof(view));
+				view.Format = desc.Format;
+				view.ViewDimension = D3D10_RTV_DIMENSION_TEXTURE2DARRAY;
+				view.Texture2DArray.FirstArraySlice = face;
+				view.Texture2DArray.ArraySize = 1;
+				R_CHK(HW.pDevice->CreateRenderTargetView(t_lens_cube_surf, &view, &rt_lens_cube[face]));
+			}
+			t_lens_cube = dxRenderDeviceRender::Instance().Resources->_CreateTexture("$user$lens_cube");
+			t_lens_cube->surface_set(t_lens_cube_surf);
+			m_lens_cube_clear = false;
+			m_lens_cube_face = 0;
+			lens_cube_clear();
+		}
 
 		rt_Back_Buffer.create(r2_RT_backbuffer_final, s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
 
@@ -1011,6 +1048,11 @@ CRenderTarget::~CRenderTarget	()
 #endif // DEBUG
 	_RELEASE					(t_material_surf);
 
+	if (t_lens_cube._get())		t_lens_cube->surface_set(NULL);
+	for (u32 face = 0; face < 6; ++face)
+		_RELEASE				(rt_lens_cube[face]);
+	_RELEASE					(t_lens_cube_surf);
+
 	t_LUM_src->surface_set		(NULL);
 	t_LUM_dest->surface_set		(NULL);
 
@@ -1398,4 +1440,71 @@ void CRender::PresentBridgeLens()
 		g_pGamePersistent->m_bLensSaveValid = true;				// a real frame is now saved -> lens frames may present it
 	}
 	_RELEASE(pBuffer);
+}
+
+// The cube emptied: alpha 0 = no face drawn, the glass keeps the sky. Once when it is made, and whenever the cube
+// stops being drawn (CRender::render_lens_cube: nothing in hand mirrors it, r3_lens_cube_far 0) -- when it comes
+// back, the glass shows the sky until the faces are in, not the place they were drawn last.
+void CRenderTarget::lens_cube_clear()
+{
+	if (m_lens_cube_clear || !t_lens_cube_surf)	return;
+	FLOAT zero[4]			= { 0.f, 0.f, 0.f, 0.f };
+	for (u32 face = 0; face < 6; ++face)
+		HW.pDevice->ClearRenderTargetView(rt_lens_cube[face], zero);
+	HW.pDevice->GenerateMips(t_lens_cube->get_SRView());	// the clear reaches the top level alone
+	m_lens_cube_clear		= true;
+	m_lens_cube_face		= 0;
+}
+
+// The cubemap the hud's glass mirrors (CRender::render_lens_cube): a face's G-buffer, as phase_scene_begin sets the
+// frame's -- the same targets in the same order, so the level's deferred shaders write it as they write that one --
+// at the face's size, cleared: nothing drawn = the sky (lens_cube.ps).
+void CRenderTarget::lens_cube_begin()
+{
+	if (RImplementation.o.dx10_gbuffer_opt)	u_setrt(rt_cube_P, rt_cube_C, rt_cube_Z->pZRT);
+	else									u_setrt(rt_cube_P, rt_cube_N, rt_cube_C, rt_cube_Z->pZRT);
+	D3D_VIEWPORT VP			= { 0, 0, rt_cube_P->dwWidth, rt_cube_P->dwHeight, 0.f, 1.f };
+	HW.pDevice->RSSetViewports(1, &VP);
+	RCache.set_Scissor		(NULL);
+	FLOAT zero[4]			= { 0.f, 0.f, 0.f, 0.f };
+	HW.pDevice->ClearRenderTargetView(rt_cube_P->pRT, zero);
+	HW.pDevice->ClearRenderTargetView(rt_cube_N->pRT, zero);
+	HW.pDevice->ClearRenderTargetView(rt_cube_C->pRT, zero);
+	HW.pDevice->ClearDepthStencilView(rt_cube_Z->pZRT, D3D10_CLEAR_DEPTH|D3D10_CLEAR_STENCIL, 1.0f, 0);
+	RCache.set_Stencil		(TRUE, D3DCMP_ALWAYS, 0x01, 0xff, 0x7f, D3DSTENCILOP_KEEP, D3DSTENCILOP_REPLACE, D3DSTENCILOP_KEEP);
+	RCache.set_CullMode		(CULL_CCW);
+	RCache.set_ColorWriteEnable();
+}
+
+// ...and the face lit into its place in the cube (lens_cube.ps): R, U, F = the face's right, up and forward in the
+// world, far_ = its range.
+void CRenderTarget::lens_cube_combine(u32 face, const Fvector& R, const Fvector& U, const Fvector& F, float far_)
+{
+	if (!s_lens_cube)		s_lens_cube.create("effects\\lens_cube", "$user$cube_p");
+	m_lens_cube_clear		= false;
+	const u32 N				= rt_cube_P->dwWidth;
+	u_setrt					(N, N, rt_lens_cube[face], nullptr, nullptr, nullptr);
+	D3D_VIEWPORT VP			= { 0, 0, N, N, 0.f, 1.f };
+	HW.pDevice->RSSetViewports(1, &VP);
+
+	// one quad over the face; stub_notransform_t maps it by the screen's size, the viewport by the face's
+	const float	w			= float(Device.dwWidth), h = float(Device.dwHeight);
+	const u32	C			= color_rgba(255, 255, 255, 255);
+	u32			Offset;
+	FVF::TL*	pv			= (FVF::TL*)RCache.Vertex.Lock(4, g_combine->vb_stride, Offset);
+	pv->set					(-0.5f,		h - 0.5f,	0.f, 1.f, C, 0.f, 1.f);	pv++;
+	pv->set					(-0.5f,		-0.5f,		0.f, 1.f, C, 0.f, 0.f);	pv++;
+	pv->set					(w - 0.5f,	h - 0.5f,	0.f, 1.f, C, 1.f, 1.f);	pv++;
+	pv->set					(w - 0.5f,	-0.5f,		0.f, 1.f, C, 1.f, 0.f);	pv++;
+	RCache.Vertex.Unlock	(4, g_combine->vb_stride);
+	RCache.set_Shader		(s_lens_cube);
+	RCache.set_c			("m_cube_r",	R.x, R.y, R.z, 0.f);
+	RCache.set_c			("m_cube_u",	U.x, U.y, U.z, 0.f);
+	RCache.set_c			("m_cube_f",	F.x, F.y, F.z, far_);
+	RCache.set_CullMode		(CULL_NONE);
+	RCache.set_Stencil		(FALSE);
+	RCache.set_Geometry		(g_combine);
+	RCache.Render			(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
+	RCache.set_CullMode		(CULL_CCW);
+	HW.pDevice->GenerateMips(t_lens_cube->get_SRView());	// the smaller faces the glass blurs it with (lens_cube.h)
 }

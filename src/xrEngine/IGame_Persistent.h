@@ -90,10 +90,21 @@ public:
 	// y = contrast exponent on the mirrored sky's brightness (1 = as is), z = how much the glass texture's
 	// alpha masks it (0 = not at all), w = the most indirect light it takes (0 = no limit).
 	Fvector4						hud_collim_reflect_shape;
+	// The dome the glass mirrors by, the sky and R3's cube of the world alike (m_collim_cube): x = the curve -- the tangent of the glass's own
+	// tilt off its flat axis times x (1 = the model's, 0 = a flat mirror).
+	Fvector4						hud_collim_cube;
 	// The glass's highlight (m_collim_spec): x = strength (0 = none), y = glossiness (the highlight's exponent),
-	// z = how the glass texture's alpha picks the glossy parts (+1 the clear ones, -1 the opaque, 0 all alike).
+	// z = how the glass texture's alpha picks the glossy parts (+1 the clear ones, -1 the opaque, 0 all alike),
+	// w = the lamps' share of it against the sun's (the inner lenses' glints take it too).
 	// The shader also fades it with the glass's texture for the aim (m_collim_glass.x).
 	Fvector4						hud_collim_spec;
+	// ...and its tint (m_collim_spec_color): rgb = collimator_specular_color / 255, 1 = the light's own colour;
+	// w = the world's share of it (collimator_specular_world, R3: the cube's light, else the sky's; 0 = none).
+	Fvector4						hud_collim_spec_color;
+	// An optic's inner lenses (m_optic_glints, model_sniperlens.ps): HUD_OPTIC_GLINTS pairs -- x = curvature,
+	// y = glossiness, z = strength (0 = none); then rgb = colour.
+	enum { HUD_OPTIC_GLINTS = 4 };
+	Fvector4						hud_optic_glints[HUD_OPTIC_GLINTS*2];
 	// The glass's own texture (m_collim_glass.x): multiplies its alpha, so the aim can fade it out.
 	// Only the HUD's strict-sorted pass gets it -- the binder gives the world's guns 1.
 	Fvector4						hud_collim_glass;
@@ -114,6 +125,13 @@ public:
 	// ROS: the reflection fades where the sky it would mirror is blocked -- indoors, under a roof.
 	Fvector4						hud_collim_hemi_pos;
 	Fvector4						hud_collim_hemi_neg;
+	// The rain on an optic's outer glass (m_lens_wet, lens_wet.h): x = how wet it is, 0 dry .. 1 soaked (the share of
+	// the drops on it), y = the rain's clock, seconds wrapping at HUD_LENS_WET_WRAP -- it runs only while rain falls on
+	// the glass, as fast as the rain is heavy: the drops' lives and the runlets' crawl -- z = the rain falling on it
+	// now, 0..1, eased (the runlets), w = the held weapon's aim, 0..1 (a collimator's drops fade in it). CActor, from
+	// the weather and the rain effect's sky factor.
+	enum							{ HUD_LENS_WET_WRAP = 3600 };
+	Fvector4						hud_lens_wet;
 	// The frame's average brightness as the eye has adapted to it (the tonemap's measure), read back from the
 	// GPU every few seconds by the renderer (R3); < 0 while there is none -- another renderer, or the tonemap
 	// off. What a collimator's light sensor sees: collimator_mark_auto_illum (CActor).
@@ -135,6 +153,9 @@ public:
 	// gone in the corners, pulsing), z = sharpening amount over the whole screen (0 = off), w = brightening
 	// in the middle (0.15 = x1.15), fading out where the vignette comes in. All zero = the pass leaves the picture alone.
 	Fvector4						pp_fatigue;
+	// The exhaustion's radial chromatic aberration (pp pass, CActor, near the stamina where running stops): x = how
+	// far red slides outwards and blue inwards in the screen's corners, in pixels (0 = off). y, z, w unused.
+	Fvector4						pp_fatigue_ca;
 	// Injury grading over the finished picture (pp pass), filled by CActor from the health and the bleeding:
 	// x = how strongly the edges are dyed red (0..1, pulsing), y = the blood drops on the lens, 0..1 -- both how
 	// far in towards the middle they have crept and the glare they catch from bright light (pulsing while
@@ -146,7 +167,9 @@ public:
 	// (no blood tint). Slots 0..PP_DROPLETS_BLOOD-1 are the bleeding's, the rest the rain's.
 	enum							{ PP_DROPLETS = 20, PP_DROPLETS_BLOOD = 8 };	// the rain's 12
 	// The hit flash (CActor): x = how strongly the edges are flushed dark red (the injury's mask), y = the
-	// vignette, how much of the light leaves the corners. Both 0 = nothing.
+	// vignette, how much of the light leaves the corners. Both 0 = nothing. z, w are the INJURY's (not the hit's):
+	// the beat of its masks' reach, a multiplier of pp_injury_mask's power -- z for the red and the vessels, w for
+	// the drops; 0 = 1 (CActor::UpdateCL, INJURY_REACH_*).
 	Fvector4						pp_hit;
 	Fvector4						pp_droplets[PP_DROPLETS];
 

@@ -776,6 +776,14 @@ bool CRelationMapLocation::Update()
 			if(ea&&!ea->g_Alive()) return true;
 
 			vis_res =  Actor()->memory().visual().visible_now(smart_cast<const CGameObject*>(_object_));
+			// the suit's infrared scanner (GS: "reliably picks up people nearby, even in the dark") puts an
+			// enemy within its range on the map unseen; friends and neutrals are on it anyway (the PDA radius)
+			if (!vis_res)
+			{
+				extern float gwr_tactical_scan_dist();
+				const float r = gwr_tactical_scan_dist();
+				vis_res = (r > 0.f) && (_object_->Position().distance_to_sqr(Actor()->Position()) <= r * r);
+			}
 		}
 		else
 			vis_res = false;

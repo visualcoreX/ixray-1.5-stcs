@@ -894,6 +894,9 @@ void	R_dsgraph_structure::r_dsgraph_render_subspace	(IRender_Sector* _sector, Fm
 	r_dsgraph_render_subspace		(_sector,&temp,mCombined,_cop,_dynamic,_precise_portals);
 }
 
+// An object a sub-space render leaves out (CRender::render_lens_cube: the actor, whose camera it is)
+CObject*	g_subspace_skip		= nullptr;
+
 // sub-space rendering - main procedure
 void	R_dsgraph_structure::r_dsgraph_render_subspace	(IRender_Sector* _sector, CFrustum* _frustum, Fmatrix& mCombined, Fvector& _cop, BOOL _dynamic, BOOL _precise_portals)
 {
@@ -959,6 +962,7 @@ void	R_dsgraph_structure::r_dsgraph_render_subspace	(IRender_Sector* _sector, CF
 				// renderable
 				IRenderable*	renderable		= spatial->dcast_Renderable	();
 				if (0==renderable)				continue;					// unknown, but renderable object (r1_glow???)
+				if (g_subspace_skip && spatial->dcast_CObject() == g_subspace_skip)	continue;
 
 #if RENDER != R_R1
 				g_render_shadow_pass			= (phase == RImplementation.PHASE_SMAP);

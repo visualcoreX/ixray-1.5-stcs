@@ -76,7 +76,7 @@ void CUIZoneMap::Render			()
 {
 	// GS ZoneMapCondition (ActorUtils.pas:3216): no minimap from veteran up -- navigate by the world and
 	// the PDA map. GS lets a "tactical helmet" (one upgraded with nearest_enemies_show_dist) hand it back;
-	// we have no such upgrade, so the rule is unconditional here.
+	// Clear Sky has no helmets, so here it is the suit's upgrade (gwr_tactical_hud, Actor.cpp).
 	//
 	// The test lives HERE and not at the call site because there are TWO callers: CUIMainIngameWnd::Draw
 	// for the ordinary hud, and CUIActorMenu::Draw -> CUIMainIngameWnd::DrawZoneMap() while the inventory
@@ -84,7 +84,8 @@ void CUIZoneMap::Render			()
 	// indicators off, so CUIMainIngameWnd::Draw is not even running then. Gating only the hud path left
 	// the minimap on screen for as long as the inventory was up, at every difficulty (user 2026-08-29).
 	// One gate inside the drawing function cannot be walked around by a caller that is added later.
-	if (g_SingleGameDifficulty >= egdVeteran)	return;
+	extern bool gwr_tactical_hud();
+	if (g_SingleGameDifficulty >= egdVeteran && !gwr_tactical_hud())	return;
 
 	if ( !visible )
 	{

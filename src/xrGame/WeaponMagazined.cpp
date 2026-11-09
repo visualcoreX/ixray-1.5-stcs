@@ -820,7 +820,11 @@ bool CWeaponMagazined::TryReload()
 			m_pAmmo = NULL;
 
 		
-		if(IsMisfire() && iAmmoElapsed)
+		// A jammed weapon is cleared by a reload that loads nothing (OnReloadInsert returns before any ammo is
+		// touched), so it needs no ammo in the inventory -- also with the magazine empty: a jam on the LAST shot
+		// (anm_reload_jammed_last) with the pouches empty could not be cleared at all, the old test wanted
+		// rounds still loaded. Not in grenade mode, where a reload loads the launcher, not clears the rifle.
+		if(IsMisfire() && (iAmmoElapsed || !IsGrenadeMode()))
 		{
 			SetPending			(TRUE);
 			SwitchState			(eReload); 
@@ -1427,7 +1431,8 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 	}
 
 	// Also the flat count/type (for the single-type advanced & count modes).
-	int eff_count = mag_visible((reloading && inserted) ? gwr_reload_total : iAmmoElapsed);
+	const int eff_total = (reloading && inserted) ? gwr_reload_total : iAmmoElapsed;	// every round, the chamber's too
+	int eff_count = mag_visible(eff_total);
 	// ...and the unjam must not adopt the loaded type mid-animation either (see jam_holds_case above):
 	// the revival loads nothing, it only clears the stuck case.
 	u32 eff_type  = (reloading && inserted && !jam_holds_case) ? reload_type : last_type;
@@ -1715,7 +1720,12 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 		LPCSTR bsect = resolve_sect(eff_type);					// the CASE's colour (chamber)
 		if (bsect)
 		{
-			if (IsMisfire() && READ_IF_EXISTS(pSettings, r_bool, bsect, "additional_ammo_bone_when_jammed", FALSE))	++cnt;
+			// additional_ammo_bone_when_jammed: the jammed round shown as one more -- but our jam comes after the shot,
+			// the round is spent already, and a jam on the LAST shot (allowed, as in GS: anm_reload_jammed_last) left
+			// 0 + 1 = a round drawn in an empty weapon (the Saiga). With no round left at all, nothing more is drawn.
+			// eff_total, not eff_count: the magazine's share leaves the chambered round out (ammo_in_chamber), and with
+			// one round left -- the jammed one -- it is 0 while that round must still show.
+			if (IsMisfire() && eff_total > 0 && READ_IF_EXISTS(pSettings, r_bool, bsect, "additional_ammo_bone_when_jammed", FALSE))	++cnt;
 			if (pSettings->line_exist(bsect, "all_bones"))	gwr_SetBones(pSettings->r_string(bsect, "all_bones"), FALSE);
 			// Drum/tube "closing round": visible ONLY when the mag is completely full. The full count
 			// varies with the mag-capacity upgrade, so a dedicated configuration_full covers any size
@@ -1759,7 +1769,7 @@ void CWeaponMagazined::gwr_UpdateBones(bool force)
 		int start = READ_IF_EXISTS(pSettings, r_s32, sect, "start_ammo_bone_index", 0);
 		int last  = READ_IF_EXISTS(pSettings, r_s32, sect, "end_ammo_bone_index", 0);
 		int fin   = start + eff_count - 1;		// reload-phased count
-		if (IsMisfire() && READ_IF_EXISTS(pSettings, r_bool, sect, "additional_ammo_bone_when_jammed", FALSE))	++fin;
+		if (IsMisfire() && eff_total > 0 && READ_IF_EXISTS(pSettings, r_bool, sect, "additional_ammo_bone_when_jammed", FALSE))	++fin;	// not with no round left (see above)
 		if (pSettings->line_exist(sect, "ammo_divisor_up"))
 			fin = start + (int)ceilf(float(fin - start + 1) / pSettings->r_s32(sect, "ammo_divisor_up")) - 1;
 		else if (pSettings->line_exist(sect, "ammo_divisor_down"))

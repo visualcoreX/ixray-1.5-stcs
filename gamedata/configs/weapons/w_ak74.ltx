@@ -108,6 +108,9 @@ zoom_cam_max_angle           = 60.0
 zoom_cam_max_angle_horz      = 5.0
 zoom_cam_step_angle_horz     = 0.3
 
+;cam_limit_nod				= 0.2		; past cam_max_angle, as parts of the cut-off kick: an up-and-back nod per shot (no lasting climb)
+;cam_limit_creep			= 0.05		; what still climbs for good, up to the camera's pitch limit
+;cam_limit_spray			= 0.1		; random vertical step per shot, within cam_max_angle_horz. All three 0 = the old hard ceiling. zoom_cam_limit_* the same in zoom
 ;cam_rise_time				= 0.075		; ���� �� ������ � �������, �� ����������� �������� �� ��������� �� ����, 0.075
 ;cam_roll_amount			= 0.8		; ���� �� ������ � �������, �� ����������� �� cam_dispersion * 0.75
 ;cam_relax_amount			= 0.5 		; ���� �� ������ � �������, �� ����������� �������� �� ��������� �� ����, 0.5
@@ -230,7 +233,7 @@ element_icon_offset_y_1 = 0
 laser_params_section    = ak74_laser
 flashlight_params_section = ak74_flashlight
 flashlight_bone         = light   ; the glow lens toggled with on/off (the `flash` device stays visible)
-disable_laserdot_when_gl_enabled = true   ; GS: in GL mode the projected dot is hidden -> the laser reads as a short stub
+disable_laserdot_when_gl_enabled = true   ; GS, R1/R2 only: in GL mode the projected dot is hidden -> the laser reads as a short stub. On R3 the beam stops on the sight (laser_stop_bones)
 bayonet_hit_time        = 210   ; ms after the quick-kick key when the bayonet stab lands (anm_kick=ak74_bayonet plays on the weapon)
 ; bayonet melee params (GS base_bayonet.ltx) -- read by QuickKickHit when the ak74 stabs. Reaches further +
 ; hits harder than the generic knife kick (quick_kick_animator: distance 2, power 0.8). Only used while the
@@ -239,8 +242,8 @@ kick_distance           = 3.0   ; GS base_bayonet (vs 2.0 for the knife phantom)
 kick_hit_power          = 1.5
 kick_hit_impulse        = 10
 kick_wallmark_size      = 0.05
-laser_switch_time_to_gl   = 500   ; GS: dot stays for the first 500ms of the raise-GL anim, then hides
-laser_switch_time_from_gl = 700   ; GS: dot reappears only in the last 700ms of the lower-GL anim
+laser_switch_time_to_gl   = 500   ; GS, R1/R2 only: dot stays for the first 500ms of the raise-GL anim, then hides
+laser_switch_time_from_gl = 700   ; GS, R1/R2 only: dot reappears only in the last 700ms of the lower-GL anim
 scope_bones             = scope_pso_assault   ; fallback bone (per-scope sections' `bones` override this)
 need_lens_frame         = true               ; GS: this scope uses the 3D PiP lens (no 2D scope texture, weapon stays visible)
 scope_lens_factor       = 10                  ; GS PSO min/max_lens_factor (magnification if the scope filled the screen); lens frame FOV = base/factor
@@ -2063,6 +2066,7 @@ configuration_1 = grenade_blue
 laser_installed                = true
 laser_ray_bones                = line, line2
 laser_beam_section             = laser_beam_red	; volumetric beam (configs\weapons\laser_beams.ltx)
+laser_stop_bones               = launcher_scope	; the GP's leaf sight: raised, it stands in the beam, which ends on it
 particles_count                = 4
 laserdot_particle_0            = laser\red_dot
 laserdot_particle_1            = laser\red_dot1

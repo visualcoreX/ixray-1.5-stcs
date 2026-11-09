@@ -23,7 +23,13 @@ public:
 	};
 
 	u32							dwLightMarkerID;
-	// 
+	// Stencil bit 0x02, "keep it dry": the optics' glass (wpn\lenses, Blender_Model_EbB) writes it with the G-buffer's
+	// 0x01, and the dynamic wet surfaces (draw_rain) leave its pixels out -- the rain's gloss there was a flat sheen the
+	// glass's own mirror (model_sniperlens.ps) knows nothing of, lit up by any lamp nearby. The bit is free until the
+	// rain has run: the G-buffer writes ref 0x01 through mask 0x7f, so it is 0 elsewhere; the MSAA edges take 0x80;
+	// everything after tests bit 0 (and 0x80), or ">= 1", or a light's marker -- odd and >= 5, written over it.
+	static constexpr u32		STENCIL_DRY			= 0x02;
+	//
 	IBlender*					b_occq;
 	IBlender*					b_accum_mask;
 	IBlender*					b_accum_direct;
@@ -104,6 +110,19 @@ public:
 	xr_map<shared_str, ref_shader>	s_laser_beam;	// one per noise texture
 	ref_shader					s_laser_dens_rain;
 	ref_shader					s_laser_dot;		// the procedural dot at the end of a beam
+	// The cubemap the hud's glass mirrors (CRender::render_lens_cube; shaders lens_cube.h): a face's own small
+	// G-buffer (position, normal -- unused with the G-buffer optimisation --, colour, depth) and the six faces lit,
+	// in a real cube texture with mips (a ref_rt has neither faces nor mips)
+	ref_rt						rt_cube_P;
+	ref_rt						rt_cube_N;
+	ref_rt						rt_cube_C;
+	ref_rt						rt_cube_Z;
+	ID3DTexture2D*				t_lens_cube_surf = nullptr;
+	ID3DRenderTargetView*		rt_lens_cube[6] = {};	// a view of each face's top level
+	ref_texture					t_lens_cube;
+	ref_shader					s_lens_cube;
+	bool						m_lens_cube_clear;	// the cube holds no face (alpha 0 everywhere: the glass keeps the sky)
+	u32							m_lens_cube_face;	// the face drawn next (+x -x +y -y +z -z)
 	xr_map<shared_str, ref_shader>	s_torch_dust;	// dust in handheld torches' cones, one per noise texture
 	bool						m_laser_dens_valid;	// the density buffer holds this frame's smoke
 	// Rain refraction: dxRainRender keeps here the streaks it drew this frame, phase_rain_distort draws
@@ -308,6 +327,9 @@ public:
 	// the sorted list, which drawing it clears), the beams after the world's transparent geometry.
 	void						phase_laser_density		();
 	void						phase_laser_beams		();
+	void						lens_cube_clear			();
+	void						lens_cube_begin			();
+	void						lens_cube_combine		(u32 face, const Fvector& R, const Fvector& U, const Fvector& F, float far_);
 	// Dust in handheld torches' light cones (IGame_Persistent::GetTorchDust), right after the beams.
 	void						phase_torch_dust		();
 	// dxRainRender, right after drawing the rain streaks: the same vertices once more into the density buffer

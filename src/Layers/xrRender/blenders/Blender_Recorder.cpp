@@ -224,7 +224,23 @@ void	CBlender_Compile::PassSET_ablend_mode	(BOOL bABlend,	u32 abSRC, u32 abDST)
 	//	alpha in DX10 identical to color.
 	RS.SetRS(D3DRS_SRCBLENDALPHA,		bABlend?abSRC:D3DBLEND_ONE	);
 	RS.SetRS(D3DRS_DESTBLENDALPHA,		bABlend?abDST:D3DBLEND_ZERO	);
+#else	//	USE_DX10
+	// Every pass says it, so PassSET_ablend_alpha's TRUE cannot stay behind in the device for the
+	// passes after it (a DX9 state block sets only what its pass recorded).
+	RS.SetRS(D3DRS_SEPARATEALPHABLENDENABLE,	FALSE);
 #endif	//	USE_DX10
+}
+// The alpha channel blended by its own factors (the colour keeps PassSET_ablend_mode's, which this
+// must follow). The distortion mask uses it: its alpha counts the distorting draws over a pixel,
+// added up, while the colour is lerped by the same alpha (distort_combine.h).
+void	CBlender_Compile::PassSET_ablend_alpha	(u32 abSRC, u32 abDST)
+{
+#ifndef	USE_DX10
+	RS.SetRS(D3DRS_SEPARATEALPHABLENDENABLE,	TRUE);
+#endif	//	USE_DX10
+	RS.SetRS(D3DRS_SRCBLENDALPHA,		abSRC	);
+	RS.SetRS(D3DRS_DESTBLENDALPHA,		abDST	);
+	RS.SetRS(D3DRS_BLENDOPALPHA,		D3DBLENDOP_ADD	);
 }
 void	CBlender_Compile::PassSET_ablend_aref	(BOOL bATest,	u32 aRef)
 {

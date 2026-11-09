@@ -22,6 +22,7 @@ prop_restore_bleeding		;;���������� ��������
 prop_restore_health			;;�������������� ��������
 prop_night_vision			;;������ ������� �������
 prop_night_vision_2			;; NV mk.2 -- gen 2 gets its own icon so it is not confused with gen 1
+prop_tactical_hud			;; GS infrared scanner: the interface on master, the minimap from veteran up
 prop_power 					;;���� �������
 prop_tonnage 				;;���������� ���
 prop_radio_chem				;;�����-��� ������
@@ -387,3 +388,9 @@ name     = gunsl_up_prop_new_ammo
 icon     = ui_wp_propery_07
 functor  = inventory_upgrades.property_functor_a
 params   = hit_power, rpm, cost
+
+[prop_tactical_hud]
+name     = st_prop_tactical_hud
+icon     = ui_gunsl_up_prop_custom
+functor  = inventory_upgrades.property_functor_a
+params   = cost

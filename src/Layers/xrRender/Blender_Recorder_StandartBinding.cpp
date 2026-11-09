@@ -289,11 +289,21 @@ class cl_collim_reflect_ind : public R_constant_setup {
 };
 static cl_collim_reflect_ind	binder_collim_reflect_ind;
 
+// The dome the glass mirrors by (collim.h collim_cube_normal): x = curve
+class cl_collim_cube : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	RCache.set_c (C, g_pGamePersistent->hud_collim_cube);
+		else												RCache.set_c (C, 0.f, 0.f, 0.f, 0.f);
+	}
+};
+static cl_collim_cube	binder_collim_cube;
+
 class cl_collim_reflect_shape : public R_constant_setup {
 	virtual void setup(R_constant* C)
 	{
 		if (g_pGamePersistent)	RCache.set_c (C, g_pGamePersistent->hud_collim_reflect_shape);
-		else					RCache.set_c (C, 0.35f, 1.f, 0.f, 0.f);
+		else					RCache.set_c (C, 0.f, 1.f, 0.f, 0.f);
 	}
 };
 static cl_collim_reflect_shape	binder_collim_reflect_shape;
@@ -395,7 +405,7 @@ class cl_collim_veil : public R_constant_setup {
 static cl_collim_veil	binder_collim_veil;
 
 // The collimator glass's highlight (collim.h collim_specular): x = strength, y = glossiness, z = the texture
-// alpha's mask. The hud's glass only -- none on the world's.
+// alpha's mask, w = the lamps' share. The hud's glass only -- none on the world's.
 class cl_collim_spec : public R_constant_setup {
 	virtual void setup(R_constant* C)
 	{
@@ -404,6 +414,31 @@ class cl_collim_spec : public R_constant_setup {
 	}
 };
 static cl_collim_spec	binder_collim_spec;
+
+// ...its tint (collim.h m_collim_spec_color): rgb, 1 = the light's own colour; w = the world's share
+class cl_collim_spec_color : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	RCache.set_c (C, g_pGamePersistent->hud_collim_spec_color);
+		else												RCache.set_c (C, 1.f, 1.f, 1.f, 0.f);
+	}
+};
+static cl_collim_spec_color	binder_collim_spec_color;
+
+// An optic's inner lenses' glints (model_sniperlens.ps m_optic_glints): IGame_Persistent::HUD_OPTIC_GLINTS pairs, see
+// hud_optic_glints. The hud's glass only.
+class cl_optic_glints : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		const u32 n = IGame_Persistent::HUD_OPTIC_GLINTS*2;
+		for (u32 i = 0; i < n; ++i)
+		{
+			if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	RCache.set_ca(C, i, g_pGamePersistent->hud_optic_glints[i]);
+			else												RCache.set_ca(C, i, 0.f, 0.f, 0.f, 0.f);
+		}
+	}
+};
+static cl_optic_glints	binder_optic_glints;
 
 // The lights besides the sun that reach a collimator's glass on the hud (collim.h collim_dynlight): an array of
 // COLLIM_LIGHTS triples, see collim_gather_lights. The hud's glass only -- black for the world's.
@@ -435,6 +470,17 @@ class cl_collim_hemi_neg : public R_constant_setup {
 	}
 };
 static cl_collim_hemi_neg	binder_collim_hemi_neg;
+
+// The rain on an optic's outer glass (lens_wet.h m_lens_wet): IGame_Persistent::hud_lens_wet. The hud's glass only --
+// the world's guns stay dry.
+class cl_lens_wet : public R_constant_setup {
+	virtual void setup(R_constant* C)
+	{
+		if (g_pGamePersistent && r_dsgraph_hud_sorted_now)	RCache.set_c (C, g_pGamePersistent->hud_lens_wet);
+		else												RCache.set_c (C, 0.f, 0.f, 0.f, 0.f);
+	}
+};
+static cl_lens_wet	binder_lens_wet;
 
 #ifndef _EDITOR
 // The weather's sky, for a forward shader that samples $user$sky0/1 itself the way the skybox does
@@ -631,6 +677,7 @@ void	CBlender_Compile::SetMapping	()
 	r_Constant				("m_collim_tint",	&binder_collim_tint);
 	r_Constant				("m_collim_reflect",	&binder_collim_reflect);
 	r_Constant				("m_collim_reflect_ind",	&binder_collim_reflect_ind);
+	r_Constant				("m_collim_cube",	&binder_collim_cube);
 	r_Constant				("m_collim_reflect_shape",	&binder_collim_reflect_shape);
 	r_Constant				("m_collim_glass",	&binder_collim_glass);
 	r_Constant				("m_collim_mark",	&binder_collim_mark);
@@ -640,8 +687,11 @@ void	CBlender_Compile::SetMapping	()
 	r_Constant				("m_collim_veil",	&binder_collim_veil);
 	r_Constant				("m_collim_lights",	&binder_collim_lights);
 	r_Constant				("m_collim_spec",	&binder_collim_spec);
+	r_Constant				("m_collim_spec_color",	&binder_collim_spec_color);
+	r_Constant				("m_optic_glints",	&binder_optic_glints);
 	r_Constant				("m_collim_hemi_pos",	&binder_collim_hemi_pos);
 	r_Constant				("m_collim_hemi_neg",	&binder_collim_hemi_neg);
+	r_Constant				("m_lens_wet",		&binder_lens_wet);
 #ifndef _EDITOR
 	r_Constant				("m_sky_params",	&binder_sky_params);
 	r_Constant				("m_sky_rotation",	&binder_sky_rotation);

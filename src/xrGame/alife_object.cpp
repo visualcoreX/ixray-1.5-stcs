@@ -66,7 +66,11 @@ void CSE_ALifeObject::spawn_supplies		(LPCSTR ini_string)
 					f_cond			= (float)atof(strstr(V,"cond=")+5);
 			}
 			for (u32 i=0; i<j; ++i) {
-				if (randF(1.f) < p) {
+				// randF() is randI()/32767, so it returns exactly 1.0 once in 32768 calls -- and `1.0 < 1` dropped the
+				// item. A line without prob= (p = 1) is meant to be always there: a Freedom guard in Dark Valley was
+				// spawned without the quest PDA (device_pda_freedom) this way, which left "find the active PDA"
+				// impossible to finish. No roll for a certain item.
+				if ((p >= 1.f) || (randF(1.f) < p)) {
 					CSE_Abstract* E = alife().spawn_item	(N,o_Position,m_tNodeID,m_tGraphID,ID);
 					//подсоединить аддоны к оружию, если включены соответствующие флажки
 					CSE_ALifeItemWeapon* W =  smart_cast<CSE_ALifeItemWeapon*>(E);

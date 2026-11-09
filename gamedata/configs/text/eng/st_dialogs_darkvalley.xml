@@ -568,4 +568,16 @@
 	<string id="val_freedom_barmen_questions_dialog_complete_121">
 		<text>Very nice. The bandits collected some information on this PDA. Show it to Chekhov - I’m sure he’ll be interested.</text>
 	</string>
+	<string id="val_freedom_fixer_hello_dialog_61">
+		<text>Ah, mercenary, good timing! I took a proper look at those blueprints you brought back from my buddy. And guess what they were? Tactical blocks! A laser designator, some with a flashlight in the same housing. A solid design, not some homemade junk.</text>
+	</string>
+	<string id="val_freedom_fixer_hello_dialog_611">
+		<text>So you can build them now?</text>
+	</string>
+	<string id="val_freedom_fixer_hello_dialog_6111">
+		<text>You bet! I'll find the parts, and my hands are where they should be. Only you can't just bolt the block on anywhere: it sits on a special rail. If your gun has the right one, bring it over and I'll fit it. If it doesn't, bring it anyway: we'll put a rail on too. And not for free, of course.</text>
+	</string>
+	<string id="val_freedom_fixer_hello_dialog_61111">
+		<text>Deal.</text>
+	</string>
 </string_table>

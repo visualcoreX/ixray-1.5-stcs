@@ -113,6 +113,8 @@ public:
 		u32	bWmark		:	1;
 		u32	bLensMask	:	1;	// an E[4] that cuts the HUD out behind a prism sight's eyepiece (r_dsgraph_render_hud)
 		u32	bHudFirst	:	1;	// strict-sorted HUD drawn before the rest of it, whatever its distance (mapHUDSortedFirst)
+		u32	bHudOverlay	:	1;	// an E[4] laid over a hud mesh drawn the ordinary way, with the hud's sorted glass
+								// (mapHUDSorted): the optics' glass mirror (Blender_Model_EbB, r__dsgraph_build.cpp)
 	};
 public:
 	Sflags								flags;

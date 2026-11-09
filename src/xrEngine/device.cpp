@@ -326,12 +326,96 @@ int g_svDedicateServerUpdateReate = 100;
 
 ENGINE_API xr_list<LOADING_EVENT>			g_loading_events;
 
+// ---------------------------------------------------------------------------------------------
+// Frame rate limit (rs_fps_limit). 0 is off: one compare per frame and nothing else runs.
+// The wait sits at the very START of a frame, before FrameMove polls the input, so the time spent
+// waiting lands before the frame samples the mouse rather than between the sample and the picture --
+// a cap placed after Present would hold every frame's input for the whole wait.
+// Sleep() alone cannot hit e.g. 144 fps (a 6.94 ms period) with its 1 ms granularity, so the bulk of
+// the wait is slept and the last stretch is spun on the performance counter.
+// ---------------------------------------------------------------------------------------------
+ENGINE_API int			ps_fps_limit		= 0;
+
+#ifndef CREATE_WAITABLE_TIMER_HIGH_RESOLUTION
+#	define CREATE_WAITABLE_TIMER_HIGH_RESOLUTION	0x00000002
+#endif
+
+static void				fps_limit_wait		()
+{
+	static s64			s_freq			= 0;
+	static s64			s_next			= 0;		// counter value the next frame may start at; 0: not pacing
+	static int			s_limit			= 0;		// the limit s_next was scheduled with
+	static HANDLE		s_timer			= NULL;
+	static bool			s_timer_hires	= false;
+	static bool			s_timer_tried	= false;
+
+	// Loading screens and the precache are not limited: every frame there is a step of the load.
+	const int	limit	= ps_fps_limit;
+	if (limit <= 0 || Device.dwPrecacheFrame || !g_loading_events.empty())
+	{
+		s_next			= 0;
+		return;
+	}
+
+	if (!s_freq)
+	{
+		LARGE_INTEGER	f;
+		QueryPerformanceFrequency	(&f);
+		s_freq			= f.QuadPart;
+	}
+	if (!s_timer_tried)
+	{
+		// Windows 10 1803+: a timer that really wakes within ~0.5 ms. Older systems fall back to
+		// Sleep(), which xrCore already runs at 1 ms resolution (timeBeginPeriod).
+		s_timer_tried	= true;
+		s_timer			= CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+		s_timer_hires	= (NULL != s_timer);
+	}
+
+	const s64	period	= s_freq / limit;
+	LARGE_INTEGER	now;
+	QueryPerformanceCounter		(&now);
+
+	const bool	pacing	= s_next && s_limit == limit;
+	if (pacing && now.QuadPart < s_next)
+	{
+		// sleep away all but the last stretch, which the OS could overshoot
+		const s64	margin	= s_freq * (s_timer_hires ? 1 : 2) / 1000;
+		const s64	sleep	= s_next - now.QuadPart - margin;
+		if (sleep > 0)
+		{
+			if (s_timer_hires)
+			{
+				LARGE_INTEGER	due;
+				due.QuadPart	= -(sleep * 10000000 / s_freq);		// relative, in 100 ns units
+				if (SetWaitableTimer(s_timer, &due, 0, NULL, NULL, FALSE))
+					WaitForSingleObject	(s_timer, INFINITE);
+			}
+			else
+				Sleep			(u32(sleep * 1000 / s_freq));
+		}
+		do {
+			YieldProcessor		();
+			QueryPerformanceCounter	(&now);
+		} while (now.QuadPart < s_next);
+	}
+
+	// The next frame's slot is one period after this one's. A frame that came in late by less than a
+	// period keeps the cadence (the jitter is absorbed by the next wait); one later than that starts
+	// it over from now, instead of letting the frames after a hitch run uncapped to catch up.
+	if (pacing && now.QuadPart - s_next < period)	s_next += period;
+	else											s_next	= now.QuadPart + period;
+	s_limit				= limit;
+}
+
 void CRenderDevice::on_idle		()
 {
 	if (!b_is_Ready) {
 		Sleep	(100);
 		return;
 	}
+
+	fps_limit_wait						();
 
 	u32 FrameStartTime = TimerGlobal.GetElapsed_ms();
 

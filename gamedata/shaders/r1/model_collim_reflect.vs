@@ -2,9 +2,9 @@
 #include "skin.h"
 
 // R1's lighter take on the collimator glass's sky reflection (r2/r3 work it out per pixel): everything
-// but the cubemap lookup is done per vertex -- the mirror direction off the model's own normals, the
-// Fresnel term, the sky visibility and the lighting -- and there is one sky (no blend between the
-// weather's two), no flattening of the dome and no contrast. The vertex shader of both glass passes of
+// but the cube's texcoord, its lookup and the contrast is done per vertex -- the mirror direction off the model's
+// normals bent toward the flat axis by the curve, the Fresnel term, the sky visibility and the lighting
+// -- and there is one sky (no blend between the weather's two). The vertex shader of both glass passes of
 // models_lenses (model_collim_glass, model_collim_tint is fine with its extra outputs).
 // The reticle (collimator_marks) cannot be cut that way -- it is a direction looked along, picked per
 // pixel -- so the pixel shader gets the world position and the scope's axes too. Those ride the
@@ -14,19 +14,18 @@
 //
 //   m_collim_reflect   rgb = coating colour * strength for the current aim, w = F0
 //   m_collim_hemi_*    the actor's sky visibility along +x+y+z / -x-y-z
-//   m_sky_params       xyz = the weather's sky colour
-//   m_sky_rotation     x = cos, y = sin of the skybox's turn about the vertical
+// These must stay few: skin.h keeps c22 and up for the bones, and whatever does not fit under them lands past the bones,
+// in c252 and up (the sky's colour goes on in the pixel shaders for this).
 uniform	float4	m_collim_reflect;
 uniform	float4	m_collim_reflect_ind;	// the mirror's colour in the sky's light alone (see collim.h)
+uniform	float4	m_collim_cube;			// x = the curve of the dome the glass mirrors by (r2/collim.h collim_cube_normal)
 uniform	float4	m_collim_hemi_pos;
 uniform	float4	m_collim_hemi_neg;
-uniform	float4	m_sky_params;
-uniform	float4	m_sky_rotation;
 
 struct vf
 {
 	float4	hpos	: POSITION;
-	float3	tc0		: TEXCOORD0;		// sky cubemap texcoord
+	float3	tc0		: TEXCOORD0;		// the way the mirror looks
 	float3	c0		: TEXCOORD1;		// what the sky is multiplied by -- may pass 1, so not a COLOR
 	float3	pos_w	: TEXCOORD2;
 	float3	axis_w	: TEXCOORD3;		// the lens axis, -Z of the scope's bone
@@ -40,16 +39,6 @@ struct vf
 #define AXIS_PACKED		float3( 0.5, 0.5, 0 )
 #define RIGHT_PACKED	float3( 1, 0.5, 0.5 )
 
-// World direction -> the sky cubemap's texcoord, as dxEnvironmentRender lays the skybox out (see
-// r2/model_collim_reflect.ps): rotated by sky_rotation, the horizon pulled down to the cube's bottom.
-float3	sky_tc( float3 d )
-{
-	float3	s	= float3( d.x*m_sky_rotation.x - d.z*m_sky_rotation.y, d.y, d.x*m_sky_rotation.y + d.z*m_sky_rotation.x );
-	float3	p	= s / max( max( abs(s.x), abs(s.y) ), abs(s.z) );
-	p.y			= max( p.y*2 - 1, -1 );
-	return	p;
-}
-
 vf _main( v_model v )
 {
 	vf		o;
@@ -58,17 +47,20 @@ vf _main( v_model v )
 	float3	v_dir	= normalize( pos_w - eye_position );
 	float3	n		= normalize( mul( (float3x3)m_W, v.norm ) );
 	n				= ( dot(n, v_dir) > 0 ) ? -n : n;			// the side facing the eye
-	float3	r		= reflect( v_dir, n );
+	float3	na		= normalize( mul( (float3x3)m_W, v.T ) );	// the flat axis, the same way
+	na				= ( dot(na, v_dir) > 0 ) ? -na : na;
+	float	cn		= dot( n, na );
+	float3	r		= reflect( v_dir, normalize( na + (n - na * cn) * m_collim_cube.x / max(cn, 0.001) ) );
 
-	float	c		= saturate( dot(-v_dir, n) );
+	float	c		= saturate( dot(-v_dir, na) );
 	float	f		= lerp( m_collim_reflect.w, 1, pow(1 - c, 5) );
 	float3	hc		= ( r < 0 ) ? m_collim_hemi_neg.xyz : m_collim_hemi_pos.xyz;
 	float	vis		= saturate( dot(hc, abs(r)) );
 	float3	light	= calc_model_lq_lighting( n ) * 2;
 
 	o.hpos		= mul( m_WVP, v.pos );
-	o.tc0		= sky_tc( r );
-	o.c0		= m_sky_params.rgb * f * vis * ( light * m_collim_reflect.rgb + L_hemi_color.rgb * 2 * m_collim_reflect_ind.rgb );
+	o.tc0		= r;
+	o.c0		= f * vis * ( light * m_collim_reflect.rgb + L_hemi_color.rgb * 2 * m_collim_reflect_ind.rgb );
 	o.pos_w		= pos_w;
 	o.axis_w	= mul( (float3x3)m_W, v.T );
 	o.right_w	= mul( (float3x3)m_W, v.B );

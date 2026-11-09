@@ -11,8 +11,8 @@ function normal(shader, t_base, t_second, t_detail)
         : fog           (false)
   shader:sampler        ("s_base")       :texture  (tex_base)
   shader:sampler        ("s_nmap")       :texture  (tex_nmap)
-  shader:sampler        ("s_env0")       :texture  ("$user$sky0")   : clamp()
-  shader:sampler        ("s_env1")       :texture  ("$user$sky1")   : clamp()
+  shader:sampler        ("s_env0")       :texture  ("$user$sky0")   : clamp() : fmip_none()
+  shader:sampler        ("s_env1")       :texture  ("$user$sky1")   : clamp() : fmip_none()
 end
 
 --function l_special(shader, t_base, t_second, t_detail)

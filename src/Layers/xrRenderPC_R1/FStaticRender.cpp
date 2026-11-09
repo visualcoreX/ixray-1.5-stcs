@@ -579,7 +579,14 @@ void	CRender::Render		()
 	Target->Begin								();
 	o.vis_intersect								= FALSE			;
 	phase										= PHASE_NORMAL	;
+	// The optics' glass (model_sniperlens, Blender_Model_EbB) is drawn here, with the hud, not with its sorted glass:
+	// the glass's constants must be on for it too (0 outside the hud, the binders)
+	extern bool r_dsgraph_hud_sorted_now;
+	RCache.set_Constants						((R_constant_table*)0);
+	r_dsgraph_hud_sorted_now					= true;
 	r_dsgraph_render_hud						();				// hud
+	r_dsgraph_hud_sorted_now					= false;
+	RCache.set_Constants						((R_constant_table*)0);
 	r_dsgraph_render_graph						(0);			// normal level
 	if(Details)Details->Render					();				// grass / details
 	r_dsgraph_render_lods						(true,false);	// lods - FB

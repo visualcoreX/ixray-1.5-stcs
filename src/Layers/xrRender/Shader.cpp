@@ -75,6 +75,7 @@ ShaderElement::ShaderElement()
 	flags.bWmark		= FALSE;
 	flags.bLensMask		= FALSE;
 	flags.bHudFirst		= FALSE;
+	flags.bHudOverlay	= FALSE;
 }
 
 BOOL ShaderElement::equal	(ShaderElement& S)
@@ -86,6 +87,7 @@ BOOL ShaderElement::equal	(ShaderElement& S)
 	if (flags.bDistort		!= S.flags.bDistort)	return FALSE;
 	if (flags.bLensMask		!= S.flags.bLensMask)	return FALSE;
 	if (flags.bHudFirst		!= S.flags.bHudFirst)	return FALSE;
+	if (flags.bHudOverlay	!= S.flags.bHudOverlay)	return FALSE;
 	if (passes.size() != S.passes.size())			return FALSE;
 	for (u32 p=0; p<passes.size(); p++)
 		if (passes[p] != S.passes[p])				return FALSE;

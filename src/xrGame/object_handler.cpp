@@ -103,6 +103,10 @@ void CObjectHandler::OnItemTake		(CInventoryItem *inventory_item)
 		// the player's 50-70 deg headroom would let his aim climb clean over the target inside one
 		// burst. See the note next to MaxAngleVert_AI in Weapon.cpp.
 		cam_recoil_copy.MaxAngleVert = cam_recoil_copy.MaxAngleVert_AI;
+		// ...and a hard one: his aim is displaced by this very angle, a soft ceiling would walk it away
+		cam_recoil_copy.LimitNod	= 0.f;
+		cam_recoil_copy.LimitCreep	= 0.f;
+		cam_recoil_copy.LimitSpray	= 0.f;
 		planner().object().weapon_shot_effector().Initialize( cam_recoil_copy );
 	}
 }

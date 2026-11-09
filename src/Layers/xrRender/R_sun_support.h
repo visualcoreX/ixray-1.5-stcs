@@ -181,14 +181,17 @@ public:
 			for( u32 i = 0; i< view_frustum_rays.size(); ++i )
 				max_dist = _max( plane.classify( view_frustum_rays[i].P ), max_dist);
 
+			// The plane culls the casters behind the view, as seen across the sunlight. When an edge of the view
+			// runs back behind it -- the sun ahead and to one side, the frustum's far side swings round past
+			// the camera -- there are receivers behind it too, and casters there throw their shadow into the
+			// view, so then there is no such plane at all. Stock tested a point 5 m along each edge and, when one
+			// had gone back, pinned the plane to the camera instead: a tree off to that side lost the near part
+			// of its shadow at the edge of the screen, the coarser cascades still showing the rest.
 			for( u32 i = 0; i< view_frustum_rays.size(); ++i )
 			{
-				Fvector P = view_frustum_rays[i].P;
-				P.mad( view_frustum_rays[i].D, 5 );
-
-				if( plane.classify( P ) > max_dist)
+				if( plane.n.dotproduct( view_frustum_rays[i].D ) > 0.f )
 				{
-					max_dist = 0.f;
+					max_dist = -1000;
 					break;
 				}
 			}

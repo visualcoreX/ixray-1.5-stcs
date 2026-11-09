@@ -163,6 +163,7 @@
 	<info_portion id="val_night_bloodsucker_reward_complete"/>
 	<info_portion id="val_night_bloodsucker_complete"/>
 	<info_portion id="val_night_bloodsucker_fail"/>
+	<info_portion id="val_freedom_fixer_tac_blocks_told"/>
 	<info_portion id="val_reward_for_destroy_killer_base"/>
 	<info_portion id="val_join_freedom_done"/>
 	<info_portion id="val_test_spawn_1_npc"/>

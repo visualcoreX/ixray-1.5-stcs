@@ -36,6 +36,16 @@ struct CameraRecoil
 	// back to Dispersion*0.75.
 	float		RollAmount;
 
+	// What becomes of a kick past cam_max_angle, as parts of the kick cut off there (the cut is capped at
+	// the size of the kick that first reached the ceiling, so cam_dispersion_inc stops growing it):
+	// LimitNod -- an up-and-back nod per shot that leaves the camera where it was (cam_limit_nod),
+	// LimitCreep -- what still climbs for good, on up to the camera's own pitch limit (cam_limit_creep),
+	// LimitSpray -- a random vertical step per shot, the sideways sway's twin (cam_limit_spray).
+	// All 0: a hard ceiling with the old +-4% jitter on it (NPCs, the stationary guns).
+	float		LimitNod;
+	float		LimitCreep;
+	float		LimitSpray;
+
 	CameraRecoil():
 		MaxAngleVert	( EPS   ),
 		MaxAngleVert_AI	( EPS   ),
@@ -50,7 +60,10 @@ struct CameraRecoil
 		StopReturn		( false ),
 		RiseTime		( 0.075f ),
 		RelaxAmount		( 0.5f  ),
-		RollAmount		( -1.0f )
+		RollAmount		( -1.0f ),
+		LimitNod		( 0.0f  ),
+		LimitCreep		( 0.0f  ),
+		LimitSpray		( 0.0f  )
 	{};
 
 	CameraRecoil( const CameraRecoil& clone )		{	Clone( clone );	}
@@ -74,6 +87,10 @@ struct CameraRecoil
 		RiseTime		= clone.RiseTime;
 		RelaxAmount		= clone.RelaxAmount;
 		RollAmount		= clone.RollAmount;
+
+		LimitNod		= clone.LimitNod;
+		LimitCreep		= clone.LimitCreep;
+		LimitSpray		= clone.LimitSpray;
 
 		VERIFY( !fis_zero(RelaxSpeed)    );
 		VERIFY( !fis_zero(RelaxSpeed_AI) );

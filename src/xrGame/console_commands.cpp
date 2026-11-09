@@ -256,9 +256,13 @@ static bool	 s_hud_info_was		= true;
 static bool	 s_qslots_lock_saved		= false;
 static bool	 s_show_quick_slots_was		= true;
 
+// GS IsTacticHudInstalled (ActorUtils.pas): an outfit upgraded with nearest_enemies_show_dist lifts the master lock
+// on the interface -- GS keys it to a helmet, Clear Sky has none, so the suit carries it (Actor.cpp)
+extern bool gwr_tactical_hud();
+
 bool gwr_hud_locked_by_difficulty()
 {
-	return	(g_SingleGameDifficulty >= egdMaster);
+	return	(g_SingleGameDifficulty >= egdMaster) && !gwr_tactical_hud();
 }
 
 bool gwr_crosshair_locked_by_difficulty()
@@ -330,6 +334,14 @@ static void gwr_apply_hud_lock()
 		psHUD_Flags.set	(HUD_INFO,		s_hud_info_was		? TRUE : FALSE);
 		s_info_lock_saved = false;
 	}
+}
+
+// Re-checked every frame by the actor (CActor::UpdateCL): the lock now also depends on the suit he wears, and
+// the suit or its upgrades can change at any moment. Idempotent -- the player's own choices are kept aside and
+// put back by the lock itself.
+void gwr_refresh_hud_lock()
+{
+	gwr_apply_hud_lock();
 }
 
 // `hud_draw` / `hud_crosshair`: an ordinary mask command that goes deaf while the lock is on, so the

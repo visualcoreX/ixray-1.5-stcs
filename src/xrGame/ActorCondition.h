@@ -48,6 +48,8 @@ public:
 	virtual bool		IsCantWalk					() const;
 	virtual bool		IsCantWalkWeight			();
 	virtual bool		IsCantSprint				() const;
+	// the stamina under which the actor can no longer run (actor.ltx cant_sprint_power_begin)
+			float		CantSprintPowerBegin		() const	{ return m_fCantSprintPowerBegin; }
 
 			void		ConditionJump				(float weight);
 			void		ConditionWalk				(float weight, bool accel, bool sprint);

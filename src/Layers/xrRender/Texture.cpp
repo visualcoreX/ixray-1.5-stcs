@@ -319,11 +319,15 @@ _DDS:
 
 _DDS_CUBE:
 		{
+			// The weather's sky cubes come without mips: all of them are made here, for what the hud's glass mirrors to read
+			// (collim_sky_blur, r2/collim.h). The skybox's and the water's samplers stay on the top level. Not the "#small"
+			// ones, nor the environment maps of models that are no weather's (sky_cube_weapons and the like).
+			const bool	sky_cube	= strstr(fname,"sky\\sky_") && !strstr(fname,"#small") && !strstr(fname,"sky_cube");
 			R_CHK(D3DXCreateCubeTextureFromFileInMemoryEx(
 				HW.pDevice,
 				S->pointer(),S->length(),
 				D3DX_DEFAULT,
-				IMG.MipLevels,0,
+				sky_cube ? D3DX_DEFAULT : IMG.MipLevels,0,
 				IMG.Format,
 				D3DPOOL_MANAGED,
 				D3DX_DEFAULT,

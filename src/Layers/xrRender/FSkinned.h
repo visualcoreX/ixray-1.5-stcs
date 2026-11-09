@@ -18,6 +18,7 @@ class		CSkeletonX_ext	: public CSkeletonX	// shared code for SkeletonX derivates
 {
 protected:
 	virtual void			_Load_hw			(Fvisual& V,		void *		data);
+			void*			_LensGlassNormals	(u32 vCount, void* verts, IReader* data, xr_vector<u8>& copy);
 	virtual void			_CollectBoneFaces	(Fvisual* V,		u32 iBase,	u32 iCount);
 			void			_EnumBoneVertices	( SEnumVerticesCallback &C, Fvisual* V, u16 bone_id, u32 iBase, u32 iCount ) const;
 	virtual void			_FillVerticesHW1W	(const Fmatrix& view, CSkeletonWallmark& wm, const Fvector& normal, float size, Fvisual* V, u16* indices, CBoneData::FacesVec& faces);

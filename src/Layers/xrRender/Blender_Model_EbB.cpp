@@ -85,6 +85,15 @@ void	CBlender_Model_EbB::Compile(CBlender_Compile& C)
 	} else {
 		LPCSTR	vsname			= 0;
 		LPCSTR	psname			= 0;
+		// The optics' glass mirrors the weather's sky as a collimator's glass does, not this blender's fixed env map
+		if (C.L_textures.size() && 0==xr_strcmp(*C.L_textures[0], "wpn\\lenses") && (SE_R1_NORMAL_HQ==C.iElement || SE_R1_NORMAL_LQ==C.iElement))
+		{
+			C.r_Pass			("model_collim_reflect", "model_sniperlens", FALSE);
+			C.r_Sampler			("s_base",	C.L_textures[0]);
+			C.r_Sampler			("s_sky0",	"$user$sky0", false, D3DTADDRESS_CLAMP, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);	// read through its mips (collim_sky.h)
+			C.r_End				();
+			return;
+		}
 		switch (C.iElement)
 		{
 		case SE_R1_NORMAL_HQ:	
@@ -168,6 +177,20 @@ void	CBlender_Model_EbB::Compile(CBlender_Compile& C)
 			C.r_Sampler		("s_base",		C.L_textures[0]);
 			C.r_End			();
 			break;
+		case 4:
+			// The optics' glass: its mirror, laid over it with the hud's glass, as on R3 (see there). model_sniperlens.ps
+			if (C.L_textures.size() && 0==xr_strcmp(*C.L_textures[0], "wpn\\lenses"))
+			{
+				C.r_Pass		("model_collim_reflect", "model_sniperlens", FALSE, TRUE, FALSE, TRUE, D3DBLEND_ONE, D3DBLEND_ONE, FALSE, 0);
+				C.r_Sampler		("s_base",	C.L_textures[0]);	// its alpha masks the mirror (collimator_reflect_mask)
+				C.r_Sampler		("s_sky0",	"$user$sky0", false, D3DTADDRESS_CLAMP, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);	// read through its mips (collim_sky_blur)
+				C.r_Sampler		("s_sky1",	"$user$sky1", false, D3DTADDRESS_CLAMP, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
+				C.r_Sampler		("s_spec",	"wpn\\lenses_spec");	// where the glass shines (collim.h COLLIM_SPEC_MAP)
+				C.r_Sampler		("s_wet",	"wpn\\lenses_rain");	// the rain's drops on it (lens_wet.h)
+				C.r_End			();
+				C.SH->flags.bHudOverlay	= TRUE;
+			}
+			break;
 		}
 	}
 }
@@ -202,18 +225,22 @@ void CBlender_Model_EbB::Compile( CBlender_Compile& C )
 	else 
 	{
 		// deferred
-		switch(C.iElement) 
+		// The optics' glass marks itself dry (CRenderTarget::STENCIL_DRY): the rain on the hud would lay a gloss over it
+		// that its mirror (case 4) is not made to sit on.
+		const bool	dry	= C.L_textures.size() && 0==xr_strcmp(*C.L_textures[0], "wpn\\lenses");
+		const u32	ref	= 0x01 | (dry ? CRenderTarget::STENCIL_DRY : 0);
+		switch(C.iElement)
 		{
 		case SE_R2_NORMAL_HQ: 	// deffer
 			uber_deffer		(C,true,	"model","base",false,0,true);
 			C.r_Stencil		( TRUE,D3DCMP_ALWAYS,0xff,0x7f,D3DSTENCILOP_KEEP,D3DSTENCILOP_REPLACE,D3DSTENCILOP_KEEP);
-			C.r_StencilRef	(0x01);
+			C.r_StencilRef	(ref);
 			C.r_End			();
 			break;
 		case SE_R2_NORMAL_LQ: 	// deffer
 			uber_deffer		(C,false,	"model","base",false,0,true);
 			C.r_Stencil		( TRUE,D3DCMP_ALWAYS,0xff,0x7f,D3DSTENCILOP_KEEP,D3DSTENCILOP_REPLACE,D3DSTENCILOP_KEEP);
-			C.r_StencilRef	(0x01);
+			C.r_StencilRef	(ref);
 			C.r_End			();
 			break;
 		case SE_R2_SHADOW:		// smap
@@ -227,6 +254,33 @@ void CBlender_Model_EbB::Compile( CBlender_Compile& C )
 			C.r_ColorWriteEnable(false, false, false, false);
 			C.r_End			();
 			break;
+#if RENDER==R_R3
+		case 4:
+			// The optics' glass (models\sniperlenses: wpn\lenses on a scope's body): drawn above as it always was,
+			// into the G-buffer with the rest of the hud -- so everything after the lighting (the DOF, the distortion,
+			// the fog) takes it for the near glass it is. What it mirrors is a second pass laid over it with the hud's
+			// glass (bHudOverlay: r__dsgraph_build.cpp puts it into mapHUDSorted): additive, depth-tested against the
+			// glass's own depth, no depth written. model_sniperlens.ps -- the collimators' mirror (collim.h), keyed
+			// by the same collimator_reflect* / collimator_specular (CWeapon::CollimatorParamSection).
+			// (Drawn as a forward glass instead, from a script, the glass was missing from the G-buffer: the post
+			// effects took its pixels for the floor behind it and blurred the floor into it.)
+			if (C.L_textures.size() && 0==xr_strcmp(*C.L_textures[0], "wpn\\lenses"))
+			{
+				C.r_Pass			("model_collim_reflect", "model_sniperlens", FALSE, TRUE, FALSE, TRUE, D3DBLEND_ONE, D3DBLEND_ONE, FALSE, 0);
+				C.r_dx10Texture		("s_base",		C.L_textures[0]);	// its alpha masks the mirror (collimator_reflect_mask)
+				C.r_dx10Texture		("s_sky0",		"$user$sky0");
+				C.r_dx10Texture		("s_sky1",		"$user$sky1");
+				C.r_dx10Texture		("s_lens_cube",	"$user$lens_cube");	// the world round the camera (CRender::render_lens_cube)
+				C.r_dx10Texture		("s_spec",		"wpn\\lenses_spec");	// where the glass shines (collim.h COLLIM_SPEC_MAP)
+				C.r_dx10Texture		("s_wet",		"wpn\\lenses_rain");	// the rain's drops on it (lens_wet.h)
+				C.r_dx10Sampler		("smp_base");
+				C.r_dx10Sampler		("smp_rtlinear");
+				C.r_dx10Sampler		("smp_linear");	// the cube's mips (lens_cube.h)
+				C.r_End				();
+				C.SH->flags.bHudOverlay	= TRUE;
+			}
+			break;
+#endif
 		}
 	}
 }

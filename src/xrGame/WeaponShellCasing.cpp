@@ -99,6 +99,62 @@ static void casing_point_hud_to_world(Fvector& p)
 	p.add			(perp);
 }
 
+// THE CAMERA A FRAME AGO, for the velocity a first-person case takes from the gun. The weapon in the hands has no
+// physics shell, so its PHGetLinearVell is zero: a case thrown while walking towards the port side went at the
+// animation's speed only and stayed level with the gun, and turning the view that way swung the gun past it.
+// The hud gun is carried by the camera, so the port moves exactly as a point fixed in the camera's axes does.
+static Fvector	s_cam_pos[2], s_cam_right[2], s_cam_top[2], s_cam_dir[2];	// [0] the frame before, [1] this one
+static u32		s_cam_frame		= u32(-1);
+static bool		s_cam_prev_ok	= false;	// [0] really is the frame just before [1]
+
+static void casing_camera_tick()
+{
+	if (s_cam_frame == Device.dwFrame)	return;
+	s_cam_prev_ok		= (s_cam_frame != u32(-1)) && (s_cam_frame + 1 == Device.dwFrame);
+	s_cam_pos[0]		= s_cam_pos[1];		s_cam_right[0]	= s_cam_right[1];
+	s_cam_top[0]		= s_cam_top[1];		s_cam_dir[0]	= s_cam_dir[1];
+	s_cam_pos[1].set	(Device.vCameraPosition);	s_cam_right[1].set	(Device.vCameraRight);
+	s_cam_top[1].set	(Device.vCameraTop);		s_cam_dir[1].set	(Device.vCameraDirection);
+	s_cam_frame			= Device.dwFrame;
+}
+
+// The world velocity of a point carried by the camera, capped at [shell_casings] inherit_max m/s so a flick of the
+// mouse does not hurl the cases. False when there is no frame before to compare with.
+// Two parts: the turn of the view (inherit_turn, default all of it -- without it the gun swung past its own cases)
+// and the walk. The walk is split along the case's flight `dir`: going the same way it is kept whole (inherit_walk),
+// so a gun walking towards the port side does not catch its cases up; going the other way only half of it
+// (inherit_walk_back) -- the actor stops dead in a frame where a body would not, and a case that kept the whole of a
+// walk against its flight was seen braking and drifting back the moment the walk stopped. Across the flight: whole.
+static bool casing_camera_point_velocity(const Fvector& p, const Fvector& dir, Fvector& v)
+{
+	casing_camera_tick	();
+	if (!s_cam_prev_ok || Device.fTimeDelta <= EPS_S)	return false;
+	Fvector d;			d.sub(p, s_cam_pos[1]);
+	const float lx		= d.dotproduct(s_cam_right[1]), ly = d.dotproduct(s_cam_top[1]), lz = d.dotproduct(s_cam_dir[1]);
+	Fvector prev;		prev.set(s_cam_pos[0]);
+	prev.mad			(s_cam_right[0], lx);	prev.mad(s_cam_top[0], ly);	prev.mad(s_cam_dir[0], lz);
+	Fvector walk;		walk.sub(s_cam_pos[1], s_cam_pos[0]);			// the camera's own travel
+	Fvector turn;		turn.sub(p, prev);	turn.sub(walk);				// ...and what the turn added at the point
+	const float k_walk	= READ_IF_EXISTS(pSettings, r_float, SC_SECT, "inherit_walk", 1.f);
+	const float k_back	= READ_IF_EXISTS(pSettings, r_float, SC_SECT, "inherit_walk_back", 0.5f);
+	const float k_turn	= READ_IF_EXISTS(pSettings, r_float, SC_SECT, "inherit_turn", 1.f);
+	Fvector fd;			fd.set(dir);
+	const float fm		= fd.magnitude();
+	if (fm > EPS)		fd.div(fm);
+	else				fd.set(0.f, 0.f, 0.f);
+	const float along	= walk.dotproduct(fd);					// the walk's part along the flight
+	Fvector across;		across.set(walk);	across.mad(fd, -along);
+	v.set				(0.f, 0.f, 0.f);
+	v.mad				(fd, along * (along >= 0.f ? k_walk : k_back));
+	v.mad				(across, k_walk);
+	v.mad				(turn, k_turn);
+	v.div				(Device.fTimeDelta);
+	const float cap		= READ_IF_EXISTS(pSettings, r_float, SC_SECT, "inherit_max", 8.f);
+	const float m		= v.magnitude();
+	if (m > cap && m > EPS)	v.mul(cap / m);
+	return				true;
+}
+
 static void casing_camera_basis(Fmatrix& B)
 {
 	B.identity		();
@@ -745,6 +801,7 @@ void CWeapon::gwr_ShellCasingUpdate(bool force)
 
 void CWeapon::gwr_ShellCasingFollow(u32 idx, bool force)
 {
+	casing_camera_tick	();		// every frame, so a throw always has the camera of the frame before
 	SShellCasingTrack& T = m_shell_track[idx];
 	// a third-person case held back for the pump (shell_casing_world_delay); the next shot settles it at once
 	if (T.world_due && (force || Device.dwTimeGlobal >= T.world_due))
@@ -1113,6 +1170,10 @@ void CWeapon::gwr_ShellCasingFollow(u32 idx, bool force)
 		T.frame			= Device.dwFrame;
 	}
 	T.active			= false;
+	// what the gun carries it with (see casing_camera_point_velocity) -- the shell holder's own is zero in the hands
+	Fvector carried;
+	if (casing_camera_point_velocity(pos, dir_world, carried))
+		T.owner_vel.set	(carried);
 	gwr_ShellCasingThrow(idx, pos, B, &dir_world, speed, true);
 
 	// the real case takes over from the animated one, until this animation is replaced by the next one

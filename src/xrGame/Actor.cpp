@@ -1331,10 +1331,34 @@ static float pp_pulse_update(float& phase, float& pulse, float level, float peri
 	return pulse;
 }
 
+// GS IsTacticHudInstalled: the actor's suit carries an upgrade with nearest_enemies_show_dist (GS: the tactical
+// helmet's "infrared scanner"). It brings the interface back on master and the minimap from veteran up.
+bool gwr_tactical_hud()
+{
+	if (!g_pGameLevel || !IsGameTypeSingle())	return false;
+	CActor* a = smart_cast<CActor*>(Level().CurrentEntity());
+	if (!a || !a->g_Alive())					return false;
+	CCustomOutfit* o = a->GetOutfit();
+	return o && o->TacticalHud();
+}
+
+// The scanner's range (the same key): enemies this close to the actor are on the minimap and the PDA map without
+// being seen -- in the dark, behind cover (CRelationMapLocation::Update). 0: no scanner.
+float gwr_tactical_scan_dist()
+{
+	if (!gwr_tactical_hud())	return 0.f;
+	return float(smart_cast<CActor*>(Level().CurrentEntity())->GetOutfit()->TacticalScanDist());
+}
+
 void CActor::UpdateCL	()
 {
 	UpdateInventoryOwner			(Device.dwTimeDelta);
 	UpdateWeaponLowered				();
+	if (Level().CurrentControlEntity() == this)
+	{
+		extern void gwr_refresh_hud_lock();
+		gwr_refresh_hud_lock		();		// the master interface lock follows the suit (gwr_tactical_hud)
+	}
 
 	// Actor self-shadow suppression, decided in ONE place and read by the renderer through
 	// IGame_Persistent (it cannot see game state itself). Two cases, both of them "the actor is not a
@@ -1449,7 +1473,11 @@ void CActor::UpdateCL	()
 			g_pGamePersistent->hud_collim_reflect = wpn->CollimatorReflect();
 			g_pGamePersistent->hud_collim_reflect_ind = wpn->CollimatorReflectIndirect();
 			g_pGamePersistent->hud_collim_reflect_shape = wpn->CollimatorReflectShape();
+			g_pGamePersistent->hud_collim_cube = wpn->CollimatorCube();
 			g_pGamePersistent->hud_collim_spec = wpn->CollimatorSpecular();
+			const Fvector spec_col = wpn->CollimatorSpecularColor();
+			g_pGamePersistent->hud_collim_spec_color.set(spec_col.x, spec_col.y, spec_col.z, wpn->CollimatorSpecularWorld());
+			wpn->OpticGlints(g_pGamePersistent->hud_optic_glints);
 			// .y: the model's reticle, off while the glass draws one itself
 			shared_str mark = wpn->CollimatorMarkTexture();
 			// .z: a sight's front aperture (crosshair_contur), off on a prism -- its field stop is the aperture
@@ -1509,6 +1537,9 @@ void CActor::UpdateCL	()
 			g_pGamePersistent->hud_collim_reflect.set(0.f, 0.f, 0.f, 0.25f);
 			g_pGamePersistent->hud_collim_reflect_ind.set(0.f, 0.f, 0.f, 0.f);
 			g_pGamePersistent->hud_collim_spec.set(0.f, 64.f, 0.f, 0.f);
+			g_pGamePersistent->hud_collim_spec_color.set(1.f, 1.f, 1.f, 0.f);
+			for (u32 i = 0; i < IGame_Persistent::HUD_OPTIC_GLINTS*2; ++i)
+				g_pGamePersistent->hud_optic_glints[i].set(0.f, 0.f, 0.f, 0.f);
 			g_pGamePersistent->hud_collim_glass.set(1.f, 1.f, 1.f, 0.f);
 			g_pGamePersistent->hud_collim_mark_tex = shared_str();
 			g_pGamePersistent->hud_collim_mark.set(0.f, 0.f, 0.f, 0.f);
@@ -1619,8 +1650,9 @@ void CActor::UpdateCL	()
 
 	// FATIGUE GRADING, from the stamina (conditions().GetPower(), 0..1). Below FATIGUE_FROM the colour starts to
 	// drain towards the edges, the middle of the picture to lighten and the corners to darken (a vignette; the
-	// lift fades out where it comes in), all full at FATIGUE_FULL. Below FATIGUE_SHARP_FROM the whole picture also sharpens into
-	// soft halos (wide unsharp mask, see pp_fatigue_sharp), full at FATIGUE_SHARP_FULL. The vignette breathes
+	// lift fades out where it comes in), all full at FATIGUE_FULL. Below FATIGUE_SHARP_FROM the whole picture also sharpens,
+	// warping hardest at the edges (a fine unsharp mask, see pp_fatigue_sharp), full at FATIGUE_SHARP_FULL. Near the
+	// stamina where running stops the colours start to slide apart radially (FATIGUE_CA_*). The vignette breathes
 	// with the intoxication's DOF pulse shape (short in/out around the peak) at twice its rate, its swing
 	// growing with the fatigue, so it is most noticeable at FATIGUE_FULL. Smooth ramps (smoothstep) so no threshold
 	// shows as a step. Coming in it follows the stamina closely; going out (rested, a drink) it can fall no
@@ -1640,13 +1672,19 @@ void CActor::UpdateCL	()
 		// (the beat still shows, only flatter).
 		const float		FATIGUE_VIGNETTE_KNEE	= 0.7f;
 		const float		FATIGUE_VIGNETTE_MAX	= 0.9f;
-		const float		FATIGUE_SHARP			= 0.5f;		// edge sharpening at full (unsharp mask amount)
+		const float		FATIGUE_SHARP			= 0.75f;	// edge sharpening at full (unsharp mask amount, 1.25 too much; was 0.5 against a
+															// wide blur -- the fine one now, 4 px, needs more to warp the picture)
+		// the EXHAUSTION's radial chromatic aberration (pp_fatigue_ca, postprocess.ps pp_fatigue_ca): from
+		// FATIGUE_CA_LEAD above the stamina where running stops (conditions().CantSprintPowerBegin(), 0.2), full
+		// -- FATIGUE_CA_PX pixels in the corners -- only at none left
+		const float		FATIGUE_CA_LEAD			= 0.05f;
+		const float		FATIGUE_CA_PX			= 4.f;		// (was 2)
 		const float		FATIGUE_FADE_OUT		= 3.5f;		// seconds for a full fade back out
 		const float		FATIGUE_FADE_IN			= 4.f;		// 1/seconds: the low-pass following the stamina down
 		// the pulse (pp_pulse_update): the intoxication DOF one's shape
 		const float		FATIGUE_PERIOD_SLOW		= 1.6f;		// seconds per pulse as it just shows (half the intoxication's)...
 		const float		FATIGUE_PERIOD_FAST		= 1.1f;		// ...and at full fatigue: the actor's panting, one breath in 1.1 s
-		static float	s_low = 0.f, s_sharp = 0.f, s_phase = 0.f, s_pulse = 0.f;
+		static float	s_low = 0.f, s_sharp = 0.f, s_phase = 0.f, s_pulse = 0.f, s_ca = 0.f;
 		auto ramp = [](float p, float from, float to) { float x = (from - p) / (from - to); clamp(x, 0.f, 1.f); return x * x * (3.f - 2.f * x); };
 		auto follow = [&](float& v, float target)
 		{
@@ -1656,8 +1694,11 @@ void CActor::UpdateCL	()
 		const float		power = g_Alive() ? conditions().GetPower() : 1.f;
 		follow(s_low,	ramp(power, FATIGUE_FROM,		FATIGUE_FULL));
 		follow(s_sharp,	ramp(power, FATIGUE_SHARP_FROM,	FATIGUE_SHARP_FULL));
+		follow(s_ca,	ramp(power, conditions().CantSprintPowerBegin() + FATIGUE_CA_LEAD, 0.f));
 		if (s_low < 0.001f)		s_low = 0.f;
 		if (s_sharp < 0.001f)	s_sharp = 0.f;
+		if (s_ca < 0.001f)		s_ca = 0.f;
+		g_pGamePersistent->pp_fatigue_ca.set(FATIGUE_CA_PX * s_ca, 0.f, 0.f, 0.f);
 		pp_pulse_update(s_phase, s_pulse, s_low, FATIGUE_PERIOD_SLOW, FATIGUE_PERIOD_FAST);
 		// the swing grows with the fatigue squared: barely there at the start, plain at FATIGUE_FULL
 		float			vignette = s_low * FATIGUE_VIGNETTE + s_low * s_low * FATIGUE_VIGNETTE_PULSE * s_pulse;
@@ -1675,7 +1716,7 @@ void CActor::UpdateCL	()
 	// replaces GS's bloodscreen overlay (CActorCondition::UpdateBloodScreen, no longer called).
 	//  - The RED: the edges of the picture dyed red (see pp_injury_tint), pulsing like the stamina vignette
 	//    with the swing growing with its strength. Health: from INJURY_TINT_FROM, full at INJURY_TINT_FULL.
-	//  - The DROPS on the lens, creeping in from the corners towards the middle and catching a glare where the
+	//  - The DROPS on the lens, fading in from the corners towards the middle and catching a glare where the
 	//    scene behind is bright (see pp_injury_drops). Health: from INJURY_DROPS_FROM, furthest in at
 	//    INJURY_DROPS_FULL.
 	//  - The BLEEDING drives both: any at all shows INJURY_BLEED_MIN of each, rising in a straight line to full
@@ -1688,15 +1729,16 @@ void CActor::UpdateCL	()
 	//    INJURY_BLUR_PULSE on top) from INJURY_BLUR_BLEED_FROM of bleeding up, full at INJURY_BLEED_FULL.
 	//  - The VESSELS (fx_blood_vessels_00, overlay): from INJURY_VESSELS_FROM of bleeding up, full at
 	//    INJURY_BLEED_FULL -- and from INJURY_VESSELS_HEALTH_FROM of health down too, up to
-	//    INJURY_VESSELS_HEALTH_MAX of that at INJURY_VESSELS_HEALTH_FULL; the stronger wins. They creep in from
+	//    INJURY_VESSELS_HEALTH_MAX of that at INJURY_VESSELS_HEALTH_FULL; the stronger wins. They fade in from
 	//    the corners like the drops and beat the same way, only deeper: down to INJURY_VESSELS_TROUGH of their
 	//    reach between the beats.
+	//  - At a beat's peak the red, the drops and the vessels swell to INJURY_PULSE_PEAK of their former peak.
 	// A hit or a fresh wound comes in fast; healing/bandaging fades it no faster than INJURY_FADE_OUT seconds.
 	if (g_pGamePersistent)
 	{
-		const float		INJURY_TINT_FROM		= 0.75f;	// health where the edges start to redden...
+		const float		INJURY_TINT_FROM		= 0.85f;	// health where the edges start to redden (was 0.75)...
 		const float		INJURY_TINT_FULL		= 0.2f;		// ...and where it is at full strength
-		const float		INJURY_DROPS_FROM		= 0.75f;	// health where the drops start to gather...
+		const float		INJURY_DROPS_FROM		= 0.85f;	// health where the drops start to gather (was 0.75)...
 		const float		INJURY_DROPS_FULL		= 0.2f;		// ...and where they have crept furthest in
 		const float		INJURY_BLEED_MIN		= 0.25f;	// the red and the drops the slightest bleeding shows (share of full)...
 		const float		INJURY_BLEED_FULL		= 1.f;		// ...and the bleeding where they are full
@@ -1705,6 +1747,19 @@ void CActor::UpdateCL	()
 		// the red's strength, 0..1 -- the shader's PP_INJURY_MIX_* say how much colour that is
 		const float		INJURY_TINT				= 1.f / 3.f;	// at full, steady part...
 		const float		INJURY_TINT_PULSE		= 1.f / 6.f;	// ...and what a pulse's peak adds on top (0.5 in all; was 1)
+		// a beat's peak of the red, the drops and the vessels, as a share of what it was before this (the trough
+		// stays): with their masks no longer creeping in (the shader's pp_injury_mask) the beat has to swell
+		// more to be seen running in from the edges. The drops take it only as far as they pulse (with bleeding).
+		const float		INJURY_PULSE_PEAK		= 1.2f;
+		// The beat is carried mostly by the masks' REACH, not their strength (which beating made the whole effect
+		// pulse as one): the strength only swings between INJURY_PULSE_FLOOR of the way from the trough to the peak
+		// and the peak, and the shader's pp_injury_mask power is multiplied by INJURY_REACH_TROUGH between the beats
+		// (the middle clears, the corners -- 1 at any power -- stay) down to INJURY_REACH_PEAK at a beat's peak (it
+		// floods in). Passed in pp_hit.z (the red, the vessels) and pp_hit.w (the drops: only as far as they beat,
+		// with bleeding); 0 there = a power of 1.
+		const float		INJURY_PULSE_FLOOR		= 0.6f;
+		const float		INJURY_REACH_TROUGH		= 1.3f;
+		const float		INJURY_REACH_PEAK		= 0.75f;
 		const float		INJURY_PERIOD_SLOW		= 1.6f;		// seconds per pulse as it just shows...
 		const float		INJURY_PERIOD_FAST		= 1.1f;		// ...and at full injury
 		const float		INJURY_FADE_OUT			= 3.5f;		// seconds for a full fade back out
@@ -1779,10 +1834,18 @@ void CActor::UpdateCL	()
 		const float		high	= _max(s_health_drops, s_bleeding);
 		const float		trough	= _max(INJURY_DROPS_TROUGH * high, INJURY_DROPS_HEALTH_DIP * s_health_drops);
 		const float		low		= s_health_drops + (trough - s_health_drops) * dip;
-		g_pGamePersistent->pp_injury.set(s_tint * INJURY_TINT + s_tint * s_tint * INJURY_TINT_PULSE * s_pulse,
-										 low + (high - low) * s_pulse,
+		const float		peak	= high * (1.f + (INJURY_PULSE_PEAK - 1.f) * dip);
+		// the strength's beat, held up towards the peak (the reach below does the rest)
+		const float		amp		= INJURY_PULSE_FLOOR + (1.f - INJURY_PULSE_FLOOR) * s_pulse;
+		g_pGamePersistent->pp_injury.set((s_tint * INJURY_TINT + s_tint * s_tint * INJURY_TINT_PULSE * amp)
+											* (1.f + (INJURY_PULSE_PEAK - 1.f) * amp),
+										 low + (peak - low) * amp,
 										 INJURY_BLUR * s_blur + s_blur_bleed * (INJURY_BLUR_TROUGH + (INJURY_BLUR_PULSE - INJURY_BLUR_TROUGH) * s_pulse),
-										 s_vessels * (INJURY_VESSELS_TROUGH + (1.f - INJURY_VESSELS_TROUGH) * s_pulse));
+										 s_vessels * (INJURY_VESSELS_TROUGH + (INJURY_PULSE_PEAK - INJURY_VESSELS_TROUGH) * amp));
+		// the masks' reach: their power's multiplier (0 = 1, nothing showing)
+		const float		reach	= INJURY_REACH_TROUGH + (INJURY_REACH_PEAK - INJURY_REACH_TROUGH) * s_pulse;
+		g_pGamePersistent->pp_hit.z	= (s_tint > 0.f || s_vessels > 0.f) ? reach : 0.f;
+		g_pGamePersistent->pp_hit.w	= (s_health_drops > 0.f || s_bleeding > 0.f) ? 1.f + (reach - 1.f) * dip : 0.f;
 
 		// LENS DROPLETS while bleeding -- blood running down off the brows (their look and run: lens_droplet_*).
 		// They appear at DROPLET_RATE_MIN a second for the lightest bleeding, up to DROPLET_RATE_MAX at
@@ -1880,6 +1943,36 @@ void CActor::UpdateCL	()
 			lens_droplet_step(s_rain[i], LD_RAIN, g_pGamePersistent->pp_droplets[RAIN_FIRST + i], true);
 	}
 
+	// THE RAIN ON AN OPTIC'S GLASS (hud_lens_wet, lens_wet.h): the drops the scope's outer glass gathers. The rain falling
+	// on it is the weather's density over a heavy rain's, as much as the sky over the camera is open (the rain effect's
+	// sky factor, open from LENS_SKY_FROM on, fully at LENS_SKY_FULL), eased over LENS_RAIN_EASE. Wet, the glass gathers
+	// drops up to what the rain gives, from dry to soaked in LENS_WET_RISE seconds, and under a roof (or in a rain
+	// lighter than it was) loses them, from soaked to dry in LENS_WET_DRY. The clock the drops live by runs only while
+	// rain falls on the glass, as fast as it is heavy: they come and go under the rain, and keep still under a roof.
+	if (g_pGamePersistent)
+	{
+		const float		LENS_RAIN_HEAVY		= 1.f;		// rain_density of a heavy rain: all the drops
+		const float		LENS_SKY_FROM		= 0.4f;		// the sky factor from which rain reaches the glass...
+		const float		LENS_SKY_FULL		= 0.8f;		// ...and all of it (4 of the 5 rays clear)
+		const float		LENS_RAIN_EASE		= 1.5f;		// seconds
+		const float		LENS_WET_RISE		= 20.f;		// seconds from dry to soaked
+		const float		LENS_WET_DRY		= 90.f;		// seconds from soaked to dry
+		static float	s_rain = 0.f, s_wet = 0.f, s_clock = 0.f;
+		CEnvironment&	env		= g_pGamePersistent->Environment();
+		const float		density	= env.CurrentEnv ? env.CurrentEnv->rain_density : 0.f;
+		const float		sky		= env.eff_Rain ? env.eff_Rain->SkyFactor() : 0.f;
+		const float		dt		= Device.fTimeDelta;
+		const float		target	= clampr(density / LENS_RAIN_HEAVY, 0.f, 1.f)
+								* clampr((sky - LENS_SKY_FROM) / (LENS_SKY_FULL - LENS_SKY_FROM), 0.f, 1.f);
+		s_rain			+= (target - s_rain) * _min(1.f, dt / LENS_RAIN_EASE);
+		if (s_wet < s_rain)	s_wet = _min(s_rain, s_wet + dt / LENS_WET_RISE);
+		else				s_wet = _max(s_rain, s_wet - dt / LENS_WET_DRY);
+		s_clock			= fmodf(s_clock + dt * s_rain, float(IGame_Persistent::HUD_LENS_WET_WRAP));
+		// .w: the held weapon's aim -- a collimator's drops fade in it, sitting right before the eye
+		CWeapon*		wpn		= smart_cast<CWeapon*>(inventory().ActiveItem());
+		g_pGamePersistent->hud_lens_wet.set(s_wet, s_clock, s_rain, wpn ? wpn->GetInertionAimFactor() : 0.f);
+	}
+
 	// HIT FLASH: a one-off hit (CActor::Hit -> s_hit_flash_pending) blurs the whole picture for a moment, flushes
 	// its edges dark red and darkens its corners, all snapping in over HIT_FLASH_IN and dropping away over
 	// HIT_FLASH_OUT. The blur is the pp pass's blur over the finished picture (pp_blur: PP_BLUR_R of the screen
@@ -1910,10 +2003,11 @@ void CActor::UpdateCL	()
 		if (s_flash > 0.001f)
 		{
 			g_pGamePersistent->pp_blur	= _max(g_pGamePersistent->pp_blur, HIT_FLASH_BLUR * s_flash);
-			g_pGamePersistent->pp_hit.set(HIT_FLASH_RED * s_flash, HIT_FLASH_VIGNETTE * s_flash, 0.f, 0.f);
+			g_pGamePersistent->pp_hit.x	= HIT_FLASH_RED * s_flash;
+			g_pGamePersistent->pp_hit.y	= HIT_FLASH_VIGNETTE * s_flash;
 		}
 		else
-			g_pGamePersistent->pp_hit.set(0.f, 0.f, 0.f, 0.f);
+			g_pGamePersistent->pp_hit.x	= g_pGamePersistent->pp_hit.y = 0.f;	// (z, w: the injury's beat, set above)
 	}
 
 	UpdatePlannedMonsterKick	();
@@ -1983,17 +2077,16 @@ void CActor::UpdateCL	()
 			fire_disp_full = m_fdisp_controller.GetCurrentDispertion();
 
 			HUD().SetCrosshairDisp(fire_disp_full, 0.02f);
-			// weapon down (or going down): the dot, as with the bolt in hand, not the cross.
-			// The mode as well as the pose: a sprint takes the pose back up (factor 0) but the mode stays on.
-			const bool lowered = pWeapon->LoweredFactor() > 0.f || (IsWeaponLowered() && IsLowerable(pWeapon));
+			// Weapon down -- until it is as far back up as the fire key needs (WeaponLoweredBlocksAction): the
+			// dot in the middle of the screen in place of the cross (CHUDTarget::Render keeps the dot there),
+			// the cross following the weapon again the moment a shot could leave.
+			const bool lowered		= (IsWeaponLowered() && IsLowerable(pWeapon))
+									|| pWeapon->LoweredBlocksWeapon();
 			HUD().ShowCrosshair(pWeapon->use_crosshair() && !lowered);
-			// No crosshair at all while the weapon cannot shoot: running (the sprint, its enter and the exit
-			// that holds the shot back) or down -- down until it is as far back up as the fire key needs
-			// (WeaponLoweredBlocksAction). It comes back the moment a shot could leave.
+			// No crosshair at all while running with the weapon up: the sprint, its enter and the exit that
+			// holds the shot back.
 			CWeaponMagazined* pWM	= smart_cast<CWeaponMagazined*>(pWeapon);
-			const bool no_shot		= (pWM && pWM->SprintBlocksFireNow())
-									|| (IsWeaponLowered() && IsLowerable(pWeapon))
-									|| pWeapon->LoweredFactor() > 0.25f;
+			const bool no_shot		= pWM && pWM->SprintBlocksFireNow();
 #ifdef DEBUG
 			HUD().SetFirstBulletCrosshairDisp(pWeapon->GetFirstBulletDisp());
 #endif
@@ -2002,7 +2095,7 @@ void CActor::UpdateCL	()
 
 			psHUD_Flags.set( HUD_WEAPON_RT, B );
 
-			B = B && (lowered || pWeapon->show_crosshair()) && !no_shot;
+			B = B && (lowered || (pWeapon->show_crosshair() && !no_shot));
 
 			psHUD_Flags.set( HUD_CROSSHAIR_RT2, B );
 			
