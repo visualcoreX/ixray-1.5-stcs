@@ -1791,6 +1791,22 @@ void CWeapon::UpdateFlashlight()
 		omnipos = pos;
 		dir.set(full.k);	dir.normalize_safe();
 		right.set(full.i);	right.normalize_safe();
+		// GS CorrectDirFromWorldToHud (ActorUtils.pas): the hud is drawn at its own, narrower field of view, so a gun
+		// turned by an angle on the hud looks turned further on the screen than a beam at that angle in the world --
+		// the beam lagged behind the barrel, short of a few degrees, as the gun swung aside. Its lean off the camera's
+		// axis is scaled by the world's fov over the hud's, times the hud section's hud_recalc_koef (default 1).
+		{
+			const float	hud_fov		= psHUD_FOV * Device.fFOV_HUD;
+			const float	koef		= READ_IF_EXISTS(pSettings, r_float, HudSection(), "hud_recalc_koef", 1.f);
+			if (hud_fov > EPS_L)
+			{
+				const Fvector&	cd	= Device.vCameraDirection;
+				dir.sub(cd).mul(koef * Device.fFOV / hud_fov).add(cd);
+				dir.normalize_safe();
+				right.mad(dir, -right.dotproduct(dir));		// square again with the new direction
+				right.normalize_safe();
+			}
+		}
 	}
 	else
 	{
