@@ -23,6 +23,7 @@ public:
 		Fvector				color;			// LOD fade included
 		float				cone_cos;		// cosine of a spot's half-angle; below -1 for an omni
 		Fvector				direction;
+		const void*			source;			// the light itself, to know it again next frame: compared only, never dereferenced
 	};
 	xr_vector<rain_light>	v_rain;
 private:

@@ -588,3 +588,125 @@ void collim_gather_lights	(Fvector4* out)
 	}
 	CopyMemory	(out, s_set, sizeof(s_set));
 }
+
+// The lights the blood and rain on the lens catch a glare from, besides the bloom (phase_PP ->
+// m_pp_glare_lights, postprocess.ps pp_glare_lights). The bloom is built from the deferred picture before the
+// forward pass, so a fire, a glow or a torch's beam never reach it, and a lamp's bulb is seldom bright enough
+// to pass its threshold -- only the sky lit the glare. So the strongest few of this frame's visible point and
+// spot lights (CLight_DB::v_rain: it outlives the light passes, which empty Lights.package), each at the
+// point of the screen it stands on:
+//  - weighed by its colour, and once further than GL_REACH x its range, by (that / the distance)^2;
+//  - a spot by where it points: full looking at the eye (its cone and GL_SPOT_EDGE more), GL_SPOT_SIDE of that
+//    seen from the side, nothing from behind -- the actor's own torch, pointing away, never counts;
+//  - none closer than GL_NEAR (the torch's own omni), full from twice that;
+//  - off the screen too, up to GL_MARGIN of it past an edge and fading out over that: the drops sit at the
+//    edges, and a lamp just out of view still lights them;
+//  - behind static geometry (a ray from the eye, short of the light by GL_RAY_SHORT) it fades out over GL_FADE
+//    seconds, and in again as it comes out -- as does a light newly among the strongest.
+// The 2 x GLARE_LIGHTS strongest are ray-tested; the GLARE_LIGHTS strongest after their fade go out.
+// out: GLARE_LIGHTS pairs -- (screen uv, 0, 0), (colour x weight, 0); one not used is black.
+void glare_gather_lights	(Fvector4* out)
+{
+	static u32		s_frame		= u32(-1);
+	static Fvector4	s_set		[GLARE_LIGHTS*2];
+	struct fade_t	{ const void* key; float v; };
+	static fade_t	s_fade		[GLARE_LIGHTS*2];	// keys compared only, never dereferenced
+	static u32		s_fades		= 0;
+	if (s_frame != Device.dwFrame)
+	{
+		s_frame					= Device.dwFrame;
+		for (u32 i = 0; i < GLARE_LIGHTS*2; ++i)	s_set[i].set(0.f, 0.f, 0.f, 0.f);
+#if RENDER!=R_R1
+		const float		GL_REACH		= 1.5f;
+		const float		GL_SPOT_EDGE	= deg2rad(10.f);
+		const float		GL_SPOT_SIDE	= 0.15f;
+		const float		GL_NEAR			= 1.f;
+		const float		GL_MARGIN		= 0.3f;
+		const float		GL_RAY_SHORT	= 0.3f;
+		const float		GL_FADE			= 0.25f;
+		const u32		NC				= GLARE_LIGHTS*2;
+		struct cand		{ const CLight_DB::rain_light* L; float u, v, w, d; };
+		cand			best	[NC];
+		u32				n		= 0;
+		const Fvector&	eye		= Device.vCameraPosition;
+		const xr_vector<CLight_DB::rain_light>& V = RImplementation.Lights.v_rain;
+		for (u32 k = 0; k < V.size(); ++k)
+		{
+			const CLight_DB::rain_light& L	= V[k];
+			Fvector	to;		to.sub(L.position, eye);
+			const float d	= to.magnitude();
+			if (d < GL_NEAR)									continue;
+			const float lum	= (L.color.x + L.color.y + L.color.z) / 3.f;
+			if (lum < EPS_L)									continue;
+			float	w		= lum * _min(1.f, (d - GL_NEAR) / GL_NEAR);
+			const float far_	= GL_REACH * L.range;
+			if (d > far_)	w	*= (far_ / d) * (far_ / d);
+			if (L.cone_cos >= -1.f)
+			{
+				const float c	= -to.dotproduct(L.direction) / d;
+				if (c <= 0.f)									continue;
+				const float lo	= _cos(_min(acosf(L.cone_cos) + GL_SPOT_EDGE, PI_DIV_2));
+				w			*= (c >= lo) ? GL_SPOT_SIDE + (1.f - GL_SPOT_SIDE) * (c - lo) / (1.f - lo + EPS_S)
+										 : GL_SPOT_SIDE * c / lo;
+			}
+			Fvector4 cl;	Device.mFullTransform.transform(cl, L.position);
+			if (cl.w < EPS_L)									continue;	// behind the eye
+			const float u	= cl.x / cl.w * 0.5f + 0.5f;
+			const float v	= 0.5f - cl.y / cl.w * 0.5f;
+			const float off	= _max(_max(-u, u - 1.f), _max(-v, v - 1.f));
+			if (off >= GL_MARGIN)								continue;
+			if (off > 0.f)	w	*= 1.f - off / GL_MARGIN;
+			if (w <= EPS_S)										continue;
+			// the weakest of the kept ones goes, if this one beats it
+			u32		slot	= n;
+			if (n == NC)
+			{
+				slot		= 0;
+				for (u32 j = 1; j < n; ++j)	if (best[j].w < best[slot].w)	slot = j;
+				if (best[slot].w >= w)							continue;
+			}
+			best[slot].L	= &L;
+			best[slot].u	= u;
+			best[slot].v	= v;
+			best[slot].w	= w;
+			best[slot].d	= d;
+			if (slot == n)	++n;
+		}
+		// hidden or not, and the fade towards it
+		fade_t			next	[NC];
+		const float		step	= Device.fTimeDelta / GL_FADE;
+		for (u32 i = 0; i < n; ++i)
+		{
+			const CLight_DB::rain_light& L	= *best[i].L;
+			float	f		= 0.f;
+			for (u32 j = 0; j < s_fades; ++j)	if (s_fade[j].key == L.source)	{ f = s_fade[j].v; break; }
+			bool	seen	= true;
+			if (g_pGameLevel)
+			{
+				Fvector	dir;	dir.sub(L.position, eye).div(best[i].d);
+				seen		= !g_pGameLevel->ObjectSpace.RayTest(eye, dir, best[i].d - GL_RAY_SHORT, collide::rqtStatic, NULL, NULL);
+			}
+			f				= seen ? _min(1.f, f + step) : _max(0.f, f - step);
+			next[i].key		= L.source;
+			next[i].v		= f;
+			best[i].w		*= f;
+		}
+		CopyMemory	(s_fade, next, n*sizeof(fade_t));
+		s_fades			= n;
+		// the strongest GLARE_LIGHTS go out
+		for (u32 i = 0; i < n && i < GLARE_LIGHTS; ++i)
+		{
+			u32		top		= i;
+			for (u32 j = i + 1; j < n; ++j)	if (best[j].w > best[top].w)	top = j;
+			std::swap		(best[i], best[top]);
+			if (best[i].w <= EPS_S)								break;
+			const CLight_DB::rain_light& L	= *best[i].L;
+			const float lum	= (L.color.x + L.color.y + L.color.z) / 3.f;
+			const float s	= best[i].w / lum;
+			s_set[i*2+0].set	(best[i].u, best[i].v, 0.f, 0.f);
+			s_set[i*2+1].set	(L.color.x * s, L.color.y * s, L.color.z * s, 0.f);
+		}
+#endif
+	}
+	CopyMemory	(out, s_set, sizeof(s_set));
+}
