@@ -603,6 +603,8 @@ void collim_gather_lights	(Fvector4* out)
 //    edges, and a lamp just out of view still lights them;
 //  - behind static geometry (a ray from the eye, short of the light by GL_RAY_SHORT) it fades out over GL_FADE
 //    seconds, and in again as it comes out -- as does a light newly among the strongest.
+// And the SUN (Lights.sun_adapted, its colour as the weather has it now, x GL_SUN): where its direction meets
+// the screen, its ray GL_SUN_RAY long; the bloom only had it where the sky round it was bright enough.
 // The 2 x GLARE_LIGHTS strongest are ray-tested; the GLARE_LIGHTS strongest after their fade go out.
 // out: GLARE_LIGHTS pairs -- (screen uv, 0, 0), (colour x weight, 0); one not used is black.
 void glare_gather_lights	(Fvector4* out)
@@ -617,18 +619,50 @@ void glare_gather_lights	(Fvector4* out)
 		s_frame					= Device.dwFrame;
 		for (u32 i = 0; i < GLARE_LIGHTS*2; ++i)	s_set[i].set(0.f, 0.f, 0.f, 0.f);
 #if RENDER!=R_R1
-		const float		GL_REACH		= 1.5f;
+		const float		GL_REACH		= 3.f;		// was 1.5: lamps a street away hardly showed
 		const float		GL_SPOT_EDGE	= deg2rad(10.f);
 		const float		GL_SPOT_SIDE	= 0.15f;
 		const float		GL_NEAR			= 1.f;
 		const float		GL_MARGIN		= 0.3f;
 		const float		GL_RAY_SHORT	= 0.3f;
 		const float		GL_FADE			= 0.25f;
+		const float		GL_SUN			= 1.5f;
+		const float		GL_SUN_RAY		= 300.f;
 		const u32		NC				= GLARE_LIGHTS*2;
-		struct cand		{ const CLight_DB::rain_light* L; float u, v, w, d; };
+		struct cand		{ const void* key; Fvector color, dir; float len, u, v, w; };
 		cand			best	[NC];
 		u32				n		= 0;
 		const Fvector&	eye		= Device.vCameraPosition;
+		// one more: w is its weight before the screen, `at` the point it shows at (w of the 4D one 0 for the sun's
+		// direction), the ray from the eye along dir, len long
+		auto consider = [&](const void* key, const Fvector& color, float w, const Fvector4& at, const Fvector& dir, float len)
+		{
+			Fvector4 cl;	Device.mFullTransform.transform(cl, at);
+			if (cl.w < EPS_L)									return;	// behind the eye
+			const float u	= cl.x / cl.w * 0.5f + 0.5f;
+			const float v	= 0.5f - cl.y / cl.w * 0.5f;
+			const float off	= _max(_max(-u, u - 1.f), _max(-v, v - 1.f));
+			if (off >= GL_MARGIN)								return;
+			if (off > 0.f)	w	*= 1.f - off / GL_MARGIN;
+			if (w <= EPS_S)										return;
+			// the weakest of the kept ones goes, if this one beats it
+			u32		slot	= n;
+			if (n == NC)
+			{
+				slot		= 0;
+				for (u32 j = 1; j < n; ++j)	if (best[j].w < best[slot].w)	slot = j;
+				if (best[slot].w >= w)							return;
+			}
+			cand&	C		= best[slot];
+			C.key			= key;
+			C.color.set		(color);
+			C.dir.set		(dir);
+			C.len			= len;
+			C.u				= u;
+			C.v				= v;
+			C.w				= w;
+			if (slot == n)	++n;
+		};
 		const xr_vector<CLight_DB::rain_light>& V = RImplementation.Lights.v_rain;
 		for (u32 k = 0; k < V.size(); ++k)
 		{
@@ -641,55 +675,39 @@ void glare_gather_lights	(Fvector4* out)
 			float	w		= lum * _min(1.f, (d - GL_NEAR) / GL_NEAR);
 			const float far_	= GL_REACH * L.range;
 			if (d > far_)	w	*= (far_ / d) * (far_ / d);
+			to.div			(d);
 			if (L.cone_cos >= -1.f)
 			{
-				const float c	= -to.dotproduct(L.direction) / d;
+				const float c	= -to.dotproduct(L.direction);
 				if (c <= 0.f)									continue;
 				const float lo	= _cos(_min(acosf(L.cone_cos) + GL_SPOT_EDGE, PI_DIV_2));
 				w			*= (c >= lo) ? GL_SPOT_SIDE + (1.f - GL_SPOT_SIDE) * (c - lo) / (1.f - lo + EPS_S)
 										 : GL_SPOT_SIDE * c / lo;
 			}
-			Fvector4 cl;	Device.mFullTransform.transform(cl, L.position);
-			if (cl.w < EPS_L)									continue;	// behind the eye
-			const float u	= cl.x / cl.w * 0.5f + 0.5f;
-			const float v	= 0.5f - cl.y / cl.w * 0.5f;
-			const float off	= _max(_max(-u, u - 1.f), _max(-v, v - 1.f));
-			if (off >= GL_MARGIN)								continue;
-			if (off > 0.f)	w	*= 1.f - off / GL_MARGIN;
-			if (w <= EPS_S)										continue;
-			// the weakest of the kept ones goes, if this one beats it
-			u32		slot	= n;
-			if (n == NC)
-			{
-				slot		= 0;
-				for (u32 j = 1; j < n; ++j)	if (best[j].w < best[slot].w)	slot = j;
-				if (best[slot].w >= w)							continue;
-			}
-			best[slot].L	= &L;
-			best[slot].u	= u;
-			best[slot].v	= v;
-			best[slot].w	= w;
-			best[slot].d	= d;
-			if (slot == n)	++n;
+			Fvector4 at;	at.set(L.position.x, L.position.y, L.position.z, 1.f);
+			consider		(L.source, L.color, w, at, to, d - GL_RAY_SHORT);
+		}
+		if (light* sun = (light*)RImplementation.Lights.sun_adapted._get())
+		{
+			Fvector	color;	color.set(sun->color.r, sun->color.g, sun->color.b);
+			const float lum	= (color.x + color.y + color.z) / 3.f;
+			Fvector	to;		to.set(sun->direction).invert().normalize();
+			Fvector4 at;	at.set(to.x, to.y, to.z, 0.f);
+			if (lum > EPS_L)	consider(sun, color, lum * GL_SUN, at, to, GL_SUN_RAY);
 		}
 		// hidden or not, and the fade towards it
 		fade_t			next	[NC];
 		const float		step	= Device.fTimeDelta / GL_FADE;
 		for (u32 i = 0; i < n; ++i)
 		{
-			const CLight_DB::rain_light& L	= *best[i].L;
+			cand&	C		= best[i];
 			float	f		= 0.f;
-			for (u32 j = 0; j < s_fades; ++j)	if (s_fade[j].key == L.source)	{ f = s_fade[j].v; break; }
-			bool	seen	= true;
-			if (g_pGameLevel)
-			{
-				Fvector	dir;	dir.sub(L.position, eye).div(best[i].d);
-				seen		= !g_pGameLevel->ObjectSpace.RayTest(eye, dir, best[i].d - GL_RAY_SHORT, collide::rqtStatic, NULL, NULL);
-			}
+			for (u32 j = 0; j < s_fades; ++j)	if (s_fade[j].key == C.key)	{ f = s_fade[j].v; break; }
+			const bool seen	= !g_pGameLevel || !g_pGameLevel->ObjectSpace.RayTest(eye, C.dir, C.len, collide::rqtStatic, NULL, NULL);
 			f				= seen ? _min(1.f, f + step) : _max(0.f, f - step);
-			next[i].key		= L.source;
+			next[i].key		= C.key;
 			next[i].v		= f;
-			best[i].w		*= f;
+			C.w				*= f;
 		}
 		CopyMemory	(s_fade, next, n*sizeof(fade_t));
 		s_fades			= n;
@@ -699,12 +717,11 @@ void glare_gather_lights	(Fvector4* out)
 			u32		top		= i;
 			for (u32 j = i + 1; j < n; ++j)	if (best[j].w > best[top].w)	top = j;
 			std::swap		(best[i], best[top]);
-			if (best[i].w <= EPS_S)								break;
-			const CLight_DB::rain_light& L	= *best[i].L;
-			const float lum	= (L.color.x + L.color.y + L.color.z) / 3.f;
-			const float s	= best[i].w / lum;
-			s_set[i*2+0].set	(best[i].u, best[i].v, 0.f, 0.f);
-			s_set[i*2+1].set	(L.color.x * s, L.color.y * s, L.color.z * s, 0.f);
+			const cand&	C	= best[i];
+			if (C.w <= EPS_S)									break;
+			const float s	= C.w / ((C.color.x + C.color.y + C.color.z) / 3.f);
+			s_set[i*2+0].set	(C.u, C.v, 0.f, 0.f);
+			s_set[i*2+1].set	(C.color.x * s, C.color.y * s, C.color.z * s, 0.f);
 		}
 #endif
 	}
