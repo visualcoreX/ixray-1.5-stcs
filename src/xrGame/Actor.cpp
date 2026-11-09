@@ -1650,8 +1650,9 @@ void CActor::UpdateCL	()
 
 	// FATIGUE GRADING, from the stamina (conditions().GetPower(), 0..1). Below FATIGUE_FROM the colour starts to
 	// drain towards the edges, the middle of the picture to lighten and the corners to darken (a vignette; the
-	// lift fades out where it comes in), all full at FATIGUE_FULL. Below FATIGUE_SHARP_FROM the whole picture also sharpens into
-	// soft halos (wide unsharp mask, see pp_fatigue_sharp), full at FATIGUE_SHARP_FULL. The vignette breathes
+	// lift fades out where it comes in), all full at FATIGUE_FULL. Below FATIGUE_SHARP_FROM the whole picture also sharpens,
+	// warping hardest at the edges (a fine unsharp mask, see pp_fatigue_sharp), full at FATIGUE_SHARP_FULL. Near the
+	// stamina where running stops the colours start to slide apart radially (FATIGUE_CA_*). The vignette breathes
 	// with the intoxication's DOF pulse shape (short in/out around the peak) at twice its rate, its swing
 	// growing with the fatigue, so it is most noticeable at FATIGUE_FULL. Smooth ramps (smoothstep) so no threshold
 	// shows as a step. Coming in it follows the stamina closely; going out (rested, a drink) it can fall no
@@ -1671,13 +1672,19 @@ void CActor::UpdateCL	()
 		// (the beat still shows, only flatter).
 		const float		FATIGUE_VIGNETTE_KNEE	= 0.7f;
 		const float		FATIGUE_VIGNETTE_MAX	= 0.9f;
-		const float		FATIGUE_SHARP			= 0.5f;		// edge sharpening at full (unsharp mask amount)
+		const float		FATIGUE_SHARP			= 1.25f;	// edge sharpening at full (unsharp mask amount; was 0.5 against a
+															// wide blur -- the fine one now, 2.5 px, needs more to warp the picture)
+		// the EXHAUSTION's radial chromatic aberration (pp_fatigue_ca, postprocess.ps pp_fatigue_ca): from
+		// FATIGUE_CA_LEAD above the stamina where running stops (conditions().CantSprintPowerBegin(), 0.2), full
+		// -- FATIGUE_CA_PX pixels in the corners -- only at none left
+		const float		FATIGUE_CA_LEAD			= 0.05f;
+		const float		FATIGUE_CA_PX			= 2.f;
 		const float		FATIGUE_FADE_OUT		= 3.5f;		// seconds for a full fade back out
 		const float		FATIGUE_FADE_IN			= 4.f;		// 1/seconds: the low-pass following the stamina down
 		// the pulse (pp_pulse_update): the intoxication DOF one's shape
 		const float		FATIGUE_PERIOD_SLOW		= 1.6f;		// seconds per pulse as it just shows (half the intoxication's)...
 		const float		FATIGUE_PERIOD_FAST		= 1.1f;		// ...and at full fatigue: the actor's panting, one breath in 1.1 s
-		static float	s_low = 0.f, s_sharp = 0.f, s_phase = 0.f, s_pulse = 0.f;
+		static float	s_low = 0.f, s_sharp = 0.f, s_phase = 0.f, s_pulse = 0.f, s_ca = 0.f;
 		auto ramp = [](float p, float from, float to) { float x = (from - p) / (from - to); clamp(x, 0.f, 1.f); return x * x * (3.f - 2.f * x); };
 		auto follow = [&](float& v, float target)
 		{
@@ -1687,8 +1694,11 @@ void CActor::UpdateCL	()
 		const float		power = g_Alive() ? conditions().GetPower() : 1.f;
 		follow(s_low,	ramp(power, FATIGUE_FROM,		FATIGUE_FULL));
 		follow(s_sharp,	ramp(power, FATIGUE_SHARP_FROM,	FATIGUE_SHARP_FULL));
+		follow(s_ca,	ramp(power, conditions().CantSprintPowerBegin() + FATIGUE_CA_LEAD, 0.f));
 		if (s_low < 0.001f)		s_low = 0.f;
 		if (s_sharp < 0.001f)	s_sharp = 0.f;
+		if (s_ca < 0.001f)		s_ca = 0.f;
+		g_pGamePersistent->pp_fatigue_ca.set(FATIGUE_CA_PX * s_ca, 0.f, 0.f, 0.f);
 		pp_pulse_update(s_phase, s_pulse, s_low, FATIGUE_PERIOD_SLOW, FATIGUE_PERIOD_FAST);
 		// the swing grows with the fatigue squared: barely there at the start, plain at FATIGUE_FULL
 		float			vignette = s_low * FATIGUE_VIGNETTE + s_low * s_low * FATIGUE_VIGNETTE_PULSE * s_pulse;

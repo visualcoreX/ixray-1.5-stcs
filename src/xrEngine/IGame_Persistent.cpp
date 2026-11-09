@@ -61,6 +61,7 @@ IGame_Persistent::IGame_Persistent	()
 	dof_kernel_mul					= 1.f;					// the DOF blur exactly as r2_dof_kernel says
 	pp_blur							= 0.f;					// no blur over the final picture
 	pp_fatigue.set					(0.f, 0.f, 0.f, 0.f);	// no fatigue grading
+	pp_fatigue_ca.set				(0.f, 0.f, 0.f, 0.f);	// no exhaustion aberration
 	pp_injury.set					(0.f, 0.f, 0.f, 0.f);	// no injury grading
 	pp_hit.set						(0.f, 0.f, 0.f, 0.f);	// no hit flash
 	for (int i = 0; i < PP_DROPLETS; ++i)	pp_droplets[i].set(0.f, 0.f, 0.f, 0.f);	// no droplets

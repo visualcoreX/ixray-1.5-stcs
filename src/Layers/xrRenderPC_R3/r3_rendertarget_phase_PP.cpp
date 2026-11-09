@@ -180,6 +180,10 @@ void CRenderTarget::phase_pp		()
 		static	shared_str	s_pp_fatigue	= "m_pp_fatigue";
 		const Fvector4 fa = g_pGamePersistent ? g_pGamePersistent->pp_fatigue : Fvector4().set(0.f,0.f,0.f,0.f);
 		RCache.set_c		(s_pp_fatigue, fa.x, fa.y, fa.z, fa.w);
+		// the exhaustion's radial chromatic aberration (pp_fatigue_ca, CActor): x = pixels in the corners
+		static	shared_str	s_pp_fatigue_ca	= "m_pp_fatigue_ca";
+		const Fvector4 fc = g_pGamePersistent ? g_pGamePersistent->pp_fatigue_ca : Fvector4().set(0.f,0.f,0.f,0.f);
+		RCache.set_c		(s_pp_fatigue_ca, fc.x, fc.y, fc.z, fc.w);
 		// the injury grading (pp_injury, CActor): x = red edges, y = blood drops on the lens
 		static	shared_str	s_pp_injury		= "m_pp_injury";
 		const Fvector4 ij = g_pGamePersistent ? g_pGamePersistent->pp_injury : Fvector4().set(0.f,0.f,0.f,0.f);

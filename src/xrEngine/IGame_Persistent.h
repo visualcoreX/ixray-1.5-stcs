@@ -152,6 +152,9 @@ public:
 	// gone in the corners, pulsing), z = sharpening amount over the whole screen (0 = off), w = brightening
 	// in the middle (0.15 = x1.15), fading out where the vignette comes in. All zero = the pass leaves the picture alone.
 	Fvector4						pp_fatigue;
+	// The exhaustion's radial chromatic aberration (pp pass, CActor, near the stamina where running stops): x = how
+	// far red slides outwards and blue inwards in the screen's corners, in pixels (0 = off). y, z, w unused.
+	Fvector4						pp_fatigue_ca;
 	// Injury grading over the finished picture (pp pass), filled by CActor from the health and the bleeding:
 	// x = how strongly the edges are dyed red (0..1, pulsing), y = the blood drops on the lens, 0..1 -- both how
 	// far in towards the middle they have crept and the glare they catch from bright light (pulsing while

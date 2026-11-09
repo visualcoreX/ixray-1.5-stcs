@@ -305,17 +305,16 @@ float3 pp_blur1(float2 uv, float3 c)
 // edges), y = vignette (how much the corners darken, pulsing), z = sharpening (over the whole screen),
 // w = brightening in the middle (0.15 = x1.15), so the vignette does not sink the whole picture.
 // The sharpening is not meant to make the picture clearer: it is a flaw to read as the body giving out.
-// An unsharp mask against a WIDE blur (four poisson rings out to PP_FATIGUE_R of the screen height) -- broad, soft
-// halos along the shapes rather than single-pixel grain -- on luma only, so no colour fringes.
-// PP_FATIGUE_CLAMP caps how far one pixel is pushed, so the halos stay a haze and never burn out.
-// The whole push (cap included) is then scaled from PP_FATIGUE_CENTRE in the middle to PP_FATIGUE_EDGE
-// at the edges, through pp_warp_mask: the halos weigh most where the eye is not looking.
+// An unsharp mask against a FINE blur (two poisson rings out to PP_FATIGUE_R_PX pixels) -- grain and hard rims
+// that deliberately warp the picture -- on luma only, so no colour fringes. PP_FATIGUE_CLAMP caps how far one
+// pixel is pushed. The whole push (cap included) is then scaled from PP_FATIGUE_CENTRE in the middle to
+// PP_FATIGUE_EDGE at the edges, through pp_warp_mask: it bites hardest where the eye is not looking.
+// (Was a wide blur, 1.5% of the screen height, x1 at the edges: soft halos, too polite for the user.)
 uniform float4 m_pp_fatigue;
-#define PP_FATIGUE_R		0.015f	// radius of the blur the sharpening works against, share of the screen height
-							// (16 px at 1080p; was 8 px fixed -- too fine to survive a video recording)
+#define PP_FATIGUE_R_PX		2.5f	// radius of the blur the sharpening works against, in pixels
 #define PP_FATIGUE_CLAMP	0.25f	// the most one pixel's brightness may be pushed (before the scale below)
 #define PP_FATIGUE_CENTRE	0.25f	// share of it in the middle of the screen...
-#define PP_FATIGUE_EDGE		1.0f	// ...and at the edges
+#define PP_FATIGUE_EDGE		2.0f	// ...and at the edges (was 1)
 float pp_fatigue_sharp_weight(float2 uv)
 {
 	return lerp(PP_FATIGUE_CENTRE, PP_FATIGUE_EDGE, pp_warp_mask(uv));
@@ -330,30 +329,66 @@ float3 pp_fatigue_sharp_mix(float3 c, float3 blur, float w)
 // (lod 0 sampling: pp_fatigue_sharp1 runs in a branch that differs per pixel)
 float3 pp_fatigue_sharp0(float2 uv, float3 c, float w)
 {
-	float2 rad	= screen_res.zw * (screen_res.y * PP_FATIGUE_R);	// round, and the same share of the frame at any resolution
+	float2 rad	= screen_res.zw * PP_FATIGUE_R_PX;	// round, PP_FATIGUE_R_PX pixels at any resolution
 	float3 sum	= c;
 	for (int i = 0; i < 12; i++)
 	{
 		sum += s_base0.SampleLevel(smp_rtlinear, uv + PP_BLUR_TAPS[i] * rad, 0.0f).rgb;
-		sum += s_base0.SampleLevel(smp_rtlinear, uv - PP_BLUR_TAPS[i] * (rad * 0.74f), 0.0f).rgb;	// the next ring, turned round
-		sum += s_base0.SampleLevel(smp_rtlinear, uv + PP_BLUR_TAPS[i].yx * (rad * 0.49f), 0.0f).rgb;	// ...mirrored
-		sum += s_base0.SampleLevel(smp_rtlinear, uv - PP_BLUR_TAPS[i].yx * (rad * 0.24f), 0.0f).rgb;	// ...and both
+		sum += s_base0.SampleLevel(smp_rtlinear, uv - PP_BLUR_TAPS[i].yx * (rad * 0.5f), 0.0f).rgb;	// the inner ring, turned round
 	}
-	return pp_fatigue_sharp_mix(c, sum / 49.0f, w);
+	return pp_fatigue_sharp_mix(c, sum / 25.0f, w);
 }
 
 float3 pp_fatigue_sharp1(float2 uv, float3 c, float w)
 {
-	float2 rad	= screen_res.zw * (screen_res.y * PP_FATIGUE_R);	// round, and the same share of the frame at any resolution
+	float2 rad	= screen_res.zw * PP_FATIGUE_R_PX;	// round, PP_FATIGUE_R_PX pixels at any resolution
 	float3 sum	= c;
 	for (int i = 0; i < 12; i++)
 	{
 		sum += s_base1.SampleLevel(smp_rtlinear, uv + PP_BLUR_TAPS[i] * rad, 0.0f).rgb;
-		sum += s_base1.SampleLevel(smp_rtlinear, uv - PP_BLUR_TAPS[i] * (rad * 0.74f), 0.0f).rgb;	// the next ring, turned round
-		sum += s_base1.SampleLevel(smp_rtlinear, uv + PP_BLUR_TAPS[i].yx * (rad * 0.49f), 0.0f).rgb;	// ...mirrored
-		sum += s_base1.SampleLevel(smp_rtlinear, uv - PP_BLUR_TAPS[i].yx * (rad * 0.24f), 0.0f).rgb;	// ...and both
+		sum += s_base1.SampleLevel(smp_rtlinear, uv - PP_BLUR_TAPS[i].yx * (rad * 0.5f), 0.0f).rgb;	// the inner ring, turned round
 	}
-	return pp_fatigue_sharp_mix(c, sum / 49.0f, w);
+	return pp_fatigue_sharp_mix(c, sum / 25.0f, w);
+}
+
+// The EXHAUSTION's chromatic aberration (CActor, pp_fatigue_ca): m_pp_fatigue_ca.x = how far, in PIXELS at the
+// screen's corners, red slides outwards and blue inwards from green, radially -- growing from nothing in the
+// middle. Walked like the scope's (pp_abber_rgb: PP_ABBER_TAPS taps from -1 to +1 of the offset, each weighted by
+// a gaussian of PP_ABBER_SIGMA around where its wavelength lands), so the channels smear into one another
+// instead of splitting into copies. It replaces the base sample, before everything that blurs or sharpens it.
+// (lod 0 sampling: the branch differs per pixel)
+uniform float4 m_pp_fatigue_ca;
+float2 pp_fatigue_ca_offset(float2 uv)
+{
+	return (uv - 0.5f) / 0.5f * (screen_res.zw * (m_pp_fatigue_ca.x / 1.41421f));	// the corner's (1, 1): x pixels
+}
+
+float3 pp_fatigue_ca0(float2 uv, float2 ab)
+{
+	float3 sum = 0.0f, wsum = 0.0f;
+	[unroll] for (int i = 0; i < PP_ABBER_TAPS; ++i)
+	{
+		float  t = float(i) * (2.0f / float(PP_ABBER_TAPS - 1)) - 1.0f;
+		float  dr = t - 1.0f, dg = t, db = t + 1.0f;
+		float3 w = exp(-float3(dr*dr, dg*dg, db*db) * (0.5f / (PP_ABBER_SIGMA*PP_ABBER_SIGMA)));
+		sum  += s_base0.SampleLevel(smp_rtlinear, uv + ab * t, 0.0f).rgb * w;
+		wsum += w;
+	}
+	return sum / max(wsum, 0.0001f);
+}
+
+float3 pp_fatigue_ca1(float2 uv, float2 ab)
+{
+	float3 sum = 0.0f, wsum = 0.0f;
+	[unroll] for (int i = 0; i < PP_ABBER_TAPS; ++i)
+	{
+		float  t = float(i) * (2.0f / float(PP_ABBER_TAPS - 1)) - 1.0f;
+		float  dr = t - 1.0f, dg = t, db = t + 1.0f;
+		float3 w = exp(-float3(dr*dr, dg*dg, db*db) * (0.5f / (PP_ABBER_SIGMA*PP_ABBER_SIGMA)));
+		sum  += s_base1.SampleLevel(smp_rtlinear, uv + ab * t, 0.0f).rgb * w;
+		wsum += w;
+	}
+	return sum / max(wsum, 0.0001f);
 }
 
 // the colour drained towards grey through pp_warp_mask (the middle keeps it, the edges lose
@@ -683,6 +718,12 @@ float4 main( p_postpr I ) : SV_Target
 	float	soft	= pp_zoom_soft(z_0);			// only inside a magnified eyepiece
 	float3	t_0 	= pp_cubic0(z_0, soft);
 	float3	t_1 	= pp_cubic1(z_1, soft);
+	if (m_pp_fatigue_ca.x > 0.0f)					// the exhaustion: the colours slide apart radially
+	{
+		float2	fab	= pp_fatigue_ca_offset(I.Tex0);
+		t_0		= pp_fatigue_ca0(z_0, fab);
+		t_1		= any(z_1 != z_0) ? pp_fatigue_ca1(z_1, fab) : t_0;
+	}
 	t_0		= pp_blur0(z_0, t_0);				// the intoxication blur while a 3D lens is aimed
 	t_1		= pp_blur1(z_1, t_1);
 	if (m_pp_injury.z > 0.0f)						// the injury: the edges smear radially
