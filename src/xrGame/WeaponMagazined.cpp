@@ -820,7 +820,11 @@ bool CWeaponMagazined::TryReload()
 			m_pAmmo = NULL;
 
 		
-		if(IsMisfire() && iAmmoElapsed)
+		// A jammed weapon is cleared by a reload that loads nothing (OnReloadInsert returns before any ammo is
+		// touched), so it needs no ammo in the inventory -- also with the magazine empty: a jam on the LAST shot
+		// (anm_reload_jammed_last) with the pouches empty could not be cleared at all, the old test wanted
+		// rounds still loaded. Not in grenade mode, where a reload loads the launcher, not clears the rifle.
+		if(IsMisfire() && (iAmmoElapsed || !IsGrenadeMode()))
 		{
 			SetPending			(TRUE);
 			SwitchState			(eReload); 
