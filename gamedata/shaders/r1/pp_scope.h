@@ -344,6 +344,7 @@ float3 pp_blur1(float2 uv, float3 c)
 // colour itself laid plainly over that -- so the edges take the hue without going garishly saturated.
 // Both are the share at x = 1 (full injury, a pulse's peak).
 uniform float4 m_pp_injury;
+uniform float4 m_pp_hit;		// (the hit flash's, below; z, w = the injury's beat, see pp_injury_mask)
 uniform sampler2D	s_blood_drops;
 #define PP_INJURY_TINT_ON	1	// 0 = the red off, the drops alone
 #define PP_INJURY_TINT		float3(160.0f, 60.0f, 50.0f) / 255.0f	// a muted blood red
@@ -380,10 +381,12 @@ float pp_injury_r(float2 uv)
 	return length((uv - 0.5f) / 0.5f);
 }
 
-float pp_injury_mask(float r)
+// reach: a multiplier of its power (the injury's beat, m_pp_hit.z / .w: above 1 the middle clears and the corners
+// stay, below 1 it floods in; 0 = 1)
+float pp_injury_mask(float r, float reach)
 {
 	float  k = saturate((r - PP_INJURY_TINT_R0) / (PP_INJURY_TINT_R1 - PP_INJURY_TINT_R0));
-	return pow(max(k, 1e-6f), PP_INJURY_TINT_POW);
+	return pow(max(k, 1e-6f), PP_INJURY_TINT_POW * (reach > 0.0f ? reach : 1.0f));
 }
 
 float3 pp_injury_tint(float3 c, float2 uv)
@@ -393,14 +396,14 @@ float3 pp_injury_tint(float3 c, float2 uv)
 #else
 	float3 t = c * PP_INJURY_TINT;
 #endif
-	float  m = m_pp_injury.x * pp_injury_mask(pp_injury_r(uv));
+	float  m = m_pp_injury.x * pp_injury_mask(pp_injury_r(uv), m_pp_hit.z);
 	c	= lerp(c, t, m * PP_INJURY_MIX_BLEND);
 	return lerp(c, PP_INJURY_TINT, m * PP_INJURY_MIX_PLAIN);
 }
 
 float3 pp_injury_drops(float3 c, float2 uv)
 {
-	float  m	= saturate(m_pp_injury.y * PP_DROPS_GAIN * pp_injury_mask(pp_injury_r(uv)));
+	float  m	= saturate(m_pp_injury.y * PP_DROPS_GAIN * pp_injury_mask(pp_injury_r(uv), m_pp_hit.w));
 	return lerp(c, pp_overlay(c, tex2D(s_blood_drops, uv).rgb), m);
 }
 
@@ -411,7 +414,7 @@ float3 pp_injury_drops(float3 c, float2 uv)
 uniform sampler2D	s_blood_vessels;
 float3 pp_injury_vessels(float3 c, float2 uv)
 {
-	float  m	= saturate(m_pp_injury.w * PP_VESSELS_GAIN * pp_injury_mask(pp_injury_r(uv)));
+	float  m	= saturate(m_pp_injury.w * PP_VESSELS_GAIN * pp_injury_mask(pp_injury_r(uv), m_pp_hit.z));
 	return lerp(c, pp_overlay(c, tex2D(s_blood_vessels, uv).rgb), m);
 }
 
@@ -505,12 +508,11 @@ float3 pp_droplets_colour(float3 c, float2 uv)
 // The HIT FLASH (CActor, pp_hit): m_pp_hit.x = the edges flushed red -- the injury's mask and its two-part
 // blend, in a colour half as bright (PP_HIT_TINT) -- and m_pp_hit.y = a vignette, the fatigue one's shape
 // (PP_VIGNETTE_R0..R1), that much of the light gone in the corners. Both flash in and out with the blur.
-uniform float4 m_pp_hit;
 #define PP_HIT_TINT			float3(80.0f, 30.0f, 25.0f) / 255.0f	// the injury red (160, 60, 50), halved
 float3 pp_hit_flash(float3 c, float2 uv)
 {
 	float  r	= length((uv - 0.5f) / 0.5f);
-	float  m	= m_pp_hit.x * pp_injury_mask(pp_injury_r(uv));
+	float  m	= m_pp_hit.x * pp_injury_mask(pp_injury_r(uv), 1.0f);
 	c	= lerp(c, pp_overlay(c, PP_HIT_TINT), m * PP_INJURY_MIX_BLEND);
 	c	= lerp(c, PP_HIT_TINT, m * PP_INJURY_MIX_PLAIN);
 	float  v	= saturate((r - PP_VIGNETTE_R0) / (PP_VIGNETTE_R1 - PP_VIGNETTE_R0));
