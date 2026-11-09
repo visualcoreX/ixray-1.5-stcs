@@ -1673,12 +1673,12 @@ void CActor::UpdateCL	()
 		const float		FATIGUE_VIGNETTE_KNEE	= 0.7f;
 		const float		FATIGUE_VIGNETTE_MAX	= 0.9f;
 		const float		FATIGUE_SHARP			= 1.25f;	// edge sharpening at full (unsharp mask amount; was 0.5 against a
-															// wide blur -- the fine one now, 2.5 px, needs more to warp the picture)
+															// wide blur -- the fine one now, 4 px, needs more to warp the picture)
 		// the EXHAUSTION's radial chromatic aberration (pp_fatigue_ca, postprocess.ps pp_fatigue_ca): from
 		// FATIGUE_CA_LEAD above the stamina where running stops (conditions().CantSprintPowerBegin(), 0.2), full
 		// -- FATIGUE_CA_PX pixels in the corners -- only at none left
 		const float		FATIGUE_CA_LEAD			= 0.05f;
-		const float		FATIGUE_CA_PX			= 2.f;
+		const float		FATIGUE_CA_PX			= 4.f;		// (was 2)
 		const float		FATIGUE_FADE_OUT		= 3.5f;		// seconds for a full fade back out
 		const float		FATIGUE_FADE_IN			= 4.f;		// 1/seconds: the low-pass following the stamina down
 		// the pulse (pp_pulse_update): the intoxication DOF one's shape

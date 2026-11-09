@@ -311,7 +311,7 @@ float3 pp_blur1(float2 uv, float3 c)
 // PP_FATIGUE_EDGE at the edges, through pp_warp_mask: it bites hardest where the eye is not looking.
 // (Was a wide blur, 1.5% of the screen height, x1 at the edges: soft halos, too polite for the user.)
 uniform float4 m_pp_fatigue;
-#define PP_FATIGUE_R_PX		2.5f	// radius of the blur the sharpening works against, in pixels
+#define PP_FATIGUE_R_PX		4.0f	// radius of the blur the sharpening works against, in pixels (was 2.5)
 #define PP_FATIGUE_CLAMP	0.25f	// the most one pixel's brightness may be pushed (before the scale below)
 #define PP_FATIGUE_CENTRE	0.25f	// share of it in the middle of the screen...
 #define PP_FATIGUE_EDGE		2.0f	// ...and at the edges (was 1)
