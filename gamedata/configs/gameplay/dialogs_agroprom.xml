@@ -1479,4 +1479,70 @@
 			</phrase>
 		</phrase_list>
 	</dialog>
+	<!-- Gromov: the army case of tactical blocks and their blueprints the bandits stole (tm_agroprom.ltx agr_duty_lam_case_*) -->
+	<dialog id="agr_duty_mechanic_lam_case">
+		<dont_has_info>agr_duty_lam_case_started</dont_has_info>
+		<phrase_list>
+			<phrase id="0">
+				<text>agr_duty_mechanic_lam_case_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>agr_duty_mechanic_lam_case_1</text>
+				<next>11</next>
+				<next>12</next>
+			</phrase>
+			<phrase id="11">
+				<text>agr_duty_mechanic_lam_case_11</text>
+				<action>dialogs_agroprom.agr_duty_lam_case_give</action>
+				<give_info>agr_duty_lam_case_started</give_info>
+				<next>111</next>
+				<next>112</next>
+			</phrase>
+			<phrase id="111">
+				<text>agr_duty_mechanic_lam_case_111</text>
+				<dont_has_info>agru_leader_dolg_task_complete</dont_has_info>
+			</phrase>
+			<phrase id="112">
+				<text>agr_duty_mechanic_lam_case_112</text>
+				<has_info>agru_leader_dolg_task_complete</has_info>
+			</phrase>
+			<phrase id="12">
+				<text>agr_duty_mechanic_lam_case_12</text>
+				<next>121</next>
+			</phrase>
+			<phrase id="121">
+				<text>agr_duty_mechanic_lam_case_121</text>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="agr_duty_mechanic_lam_case_done">
+		<has_info>agr_duty_lam_case_started</has_info>
+		<dont_has_info>agr_duty_lam_case_done</dont_has_info>
+		<precondition>dialogs_agroprom.agr_duty_lam_case_actor_has</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>agr_duty_mechanic_lam_case_done_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>agr_duty_mechanic_lam_case_done_1</text>
+				<action>dialogs_agroprom.agr_duty_lam_case_hand_over</action>
+				<give_info>agr_duty_lam_case_done</give_info>
+				<give_info>agr_duty_mechanic_tac_blocks_told</give_info>
+				<next>11</next>
+			</phrase>
+			<phrase id="11">
+				<text>agr_duty_mechanic_lam_case_done_11</text>
+				<next>111</next>
+			</phrase>
+			<phrase id="111">
+				<text>agr_duty_mechanic_lam_case_done_111</text>
+				<next>1111</next>
+			</phrase>
+			<phrase id="1111">
+				<text>agr_duty_mechanic_lam_case_done_1111</text>
+			</phrase>
+		</phrase_list>
+	</dialog>
 </game_dialogs>

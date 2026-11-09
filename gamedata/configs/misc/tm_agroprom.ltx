@@ -32,6 +32,8 @@ agr_recover_item_1
 agr_recover_item_2
 agr_recover_item_3
 agr_recover_item_4
+agr_duty_lam_case_1
+agr_duty_lam_case_2
 
 [agr_no_task]
 type = storyline
@@ -483,3 +485,31 @@ requested_items = agr_quest_duty_abakan
 community_relation_delta_complete = 100
 reward_money = 1000
 auto_faction = true
+
+; Gromov (Duty mechanic): the case bandits looted from a Duty convoy and hid with in the underground, out of Duty's reach.
+; Given by his agr_duty_mechanic_lam_case dialogue, which also puts the case into agru_smart_terrain_1_box.
+[agr_duty_lam_case_1]
+type = storyline
+task_type = additional
+name = agr_duty_lam_case_1_name
+text = agr_duty_lam_case_1_text
+target_name = agru_smart_terrain_1_box
+target_story_ids = 1011	; read by the loader whatever happens, target_name is the one used
+condlist_0 = {=actor_has_item(agr_quest_duty_lam_case)} complete
+condlist_1 = {!is_alive_by_name(agr_duty_mechanic)} fail
+on_complete = %=give_inited_task(storyline:agr_duty_lam_case_2:dolg)%
+prior = 2
+
+[agr_duty_lam_case_2]
+type = storyline
+task_type = additional
+name = agr_duty_lam_case_2_name
+text = agr_duty_lam_case_2_text
+target_name = agr_duty_mechanic
+target_story_ids = 1011	; read by the loader whatever happens, target_name is the one used
+condlist_0 = {+agr_duty_lam_case_done} complete
+condlist_1 = {!is_alive_by_name(agr_duty_mechanic)} fail
+prior = 2
+immediate_reward = true
+community_relation_delta_complete = 50
+reward_money = 3000

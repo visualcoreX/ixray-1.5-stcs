@@ -317,6 +317,8 @@
 		<actor_dialog>agr_duty_mechanic_about_upgrade</actor_dialog>
 		<actor_dialog>agr_duty_mechanic_like_parametrs</actor_dialog>
 		<actor_dialog>em1_ask_agr_duty_mech</actor_dialog>
+		<actor_dialog>agr_duty_mechanic_lam_case</actor_dialog>
+		<actor_dialog>agr_duty_mechanic_lam_case_done</actor_dialog>
 <!--		<actor_dialog>agr_duty_mechanic_about_many_word</actor_dialog>	-->
 
 #include "gameplay\character_criticals_1.xml"

@@ -94,6 +94,9 @@
 	<info_portion id="agr_recover_item_2_done"/>
 	<info_portion id="agr_recover_item_3_done"/>
 	<info_portion id="agr_recover_item_4_done"/>
+	<info_portion id="agr_duty_lam_case_started"/>
+	<info_portion id="agr_duty_lam_case_done"/>
+	<info_portion id="agr_duty_mechanic_tac_blocks_told"/>
 <!--
 	<info_portion id="agr_smart_terrain_6_4_simulation_attack"/>
 	<info_portion id="agr_smart_terrain_2_3_simulation_attack"/>

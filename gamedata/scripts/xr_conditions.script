@@ -208,6 +208,12 @@ function is_alive(_, _, p)
 	return story_npc ~= nil and story_npc:alive()
 end
 
+-- is_alive by the object's NAME in all.spawn, for characters that carry no story id (Gromov: agr_duty_mechanic).
+function is_alive_by_name(_, _, p)
+	local se = sim:object(p[1])
+	return se ~= nil and se:alive()
+end
+
 function is_dead_all(_, _, p)
 	for _, npc_id in pairs (p) do
 		local story_npc = sim:story_object(npc_id) -- level_object_by_sid(npc_id)
