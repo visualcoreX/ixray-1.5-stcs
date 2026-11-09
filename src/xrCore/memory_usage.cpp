@@ -34,6 +34,54 @@ XRCORE_API void log_vminfo	()
 	);
 }
 
+// ---- A broken heap -------------------------------------------------------------------------------------------
+// 'bad node in heap' is only FOUND where the CRT heap is next walked -- here, at the first load phase after a level
+// unloads -- long after whatever wrote over a block's header. The walk below stops right at the damage, so the
+// report logs the last good block and the bytes around where the next one should start: whatever is written there
+// in place of a header often names the data that ran over it (a string, a file or texture name, floats, pointers).
+static bool heap_read16(const u8* p, u8* out)
+{
+	__try	{ for (int i = 0; i < 16; ++i) out[i] = p[i]; }
+	__except(EXCEPTION_EXECUTE_HANDLER)	{ return false; }
+	return true;
+}
+
+static void heap_broken(const char* what)
+{
+	_HEAPINFO	hi;		hi._pentry = NULL;
+	_HEAPINFO	last;	last._pentry = NULL;	last._size = 0;	last._useflag = 0;
+	int			st;
+	u32			good	= 0;
+	while ((st = _heapwalk(&hi)) == _HEAPOK)	{ last = hi; ++good; }
+	Msg("! [heap] %s: the walk stops with status %d after %u good blocks", what, st, good);
+	const u8*	end		= last._pentry ? (const u8*)last._pentry + last._size : NULL;
+	if (end)
+	{
+		Msg("! [heap] last good block %p, %u bytes, %s; the bad one starts at %p (offset +0 below)",
+			last._pentry, (u32)last._size, last._useflag == _USEDENTRY ? "in use" : "free", end);
+		const u8*	from	= end - 64;
+		for (u32 row = 0; row < 12; ++row)
+		{
+			const u8*	p	= from + row*16;
+			u8			b[16];
+			if (!heap_read16(p, b))	{ Msg("! [heap]   %+5d %p: <unreadable>", int(p - end), p); break; }
+			string128	hex;	hex[0] = 0;
+			char		asc[17];
+			for (int i = 0; i < 16; ++i)
+			{
+				string16	h;	xr_sprintf(h, "%02X ", b[i]);	xr_strcat(hex, h);
+				asc[i]		= (b[i] >= 32 && b[i] < 127) ? char(b[i]) : '.';
+			}
+			asc[16]		= 0;
+			Msg("! [heap]   %+5d %p: %s|%s|", int(p - end), p, hex, asc);
+		}
+	}
+	FlushLog();
+	if (end)	Debug.fatal(DEBUG_INFO, "%s: the damage starts at %p, right after a good %u-byte block at %p, %u good blocks into the heap (the bytes there are in the log)",
+					what, end, (u32)last._size, last._pentry, good);
+	else		Debug.fatal(DEBUG_INFO, "%s: at the very start of the heap", what);
+}
+
 u32	mem_usage_impl	(u32* pBlocksUsed, u32* pBlocksFree)
 {
 	_HEAPINFO		hinfo;
@@ -61,13 +109,13 @@ u32	mem_usage_impl	(u32* pBlocksUsed, u32* pBlocksFree)
 	case _HEAPEND:
 		break;
 	case _HEAPBADPTR:
-		FATAL			("bad pointer to heap");
+		heap_broken		("bad pointer to heap");
 		break;
 	case _HEAPBADBEGIN:
-		FATAL			("bad start of heap");
+		heap_broken		("bad start of heap");
 		break;
 	case _HEAPBADNODE:
-		FATAL			("bad node in heap");
+		heap_broken		("bad node in heap");
 		break;
 	}
 	return (u32) total;
