@@ -359,14 +359,13 @@ uniform sampler2D	s_blood_drops;
 #define PP_INJURY_TINT_R1	1.41f
 #define PP_INJURY_TINT_POW	1.5f
 // The DROPS: fx_blood_lowhealth_00 is a grey (~0.5) plate with the drops darker/redder on it, laid on by
-// overlay -- grey changes nothing, only what is darker or lighter than it shows. They gather from the corners
-// in: nothing past PP_DROPS_R_OUT as they start, everything outside PP_DROPS_R_IN at y = 1, with a soft
-// band PP_DROPS_SOFT wide (radii on the screen-shaped ellipse: 1 = the middle of an edge, 1.41 = a corner).
+// overlay -- grey changes nothing, only what is darker or lighter than it shows. Through the red's own mask
+// (pp_injury_mask) at y of its strength, times PP_DROPS_GAIN: they fade in with the red's soft fall from the
+// corners rather than creeping in behind a band (a smoothstep PP_DROPS_SOFT = 0.45 wide, its start running
+// from r = 1.5 in to 0.25 with y, which drew a visible edge across the picture).
 // No GLARE on R1: R2/R3 light fx_blood_lowhealth_02 from the bloom, and R1 has none (probing the picture
 // itself drew the scene's silhouettes into it).
-#define PP_DROPS_R_OUT		1.5f
-#define PP_DROPS_R_IN		0.25f
-#define PP_DROPS_SOFT		0.45f
+#define PP_DROPS_GAIN		1.0f
 float3 pp_overlay(float3 a, float3 b)
 {
 	a = saturate(a);
@@ -394,23 +393,20 @@ float3 pp_injury_tint(float3 c, float2 uv)
 float3 pp_injury_drops(float3 c, float2 uv)
 {
 	float  r	= length((uv - 0.5f) / 0.5f);
-	float  e	= lerp(PP_DROPS_R_OUT, PP_DROPS_R_IN, m_pp_injury.y);
-	float  m	= smoothstep(e, e + PP_DROPS_SOFT, r);
+	float  m	= saturate(m_pp_injury.y * PP_DROPS_GAIN * pp_injury_mask(r));
 	return lerp(c, pp_overlay(c, tex2D(s_blood_drops, uv).rgb), m);
 }
 
 // The VESSELS: fx_blood_vessels_00, a grey (0.5) plate with the vessels darker/redder towards the rim, laid
-// on by overlay like the drops -- grey changes nothing -- and gathering in from the corners the same way:
-// nothing past PP_VESSELS_R_OUT as they start, everything outside PP_VESSELS_R_IN at w = 1.
-#define PP_VESSELS_R_OUT	1.5f
-#define PP_VESSELS_R_IN		0.25f
-#define PP_VESSELS_SOFT		0.45f
+// on by overlay like the drops -- grey changes nothing -- and through the same mask the same way: the red's,
+// at w of its strength, times PP_VESSELS_GAIN.
+#define PP_VESSELS_GAIN		1.0f
 uniform sampler2D	s_blood_vessels;
 float3 pp_injury_vessels(float3 c, float2 uv)
 {
 	float  r	= length((uv - 0.5f) / 0.5f);
-	float  e	= lerp(PP_VESSELS_R_OUT, PP_VESSELS_R_IN, m_pp_injury.w);
-	return lerp(c, pp_overlay(c, tex2D(s_blood_vessels, uv).rgb), smoothstep(e, e + PP_VESSELS_SOFT, r));
+	float  m	= saturate(m_pp_injury.w * PP_VESSELS_GAIN * pp_injury_mask(r));
+	return lerp(c, pp_overlay(c, tex2D(s_blood_vessels, uv).rgb), m);
 }
 
 // The RADIAL BLUR of the edges, as an optic's rim smears: the picture averaged along the line through the
