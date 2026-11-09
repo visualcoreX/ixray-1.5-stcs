@@ -350,14 +350,21 @@ uniform sampler2D	s_blood_drops;
 #define PP_INJURY_OVERLAY	1
 #define PP_INJURY_MIX_BLEND	0.9f
 #define PP_INJURY_MIX_PLAIN	0.45f	// 0.75 leaned too far off the overlay
-// Its mask (pp_injury_mask): the screen-shaped ellipse (1 = the middle of an edge, 1.41 = a corner), a power
-// curve from nothing at PP_INJURY_TINT_R0 to full at PP_INJURY_TINT_R1, the very corner. It leaves the middle
-// with no slope and only steepens towards the rim, never levelling off on screen -- the smoothstep it replaces
-// (0.1..1.3) was full from r ~1.1 out and steepest at r ~0.7, a flat red band along the edges with a ring
-// round it that read as a hard border. PP_INJURY_TINT_POW: higher = the red held further out, lower = in.
-#define PP_INJURY_TINT_R0	0.15f
-#define PP_INJURY_TINT_R1	1.41f
-#define PP_INJURY_TINT_POW	1.5f
+// Its mask (pp_injury_mask, shared by the red, the drops, the vessels and the hit flash), after the curve the user
+// drew: full at the screen's edge, falling fast and then ever slower towards the middle, gone a little short of
+// it -- ((r - PP_INJURY_TINT_R0) / (PP_INJURY_TINT_R1 - PP_INJURY_TINT_R0))^PP_INJURY_TINT_POW, read off the
+// drawing (0.65 / 0.44 / 0.28 / 0.16 at 15 / 27 / 39 / 50% of the way in). r (pp_injury_r) is a SUPERELLIPSE of
+// the screen, PP_INJURY_SHAPE_N: 1 at the middle of each edge, 2^(1/N) in a corner (1.19) -- its rings hug the
+// screen's edges as the drawing's "from the edge" means, where the old ellipse (N = 2, 1.41 in a corner) made
+// the corners reach full long before the edge. Past r = 1 the curve would keep climbing, so it is eased onto 1
+// over a knee PP_INJURY_TINT_KNEE wide (no crease where it stops): ~0.94 at an edge's middle, 1 in the corners.
+// (Was a gentler ^1.5 over the ellipse from 0.15 to the corner, 0.55 at an edge -- short of contrast; before
+// that a smoothstep 0.1..1.3, a flat band along the edges with a hard ring round it.)
+#define PP_INJURY_SHAPE_N	4.0f
+#define PP_INJURY_TINT_R0	0.12f
+#define PP_INJURY_TINT_R1	1.0f
+#define PP_INJURY_TINT_POW	2.25f
+#define PP_INJURY_TINT_KNEE	0.25f
 // The DROPS: fx_blood_lowhealth_00 is a grey (~0.5) plate with the drops darker/redder on it, laid on by
 // overlay -- grey changes nothing, only what is darker or lighter than it shows. Through the red's own mask
 // (pp_injury_mask) at y of its strength, times PP_DROPS_GAIN: they fade in with the red's soft fall from the
@@ -365,17 +372,24 @@ uniform sampler2D	s_blood_drops;
 // from r = 1.5 in to 0.25 with y, which drew a visible edge across the picture).
 // No GLARE on R1: R2/R3 light fx_blood_lowhealth_02 from the bloom, and R1 has none (probing the picture
 // itself drew the scene's silhouettes into it).
-#define PP_DROPS_GAIN		1.0f
+#define PP_DROPS_GAIN		2.0f	// was 1: too faint
 float3 pp_overlay(float3 a, float3 b)
 {
 	a = saturate(a);
 	return lerp(2.0f * a * b, 1.0f - 2.0f * (1.0f - a) * (1.0f - b), step(0.5f, a));
 }
 
+float pp_injury_r(float2 uv)
+{
+	float2 d = abs(uv - 0.5f) / 0.5f;
+	return pow(max(pow(d.x, PP_INJURY_SHAPE_N) + pow(d.y, PP_INJURY_SHAPE_N), 1e-12f), 1.0f / PP_INJURY_SHAPE_N);
+}
+
 float pp_injury_mask(float r)
 {
-	float  k = saturate((r - PP_INJURY_TINT_R0) / (PP_INJURY_TINT_R1 - PP_INJURY_TINT_R0));
-	return pow(max(k, 1e-6f), PP_INJURY_TINT_POW);
+	float  s = pow(max((r - PP_INJURY_TINT_R0) / (PP_INJURY_TINT_R1 - PP_INJURY_TINT_R0), 1e-6f), PP_INJURY_TINT_POW);
+	float  k = clamp(s - (1.0f - PP_INJURY_TINT_KNEE), 0.0f, 2.0f * PP_INJURY_TINT_KNEE);	// into the knee: past it, s - K >= 1
+	return min(s - k * k / (4.0f * PP_INJURY_TINT_KNEE), 1.0f);
 }
 
 float3 pp_injury_tint(float3 c, float2 uv)
@@ -385,15 +399,14 @@ float3 pp_injury_tint(float3 c, float2 uv)
 #else
 	float3 t = c * PP_INJURY_TINT;
 #endif
-	float  m = m_pp_injury.x * pp_injury_mask(length((uv - 0.5f) / 0.5f));
+	float  m = m_pp_injury.x * pp_injury_mask(pp_injury_r(uv));
 	c	= lerp(c, t, m * PP_INJURY_MIX_BLEND);
 	return lerp(c, PP_INJURY_TINT, m * PP_INJURY_MIX_PLAIN);
 }
 
 float3 pp_injury_drops(float3 c, float2 uv)
 {
-	float  r	= length((uv - 0.5f) / 0.5f);
-	float  m	= saturate(m_pp_injury.y * PP_DROPS_GAIN * pp_injury_mask(r));
+	float  m	= saturate(m_pp_injury.y * PP_DROPS_GAIN * pp_injury_mask(pp_injury_r(uv)));
 	return lerp(c, pp_overlay(c, tex2D(s_blood_drops, uv).rgb), m);
 }
 
@@ -404,8 +417,7 @@ float3 pp_injury_drops(float3 c, float2 uv)
 uniform sampler2D	s_blood_vessels;
 float3 pp_injury_vessels(float3 c, float2 uv)
 {
-	float  r	= length((uv - 0.5f) / 0.5f);
-	float  m	= saturate(m_pp_injury.w * PP_VESSELS_GAIN * pp_injury_mask(r));
+	float  m	= saturate(m_pp_injury.w * PP_VESSELS_GAIN * pp_injury_mask(pp_injury_r(uv)));
 	return lerp(c, pp_overlay(c, tex2D(s_blood_vessels, uv).rgb), m);
 }
 
@@ -504,7 +516,7 @@ uniform float4 m_pp_hit;
 float3 pp_hit_flash(float3 c, float2 uv)
 {
 	float  r	= length((uv - 0.5f) / 0.5f);
-	float  m	= m_pp_hit.x * pp_injury_mask(r);
+	float  m	= m_pp_hit.x * pp_injury_mask(pp_injury_r(uv));
 	c	= lerp(c, pp_overlay(c, PP_HIT_TINT), m * PP_INJURY_MIX_BLEND);
 	c	= lerp(c, PP_HIT_TINT, m * PP_INJURY_MIX_PLAIN);
 	float  v	= saturate((r - PP_VIGNETTE_R0) / (PP_VIGNETTE_R1 - PP_VIGNETTE_R0));
