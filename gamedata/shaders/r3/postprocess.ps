@@ -426,18 +426,23 @@ Texture2D	s_blood_glare;
 #define PP_GLARE_R			0.05f
 #define PP_GLARE_LO			0.03f	// lower and the sky lit the glare everywhere
 #define PP_GLARE_HI			0.15f
-#define PP_GLARE_GAIN		1.0f
+#define PP_GLARE_GAIN		1.5f	// was 1, under the drops' full opacity; now under PP_GLARE_MASK_POW below
+// The glare's own mask: the drops' (m) to this power -- a highlight shows through a faint drop more than its
+// shade does. Under m itself the glare nearly vanished once the drops took the red's soft mask (0.3..0.6 at
+// the edges where it had been 1).
+#define PP_GLARE_MASK_POW	0.5f
 
 // The LIGHTS' glare (glare_gather_lights): the bloom above never sees a fire, a glow or a torch's beam (it is
 // built before the forward pass) and seldom a lamp's bulb (under its threshold), so the engine hands over the
 // strongest PP_GLARE_LIGHTS of this frame's lights itself: m_pp_glare_lights[2i] = where it stands (screen uv,
 // off the screen too), [2i + 1] = its colour x weight (black = none; fading in and out as it shows or hides).
 // Each lights the glare around it out to PP_GLARE_LIGHT_R of the screen height, falling off as (1 - d / R)^2,
-// in its own colour; the sum goes through 1 - exp(-x), so a cluster of lamps never burns it out, times
-// PP_GLARE_LIGHT_GAIN. Both the drops' glare and the droplets' take it, on top of the bloom's.
+// in its own colour; the sum, times PP_GLARE_LIGHT_GAIN, goes through 1 - exp(-x), so a cluster of lamps never
+// burns it out, up to PP_GLARE_LIGHT_MAX. The sun is among them (the engine's GL_SUN). Both the drops' glare and the droplets' take it, on top of the bloom's.
 #define PP_GLARE_LIGHTS		8
 #define PP_GLARE_LIGHT_R	0.6f
-#define PP_GLARE_LIGHT_GAIN	1.0f
+#define PP_GLARE_LIGHT_GAIN	2.5f	// inside the cap: how fast the lights' sum climbs towards it...
+#define PP_GLARE_LIGHT_MAX	1.5f	// ...and the cap itself
 uniform float4 m_pp_glare_lights[PP_GLARE_LIGHTS * 2];
 float3 pp_glare_lights(float2 uv)
 {
@@ -448,7 +453,7 @@ float3 pp_glare_lights(float2 uv)
 		float  f	= saturate(1.0f - length((uv - m_pp_glare_lights[i * 2].xy) * asp) / PP_GLARE_LIGHT_R);
 		sum += m_pp_glare_lights[i * 2 + 1].rgb * (f * f);
 	}
-	return (1.0f - exp(-sum)) * PP_GLARE_LIGHT_GAIN;
+	return (1.0f - exp(-sum * PP_GLARE_LIGHT_GAIN)) * PP_GLARE_LIGHT_MAX;
 }
 float3 pp_overlay(float3 a, float3 b)
 {
@@ -489,7 +494,7 @@ float3 pp_injury_drops(float3 c, float2 uv)
 	float3 lit	= b0.rgb * b0.a * 0.4f + (b1.rgb * b1.a + b2.rgb * b2.a + b3.rgb * b3.a + b4.rgb * b4.a) * 0.15f;
 	float  b	= sqrt(saturate((dot(lit, float3(0.299f, 0.587f, 0.114f)) - PP_GLARE_LO) / (PP_GLARE_HI - PP_GLARE_LO)));
 	float3 g	= s_blood_glare.Sample(smp_rtlinear, uv).rgb;
-	return c + g * ((PP_GLARE_GAIN * b + pp_glare_lights(uv)) * m);
+	return c + g * ((PP_GLARE_GAIN * b + pp_glare_lights(uv)) * pow(m, PP_GLARE_MASK_POW));
 }
 
 // The VESSELS: fx_blood_vessels_00, a grey (0.5) plate with the vessels darker/redder towards the rim, laid
