@@ -272,7 +272,9 @@ float	calc_ssao( float3 P, float3 N, float2 tc, float2 tcJ, uint iSample)
 #endif	//	SSAO_QUALITY==1
 //	occ = 1;
 
-	float WeaponAttenuation = smoothstep( 0.8, 0.9, length( P.xyz ));
+	//	Keep the hud weapon (within 0.8 m) unshaded, fading in over 0.8 m rather than the stock 10 cm,
+	//	which drew a sharp line on whatever stood at 0.8..0.9 m from the eye (see ssao_hbao.ps).
+	float WeaponAttenuation = smoothstep( 0.8, 1.6, length( P.xyz ));
 	occ = lerp( 1, occ, WeaponAttenuation );
 
 	return occ;
