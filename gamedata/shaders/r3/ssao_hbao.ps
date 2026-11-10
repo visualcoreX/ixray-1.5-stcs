@@ -67,7 +67,30 @@ float3 min_diff(float3 P, float3 Pr, float3 Pl)
 {
     float3 V1 = Pr - P;
     float3 V2 = P - Pl;
-    return (length2(V1) < length2(V2)) ? V1 : V2;
+    float  l1 = length2(V1);
+    float  l2 = length2(V2);
+    // a zero step (the neighbour clamped onto P at the screen's edge) is no tangent: take the other
+    return (l1 > 0.0f && (l1 < l2 || l2 == 0.0f)) ? V1 : V2;
+}
+
+//----------------------------------------------------------------------------------
+//	The step of the surface across C from the fp16 depth, with .w = the tangent of the angle the
+//	rounding of the depth alone can turn it by. Where both sides change the depth alike (one surface,
+//	up to the rounding) the step is taken across both, Pp - Pm: on a surface whose depth changes by
+//	less than a step of the fp16 per texel -- a wall at 3 m facing the camera -- the depth runs in
+//	flat terraces, and min_diff, taking the shorter side, nearly always took the flat one: the
+//	normal lay down in the screen's plane. Across both sides the terraces average out. min_diff
+//	only where the depth breaks (an edge), to keep to the near surface.
+//	ulp: the fp16 step at C, rlen: the length of C's view ray per unit of depth.
+float4 depth_diff(float3 C, float3 Pp, float3 Pm, float ulp, float rlen)
+{
+    float3 Dp = Pp - C;
+    float3 Dm = C - Pm;
+    float3 D  = (abs(Dp.z - Dm.z) <= 2.0f * ulp + 0.5f * min(abs(Dp.z), abs(Dm.z)))
+              ? Pp - Pm
+              : min_diff(C, Pp, Pm);
+    // each end rounded by up to half a step along its view ray
+    return float4(D, rlen * ulp / max(length(D), 1e-6f));
 }
 
 //----------------------------------------------------------------------------------
@@ -135,11 +158,14 @@ float3 tangent_vector(float2 deltaUV, float3 dPdu, float3 dPdv)
 
 float3 tangent_eye_pos(float2 uv, float4 tangentPlane)
 {
-    // view vector going through the surface point at uv
+    // the surface at uv, kept at silhouette edges
     float3 V = fetch_eye_pos(uv);
-    float NdotV = dot(tangentPlane.xyz, V);
+    // the view ray through uv itself: fetch_eye_pos rebuilds the point at the pixel its depth came
+    // from, which in the half-res copy can be this very pixel's, and the tangent came out zero
+    float3 R = uv_to_eye(uv, 1.0f);
+    float NdotR = dot(tangentPlane.xyz, R);
     // intersect with tangent plane except for silhouette edges
-    if (NdotV < 0.0) V *= (tangentPlane.w / NdotV);
+    if (NdotR < 0.0) V = R * (tangentPlane.w / NdotR);
     return V;
 }
 
@@ -239,7 +265,11 @@ float horizon_occlusion2(float2 deltaUV,
         
         // Ignore any samples outside the radius of influence
         float d2  = length2(S - P);
-        float tanS = tangent(P, S);	
+        //	The depth is fp16: P and S are each rounded to steps of up to P.z/1024 (~2 mm at 2..4 m),
+        //	so a sample on the very surface can come out up to a step nearer than it is. On a wall or
+        //	the ground, which run nearly level with the horizon, that alone would lift it above and
+        //	shade it along the steps of the depth. Only what stands out by more than a step counts.
+        float tanS = (P.z - S.z - P.z * (1.0f / 1024.0f)) / length(S.xy - P.xy);
 	[branch]
         if ((d2 < g_sqr_R) && (tanS > tanH)) {
                 // Accumulate AO between the horizon and the sample
@@ -346,16 +376,48 @@ float4 calc_hbao(float z, float3 N, float2 tc0, float4 pos2d)
 #endif
 
 
-	// footprint optimization
-	float maxNumSteps = g_MaxFootprintUV / step_size;
-	if (maxNumSteps < numSteps)
-	{
-		numSteps = floor(maxNumSteps + rand_Dir.z);
-        	numSteps = max(numSteps, 1);
-	        step_size = g_MaxFootprintUV / numSteps;
-    	}
+	//	No footprint clamp. The stock code capped the kernel at g_MaxFootprintUV (1% of the screen) to
+	//	spare the texture cache, which nearer than ~4.8 m shrank it in the world along with the
+	//	distance and cut the steps to a random 1..3 per pixel. Walls and ground at 3..4 m showed sharp
+	//	bands of shading with it, and none without. The kernel keeps its world size now down to the
+	//	1.3 m of max(z,1.3) above.
 
-    float4 tangentPlane = float4(N, dot(P, N));
+    //	The horizon lies along the tangent plane, and the stock code took that plane from the G-buffer
+    //	normal alone. Where the normal disagrees with the depth the samples are measured against, the
+    //	surface rose above its own horizon and shaded itself: grass, whose normal is made up (radial
+    //	from the tuft, deffer_detail_*.vs), went dark on its own blades, with a sharp edge running
+    //	across the bushes that moved along with the camera. The depth alone is no better: it is fp16
+    //	(~2 mm a step at 2..4 m), so a wall facing the camera reads as flat terraces, and a plane taken
+    //	from neighbouring texels shaded it in bands along the steps.
+    //	So take the normal of the depth too, and keep the G-buffer's wherever the two roughly agree,
+    //	the depth's where they are far apart (grass), blending in between so the switch draws no edge
+    //	of its own (depth_diff above for how the depth's normal keeps clear of the terraces).
+    //	"Roughly" allows for the rounding of the depth: it moves each point along its own view ray by up
+    //	to half a step, which off the screen's centre is mostly sideways (x = X*z, and X reaches ~1.8 at
+    //	the edges of 21:9). The angle that can explain is granted on top: the G-buffer's normal is kept
+    //	up to 25 deg past it, the depth's taken over from 50 deg past it.
+    //	Depth neighbours one texel apart (2 px in the half-res copy), the centre from the same depth,
+    //	so all three stand at their texels' source pixels, one row/column apart.
+#if SSAO_OPT_DATA == 2
+    float2 o    = 2.0f * g_InvResolution;
+#else
+    float2 o    = g_InvResolution;
+#endif
+    float3 C    = fetch_eye_pos(tc0);
+    float  ulp  = exp2(floor(log2(max(C.z, 1e-3f))) - 10.0f);	// the fp16 step at C
+    float  rlen = length(uv_to_eye(tc0, 1.0f));
+    float4 Du   = depth_diff(C, fetch_eye_pos(tc0 + float2(o.x, 0)), fetch_eye_pos(tc0 - float2(o.x, 0)), ulp, rlen);
+    float4 Dv   = depth_diff(C, fetch_eye_pos(tc0 + float2(0, o.y)), fetch_eye_pos(tc0 - float2(0, o.y)), ulp, rlen);
+    float3 Nc   = cross(Du.xyz, Dv.xyz);
+    float  Nl   = dot(Nc, Nc);
+    float3 Nd   = (Nl > 1e-20f) ? Nc * rsqrt(Nl) : N;
+    if (dot(Nd, C) > 0.0f) Nd = -Nd;	// towards the camera
+    float  aErr = atan(max(Du.w, Dv.w));
+    float  aN   = acos(clamp(dot(N, Nd), -1.0f, 1.0f));
+    float  w    = 1.0f - smoothstep(aErr + 0.44f, aErr + 0.87f, aN);
+    float3 Nb   = normalize(lerp(Nd, N, w));
+
+    float4 tangentPlane = float4(Nb, dot(P, Nb));
     float3 Pr = tangent_eye_pos(tc0 + float2(g_InvResolution.x, 0), tangentPlane);
     float3 Pl = tangent_eye_pos(tc0 + float2(-g_InvResolution.x, 0), tangentPlane);
     float3 Pt = tangent_eye_pos(tc0 + float2(0, g_InvResolution.y), tangentPlane);

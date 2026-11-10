@@ -51,7 +51,7 @@ float3 fetch_eye_pos(float2 uv)
 #else // SSAO_OPT_DATA 
     return tex2Dlod	(s_position, float4(uv, 0, 0));
 #endif // SSAO_OPT_DATA
-   
+
 }
 
 float3 tangent_eye_pos(float2 uv, float4 tangentPlane)
@@ -72,7 +72,23 @@ float3 min_diff(float3 P, float3 Pr, float3 Pl)
 {
     float3 V1 = Pr - P;
     float3 V2 = P - Pl;
-    return (length2(V1) < length2(V2)) ? V1 : V2;
+    float  l1 = length2(V1);
+    float  l2 = length2(V2);
+    // a zero step (the neighbour clamped onto P at the screen's edge) is no tangent: take the other
+    return (l1 > 0.0f && (l1 < l2 || l2 == 0.0f)) ? V1 : V2;
+}
+
+//----------------------------------------------------------------------------------
+//	The step of the surface across C from the fp16 depth, across both sides unless the depth breaks
+//	(min_diff alone took the flat side of its terraces), .w = the turn its rounding can give (see r3)
+float4 depth_diff(float3 C, float3 Pp, float3 Pm, float ulp, float rlen)
+{
+    float3 Dp = Pp - C;
+    float3 Dm = C - Pm;
+    float3 D  = (abs(Dp.z - Dm.z) <= 2.0f * ulp + 0.5f * min(abs(Dp.z), abs(Dm.z)))
+              ? Pp - Pm
+              : min_diff(C, Pp, Pm);
+    return float4(D, rlen * ulp / max(length(D), 1e-6f));
 }
 
 //----------------------------------------------------------------------------------
@@ -188,7 +204,8 @@ float horizon_occlusion(float2 deltaUV,
         
         // Ignore any samples outside the radius of influence
         float d2  = length2(S - P);
-        float tanS = tangent(P, S);
+        //	fp16 depth: only what stands out by more than a step of it counts (see r3)
+        float tanS = (P.z - S.z - P.z * (1.0f / 1024.0f)) / length(S.xy - P.xy);
         if ((d2 < g_sqr_R) && (tanS > tanH)) {
 
                 // Accumulate AO between the horizon and the sample
@@ -232,31 +249,40 @@ float4 calc_hbao(float z, float4 curN, float2 tc0)
 #endif
     //rand_Dir = float3(1,0,0);
 
-	// footprint optimization
-	float maxNumSteps = g_MaxFootprintUV / step_size;
-	if (maxNumSteps < numSteps)
-	{
-		numSteps = floor(maxNumSteps + rand_Dir.z);
-        	numSteps = max(numSteps, 1);
-	        step_size = g_MaxFootprintUV / numSteps;
-    	}
+	//	No footprint clamp: nearer than ~4.8 m it shrank the kernel in the world and cut the steps to
+	//	a random 1..3 per pixel, which drew sharp bands of shading on walls and ground (see r3).
 
-    float4 tangentPlane = float4(N, dot(P, N));
-    
+    //	The tangent plane from the G-buffer normal where it roughly agrees with the depth's own normal,
+    //	from the depth's where they are far apart (grass, whose made-up normal let it shade its own
+    //	blades), blended in between (see r3). Depth neighbours one texel apart: 2 px in the half-res copy.
+#if SSAO_OPT_DATA == 2
+    float2 o    = 2.0f * g_InvResolution;
+#else
+    float2 o    = g_InvResolution;
+#endif
+    float3 C    = fetch_eye_pos(tc0);
+    float  ulp  = exp2(floor(log2(max(C.z, 1e-3f))) - 10.0f);	// the fp16 step at C
+    float  rlen = length(uv_to_eye(tc0, 1.0f));
+    float4 Du   = depth_diff(C, fetch_eye_pos(tc0 + float2(o.x, 0)), fetch_eye_pos(tc0 - float2(o.x, 0)), ulp, rlen);
+    float4 Dv   = depth_diff(C, fetch_eye_pos(tc0 + float2(0, o.y)), fetch_eye_pos(tc0 - float2(0, o.y)), ulp, rlen);
+    float3 Nc   = cross(Du.xyz, Dv.xyz);
+    float  Nl   = dot(Nc, Nc);
+    float3 Nd   = (Nl > 1e-20f) ? Nc * rsqrt(Nl) : N;
+    if (dot(Nd, C) > 0.0f) Nd = -Nd;	// towards the camera
+    //	allowing for the turn the rounding of the depth alone can give the depth's normal (see r3)
+    float  aErr = atan(max(Du.w, Dv.w));
+    float  aN   = acos(clamp(dot(N, Nd), -1.0f, 1.0f));
+    float  w    = 1.0f - smoothstep(aErr + 0.44f, aErr + 0.87f, aN);
+    float3 Nb   = normalize(lerp(Nd, N, w));
+
+    float4 tangentPlane = float4(Nb, dot(P, Nb));
+
     // Nearest neighbor pixels on the tangent plane
     float3 Pr = tangent_eye_pos(tc0 + float2(g_InvResolution.x, 0), tangentPlane);
     float3 Pl = tangent_eye_pos(tc0 + float2(-g_InvResolution.x, 0), tangentPlane);
     float3 Pt = tangent_eye_pos(tc0 + float2(0, g_InvResolution.y), tangentPlane);
     float3 Pb = tangent_eye_pos(tc0 + float2(0, -g_InvResolution.y), tangentPlane);
-    
-    //float3 Pr, Pl, Pt, Pb;
-    //Pr = fetch_eye_pos(IN.texUV + float2(g_InvResolution.x, 0));
-    //Pl = fetch_eye_pos(IN.texUV + float2(-g_InvResolution.x, 0));
-    //Pt = fetch_eye_pos(IN.texUV + float2(0, g_InvResolution.y));
-    //Pb = fetch_eye_pos(IN.texUV + float2(0, -g_InvResolution.y));
-    //float3 N = normalize(cross(Pr - Pl, Pt - Pb));
-    //tangentPlane = float4(N, dot(P, N));
-    
+
     // Screen-aligned basis for the tangent plane
     float3 dPdu = min_diff(P, Pr, Pl);
     float3 dPdv = min_diff(P, Pt, Pb) * (g_Resolution.y * g_InvResolution.x);
