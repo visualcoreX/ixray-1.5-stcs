@@ -21,7 +21,6 @@
 ENGINE_API bool g_dedicated_server;
 
 const int max_objects_size			= 2*1024;
-const int max_objects_size_in_save	= 6*1024;
 
 extern bool	g_b_ClearGameCaptions;
 
@@ -217,52 +216,40 @@ void CLevel::ClientSend()
 	}
 }
 
-u32	CLevel::Objects_net_Save	(NET_Packet* _Packet, u32 start, u32 max_object_size)
-{
-	NET_Packet& Packet	= *_Packet;
-	u32			position;
-	for (; start<Objects.o_count(); start++)	{
-		CObject		*_P = Objects.o_get_by_iterator(start);
-		CGameObject *P = smart_cast<CGameObject*>(_P);
-//		Msg			("save:iterating:%d:%s",P->ID(),*P->cName());
-		if (P && !P->getDestroy() && P->net_SaveRelevant())	{
-			Packet.w_u16			(u16(P->ID())	);
-			Packet.w_chunk_open16	(position);
-//			Msg						("save:saving:%d:%s",P->ID(),*P->cName());
-			P->net_Save				(Packet);
-#ifdef DEBUG
-			u32 size				= u32		(Packet.w_tell()-position)-sizeof(u16);
-//			Msg						("save:saved:%d bytes:%d:%s",size,P->ID(),*P->cName());
-			if				(size>=65536)			{
-				Debug.fatal	(DEBUG_INFO,"Object [%s][%d] exceed network-data limit\n size=%d, Pend=%d, Pstart=%d",
-					*P->cName(), P->ID(), size, Packet.w_tell(), position);
-			}
-#endif
-			Packet.w_chunk_close16	(position);
-//			if (0==(--count))		
-//				break;
-			if (max_object_size >= (NET_PacketSizeLimit - Packet.w_tell()))
-				break;
-		}
-	}
-	return	++start;
-}
-
+// Each object is saved into a packet of its own and only then appended to the
+// M_SAVE_PACKET being filled. Objects used to be written straight into the
+// shared packet, and a new one was started only once less than 6 KB was left,
+// so an object could begin ~10 KB in. A stalker in a big fight writes more than
+// that (the squad's visual memory alone is up to 128 * 50 bytes), ran into the
+// 16000-byte guard of the save scripts and could run off the 16 KB buffer.
+// Starting every object at offset 0 gives it the whole buffer.
 void CLevel::ClientSave	()
 {
 	NET_Packet		P;
-	u32				start	= 0;
+	P.w_begin		(M_SAVE_PACKET);
 
-	for (;;) {
-		P.w_begin	(M_SAVE_PACKET);
-		
-		start		= Objects_net_Save(&P, start, max_objects_size_in_save);
+	NET_Packet		object_packet;
+	for (u32 i = 0; i < Objects.o_count(); ++i) {
+		CGameObject	*object = smart_cast<CGameObject*>(Objects.o_get_by_iterator(i));
+		if (!object || object->getDestroy() || !object->net_SaveRelevant())
+			continue;
 
-		if (P.B.count>2)
-			Send	(P, net_flags(FALSE));
-		else
-			break;
+		u32							position;
+		object_packet.write_start	();
+		object_packet.w_u16			(u16(object->ID()));
+		object_packet.w_chunk_open16(position);
+		object->net_Save			(object_packet);
+		object_packet.w_chunk_close16(position);
+
+		if ((P.w_tell() > 2) && (P.w_tell() + object_packet.w_tell() >= NET_PacketSizeLimit)) {
+			Send					(P, net_flags(FALSE));
+			P.w_begin				(M_SAVE_PACKET);
+		}
+		P.w							(object_packet.B.data, object_packet.w_tell());
 	}
+
+	if (P.w_tell() > 2)
+		Send		(P, net_flags(FALSE));
 }
 
 extern		float		phTimefactor;
