@@ -332,7 +332,6 @@ float4 calc_hbao(float z, float3 N, float2 tc0, float4 pos2d)
 
 	float2 	step_size	= float2	(.5f / 1024.0f, .5f / 768.0f)*ssao_kernel_size/max(z,1.3);
   	float numSteps = min ( g_NumSteps, min(step_size.x * g_Resolution.x, step_size.y * g_Resolution.y));
-	float numDirs = min ( g_NumDir, min(step_size.x / 4 * g_Resolution.x, step_size.y / 4 * g_Resolution.y));
     if( numSteps < 1.0 ) return 1.0;
     step_size = step_size / ( numSteps + 1 );
 
@@ -370,9 +369,14 @@ float4 calc_hbao(float z, float3 N, float2 tc0, float4 pos2d)
     // Loop for all directions
     float ao = 0;
     float alpha = 2.0f * M_PI / g_NumDir;
-    float delta = g_NumDir / numDirs;
-    
-    int   iNumDir = ceil( int( g_NumDir / delta ) );
+    //	Always walk every direction. The stock code dropped directions once the kernel got small on
+    //	screen (numDirs = step_size/4 in pixels), yet still divided the sum by g_NumDir below -- so the
+    //	occlusion fell by a whole 1/g_NumDir each time the count went down a step, at fixed distances
+    //	from the camera (about 5, 8 and 16 m at 1440p): hard rings of lighter shading on grass and
+    //	ground that slide along with the player.
+    float delta = 1.0f;
+
+    int   iNumDir = int( g_NumDir );
     
 #ifndef VECTORIZED_CODE    
     for (int i = 0; i < iNumDir; ++i ) {  
