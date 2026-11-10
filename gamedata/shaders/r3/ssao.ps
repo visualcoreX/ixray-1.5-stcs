@@ -105,6 +105,32 @@ float3 uv_to_eye(float2 uv, float eye_z)
     return float3(uv * pos_decompression_params.xy * eye_z, eye_z);
 }
 
+#ifdef SSAO_OPT_DATA
+//	View-space position of the depth the AO taps read at uv, taken at the pixel that depth really
+//	came from. The stock code rebuilt xy at the tap's own uv and z from whatever pixel the point
+//	sampler landed on -- in the half-res copy a different full-res pixel from the one the texel
+//	centre names (see depth_downs.ps). On ground and grass, which recede from the camera, the
+//	pixel below is always the nearer one, so every tap stood a little above the surface and
+//	shaded it, more the further off it was.
+//	SSAO_OPT_DATA == 1: s_half_depth is full-res. == 2: half-res, texel (i,j) holds pixel (2i,2j).
+float3 ssao_fetch_eye_pos(float2 uv)
+{
+#if SSAO_OPT_DATA == 2
+	float2	res		= floor( pos_decompression_params2.xy * 0.5f );
+#else
+	float2	res		= pos_decompression_params2.xy;
+#endif
+	int2	texel	= clamp( int2( floor( uv * res ) ), int2( 0, 0 ), int2( res ) - 1 );
+	float	z		= s_half_depth.Load( int3( texel, 0 ) ).x;
+#if SSAO_OPT_DATA == 2
+	float2	src_uv	= ( float2( texel ) * 2.0f + 0.5f ) * pos_decompression_params2.zw;
+#else
+	float2	src_uv	= ( float2( texel ) + 0.5f ) * pos_decompression_params2.zw;
+#endif
+	return uv_to_eye( src_uv, z );
+}
+#endif // SSAO_OPT_DATA
+
 //	Screen space ambient occlusion
 //	P	screen space position of the original point
 //	N	screen space normal of the original point
@@ -177,6 +203,13 @@ float	calc_ssao( float3 P, float3 N, float2 tc, float2 tcJ, uint iSample)
 				tap		*= scale;
 				tap		+= tc;
 #ifndef SSAO_OPT_DATA
+#ifdef GBUFFER_OPTIMIZATION
+		//	Snap to the centre of the pixel the load lands on: the optimized G-buffer rebuilds xy
+		//	from pos2d + delta, which kept the tap's fraction while z came from the whole pixel
+		//	(the "this is wrong" below), so the tap moved off the surface by up to half a pixel.
+				tap		= ( floor( tap * pos_decompression_params2.xy ) + 0.5f ) * pos_decompression_params2.zw;
+#endif
+
 #ifdef USE_MSAA
 #ifdef GBUFFER_OPTIMIZATION
 		gbuffer_data gbd = gbuffer_load_data_offset( tc, tap, pos2d, iSample ); // this is wrong - need to correct this
@@ -194,8 +227,7 @@ float	calc_ssao( float3 P, float3 N, float2 tc, float2 tcJ, uint iSample)
 		//float3	tap_pos	= s_position.Sample(smp_nofilter,tap);
 		float3	tap_pos	= gbd.P;
 #else // SSAO_OPT_DATA
-		float	z	= s_half_depth.SampleLevel(smp_nofilter,tap, 0);
-		float3	tap_pos	= uv_to_eye(tap, z);
+		float3	tap_pos	= ssao_fetch_eye_pos(tap);
 #endif // SSAO_OPT_DATA
 		float3 	dir 	= tap_pos-P.xyz;
 		float	dist	= length(dir);
@@ -240,7 +272,9 @@ float	calc_ssao( float3 P, float3 N, float2 tc, float2 tcJ, uint iSample)
 #endif	//	SSAO_QUALITY==1
 //	occ = 1;
 
-	float WeaponAttenuation = smoothstep( 0.8, 0.9, length( P.xyz ));
+	//	Keep the hud weapon (within 0.8 m) unshaded, fading in over 0.8 m rather than the stock 10 cm,
+	//	which drew a sharp line on whatever stood at 0.8..0.9 m from the eye (see ssao_hbao.ps).
+	float WeaponAttenuation = smoothstep( 0.8, 1.6, length( P.xyz ));
 	occ = lerp( 1, occ, WeaponAttenuation );
 
 	return occ;

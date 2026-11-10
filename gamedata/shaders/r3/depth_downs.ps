@@ -21,15 +21,13 @@ float4 main ( _input I ) : SV_Target0
 	//	gbuffer_data gbd = gbuffer_load_data( GLD_P(I.tc0.xy + 0.5f / pos_decompression_params2.xy, I.pos2d * 2, ISAMPLE) );
 	//	TODO: move it to C++ code to save maths in PS
 	//	??? Why we move x and y in the same direction???
-	gbuffer_data gbd0 = gbuffer_load_data( GLD_P(I.tc0.xy + 0.5f * pos_decompression_params2.zw, I.pos2d * 2, ISAMPLE) );
-	gbuffer_data gbd1 = gbuffer_load_data( GLD_P(I.tc0.xy - 0.5f * pos_decompression_params2.zw, I.pos2d * 2, ISAMPLE) );
-	gbuffer_data gbd2 = gbuffer_load_data( GLD_P(I.tc0.xy + 0.5f * float2(+pos_decompression_params2.z, -pos_decompression_params2.w), I.pos2d * 2, ISAMPLE) );
-	gbuffer_data gbd3 = gbuffer_load_data( GLD_P(I.tc0.xy + 0.5f * float2(-pos_decompression_params2.z, +pos_decompression_params2.w), I.pos2d * 2, ISAMPLE) );
-
-	gbuffer_data gbd = gbd0;
-	if (gbd1.P.z < gbd.P.z) gbd = gbd1;	
-	if (gbd2.P.z < gbd.P.z) gbd = gbd2;	
-	if (gbd3.P.z < gbd.P.z) gbd = gbd3;
+	//	Half-res: keep ONE known full-res pixel per texel, (2i,2j), and let the readers rebuild the
+	//	position at that pixel (ssao_fetch_eye_pos in ssao.ps). The stock code meant to keep the
+	//	nearest of the 2x2 block, but with the optimized G-buffer under MSAA all four loads went to
+	//	pos2d*2 = pixel (2i+1,2j+1), and without MSAA the nearest is still not where the texel
+	//	centre says -- either way the taps read depth from somewhere else than they placed it.
+	float2	src_pos2d	= floor( I.pos2d.xy ) * 2.0f + 0.5f;
+	gbuffer_data gbd = gbuffer_load_data( GLD_P(src_pos2d * pos_decompression_params2.zw, src_pos2d, ISAMPLE) );
 
 //	gbd.P.z = (gbd0.P.z + gbd1.P.z + gbd2.P.z + gbd3.P.z)  * 0.25f;
 
