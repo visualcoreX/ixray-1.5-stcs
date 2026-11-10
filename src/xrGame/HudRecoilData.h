@@ -30,6 +30,7 @@ struct HudRecoilData
 	float	RelaxFreq;		// Hz, spring that brings the weapon back after it
 	float	RelaxDamp;		// <1 swings past the centre on the way back
 	float	Mouse;			// 0..1, part of the mouse the weapon takes inside the zone while firing
+	float	MouseHorz;		// the same sideways: Mouse * hud_recoil_mouse_horz_k (0.5 by default)
 	float	CameraSplit;	// 0..1: the camera's kick shrinks by Inherit * this -- the weapon's lead is taken
 							// out of the camera's kick instead of added to it (1: camera 1 - Inherit)
 	float	PushBack;		// m the weapon slides back per degree it leads upwards
@@ -55,6 +56,7 @@ struct HudRecoilData
 		RelaxFreq	= 3.f;
 		RelaxDamp	= 0.45f;
 		Mouse		= 0.5f;
+		MouseHorz	= 0.25f;
 		CameraSplit	= 0.f;
 		PushBack	= 0.f;
 		PushMax		= 0.03f;
@@ -81,6 +83,7 @@ struct HudRecoilData
 		RelaxFreq	= L(from.RelaxFreq,		to.RelaxFreq);
 		RelaxDamp	= L(from.RelaxDamp,		to.RelaxDamp);
 		Mouse		= L(from.Mouse,			to.Mouse);
+		MouseHorz	= L(from.MouseHorz,		to.MouseHorz);
 		CameraSplit	= L(from.CameraSplit,	to.CameraSplit);
 		PushBack	= L(from.PushBack,		to.PushBack);
 		PushMax		= L(from.PushMax,		to.PushMax);

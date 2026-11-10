@@ -1620,9 +1620,9 @@ void player_hud::recoil_mouse(float& right, float& up)
 	CHudItem* wpn			= m_attached_items[0] ? m_attached_items[0]->m_parent_hud_item : NULL;
 	if (!wpn || wpn != m_recoil_item || !wpn->HudRecoilFiringNow())	return;
 	const HudRecoilData* d	= wpn->CurrentHudRecoilData();
-	if (!d || d->Mouse <= 0.f)	return;
+	if (!d || (d->Mouse <= 0.f && d->MouseHorz <= 0.f))	return;
 
-	Fvector2 t;				t.set(m_recoil.tgt.x + right * d->Mouse, m_recoil.tgt.y + up * d->Mouse);
+	Fvector2 t;				t.set(m_recoil.tgt.x + right * d->MouseHorz, m_recoil.tgt.y + up * d->Mouse);
 	recoil_zone				(t, d->Radius, -d->ZoneDown * d->Radius);
 	right					-= t.x - m_recoil.tgt.x;
 	up						-= t.y - m_recoil.tgt.y;

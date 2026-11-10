@@ -459,6 +459,10 @@ namespace
 		d.RelaxFreq		= hud_recoil_f	(s, pfx, "relax_freq",		def.RelaxFreq);
 		d.RelaxDamp		= hud_recoil_f	(s, pfx, "relax_damping",	def.RelaxDamp);
 		d.Mouse			= clampr(hud_recoil_f(s, pfx, "mouse",		def.Mouse), 0.f, 1.f);
+		// sideways as a part of the vertical, so it follows whatever mouse is set to
+		d.MouseHorz		= d.Mouse * _max(hud_recoil_f(s, pfx, "mouse_horz_k",
+										 def.Mouse > 0.f ? def.MouseHorz / def.Mouse : 0.5f), 0.f);
+		clamp			(d.MouseHorz, 0.f, 1.f);
 		d.CameraSplit	= clampr(hud_recoil_f(s, pfx, "camera_split",	def.CameraSplit), 0.f, 1.f);
 		d.PushBack		= _max(hud_recoil_f(s, pfx, "push_back",	def.PushBack), 0.f);
 		d.PushMax		= _max(hud_recoil_f(s, pfx, "push_max",		def.PushMax), 0.f);
@@ -517,6 +521,7 @@ const HudRecoilData* CWeapon::CurrentHudRecoilData()
 		m_hud_recoil_blend.Roll			*= k;
 		m_hud_recoil_blend.SettleRoll	*= k;
 		m_hud_recoil_blend.Mouse		*= k;
+		m_hud_recoil_blend.MouseHorz	*= k;
 	}
 	return &m_hud_recoil_blend;
 }
