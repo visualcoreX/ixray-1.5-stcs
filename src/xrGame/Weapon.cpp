@@ -1414,6 +1414,10 @@ void CWeapon::UpdateLaserDot()
 	// The volumetric beam's emitter and axis, read off the model's own mesh beam (SLaserEmitter). It also
 	// keeps the dot working when that bone is hidden (laser_beam_hide_mesh): the skeleton stops
 	// recalculating a hidden bone, so its pose is rebuilt from the device bone it hangs off instead.
+	// The gun is not in the picture: a 3D lens frame (the world drawn again at the optic's power, CActor::OnHUDDraw)
+	// or the flat 2D scope, which hides the hud model altogether (need_renderable). Seen through either, the
+	// beam would start in the air.
+	const bool no_gun = (g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow) || !need_renderable();
 	const bool em_ok = m_LaserBeam.enabled
 		&& m_LaserBeam.hud.Update(K, m_sLaserRayBones.size() ? m_sLaserRayBones.c_str() : m_sLaserBone.c_str(), m_sLaserBone.c_str());
 	Fmatrix ref_full;
@@ -1455,6 +1459,13 @@ void CWeapon::UpdateLaserDot()
 		if (hi->m_parent->pick_hands(beam_from, beam_dir, stop))	blocked = true;
 		if (blocked)
 		{
+			// a lens frame or the 2D scope has neither the gun nor the hands in it: what the beam stops on is
+			// not in the picture, so neither is the beam (the dot's light is left as the last frame put it)
+			if (no_gun)
+			{
+				if (m_pLaserDot)	CParticlesObject::Destroy(m_pLaserDot);
+				return;
+			}
 			Fvector hit;	hit.mad(beam_from, beam_dir, stop);
 			LaserBeam_HudPointToWorld	(hit);
 			LaserBeam_HudPointToWorld	(beam_from);
@@ -1616,6 +1627,12 @@ void CWeapon::UpdateLaserDot()
 				if (h < range - EPS_L)	{ dot_surf.mad(cp, vd, h); dot_ok = true; }
 			}
 		}
+		// A 3D lens frame has no weapon in it, so the beam would start in the air inside the picture: run its
+		// start back towards the eye, out of the lens's view. Not for the flat 2D scope: its art is open
+		// round the glass, and the start run back would be seen crossing the world there -- the renderer
+		// runs it back inside the glass only (phase_laser_beams, the eyepiece circle).
+		if (g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow)
+			LaserBeam_LensFrameStart	(beam_from, beam_to);
 		m_LaserBeam.Publish			(beam_from, beam_dir, beam_to, beam_to_hit, dot_ok, dot_surf);
 	}
 

@@ -496,6 +496,8 @@ bool	g_scope_prism_fade	= false;
 // the glass -- measured, it put the circle at the bottom of the screen.) Too big does no harm: what it spares round
 // the glass is the tube and the eyecup, at the eye and sharp anyway.
 Fvector4	g_scope_glass_hole;		// (zero at start: a global)
+// ...and whether an eyepiece cut the hud out this frame at all (r_dsgraph_mark_hud_glass)
+bool		g_hud_glass_cut		= false;
 
 static bool scope_prism_cut_decide()
 {
@@ -556,11 +558,13 @@ void R_dsgraph_structure::r_dsgraph_render_hud	()
 	// would clamp it into the hud's thin slice. (The cut is pass 0 because only pass 0 may write depth --
 	// PassSET_ZB.) Pass 2 waits for the end of the frame (r_dsgraph_render_lens_late), so the glass is kept.
 	lstHUDLensLate.clear		();
+	g_hud_glass_cut				= false;
 	if (hud_lens_mask_now && mapHUDLensMask.size())
 	{
 		mapHUDLensMask.getLR		(lstHUDLensLate);
 		if (g_scope_prism_cut)		// (the lens-off prism mode's fade skips it every other frame, see above)
 		{
+			g_hud_glass_cut				= true;
 			for (u32 i = 0; i < lstHUDLensLate.size(); ++i)
 				r_dsgraph_draw_pass		(lstHUDLensLate[i], 1);
 			rmNormal					();
@@ -745,6 +749,43 @@ void	R_dsgraph_structure::r_dsgraph_render_lens_undistort	()
 	Device.mProject			= Pold;
 	Device.mFullTransform	= FTold;
 	RCache.set_xform_project(Device.mProject);
+}
+
+// Where the eyepieces cut the hud out this frame, stencil bit 0x80 once more: their mark (pass 1 of the lens_mask
+// element) drawn again. The cut itself zeroed the stencil there and the world and its lights have written it since,
+// so the caller clears the bit first. The mark is depth-tested in the hud's slice against the frame's depth, which
+// holds the world where the glass was cut and the hud everywhere else, so the sight's own rim, nearer the eye, still
+// hides what it did; and its pixel shader keeps it inside the field stop. For the laser beams (phase_laser_beams):
+// inside the glass the weapon the beam leaves is gone. False when no eyepiece cut anything this frame.
+bool	R_dsgraph_structure::r_dsgraph_mark_hud_glass	()
+{
+	if (!g_hud_glass_cut || lstHUDLensLate.empty())	return false;
+
+	extern ENGINE_API float psHUD_FOV;
+	Fmatrix Pold = Device.mProject;
+	Fmatrix FTold = Device.mFullTransform;
+	Device.mProject.build_projection(
+		deg2rad(psHUD_FOV * Device.fFOV_HUD),
+		Device.fASPECT, VIEWPORT_NEAR,
+		g_pGamePersistent->Environment().CurrentEnv->far_plane);
+	Device.mFullTransform.mul(Device.mProject, Device.mView);
+	RCache.set_xform_view	(Device.mView);
+	RCache.set_xform_project(Device.mProject);
+
+	RCache.set_CullMode			(CULL_CCW);
+	rmNear						();
+	RCache.set_Constants		((R_constant_table*)0);
+	r_dsgraph_hud_sorted_now	= true;
+	for (u32 i = 0; i < lstHUDLensLate.size(); ++i)
+		r_dsgraph_draw_pass		(lstHUDLensLate[i], 1);
+	r_dsgraph_hud_sorted_now	= false;
+	RCache.set_Constants		((R_constant_table*)0);
+	rmNormal					();
+
+	Device.mProject			= Pold;
+	Device.mFullTransform	= FTold;
+	RCache.set_xform_project(Device.mProject);
+	return true;
 }
 
 // A prism sight's black field stop, drawn over the FINISHED picture (pass 2 of the eyepiece's l_special,
