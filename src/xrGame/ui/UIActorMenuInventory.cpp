@@ -299,6 +299,27 @@ void CUIActorMenu::OnInventoryAction(PIItem pItem, u16 action_type)
 						lst_to_add->SetItem	(itm);
 					}
 				}
+
+				// An item the actor has just taken is no longer in the corpse or the box, so its cell
+				// goes from that list too. The list is a snapshot, rebuilt only while WatchDeadBodyBag
+				// is armed: "take all" on a full box (the Garbage robbery stash) outlasts the 2 s watch,
+				// and the cells of items still on their way stayed behind, pointing at items that now
+				// belong to the actor. Once one of them was released (ammo repacked by dunin_ammo), the
+				// weight count of that list (UpdateDeadBodyBag) made a virtual call into freed memory.
+				CUICellItem* bag_ci = NULL;
+				if ( m_pDeadBodyBagList && FindItemInList(m_pDeadBodyBagList, pItem, bag_ci) )
+				{
+					if ( CUIDragDropListEx::m_drag_item )
+					{
+						CUIInventoryCellItem* ici = smart_cast<CUIInventoryCellItem*>(CUIDragDropListEx::m_drag_item->ParentItem());
+						if ( ici && ici->object() == pItem && ici->OwnerList() )
+							ici->OwnerList()->DestroyDragItem();
+					}
+					CUICellItem* dying_cell = m_pDeadBodyBagList->RemoveItem(bag_ci, false);
+					if ( dying_cell == m_pCurrentCellItem )
+						SetCurrentItem	(NULL);
+					xr_delete			(dying_cell);
+				}
 			}break;
 		case GE_TRADE_SELL :
 		case GE_OWNERSHIP_REJECT : 
