@@ -67,6 +67,9 @@ public:
 	//                   lens output alpha = min(y,w) -> the lens fades in with aim and hides when not aiming
 	// m_zoom_deviation: x,y=lens image offset (sway/recoil), z=brightness, w=jitter (0 = static centred lens)
 	Fvector4						hud_scope_params;
+	// 1 = the held optic's 3D lens shows exactly its lens factor (CWeapon::LensTruePower, m_scope_prism.y): the lens
+	// shader samples only the part of the capture that matches the ocular's size on screen. 0 = the stock lens.
+	float							hud_lens_true_power;
 	// Post-process mask: xy = centre in screen uv, zw = x/y radii (screen uv, so the circle stays
 	// round on any aspect). z <= 0 = no mask, the pp pass grades the whole screen as it always did.
 	Fvector4						pp_mask_circle;

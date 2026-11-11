@@ -16,6 +16,33 @@
 // pos_v: the pixel in VIEW space (the eye at the origin). Derivatives of hud geometry in world space are noise
 // -- centimetres against hundreds of metres -- so view space only. Call it first thing in main: it takes
 // derivatives, which mean nothing after a branch. Needs LENS_GLASS_R (the aperture's radius in the glass's uv).
+// THE 3D LENS AT ITS TRUE POWER (m_scope_prism.y = 1, CWeapon::LensTruePower): the ocular's height on screen, as a
+// share of the screen's. The lens samples its capture at 0.5 + (uv - 0.5) * this: one screen height of the capture
+// then covers one screen height of the eye's view, and the eye gets the lens factor itself instead of the factor
+// times the ocular's size. The capture is the screen's centre square (r3_R_render.cpp), so the part read is always
+// rendered. NOT from the uv's screen derivatives: on a domed glass (the ELCAN's) every triangle leans its own way and
+// gives its own answer -- the picture's scale stepped from ring to ring, sharp bands across the rim's distortion.
+// The glass's size and centre as lens_field_stop takes them instead (flattened across the axis: the same on every
+// triangle), put on screen by the hud's projection. Only the dome's own height still moves the centre's depth, and
+// that is continuous. Call it next to lens_field_stop, before any branch.
+float lens_quad_height(float3 pos_v, float3 axis_v, float2 uv)
+{
+	float3	dpx	= ddx(pos_v);
+	float3	dpy	= ddy(pos_v);
+	float2	dux	= ddx(uv);
+	float2	duy	= ddy(uv);
+	float	det	= dux.x*duy.y - dux.y*duy.x;
+	if (abs(det) < 1e-12f)				return 1.0f;
+	float3	fwd	= normalize(axis_v);
+	float3	P_u	= (dpx*duy.y - dpy*dux.y) / det;
+	float3	P_v	= (dpy*dux.x - dpx*duy.x) / det;
+	P_u		-= fwd * dot(P_u, fwd);
+	P_v		-= fwd * dot(P_v, fwd);
+	float3	c	= pos_v - (uv.x - 0.5f)*P_u - (uv.y - 0.5f)*P_v;	// the glass's centre
+	float	size= 0.5f * (length(P_u) + length(P_v));				// the uv's 0..1, in view units
+	return	min(size * m_P._22 / (2.0f * max(c.z, 0.0001f)), 1.0f);	// ...over the screen's height at its depth
+}
+
 #define LENS_FIELD_SOFT	0.2f		// the stop's edge, as a share of the field's own size
 #define LENS_FIELD_SCALE	1.8f		// the clear field, times the glass's own size (user: the black closed in too soon)
 

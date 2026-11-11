@@ -382,13 +382,15 @@ static cl_collim_prism	binder_collim_prism;
 // = 171): w = 1 on a frame with the eyepiece's cut, 2 on one without it while the lens fades (r__dsgraph_render.cpp
 // g_scope_prism_cut), 0 off; x = 1 while the lens fades (the frames take turns). Read by models_zoom*.s only
 // (model_scope_lense*.ps, model_scope_mask.ps, model_scope_late.ps).
+// y: not the prism mode at all -- 1 = the 3D lens at its true power (CWeapon::LensTruePower, scope_field.h).
 class cl_scope_prism : public R_constant_setup {
 	virtual void setup(R_constant* C)
 	{
 		extern bool g_scope_prism_cut;
 		extern bool g_scope_prism_fade;
 		const bool	on	= g_pGamePersistent && g_pGamePersistent->hud_collim_prism.x > 170.5f;
-		RCache.set_c (C, (on && g_scope_prism_fade) ? 1.f : 0.f, 0.f, 0.f, !on ? 0.f : (g_scope_prism_cut ? 1.f : 2.f));
+		const float	tp	= g_pGamePersistent ? g_pGamePersistent->hud_lens_true_power : 0.f;
+		RCache.set_c (C, (on && g_scope_prism_fade) ? 1.f : 0.f, tp, 0.f, !on ? 0.f : (g_scope_prism_cut ? 1.f : 2.f));
 	}
 };
 static cl_scope_prism	binder_scope_prism;

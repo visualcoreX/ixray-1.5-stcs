@@ -1437,6 +1437,7 @@ void CActor::UpdateCL	()
 			// .x: the lens-off prism mode's eyepiece zoom over the world's (CWeapon::ScopePrismLensZoom) -- the lens
 			// shaders read .x only in that mode, and resample the frame by it about the screen's centre
 			g_pGamePersistent->hud_scope_params.set(wpn->IsScopePrismCfg() ? wpn->ScopePrismLensZoom() : aspect, aim, abber, wpn->LensVisibility());
+			g_pGamePersistent->hud_lens_true_power = wpn->LensTruePower() ? 1.f : 0.f;
 			// GS scope illumination -> m_zoom_deviation.z = brightness, .w = jitter (used by the NV lens shader
 			// model_scope_lense_night). Day scopes ignore .z/.w and use the reticle-glow bones instead.
 			g_pGamePersistent->hud_zoom_deviation.set(0.f, 0.f, wpn->ScopeIllumValue(), wpn->ScopeIllumJitter());
@@ -1444,6 +1445,7 @@ void CActor::UpdateCL	()
 		else
 		{
 			g_pGamePersistent->hud_scope_params.set(aspect, 0.f, 0.f, 0.f);
+			g_pGamePersistent->hud_lens_true_power = 0.f;
 			// A 2D night scope has no lens shader to take the brightness -- its tint is a full-screen PPE whose
 			// green gain is a u32 colour, clamped at 1.0 from the lowest step up, so the brightness keys only
 			// changed the noise. Hand the pp pass what the step means instead: .z = a gain for the picture

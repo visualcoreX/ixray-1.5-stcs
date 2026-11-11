@@ -4194,6 +4194,31 @@ float CWeapon::GetLensFOV() const
 	return rad2deg(2.0f * atanf(tanf(half) / factor));
 }
 
+// An optic's magnification tuning (scope_prism_*, scope_lens_true_power): the active scope section, then the addon
+// item it names -- one place for an optic that sits on many guns (the ELCAN's eleven scope sections) -- then the weapon.
+float CWeapon::ScopeTuneFloat(LPCSTR key, float def) const
+{
+	shared_str sc = GetCurrentScopeSection();
+	if (sc.size() && pSettings->line_exist(*sc, key))				return pSettings->r_float(*sc, key);
+	if (IsScopeAttached())
+	{
+		shared_str item = GetAttachedScopeName();
+		if (item.size() && pSettings->section_exist(*item) && pSettings->line_exist(*item, key))
+			return pSettings->r_float(*item, key);
+	}
+	return READ_IF_EXISTS(pSettings, r_float, cNameSect(), key, def);
+}
+
+// THE 3D LENS AT ITS TRUE POWER (scope_lens_true_power = 1). The lens squeezes its whole capture into the ocular's
+// mesh (Scope2DPipMatch has the story), so the eye gets the lens factor times the mesh's height on screen -- a number
+// no config knows, different on every gun's hud. With this key the lens shader measures that height itself (the uv's
+// screen derivatives, scope_field.h lens_quad_height) and samples only the capture's matching middle, so the eye gets
+// the lens factor exactly: 1 = the world in the glass is the size of the world round it, 4 = four times that.
+bool CWeapon::LensTruePower() const
+{
+	return IsLensedScope() && ScopeTuneFloat("scope_lens_true_power", 0.f) > 0.5f;
+}
+
 // THE LENS-OFF PRISM MODE'S POWER, and how it is split. In total it is the 3D lens's apparent power: the 3D lens
 // stretches its whole frame over the glass, and the glass covers only ~0.8 of the screen's height, so the eye gets
 // the factor times that (scope_prism_zoom_k, scope section then the weapon's). The default was 0.8, read off the PSO-type
@@ -4206,14 +4231,9 @@ float CWeapon::GetLensFOV() const
 // afterwards. The eyepiece can only zoom IN (zooming out would reach past the glass, where the hud is).
 void CWeapon::ScopePrismPowers(float& total, float& world) const
 {
-	shared_str sc = GetCurrentScopeSection();
-	float k = (sc.size() && pSettings->line_exist(*sc, "scope_prism_zoom_k"))
-			? pSettings->r_float(*sc, "scope_prism_zoom_k")
-			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_zoom_k", 0.6f);
+	float k = ScopeTuneFloat("scope_prism_zoom_k", 0.6f);
 	clamp(k, 0.1f, 2.f);
-	float share = (sc.size() && pSettings->line_exist(*sc, "scope_prism_world_share"))
-			? pSettings->r_float(*sc, "scope_prism_world_share")
-			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_world_share", 0.7f);
+	float share = ScopeTuneFloat("scope_prism_world_share", 0.7f);
 	clamp(share, 0.3f, 1.f);
 	extern float g_fov;
 	const float lens = GetLensFOV();
@@ -4231,10 +4251,7 @@ float CWeapon::ScopeWorldPower(float total, float share, float k) const
 	float world	= total * share;
 	if (k > 0.f && m_lens_steps > 0 && m_lens_min > 1.f)
 	{
-		shared_str sc = GetCurrentScopeSection();
-		float follow = (sc.size() && pSettings->line_exist(*sc, "scope_prism_power_follow"))
-				? pSettings->r_float(*sc, "scope_prism_power_follow")
-				: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_power_follow", 0.5f);
+		float follow = ScopeTuneFloat("scope_prism_power_follow", 0.5f);
 		clamp(follow, 0.f, 1.f);
 		const float tmin	= _min(m_lens_min, m_lens_max) * k;
 		if (tmin > 0.f && total > tmin)
@@ -4967,10 +4984,7 @@ void CWeapon::Scope2DPowers(float& total, float& world) const
 		if (t_aim > EPS_S)
 			total = (tanf(deg2rad(g_fov) * 0.5f) / t_aim) * Scope2DPipMatch();
 	}
-	shared_str sc = GetCurrentScopeSection();
-	float share = (sc.size() && pSettings->line_exist(*sc, "scope_prism_world_share"))
-			? pSettings->r_float(*sc, "scope_prism_world_share")
-			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_world_share", 0.7f);
+	float share = ScopeTuneFloat("scope_prism_world_share", 0.7f);
 	clamp(share, 0.3f, 1.f);
 	world = ScopeWorldPower(total, share, 0.f);
 }

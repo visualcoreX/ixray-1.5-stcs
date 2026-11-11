@@ -91,6 +91,7 @@ float4 main( v2p I ) : SV_Target
 	// the ocular's own uv, before the sway and the aspect squeeze below: the glass is 0..1 here
 	float2 uv_glass = I.tc0.xy;
 	const float field = lens_field_stop(I.pos_v, I.axis_v, uv_glass);	// first thing: it takes derivatives (scope_field.h)
+	const float quad_h = lens_quad_height(I.pos_v, I.axis_v, uv_glass);	// the ocular on screen: the true power's scale (scope_field.h)
     const bool prism = m_scope_prism.w > 0.5;	// the lens-off prism mode, see below
     if (!prism && m_hud_params.y * m_hud_params.a < 0.0001) return float4 (0,0,0,0);
 
@@ -109,6 +110,8 @@ float4 main( v2p I ) : SV_Target
 
     // ����������� �������� � ����� ���, ����� �� ����� ���������� ������ ���� ���������� ���������
     I.tc0.x = resize(I.tc0.x, screen_res.x/screen_res.y, 0);
+    // the 3D lens at its true power: only the capture's part the ocular's size on screen covers (scope_field.h)
+    if (!prism && m_scope_prism.y > 0.5f)	I.tc0 = 0.5f + (I.tc0 - 0.5f) * quad_h;
 	// The lens-off prism mode (CWeapon::IsScopePrismCfg): no lens picture was rendered -- the ONE world render of
 	// the frame was copied into s_vp2 just before the hud's glass (CRender::CaptureScopePrism), with the eyepiece
 	// cut out of the hud so the world lies under it, already magnified by the camera's share. Sample it where
