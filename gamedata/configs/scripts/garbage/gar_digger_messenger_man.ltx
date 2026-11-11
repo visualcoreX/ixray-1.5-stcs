@@ -35,7 +35,8 @@ wounded = wounded
 [walker@time]
 path_walk = digger_messenger_safe_place_walk
 path_look = digger_messenger_safe_place_look
-combat_ignore_cond = true
+; the dogs now come straight away, not after the 25 s the timer below waits: shoot at whatever is near (orig true)
+combat_ignore_cond = {=fighting_dist_ge(30)}
 on_timer = 25000 | walker@dogs
 on_info = {+gar_story_messenger_dogs_dead} walker@catch_sound
 meet = no_meet
@@ -47,6 +48,8 @@ path_walk = digger_messenger_safe_place_walk
 path_look = digger_messenger_safe_place_look
 on_info = {+gar_story_messenger_dogs_dead} walker@catch_sound
 on_info2 = %=play_sound(gar_digger_messenger_shout:stalker:gar_digger_messenger_man_name)%
+; the info comes from the task gar_story_kill_dogs; a pack killed with no task running left him shouting for good
+on_info3 = {!squad_exist(gar_digger_messenger_dogs)} walker@catch_sound %+gar_story_messenger_dogs_dead%
 meet = no_meet
 out_restr = gar_space_restrictor_messenger_block
 wounded = wounded

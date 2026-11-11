@@ -1563,10 +1563,15 @@ function sim_stay_point:init_defend_smart_delay(attack_squad)
 --	end
 	if db.actor:position():distance_to_sqr(target_smart_obj.position) <= PLAYER_HELP_MAX_RADIUS then
 		local tm = task_manager.get_task_manager()
-		for k, task in pairs (tm.task_info) do
-			local task_type = task.type
-			if task_type == "defend_smart" or task_type == "defend_smart_delay" then
-				return
+		-- One defend task at a time -- but not for the messenger's dogs: theirs is the story task gar_story_kill_dogs
+		-- (tm_garbadge.ltx; it launches their attack and gives gar_story_messenger_dogs_dead), and with any other
+		-- defend task running the pack sat at gar_smart_terrain_6_5 for good. Task keys are per smart, so two coexist.
+		if attack_squad.squad_id ~= "gar_digger_messenger_dogs" then
+			for k, task in pairs (tm.task_info) do
+				local task_type = task.type
+				if task_type == "defend_smart" or task_type == "defend_smart_delay" then
+					return
+				end
 			end
 		end
 		local task = tm:select_task("defend_smart_delay", target_smart_obj, self.delay_attack_defender)
