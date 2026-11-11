@@ -137,6 +137,12 @@ float	LaserBeam_HudToWorldK		();
 // Does the ray from `from` along unit `dir` run into the posed geometry of these bones (CSV, may be NULL)
 // of model K, drawn at `xform`, nearer than `dist`? Hidden bones do not count. `dist` comes down to the hit.
 bool	LaserBeam_PickBones			(IKinematics* K, const Fmatrix& xform, LPCSTR bones, const Fvector& from, const Fvector& dir, float& dist);
+// For a 3D lens frame (the scene drawn again from the eye at the optic's fov, with no weapon in it): moves
+// the beam's start back along the line from `to` to just in front of the eye. The gun the beam leaves is not
+// drawn there, and the lens's view is far wider near the eye than a real optic's aperture, so the start
+// stays in the picture even at the glass; brought this close, it lies outside it and the beam comes in
+// from the edge. Left alone for a beam running across the view.
+void	LaserBeam_LensFrameStart	(Fvector& from, const Fvector& to);
 // How far along the beam to look for what stops it on the gun or the hands: anything further is the world's.
 const float LASER_BEAM_GUN_RANGE	= 2.f;
 

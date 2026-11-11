@@ -306,6 +306,22 @@ static void split_bone_csv(LPCSTR csv, xr_vector<shared_str>& out)
 	}
 }
 
+void LaserBeam_LensFrameStart(Fvector& from, const Fvector& to)
+{
+	const Fvector&	cp	= Device.vCameraPosition;
+	const Fvector&	cd	= Device.vCameraDirection;
+	Fvector d;		d.sub(from, to);
+	const float l	= d.magnitude();
+	if (l < EPS_L)	return;
+	d.mul			(1.f / l);
+	const float s	= d.dotproduct(cd);					// < 0: back along the beam comes closer to the eye
+	if (s > -0.1f)	return;
+	const float depth	= Fvector().sub(from, cp).dotproduct(cd);
+	const float target	= 2.f * VIEWPORT_NEAR;			// just past the near plane
+	if (depth <= target)	return;
+	from.mad		(d, (target - depth) / s);
+}
+
 bool LaserBeam_PickBones(IKinematics* K, const Fmatrix& xform, LPCSTR bones, const Fvector& from, const Fvector& dir, float& dist)
 {
 	if (!K || !bones || !bones[0])	return false;

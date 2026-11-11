@@ -63,6 +63,7 @@ public:
 	xr_vector<R_dsgraph::_MatrixItemS,render_allocator::helper<R_dsgraph::_MatrixItemS>::result>	lstHUDLensLate;
 	void		r_dsgraph_render_lens_late						();
 	void		r_dsgraph_render_lens_undistort					();	// the hud's glass back out of the distortion mask
+	bool		r_dsgraph_mark_hud_glass						();	// stencil 0x80 where it cut the hud out (laser beams)
 
 #if RENDER!=R_R1
 	R_dsgraph::mapSorted_T										mapWmark;			// sorted

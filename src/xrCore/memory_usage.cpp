@@ -39,6 +39,10 @@ XRCORE_API void log_vminfo	()
 // unloads -- long after whatever wrote over a block's header. The walk below stops right at the damage, so the
 // report logs the last good block and the bytes around where the next one should start: whatever is written there
 // in place of a header often names the data that ran over it (a string, a file or texture name, floats, pointers).
+// Not after a block of HEAP_HUGE_BLOCK or more: the 32-bit NT heap gives such a block pages of its own
+// (VirtualAlloc), the walk lists them apart from the rest, and the next block is not after it in memory -- what
+// follows it is the untouched (zero) tail of its own last page.
+static const u32 HEAP_HUGE_BLOCK = 0x7F000 - 64;	// VirtualMemoryThreshold, 508 KB, less a header's worth
 static bool heap_read16(const u8* p, u8* out)
 {
 	__try	{ for (int i = 0; i < 16; ++i) out[i] = p[i]; }
@@ -55,7 +59,12 @@ static void heap_broken(const char* what)
 	while ((st = _heapwalk(&hi)) == _HEAPOK)	{ last = hi; ++good; }
 	Msg("! [heap] %s: the walk stops with status %d after %u good blocks", what, st, good);
 	const u8*	end		= last._pentry ? (const u8*)last._pentry + last._size : NULL;
-	if (end)
+	const bool	huge	= end && last._size >= HEAP_HUGE_BLOCK;
+	if (huge)
+		Msg("! [heap] last good block %p, %u bytes, %s: big enough to have pages of its own, so the broken block is NOT "
+			"right after it in memory, only next in the walk (likely another block of 508 KB or more)",
+			last._pentry, (u32)last._size, last._useflag == _USEDENTRY ? "in use" : "free");
+	else if (end)
 	{
 		Msg("! [heap] last good block %p, %u bytes, %s; the bad one starts at %p (offset +0 below)",
 			last._pentry, (u32)last._size, last._useflag == _USEDENTRY ? "in use" : "free", end);
@@ -77,9 +86,11 @@ static void heap_broken(const char* what)
 		}
 	}
 	FlushLog();
-	if (end)	Debug.fatal(DEBUG_INFO, "%s: the damage starts at %p, right after a good %u-byte block at %p, %u good blocks into the heap (the bytes there are in the log)",
-					what, end, (u32)last._size, last._pentry, good);
-	else		Debug.fatal(DEBUG_INFO, "%s: at the very start of the heap", what);
+	if (huge)		Debug.fatal(DEBUG_INFO, "%s: %u good blocks into the heap, the next after a %u-byte block at %p; that block has pages of its own, so the broken one is elsewhere (likely another block of 508 KB or more)",
+						what, good, (u32)last._size, last._pentry);
+	else if (end)	Debug.fatal(DEBUG_INFO, "%s: the damage starts at %p, right after a good %u-byte block at %p, %u good blocks into the heap (the bytes there are in the log)",
+						what, end, (u32)last._size, last._pentry, good);
+	else			Debug.fatal(DEBUG_INFO, "%s: at the very start of the heap", what);
 }
 
 u32	mem_usage_impl	(u32* pBlocksUsed, u32* pBlocksFree)

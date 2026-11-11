@@ -459,6 +459,10 @@ namespace
 		d.RelaxFreq		= hud_recoil_f	(s, pfx, "relax_freq",		def.RelaxFreq);
 		d.RelaxDamp		= hud_recoil_f	(s, pfx, "relax_damping",	def.RelaxDamp);
 		d.Mouse			= clampr(hud_recoil_f(s, pfx, "mouse",		def.Mouse), 0.f, 1.f);
+		// sideways as a part of the vertical, so it follows whatever mouse is set to
+		d.MouseHorz		= d.Mouse * _max(hud_recoil_f(s, pfx, "mouse_horz_k",
+										 def.Mouse > 0.f ? def.MouseHorz / def.Mouse : 0.5f), 0.f);
+		clamp			(d.MouseHorz, 0.f, 1.f);
 		d.CameraSplit	= clampr(hud_recoil_f(s, pfx, "camera_split",	def.CameraSplit), 0.f, 1.f);
 		d.PushBack		= _max(hud_recoil_f(s, pfx, "push_back",	def.PushBack), 0.f);
 		d.PushMax		= _max(hud_recoil_f(s, pfx, "push_max",		def.PushMax), 0.f);
@@ -517,6 +521,7 @@ const HudRecoilData* CWeapon::CurrentHudRecoilData()
 		m_hud_recoil_blend.Roll			*= k;
 		m_hud_recoil_blend.SettleRoll	*= k;
 		m_hud_recoil_blend.Mouse		*= k;
+		m_hud_recoil_blend.MouseHorz	*= k;
 	}
 	return &m_hud_recoil_blend;
 }
@@ -1409,6 +1414,10 @@ void CWeapon::UpdateLaserDot()
 	// The volumetric beam's emitter and axis, read off the model's own mesh beam (SLaserEmitter). It also
 	// keeps the dot working when that bone is hidden (laser_beam_hide_mesh): the skeleton stops
 	// recalculating a hidden bone, so its pose is rebuilt from the device bone it hangs off instead.
+	// The gun is not in the picture: a 3D lens frame (the world drawn again at the optic's power, CActor::OnHUDDraw)
+	// or the flat 2D scope, which hides the hud model altogether (need_renderable). Seen through either, the
+	// beam would start in the air.
+	const bool no_gun = (g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow) || !need_renderable();
 	const bool em_ok = m_LaserBeam.enabled
 		&& m_LaserBeam.hud.Update(K, m_sLaserRayBones.size() ? m_sLaserRayBones.c_str() : m_sLaserBone.c_str(), m_sLaserBone.c_str());
 	Fmatrix ref_full;
@@ -1450,6 +1459,13 @@ void CWeapon::UpdateLaserDot()
 		if (hi->m_parent->pick_hands(beam_from, beam_dir, stop))	blocked = true;
 		if (blocked)
 		{
+			// a lens frame or the 2D scope has neither the gun nor the hands in it: what the beam stops on is
+			// not in the picture, so neither is the beam (the dot's light is left as the last frame put it)
+			if (no_gun)
+			{
+				if (m_pLaserDot)	CParticlesObject::Destroy(m_pLaserDot);
+				return;
+			}
 			Fvector hit;	hit.mad(beam_from, beam_dir, stop);
 			LaserBeam_HudPointToWorld	(hit);
 			LaserBeam_HudPointToWorld	(beam_from);
@@ -1611,6 +1627,12 @@ void CWeapon::UpdateLaserDot()
 				if (h < range - EPS_L)	{ dot_surf.mad(cp, vd, h); dot_ok = true; }
 			}
 		}
+		// A 3D lens frame has no weapon in it, so the beam would start in the air inside the picture: run its
+		// start back towards the eye, out of the lens's view. Not for the flat 2D scope: its art is open
+		// round the glass, and the start run back would be seen crossing the world there -- the renderer
+		// runs it back inside the glass only (phase_laser_beams, the eyepiece circle).
+		if (g_pGamePersistent && g_pGamePersistent->m_bLensFrameNow)
+			LaserBeam_LensFrameStart	(beam_from, beam_to);
 		m_LaserBeam.Publish			(beam_from, beam_dir, beam_to, beam_to_hit, dot_ok, dot_surf);
 	}
 
@@ -4172,6 +4194,31 @@ float CWeapon::GetLensFOV() const
 	return rad2deg(2.0f * atanf(tanf(half) / factor));
 }
 
+// An optic's magnification tuning (scope_prism_*, scope_lens_true_power): the active scope section, then the addon
+// item it names -- one place for an optic that sits on many guns (the ELCAN's eleven scope sections) -- then the weapon.
+float CWeapon::ScopeTuneFloat(LPCSTR key, float def) const
+{
+	shared_str sc = GetCurrentScopeSection();
+	if (sc.size() && pSettings->line_exist(*sc, key))				return pSettings->r_float(*sc, key);
+	if (IsScopeAttached())
+	{
+		shared_str item = GetAttachedScopeName();
+		if (item.size() && pSettings->section_exist(*item) && pSettings->line_exist(*item, key))
+			return pSettings->r_float(*item, key);
+	}
+	return READ_IF_EXISTS(pSettings, r_float, cNameSect(), key, def);
+}
+
+// THE 3D LENS AT ITS TRUE POWER (scope_lens_true_power = 1). The lens squeezes its whole capture into the ocular's
+// mesh (Scope2DPipMatch has the story), so the eye gets the lens factor times the mesh's height on screen -- a number
+// no config knows, different on every gun's hud. With this key the lens shader measures that height itself (the uv's
+// screen derivatives, scope_field.h lens_quad_height) and samples only the capture's matching middle, so the eye gets
+// the lens factor exactly: 1 = the world in the glass is the size of the world round it, 4 = four times that.
+bool CWeapon::LensTruePower() const
+{
+	return IsLensedScope() && ScopeTuneFloat("scope_lens_true_power", 0.f) > 0.5f;
+}
+
 // THE LENS-OFF PRISM MODE'S POWER, and how it is split. In total it is the 3D lens's apparent power: the 3D lens
 // stretches its whole frame over the glass, and the glass covers only ~0.8 of the screen's height, so the eye gets
 // the factor times that (scope_prism_zoom_k, scope section then the weapon's). The default was 0.8, read off the PSO-type
@@ -4184,14 +4231,9 @@ float CWeapon::GetLensFOV() const
 // afterwards. The eyepiece can only zoom IN (zooming out would reach past the glass, where the hud is).
 void CWeapon::ScopePrismPowers(float& total, float& world) const
 {
-	shared_str sc = GetCurrentScopeSection();
-	float k = (sc.size() && pSettings->line_exist(*sc, "scope_prism_zoom_k"))
-			? pSettings->r_float(*sc, "scope_prism_zoom_k")
-			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_zoom_k", 0.6f);
+	float k = ScopeTuneFloat("scope_prism_zoom_k", 0.6f);
 	clamp(k, 0.1f, 2.f);
-	float share = (sc.size() && pSettings->line_exist(*sc, "scope_prism_world_share"))
-			? pSettings->r_float(*sc, "scope_prism_world_share")
-			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_world_share", 0.7f);
+	float share = ScopeTuneFloat("scope_prism_world_share", 0.7f);
 	clamp(share, 0.3f, 1.f);
 	extern float g_fov;
 	const float lens = GetLensFOV();
@@ -4209,10 +4251,7 @@ float CWeapon::ScopeWorldPower(float total, float share, float k) const
 	float world	= total * share;
 	if (k > 0.f && m_lens_steps > 0 && m_lens_min > 1.f)
 	{
-		shared_str sc = GetCurrentScopeSection();
-		float follow = (sc.size() && pSettings->line_exist(*sc, "scope_prism_power_follow"))
-				? pSettings->r_float(*sc, "scope_prism_power_follow")
-				: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_power_follow", 0.5f);
+		float follow = ScopeTuneFloat("scope_prism_power_follow", 0.5f);
 		clamp(follow, 0.f, 1.f);
 		const float tmin	= _min(m_lens_min, m_lens_max) * k;
 		if (tmin > 0.f && total > tmin)
@@ -4945,10 +4984,7 @@ void CWeapon::Scope2DPowers(float& total, float& world) const
 		if (t_aim > EPS_S)
 			total = (tanf(deg2rad(g_fov) * 0.5f) / t_aim) * Scope2DPipMatch();
 	}
-	shared_str sc = GetCurrentScopeSection();
-	float share = (sc.size() && pSettings->line_exist(*sc, "scope_prism_world_share"))
-			? pSettings->r_float(*sc, "scope_prism_world_share")
-			: READ_IF_EXISTS(pSettings, r_float, cNameSect(), "scope_prism_world_share", 0.7f);
+	float share = ScopeTuneFloat("scope_prism_world_share", 0.7f);
 	clamp(share, 0.3f, 1.f);
 	world = ScopeWorldPower(total, share, 0.f);
 }
