@@ -439,19 +439,12 @@ void CLevel::cl_Process_Event				(u16 dest, u16 type, NET_Packet& P)
 	}
 };
 
-// Time per frame for spawns and other game events once the level is running (see CLevel::OnFrame).
-// A stalker costs ~5 ms to spawn, an item under 1 ms, so this is about one NPC or a handful of items.
-static const u32	game_events_frame_budget_ms	= 4;
-
-void CLevel::ProcessGameEvents		(u32 budget_ms)
+void CLevel::ProcessGameEvents		()
 {
 	// Game events
 	{
 		NET_Packet			P;
 		u32 svT				= timeServer()-NET_Latency;
-		const u64 t_start	= CPU::QPC();
-		const u64 t_budget	= CPU::qpc_freq * budget_ms / 1000;
-		bool processed		= false;
 
 		/*
 		if (!game_events->queue.empty())	
@@ -460,10 +453,6 @@ void CLevel::ProcessGameEvents		(u32 budget_ms)
 
 		while	(game_events->available(svT))
 		{
-			if (budget_ms && processed && CPU::QPC() - t_start >= t_budget)
-				break;
-			processed			= true;
-
 			u16 ID,dest,type;
 			game_events->get	(ID,dest,type,P);
 
@@ -611,13 +600,8 @@ void CLevel::OnFrame	()
 	}
 
 	{
-		// Spawns land here: an object coming online builds its model, motions, sounds and logic.
-		// A squad switching online used to arrive as one burst -- 100-280 spawns (NPCs, then every
-		// binocular, torch and weapon they carry) in a single frame, 70-460 ms. Spread it: a few ms
-		// of events per frame, the rest in order on the following frames. Not during the precache
-		// that ends a level load, where nothing is on screen yet and the whole level is spawning.
 		hitch::zone			hz("level/game_events");
-		ProcessGameEvents	(Device.dwPrecacheFrame ? 0 : game_events_frame_budget_ms);
+		ProcessGameEvents	();
 	}
 
 
