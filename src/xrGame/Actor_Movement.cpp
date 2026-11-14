@@ -439,6 +439,9 @@ float	g_actor_yaw_snap	= 100.f;	// bigger than this in one go = teleport, not a 
 // How stiffly the diagonal body turn (actor.ltx *_strafe_yaw) follows the keys: the angular frequency
 // of a critically damped spring, 1/s. 0 = the stock constant 720 deg/s slide.
 float	g_actor_strafe_yaw_omega	= 10.f;
+// Share of that diagonal turn kept while sprinting: the sprint cycle is a straight forward run, so a
+// full 45 degrees reads as the body skewed across its own path. 1 = as walking, 0 = no turn at all.
+float	g_actor_sprint_strafe_yaw_k	= 0.5f;
 
 #define ACTOR_LLOOKOUT_ANGLE	PI_DIV_4
 #define ACTOR_RLOOKOUT_ANGLE	PI_DIV_4
@@ -493,6 +496,9 @@ void CActor::g_Orientate	(u32 mstate_rl, float dt)
 		calc_yaw = -r_strafe_yaw;//-PI_DIV_4+EPS_L; 
 		break;
 	}
+	// The spring below eases the change when the sprint starts or ends mid-diagonal.
+	if (mstate_rl&mcSprint)
+		calc_yaw	*= g_actor_sprint_strafe_yaw_k;
 
 	// lerp angle for "effect" and capture torso data from camera
 	// The stock lerp slid the body at a constant 720 deg/s with no run-up and a dead stop, so

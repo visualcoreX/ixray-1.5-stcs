@@ -2726,6 +2726,9 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 		// First and third person both: in first person it is what the shadow turns with.
 		extern float	g_actor_strafe_yaw_omega;
 		CMD4(CCC_Float,		"g_actor_strafe_yaw_omega",	&g_actor_strafe_yaw_omega,	0.f, 60.f);
+		// how much of that diagonal turn is kept while sprinting: 1 = as walking, 0 = none
+		extern float	g_actor_sprint_strafe_yaw_k;
+		CMD4(CCC_Float,		"g_actor_sprint_strafe_yaw_k",	&g_actor_sprint_strafe_yaw_k,	0.f, 1.f);
 	}
 	// Top-left overlay for every playing hud blend: source .omf, motion name, time and state.
 	// Registered here rather than in the DEBUG block so it works in a Release build.
