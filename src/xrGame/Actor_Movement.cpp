@@ -710,7 +710,10 @@ bool CActor::CanSprint()
 	bool can_Sprint = CanAccelerate() && !conditions().IsCantSprint() &&
 						Game().PlayerCanSprint(this)
 						&& CanRun()
-						&& !(mstate_real&mcLStrafe || mstate_real&mcRStrafe)
+						// A strafe key breaks the sprint only when it is the whole of the movement: with
+						// W held too the sprint just turns diagonal (the move vector is normalized in
+						// g_cl_CheckControls, so the diagonal is no faster than the straight line).
+						&& !((mstate_real&(mcLStrafe|mcRStrafe)) && !(mstate_real&mcFwd))
 						&& InventoryAllowSprint()
 						;
 
