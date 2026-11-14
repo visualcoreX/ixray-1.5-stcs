@@ -264,6 +264,7 @@ CActor::CActor() : CEntityAlive()
 	r_torso_tgt_roll		= 0;
 	r_model_yaw				= 0;
 	r_model_yaw_delta		= 0;
+	m_fModelYawDeltaVel		= 0;
 	r_model_yaw_dest		= 0;
 	m_fModelYawVis			= 0;
 	m_bModelYawVisValid		= false;

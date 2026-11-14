@@ -2722,6 +2722,10 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 		CMD4(CCC_Integer,	"g_actor_yaw_smooth",		&g_actor_yaw_smooth,		0, 1);
 		CMD4(CCC_Float,		"g_actor_yaw_speed",		&g_actor_yaw_speed,			10.f, 1440.f);
 		CMD4(CCC_Float,		"g_actor_yaw_snap",			&g_actor_yaw_snap,			10.f, 180.f);
+		// the diagonal body turn's spring (g_Orientate): higher = snappier, 0 = stock 720 deg/s slide.
+		// First and third person both: in first person it is what the shadow turns with.
+		extern float	g_actor_strafe_yaw_omega;
+		CMD4(CCC_Float,		"g_actor_strafe_yaw_omega",	&g_actor_strafe_yaw_omega,	0.f, 60.f);
 	}
 	// Top-left overlay for every playing hud blend: source .omf, motion name, time and state.
 	// Registered here rather than in the DEBUG block so it works in a Release build.

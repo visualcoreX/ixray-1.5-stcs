@@ -289,6 +289,7 @@ protected:
 	float					r_model_yaw_dest;
 	float					r_model_yaw;			// orientation of model
 	float					r_model_yaw_delta;		// effect on multiple "strafe"+"something"
+	float					m_fModelYawDeltaVel;	// its turn rate, rad/s: the spring in g_Orientate
 	// What the world model is actually DRAWN at: r_model_yaw+r_model_yaw_delta eased at a limited
 	// rate, so the body turns into a new heading instead of teleporting to it. r_model_yaw itself is
 	// left alone because movement rides on it (g_cl_Analyze rotates vControlAccel by it). See

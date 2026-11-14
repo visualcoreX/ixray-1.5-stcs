@@ -436,6 +436,9 @@ void CActor::g_cl_CheckControls(u32 mstate_wf, Fvector &vControlAccel, float &Ju
 BOOL	g_actor_yaw_smooth	= TRUE;
 float	g_actor_yaw_speed	= 240.f;	// degrees a second the drawn body turns to catch up
 float	g_actor_yaw_snap	= 100.f;	// bigger than this in one go = teleport, not a turn: jump to it
+// How stiffly the diagonal body turn (actor.ltx *_strafe_yaw) follows the keys: the angular frequency
+// of a critically damped spring, 1/s. 0 = the stock constant 720 deg/s slide.
+float	g_actor_strafe_yaw_omega	= 10.f;
 
 #define ACTOR_LLOOKOUT_ANGLE	PI_DIV_4
 #define ACTOR_RLOOKOUT_ANGLE	PI_DIV_4
@@ -492,7 +495,28 @@ void CActor::g_Orientate	(u32 mstate_rl, float dt)
 	}
 
 	// lerp angle for "effect" and capture torso data from camera
-	angle_lerp		(r_model_yaw_delta,calc_yaw,PI_MUL_4,dt);
+	// The stock lerp slid the body at a constant 720 deg/s with no run-up and a dead stop, so
+	// flicking A/D on a diagonal sprint threw it 90 degrees across in an eighth of a second -- and in
+	// first person the shadow is cast from exactly this heading, with no other smoothing on it. A
+	// critically damped spring instead: it starts and stops softly, and taps faster than it can turn
+	// average out instead of jerking the body side to side. Visual only: the walk direction rides on
+	// r_model_yaw, not on the delta. Both ends stay within +-45 degrees, so no wrap to worry about.
+	if (g_actor_strafe_yaw_omega > EPS)
+	{
+		// Unity's SmoothDamp step: the exact spring solution with exp() approximated, stable at any dt.
+		const float omega	= g_actor_strafe_yaw_omega;
+		const float x		= omega * dt;
+		const float e		= 1.f / (1.f + x + 0.48f * x * x + 0.235f * x * x * x);
+		const float change	= r_model_yaw_delta - calc_yaw;
+		const float temp	= (m_fModelYawDeltaVel + omega * change) * dt;
+		m_fModelYawDeltaVel	= (m_fModelYawDeltaVel - omega * temp) * e;
+		r_model_yaw_delta	= calc_yaw + (change + temp) * e;
+	}
+	else
+	{
+		m_fModelYawDeltaVel	= 0.f;
+		angle_lerp			(r_model_yaw_delta,calc_yaw,PI_MUL_4,dt);
+	}
 
 	// ---- how fast the WORLD model may turn ---------------------------------------------------
 	// While moving, g_cl_Orientate snaps r_model_yaw straight onto the camera every frame, so in
