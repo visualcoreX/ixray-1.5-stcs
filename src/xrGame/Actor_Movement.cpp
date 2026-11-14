@@ -134,6 +134,22 @@ void CActor::g_cl_ValidateMState(float dt, u32 mstate_wf)
 		}
 	}
 
+	// The stand-up a sprint asked for (SprintOutOfCrouch) has been tried. Done: the sprint takes over
+	// next frame. No room to stand (a low ceiling): put the crouch toggle back and drop the sprint, as
+	// if the key had not been pressed -- otherwise the actor would get up by himself, and in toggle
+	// sprint mode break into a run, the moment he came out from under it.
+	if (m_bSprintStandUp)
+	{
+		m_bSprintStandUp		= false;
+		if (mstate_real & mcCrouch)
+		{
+			extern bool g_bAutoClearCrouch;
+			g_bAutoClearCrouch	= false;
+			mstate_wishful		|= mcCrouch;
+			mstate_wishful		&= ~mcSprint;
+		}
+	}
+
 	if(!CanAccelerate()&&isActorAccelerated(mstate_real, IsZoomAimingMode()))
 	{
 		mstate_real				^=mcAccel;
@@ -266,7 +282,11 @@ void CActor::g_cl_CheckControls(u32 mstate_wf, Fvector &vControlAccel, float &Ju
 		if(!(mstate_real&(mcFwd|mcLStrafe|mcRStrafe))||mstate_real&(mcCrouch|mcClimb)|| !isActorAccelerated(mstate_wf, IsZoomAimingMode()))
 		{
 			mstate_real&=~mcSprint;
-			mstate_wishful&=~mcSprint;
+			// A sprint that stands the actor up out of a toggled crouch (SprintOutOfCrouch) is still
+			// crouched this frame -- g_cl_ValidateMState runs after us and does the standing -- so the
+			// wish has to outlive this one frame; that function settles it either way.
+			if (!m_bSprintStandUp)
+				mstate_wishful&=~mcSprint;
 		}
 
 		// smooth sprint acceleration ramp (0..1): while sprinting, ease up over m_fSprintAccelTime; reset the

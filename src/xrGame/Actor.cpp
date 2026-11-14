@@ -258,6 +258,8 @@ CActor::CActor() : CEntityAlive()
 	pCamBobbing				= 0;
 
 
+	m_bSprintStandUp		= false;
+
 	r_torso.yaw				= 0;
 	r_torso.pitch			= 0;
 	r_torso.roll			= 0;

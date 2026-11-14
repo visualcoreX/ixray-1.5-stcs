@@ -512,6 +512,11 @@ public:
 	// Drop the sprint from outside the input code (a reload does it when the option says so).
 	// mstate_wishful is protected, and the next movement update carries it into mstate_real.
 			void			StopSprint				()	{ mstate_wishful &= ~mcSprint; }
+	// A sprint asked for from a toggled crouch: drops the toggle so the actor stands up into it.
+	// m_bSprintStandUp marks the stand-up as the sprint's own, for g_cl_CheckControls and
+	// g_cl_ValidateMState (Actor_Movement.cpp) -- see SprintOutOfCrouch in ActorInput.cpp.
+			void			SprintOutOfCrouch		();
+			bool			m_bSprintStandUp;
 	virtual void			IR_OnMouseWheel			(int direction);
 	virtual	float			GetLookFactor			();
 
