@@ -442,6 +442,17 @@ IC	void					wake_up				(){m_bSleep = false;}
 	float					m_skin_armor;
 	float					m_hit_fraction_monster;
 
+	// Per-bone skin armour from the same protections_sect: any line named after a bone,
+	// "bone = armor[, hit_fraction]", overrides the two values above for hits on that bone
+	// (hit_fraction defaults to hit_fraction_monster). Resolved in reload(), once the visual is
+	// known; bones the visual lacks are skipped with a log line.
+	struct SSkinBone
+	{
+		float				armor;
+		float				hit_fraction;
+	};
+	xr_map<u16,SSkinBone>	m_skin_bones;
+
 private:
 	bool					ignore_collision_hit;
 	

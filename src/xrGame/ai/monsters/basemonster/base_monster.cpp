@@ -286,22 +286,35 @@ void	CBaseMonster::Hit							(SHit* pHDS)
 
 	// Gunslinger skin armour, mirroring CAI_Stalker::Hit's bone-armour block: bullets only.
 	// m_skin_armor is 0 unless the monster names a protections_sect, so untouched monsters and
-	// every non-bullet hit take exactly the stock path.
-	if (m_skin_armor > EPS && pHDS->hit_type == ALife::eHitTypeFireWound)
+	// every non-bullet hit take exactly the stock path. A bone listed in protections_sect brings
+	// its own armour and hit_fraction (an armour of 0 there leaves that bone unarmoured).
+	float	skin_armor		= m_skin_armor;
+	float	hit_fraction	= m_hit_fraction_monster;
+	if (!m_skin_bones.empty() && pHDS->hit_type == ALife::eHitTypeFireWound)
+	{
+		xr_map<u16,SSkinBone>::const_iterator	it = m_skin_bones.find(pHDS->boneID);
+		if (it != m_skin_bones.end())
+		{
+			skin_armor		= it->second.armor;
+			hit_fraction	= it->second.hit_fraction;
+		}
+	}
+
+	if (skin_armor > EPS && pHDS->hit_type == ALife::eHitTypeFireWound)
 	{
 		SHit	HDS			= *pHDS;
 		float	hit_power	= HDS.power;
 		float	ap			= HDS.armor_piercing;
 
-		if (ap > EPS && ap > m_skin_armor)
+		if (ap > EPS && ap > skin_armor)
 		{
-			hit_power		*= (ap - m_skin_armor) / ap;
-			if (hit_power < m_hit_fraction_monster)
-				hit_power	= m_hit_fraction_monster;
+			hit_power		*= (ap - skin_armor) / ap;
+			if (hit_power < hit_fraction)
+				hit_power	= hit_fraction;
 		}
 		else
 		{
-			hit_power		*= m_hit_fraction_monster;
+			hit_power		*= hit_fraction;
 			HDS.add_wound	= false;
 		}
 
