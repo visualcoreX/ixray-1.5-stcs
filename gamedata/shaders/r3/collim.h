@@ -376,13 +376,23 @@ float3	collim_reflection_dn( float3 v, float3 ng, float3 na, float3 dn )
 
 float3	collim_reflection( float3 v, float3 ng, float3 na )	{ return collim_reflection_dn( v, ng, na, 0 ); }
 
-// The reticle's glow (its etched lines are the tint pass's darkening). 0 outside the hud (the binder).
+// The reticle's glow (its etched lines: collim_lines). 0 outside the hud (the binder).
 float3	collim_glow( float2 t, float a )
 {
 	float	inside;
 	float2	tc		= collim_mark_tc( t, a, inside );
 	float4	mark	= COLLIM_MARK( tc );
 	return	mark.rgb * mark.a * m_collim_mark.rgb * inside;
+}
+
+// How dark an etched reticle's lines lay over the view (0..1, m_collim_prism.z = collimator_mark_dark; 0 on a sight
+// without them). Laid on by the late pass, over the picture already distorted, so the lines stay put as the glow
+// does (model_collim_late.ps); the tint pass used to darken the view with them, and the haze rippled them with it.
+float	collim_lines( float2 t, float a )
+{
+	float	inside;
+	float2	tc		= collim_mark_tc( t, a, inside );
+	return	COLLIM_MARK( tc ).a * inside * m_collim_prism.z;
 }
 
 #endif

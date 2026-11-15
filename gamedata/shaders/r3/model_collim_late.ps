@@ -35,6 +35,8 @@ float4 main( v2p_collim I, float4 pos2d : SV_Position ) : SV_Target
 	float	ad;
 	float2	t		= collim_sight( v, I.axis_w, I.right_w, ad );
 	float	dark	= (m_collim_prism.w > 0.5) ? (1 - collim_field_stop( t, ad )) : 0;
+	// an etched reticle's lines black the view out as the stop does: over the picture already distorted, they stay put
+	dark			= 1 - (1 - dark) * (1 - collim_lines( t, ad ));
 	float4	t_base	= s_base.Sample( smp_base, I.tc0 );
 	float	a		= t_base.a * m_collim_glass.x;
 	float3	n		= normalize( I.norm_w );

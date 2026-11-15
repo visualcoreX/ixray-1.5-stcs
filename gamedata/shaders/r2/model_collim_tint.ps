@@ -3,16 +3,14 @@
 
 // The coating on a collimator's glass, the second pass of models_lenses / models_transparent. Blended
 // destcolor/srccolor, so the view behind ends up times 2*src: 0.5 leaves it alone. Besides the tint it
-// carries what only darkens -- a prism sight's field stop and an etched reticle's lines (collim.h).
+// carries what only darkens -- a prism sight's field stop. An etched reticle's lines darken the view in the
+// late pass instead (collim.h collim_lines), after the distortion, so the haze does not ripple them.
 // .a is 0.5 too, which keeps the target's alpha as it was.
 float4 main( v2p_collim I ) : COLOR
 {
 	float3	v		= normalize( I.pos_w - eye_position );
-	float	a, inside;
+	float	a;
 	float2	t		= collim_sight( v, I.axis_w, I.right_w, a );
-	float2	mtc		= collim_mark_tc( t, a, inside );
-	float	lines	= COLLIM_MARK( mtc ).a * inside * m_collim_prism.z;
-
-	float	k		= collim_field_stop( t, a ) * ( 1 - lines );
+	float	k		= collim_field_stop( t, a );
 	return	float4( m_collim_tint.rgb * k, 0.5 );
 }
