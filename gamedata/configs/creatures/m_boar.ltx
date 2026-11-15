@@ -348,13 +348,15 @@ bip01_pelvis 		= 1.0, -1, 0.3
 bip01_spine 		= 1.0, -1, 0.3
 bip01_spine1 		= 1.0, -1, 0.3
 bip01_spine2		= 1.0, -1, 0.3
-bip01_l_upperarm	= 1.0, -1, 0.3
-bip01_r_upperarm	= 1.0, -1, 0.3
+bip01_l_upperarm	= 1.1, -1, 0.3
+bip01_r_upperarm	= 1.1, -1, 0.3
 bip01_l_thigh		= 1.0, -1, 0.3
 bip01_r_thigh		= 1.0, -1, 0.3
 bip01_neck 			= 1.5, -1, 1.5
-bip01_head	 		= 1.5, -1, 0.3
-
+bip01_head	 		= 2.5, -1, 0.3	; orig 1.5. Paired with the head armour in boar_protections
+bone01				= 2.5, -1, 0.3
+bone04				= 3.0, -1, 0.3
+bone06				= 3.0, -1, 0.3
 
 [boar_critical_wound_bones_head]
 bip01_pelvis
@@ -474,7 +476,7 @@ radiation_immunity		= 0.0
 telepatic_immunity		= 0.0
 chemical_burn_immunity	= 0.2
 explosion_immunity		= 0.4
-fire_wound_immunity		= 1.722; orig 0.4 (x2 tougher: was 3.444)
+fire_wound_immunity		= 1.5; orig 0.4 (x2 tougher: was 3.444)
 
 [boar_attack_params_weak]
 ;---------------------------------------------------------------------------------------------------------------------------------------------
@@ -513,7 +515,7 @@ radiation_immunity		= 0.0
 telepatic_immunity		= 0.0
 chemical_burn_immunity	= 0.2
 explosion_immunity		= 0.3
-fire_wound_immunity		= 1.2915; orig 0.3 (x2 tougher: was 2.583)
+fire_wound_immunity		= 1.4; orig 0.3 (x2 tougher: was 2.583)
 
 [boar_attack_params_normal]
 ;---------------------------------------------------------------------------------------------------------------------------------------------
@@ -552,7 +554,7 @@ radiation_immunity		= 0.0
 telepatic_immunity		= 0.0
 chemical_burn_immunity	= 0.1
 explosion_immunity		= 0.3
-fire_wound_immunity		= 1.2915; orig 0.3 (x2 tougher: was 2.583)
+fire_wound_immunity		= 1.25; orig 0.3 (x2 tougher: was 2.583)
 
 [boar_attack_params_strong]
 ;---------------------------------------------------------------------------------------------------------------------------------------------
@@ -582,8 +584,12 @@ species				= zoo_monster
 ; tuned down from GS 0.5/0.24 to keep FMJ at the old CS level
 ;***************************************************************
 [boar_protections]
-skin_armor				= 0.29
-hit_fraction_monster	= 0.106
+skin_armor				= 0.20	;0.29
+hit_fraction_monster	= 0.125	;0.106
+bip01_head				= 0.35, 0.025	; per-bone skin armour + hit_fraction (base_monster.cpp Hit). With the x2.5 head scale and body skin 0.20 a head hit beats a body hit only for k_ap above 0.45 ((2.5*0.35 - 0.20)/1.5): slug (0.4) 0.63x of a body hit, 5.45 FMJ (0.45) 1.0x, 5.45 AP 1.67x, dart 1.87x, 7N14 2.0x. Rounds that do not pierce the head (buckshot, pistols) get 2.5 x 0.025, half a body hit or less
+bone01					= 0.35, 0.025
+bone04					= 0.10, 0.5
+bone06					= 0.10, 0.5
 
 ;***************************************************************
 ; Boar hit camera effectors -- Gunslinger boar_hit_front/back motions.

@@ -809,7 +809,8 @@ void	R_dsgraph_structure::r_dsgraph_render_lens_late	()
 	RCache.set_xform_project(Device.mProject);
 
 	// depth-tested in the hud's slice against the frame's depth, so the eyepiece's own rim keeps what it
-	// hides of the glass when the eye looks in from the side (under MSAA no depth is bound: all of it draws).
+	// hides of the glass when the eye looks in from the side (under MSAA no depth can be bound: the pixel shaders
+	// test the G-buffer's depth themselves, collim.h collim_late_cover).
 	// It redraws the hud's glass over the black, so its binders must give the hud's values (and the constant
 	// table is dropped on the way in and out, binders running only when it changes).
 	RCache.set_CullMode			(CULL_CCW);

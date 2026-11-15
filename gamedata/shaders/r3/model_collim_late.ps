@@ -29,10 +29,14 @@ Texture2DMS<float4, MSAA_SAMPLES>	s_vollight;
 // The rain's drops (lens_wet.h) as model_collim_glass has them: their rims hide the glow behind as they hide the view.
 float4 main( v2p_collim I, float4 pos2d : SV_Position ) : SV_Target
 {
+	float	cover	= collim_late_cover( I.pos_w, pos2d.xy );		// MSAA: the depth test no depth is bound for
+	clip( cover - 0.001 );
 	float3	v		= normalize( I.pos_w - eye_position );
 	float	ad;
 	float2	t		= collim_sight( v, I.axis_w, I.right_w, ad );
 	float	dark	= (m_collim_prism.w > 0.5) ? (1 - collim_field_stop( t, ad )) : 0;
+	// an etched reticle's lines black the view out as the stop does: over the picture already distorted, they stay put
+	dark			= 1 - (1 - dark) * (1 - collim_lines( t, ad ));
 	float4	t_base	= s_base.Sample( smp_base, I.tc0 );
 	float	a		= t_base.a * m_collim_glass.x;
 	float3	n		= normalize( I.norm_w );
@@ -41,7 +45,7 @@ float4 main( v2p_collim I, float4 pos2d : SV_Position ) : SV_Target
 	float3	glow	= collim_glow( t, ad ) * (1 - a) * (1 - lens_wet_shade(w, ng));
 	float3	water	= lens_water( I.pos_w, v, w );
 	clip( max(dark - 0.001, dot(glow, float3(1, 1, 1)) - 0.0001) );
-	if ( dark < 0.001 )	return	float4( glow, 0 );
+	if ( dark < 0.001 )	return	float4( glow * cover, 0 );
 
 	float	facing	= 0.8 * ( 0.5 * -dot( L_sun_dir_w, v ) + 0.5 ) + 0.2;
 #ifndef USE_MSAA
@@ -57,5 +61,5 @@ float4 main( v2p_collim I, float4 pos2d : SV_Position ) : SV_Target
 	float3	refl	= collim_reflection_dn( v, ng, na, w.n - ng ) * lerp( 1, 1 - t_base.a, m_collim_reflect_shape.z );
 
 	float3	res		= glow + glass * a + refl + collim_specular( v, w.n, t_base.a, COLLIM_SPEC_MAP(I.tc0).rgb, lamps.spec ) + water + haze;
-	return	float4( res * dark + glow * (1 - dark), dark );
+	return	float4( res * dark + glow * (1 - dark), dark ) * cover;
 }

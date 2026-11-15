@@ -150,7 +150,7 @@ float CCustomOutfit::GetBoneArmor(s16 element)
 	return m_boneProtection->getBoneArmor(element);
 }
 
-float CCustomOutfit::HitThroughArmor( float hit_power, s16 element, float ap, bool& add_wound )
+float CCustomOutfit::HitThroughArmor( float hit_power, s16 element, float ap, float armor_frac, bool& add_wound )
 {
 	float NewHitPower = hit_power;
 	float BoneArmor = m_boneProtection->getBoneArmor(element)*GetCondition();
@@ -184,7 +184,8 @@ float CCustomOutfit::HitThroughArmor( float hit_power, s16 element, float ap, bo
 	else
 	{
 		//пуля НЕ пробила бронь
-		NewHitPower *= m_boneProtection->m_fHitFracActor;
+		// the ammo's k_armor_frac scales what a stopped round still deals (SHit::armor_frac)
+		NewHitPower *= m_boneProtection->m_fHitFracActor * armor_frac;
 		add_wound = false; 	//раны нет
 		Hit( NewHitPower, ALife::eHitTypeFireWound );
 	}// if >=

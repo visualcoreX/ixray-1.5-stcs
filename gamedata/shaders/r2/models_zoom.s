@@ -1,8 +1,15 @@
 local tex_env0	= "$user$sky0"
 local tex_env1	= "$user$sky1"
 
+-- Reticles drawn twice side by side, unlit and lit, on a mesh that still names models\zoom: the lens takes the
+-- lerp pixel shader for them, the two halves mixed by m_zoom_deviation.z as models\zoom_lerp does (the ELCAN's).
+-- The Kashtan's tritium reticle: its glow is the light sensor's (CWeapon::ScopeReticleAutoIllum).
+local two_looks	= {
+	["crosshair\\crosshair_kashtan"]	= true,
+}
+
 function normal   (shader, t_base, t_second, t_detail)
-	shader:begin	("model_scope_eye","model_scope_lense")
+	shader:begin	("model_scope_eye", two_looks[string.lower(t_base)] and "model_scope_lense_lerp" or "model_scope_lense")
       : fog			(true)
       : zb			(true,false)
       : blend		(true,blend.srcalpha,blend.invsrcalpha)

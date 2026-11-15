@@ -32,6 +32,7 @@
    </file>
    <file name="crosshair\crosshairs_ui_kashtan">
     <texture id="crosshair_2d_kashtan" x="0" y="0" width="1820" height="1024" />
+    <texture id="crosshair_2d_kashtan_on" x="0" y="1024" width="1820" height="1024" />
    </file>
    <file name="crosshair\crosshairs_ui_pgo7v">
     <texture id="crosshair_2d_pgo7v_off" x="0" y="0" width="1820" height="1024" />

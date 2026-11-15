@@ -252,6 +252,15 @@ public:
 	// the renderer has none, the actor's own lighting. With collimator_mark_illum_switch the keys turn it
 	// between this and off. false = always lit.
 	bool		CollimatorMarkAutoIllum(Fvector& range) const;
+	// scope_reticle_auto_illum = bright, dark[, seconds], on an optic's scope section or its addon item: the etched
+	// reticle has a tritium glow, the same light sensor as collimator_mark_auto_illum (the Kashtan's, as the
+	// Rakurs's). Its lens texture holds the reticle twice side by side, unlit and lit (the ELCAN's layout), and the
+	// lens mixes them by the glow (model_scope_lense_lerp, m_zoom_deviation.z); the 2D picture lays its last level
+	// (lit) over its first by the glow (ApplyScopeIllumUI). The brightness keys do nothing on it. false = none.
+	bool		ScopeReticleAutoIllum(Fvector& range) const;
+	// ...the glow the sensor gives it now, 0..1 (CActor works it out every frame)
+	float		ScopeReticleGlow() const		{ return m_scope_reticle_glow; }
+	void		SetScopeReticleGlow(float g)	{ m_scope_reticle_glow = g; }
 	// collimator_mark_illum_switch = true: the brightness keys turn the reticle's glow off (step 0) and on
 	// (step 1) instead of stepping through marks -- the first mark only. Off wins; on leaves the glow to
 	// collimator_mark_auto_illum where the optic has it.
@@ -290,6 +299,7 @@ private:
 	void  LoadScopeIllumParams();					// read min/max/steps/jitter from the attached scope (or weapon) section
 	float m_scope_illum_value;						// current brightness 0..max
 	float m_scope_illum_jitter;
+	float m_scope_reticle_glow;						// a tritium reticle's glow, 0..1 (ScopeReticleAutoIllum)
 	int   m_scope_illum_step;						// current (active scope's) step, clamped to steps
 	int   m_scope_illum_steps;
 	int   m_scope_illum_step_by_scope[16];			// PER-SCOPE saved step (index = m_cur_scope; -1 = never set -> use default_brightness_step). Each scope keeps its own brightness.

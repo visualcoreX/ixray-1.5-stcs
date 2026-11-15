@@ -113,7 +113,7 @@ protected:
 
 	//��������� ���� ���� � ����������� �� �������� �������
 	//(������ ��� InventoryOwner)
-	float					HitOutfitEffect			(float hit_power, ALife::EHitType hit_type, s16 element, float ap, bool& add_wound );
+	float					HitOutfitEffect			(float hit_power, ALife::EHitType hit_type, s16 element, float ap, float armor_frac, bool& add_wound );
 public:
 	// burn/shock/chemical_burn/radiation/telepatic: the hits an outfit's or artefact's protection is
 	// in field units for (see the .cpp)

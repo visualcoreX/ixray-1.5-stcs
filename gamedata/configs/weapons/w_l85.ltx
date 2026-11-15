@@ -199,14 +199,75 @@ snd_changecartridgetype		= weapons\l85\l85_reload	; GS base.ltx:225 -- the RIFLE
 snd_switch					= weapons\l85\l85_gl_deactivate
 snd_switch_g				= weapons\l85\l85_gl_activate	; orig weapons\l85\l85_gl_deactivate (GS: raising the GL)
 
-snd_shoot_dist          = weapons\shared\gen_rifle_556_shoot_dist_01, -1.1
-snd_shoot_dist1         = weapons\shared\gen_rifle_556_shoot_dist_02, -1.1
-snd_shoot_dist2         = weapons\shared\gen_rifle_556_shoot_dist_03, -1.1
-snd_shoot_dist3         = weapons\shared\gen_rifle_556_shoot_dist_04, -1.1
-snd_shoot_dist4         = weapons\shared\gen_rifle_556_shoot_dist_05, -1.1
-snd_shoot_dist5         = weapons\shared\gen_rifle_556_shoot_dist_06, -1.1
+;firing sounds (1st person)
+snd_shoot_1p          = weapons\l85\l85_shoot_1p_01, -0.9
+snd_shoot_1p1         = weapons\l85\l85_shoot_1p_02, -0.9
+snd_shoot_1p2         = weapons\l85\l85_shoot_1p_03, -0.9
+snd_shoot_1p3         = weapons\l85\l85_shoot_1p_04, -0.9
+snd_shoot_1p4         = weapons\l85\l85_shoot_1p_05, -0.9
+snd_shoot_1p5         = weapons\l85\l85_shoot_1p_06, -0.9
+snd_shoot_1p6         = weapons\l85\l85_shoot_1p_07, -0.9
+snd_shoot_1p7         = weapons\l85\l85_shoot_1p_08, -0.9
+snd_shoot_1p8         = weapons\l85\l85_shoot_1p_09, -0.9
+snd_shoot_1p9         = weapons\l85\l85_shoot_1p_10, -0.9
+snd_shoot_1p10        = weapons\l85\l85_shoot_1p_11, -0.9
+snd_shoot_1p11        = weapons\l85\l85_shoot_1p_12, -0.9
+
+snd_silncer_shot_1p          = weapons\l85\l85_shoot_sil_1p_01, -0.9
+snd_silncer_shot_1p1         = weapons\l85\l85_shoot_sil_1p_02, -0.9
+snd_silncer_shot_1p2         = weapons\l85\l85_shoot_sil_1p_03, -0.9
+snd_silncer_shot_1p3         = weapons\l85\l85_shoot_sil_1p_04, -0.9
+snd_silncer_shot_1p4         = weapons\l85\l85_shoot_sil_1p_05, -0.9
+snd_silncer_shot_1p5         = weapons\l85\l85_shoot_sil_1p_06, -0.9
+snd_silncer_shot_1p6         = weapons\l85\l85_shoot_sil_1p_07, -0.9
+snd_silncer_shot_1p7         = weapons\l85\l85_shoot_sil_1p_08, -0.9
+snd_silncer_shot_1p8         = weapons\l85\l85_shoot_sil_1p_09, -0.9
+snd_silncer_shot_1p9         = weapons\l85\l85_shoot_sil_1p_10, -0.9
+snd_silncer_shot_1p10        = weapons\l85\l85_shoot_sil_1p_11, -0.9
+snd_silncer_shot_1p11        = weapons\l85\l85_shoot_sil_1p_12, -0.9
+
+volume_snd_shoot_1p          = 125
+volume_snd_silncer_shot_1p   = 125
+
+;firing sounds (3rd person)
+snd_shoot          = weapons\l85\l85_shoot_3p_01, -0.9
+snd_shoot1         = weapons\l85\l85_shoot_3p_02, -0.9
+snd_shoot2         = weapons\l85\l85_shoot_3p_03, -0.9
+snd_shoot3         = weapons\l85\l85_shoot_3p_04, -0.9
+snd_shoot4         = weapons\l85\l85_shoot_3p_05, -0.9
+snd_shoot5         = weapons\l85\l85_shoot_3p_06, -0.9
+
+snd_shoot_dist          = weapons\shared\gen_rifle_556_shoot_dist_01, -0.9
+snd_shoot_dist1         = weapons\shared\gen_rifle_556_shoot_dist_02, -0.9
+snd_shoot_dist2         = weapons\shared\gen_rifle_556_shoot_dist_03, -0.9
+snd_shoot_dist3         = weapons\shared\gen_rifle_556_shoot_dist_04, -0.9
+snd_shoot_dist4         = weapons\shared\gen_rifle_556_shoot_dist_05, -0.9
+snd_shoot_dist5         = weapons\shared\gen_rifle_556_shoot_dist_06, -0.9
+
+volume_snd_shoot           = 150
+volume_snd_silncer_shot    = 150
+
 snd_shoot_blend_dist_start = 30
 snd_shoot_blend_dist_end   = 60
+
+snd_silncer_shot          = weapons\l85\l85_shoot_sil_3p_01, -0.9
+snd_silncer_shot1         = weapons\l85\l85_shoot_sil_3p_02, -0.9
+snd_silncer_shot2         = weapons\l85\l85_shoot_sil_3p_03, -0.9
+snd_silncer_shot3         = weapons\l85\l85_shoot_sil_3p_04, -0.9
+snd_silncer_shot4         = weapons\l85\l85_shoot_sil_3p_05, -0.9
+snd_silncer_shot5         = weapons\l85\l85_shoot_sil_3p_06, -0.9
+
+;grenade launcher sounds
+snd_shoot_grenade_1p    = weapons\shared\gen_launcher_shoot_1p_01
+snd_shoot_grenade_1p1   = weapons\shared\gen_launcher_shoot_1p_02
+snd_shoot_grenade_1p2   = weapons\shared\gen_launcher_shoot_1p_03
+snd_shoot_grenade_1p3   = weapons\shared\gen_launcher_shoot_1p_04
+snd_shoot_grenade       = weapons\shared\gen_launcher_shoot_3p_01
+snd_shoot_grenade1      = weapons\shared\gen_launcher_shoot_3p_02
+snd_shoot_grenade2      = weapons\shared\gen_launcher_shoot_3p_03
+snd_shoot_grenade3      = weapons\shared\gen_launcher_shoot_3p_04
+volume_snd_shoot_grenade    = 150
+volume_snd_shoot_grenade_1p = 150
 
 ;indoor sounds
 snd_shoot_1p_indoor               = weapons\shared\gen_tail_indoor_medium_1p_01

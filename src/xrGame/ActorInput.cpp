@@ -228,12 +228,15 @@ void CActor::IR_OnKeyboardPress(int cmd)
 			// keeps asking. Handled here too, so a tap is not a frame late.
 			if (psActorFlags.test(AF_GS_SPRINT))
 			{
-				if (CanSprintNow())	mstate_wishful |= mcSprint;
+				if (CanSprintNow())	{ SprintOutOfCrouch(); mstate_wishful |= mcSprint; }
 			}
 			else if (mstate_wishful & mcSprint)
 				mstate_wishful &=~mcSprint;
 			else
+			{
+				SprintOutOfCrouch();
 				mstate_wishful |= mcSprint;
+			}
 		}break;
 	case kCAM_1:	cam_Set			(eacFirstEye);				break;
 	case kCAM_2:	cam_Set			(eacLookAt);				break;
@@ -609,7 +612,10 @@ void CActor::IR_OnKeyboardHold(int cmd)
 		// the action hook behind "Перезарядка во время спринта", the actor's own limits. A poll that
 		// cleared it too made the hold option answer for all of that as well.
 		if (psActorFlags.test(AF_GS_SPRINT) && !(mstate_wishful & mcSprint) && CanSprintNow())
+		{
+			SprintOutOfCrouch();	// Shift held first and W pressed after: stands up once moving
 			mstate_wishful |= mcSprint;
+		}
 		break;
 
 
@@ -622,6 +628,27 @@ bool CActor::CanSprintNow()
 {
 	CHudItem* hi = smart_cast<CHudItem*>(inventory().ActiveItem());
 	return (!hi) || hi->CanSprintNow();
+}
+
+// Sprint pressed in a TOGGLED crouch: let go of the toggle, so the actor stands up and the sprint
+// takes over -- the sprint key doubling as "get up and run". Only for the toggle: a crouch key
+// physically held means the player wants to stay down, and the hold re-asserts it anyway.
+// Only while moving forward, too: a sprint needs it (CanSprint, g_cl_CheckControls), so a press
+// standing still would get the actor up for a sprint that is then cancelled on the spot. mstate_real
+// rather than mstate_wishful, because the movement bits of the wish are rebuilt by the key holds
+// each frame and may not be in yet when this press arrives. And not when the actor could not sprint
+// anyway (exhausted, overloaded): that would be a stand-up and nothing else.
+void CActor::SprintOutOfCrouch()
+{
+	extern bool g_bAutoClearCrouch;
+	if (g_bAutoClearCrouch || !(mstate_wishful & mcCrouch))	return;		// not a toggled crouch
+	if (!(mstate_real & mcCrouch) || (mstate_real & mcClimb))	return;
+	if (!(mstate_real & mcFwd))									return;
+	if (conditions().IsCantSprint() || !CanAccelerate())		return;
+
+	g_bAutoClearCrouch	= true;
+	mstate_wishful		&= ~mcCrouch;
+	m_bSprintStandUp	= true;
 }
 
 void CActor::IR_OnMouseMove(int dx, int dy)

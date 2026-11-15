@@ -134,6 +134,22 @@ void CActor::g_cl_ValidateMState(float dt, u32 mstate_wf)
 		}
 	}
 
+	// The stand-up a sprint asked for (SprintOutOfCrouch) has been tried. Done: the sprint takes over
+	// next frame. No room to stand (a low ceiling): put the crouch toggle back and drop the sprint, as
+	// if the key had not been pressed -- otherwise the actor would get up by himself, and in toggle
+	// sprint mode break into a run, the moment he came out from under it.
+	if (m_bSprintStandUp)
+	{
+		m_bSprintStandUp		= false;
+		if (mstate_real & mcCrouch)
+		{
+			extern bool g_bAutoClearCrouch;
+			g_bAutoClearCrouch	= false;
+			mstate_wishful		|= mcCrouch;
+			mstate_wishful		&= ~mcSprint;
+		}
+	}
+
 	if(!CanAccelerate()&&isActorAccelerated(mstate_real, IsZoomAimingMode()))
 	{
 		mstate_real				^=mcAccel;
@@ -266,7 +282,11 @@ void CActor::g_cl_CheckControls(u32 mstate_wf, Fvector &vControlAccel, float &Ju
 		if(!(mstate_real&(mcFwd|mcLStrafe|mcRStrafe))||mstate_real&(mcCrouch|mcClimb)|| !isActorAccelerated(mstate_wf, IsZoomAimingMode()))
 		{
 			mstate_real&=~mcSprint;
-			mstate_wishful&=~mcSprint;
+			// A sprint that stands the actor up out of a toggled crouch (SprintOutOfCrouch) is still
+			// crouched this frame -- g_cl_ValidateMState runs after us and does the standing -- so the
+			// wish has to outlive this one frame; that function settles it either way.
+			if (!m_bSprintStandUp)
+				mstate_wishful&=~mcSprint;
 		}
 
 		// smooth sprint acceleration ramp (0..1): while sprinting, ease up over m_fSprintAccelTime; reset the
@@ -436,6 +456,12 @@ void CActor::g_cl_CheckControls(u32 mstate_wf, Fvector &vControlAccel, float &Ju
 BOOL	g_actor_yaw_smooth	= TRUE;
 float	g_actor_yaw_speed	= 240.f;	// degrees a second the drawn body turns to catch up
 float	g_actor_yaw_snap	= 100.f;	// bigger than this in one go = teleport, not a turn: jump to it
+// How stiffly the diagonal body turn (actor.ltx *_strafe_yaw) follows the keys: the angular frequency
+// of a critically damped spring, 1/s. 0 = the stock constant 720 deg/s slide.
+float	g_actor_strafe_yaw_omega	= 10.f;
+// Share of that diagonal turn kept while sprinting: the sprint cycle is a straight forward run, so a
+// full 45 degrees reads as the body skewed across its own path. 1 = as walking, 0 = no turn at all.
+float	g_actor_sprint_strafe_yaw_k	= 0.5f;
 
 #define ACTOR_LLOOKOUT_ANGLE	PI_DIV_4
 #define ACTOR_RLOOKOUT_ANGLE	PI_DIV_4
@@ -490,9 +516,33 @@ void CActor::g_Orientate	(u32 mstate_rl, float dt)
 		calc_yaw = -r_strafe_yaw;//-PI_DIV_4+EPS_L; 
 		break;
 	}
+	// The spring below eases the change when the sprint starts or ends mid-diagonal.
+	if (mstate_rl&mcSprint)
+		calc_yaw	*= g_actor_sprint_strafe_yaw_k;
 
 	// lerp angle for "effect" and capture torso data from camera
-	angle_lerp		(r_model_yaw_delta,calc_yaw,PI_MUL_4,dt);
+	// The stock lerp slid the body at a constant 720 deg/s with no run-up and a dead stop, so
+	// flicking A/D on a diagonal sprint threw it 90 degrees across in an eighth of a second -- and in
+	// first person the shadow is cast from exactly this heading, with no other smoothing on it. A
+	// critically damped spring instead: it starts and stops softly, and taps faster than it can turn
+	// average out instead of jerking the body side to side. Visual only: the walk direction rides on
+	// r_model_yaw, not on the delta. Both ends stay within +-45 degrees, so no wrap to worry about.
+	if (g_actor_strafe_yaw_omega > EPS)
+	{
+		// Unity's SmoothDamp step: the exact spring solution with exp() approximated, stable at any dt.
+		const float omega	= g_actor_strafe_yaw_omega;
+		const float x		= omega * dt;
+		const float e		= 1.f / (1.f + x + 0.48f * x * x + 0.235f * x * x * x);
+		const float change	= r_model_yaw_delta - calc_yaw;
+		const float temp	= (m_fModelYawDeltaVel + omega * change) * dt;
+		m_fModelYawDeltaVel	= (m_fModelYawDeltaVel - omega * temp) * e;
+		r_model_yaw_delta	= calc_yaw + (change + temp) * e;
+	}
+	else
+	{
+		m_fModelYawDeltaVel	= 0.f;
+		angle_lerp			(r_model_yaw_delta,calc_yaw,PI_MUL_4,dt);
+	}
 
 	// ---- how fast the WORLD model may turn ---------------------------------------------------
 	// While moving, g_cl_Orientate snaps r_model_yaw straight onto the camera every frame, so in
@@ -710,7 +760,10 @@ bool CActor::CanSprint()
 	bool can_Sprint = CanAccelerate() && !conditions().IsCantSprint() &&
 						Game().PlayerCanSprint(this)
 						&& CanRun()
-						&& !(mstate_real&mcLStrafe || mstate_real&mcRStrafe)
+						// A strafe key breaks the sprint only when it is the whole of the movement: with
+						// W held too the sprint just turns diagonal (the move vector is normalized in
+						// g_cl_CheckControls, so the diagonal is no faster than the straight line).
+						&& !((mstate_real&(mcLStrafe|mcRStrafe)) && !(mstate_real&mcFwd))
 						&& InventoryAllowSprint()
 						;
 
