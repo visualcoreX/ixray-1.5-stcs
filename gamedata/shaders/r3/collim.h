@@ -89,6 +89,33 @@ struct v2p_collim
 	float2	obj		: TEXCOORD5;	// the model's x, y (lens_wet.h)
 };
 
+// The late passes over the finished picture (model_collim_late, model_scope_late; r_dsgraph_render_lens_late) are
+// depth-tested in the hud's slice, so the eyepiece's own rim, nearer the eye, keeps what it hides of the glass when
+// the eye looks in from the side. Under MSAA no depth can be bound there (the picture is resolved, the depth is
+// multisampled), and the field stop's black, laid over the whole glass, cut the rim away at an angle -- most with the
+// gun lowered, where the eye is far off the axis and nearly all of the stop is black. So the test is made here
+// against the G-buffer's view depth, sample by sample: the share of the pixel's samples where nothing stands in front
+// of the glass, for the pass to scale its premultiplied output by -- the rim's edge comes out antialiased.
+// Where the eyepiece cut the hud out the G-buffer holds the world, or 0 (only the sky: cleared by the cut), and the
+// glass is in front of either. (A wall nearer than the glass, the gun pushed into it, takes the late pass out too.)
+#define	COLLIM_LATE_EPS	0.001	// metres: the G-buffer's fp16 depth at the hud's distance is good to ~0.25 mm
+float	collim_late_cover( float3 pos_w, float2 pos2d )
+{
+#ifndef USE_MSAA
+	return	1;
+#else
+	float	z	= mul( m_V, float4(pos_w, 1) ).z;
+	int2	p	= int2( pos2d );
+	float	n	= 0;
+	[unroll] for (int s = 0; s < MSAA_SAMPLES; s++)
+	{
+		float	gz	= s_position.Load( p, s ).z;
+		n	+= ( gz < COLLIM_LATE_EPS || gz > z - COLLIM_LATE_EPS ) ? 1 : 0;
+	}
+	return	n / MSAA_SAMPLES;
+#endif
+}
+
 // World direction -> the sky cubemaps' texcoord, as dxEnvironmentRender lays the skybox out: rotated
 // about Y by sky_rotation, and with the horizon pulled down to the cube's bottom edge -- the box's side
 // faces map box-y 0..1 to tc-y -1..1, and everything under the horizon to the bottom (hbox_verts).

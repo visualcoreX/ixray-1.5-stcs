@@ -55,3 +55,4 @@ function l_special	(shader, t_base, t_second, t_detail)
 			: blend		(true,blend.srcalpha,blend.invsrcalpha)
 			: aref		(false,0)
 end
+	shader:dx10texture	("s_position",	"$user$position")	-- MSAA: the G-buffer's depth for the hand-made depth test (collim.h collim_late_cover)
