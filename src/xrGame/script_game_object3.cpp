@@ -787,15 +787,29 @@ void CScriptGameObject::jump(const Fvector &position, float factor)
 
 void CScriptGameObject::make_object_visible_somewhen	(CScriptGameObject *object)
 {
-	CAI_Stalker		*stalker = smart_cast<CAI_Stalker*>(&this->object());
-	if (!stalker) {
-		ai().script_engine().script_log			(ScriptStorage::eLuaMessageTypeError,"CAI_Stalker : cannot access class member make_object_visible_somewhen!");
-		return;
-	}
-
 	CEntityAlive	*entity_alive = smart_cast<CEntityAlive*>(&object->object());
 	if (!entity_alive) {
 		ai().script_engine().script_log			(ScriptStorage::eLuaMessageTypeError,"CEntityAlive : cannot access class member make_object_visible_somewhen!");
+		return;
+	}
+
+	// A mutant picks its target from its own enemy memory (CMonsterEnemyMemory), not from the
+	// squad-masked visual memory the stalker path below feeds, so it gets the sighting written
+	// there directly: where the object stands now, as of now. Without this the call only logged
+	// an error for a monster -- the scripts that put a whole squad on the actor
+	// (xr_effects.smart_alarm_on_actor, squad_hunt_actor, sim_combat.keep_actor_tick) quietly
+	// did nothing to any mutants in it. The entry lasts the monster's memory time (10 s by
+	// default) unless the call is repeated.
+	CBaseMonster	*monster = smart_cast<CBaseMonster*>(&this->object());
+	if (monster) {
+		if (monster->g_Alive())
+			monster->EnemyMemory.add_enemy		(entity_alive);
+		return;
+	}
+
+	CAI_Stalker		*stalker = smart_cast<CAI_Stalker*>(&this->object());
+	if (!stalker) {
+		ai().script_engine().script_log			(ScriptStorage::eLuaMessageTypeError,"CAI_Stalker : cannot access class member make_object_visible_somewhen!");
 		return;
 	}
 
