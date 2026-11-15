@@ -34,8 +34,11 @@ CALifeStorageManager::~CALifeStorageManager	()
 	*g_last_saved_game			= 0;
 }
 
+XRCORE_API void heap_checkpoint(const char* where);	// memory_usage.cpp
+
 void CALifeStorageManager::save	(LPCSTR save_name, bool update_name)
 {
+	heap_checkpoint				("save: A-Life start");
 	xr_strcpy					(g_last_saved_game,sizeof(g_last_saved_game),save_name);
 
 	string_path					save;
@@ -61,6 +64,7 @@ void CALifeStorageManager::save	(LPCSTR save_name, bool update_name)
 		objects().save			(stream);
 		registry().save			(stream);
 
+		heap_checkpoint			("save: A-Life serialized");
 		source_count			= stream.tell();
 		void					*source_data = stream.pointer();
 		dest_count				= rtc_csize(source_count);
@@ -78,6 +82,7 @@ void CALifeStorageManager::save	(LPCSTR save_name, bool update_name)
 	writer->w					(dest_data,dest_count);
 	xr_free						(dest_data);
 	FS.w_close					(writer);
+	heap_checkpoint				("save: A-Life compressed and written");
 #ifdef DEBUG
 	Msg							("* Game %s is successfully saved to file '%s' (%d bytes compressed to %d)",m_save_name,temp,source_count,dest_count + 4);
 #else // DEBUG

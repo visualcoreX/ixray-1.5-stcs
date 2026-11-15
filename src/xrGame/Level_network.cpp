@@ -223,8 +223,11 @@ void CLevel::ClientSend()
 // that (the squad's visual memory alone is up to 128 * 50 bytes), ran into the
 // 16000-byte guard of the save scripts and could run off the 16 KB buffer.
 // Starting every object at offset 0 gives it the whole buffer.
+XRCORE_API void heap_checkpoint(const char* where);	// memory_usage.cpp
+
 void CLevel::ClientSave	()
 {
+	heap_checkpoint				("save: before the objects' net_Save");
 	NET_Packet		P;
 	P.w_begin		(M_SAVE_PACKET);
 
@@ -250,6 +253,7 @@ void CLevel::ClientSave	()
 
 	if (P.w_tell() > 2)
 		Send		(P, net_flags(FALSE));
+	heap_checkpoint				("save: after the objects' net_Save");
 }
 
 extern		float		phTimefactor;

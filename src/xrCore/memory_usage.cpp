@@ -50,8 +50,15 @@ static bool heap_read16(const u8* p, u8* out)
 	return true;
 }
 
-static void heap_broken(const char* what)
+// The last step the heap was seen whole at, and the one it was found broken at (heap_checkpoint below,
+// or a load phase's memory walk).
+static string256	s_heap_last_ok		= "nothing checked yet";
+static const char*	s_heap_found_at		= "a load phase's memory walk";
+
+static void heap_broken(const char* what_raw)
 {
+	string512	what;
+	xr_sprintf	(what, "%s, found at [%s], last seen whole at [%s]", what_raw, s_heap_found_at, s_heap_last_ok);
 	_HEAPINFO	hi;		hi._pentry = NULL;
 	_HEAPINFO	last;	last._pentry = NULL;	last._size = 0;	last._useflag = 0;
 	int			st;
@@ -93,6 +100,20 @@ static void heap_broken(const char* what)
 	else			Debug.fatal(DEBUG_INFO, "%s: at the very start of the heap", what);
 }
 
+// One check at a step that happens once -- a save, a level unload -- never during play. Remembers the step
+// while the heap is whole; the first one that finds it broken reports between which two steps it broke.
+XRCORE_API void heap_checkpoint(const char* where)
+{
+	switch (_heapchk())
+	{
+	case _HEAPOK:
+	case _HEAPEMPTY:	xr_strcpy(s_heap_last_ok, where);	return;
+	case _HEAPBADBEGIN:	s_heap_found_at = where;	heap_broken("bad start of heap");	break;
+	case _HEAPBADNODE:	s_heap_found_at = where;	heap_broken("bad node in heap");	break;
+	default:			s_heap_found_at = where;	heap_broken("heap check failed");	break;
+	}
+}
+
 u32	mem_usage_impl	(u32* pBlocksUsed, u32* pBlocksFree)
 {
 	_HEAPINFO		hinfo;
@@ -129,6 +150,7 @@ u32	mem_usage_impl	(u32* pBlocksUsed, u32* pBlocksFree)
 		heap_broken		("bad node in heap");
 		break;
 	}
+	xr_strcpy		(s_heap_last_ok, "a load phase's memory walk");
 	return (u32) total;
 }
 

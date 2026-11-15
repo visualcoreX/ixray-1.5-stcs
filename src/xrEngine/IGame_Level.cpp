@@ -28,20 +28,25 @@ IGame_Level::IGame_Level	()
 
 //#include "resourcemanager.h"
 
+XRCORE_API void heap_checkpoint(const char* where);	// memory_usage.cpp
+
 IGame_Level::~IGame_Level	()
 {
 	if(strstr(Core.Params,"-nes_texture_storing") )
 		//Device.Resources->StoreNecessaryTextures();
 		Device.m_pRender->ResourcesStoreNecessaryTextures();
 	xr_delete					( pLevel		);
+	heap_checkpoint				("level unload: after ~CLevel");
 
 	// Render-level unload
 	Render->level_Unload		();
+	heap_checkpoint				("level unload: after the render's level_Unload");
 	// ~CLevel has already run, so g_player_hud and its weapon pool are gone along with every object:
 	// the base models they were holding are at zero references now, which they were NOT at the
 	// earlier sweep in CLevel::remove_objects. Without this the HUD's weapons -- and the full addon
 	// wardrobe baked into each of them -- stay resident for the rest of the session.
 	Render->models_Trim			();
+	heap_checkpoint				("level unload: after models_Trim");
 	xr_delete					(m_pCameras);
 	// Unregister
 	Device.seqRender.Remove		(this);
@@ -57,15 +62,19 @@ IGame_Level::~IGame_Level	()
 		Device.m_pRender->ResourcesGetMemoryUsage(m_base,c_base,m_lmaps,c_lmaps);
 
 	Msg		("* [ D3D ]: textures[%d K]", (m_base+m_lmaps)/1024);
+	heap_checkpoint				("level unload: end");
 
 }
 
 void IGame_Level::net_Stop			()
 {
+	heap_checkpoint				("level unload: start (net_Stop)");
 	for (int i=0; i<6; i++)
 		Objects.Update			(false);
+	heap_checkpoint				("level unload: after the last object updates");
 	// Destroy all objects
 	Objects.Unload				( );
+	heap_checkpoint				("level unload: after the objects are destroyed");
 	IR_Release					( );
 
 	bReady						= false;	

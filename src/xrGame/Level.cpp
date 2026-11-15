@@ -215,8 +215,11 @@ CLevel::CLevel():IPureClient	(Device.GetTimerGlobal())
 
 extern CAI_Space *g_ai_space;
 
+XRCORE_API void heap_checkpoint(const char* where);	// memory_usage.cpp
+
 CLevel::~CLevel()
 {
+	heap_checkpoint				("level unload: ~CLevel start");
 	xr_delete					(g_player_hud);
 	delete_data					(hud_zones_list);
 	hud_zones_list				= NULL;
