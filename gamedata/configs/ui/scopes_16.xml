@@ -98,9 +98,15 @@
     </auto_static>
   </crosshair_2d_gauss>
 
+  <!-- The tritium reticle: the lit level is laid over the unlit one by the light sensor's glow
+       (scope_reticle_auto_illum, CWeapon::ApplyScopeIllumUI), not picked by the brightness keys. -->
   <crosshair_2d_kashtan x="0" y="0" width="1024" height="768">
+    <window_name>switchable_zoom_wnd</window_name>
     <auto_static x="0" y="0" width="1024" height="768" stretch="1">
       <texture>crosshair_2d_kashtan</texture>
+    </auto_static>
+    <auto_static x="0" y="0" width="1024" height="768" stretch="1">
+      <texture>crosshair_2d_kashtan_on</texture>
     </auto_static>
   </crosshair_2d_kashtan>
 

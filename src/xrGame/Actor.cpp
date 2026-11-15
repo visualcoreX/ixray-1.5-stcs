@@ -1353,6 +1353,35 @@ float gwr_tactical_scan_dist()
 	return float(smart_cast<CActor*>(Level().CurrentEntity())->GetOutfit()->TacticalScanDist());
 }
 
+// A tritium reticle's light sensor (collimator_mark_auto_illum, scope_reticle_auto_illum): lit all the time, but only
+// seen when the light is low. It reads the frame's average brightness, measured every 5 s
+// (IGame_Persistent::frame_luminance) -- the actor's own lighting jumped about with the hemi's patchiness -- and the
+// glow eases toward what it asks for over illum.z seconds. Where the renderer has no frame measure, the actor's
+// lighting (his ROS -- the same figure the AI sees him by), eased as the eye adapts over ~1.3 s, so the glow neither
+// flickers in the dappled shade nor snaps on in a doorway -- nor dies in the flash of a lightning bolt at night (at
+// 0.7 s it did). illum: x = no glow at this brightness and above, y = full at this and below. Each user keeps its
+// own state: a collimator and an optic on one gun ease apart.
+struct reticle_sensor_state
+{
+	float	lum		= 0.f;
+	float	glow	= -1.f;
+};
+
+static float reticle_sensor_glow(IRender_ObjectSpecific* ros, const Fvector& illum, reticle_sensor_state& st)
+{
+	float lum = g_pGamePersistent->frame_luminance;
+	if (lum < 0.f)
+	{
+		st.lum	+= ((ros ? ros->get_luminocity() : 0.f) - st.lum) * _min(1.f, Device.fTimeDelta * 0.75f);
+		lum		= st.lum;
+	}
+	float target	= (illum.x - lum) / _max(illum.x - illum.y, EPS);
+	clamp(target, 0.f, 1.f);
+	if (st.glow < 0.f || illum.z <= EPS)	st.glow = target;
+	else	st.glow += (target - st.glow) * _min(1.f, Device.fTimeDelta / illum.z);
+	return st.glow;
+}
+
 void CActor::UpdateCL	()
 {
 	UpdateInventoryOwner			(Device.dwTimeDelta);
@@ -1421,6 +1450,16 @@ void CActor::UpdateCL	()
 		// distort() from the models_zoom blender).
 		float	aspect	= Device.dwWidth ? (float)Device.dwHeight / (float)Device.dwWidth : 0.75f;
 		CWeapon* wpn	= smart_cast<CWeapon*>(active_item);
+		// An optic's tritium reticle (CWeapon::ScopeReticleAutoIllum, the Kashtan's): its glow from the light sensor,
+		// for the lens (m_zoom_deviation.z below, model_scope_lense_lerp) and the 2D picture (ApplyScopeIllumUI)
+		bool scope_reticle_auto = false;
+		if (wpn)
+		{
+			Fvector si;
+			scope_reticle_auto	= wpn->ScopeReticleAutoIllum(si);
+			static reticle_sensor_state s_scope;
+			wpn->SetScopeReticleGlow(scope_reticle_auto ? reticle_sensor_glow(renderable_ROS(), si, s_scope) : 0.f);
+		}
 		// ...the lens-off prism mode too (CWeapon::IsScopePrismCfg): its lens draws the reticle, and the shader
 		// shows the lens only while aim * visibility is above zero, as the 3D lens does
 		if (wpn && (wpn->IsLensedScope() || wpn->IsScopePrismCfg()))
@@ -1443,7 +1482,11 @@ void CActor::UpdateCL	()
 			g_pGamePersistent->hud_lens_true_power = wpn->LensTruePower() ? 1.f : 0.f;
 			// GS scope illumination -> m_zoom_deviation.z = brightness, .w = jitter (used by the NV lens shader
 			// model_scope_lense_night). Day scopes ignore .z/.w and use the reticle-glow bones instead.
-			g_pGamePersistent->hud_zoom_deviation.set(0.f, 0.f, wpn->ScopeIllumValue(), wpn->ScopeIllumJitter());
+			// ...a tritium reticle: the sensor's glow, 0..1, the lerp lens's mix of its unlit and lit halves
+			if (scope_reticle_auto)
+				g_pGamePersistent->hud_zoom_deviation.set(0.f, 0.f, wpn->ScopeReticleGlow(), 0.f);
+			else
+				g_pGamePersistent->hud_zoom_deviation.set(0.f, 0.f, wpn->ScopeIllumValue(), wpn->ScopeIllumJitter());
 		}
 		else
 		{
@@ -1495,33 +1538,15 @@ void CActor::UpdateCL	()
 				g_pGamePersistent->hud_collim_mark = wpn->CollimatorMarkColor();
 				g_pGamePersistent->hud_collim_mark_shape = wpn->CollimatorMarkShape();
 
-				// A tritium reticle: lit all the time, but only seen when the light is low. The actor's lighting
-				// (his ROS -- the same figure the AI sees him by) is eased as the eye adapts, over ~1.3 s, so the
-				// glow neither flickers in the dappled shade nor snaps on in a doorway -- nor dies in the flash of
-				// a lightning bolt at night (at 0.7 s it did).
-				// The brightness keys may switch it by hand: off, or on -- lit, or left to the light sensor.
-				// The sensor (collimator_mark_auto_illum) reads the frame's average brightness, measured every
-				// 5 s (IGame_Persistent::frame_luminance) -- the actor's own lighting jumped about with the hemi's
-				// patchiness -- and the glow eases toward what it asks for over a few seconds.
+				// A tritium reticle (reticle_sensor_glow). The brightness keys may switch it by hand: off, or on
+				// -- lit, or left to the light sensor (collimator_mark_auto_illum).
 				Fvector illum;
 				if (wpn->CollimatorMarkIllumSwitch() && !wpn->CollimatorMarkIllumOn())
 					g_pGamePersistent->hud_collim_mark.set(0.f, 0.f, 0.f, g_pGamePersistent->hud_collim_mark.w);
 				else if (wpn->CollimatorMarkAutoIllum(illum))
 				{
-					float lum = g_pGamePersistent->frame_luminance;
-					if (lum < 0.f)
-					{
-						// no frame measure from this renderer: the actor's lighting, eased as before
-						static float s_lum = 0.f;
-						IRender_ObjectSpecific* ros = renderable_ROS();
-						s_lum	+= ((ros ? ros->get_luminocity() : 0.f) - s_lum) * _min(1.f, Device.fTimeDelta * 0.75f);
-						lum		= s_lum;
-					}
-					float target	= (illum.x - lum) / _max(illum.x - illum.y, EPS);
-					clamp(target, 0.f, 1.f);
-					static float s_glow = -1.f;
-					if (s_glow < 0.f || illum.z <= EPS)	s_glow = target;
-					else	s_glow += (target - s_glow) * _min(1.f, Device.fTimeDelta / illum.z);
+					static reticle_sensor_state s_collim;
+					const float s_glow	= reticle_sensor_glow(renderable_ROS(), illum, s_collim);
 					g_pGamePersistent->hud_collim_mark.x *= s_glow;
 					g_pGamePersistent->hud_collim_mark.y *= s_glow;
 					g_pGamePersistent->hud_collim_mark.z *= s_glow;

@@ -75,6 +75,7 @@ CWeapon::CWeapon()
 	m_bZoomToggleWanted		= false;
 	m_scope_illum_value		= 0.f;
 	m_scope_illum_jitter	= 0.f;
+	m_scope_reticle_glow	= 0.f;
 	m_scope_nv_2d_lens_tint	= false;
 	m_scope_nv_2d_max_gain	= 2.5f;
 	m_bScopeNVChain			= false;
@@ -4135,6 +4136,29 @@ bool CWeapon::CollimatorMarkAutoIllum(Fvector& range) const
 	return true;
 }
 
+// An optic's tritium reticle (Weapon.h). Only the optic's own sections are asked -- the scope section, then the
+// addon item -- never the weapon's: a gun's built-in collimator keys must not light up whatever optic is put on it.
+bool CWeapon::ScopeReticleAutoIllum(Fvector& range) const
+{
+	if (!IsScopeAttached() || IsCollimatorScope())	return false;
+	static const char* key = "scope_reticle_auto_illum";
+	LPCSTR sect	= nullptr;
+	shared_str sc	= GetCurrentScopeSection();
+	if (sc.size() && pSettings->section_exist(*sc) && pSettings->line_exist(*sc, key))
+		sect	= *sc;
+	else
+	{
+		shared_str item	= GetAttachedScopeName();
+		if (item.size() && pSettings->section_exist(*item) && pSettings->line_exist(*item, key))
+			sect	= *item;
+	}
+	if (!sect)	return false;
+	range.set(0.f, 0.f, 3.f);
+	sscanf(pSettings->r_string(sect, key), "%f,%f,%f", &range.x, &range.y, &range.z);
+	if (range.z < 0.f)	range.z = 0.f;
+	return true;
+}
+
 // Where an optic's glass keys live: the scope section, then its addon item, then the weapon. Empty when
 // no scope is on or none of them has the key.
 shared_str CWeapon::CollimatorParamSection(LPCSTR key) const
@@ -4646,6 +4670,10 @@ void CWeapon::LoadScopeIllumParams()
 			m_scope_illum_steps = 1;
 		else if (marks > 0)
 			m_scope_illum_steps = marks - 1;
+		// ...and an optic's tritium reticle has none either: its glow is the light sensor's (ScopeReticleAutoIllum)
+		Fvector si;
+		if (marks <= 0 && ScopeReticleAutoIllum(si))
+			m_scope_illum_steps = 0;
 	}
 	// The step the player picked for this optic is remembered per scope, and THAT is the truth -- the
 	// working step is only a clamped copy. On a save load CWeapon::load restores it and calls this at once,
@@ -5442,6 +5470,25 @@ void CWeapon::ApplyScopeIllumUI()
 		++levels;
 	}
 	if (levels < 2)	return;			// nothing to switch
+
+	// A tritium reticle (ScopeReticleAutoIllum): the first level, unlit, always, and the last, lit, laid over it as
+	// much as the light sensor's glow says -- the two differ only where the reticle is, so that is a cross-fade
+	// there. Every frame the picture is drawn (render_item_ui), as the glow eases.
+	Fvector si;
+	if (ScopeReticleAutoIllum(si))
+	{
+		const float g	= ScopeReticleGlow();
+		int i = 0;
+		for (auto it = lst.begin(); it != lst.end() && i < levels; ++it, ++i)
+		{
+			const bool lit	= (i == levels - 1);
+			(*it)->Show(i == 0 || (lit && g > 0.002f));
+			if (lit)
+				if (CUIStatic* s = smart_cast<CUIStatic*>(*it))
+					s->SetTextureColor(color_rgba(255, 255, 255, iFloor(_min(g, 1.f) * 255.f + 0.5f)));
+		}
+		return;
+	}
 
 	int step = m_scope_illum_step;
 	clamp(step, 0, levels - 1);
@@ -6447,6 +6494,10 @@ void CWeapon::render_item_ui()
 	}
 	if (!ZoomTexture())		return;					// lensed/collimator optic: no 2D picture to draw
 	ApplyScopeUIMotion		();						// the shot and the walk shove the sight picture about
+	{
+		Fvector si;
+		if (ScopeReticleAutoIllum(si))	ApplyScopeIllumUI();	// a tritium reticle's glow eases all the time
+	}
 	ZoomTexture()->Update	();
 	ZoomTexture()->Draw		();
 }
