@@ -108,6 +108,7 @@ extern	BOOL	b_toggle_weapon_aim;
 extern float	g_smart_cover_factor;
 extern float	g_actor_torso_yaw;		// ActorAnimation.cpp -- third-person upper-body yaw trim, degrees
 extern int		g_actor_legs_relaxed;	// ActorAnimation.cpp -- 0 stock / 1 empty hands / 2 unless aiming / 3 always
+extern int		g_dbg_hit_log;			// EntityCondition.cpp -- 0 off / 1 actor's hits / 2 all hits
 extern float	g_actor_torso_follow_empty;	// ActorAnimation.cpp -- spine/head chase the camera with empty hands
 extern float	g_actor_torso_follow_empty_pitch;	// ...its vertical half alone; -1 = tied to the line above
 extern float	g_actor_torso_blend;		// ActorAnimation.cpp -- ease time for the follow-cam constant
@@ -2385,6 +2386,9 @@ void CCC_RegisterCommands()
 	// third-person stance, legs AND torso together: 0 = stock braced, 1 = relaxed with nothing in
 	// hand, 2 = relaxed until aiming, 3 = relaxed always. No effect without a pack that ships it.
 	CMD4(CCC_Integer,			"actor_legs_relaxed",	&g_actor_legs_relaxed,	0,	3);
+	// temporary balance aid: one log line per hit (victim, bone, ap, power, health lost and left);
+	// 1 = hits the actor deals or takes, 2 = every hit
+	CMD4(CCC_Integer,			"dbg_hit_log",			&g_dbg_hit_log,			0,	2);
 	// how much the spine/head chase the camera with NOTHING in hand (0 = not at all, current default)
 	CMD4(CCC_Float,				"actor_torso_follow_empty",	&g_actor_torso_follow_empty,	0.0f,	1.0f);
 	CMD4(CCC_Float,				"actor_torso_follow_empty_pitch",&g_actor_torso_follow_empty_pitch,	-1.0f,	1.0f);

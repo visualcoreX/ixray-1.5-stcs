@@ -15,6 +15,9 @@
 
 #define MAX_HEALTH 1.0f
 
+// Console "dbg_hit_log": 0 off, 1 hits the actor deals or takes, 2 every hit (see ConditionHit).
+int g_dbg_hit_log = 0;
+
 // How big a burn wound a burn hit leaves; 0 disables them entirely (stock Clear Sky behaviour).
 // Gunslinger's equivalent knob is wound_factor_for_hit_type_0. Read once -- ConditionHit is hot.
 float gwr_burn_wound_factor()
@@ -637,6 +640,29 @@ CWound* CEntityCondition::ConditionHit(SHit* pHDS)
 	}
 
 	if (bDebug) Msg("%s hitted in %s with %f[%f]", m_object->Name(), smart_cast<IKinematics*>(m_object->Visual())->LL_BoneName_dbg(pHDS->boneID), m_fHealthLost*100.0f, hit_power_org);
+
+	// Temporary balance aid: "dbg_hit_log 1" logs every hit the actor deals or takes, 2 every hit.
+	// power is what reached the condition (a monster's skin or a stalker's bone armour has already
+	// cut it); lost is the health it takes after the hit-type immunity and bone scale; the last pair
+	// is the health before this frame's hits and what is left after them (several hits from one
+	// bullet in a frame each print the running total). Radiation returned above and never prints.
+	if (g_dbg_hit_log > 0)
+	{
+		CObject*	actor		= Actor();
+		bool		involved	= actor && (pHDS->who == actor || m_object == actor);
+		if (g_dbg_hit_log > 1 || involved)
+		{
+			IKinematics*	K		= smart_cast<IKinematics*>(m_object->Visual());
+			LPCSTR			bone	= (K && pHDS->boneID != BI_NONE && pHDS->boneID < K->LL_BoneCount())
+										? K->LL_BoneName_dbg(pHDS->boneID) : "-";
+			Msg("~ hit %s [%s] by %s | %s bone %s x%.2f | ap %.2f af %.2f power %.3f | lost %.3f | health %.3f -> %.3f",
+				m_object->Name(), m_object->cNameSect().c_str(),
+				pHDS->who ? pHDS->who->cName().c_str() : "-",
+				ALife::g_cafHitType2String(pHDS->hit_type), bone, m_fHitBoneScale,
+				pHDS->armor_piercing, pHDS->armor_frac, hit_power_org, m_fHealthLost,
+				GetHealth(), GetHealth() + m_fDeltaHealth);
+		}
+	}
 	//���� ����������� ������ ������
 	if( bAddWound && GetHealth()>0 )
 	{
