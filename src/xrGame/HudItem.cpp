@@ -324,9 +324,9 @@ const InertionData& CHudItem::CurrentInertionData()
 	if (f <= 0.f)	d = m_current_inertion;
 	else			d.lerp(m_current_inertion, InertionGrenadeModeNow() ? m_gl_inertion : m_aim_inertion, f);
 
-	// Handling: control_inertion_factor is what the item divides the mouse by (CActor::GetLookFactor),
-	// 1.0..2.2 over the weapons, and upgrades lower it. Read live, so an upgrade shows at once: a
-	// heavier item sways further, slower and (rotation) springier.
+	// Handling: control_inertion_factor is what slows the mouse (at 75% strength, CActor::GetLookFactor),
+	// 1.0..2.2 over the weapons, and upgrades lower it, never below 1.0. Read live, so an upgrade shows
+	// at once: a heavier item sways further, slower and (rotation) springier.
 	float h = m_item ? m_item->GetControlInertionFactor() : 1.f;
 	if (!_valid(h) || h <= 0.f)	h = 1.f;
 	if (d.HandlingRef > EPS)	h /= d.HandlingRef;
