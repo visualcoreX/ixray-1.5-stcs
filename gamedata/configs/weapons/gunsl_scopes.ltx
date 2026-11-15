@@ -123,6 +123,10 @@ collimator_specular_color	= 255,245,225
 collimator_specular_world	= 5
 optic_glint_1				= -1.0, 250, 0.06, 255,128,64
 optic_glint_2				= -1.6, 1600, 0.0075, 100,150,255
+; the 1P78's tritium reticle, the Rakurs's light sensor: no glow at frame brightness 0.16 and above, full at 0.12 and
+; below, eased over 2 s. crosshair_kashtan holds it unlit | lit side by side (models_zoom.s two_looks), the 2D picture
+; lays crosshair_2d_kashtan_on over crosshair_2d_kashtan. The brightness keys do nothing on it.
+scope_reticle_auto_illum	= 0.16, 0.12, 2
 
 [wpn_addon_scope_rakurs]:wpn_addon_scope_x2.7
 $spawn			= "weapons\addons\scope_rakurs"
@@ -137,7 +141,7 @@ collimator_reflect_indirect	= 128,132,146
 collimator_reflect_strength	= 2.0, 0.25
 collimator_reflect_limit	= 2
 collimator_reflect_f0		= 0.75
-collimator_reflect_cube_curve = 0.5
+collimator_reflect_cube_curve = 0.75
 collimator_reflect_contrast = 2.5
 collimator_reflect_mask		= 1.0
 collimator_specular			= 0.06, 400
@@ -147,7 +151,7 @@ collimator_specular_mask	= 0
 collimator_specular_lamps	= 0.25
 ; a 1x prism sight: the glass shows the world with the body cut out behind the eyepiece (r3), inside a field stop
 collimator_prism			= true
-collimator_prism_fov		= 13		; full angle, degrees (spec: 13)
+collimator_prism_fov		= 16		; full angle, degrees (spec: 13)
 collimator_prism_fov_soft	= 1.0		; width of the field stop's edge, degrees
 collimator_prism_veil		= 0.55		; pass-through multiplier for god rays inside the lens
 collimator_marks			= wpn\sight_marks\mark_rakurs_01
@@ -321,7 +325,7 @@ scoped_hud_offset_pos			= 0, -0.03, 0	; hip pose with this scope on: gun lowered
 scope_x = 54
 scope_y = 2
 scope_name				= wpn_addon_scope_kashtan
-scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_texture		= crosshair_2d_kashtan	; tritium glow from the light sensor (scope_reticle_auto_illum on the item)
 bones					= scope_kashtan
 ; x the glass share of the screen (2 x scope_nv_mask_radius = 0.8) = 2.8x, the real 1P78's power
 scope_lens_factor		= 3.5	; orig 2.0 (= 1.6x; GS min/max_lens_factor is 5)
@@ -497,10 +501,10 @@ scope_x                 = 101
 scope_y                 = -2
 bones                   = scope2
 overriding_hide_bones   = scope2_sight	; the opaque lens the aim anims slide away -- hidden, the glass with the lens shader sits there instead
-aim_hud_offset_pos      = -0.009100,-0.014700,0.0
-aim_hud_offset_rot      = -0.001000,0.000000,0.000000
-aim_hud_offset_pos_16x9 = -0.009100,-0.013600,0.0
-aim_hud_offset_rot_16x9 = 0.001000,0.000000,0.000000
+aim_hud_offset_pos      = -0.009250,-0.014200,0.0		;-0.009100,-0.014700,0.0
+aim_hud_offset_rot      = 0.000000,0.000000,0.000000	;-0.001000,0.000000,0.000000
+aim_hud_offset_pos_16x9 = -0.009250,-0.014200,0.0		;-0.009100,-0.013600,0.0
+aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000	;0.001000,0.000000,0.000000
 ;inertion_aim_origin_offset = 0.02
 ;inertion_aim_speed      = 8
 
@@ -1421,7 +1425,7 @@ aim_hud_offset_pos_16x9 = 0.015150,-0.007200,0.05
 aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.000000
 
 [scope_kashtan_aks74u]:scope_kashtan_ak74m
-scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_texture		= crosshair_2d_kashtan	; tritium glow from the light sensor (scope_reticle_auto_illum on the item)
 scope_x                 = 58
 scope_y                 = 1
 aim_hud_offset_pos      = 0.004760,-0.004960,0.05	; orig 0.005100,-0.005000,0.05 (centred: tools/hud_aim_center.py)
@@ -1445,7 +1449,7 @@ scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination l
 [scope_pka_ak101]:scope_pka_ak74m
 scope_texture		= zero_alpha	; GS parity: the stock reticle has no illumination levels
 [scope_kashtan_ak101]:scope_kashtan_ak74m
-scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_texture		= crosshair_2d_kashtan	; tritium glow from the light sensor (scope_reticle_auto_illum on the item)
 [scope_nvas_ak101]:scope_nvas_ak74m
 scope_texture		= crosshair_2d_1pn93x1	; GS parity: the stock reticle has no illumination levels
 [scope_nvsn_ak101]:scope_nvsn_ak74m
@@ -1505,7 +1509,7 @@ aim_hud_offset_rot_16x9 = 0.000000,0.000000,0.0
 
 [scope_kashtan_an94]:scope_kashtan_ak74m
 scoped_hud_offset_pos			= 0, -0.05, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
-scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_texture		= crosshair_2d_kashtan	; tritium glow from the light sensor (scope_reticle_auto_illum on the item)
 scope_x                 = 55
 scope_y                 = 3
 bones                   = scope_kashtan
@@ -2192,7 +2196,7 @@ aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
 ;inertion_aim_speed      = 8
 
 [scope_kashtan_val]:scope_kashtan_ak74m
-scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_texture		= crosshair_2d_kashtan	; tritium glow from the light sensor (scope_reticle_auto_illum on the item)
 scope_x                 = 62
 scope_y                 = -4
 scope_hud_fov_aim       = 0.253	; GS hud_fov_zoom_factor 0.45
@@ -2319,7 +2323,7 @@ additional_icon_element_offset_x = 50
 additional_icon_element_offset_y = 0
 
 [scope_kashtan_svu]:scope_kashtan_ak74m
-scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_texture		= crosshair_2d_kashtan	; tritium glow from the light sensor (scope_reticle_auto_illum on the item)
 scope_x                 = 74
 scope_y                 = 0
 bones                   = scope3
@@ -2421,7 +2425,7 @@ aim_hud_offset_rot_16x9 = 0.0,0.0,0.0
 ;inertion_aim_speed      = 8
 
 [scope_kashtan_svd]:scope_kashtan_ak74m
-scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_texture		= crosshair_2d_kashtan	; tritium glow from the light sensor (scope_reticle_auto_illum on the item)
 scope_x                 = 57
 scope_y                 = 6
 bones                   = scope3
@@ -2844,7 +2848,7 @@ zoom_mouse_sense_koef	= 0.5
 [scope_kashtan_bizon]:scope_ak74m_base
 scoped_hud_offset_pos			= 0, -0.02, 0	; hip pose with this scope on: gun lowered (fades out while aiming)
 scope_name 					= wpn_addon_scope_kashtan
-scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_texture		= crosshair_2d_kashtan	; tritium glow from the light sensor (scope_reticle_auto_illum on the item)
 scope_x              	= 66                ; offset in inventory icon
 scope_y                 = 0
 scope_lens_factor		= 3.5	; orig absent (4.0 from scope_ak74m_base) -- 2.8x, same as scope_kashtan_ak74m
@@ -3074,7 +3078,7 @@ scope_zoom_factor         = 98
 [scope_kashtan_saiga12]:scope_ak74m_base
 scoped_hud_offset_pos			= 0, -0.02, 0	; orig 0, -0.03, 0 ; hip pose with this scope on: gun lowered (fades out while aiming)
 scope_name 					= wpn_addon_scope_kashtan
-scope_texture		= crosshair_2d_kashtan	; GS parity: the stock reticle has no illumination levels
+scope_texture		= crosshair_2d_kashtan	; tritium glow from the light sensor (scope_reticle_auto_illum on the item)
 scope_x              	= 62                ; offset in inventory icon
 scope_y                 = 0
 scope_hud_fov_aim		= 0.20	; orig 0.253 (matched to the ak74m twin)

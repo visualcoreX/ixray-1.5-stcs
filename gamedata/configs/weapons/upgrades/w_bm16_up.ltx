@@ -98,6 +98,7 @@ inv_weight = -0.7
 fire_dispersion_base = +0.175
 control_inertion_factor = -0.3
 crosshair_inertion = -4
+hit_power       = -0.1, -0.1, -0.1, -0.1
 bullet_speed = -100
 fire_distance = -50
 actor_camera_speed_factor = 1.5
@@ -296,7 +297,7 @@ fire_dispersion_base = -0.06
 ammo_class = ammo_12x76_zhekan, ammo_12x76_dart	; +dart: rifling bans SHOT, not the flechette round (GS had no dart)
 hit_impulse    = +25
 PDM_disp_base = -0.1
-hit_power       = 1.1, 1.1, 1.1, 1.1
+hit_power       = +0.1, +0.1, +0.1, +0.1	; signed: added to the base hit_power (1.05 -> 1.15 alone), was the plain 1.15,1.15,1.15,1.15
 hud = wpn_bm16_hud_inverted_ammotypes
 
 [up_bm16_barrel_narezka]

@@ -289,6 +289,7 @@ protected:
 	float					r_model_yaw_dest;
 	float					r_model_yaw;			// orientation of model
 	float					r_model_yaw_delta;		// effect on multiple "strafe"+"something"
+	float					m_fModelYawDeltaVel;	// its turn rate, rad/s: the spring in g_Orientate
 	// What the world model is actually DRAWN at: r_model_yaw+r_model_yaw_delta eased at a limited
 	// rate, so the body turns into a new heading instead of teleporting to it. r_model_yaw itself is
 	// left alone because movement rides on it (g_cl_Analyze rotates vControlAccel by it). See
@@ -511,6 +512,11 @@ public:
 	// Drop the sprint from outside the input code (a reload does it when the option says so).
 	// mstate_wishful is protected, and the next movement update carries it into mstate_real.
 			void			StopSprint				()	{ mstate_wishful &= ~mcSprint; }
+	// A sprint asked for from a toggled crouch: drops the toggle so the actor stands up into it.
+	// m_bSprintStandUp marks the stand-up as the sprint's own, for g_cl_CheckControls and
+	// g_cl_ValidateMState (Actor_Movement.cpp) -- see SprintOutOfCrouch in ActorInput.cpp.
+			void			SprintOutOfCrouch		();
+			bool			m_bSprintStandUp;
 	virtual void			IR_OnMouseWheel			(int direction);
 	virtual	float			GetLookFactor			();
 

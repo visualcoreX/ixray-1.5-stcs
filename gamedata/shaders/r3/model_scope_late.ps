@@ -20,7 +20,9 @@ Texture2D		s_scope_latec;
 float4 main( v2p_collim I, float4 pos : SV_Position ) : SV_Target
 {
 	clip( (m_scope_prism.x > 0.5f && m_scope_prism.w > 0.5f) ? 1.0f : -1.0f );
+	const float	cover	= collim_late_cover( I.pos_w, pos.xy );		// MSAA: the depth test no depth is bound for
+	clip( cover - 0.001f );
 	const float	a	= saturate( min(m_hud_params.y, m_hud_params.w) );
 	const int3	p	= int3( pos.xy, 0 );
-	return	float4( lerp(s_scope_late.Load(p).rgb, s_scope_latec.Load(p).rgb, a), 1.0f );
+	return	float4( lerp(s_scope_late.Load(p).rgb, s_scope_latec.Load(p).rgb, a), 1.0f ) * cover;
 }

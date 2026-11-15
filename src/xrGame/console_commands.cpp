@@ -108,6 +108,7 @@ extern	BOOL	b_toggle_weapon_aim;
 extern float	g_smart_cover_factor;
 extern float	g_actor_torso_yaw;		// ActorAnimation.cpp -- third-person upper-body yaw trim, degrees
 extern int		g_actor_legs_relaxed;	// ActorAnimation.cpp -- 0 stock / 1 empty hands / 2 unless aiming / 3 always
+extern int		g_dbg_hit_log;			// EntityCondition.cpp -- 0 off / 1 actor's hits / 2 all hits
 extern float	g_actor_torso_follow_empty;	// ActorAnimation.cpp -- spine/head chase the camera with empty hands
 extern float	g_actor_torso_follow_empty_pitch;	// ...its vertical half alone; -1 = tied to the line above
 extern float	g_actor_torso_blend;		// ActorAnimation.cpp -- ease time for the follow-cam constant
@@ -2385,6 +2386,9 @@ void CCC_RegisterCommands()
 	// third-person stance, legs AND torso together: 0 = stock braced, 1 = relaxed with nothing in
 	// hand, 2 = relaxed until aiming, 3 = relaxed always. No effect without a pack that ships it.
 	CMD4(CCC_Integer,			"actor_legs_relaxed",	&g_actor_legs_relaxed,	0,	3);
+	// temporary balance aid: one log line per hit (victim, bone, ap, power, health lost and left);
+	// 1 = hits the actor deals or takes, 2 = every hit
+	CMD4(CCC_Integer,			"dbg_hit_log",			&g_dbg_hit_log,			0,	2);
 	// how much the spine/head chase the camera with NOTHING in hand (0 = not at all, current default)
 	CMD4(CCC_Float,				"actor_torso_follow_empty",	&g_actor_torso_follow_empty,	0.0f,	1.0f);
 	CMD4(CCC_Float,				"actor_torso_follow_empty_pitch",&g_actor_torso_follow_empty_pitch,	-1.0f,	1.0f);
@@ -2722,6 +2726,13 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 		CMD4(CCC_Integer,	"g_actor_yaw_smooth",		&g_actor_yaw_smooth,		0, 1);
 		CMD4(CCC_Float,		"g_actor_yaw_speed",		&g_actor_yaw_speed,			10.f, 1440.f);
 		CMD4(CCC_Float,		"g_actor_yaw_snap",			&g_actor_yaw_snap,			10.f, 180.f);
+		// the diagonal body turn's spring (g_Orientate): higher = snappier, 0 = stock 720 deg/s slide.
+		// First and third person both: in first person it is what the shadow turns with.
+		extern float	g_actor_strafe_yaw_omega;
+		CMD4(CCC_Float,		"g_actor_strafe_yaw_omega",	&g_actor_strafe_yaw_omega,	0.f, 60.f);
+		// how much of that diagonal turn is kept while sprinting: 1 = as walking, 0 = none
+		extern float	g_actor_sprint_strafe_yaw_k;
+		CMD4(CCC_Float,		"g_actor_sprint_strafe_yaw_k",	&g_actor_sprint_strafe_yaw_k,	0.f, 1.f);
 	}
 	// Top-left overlay for every playing hud blend: source .omf, motion name, time and state.
 	// Registered here rather than in the DEBUG block so it works in a Release build.

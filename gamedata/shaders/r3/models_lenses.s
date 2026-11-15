@@ -7,7 +7,7 @@
 --   pass 0  model_collim_glass: the glass's texture (its alpha faded by the aim), the sky the coating
 --           mirrors over it, the reticle's glow behind it -- one premultiplied-alpha pass (one, invsrcalpha);
 --   pass 1  model_collim_tint: what darkens the view BEHIND the glass -- the coating's tint (2*src*dst, 0.5
---           = clear), a prism sight's field stop, an etched reticle's lines.
+--           = clear), a prism sight's field stop (an etched reticle's lines: the late pass, collim_lines).
 -- The hud draws pass 1 first and pass 0 over it (sorted_L1_passes); the world draws pass 0
 -- alone, and its binders then give a plain glass -- full texture, no sky, no reticle. The model reticle
 -- draws after all of the hud's glass (models_collimsight.s, priority 3).
@@ -98,6 +98,7 @@ function l_special	(shader, t_base, t_second, t_detail)
 			: blend		(true,blend.one,blend.invsrcalpha)
 			: aref		(false,0)
 	shader:dx10texture	("s_vollight",	"$user$generic2")
+	shader:dx10texture	("s_position",	"$user$position")	-- MSAA: the G-buffer's depth for the hand-made depth test (collim.h collim_late_cover)
 	shader:dx10texture	("s_base",	t_base)
 	shader:dx10texture	("s_sky0",	"$user$sky0")
 	shader:dx10texture	("s_sky1",	"$user$sky1")

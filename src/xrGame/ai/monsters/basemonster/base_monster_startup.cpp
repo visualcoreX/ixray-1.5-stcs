@@ -240,6 +240,31 @@ void CBaseMonster::reload	(LPCSTR section)
 
 	Home->load						("home");
 
+	// Per-bone skin armour (see m_skin_bones): every protections_sect line other than the two
+	// whole-body keys names a bone.
+	m_skin_bones.clear				();
+	IKinematics*	K				= smart_cast<IKinematics*>(Visual());
+	if (K && pSettings->line_exist(section,"protections_sect")) {
+		LPCSTR				prot_sect	= pSettings->r_string(section,"protections_sect");
+		CInifile::Sect&		S			= pSettings->r_section(prot_sect);
+		for (CInifile::SectCIt i = S.Data.begin(); S.Data.end() != i; ++i) {
+			if (!xr_strcmp(*i->first,"skin_armor") || !xr_strcmp(*i->first,"hit_fraction_monster"))
+				continue;
+			u16				bone		= K->LL_BoneID(i->first);
+			if (BI_NONE == bone) {
+				Msg			("! [%s] protections_sect [%s]: bone [%s] is not in visual [%s], ignored",
+							 section, prot_sect, *i->first, *cNameVisual());
+				continue;
+			}
+			string64		buffer;
+			SSkinBone		B;
+			B.armor			= (float)atof(_GetItem(*i->second,0,buffer));
+			B.hit_fraction	= (_GetItemCount(*i->second) > 1)
+								? (float)atof(_GetItem(*i->second,1,buffer)) : m_hit_fraction_monster;
+			m_skin_bones[bone]	= B;
+		}
+	}
+
 	// save panic_threshold
 	m_default_panic_threshold = m_panic_threshold;
 }

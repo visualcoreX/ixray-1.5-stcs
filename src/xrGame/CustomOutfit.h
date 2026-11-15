@@ -23,7 +23,7 @@ public:
 	float					GetDefHitTypeProtection(ALife::EHitType hit_type);
 	float					GetBoneArmor(s16 element);
 
-	float					HitThroughArmor		(float hit_power, s16 element, float ap, bool& add_wound );
+	float					HitThroughArmor		(float hit_power, s16 element, float ap, float armor_frac, bool& add_wound );
 	//����������� �� ������� ����������� ������ ����
 	//���� �� ��������� ����� ������
 	float					GetPowerLoss		();

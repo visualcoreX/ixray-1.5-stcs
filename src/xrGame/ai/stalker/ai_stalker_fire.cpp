@@ -251,7 +251,8 @@ void CAI_Stalker::Hit			(SHit* pHDS)
 		}
 		else
 		{
-			hit_power *= m_boneHitProtection->m_fHitFrac;
+			// the armour stopped the round: the ammo's k_armor_frac scales what still gets through
+			hit_power *= m_boneHitProtection->m_fHitFrac * HDS.armor_frac;
 			HDS.add_wound = false;
 		}// if >=
 

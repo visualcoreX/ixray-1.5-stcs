@@ -1,8 +1,15 @@
 local tex_env0	= "$user$sky0"
 local tex_env1	= "$user$sky1"
 
+-- Reticles drawn twice side by side, unlit and lit, on a mesh that still names models\zoom: the lens takes the
+-- lerp pixel shader for them, the two halves mixed by m_zoom_deviation.z as models\zoom_lerp does (the ELCAN's).
+-- The Kashtan's tritium reticle: its glow is the light sensor's (CWeapon::ScopeReticleAutoIllum).
+local two_looks	= {
+	["crosshair\\crosshair_kashtan"]	= true,
+}
+
 function normal   (shader, t_base, t_second, t_detail)
-	  shader:begin	("model_scope_eye","model_scope_lense")
+	  shader:begin	("model_scope_eye", two_looks[string.lower(t_base)] and "model_scope_lense_lerp" or "model_scope_lense")
       : fog			(true)
       : zb			(true,false)
       : blend		(true,blend.srcalpha,blend.invsrcalpha)
@@ -48,6 +55,7 @@ function l_special	(shader, t_base, t_second, t_detail)
 			: aref		(false,0)
 	shader:dx10texture	("s_scope_late",	"$user$scopelate")	-- the prism mode's fade: the frames without the cut, finished
 	shader:dx10texture	("s_scope_latec",	"$user$scopelatec")	-- ...and with it
+	shader:dx10texture	("s_position",	"$user$position")	-- MSAA: the G-buffer's depth for the hand-made depth test (collim.h collim_late_cover)
 
 	shader:begin	("model_collim_reflect","model_scope_undistort")	-- pass 3: the distortion mask (r_dsgraph_render_lens_undistort)
 			: fog		(false)

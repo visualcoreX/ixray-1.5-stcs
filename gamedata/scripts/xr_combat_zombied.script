@@ -132,8 +132,10 @@ function action_zombie_shoot:hit_callback(victim, amount, local_direction, hitte
 		return
 	end
 	if self.st.cur_act == act_shoot then
-		local be = victim:best_enemy() -- guaranteed valid; only reached in script combat
-		if hitter:id() == be:id() then
+		-- may be nil: the hit comes outside the planner, and cur_act stays act_shoot
+		-- until the next update even if the enemy died, was forgotten or this hit killed us
+		local be = victim:best_enemy()
+		if be and hitter:id() == be:id() then
 			self.enemy_last_seen_pos = be:position()
 			self.enemy_last_seen_vid = be:level_vertex_id()
 			self.was_hit = true
@@ -207,8 +209,8 @@ function action_zombie_go_to_danger:hit_callback(victim, amount, local_direction
 		return
 	end
 	if self.st.cur_act == act_danger then
-		local bd = victim:best_danger() -- guaranteed valid; only reached in danger
-		local bdo = bd:object()
+		local bd = victim:best_danger() -- may be nil, as best_enemy() above
+		local bdo = bd and bd:object()
 		if bdo and (bd:type() == danger_object.attacked or amount > 0) then
 			self.enemy_last_seen_pos = bdo:position()
 			self.enemy_last_seen_vid = bdo:level_vertex_id()
