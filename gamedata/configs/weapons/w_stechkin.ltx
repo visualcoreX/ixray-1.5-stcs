@@ -401,6 +401,33 @@ aim_hud_offset_rot_16x9 = -0.004,0.0,0.0
 lowered_anim_down			= dynamics\weapons\weapon_lowered\weapon_lowered_pistol
 lowered_anim_up				= dynamics\weapons\weapon_lowered\weapon_raised_pistol
 
+hip_fire_point			= 0.104587, 0.039960, 0.799263
+hip_fire_dir			= 0.000000, 0.000366, 1.000000
+hud_recoil_pivot		= 0.11500, -0.125, 0.2
+hud_recoil_aim_pivot	= 0.0, -0.15, 0.1
+
+hud_recoil_inherit          = 0.75
+hud_recoil_inherit_horz		= 0.75
+hud_recoil_camera_split     = 0.75
+hud_recoil_push_back        = 0.01
+hud_recoil_push_max         = 0.06
+hud_recoil_radius           = 6.0
+hud_recoil_zone_down        = 2.5
+hud_recoil_mouse            = 0.4
+hud_recoil_mouse_horz_k     = 0.4
+hud_recoil_roll             = 5.0
+hud_recoil_roll_time        = 0.125
+hud_recoil_settle_roll      = 5.0
+hud_recoil_settle_roll_time = 0.6
+hud_recoil_settle_roll_min	= 0.3
+hud_recoil_rise_damping     = 1.0
+hud_recoil_relax_delay      = 0.08
+hud_recoil_relax_speed      = 60.0
+hud_recoil_relax_freq       = 3.0
+hud_recoil_relax_damping    = 0.4
+hud_recoil_aim_roll         = 0.5
+hud_recoil_aim_roll_time    = 0.09
+
 item_position			= 0.0,0.0,0.0
 item_orientation		= 0.0,0.0,0.0
 
@@ -1308,10 +1335,6 @@ anm_lefthand_detector_scientific_wpn_changefiremode_from_3_to_1_jammed_16x9 = ve
 ; GS has no such key -- its behaviour is "hide only when pointing away".
 laserdot_hud_treshold	= 90
 hud_recalc_koef		= 1.2
-hip_fire_point			= 0.104587, 0.039960, 0.799263
-hip_fire_dir			= 0.000000, 0.000366, 1.000000
-hud_recoil_pivot		= 0.104587, 0.039960, 0.1
-hud_recoil_aim_pivot	= 0.0, -0.05, 0.0
 
 ; --- advanced ammo bones, from GS ammo.ltx ---
 [wpn_stechkin_ammo_bones]
@@ -1401,7 +1424,7 @@ hud = wpn_apb_hud
 item_visual = dynamics\weapons\wpn_stechkin\wpn_apb_hud.ogf
 hip_fire_point			= 0.104587, 0.039960, 0.799263
 hip_fire_dir			= 0.000000, 0.000366, 1.000000
-hud_recoil_pivot		= 0.104587, 0.039960, 0.1
+hud_recoil_pivot		= 0.104587, -0.075, 0.1
 hud_recoil_aim_pivot	= 0.0, -0.05, 0.0
 
 [icon_element_apb_base]
