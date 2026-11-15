@@ -1885,7 +1885,7 @@ bool player_hud::fire_ray_local(const CHudItem* item, const Fmatrix& cam, Fvecto
 		aim_ray				(r, m_ray_slide[i], D, hd, &target);
 		// Close up the target is held just past the muzzle, on the barrel's line: the crosshair moves along
 		// the line from the middle of the view to the muzzle and never off it onto what lies behind an edge.
-		// (With the barrel in a wall HudFireRay starts the ray at the wall and drops the target.)
+		// (With the barrel in a wall HudFireRay starts the ray at the wall and aims it at the target from there.)
 		have_target			= true;
 	}
 
