@@ -713,7 +713,10 @@ BOOL CBulletManager::firetrace_callback	(collide::rq_result& result, LPVOID para
 	Fvector& collide_position		= data.collide_position;
 	collide_position				= Fvector().mad(bullet.bullet_pos, bullet.dir, result.range);
 	
-	float const	air_resistance		= (GameID() == eGameIDSingle) ? Level().BulletManager().m_fAirResistanceK : bullet.air_resistance;
+	// The ammo's k_air_resistance, as multiplayer always had it (stock single player used only the
+	// global air_resistance_k). A cartridge built in code (explosion fragments, knife, kick) carries
+	// 0: in single player it keeps the global value as before; see process_bullet.
+	float const	air_resistance		= (GameID() == eGameIDSingle && bullet.air_resistance <= 0.f) ? Level().BulletManager().m_fAirResistanceK : bullet.air_resistance;
 
 	CBulletManager& bullet_manager	= Level().BulletManager();
 	Fvector const gravity			= { 0.f, -bullet_manager.m_fGravityConst, 0.f };
@@ -831,7 +834,8 @@ bool CBulletManager::process_bullet			(collide::rq_results & storage, SBullet& b
 	float const time_delta		= float(delta_time)/1000.f;
 	Fvector const gravity		= Fvector().set( 0.f, -m_fGravityConst, 0.f);
 
-	float const	air_resistance	= (GameID() == eGameIDSingle) ? m_fAirResistanceK : bullet.air_resistance;
+	// per-ammo air resistance; 0 (a cartridge built in code) falls back to the global in single player
+	float const	air_resistance	= (GameID() == eGameIDSingle && bullet.air_resistance <= 0.f) ? m_fAirResistanceK : bullet.air_resistance;
 	bullet.tracer_start_position= bullet.bullet_pos;
 
 #if 0//def DEBUG
