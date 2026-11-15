@@ -1173,7 +1173,7 @@ void CWeaponMagazined::gwr_SetBones(LPCSTR csv, BOOL show)
 		{
 			strncpy_s(name, sizeof(name), s, n);  name[n] = 0;
 			// (not the animated shell a real cartridge case has just taken over from: see WeaponShellCasing.cpp)
-			if (hi && !(show && hi->m_model && gwr_ShellCasingHidesBone(hi->m_model->LL_BoneID(name))))
+			if (hi && !(show && hi->m_model && gwr_ShellCasingHidesBone(hi->m_model, hi->m_model->LL_BoneID(name))))
 				hi->set_bone_visible(name, show, TRUE);
 			gwr_SetWorldBone(K, name, show);
 		}
@@ -2660,11 +2660,17 @@ void CWeaponMagazined::OnShot()
 	if (READ_IF_EXISTS(pSettings, r_bool, HudSection(), "ammo_params_use_previous_shot_type", FALSE) &&	// a hud key
 		m_gwr_last_fired_type < m_ammoTypes.size())
 		thrown_case = m_ammoTypes[m_gwr_last_fired_type].c_str();
-	if (!m_magazine.empty())
+	// The case picks the hud shell it follows with the ammo-bones pass re-run (gwr_ShellCasingSettle), and the
+	// pass colours the shell by the last fired round. A drum's case is the PREVIOUS round: the pass must still
+	// see that one then, so for a drum this round becomes the fired one only after the case is armed.
+	const bool fired_after_case	= (thrown_case != NULL);
+	auto mark_fired				= [this]()
 	{
-		m_gwr_last_fired_type = (u8)m_magazine.back().m_LocalAmmoType;
-		m_gwr_fired_until     = Device.dwTimeGlobal + 600;
-	}
+		if (m_magazine.empty())	return;
+		m_gwr_last_fired_type	= (u8)m_magazine.back().m_LocalAmmoType;
+		m_gwr_fired_until		= Device.dwTimeGlobal + 600;
+	};
+	if (!fired_after_case)		mark_fired();
 
 	// Sound. Unlocked, so a burst is several shots ringing over each other instead of one sound
 	// restarted at every round -- the shared sound object is stopped on replay, which cut the tail off
@@ -2691,6 +2697,7 @@ void CWeaponMagazined::OnShot()
 	// _first take, see gwr_ShellCasingOnShot)
 	const bool no_case		= NeedFirstShootAnim();
 	const bool real_case	= !no_case && gwr_ShellCasingOnShot(vel, thrown_case);
+	if (fired_after_case)	mark_fired();
 	if ((!no_case && !real_case) || (GetHUDmode() && !gwr_ShellParticlesWithCase()))
 		OnShellDrop				(get_LastSP(), vel);
 	

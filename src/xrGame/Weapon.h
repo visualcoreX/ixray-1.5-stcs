@@ -452,10 +452,14 @@ public:
 			void gwr_ShellCasingArmReloadDrop	(bool gl = false);	// a full reload: the old magazine falls
 			void gwr_ShellCasingCancel	();				// the shot jammed: its case stays in the port
 			void gwr_ShellCasingUpdate	(bool force = false);
-			bool gwr_ShellCasingHidesBone	(u16 bone) const;
+			bool gwr_ShellCasingHidesBone	(IKinematics* K, u16 bone) const;	// K: the hud model the bone is of
+	// the ammo-bones pass, re-run when a case is about to pick the hud shell it follows (CWeaponMagazined)
+	virtual	void gwr_ShellCasingRefreshBones	() {}
 			void gwr_ShellCasingKeepHidden	();	// after the ammo-bones pass: it would show the animated shell again
 			// idx: 0 = the cartridge case, 1 = the extra thing a belt-fed gun throws (the link)
-			void gwr_ShellCasingArm		(u32 idx, const shared_str& sect, const Fvector& owner_vel);
+			// hud_bone: the animated shell to follow (idx 0), as gwr_ShellCasingSettle picked it
+			void gwr_ShellCasingArm		(u32 idx, const shared_str& sect, const Fvector& owner_vel, u16 hud_bone = BI_NONE);
+			u16  gwr_ShellCasingSettle	();	// settle the previous case, re-run the ammo-bones pass; the hud shell the new one is to follow
 			void gwr_ShellCasingFollow	(u32 idx, bool force);
 			void gwr_ShellCasingThrow	(u32 idx, const Fvector& pos, const Fmatrix& basis, const Fvector* dir, float speed, bool hud);
 	// first person: the shot being followed until the hud model's animated shell leaves the port
