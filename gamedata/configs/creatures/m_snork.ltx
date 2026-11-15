@@ -248,11 +248,14 @@ community					= snork
 
 default				= 0.5,	-1,	0.1
 
-bip01_pelvis 		= 1.0, -1, 0.1
+bip01_pelvis 		= 0.75, -1, 0.1
 bip01_spine 		= 1.0, -1, 0.1
 bip01_spine1 		= 1.0, -1, 0.1
-bip01_neck 			= 1.0, -1, 0.5
-bip01_head 			= 2.0, -1, 0.1, 10
+bip01_spine2 		= 1.0, -1, 0.1
+bip01_neck 			= 1.5, -1, 0.5
+bip01_head 			= 2.75, -1, 0.1, 10
+bip01_ponytail1		= 2.75, -1, 0.1, 10
+bip01_ponytail2		= 2.75, -1, 0.1, 10	;включаем сюда начало хобота, т.к. он блокирует попадания в голову
 
 [m_snork_attack_effector]
 duality_h			= 0.05;0.01
@@ -488,5 +491,5 @@ jump_max_angle				= 0.8
 ; tuned down from GS 0.5/0.23 to keep FMJ at the old CS level
 ;***************************************************************
 [snork_protections]
-skin_armor				= 0.29
-hit_fraction_monster	= 0.106
+skin_armor				= 0.25	;0.29
+hit_fraction_monster	= 0.125	;0.106

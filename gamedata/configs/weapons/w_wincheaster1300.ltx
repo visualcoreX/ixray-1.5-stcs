@@ -65,7 +65,7 @@ control_inertion_factor		= 1.3f	; orig 1.2f (GS)
 ;������
 cam_relax_speed         = 5		; orig 10 (GS)
 cam_relax_speed_ai      = 360	; orig 360 (GS)
-cam_dispersion          = 5.1	; orig 3.0 (GS)
+cam_dispersion          = 6.0	; orig 3.0 (GS)
 cam_dispersion_inc		= 2.4	; orig 3.0 (GS)
 cam_dispersion_frac		= 0.7	; orig 0.7 (GS)
 cam_max_angle			= 15.0	; orig 15.0 (GS)
@@ -74,7 +74,7 @@ cam_step_angle_horz		= 3.0	; orig 3.0 (GS)
 
 zoom_cam_relax_speed		= 5		; orig 10 (GS)
 zoom_cam_relax_speed_ai		= 120.75
-zoom_cam_dispersion			= 3.5	; orig 3.0 (GS)
+zoom_cam_dispersion			= 4.5	; orig 3.0 (GS)
 zoom_cam_dispersion_inc		= 2.9	; orig 3.0 (GS)
 zoom_cam_dispersion_frac	= 0.7	; orig 0.7 (GS)
 zoom_cam_max_angle			= 15.0	; orig 10.0 (GS)
@@ -126,7 +126,7 @@ PDM_disp_crouch_no_acc 		= 1.0	; orig 1.0 (GS)
 
 ; ttc
 
-hit_power        			= 0.99, 0.99, 0.99, 0.99	; orig 1.00, 1.00, 1.00, 1.00 (GS)
+hit_power        			= 1.0, 1.0, 1.0, 1.0	; orig 1.00, 1.00, 1.00, 1.00 (GS)
 hit_impulse      			= 120	; orig 120 (GS)
 hit_type 					= fire_wound
 
@@ -160,17 +160,17 @@ light_time 		 			= 0.2
 
 ; ---- silencer params (read from this section when a silencer is attached via the barrel-mod upgrade;
 ; copied from w_ak74.ltx). Fatal r_string on the silencer_light_* keys if missing -> attach crash. ----
-silencer_hit_power      = 0.55, 0.55, 0.55, 0.55
-silencer_hit_impulse    = 120
-silencer_fire_distance  = 250
-silencer_bullet_speed   = 600
-silencer_smoke_particles   = ghost_particles\weapons\suppressor_smoke_shtg_common
 snd_silncer_shot        = weapons\winchester1300\winchester1300_shoot_silencer, -1.1
+silencer_smoke_particles   = ghost_particles\weapons\suppressor_smoke_shtg_common
+silencer_hit_power      = 0.90, 0.90, 0.90, 0.90	;0.55, 0.55, 0.55, 0.55
+silencer_hit_impulse    = 120
+silencer_fire_distance  = 200
+silencer_bullet_speed   = 200
 silencer_light_color    = 0.6,0.5,0.3
 silencer_light_range    = 0.01
 silencer_light_var_color= 0.05
-silencer_light_var_range= 0.5
-silencer_light_time     = 0.2
+silencer_light_var_range= 0.01
+silencer_light_time     = 0.01
 
 ph_mass			 			= 3
 ;cost			 			= 900
@@ -886,7 +886,7 @@ hud = wpn_wincheaster1300_trapper_hud
 cost					 	= 10000
 
 rpm                      	= 85  ;60 = 1 �������
-hit_power        			= 1.4, 1.4, 1.4, 1.4
+hit_power        			= 1.25, 1.25, 1.25, 1.25	;1.4, 1.4, 1.4, 1.4
 hit_impulse      			= 150
 
 misfire_start_condition		= 0.6

@@ -34,7 +34,7 @@ allowed_upgrades = up_saiga12_
 
 ;-““’---------------------------------------------------------------------------
 
-hit_power            	= 0.85, 0.85, 0.85, 0.85
+hit_power            	= 0.95, 0.95, 0.95, 0.95    ;0.925, 0.925, 0.925, 0.925    ;0.85, 0.85, 0.85, 0.85
 hit_impulse          	= 130    ; size of physic impulse by bullet
 hit_type            	= fire_wound            ; [] type of the wound
 fire_distance           = 200    ; maximum fire distance that bullet can fly
@@ -60,9 +60,9 @@ misfire_start_prob	     	= 0.003
 ;шанс осечки при изношености больше чем misfireEndCondition
 misfire_end_prob	     	= 0.5
 ;увеличение изношености при одиночном выстреле
-condition_shot_dec      	= 0.0043
+condition_shot_dec      	= 0.00415 ;0.0043
 ;увеличение изношености при выстреле очередью
-condition_queue_shot_dec	= 0.0043
+condition_queue_shot_dec	= 0.00415 ;0.0043
 
 
 ammo_elapsed            = 6           ; obsolete
@@ -323,7 +323,10 @@ snd_low_ammo_duck_hold	= 0.01
 
 ;silencer_flame_particles  = weapons\generic_weapon01
 silencer_smoke_particles   = ghost_particles\weapons\suppressor_smoke_shtg_common
-
+silencer_hit_power      = 0.875, 0.875, 0.875, 0.875	;0.55, 0.55, 0.55, 0.55
+silencer_hit_impulse    = 120
+silencer_fire_distance  = 200
+silencer_bullet_speed   = 200
 silencer_light_color    = 0.6,0.5,0.3
 silencer_light_range    = 0.01
 silencer_light_var_color= 0.05
