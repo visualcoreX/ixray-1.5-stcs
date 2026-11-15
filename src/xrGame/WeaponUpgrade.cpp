@@ -22,6 +22,32 @@ static bool process_if_exists_deg2rad( LPCSTR section, LPCSTR name, float& value
 	return true;
 }
 
+// hit_power / hit_power_critical of an upgrade, laid out like the weapon's own line:
+// master[, veteran[, stalker[, novice]]], missing items repeat the first. A plain number SETS the
+// value (stock: "1.15" is the new damage whatever the base was). A signed one ADDS to the current
+// value: "+0.05" / "-0.1" follow the base weapon's hit_power and stack with the other upgrades in
+// install order, like bullet_speed and the rest of the upgrade parameters already do.
+static void upgrade_hit_power( LPCSTR str, Fvector4& hit_power )
+{
+	static const int	order[4]	= { egdMaster, egdVeteran, egdStalker, egdNovice };
+	int					count		= _GetItemCount( str );
+	string32			buffer;
+	for ( int i = 0; i < 4; ++i )
+	{
+		_GetItem( str, (i < count) ? i : 0, buffer );
+		LPCSTR	item	= buffer;
+		while ( *item == ' ' || *item == '\t' )	++item;
+
+		float	value	= (float)atof( item );
+		float&	dst		= hit_power[order[i]];
+		if ( *item == '+' || *item == '-' )
+			dst			+= value;
+		else
+			dst			= value;
+		if ( dst < 0.0f )	dst = 0.0f;
+	}
+}
+
 bool CWeapon::install_upgrade_impl( LPCSTR section, bool test )
 {
 	//inherited::install_upgrade( section );
@@ -212,29 +238,16 @@ bool CWeapon::install_upgrade_hit( LPCSTR section, bool test )
 	bool result2 = process_if_exists_set( section, "hit_power", &CInifile::r_string_wb, s_sHitPower, test );
 	if ( result2 && !test )
 	{
-		string32 buffer;
-		fvHitPower[egdMaster] = (float)atof( _GetItem( *s_sHitPower, 0, buffer ) );
-		fvHitPower[egdNovice] = fvHitPower[egdStalker] = fvHitPower[egdVeteran] = fvHitPower[egdMaster];
-
-		int num_game_diff_param = _GetItemCount( *s_sHitPower );
-		if ( num_game_diff_param > 1 ) { fvHitPower[egdVeteran]	= (float)atof( _GetItem( *s_sHitPower, 1, buffer ) ); }
-		if ( num_game_diff_param > 2 ) { fvHitPower[egdStalker]	= (float)atof( _GetItem( *s_sHitPower, 2, buffer ) ); }
-		if ( num_game_diff_param > 3 ) { fvHitPower[egdNovice]	= (float)atof( _GetItem( *s_sHitPower, 3, buffer ) ); }
+		upgrade_hit_power( *s_sHitPower, fvHitPower );
 	}
 	result |= result2;
 
+	// stock read hit_power_critical into s_sHitPower and then parsed the empty s_sHitPowerCritical
 	shared_str	s_sHitPowerCritical;
-	result2 = process_if_exists_set( section, "hit_power_critical", &CInifile::r_string_wb, s_sHitPower, test );
+	result2 = process_if_exists_set( section, "hit_power_critical", &CInifile::r_string_wb, s_sHitPowerCritical, test );
 	if ( result2 && !test )
 	{
-		string32 buffer;
-		fvHitPowerCritical[egdMaster] = (float)atof(_GetItem(*s_sHitPowerCritical,0,buffer));
-		fvHitPowerCritical[egdNovice] = fvHitPowerCritical[egdStalker] = fvHitPowerCritical[egdVeteran] = fvHitPowerCritical[egdMaster];
-
-		int num_game_diff_param = _GetItemCount(*s_sHitPowerCritical);
-		if ( num_game_diff_param > 1 ) { fvHitPowerCritical[egdVeteran]	= (float)atof(_GetItem(*s_sHitPowerCritical,1,buffer)); }
-		if ( num_game_diff_param > 2 ) { fvHitPowerCritical[egdStalker]	= (float)atof(_GetItem(*s_sHitPowerCritical,2,buffer)); }
-		if ( num_game_diff_param > 3 ) { fvHitPowerCritical[egdNovice]	= (float)atof(_GetItem(*s_sHitPowerCritical,3,buffer)); }
+		upgrade_hit_power( *s_sHitPowerCritical, fvHitPowerCritical );
 	}
 	result |= result2;
 
