@@ -79,6 +79,7 @@ void SBullet::Init(const Fvector& position,
 	hit_type				= e_hit_type;
 
 	armor_piercing			= cartridge.param_s.kAP;
+	armor_frac				= cartridge.param_s.kArmorFrac;
 	air_resistance			= cartridge.param_s.kAirRes;
 	wallmark_size			= cartridge.param_s.fWallmarkSize;
 	m_u8ColorID				= cartridge.param_s.u8ColorID;

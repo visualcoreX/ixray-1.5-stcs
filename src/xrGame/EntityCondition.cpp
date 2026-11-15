@@ -400,7 +400,7 @@ void CEntityCondition::UpdateCondition()
 
 
 
-float CEntityCondition::HitOutfitEffect( float hit_power, ALife::EHitType hit_type, s16 element, float ap, bool& add_wound )
+float CEntityCondition::HitOutfitEffect( float hit_power, ALife::EHitType hit_type, s16 element, float ap, float armor_frac, bool& add_wound )
 {
     CInventoryOwner* pInvOwner		= smart_cast<CInventoryOwner*>(m_object);
 	if(!pInvOwner)					return hit_power;
@@ -414,7 +414,7 @@ float CEntityCondition::HitOutfitEffect( float hit_power, ALife::EHitType hit_ty
 
 	if ( hit_type == ALife::eHitTypeFireWound )
 	{
-		new_hit_power				= pOutfit->HitThroughArmor( hit_power, element, ap, add_wound );
+		new_hit_power				= pOutfit->HitThroughArmor( hit_power, element, ap, armor_frac, add_wound );
 	}
 	else
 	{
@@ -540,7 +540,7 @@ CWound* CEntityCondition::ConditionHit(SHit* pHDS)
 	
 	float hit_power_org = pHDS->damage();
 	float hit_power = hit_power_org;
-	hit_power = HitOutfitEffect( hit_power_org, pHDS->hit_type, pHDS->boneID, pHDS->armor_piercing, bAddWound );
+	hit_power = HitOutfitEffect( hit_power_org, pHDS->hit_type, pHDS->boneID, pHDS->armor_piercing, pHDS->armor_frac, bAddWound );
 
 	switch(pHDS->hit_type)
 	{

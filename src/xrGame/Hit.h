@@ -40,6 +40,10 @@ IC	ALife::EHitType		type					()		const	{VERIFY(is_valide());return hit_type;}
 	
 	ALife::EHitType		hit_type;
 	float				armor_piercing;
+	// Ammo's k_armor_frac (1 = stock): multiplies the hit_fraction a stalker's bone armour or the
+	// actor's outfit applies when it stops the round (ap <= armour). Monster skin ignores it.
+	// Bullet hits only; on the wire in single player after armor_piercing.
+	float				armor_frac;
 	bool				add_wound;
 	bool				aim_bullet;
 	//---------------------------------------------------
