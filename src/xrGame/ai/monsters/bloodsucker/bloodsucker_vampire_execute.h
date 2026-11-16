@@ -6,6 +6,7 @@ class	CStateBloodsuckerVampireExecute : public CState<_Object> {
 	typedef CState<_Object>		inherited;
 
 	enum {
+		eActionApproach,
 		eActionPrepare,
 		eActionContinue,
 		eActionFire,
@@ -18,7 +19,7 @@ class	CStateBloodsuckerVampireExecute : public CState<_Object> {
 	bool				m_effector_activated;
 
 public:
-						CStateBloodsuckerVampireExecute	(_Object *obj) : inherited(obj) {}
+						CStateBloodsuckerVampireExecute	(_Object *obj) : inherited(obj), m_hud_hidden(false) {}
 
 	virtual void		initialize						();
 	virtual	void		execute							();
@@ -34,6 +35,12 @@ private:
 			void		execute_vampire_hit				();
 
 			void		look_head						();
+			void		cleanup							();
+
+	bool				m_hud_hidden;
+	u32					m_time_approach_started;
+	float				m_approach_best_dist;		// closest it has got so far
+	u32					m_approach_best_time;		// when it last got closer
 };
 
 #include "bloodsucker_vampire_execute_inline.h"

@@ -26,7 +26,6 @@ TEMPLATE_SPECIALIZATION
 void CBloodsuckerStateAttackAbstract::initialize()
 {
 	inherited::initialize	();
-	m_time_stop_invis		= 0;
 	m_last_health           = object->conditions().GetHealth();
 }
 
@@ -34,14 +33,12 @@ TEMPLATE_SPECIALIZATION
 void CBloodsuckerStateAttackAbstract::finalize()
 {
 	inherited::finalize();
-	object->start_invisible_predator();
 }
 
 TEMPLATE_SPECIALIZATION
 void CBloodsuckerStateAttackAbstract::critical_finalize()
 {
 	inherited::critical_finalize();
-	object->start_invisible_predator();
 }
 
 namespace detail
@@ -49,7 +46,6 @@ namespace detail
 
 namespace bloodsucker
 {
-	const float invisibility_dist2enemy     = 5.f;
 	const u32   encircle_time               = 3000;
 	const float loose_health_diff           = 0.15f;
 	const u32   change_behaviour_time       = 1000;
@@ -129,8 +125,8 @@ void CBloodsuckerStateAttackAbstract::execute()
 		m_time_start_check_behinder = 0;
 	}
 
-	update_invisibility();
-	
+	// Visibility is CAI_Bloodsucker::update_invisibility's now: the distance stages, every frame,
+	// in and out of the fight alike.
 	get_state_current()->execute();
 	prev_substate = current_substate;
 
@@ -144,36 +140,6 @@ void CBloodsuckerStateAttackAbstract::execute()
 		goal.entity	= const_cast<CEntityAlive*>(object->EnemyMan.get_enemy());
 
 		squad->UpdateGoal(object, goal);
-	}
-}
-
-TEMPLATE_SPECIALIZATION
-void CBloodsuckerStateAttackAbstract::update_invisibility()
-{
-	if ( object->state_invisible )
-	{
-		// check conditions to stop invis
-		if ( current_substate == eStateAttack_Melee )
-		{
-			object->stop_invisible_predator	();
-			m_time_stop_invis = Device.dwTimeGlobal;		
-		}
-	} 
-	else 
-	{
-		if ( Device.dwTimeGlobal > m_time_stop_invis + object->get_invisibility_activate_delay() )
-		{
-			// check conditions to start invis
-			if ( current_substate == eStateAttack_Hide )
-			{
-				object->start_invisible_predator();
-			} 
-			else if ( object->EnemyMan.get_enemy()->Position().distance_to(object->Position()) > 
-				      detail::bloodsucker::invisibility_dist2enemy )
-			{
-				object->start_invisible_predator();
-			}
-		}
 	}
 }
 
