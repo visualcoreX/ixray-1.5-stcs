@@ -37,6 +37,7 @@ class ENGINE_API CBoneInstance;
 class ENGINE_API CBlend;
 class CWeaponList;
 class CEffectorBobbing;
+class IKinematics;
 class CHolderCustom;
 class CUsableScriptObject;
 
@@ -390,6 +391,27 @@ protected:
 	Fvector					vPrevCamDir;
 	float					fCurAVelocity;
 	CEffectorBobbing*		pCamBobbing;
+
+	// First-person death camera: the view stays in the corpse's eyes instead of cam_3 (see ActorCameras.cpp).
+	// The look and up vectors are the head bone's own face / crown axes, picked at the moment of death, so
+	// the camera follows the ragdoll's head whichever way that bone's axes happen to point on a skeleton.
+	bool					m_death_cam_enabled;	// [actor] death_cam_first_person
+	float					m_death_cam_forward;	// [actor] death_cam_forward, m along the look
+	float					m_death_cam_up;			// [actor] death_cam_up, m along the head's up
+	float					m_death_cam_smooth;		// [actor] death_cam_smooth, 1/s; 0 = rigid
+	float					m_death_cam_pitch;		// [actor] death_cam_pitch, deg, + = up
+	bool					m_death_cam_valid;
+	Fvector					m_death_cam_dir_local;
+	Fvector					m_death_cam_up_local;
+	Fvector					m_death_cam_dir;		// smoothed world look / up
+	Fvector					m_death_cam_nrm;
+	bool					m_death_cam_hide_head;	// [actor] death_cam_hide_head
+	bool					m_death_cam_head_hidden;	// the visual callback below is registered
+	xr_vector<u16>			m_death_cam_head_bones;	// bip01_head and everything under it
+	bool					death_cam_HeadMatrix	(Fmatrix& head);
+	void					death_cam_Capture		();
+	void					death_cam_Update		(float dt);
+	static void __stdcall	death_cam_HideHead		(IKinematics* K);
 
 
 	//�������� ����������, ���� � ������� �������
