@@ -3,6 +3,7 @@
 
 #include "SoundRender_CoreA.h"
 #include "SoundRender_TargetA.h"
+#include "SoundRender_Emitter.h"
 #include "SoundRender_Environment.h"
 
 CSoundRender_CoreA*	SoundRenderA = nullptr; 
@@ -12,6 +13,16 @@ CSoundRender_CoreA::CSoundRender_CoreA	():CSoundRender_Core()
 	pDevice = nullptr;
 	pDeviceList = nullptr;
 	pContext = nullptr;
+	for (int i=0; i<srs_count; ++i)
+	{
+		conv_space& C	= m_conv[i];
+		C.slot			= 0;
+		C.effect		= 0;
+		C.buffer		= 0;
+		C.weight		= 0.f;
+		C.applied_gain	= -1.f;
+		C.ok			= false;
+	}
 }
 
 CSoundRender_CoreA::~CSoundRender_CoreA	()
@@ -73,14 +84,25 @@ int CSoundRender_CoreA::load_reverb(ALuint effect_, const EFXEAXREVERBPROPERTIES
     return 1;
 }
 
-ALuint CSoundRender_CoreA::get_efx_slot() const
+ALuint CSoundRender_CoreA::get_send_slot(int send, CSoundRender_Emitter* E) const
 {
     // m_is_supported says the slot and the effect were created; snd_efx is the player's switch,
     // which until now nothing in xrSound read. Gating the send here is enough to turn the
     // reverb off completely -- with no source feeding it, the slot has nothing to process.
     if (!m_is_supported)                return AL_EFFECTSLOT_NULL;
     if (!psSoundFlags.test(ss_EFX))     return AL_EFFECTSLOT_NULL;
-    return slot;
+
+    // kept dry: music, the paths sound_reverb.ltx excludes, recordings that carry their own reverb
+    if (E && E->owner_data)
+    {
+        if (E->owner_data->s_type==st_Music)                    return AL_EFFECTSLOT_NULL;
+        if (s_reverb.exclude_tagged && E->owner_data->no_reverb) return AL_EFFECTSLOT_NULL;
+        if (E->owner_data->handle && E->source()->m_bNoReverb)  return AL_EFFECTSLOT_NULL;
+    }
+
+    if (conv_active())
+        return (send<srs_count && m_conv[send].ok) ? m_conv[send].slot : AL_EFFECTSLOT_NULL;
+    return (send==0) ? slot : AL_EFFECTSLOT_NULL;
 }
 
 void CSoundRender_CoreA::commit()
@@ -183,8 +205,10 @@ void CSoundRender_CoreA::_initialize(int stage)
     const ALCchar*		        deviceSpecifier;
     deviceSpecifier         	= alcGetString		(pDevice, ALC_DEVICE_SPECIFIER);
 
-    // Create context
-    pContext					= alcCreateContext	(pDevice,NULL);
+    // Create context. Four aux sends a source, not OpenAL Soft's default two: the convolution reverb
+    // feeds one slot per space (three) so it can cross-fade between them.
+    const ALCint				ctx_attr[] = { ALC_MAX_AUXILIARY_SENDS, 4, 0 };
+    pContext					= alcCreateContext	(pDevice,ctx_attr);
 	if (pContext == nullptr) {
 		CHECK_OR_EXIT			(0,"SOUND: OpenAL: Failed to create context.");
 		bPresent				= FALSE;
@@ -268,7 +292,14 @@ void CSoundRender_CoreA::_initialize(int stage)
             alDeleteEffects(1, &effect);
     }
 
+    m_max_sends                 = 1;
+    alcGetIntegerv              (pDevice, ALC_MAX_AUXILIARY_SENDS, 1, &m_max_sends);
+    m_max_sends                 = _max(m_max_sends, 1);
+
     inherited::_initialize		(stage);
+
+    // after the core's own init: it reads sound_reverb.ltx
+    conv_init                   ();
 
 	if(stage==1)//first initialize
 	{
@@ -309,6 +340,10 @@ void CSoundRender_CoreA::_clear	()
 		T->_destroy				();
         xr_delete				(T);
 	}
+    s_targets.clear             ();
+
+    // the sources are gone, so nothing holds the slots any more
+    conv_destroy                ();
 
     // Reset the current context to NULL.
     alcMakeContextCurrent		(NULL);         

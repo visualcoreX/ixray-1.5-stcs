@@ -111,6 +111,9 @@ void CSoundRender_Core::update	( const Fvector& P, const Fvector& D, const Fvect
 
         set_listener			(e_current);
 		commit		();
+
+		// the convolution spaces: their IRs, which one the listener is in, the cross-fade between them
+		reverb_update			(dt_sec);
 	}
 
     // update listener

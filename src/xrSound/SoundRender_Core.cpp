@@ -10,7 +10,10 @@
 #include <AL/efx.h>
 
 int		psSoundTargets			= 64;	// 32 ran out once shots stopped cutting each other off
-Flags32	psSoundFlags			= {ss_Hardware | ss_EFX};
+Flags32	psSoundFlags			= {ss_Hardware | ss_EFX | ss_ConvReverb};
+float	psSoundReverbGain		= 1.0f;
+int		psSoundReverbSpace		= -1;
+char	psSoundReverbIR[srs_count][SND_REVERB_IR_LEN]	= { "", "", "" };
 float	psSoundOcclusionScale	= 0.5f;
 float	psSoundCull				= 0.01f;
 float	psSoundRolloff			= 0.75f;
@@ -63,6 +66,7 @@ void CSoundRender_Core::_initialize(int stage)
     // load environment
 	env_load					();
 	atten_load					();
+	reverb_load					();
 
 	bPresent					= TRUE;
 
@@ -197,6 +201,130 @@ const CSoundRender_Attenuation* CSoundRender_Core::atten_find	(LPCSTR fname) con
 			return				&s_atten_rules[it].curve;
 	}
 	return						NULL;
+}
+
+#define SNDREVERB_FILENAME	"sound_reverb.ltx"
+
+CSoundRender_Core::reverb_config::reverb_config()
+{
+	enabled						= false;
+	fade_time					= 0.75f;
+	rolloff						= 1.f;
+	normalize					= true;
+	exclude_tagged				= true;
+	for (int i=0; i<srs_count; ++i)
+	{
+		gain[i]					= 0.3f;
+		skip_ms[i]				= 0.f;
+	}
+}
+
+// configs\sound_reverb.ltx -- see the file itself for what each key does
+void CSoundRender_Core::reverb_load	()
+{
+	s_reverb					= reverb_config();
+
+	string_path					fn;
+	if (!FS.path_exist("$game_config$") || !FS.exist(fn,"$game_config$",SNDREVERB_FILENAME))
+	{
+		Msg						("SOUND: no %s, convolution reverb off", SNDREVERB_FILENAME);
+		return;
+	}
+
+	CInifile					ini(fn);
+	LPCSTR const				sect = "sound_reverb";
+	if (!ini.section_exist(sect))
+	{
+		Msg						("! SOUND: %s has no [%s] section", SNDREVERB_FILENAME, sect);
+		return;
+	}
+
+	static LPCSTR const			names[srs_count] = { "outdoor", "indoor", "underground" };
+	for (int i=0; i<srs_count; ++i)
+	{
+		string64				key;
+		xr_sprintf				(key, "ir_%s", names[i]);
+		if (ini.line_exist(sect,key))
+		{
+			string_path			v;
+			xr_strcpy			(v, ini.r_string(sect,key));
+			_strlwr				(v);
+			for (char* c=v; *c; ++c)
+				if (*c=='/')	*c = '\\';
+			if (strext(v))		*strext(v) = 0;
+			s_reverb.ir[i]		= v;
+		}
+		xr_sprintf				(key, "gain_%s", names[i]);
+		if (ini.line_exist(sect,key))	s_reverb.gain[i]	= ini.r_float(sect,key);
+		xr_sprintf				(key, "skip_ms_%s", names[i]);
+		if (ini.line_exist(sect,key))	s_reverb.skip_ms[i]	= ini.r_float(sect,key);
+		clamp					(s_reverb.gain[i], 0.f, 4.f);
+		clamp					(s_reverb.skip_ms[i], 0.f, 500.f);
+	}
+	if (ini.line_exist(sect,"fade_time"))				s_reverb.fade_time		= ini.r_float(sect,"fade_time");
+	if (ini.line_exist(sect,"normalize"))				s_reverb.normalize		= !!ini.r_bool(sect,"normalize");
+	if (ini.line_exist(sect,"exclude_indoor_tails"))	s_reverb.exclude_tagged	= !!ini.r_bool(sect,"exclude_indoor_tails");
+	if (ini.line_exist(sect,"rolloff"))					s_reverb.rolloff		= ini.r_float(sect,"rolloff");
+	s_reverb.fade_time			= _max(s_reverb.fade_time, 0.f);
+	clamp						(s_reverb.rolloff, 0.f, 2.f);
+
+	// the paths kept dry, matched against the start of a sound's name like sound_attenuation.ltx's
+	if (ini.line_exist(sect,"exclude"))
+	{
+		LPCSTR					list = ini.r_string(sect,"exclude");
+		string_path				item;
+		for (int i=0, n=_GetItemCount(list); i<n; ++i)
+		{
+			_GetItem			(list, i, item);
+			_Trim				(item);
+			if (!item[0])		continue;
+			_strlwr				(item);
+			for (char* c=item; *c; ++c)
+				if (*c=='/')	*c = '\\';
+			s_reverb.exclude.push_back	(xr_string(item));
+		}
+	}
+
+	// levels heard in one space throughout: "<level> = outdoor | indoor | underground"
+	if (ini.section_exist("sound_reverb_levels"))
+	{
+		CInifile::Sect& S		= ini.r_section("sound_reverb_levels");
+		for (CInifile::SectCIt it=S.Data.begin(); it!=S.Data.end(); ++it)
+		{
+			int					space = -1;
+			for (int i=0; i<srs_count; ++i)
+				if (it->second.size() && 0==xr_strcmp(*it->second, names[i]))	space = i;
+			if (space<0)
+			{
+				Msg				("! SOUND: %s: level '%s' has an unknown space '%s'", SNDREVERB_FILENAME, *it->first, it->second.size()?*it->second:"");
+				continue;
+			}
+			s_reverb.levels.push_back	(std::make_pair(it->first, space));
+		}
+	}
+
+	s_reverb.enabled			= true;
+	Msg							("SOUND: convolution reverb config loaded: %d excluded path(s), %d pinned level(s)", s_reverb.exclude.size(), s_reverb.levels.size());
+}
+
+bool CSoundRender_Core::reverb_excluded	(LPCSTR fname) const
+{
+	for (u32 it=0; it<s_reverb.exclude.size(); it++)
+	{
+		const xr_string& p		= s_reverb.exclude[it];
+		if (0==strncmp(fname, p.c_str(), p.size()))
+			return				true;
+	}
+	return						false;
+}
+
+int CSoundRender_Core::reverb_level_space	(LPCSTR level) const
+{
+	if (!level)					return -1;
+	for (u32 it=0; it<s_reverb.levels.size(); it++)
+		if (0==_stricmp(*s_reverb.levels[it].first, level))
+			return				s_reverb.levels[it].second;
+	return						-1;
 }
 
 void CSoundRender_Core::env_unload	()
@@ -379,6 +507,7 @@ void	CSoundRender_Core::clone				( ref_sound& S, const ref_sound& from, esound_t
 	S._p->fn_attached[1]	= from._p->fn_attached[1];
 	S._p->g_type		= (game_type==sg_SourceType)?S._p->handle->game_type():game_type;
 	S._p->s_type		= sound_type;
+	S._p->no_reverb		= from._p->no_reverb;
 }
 
 
@@ -400,6 +529,7 @@ void	CSoundRender_Core::play_no_feedback		( ref_sound& S, CObject* O, u32 flags,
 	S._p				= xr_new<ref_sound_data>();
 	S._p->handle		= orig->handle;
 	S._p->g_type		= orig->g_type;
+	S._p->no_reverb		= orig->no_reverb;
 	S._p->g_object		= O;
 	S._p->dwBytesTotal	= orig->dwBytesTotal;
 	S._p->fTimeTotal	= orig->fTimeTotal;
@@ -448,7 +578,8 @@ void CSoundRender_Core::_create_data( ref_sound_data& S, LPCSTR fName, esound_ty
 	S.handle			= (CSound_source*)SoundRender->i_create_source(fn);
 	S.g_type			= (game_type==sg_SourceType)?S.handle->game_type():game_type;
 	S.s_type			= sound_type;
-	S.feedback			= 0; 
+	S.no_reverb			= false;
+	S.feedback			= 0;
     S.g_object			= 0; 
     S.g_userdata		= 0;
 	S.dwBytesTotal		= S.handle->bytes_total();

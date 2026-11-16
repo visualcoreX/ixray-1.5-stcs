@@ -74,6 +74,36 @@ class CSoundRender_CoreA: public CSoundRender_Core
 	ALuint effectfv{};
 	ALuint slot{};
 
+	// Convolution reverb: one aux slot per space (outdoor, indoor, underground), each convolving with its own
+	// impulse response. A source sends to all of them on sends 0..2 and the slots' gains cross-fade, so
+	// leaving a building blends one room into the other instead of switching it. See SoundRender_CoreA_Reverb.cpp.
+	struct conv_space
+	{
+		ALuint					slot;
+		ALuint					effect;
+		ALuint					buffer;
+		shared_str				ir;				// what is loaded (or failed to load) into it
+		float					weight;			// 0..1, its share of the cross-fade
+		float					applied_gain;	// last AL_EFFECTSLOT_GAIN written
+		bool					ok;
+	};
+	conv_space				m_conv[srs_count];
+	ALenum					m_conv_type{};		// AL_EFFECT_CONVOLUTION_*_SOFT as this OpenAL names it; 0 = none
+	ALint					m_max_sends{1};
+	shared_str				m_rv_level;
+	int						m_rv_level_space{-1};
+	bool					m_rv_indoor{false};
+	int						m_rv_space{-1};			// the space last cross-faded to
+	char					m_rv_console[srs_count][SND_REVERB_IR_LEN]{};	// snd_reverb_ir_* as last applied
+
+	void					conv_init				();
+	void					conv_destroy			();
+	shared_str				conv_wanted_ir			(int space) const;
+	void					conv_build				(int space, const shared_str& ir);
+	void					conv_release			(int space);
+	bool					conv_active				() const;
+	void					clear_target_sends		();
+
 protected:
 	virtual void			update_listener			( const Fvector& P, const Fvector& D, const Fvector& N, float dt );
 public:	
@@ -90,9 +120,14 @@ public:
 
 	virtual const Fvector&	listener_position		( ){return Listener.position;}
 
-	// The slot a source has to send to for the reverb to be heard at all, or AL_EFFECTSLOT_NULL
-	// when EFX is unsupported or switched off. See CSoundRender_TargetA::fill_parameters.
-	ALuint					get_efx_slot			() const;
+	// The slot <E> sends to on its aux send <send>, or AL_EFFECTSLOT_NULL: none when EFX is unsupported or
+	// switched off or the sound is kept dry; with the convolution reverb on, send N goes to space N's slot,
+	// otherwise send 0 goes to the EAX zone reverb. See CSoundRender_TargetA::fill_parameters.
+	ALuint					get_send_slot			(int send, CSoundRender_Emitter* E) const;
+	ALint					max_sends				() const	{ return m_max_sends; }
+
+	virtual void			reverb_update			(float dt);
+	virtual void			set_reverb_listener		(LPCSTR level, bool indoor);
 
 	// EFX listener
 	void set_listener(const CSoundRender_Environment& env);

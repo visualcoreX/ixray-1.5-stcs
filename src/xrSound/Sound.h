@@ -41,10 +41,23 @@ XRSOUND_API extern int				psSoundCacheSizeMB		;
 XRSOUND_API extern xr_token*		snd_devices_token		;
 XRSOUND_API extern u32				snd_device_id			;
 
+// Convolution reverb (configs\sound_reverb.ltx, see SoundRender_CoreA_Reverb.cpp)
+enum {
+	srs_Outdoor			= 0,
+	srs_Indoor			= 1,
+	srs_Underground		= 2,
+	srs_count			= 3,
+};
+#define SND_REVERB_IR_LEN	64
+XRSOUND_API extern float			psSoundReverbGain		;	// snd_reverb_gain: the wet level of every space, on top of its own
+XRSOUND_API extern int				psSoundReverbSpace		;	// snd_reverb_space: -1 decide by the listener, else force srs_*
+XRSOUND_API extern char				psSoundReverbIR[srs_count][SND_REVERB_IR_LEN];	// snd_reverb_ir_*: "" = the config's
+
 // Flags
 enum {
 	ss_Hardware			= (1ul<<1ul),	//!< Use hardware mixing only
     ss_EFX				= (1ul<<2ul),	//!< Use eax
+	ss_ConvReverb		= (1ul<<3ul),	//!< Reverb by the impulse responses of sound_reverb.ltx, not the EAX zones
 	ss_forcedword		= u32(-1)
 };
 
@@ -102,6 +115,7 @@ public:
 	CObject*						g_object;		//!< Game object that emitts ref_sound
 	CSound_UserDataPtr				g_userdata;
 	shared_str						fn_attached		[2];
+	bool							no_reverb;		//!< Kept out of the reverb (a recording that already has its own)
 
 	u32								dwBytesTotal;
 	float							fTimeTotal;
@@ -132,6 +146,8 @@ public:
 	IC int					_g_type					()						{VERIFY(_p); return _p->g_type;}
 	IC esound_type			_sound_type				()						{VERIFY(_p); return _p->s_type;}
 	IC CSound_UserDataPtr	_g_userdata				()						{VERIFY(_p); return _p->g_userdata;}
+	// Copies made of it later (clone, play_no_feedback) inherit the mark
+	IC void					set_no_reverb			(bool b)				{if (_p) _p->no_reverb = b;}
 
 	IC void					create					( LPCSTR name, esound_type sound_type,	int	game_type);
 	IC void					attach_tail				( LPCSTR name);
@@ -301,6 +317,10 @@ public:
 
 	virtual float					get_occlusion_to		( const Fvector& hear_pt, const Fvector& snd_pt, float dispersion=0.2f)					= 0;
 
+	// Where the listener is, for the convolution reverb: the level (sound_reverb.ltx may pin one to a space)
+	// and whether the spot it hears from is indoors. The game says so a few times a second.
+	virtual void					set_reverb_listener		( LPCSTR level, bool indoor )															= 0;
+
 	virtual void					object_relcase			( CObject* obj )																		= 0;
 	virtual const Fvector&			listener_position		()																						= 0;
 #ifdef __BORLANDC__
@@ -316,7 +336,7 @@ public:
 extern XRSOUND_API CSound_manager_interface*		Sound;
 
 /// ********* Sound ********* (utils, accessors, helpers)
-IC ref_sound_data::ref_sound_data				()																{	handle=0;feedback=0;g_type=0;g_object=0;s_type=st_Effect;			}
+IC ref_sound_data::ref_sound_data				()																{	handle=0;feedback=0;g_type=0;g_object=0;s_type=st_Effect;no_reverb=false;	}
 IC ref_sound_data::ref_sound_data				( LPCSTR fName, esound_type sound_type, int	game_type )	{	::Sound->_create_data			(*this,fName, sound_type, game_type);							}
 IC ref_sound_data::~ref_sound_data				()																{	::Sound->_destroy_data			(*this);																}
 

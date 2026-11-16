@@ -104,6 +104,9 @@
     <ClCompile Include="SoundRender_CoreA.cpp">
       <Filter>Core\OpenAL</Filter>
     </ClCompile>
+    <ClCompile Include="SoundRender_CoreA_Reverb.cpp">
+      <Filter>Core\OpenAL</Filter>
+    </ClCompile>
     <ClCompile Include="SoundRender_Emitter.cpp">
       <Filter>Emitter</Filter>
     </ClCompile>

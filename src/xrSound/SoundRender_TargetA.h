@@ -14,9 +14,10 @@ class CSoundRender_TargetA: public CSoundRender_Target
 	ALuint						pBuffers[sdef_target_count];
     float						cache_gain;
     float						cache_pitch;
-	// the aux slot this source is currently sending to; ALuint(-1) = "not applied yet", which is
-	// neither a real slot nor AL_EFFECTSLOT_NULL, so the first fill always writes it
-	ALuint						cache_efx_slot;
+	// the aux slot each send of this source currently goes to; ALuint(-1) = "not applied yet", which
+	// is neither a real slot nor AL_EFFECTSLOT_NULL, so the first fill always writes it
+	enum { max_sends = 4 };
+	ALuint						cache_send[max_sends];
 
     ALuint						buf_block;
 private:
@@ -36,5 +37,8 @@ public:
 	virtual void				update					();
 	virtual void				fill_parameters			();
 			void				source_changed			();
+	// Point every send at nothing, now: a slot cannot be deleted while a source still sends to it.
+	// The next fill_parameters sends it wherever it belongs again.
+			void				clear_sends				();
 };
 #endif
