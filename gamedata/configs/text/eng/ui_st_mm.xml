@@ -818,4 +818,7 @@
 	<string id="ui_mm_reload_in_sprint">
 		<text>Weapon handling while sprinting</text>
 	</string>
+	<string id="ui_mm_first_person_death">
+		<text>First-person death</text>
+	</string>
 </string_table>
