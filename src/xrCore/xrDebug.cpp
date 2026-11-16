@@ -260,8 +260,43 @@ LPCSTR xrDebug::error2string	(long code)
 {
 	static string1024 desc_storage = "";
 
-	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, nullptr, code, 0, desc_storage, 0, nullptr);
+	// Stock passed FORMAT_MESSAGE_ALLOCATE_BUFFER with this array as the target, so FormatMessage
+	// wrote the address of a LocalAlloc'ed string into it and the log showed four bytes of pointer
+	// for every failed HRESULT. The text goes into the array now, with the code after it.
+	// Direct3D's own codes have no system text: the ones a crash log is likely to carry are named here.
+	struct { DWORD code; LPCSTR name; } static const d3d_codes[] =
+	{
+		{ 0x8876017C, "D3DERR_OUTOFVIDEOMEMORY" },
+		{ 0x88760818, "D3DERR_WRONGTEXTUREFORMAT" },
+		{ 0x88760827, "D3DERR_DRIVERINTERNALERROR" },
+		{ 0x88760868, "D3DERR_DEVICELOST" },
+		{ 0x88760869, "D3DERR_DEVICENOTRESET" },
+		{ 0x8876086A, "D3DERR_NOTAVAILABLE" },
+		{ 0x8876086C, "D3DERR_INVALIDCALL" },
+		{ 0x88760870, "D3DERR_DEVICEREMOVED" },
+		{ 0x88760B59, "D3DXERR_INVALIDDATA" },
+		{ 0x887A0001, "DXGI_ERROR_INVALID_CALL" },
+		{ 0x887A0005, "DXGI_ERROR_DEVICE_REMOVED" },
+		{ 0x887A0006, "DXGI_ERROR_DEVICE_HUNG" },
+		{ 0x887A0007, "DXGI_ERROR_DEVICE_RESET" },
+	};
 
+	string512	text	= "";
+	for (u32 i = 0; i < sizeof(d3d_codes) / sizeof(d3d_codes[0]); ++i)
+		if (d3d_codes[i].code == (DWORD)code)
+			xr_strcpy(text, d3d_codes[i].name);
+
+	if (!text[0])
+	{
+		DWORD	len	= FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
+								 (DWORD)code, 0, text, sizeof(text), nullptr);
+		while (len && (text[len - 1] == '\r' || text[len - 1] == '\n' || text[len - 1] == ' ' || text[len - 1] == '.'))
+			text[--len]	= 0;
+		if (!len)
+			xr_strcpy(text, "unknown error");
+	}
+
+	xr_sprintf(desc_storage, "%s (0x%08X)", text, (DWORD)code);
 	return desc_storage;
 }
 
