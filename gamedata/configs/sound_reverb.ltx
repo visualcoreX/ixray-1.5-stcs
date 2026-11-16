@@ -1,0 +1,59 @@
+; Convolution reverb: every sound goes through the recorded impulse response (IR) of the space the listener
+; is in, instead of the EAX zones a level would have to be dressed in. The space is decided by the same ray
+; test that picks indoor shots ([indoor_sound] in system.ltx), at the camera, a few times a second; moving
+; between spaces cross-fades them over fade_time. One convolution per space, not per sound.
+;
+; IR files: WAV, mono or stereo, PCM 16/24/32 bit or float, any sample rate (OpenAL resamples it), in
+; gamedata\sounds. Paths without the extension. A space with no IR borrows the next one up:
+; underground -> indoor -> outdoor.
+;
+; Console, for listening:
+;   snd_reverb_conv 0|1                 off = the old EAX zones
+;   snd_reverb_gain <0..4>              wet level of every space, on top of gain_* below (1 = as configured)
+;   snd_reverb_space -1|0|1|2           force a space: 0 outdoor, 1 indoor, 2 underground; -1 = automatic
+;   snd_reverb_ir_outdoor <path>        swap an IR on the fly, e.g. "snd_reverb_ir_outdoor reverb\outdoor_alt";
+;   snd_reverb_ir_indoor <path>         "default" goes back to the one below. The console saves these into
+;   snd_reverb_ir_underground <path>    user.ltx like any other setting -- set them back when done comparing.
+; The log says which IR went into which space and every change of space ("SOUND: reverb: indoor").
+
+[sound_reverb]
+ir_outdoor				= reverb\outdoor
+ir_indoor				= reverb\indoor
+ir_underground			= reverb\underground
+
+; Each IR is first scaled to unit energy (normalize), so they are on a par whatever their own level:
+; gain = 1 makes the reverb of a steady sound about as loud as the sound itself. The IRs as delivered
+; differ by up to 4 dB in energy and are 13-17 dB "hotter" than unit -- without normalize they would drown
+; the dry sound.
+normalize				= false
+gain_outdoor			= 0.0125
+gain_indoor				= 0.03
+gain_underground		= 0.03
+
+; Milliseconds cut off the start of an IR: its direct sound, which the dry signal already is -- left in, it
+; adds a second copy of every sound on top of the reverb. 0 = use the IR as it is. (outdoor_alt.wav has
+; 81% of its energy in its first 5 ms, so it is mostly that.)
+skip_ms_outdoor			= 0
+skip_ms_indoor			= 0
+skip_ms_underground		= 0
+
+fade_time				= 0.75			; seconds to cross from one space to another
+
+; How a sound's reverb falls off with distance, as a share of how the sound itself does (the stock OpenAL
+; inverse-distance rolloff). 1 = together: the reverb stays as far under the sound at 100 m as at 1 m.
+; Below 1 the reverb fades slower, so a distant sound is heard "wetter" than a near one, as in a real room;
+; far off, the reverb ends up 20*log10(1/rolloff) dB louder relative to the sound than close up: 0.8 ->
+; up to +2 dB, 0.5 -> up to +6 dB. 0 = no falloff at all -- what it was before: a far-off radio heard by
+; its reverb alone. Sounds with a curve in sound_attenuation.ltx ignore this: the curve takes the reverb
+; down with the sound.
+rolloff					= 1.0
+
+; Kept dry. Music (st_Music) always is. exclude = path prefixes under gamedata\sounds, matched against the
+; start of a sound's name like sound_attenuation.ltx. exclude_indoor_tails: the "_indoor" twins of shots
+; and blasts (snd_shoot_indoor ...) are recordings of a room's reverb already.
+exclude					= music\, interface\
+exclude_indoor_tails	= true
+
+; Levels heard in one space throughout, no ray test: <level> = outdoor | indoor | underground
+[sound_reverb_levels]
+agroprom_underground	= underground
