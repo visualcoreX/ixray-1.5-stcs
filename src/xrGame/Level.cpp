@@ -15,6 +15,7 @@
 #include "PHdynamicdata.h"
 #include "Physics.h"
 #include "ShootingObject.h"
+#include "HudSound.h"
 #include "GameTaskManager.h"
 #include "Level_Bullet_Manager.h"
 #include "script_process.h"
@@ -601,6 +602,8 @@ void CLevel::OnFrame	()
 	}
 
 	ProcessGameEvents	();
+
+	UpdateReverbListener();
 
 
 	if (m_bNeed_CrPr)					make_NetCorrectionPrediction();

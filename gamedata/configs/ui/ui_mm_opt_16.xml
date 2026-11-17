@@ -876,6 +876,11 @@
 			<text font="letterica16" color="ui_6">ui_mm_reload_in_sprint</text>
 		</check_reload_in_sprint>
 
+		<check_first_person_death x="230" y="230" width="27" height="21" stretch="1">
+			<options_item entry="g_first_person_death" group="mm_opt_gameplay"/>
+			<text font="letterica16" color="ui_6">ui_mm_first_person_death</text>
+		</check_first_person_death>
+
 
 		
 	</tab_gameplay>

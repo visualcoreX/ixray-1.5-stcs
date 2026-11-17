@@ -118,6 +118,8 @@ void CSoundRender_Source::load(LPCSTR name)
 	LoadWave			(fn);
 	SoundRender->cache.cat_create	(CAT, dwBytesTotal);
 
+	m_bNoReverb			= SoundRender->reverb_excluded(*fname);
+
 	// the curve's own distances, when it gives them, win over the ogg comment's (AI hearing range stays)
 	if (const CSoundRender_Attenuation* A = SoundRender->atten_find(*fname))
 	{

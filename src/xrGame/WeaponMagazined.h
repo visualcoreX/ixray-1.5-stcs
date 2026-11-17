@@ -240,6 +240,7 @@ public:
 			bool	gwr_TryLightMisfire		();
 			void	PlayKickSound			();	// GS snd_kick, at the bayonet stab
 			void	gwr_UpdateBones			(bool force = false);
+	virtual void	gwr_ShellCasingRefreshBones	() { gwr_UpdateBones(true); }	// a case is about to pick its hud shell
 	void			gwr_SetBones			(LPCSTR csv, BOOL show);
 	// ...restricted to the entries whose name does (want) / does not (!want) start with pfx -- lets the
 	// chamber's case and the magazine's rounds be coloured from two different ammo-bone sections.

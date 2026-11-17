@@ -42,6 +42,7 @@ public:
 	u32						m_uGameType;
 
 	bool					m_bCustomAttenuation;	// m_Attenuation is in effect, OpenAL rolloff is off
+	bool					m_bNoReverb;			// sound_reverb.ltx "exclude" lists its path
 	CSoundRender_Attenuation m_Attenuation;
 private:
 	OggVorbis_File			m_ovf;

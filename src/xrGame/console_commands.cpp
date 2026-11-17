@@ -2668,6 +2668,9 @@ CMD4(CCC_Integer,			"hit_anims_tune",						&tune_hit_anims,		0, 1);
 	// end the sprint. Independent of the mode above: it answers in both.
 	psActorFlags.set(AF_RELOAD_IN_SPRINT, true);
 	CMD3(CCC_Mask,			"g_reload_in_sprint",	&psActorFlags,	AF_RELOAD_IN_SPRINT);
+	// "First-person death" checkbox in the gameplay options. ON by default.
+	psActorFlags.set(AF_FIRST_PERSON_DEATH, true);
+	CMD3(CCC_Mask,			"g_first_person_death",	&psActorFlags,	AF_FIRST_PERSON_DEATH);
 	// "First-person body" checkbox in the ADVANCED video options. OFF by default.
 	psActorFlags.set(AF_LEGS, false);
 	CMD3(CCC_Mask,			"g_legs",			&psActorFlags,	AF_LEGS);

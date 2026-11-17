@@ -131,7 +131,40 @@ attack_effector     = m_bloodsucker_attack_effector
 vampire_effector    = m_bloodsucker_vampire_effector
 
 Melee_Rotation_Factor = 2.0
-berserk_always		  = true
+; What reaches the actor of its blows, AFTER his suit has taken its part (the suit subtracts its
+; wound protection from the blow, so cutting hit_power instead would cut a suited actor's loss by
+; far more than 10%).
+actor_hit_damage_factor = 0.9
+
+; Attack on the move (Call of Pripyat): it strikes running instead of stopping to claw. CoP's
+; bloodsucker has its own left/right run strikes; the CS model has not, so both sides play the
+; CS run attack (stand_attack_run_0, the lunge), as the boar does.
+aom_enabled                 = 1
+aom_animation_left          = stand_attack_run_
+aom_animation_right         = stand_attack_run_
+aom_far_radius              = 10
+aom_max_go_close_time       = 8
+aom_prepare_time            = 5
+aom_attack_radius           = 0.6
+aom_update_side_period      = 4
+aom_prediction_factor       = 1.2
+; Its run strike connects some 0.4 s and 2 m into the swing, out to the strike's own test distance
+; (3 m below): started from CoP's full reach it struck at the air. It also strikes while circling
+; round for the next pass, so walking up to it is met with one. Within melee reach it claws in a
+; series instead.
+aom_allowed_dist_factor     = 0.8
+aom_attack_while_prepare    = 1
+; Strikes on the run from as close as this. CoP's own bound (2.8 m at a run) left a gap down to
+; melee reach (2.3 m, shrinking to 1.7 after misses) where it had neither a strike nor its claws,
+; and just ran round the actor.
+aom_min_attack_dist         = 0.75
+; It passes the actor aom_attack_radius to his side and strikes only with him within
+; aom_attack_angle of its heading: at CoP's 1 m and 30 degrees nothing nearer than 2 m qualified,
+; and its strike reaches 69 degrees to either side anyway.
+aom_attack_angle            = 45
+; berserk_always = true forbids the grab (the vampire attack), and nothing else reads it: stock
+; CS set it to switch the grab off. Call of Pripyat does not set it.
+berserk_always		  = false
 ;-------------------------------------------------------------------------
 ; Entity Conditions
 ;-------------------------------------------------------------------------
@@ -289,15 +322,56 @@ Invisibility_BlinkTime                = 300
 Invisibility_BlinkMicroInterval           = 30
 Invisibility_EnergySpeed              = 0.05
 
-invisibility_activate_delay = 4000
+; Visibility stages, ported from Call of Pripyat: by the distance to its enemy the
+; bloodsucker is in the open (up to full_visibility_radius), shimmers in the predator
+; visual (up to partial_visibility_radius), or is not drawn at all further out. No enemy:
+; in the open. A stage holds for at least visibility_state_change_min_delay ms.
+full_visibility_radius            = 4
+partial_visibility_radius         = 7
+visibility_state_change_min_delay = 1000
+
+; Damage while invisible. invulnerable_while_invisible: its own invisibility (stock CS had
+; it, CoP has not). invisible_invulnerable: a script holds it invisible (set_invisible /
+; mob state "invis", the alien scene, a drag jump). Off: the logics hold their bloodsuckers
+; invisible for as long as they wait in ambush or flee (agr_scientists_bloodsucker until the
+; scientists walk into its zone, the Agroprom underground and Military ones beyond 5 and 10 m,
+; the Red Forest runners), and every bullet into them went for nothing all that time.
+invulnerable_while_invisible = false
+invisible_invulnerable       = false
+; The part of a hit's damage that gets through while it is invisible (either stage, or held
+; invisible by a script that leaves it killable). 1 = full damage; set per type below.
+invisible_hit_factor         = 1.0
 
 ;-------------------------------------------------------------------------
 ; Vampire Ability
 ;-------------------------------------------------------------------------
+; The grab (CoP): from melee reach and facing the actor, with the thirst full (it rises by
+; Vampire_Want_Speed a second) and no grab by ANY bloodsucker in the last Vampire_Delay ms, it
+; seizes him once EITHER
+; - enough blows have landed on him since its last grab: Vampire_Sufficient_Hits_<difficulty>
+;   = min, max (where in the range is drawn anew after each grab; a difficulty without its own
+;   key takes Vampire_Sufficient_Hits..Vampire_Sufficient_Hits_Max), OR
+; - it is wounded: health under Vampire_Wounded_Health of its max (1 = any wound, 0 = off)
+;   for at least Vampire_Wounded_First_Delay ms, and its OWN last grab ended at least
+;   Vampire_Wounded_Delay ms ago.
+; It holds him at once (no hud, weapon put away), closes to Vampire_Distance -- or as near as its
+; body lets it, within Vampire_Hold_Distance -- and drinks; the blood heals it by
+; Vampire_GainHealth. Not that close after Vampire_Approach_Time ms, the grab fails; pushed
+; further than Vampire_Hold_Distance from it while it drinks, the actor is let go.
 
-Vampire_Delay     = 100000
-Vampire_Want_Speed    = 0.01
+Vampire_Delay     = 5000
+Vampire_Want_Speed    = 0.1
 Vampire_Wound     = 0.2
+Vampire_GainHealth    = 0.5
+Vampire_Distance      = 1
+Vampire_Hold_Distance = 1.7
+Vampire_Approach_Time = 1500
+Vampire_Sufficient_Hits     = 3
+Vampire_Sufficient_Hits_Max = 4
+; per difficulty, if wanted: Vampire_Sufficient_Hits_<novice|stalker|veteran|master> = min, max
+Vampire_Wounded_Health      = 1.0
+Vampire_Wounded_Delay       = 5000
+Vampire_Wounded_First_Delay = 5000
 
 ;--- OUTDATED :: REMOVE THIS PARAM ---------------
 Vampire_Reach_Time    = 15000
@@ -440,8 +514,11 @@ vampire_2   =     	  0.60,   0.5,       50,        0.0, 2.5, 4.50,    -1.2, 1.2,
 stand_attack_run_0 =  bloodsucker_run_attack_sect
 
 [bloodsucker_run_attack_sect]
-value1      = 0.20,   0.2,        55,        0.0, 2.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         4.5
-value2      = 0.60,   0.4,        55,        0.0, 2.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         4.5
+; impulse: the run strike throws the actor back (was 55)
+; hit_power as the claws' (was 0.2/0.4): the suit subtracts its wound protection (0.12-0.4)
+; from a blow, and next to nothing was left of these
+value1      = 0.20,   0.4,        600,       0.0, 2.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         3.0
+value2      = 0.60,   0.5,        700,       0.0, 2.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         3.0
 
 ;===========================================================================
 ; Immunities
@@ -499,6 +576,7 @@ ce_power      	= 3.0 ;0.7 ; power
 ;*********************************************************************************
 
 [bloodsucker_weak]:m_bloodsucker_e
+invisible_hit_factor = 0.7
 $spawn        	= "monsters\bloodsuckers\bloodsucker_01_weak"
 visual        	= monsters\krovosos\krovosos
 icon        	= ui_npc_monster_krovosos
@@ -509,7 +587,6 @@ attack_params   = bloodsucker_attack_params_weak
 spec_rank     	= weak
 community     	= bloodsucker
 
-invisibility_activate_delay = 5000
 
 [bloodsucker_immunities_weak]
 burn_immunity   		= 0.1
@@ -520,7 +597,7 @@ radiation_immunity		= 0.0
 telepatic_immunity  	= 0.0
 chemical_burn_immunity  = 0.1
 explosion_immunity    	= 0.6
-fire_wound_immunity   	= 2.607; orig 0.6 (x2 tougher: was 5.214)
+fire_wound_immunity   	= 1.6 ; orig 0.6 (x2 tougher: was 5.214)
 
 ;*********************************************************************************
 ; WEAK PROFILE
@@ -545,6 +622,7 @@ stand_attack_run_0 =  bloodsucker_weak_run_attack_sect
 ;value2      = 0.60,   0.2,        20,        0.0, 0.5, 1.50,     -1.2, 1.2, -1.2, 1.2,         2.2
 
 [bloodsucker_normal]:m_bloodsucker_e
+invisible_hit_factor = 0.6
 $spawn        = "monsters\bloodsuckers\bloodsucker_02_normal"
 visual        = monsters\krovosos\krovosos
 
@@ -555,7 +633,6 @@ immunities_sect   = bloodsucker_immunities_normal
 attack_params   = bloodsucker_attack_params_normal
 spec_rank     = normal
 community     = bloodsucker
-invisibility_activate_delay = 3500
 
 
 [bloodsucker_immunities_normal]
@@ -567,7 +644,7 @@ radiation_immunity   	= 0.0
 telepatic_immunity    	= 0.0
 chemical_burn_immunity  = 0.1
 explosion_immunity    	= 0.5
-fire_wound_immunity   	= 2.1725; orig 0.5 (x2 tougher: was 4.345)
+fire_wound_immunity   	= 1.2  ; orig 0.5 (x2 tougher: was 4.345)
 
 ;*********************************************************************************
 ; NORMAL PROFILE
@@ -588,11 +665,15 @@ vampire_2   =     	  0.60,   0.7,      50,        0.0, 2.5, 4.50,     -1.2, 1.2,
 stand_attack_run_0 =  bloodsucker_normal_run_attack_sect
 
 [bloodsucker_normal_run_attack_sect]
-value1      = 0.20,   0.2,        25,        0.0, 0.5, 3.00,     -1.2, 1.2, -1.2, 1.2,         2.2
-value2      = 0.60,   0.4,        30,        0.0, 0.5, 3.00,     -1.2, 1.2, -1.2, 1.2,         2.2
+; impulse: the run strike throws the actor back (was 25/30); test distance 3 (was 2.2: the
+; strike, started on the run, connected out of reach)
+; hit_power as the claws' (was 0.2/0.4), see above
+value1      = 0.20,   0.55,       800,       0.0, 0.5, 3.00,     -1.2, 1.2, -1.2, 1.2,         3.0
+value2      = 0.60,   0.6,        900,       0.0, 0.5, 3.00,     -1.2, 1.2, -1.2, 1.2,         3.0
 
 
 [bloodsucker_strong]:m_bloodsucker_e
+invisible_hit_factor = 0.5
 $spawn        = "monsters\bloodsuckers\bloodsucker_03_strong"
 ;visual        = monsters\krovosos\krovosos_strong
 visual        = monsters\krovosos\krovosos
@@ -604,7 +685,6 @@ immunities_sect   = bloodsucker_immunities_strong
 attack_params   = bloodsucker_attack_params_strong
 spec_rank     = strong
 community     = bloodsucker
-invisibility_activate_delay = 1500
 
 [bloodsucker_immunities_strong]
 burn_immunity     		= 0.05
@@ -615,7 +695,7 @@ radiation_immunity    	= 0.0
 telepatic_immunity    	= 0.0
 chemical_burn_immunity  = 0.05
 explosion_immunity    	= 0.2
-fire_wound_immunity  	= 0.869; orig 0.2 (x2 tougher: was 1.738)
+fire_wound_immunity  	= 0.8 ; orig 0.2 (x2 tougher: was 1.738)
 
 ;*********************************************************************************
 ; STRONG PROFILE
@@ -636,8 +716,10 @@ vampire_2      =      0.60,   1.0,    	50,        0.0, 2.5, 4.50,     -1.2, 1.2,
 stand_attack_run_0 =  bloodsucker_strong_run_attack_sect
 
 [bloodsucker_strong_run_attack_sect]
-value1      = 0.20,   0.4,        35,        0.0, 0.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         2.2
-value2      = 0.60,   0.8,        40,        0.0, 0.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         2.2
+; impulse: the run strike throws the actor back (was 35/40); test distance 3 (was 2.2)
+; hit_power as the claws' (was 0.4/0.8), see above
+value1      = 0.20,   0.7,        1000,      0.0, 0.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         3.0
+value2      = 0.60,   0.8,        1100,      0.0, 0.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         3.0
 
 
 ;*********************************************************************************
@@ -690,7 +772,7 @@ radiation_immunity      = 0.0 ;0.5
 telepatic_immunity      = 0.0
 chemical_burn_immunity	= 0.2
 explosion_immunity      = 0.2
-fire_wound_immunity     = 0.869; orig 0.2 (x2 tougher: was 1.738)
+fire_wound_immunity     = 0.8 ; orig 0.2 (x2 tougher: was 1.738)
 
 [bloodsucker_jumper]:bloodsucker_jumper_deadly
 $spawn        = "monsters\military\bloodsucker_jumper"
@@ -746,7 +828,7 @@ radiation_immunity    	= 0.0
 telepatic_immunity    	= 0.0
 chemical_burn_immunity  = 0.05
 explosion_immunity    	= 0.05
-fire_wound_immunity  	= 0.869; orig 0.2 (x2 tougher: was 1.738)
+fire_wound_immunity  	= 0.8 ; orig 0.2 (x2 tougher: was 1.738)
 
 [bloodsucker_redhunter]:bloodsucker_redforest
 $spawn        = "monsters\bloodsuckers\bloodsucker_redhunter"
@@ -775,7 +857,7 @@ radiation_immunity    	= 0.0
 telepatic_immunity    	= 0.0
 chemical_burn_immunity  = 0.01
 explosion_immunity    	= 0.01
-fire_wound_immunity   	= 0.869; orig 0.2 (x2 tougher: was 1.738)
+fire_wound_immunity   	= 0.8 ; orig 0.2 (x2 tougher: was 1.738)
 
 [bloodsucker_marsh]:bloodsucker_weak
 $spawn        	= "monsters\bloodsuckers\bloodsucker_marsh"
@@ -788,5 +870,5 @@ visual        	= monsters\krovosos\krovosos_green
 ; tuned down from GS 0.5/0.23 to keep FMJ at the old CS level
 ;***************************************************************
 [bloodsucker_protections]
-skin_armor				= 0.293
-hit_fraction_monster	= 0.104
+skin_armor				= 0.28      ;0.293
+hit_fraction_monster	= 0.15   ;0.104

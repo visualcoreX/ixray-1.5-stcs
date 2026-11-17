@@ -1010,8 +1010,15 @@ float	CActor::GetLookFactor()
 
 	PIItem pItem	= inventory().ActiveItem();
 
+	// The item's control_inertion_factor (handling, clamped to >= 1.0 by the getter) slows the mouse at
+	// 75% of its raw strength: sensitivity = 1 - 0.75*(1 - 1/factor), so 2.0 costs 37.5% instead of 50%.
+	// The sway (CHudItem::CurrentInertionData) reads the factor at full strength.
 	if (pItem)
-		factor *= pItem->GetControlInertionFactor();
+	{
+		const float h = pItem->GetControlInertionFactor();
+		if (_valid(h) && h > EPS)
+			factor = 4.f * h / (h + 3.f);
+	}
 
 	VERIFY(!fis_zero(factor));
 

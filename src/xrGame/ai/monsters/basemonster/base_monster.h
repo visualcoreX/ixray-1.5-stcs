@@ -224,6 +224,10 @@ public:
 		float				prepare_time;
 		float				prepare_radius;
 		float				max_go_close_time;
+		float				allowed_dist_factor;	// share of the computed reach a strike may start from
+		bool				attack_while_prepare;	// strike while looping out, not only while closing in
+		float				min_attack_dist;		// strike from no further in than this (0: CoP's own bound)
+		float				attack_angle;			// degrees off its heading the target may be for a strike
 	};
 
 			bool			can_attack_on_move						() {return m_attack_on_move_params.enabled;}
@@ -232,6 +236,10 @@ public:
 			float			get_attack_on_move_attack_radius		() {return m_attack_on_move_params.attack_radius;}
 			float			get_attack_on_move_update_side_period	() {return m_attack_on_move_params.update_side_period;}
 			float			get_attack_on_move_prediction_factor	() {return m_attack_on_move_params.prediction_factor;}
+			float			get_attack_on_move_allowed_dist_factor	() {return m_attack_on_move_params.allowed_dist_factor;}
+			bool			can_attack_on_move_while_prepare		() {return m_attack_on_move_params.attack_while_prepare;}
+			float			get_attack_on_move_min_attack_dist		() {return m_attack_on_move_params.min_attack_dist;}
+			float			get_attack_on_move_attack_angle			() {return m_attack_on_move_params.attack_angle;}
 			float			get_attack_on_move_prepare_radius		() {return m_attack_on_move_params.prepare_radius;}
 			float			get_attack_on_move_prepare_time			() {return m_attack_on_move_params.prepare_time;}
 
@@ -375,6 +383,9 @@ public:
 	u32						time_berserk_start;
 	IC void					set_berserk						() {time_berserk_start = time();}
 	bool					berserk_always;
+	// Share of its hits' damage that reaches the actor AFTER his suit has taken its part
+	// (actor_hit_damage_factor, default 1). See CEntityCondition::ConditionHit.
+	float					m_actor_hit_damage_factor;
 
 	//--------------------------------------------------------------------
 	// Panic Threshold (extension for scripts)

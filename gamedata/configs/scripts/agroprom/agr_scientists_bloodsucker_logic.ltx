@@ -11,6 +11,10 @@ combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
 braindead = true
 on_info = {=squad_in_zone(agr_smart_terrain_1_3_scientists_squad:agr_scientists_bloodsucker)} mob_home@2
+; The ambush is also sprung by whoever finds it first: the actor walking into it, or anyone's
+; hit. Braindead and blind to combat, it otherwise stood its ground under fire until the
+; scientists came, and for good if they never did.
+on_info2 = {=dist_to_actor_le(5)} mob_home@2, {=health_le(1)} mob_home@2
 
 [mob_home@2]
 path_home = agr_scientists_bloodsucker_home

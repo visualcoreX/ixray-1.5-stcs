@@ -39,6 +39,9 @@ public:
 	virtual bool			use_center_to_aim		() const {return true;}
 	virtual bool			check_start_conditions	(ControlCom::EControlType);
 	virtual void			HitEntity				(const CEntity *pEntity, float fDamage, float impulse, Fvector &dir);
+
+	virtual void			renderable_Render		();
+	virtual BOOL			AlwaysTheCrow			();
 	
 	//--------------------------------------------------------------------
 	// Utils
@@ -62,8 +65,15 @@ private:
 	CBoneInstance			*bone_spine;
 	CBoneInstance			*bone_head;
 	bool					collision_hit_off;
-	// Stock CS "no damage while invisible" guard; config key invisible_invulnerable, default on.
+	// No damage while a script holds it invisible (set_invisible / mob state "invis"): the scenes
+	// built around an unkillable bloodsucker. Config key invisible_invulnerable, default on.
 	bool					m_invisible_invulnerable;
+	// No damage while its own invisibility is on (partial or no visibility). Stock CS had this for
+	// every bloodsucker; CoP dropped it. Config key invulnerable_while_invisible, default off.
+	bool					m_invulnerable_while_invisible;
+	// What part of a hit's damage reaches it while invisible, script or its own (and not made
+	// untouchable by the two keys above). Config key invisible_hit_factor, default 1.
+	float					m_invisible_hit_factor;
 	bool					collision_off;
 
 	//--------------------------------------------------------------------
@@ -89,10 +99,31 @@ public:
 
 	SPPInfo					pp_vampire_effector;
 
-			
+	// When the last grab by ANY bloodsucker ended: Vampire_Delay counts from it, so a pack does not
+	// pass the actor from one to the next.
+	static TTime			m_time_last_vampire;
+
+
 			void			ActivateVampireEffector	();
 	IC		bool			WantVampire				() {return (fsimilar(m_vampire_want_value,1.f) == TRUE);}
-	IC		void			SatisfyVampire			() {m_vampire_want_value = 0.f;}
+			void			SatisfyVampire			();
+
+			float			get_vampire_distance	() const { return m_vampire_distance; }
+			float			get_vampire_hold_distance () const { return m_vampire_hold_distance; }
+			u32				get_vampire_approach_time () const { return m_vampire_approach_time; }
+
+	// The grab is earned either way:
+	// - by blows: melee hits landed on the actor since the last grab reach the number for the
+	//   current difficulty (Vampire_Sufficient_Hits_<difficulty> = min, max; where in that range
+	//   is drawn anew after each grab);
+	// - by wounds: its health is under Vampire_Wounded_Health and its own last grab ended at
+	//   least Vampire_Wounded_Delay ms ago.
+			void			on_actor_hit_landed		() { ++m_hits_before_vampire; }
+			bool			done_enough_hits_before_vampire ();
+			bool			wounded_enough_for_vampire ();
+			void			reset_hits_before_vampire ();
+			// a grab is over: the blows start again and its own wounded cooldown runs from now
+			void			on_vampire_finished		();
 
 			u32             get_last_critical_hit_tick () { return m_last_critical_hit_tick; }
 			void            clear_last_critical_hit_tick () { m_last_critical_hit_tick = 0; }
@@ -104,6 +135,20 @@ private:
 	float					m_vampire_want_value;
 	float					m_vampire_want_speed;		// load from ltx
 	float					m_vampire_wound;
+	float					m_vampire_gain_health;
+	float					m_vampire_distance;
+	float					m_vampire_hold_distance;
+	u32						m_vampire_approach_time;
+	u32						m_hits_before_vampire;
+	float					m_sufficient_hits_roll;			// 0..1: where in the range this grab waits
+	enum { eVampireDifficultyCount = 4 };					// ESingleGameDifficulty: novice..master
+	u32						m_sufficient_hits_min[eVampireDifficultyCount];
+	u32						m_sufficient_hits_max[eVampireDifficultyCount];
+	float					m_vampire_wounded_health;
+	u32						m_vampire_wounded_delay;
+	u32						m_vampire_wounded_first_delay;
+	TTime					m_time_wounded;					// since when it is under Vampire_Wounded_Health
+	TTime					m_time_own_last_vampire;
 	float					m_vis_state;
 	bool					m_drag_anim_jump;
 	bool					m_animated;
@@ -172,7 +217,28 @@ public:
 			void	manual_activate		();
 			void	manual_deactivate	();
 
-			u32     get_invisibility_activate_delay () { return m_invisibility_activate_delay; }
+	//--------------------------------------------------------------------
+	// Visibility stages (Call of Pripyat): by the distance to the enemy
+	//--------------------------------------------------------------------
+public:
+	enum			visibility_t { unset = -1, no_visibility = 0, partial_visibility = 1, full_visibility = 2 };
+
+			visibility_t	get_visibility_state	() const { return m_visibility_state; }
+			// Switches at once, bypassing the minimum delay between changes -- for the states that
+			// must show the bloodsucker now (the grab) and for death.
+			void			set_visibility_state	(visibility_t new_state, bool immediate = false);
+
+private:
+			void			update_invisibility		();
+			bool			invisibility_scripted	();
+
+	visibility_t	m_visibility_state;
+	TTime			m_visibility_state_last_changed_time;
+	u32				m_visibility_state_change_min_delay;
+	float			m_full_visibility_radius;
+	float			m_partial_visibility_radius;
+	// A script hid it (manual_activate): the stages leave it alone, and invisible_invulnerable applies.
+	bool			m_manual_invisible;
 
 
 #ifdef DEBUG
@@ -195,8 +261,6 @@ public:
 	TTime   m_camera_effector_move_time_milis;
 	float   m_camera_effector_hor_angle;
 	float   m_camera_effector_ver_angle;
-
-	u32     m_invisibility_activate_delay;
 
 	DECLARE_SCRIPT_REGISTER_FUNCTION
 };

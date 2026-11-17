@@ -234,15 +234,16 @@ static void casing_show_hud_bone(IKinematics* K, u16 bone, BOOL show)
 // calibres carries a shell for each and shows the right one; the shotguns have one per kind of shell and
 // the ammo-bones pass shows the one that matches what is loaded. own_hidden: the bone this weapon hid
 // itself after the previous shot -- still the right one, just not visible at the moment.
+static LPCSTR casing_shell_names[] = { "shell", "shell5x45", "shell_red", "shell_blue", "shell_green", "gilza" };
+
 static u16 casing_hud_bone(IKinematics* K, LPCSTR weapon_sect, u16 own_hidden)
 {
 	if (pSettings->line_exist(weapon_sect, "shell_casing_bone"))
 		return K->LL_BoneID(pSettings->r_string(weapon_sect, "shell_casing_bone"));
 
-	static LPCSTR names[] = { "shell", "shell5x45", "shell_red", "shell_blue", "shell_green", "gilza" };
-	for (u32 i = 0; i < sizeof(names) / sizeof(names[0]); ++i)
+	for (u32 i = 0; i < sizeof(casing_shell_names) / sizeof(casing_shell_names[0]); ++i)
 	{
-		const u16 id = K->LL_BoneID(names[i]);
+		const u16 id = K->LL_BoneID(casing_shell_names[i]);
 		if (id != BI_NONE && K->LL_GetBoneVisible(id))	return id;
 	}
 	return own_hidden;
@@ -281,7 +282,7 @@ bool CWeapon::gwr_ShellCasingOnShot(const Fvector& owner_vel, LPCSTR ammo)
 
 	// whatever of the previous shot is still waiting for its animation (fast fire at a low frame rate)
 	// is settled now, with what is known
-	gwr_ShellCasingUpdate	(true);
+	const u16 hud_bone		= gwr_ShellCasingSettle();
 
 	// The first shot out of a freshly loaded drum (GS need_first_shoot_anims: the Protecta / SPAS-12) has
 	// its own take, anm_shoot*_first: the drum turns and nothing is thrown -- the fired shell rides in the
@@ -303,7 +304,7 @@ bool CWeapon::gwr_ShellCasingOnShot(const Fvector& owner_vel, LPCSTR ammo)
 	const float dist = READ_IF_EXISTS(pSettings, r_float, SC_SECT, "spawn_distance", 25.f);
 	if (Device.vCameraPosition.distance_to_sqr(Position()) > dist * dist)	return true;
 
-	gwr_ShellCasingArm		(0, sect, owner_vel);
+	gwr_ShellCasingArm		(0, sect, owner_vel, hud_bone);
 
 	if (pSettings->line_exist(ws, "shell_casing_extra"))
 	{
@@ -350,14 +351,14 @@ void CWeapon::gwr_ShellCasingOnUnjam(LPCSTR ammo)
 	if (!hi || !hi->m_model)	return;
 	IKinematics* K		= hi->m_model;
 
-	gwr_ShellCasingUpdate	(true);
+	const u16 bone		= gwr_ShellCasingSettle();
 
 	SShellCasingTrack& T = m_shell_track[0];
-	const u16 bone		= casing_hud_bone(K, ws, T.reshow_time ? T.bone : BI_NONE);
 	if (bone == BI_NONE || bone >= 64)	return;
 	if (T.reshow_time)
 	{
-		casing_show_hud_bone	(K, T.bone, TRUE);
+		if (T.bone == bone)		// (another one is not the round in the chamber: the ammo-bones pass's again)
+			casing_show_hud_bone	(K, T.bone, TRUE);
 		T.reshow_time	= 0;
 	}
 
@@ -645,7 +646,28 @@ void CWeapon::gwr_ShellCasingArmReloadDrop(bool gl)
 	T.motion			= MotionStartTm();
 }
 
-void CWeapon::gwr_ShellCasingArm(u32 idx, const shared_str& sect, const Fvector& owner_vel)
+// The previous case is settled (gwr_ShellCasingUpdate(true)), then the ammo-bones pass has its say, and only
+// then is the hud shell the new case is to follow picked: the first SHOWN of its names (casing_hud_bone).
+// Settling gives the previous shot's animated shell back to the model (its animation has just been replaced
+// by the new shot's). Picked from what the model showed a moment before, the pick lagged the pass by a frame
+// whenever the colour had just changed:
+//  - a pump gun fires the old round left in the chamber first after an ammo change: the old round's shell,
+//    given back, came ahead of the one shown now (shell_red before shell_blue) and was hidden in its place;
+//  - a shot inside the previous one's eject window (600 ms, gwr_UpdateBones) found the pass still on the
+//    previous round, whose shell was hidden: none shown, and the case took that hidden one again.
+// Either way the right shell stayed on the model and flew out next to the real case. The pass now runs here,
+// with the round this case is of as the fired one (CWeaponMagazined::OnShot sees to that).
+u16 CWeapon::gwr_ShellCasingSettle()
+{
+	gwr_ShellCasingUpdate		(true);
+	attachable_hud_item* hi		= GetHUDmode() ? HudItemData() : NULL;
+	if (!hi || !hi->m_model)	return BI_NONE;
+	gwr_ShellCasingRefreshBones	();
+	const SShellCasingTrack& T	= m_shell_track[0];
+	return casing_hud_bone		(hi->m_model, cNameSect().c_str(), T.reshow_time ? T.bone : BI_NONE);
+}
+
+void CWeapon::gwr_ShellCasingArm(u32 idx, const shared_str& sect, const Fvector& owner_vel, u16 hud_bone)
 {
 	SShellCasingTrack& T = m_shell_track[idx];
 	LPCSTR ws		= cNameSect().c_str();
@@ -663,7 +685,7 @@ void CWeapon::gwr_ShellCasingArm(u32 idx, const shared_str& sect, const Fvector&
 		IKinematics* K	= hi->m_model;
 		u16 bone		= BI_NONE;
 		if (idx == 0)
-			bone		= casing_hud_bone(K, ws, T.reshow_time ? T.bone : BI_NONE);
+			bone		= (hud_bone != BI_NONE) ? hud_bone : casing_hud_bone(K, ws, T.reshow_time ? T.bone : BI_NONE);
 		else if (pSettings->line_exist(ws, "shell_casing_extra_bone"))
 			bone		= K->LL_BoneID(pSettings->r_string(ws, "shell_casing_extra_bone"));
 
@@ -1188,17 +1210,40 @@ void CWeapon::gwr_ShellCasingFollow(u32 idx, bool force)
 	T.motion			= MotionStartTm();
 }
 
+// The animated shells a hud model carries: one per kind of round on a gun that takes several (the shotguns'
+// shell_red / _blue / _green), the ammo-bones pass showing the one loaded. shell_casing_bone: only that one.
+static bool casing_is_hud_shell(IKinematics* K, LPCSTR weapon_sect, u16 bone)
+{
+	if (bone == BI_NONE)	return false;
+	if (pSettings->line_exist(weapon_sect, "shell_casing_bone"))
+		return (bone == K->LL_BoneID(pSettings->r_string(weapon_sect, "shell_casing_bone")));
+	for (u32 i = 0; i < sizeof(casing_shell_names) / sizeof(casing_shell_names[0]); ++i)
+		if (bone == K->LL_BoneID(casing_shell_names[i]))	return true;
+	return false;
+}
+
+// A shot's shell, hidden for its case (not a reload's spent shell, not a dropped magazine): until the shot
+// animation is replaced, NO shell of the gun is shown, whatever its kind. The pass changes the colour as the
+// rounds go -- to the round just fired, to the next one after the eject window, to the round a drum's next
+// shot has put in the chamber -- and the shot animation is still throwing the shell bone out of the port:
+// the newly coloured one flew out next to the real case (the Protecta's second shot after an ammo change,
+// a pump gun past the window). The next animation shows the right one again.
+static bool casing_hides_all_shells(const CWeapon::SShellCasingTrack& T)
+{
+	return (T.reshow_time && !T.ammo_bone && !T.drop);
+}
+
 // True while the animated shell of this hud bone is hidden because a real case has taken over from it.
 // The ammo-bones pass of the magazined weapons (gwr_SetBones) asks before showing a bone: it re-applies
 // its lists after every shot and would bring the shell straight back next to the real case.
-bool CWeapon::gwr_ShellCasingHidesBone(u16 bone) const
+bool CWeapon::gwr_ShellCasingHidesBone(IKinematics* K, u16 bone) const
 {
 	for (u32 idx = 0; idx < 2; ++idx)
 	{
 		const SShellCasingTrack& T = m_shell_track[idx];
 		if (T.reshow_time && T.bone == bone)	return true;
 	}
-	return false;
+	return (K && casing_hides_all_shells(m_shell_track[0]) && casing_is_hud_shell(K, cNameSect().c_str(), bone));
 }
 
 // The ammo-bones pass of the magazined weapons re-applies its own show/hide lists whenever the ammunition
@@ -1208,11 +1253,20 @@ void CWeapon::gwr_ShellCasingKeepHidden()
 {
 	attachable_hud_item* hi = GetHUDmode() ? HudItemData() : NULL;
 	if (!hi || !hi->m_model)	return;
+	IKinematics* K			= hi->m_model;
 	for (u32 idx = 0; idx < 2; ++idx)
 	{
 		SShellCasingTrack& T = m_shell_track[idx];
 		if (T.reshow_time)
-			casing_show_hud_bone	(hi->m_model, T.bone, FALSE);
+			casing_show_hud_bone	(K, T.bone, FALSE);
+	}
+	if (!casing_hides_all_shells(m_shell_track[0]))	return;
+	LPCSTR ws				= cNameSect().c_str();
+	if (pSettings->line_exist(ws, "shell_casing_bone"))	return;		// that one only: hidden above
+	for (u32 i = 0; i < sizeof(casing_shell_names) / sizeof(casing_shell_names[0]); ++i)
+	{
+		const u16 b			= K->LL_BoneID(casing_shell_names[i]);
+		if (b != BI_NONE)	casing_show_hud_bone	(K, b, FALSE);
 	}
 }
 

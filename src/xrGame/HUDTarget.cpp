@@ -170,8 +170,9 @@ void CHUDTarget::CursorOnFrame ()
 		// the crosshair on that edge, a jump along the ray each time the view passes one; the same the other
 		// way round close up, where the aim slides towards the barrel and its ray can run past the edge of
 		// what the eye sees onto something behind. The round may still clip or miss such an edge; the
-		// crosshair does not jump to show it -- right up to the muzzle. With the barrel in a wall there is no
-		// target: the hit is shown, at the wall where the muzzle is.
+		// crosshair does not jump to show it -- right up to the muzzle. With the barrel in a wall the ray
+		// starts at the wall and is aimed at the same target from there (HudFireRay); with no target the
+		// hit is shown.
 		if (tdist > 0.f)
 		{
 			PPF.RQ.range	= tdist;

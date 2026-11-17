@@ -67,6 +67,10 @@ enum{
 	// narrowing the camera for the whole screen. Only meaningful with the 3D lens switched off --
 	// a lensed optic gets its magnification from its own second render.
 	AF_SCOPE_2D_ZOOM	=(1<<23),	// RETIRED: the eyepiece magnification is how a 2D scope works now, not an option
+	// First-person death (console: g_first_person_death, checkbox in the gameplay options). ON by
+	// default: the view stays in the corpse's eyes instead of going to cam_3. See the death camera in
+	// ActorCameras.cpp; [actor] death_cam_first_person = false turns it off for the mod as a whole.
+	AF_FIRST_PERSON_DEATH	=(1<<24),
 };
 
 extern Flags32 psActorFlags;
