@@ -6188,7 +6188,11 @@ void CHudItem::UpdateLoweredPose(Fmatrix& trans, CActor* pActor)
 		{
 			const bool	want_up	= !down && U.valid;
 			const SLowerAnim*	C	= down ? (A.valid ? &A : 0) : ((m_fLoweredFactor > 0.f && U.valid) ? &U : 0);
-			if (C && C->cam.size())	play_lower_cam(pActor, C->cam);
+			// The way up is the raise only while this weapon is still in the hands. Put away while lowered, it
+			// stays the active item through its hide motion and stops being it once that ends -- which reads
+			// here as "not down any more", and the raise's camera played after the holster, with empty hands.
+			const bool	in_hands	= pActor->inventory().ActiveItem() == &item();
+			if (C && C->cam.size() && in_hands)	play_lower_cam(pActor, C->cam);
 			// the two animations should meet at the ends; where they do not, fade over from the pose the hud is in
 			if (want_up != m_bLowerAnimUp && m_fLoweredFactor > 0.f && A.valid && U.valid)
 			{
