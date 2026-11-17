@@ -51,6 +51,8 @@ function opt_gameplay:InitControls(x, y, xml, handler)
 	xml:InitCheck("tab_gameplay:check_sprint_on_hold",	self)
 	-- ...and, separately from the mode above, whether a reload ends the sprint.
 	xml:InitCheck("tab_gameplay:check_reload_in_sprint",	self)
+	-- g_first_person_death: after death the view stays in the corpse's eyes instead of cam_3
+	xml:InitCheck("tab_gameplay:check_first_person_death",	self)
 
 	local list_difficulty = xml:InitComboBox("tab_gameplay:list_difficulty", self)
 	-- Master means playing blind: no interface, no crosshair, and no way to turn either back on --

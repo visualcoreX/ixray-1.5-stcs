@@ -12,6 +12,7 @@
 #include "../Include/xrRender/Kinematics.h"
 #include "object_broker.h"
 #include "customzone.h"
+#include "ai/monsters/BaseMonster/base_monster.h"
 
 #define MAX_HEALTH 1.0f
 
@@ -544,6 +545,17 @@ CWound* CEntityCondition::ConditionHit(SHit* pHDS)
 	float hit_power_org = pHDS->damage();
 	float hit_power = hit_power_org;
 	hit_power = HitOutfitEffect( hit_power_org, pHDS->hit_type, pHDS->boneID, pHDS->armor_piercing, pHDS->armor_frac, bAddWound );
+
+	// A mutant's damage to the actor, scaled by its actor_hit_damage_factor once the suit has had
+	// its share. The suit takes its wound protection OFF the blow (HitOutfitEffect), so scaling the
+	// blow itself would cut what gets through by far more in a good suit than in a bad one.
+	if ( smart_cast<CActor*>(m_object) )
+	{
+		if ( const CBaseMonster* monster = smart_cast<const CBaseMonster*>(pHDS->who) )
+		{
+			hit_power *= monster->m_actor_hit_damage_factor;
+		}
+	}
 
 	switch(pHDS->hit_type)
 	{

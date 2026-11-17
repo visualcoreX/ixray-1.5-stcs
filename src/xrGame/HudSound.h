@@ -20,6 +20,11 @@ float	DistantSoundBlend	(const Fvector& position, float start, float end);
 // so a burst costs one test.
 bool	IndoorSoundTest		(const Fvector& pos);
 
+// Tells the sound engine's convolution reverb where the listener is: the level, and whether the camera is
+// indoors by IndoorSoundTest. Called every frame, it tests a few times a second. An "_indoor" twin is
+// kept out of that reverb (it is a reverb recording itself), see HUD_SOUND_ITEM::LoadSound.
+void	UpdateReverbListener();
+
 // Overlapping sounds (an unlocked shot, see PlaySound) are held to so many copies per item ringing at
 // full volume: the one that would make it more fades out the oldest over snd_overlap_fade seconds, from
 // the moment it starts sounding itself. 0 = no limit. Console defaults; a config may override both, see

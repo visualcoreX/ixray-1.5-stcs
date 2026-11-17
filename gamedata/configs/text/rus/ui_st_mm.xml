@@ -597,6 +597,9 @@
 	<string id="ui_mm_reload_in_sprint">
 		<text>Манипуляции с оруж. при спринте</text>
 	</string>
+	<string id="ui_mm_first_person_death">
+		<text>Смерть от 1-го лица</text>
+	</string>
 	<string id="ui_mm_show_weapon">
 		<text>Показывать оружие</text>
 	</string>

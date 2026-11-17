@@ -60,6 +60,23 @@ protected:
 		CSoundRender_Attenuation		curve;
 	};
 	xr_vector<atten_rule>				s_atten_rules;
+
+	// configs\sound_reverb.ltx: the impulse responses of the convolution reverb and what it leaves dry
+	struct reverb_config
+	{
+		bool							enabled;				// the file was there
+		shared_str						ir			[srs_count];	// sound path, no extension; empty = none
+		float							gain		[srs_count];	// wet level, after normalize
+		float							skip_ms		[srs_count];	// cut off the start (the direct sound)
+		float							fade_time;				// seconds to cross from one space to another
+		float							rolloff;				// the reverb send's distance rolloff, x the dry one's
+		bool							normalize;				// scale each IR to unit energy first
+		bool							exclude_tagged;			// honour ref_sound_data::no_reverb
+		xr_vector<xr_string>			exclude;				// path prefixes kept dry
+		xr_vector<std::pair<shared_str,int> >	levels;			// level -> the one space it is heard in
+										reverb_config			();
+	};
+	reverb_config						s_reverb;
 public:
 	// Cache
 	CSoundRender_Cache					cache;
@@ -135,6 +152,13 @@ public:
 
 	void								atten_load				();
 	const CSoundRender_Attenuation*		atten_find				( LPCSTR fname ) const;
+
+	void								reverb_load				();
+	bool								reverb_excluded			( LPCSTR fname ) const;
+	int									reverb_level_space		( LPCSTR level ) const;
+	float								reverb_rolloff			() const												{ return s_reverb.rolloff; }
+	virtual void						reverb_update			( float dt )											{}
+	virtual void						set_reverb_listener		( LPCSTR level, bool indoor )							{}
 };
 extern CSoundRender_Core* SoundRender;
 #endif

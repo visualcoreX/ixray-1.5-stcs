@@ -258,6 +258,11 @@ void  CHUDManager::RenderUI()
 		Font().Render();
 	}
 
+	// after death in first person: the eyes close over everything the level drew (the NV mask too),
+	// under the "game over" tutorial, which is its own seqRender entry after this
+	if (CActor* dead = smart_cast<CActor*>(g_pGameLevel->CurrentEntity()))
+		dead->death_cam_RenderEyelids();
+
 	if (/* psHUD_Flags.is(HUD_CROSSHAIR|HUD_CROSSHAIR_RT|HUD_CROSSHAIR_RT2) &&*/ !bAlready)	
 		m_pHUDTarget->Render();
 

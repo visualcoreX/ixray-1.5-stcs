@@ -12,6 +12,7 @@ CSoundRender_Source::CSoundRender_Source	()
 	m_fBaseVolume	= 1.f;
 	m_uGameType		= 0;
 	m_bCustomAttenuation	= false;
+	m_bNoReverb		= false;
 	fname			= 0;
 	m_wave			= 0;
     CAT.table		= 0;

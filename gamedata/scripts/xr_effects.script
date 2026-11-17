@@ -1862,6 +1862,67 @@ function smart_alarm_on_actor(actor, npc, p)
 	end
 end
 
+-- Scripted mutant squad p[1] (keyed by its section name) goes after the actor: every member online -- and,
+-- when p[2] is given, within p[2] metres of him -- is told where he is and let loose. Meant to be called
+-- again every second or so from a restrictor's logic for as long as the hunt should last; one call does
+-- not stick, because the smart the squad was created at keeps handing its mutants their job back:
+-- * The job is a mob_home, and a monster with a home walks back to it, attack state or not, while it or
+--   its enemy is outside the home radius (CStateMonsterAttackMoveToHomePoint). The home is dropped here;
+--   mob_home sets it again whenever its scheme resets (going online, a job change).
+-- * The job also carries out_restr = the smart's defence zone, which a monster cannot leave at all: it
+--   charged the actor only as far as the fence and stood there. Every out restriction is lifted here, and
+--   restrictor_manager puts it back on the same resets.
+-- * A monster chooses its target from its own enemy memory; make_object_visible_somewhen writes the
+--   actor's current position there (the engine used to accept that call from stalkers only). The entry
+--   lasts the monster's memory time, 10 s by default, so the repeat also keeps it fresh.
+-- * xr_combat_ignore.is_enemy lets a squad remember the actor only while its smart's combat manager has
+--   it in the "combat" stage, and the manager grants that only when he is seen within 30 m of the squad;
+--   short of it the squad is put in "defence" and forgets him. The stage is set and the sighting
+--   refreshed here, so it does not lapse back to idle mid-hunt.
+function squad_hunt_actor(actor, npc, p)
+	local board = sim_board.get_sim_board()
+	local squad = p[1] and board.squads[p[1]]
+	local actor_obj = db.actor
+	if squad == nil or actor_obj == nil then
+		return
+	end
+	local radius = tonumber(p[2])
+	local radius_sqr = radius and radius * radius
+	local actor_pos = actor_obj:position()
+	local hunting = false
+	for npc_id in pairs (squad.squad_npc) do
+		local obj = level.object_by_id(npc_id)
+		if obj ~= nil and obj:alive()
+		and (radius_sqr == nil or obj:position():distance_to_sqr(actor_pos) < radius_sqr) then
+			obj:remove_home()
+			local out_restr = obj:out_restrictions()
+			if out_restr ~= nil and out_restr ~= "" then
+				for _, restr in pairs (parse_names(out_restr)) do
+					obj:remove_restrictions(restr, "")
+				end
+			end
+			obj:make_object_visible_somewhen(actor_obj)
+			hunting = true
+		end
+	end
+	if not hunting then
+		return
+	end
+	local smart_id = squad.current_action and squad.current_action.dest_smrt_id or squad.smart_id
+	local smart = smart_id and board.smarts[smart_id]
+	local combat = smart and smart.smrt.combat_manager
+	local data = combat and combat.squads[squad.squad_id]
+	if data == nil then
+		return
+	end
+	if data._stage ~= "combat" then
+		data._stage = "combat"
+		squad:issue_order("attack")
+	end
+	combat:enemy_actor_callback(squad)
+	combat.actor_combat = true
+end
+
 function add_map_spot(actor, npc, p)
 
 	local p1 = p[1]

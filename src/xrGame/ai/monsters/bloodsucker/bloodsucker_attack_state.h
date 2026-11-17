@@ -5,11 +5,11 @@ template<typename _Object>
 class	CBloodsuckerStateAttack : public CStateMonsterAttack<_Object> {
 	typedef CStateMonsterAttack<_Object> inherited_attack;
 
-	u32				m_time_stop_invis;
 	Fvector			m_dir_point;
 
 	float           m_last_health;
 	bool            m_start_with_encircle;
+	TTime           m_time_hide_started;
 
 public:
 					CBloodsuckerStateAttack		(_Object *obj);
@@ -22,7 +22,6 @@ public:
 	
 	virtual void	setup_substates				();
 private:
-			void	update_invisibility			();
 			bool	check_hiding				();
 };
 

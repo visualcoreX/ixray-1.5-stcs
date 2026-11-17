@@ -21,6 +21,7 @@
 #include "../../../../xrEngine/camerabase.h"
 #include "../../../xr_level_controller.h"
 #include "../../../ActorCondition.h"
+#include "../../../game_cl_single.h"
 
 #include "../../../PHDestroyable.h"
 #include "../../../CharacterPhysicsSupport.h"
@@ -40,9 +41,18 @@ namespace bloodsucker
 	const float default_critical_hit_camera_effector_angle = 3.1415f / 6;
 
 	const float default_camera_effector_move_angular_speed = 1.5f;
-	const u32   default_invisibility_activate_delay = 4000;
+
+	// visibility stages and the grab, as Call of Pripyat ships them
+	const u32   default_visibility_state_change_min_delay = 1000;
+	const float default_full_visibility_radius            = 4.f;
+	const float default_partial_visibility_radius         = 7.f;
+	const float default_vampire_gain_health               = 0.5f;
+	const float default_vampire_distance                  = 1.f;
+	const u32   default_sufficient_hits_before_vampire    = 3;
 } // namespace bloodsucker
 } // namespace detail
+
+TTime CAI_Bloodsucker::m_time_last_vampire = 0;
 
 CAI_Bloodsucker::CAI_Bloodsucker()
 {
@@ -51,6 +61,13 @@ CAI_Bloodsucker::CAI_Bloodsucker()
 	m_drag_anim_jump	= false;
 	m_animated			= false;
 	collision_off		= false;
+	m_visibility_state	= unset;
+	m_visibility_state_last_changed_time = 0;
+	m_manual_invisible	= false;
+	m_hits_before_vampire = 0;
+	m_sufficient_hits_roll = 0.f;
+	m_time_own_last_vampire = 0;
+	m_time_wounded = 0;
 
 	using namespace detail::bloodsucker;
 
@@ -73,11 +90,15 @@ void CAI_Bloodsucker::Load(LPCSTR section)
 		collision_hit_off = true;
 	}else collision_hit_off = false;
 
-	// Stock Clear Sky makes a bloodsucker untouchable while it is invisible; IX-Ray dropped that
-	// guard in ab9d120c ("Fix bloodsucker invisibility"), which also killed the immortality of the
-	// scripted bloodsuckers that are held permanently invisible via manual_activate(). Restored,
-	// with a config switch so it can be turned off without a rebuild. Default = stock behaviour.
-	m_invisible_invulnerable = !!READ_IF_EXISTS(pSettings, r_bool, section, "invisible_invulnerable", TRUE);
+	// Stock Clear Sky made a bloodsucker untouchable whenever it was invisible. Call of Pripyat does
+	// away with that, and so does this port for the bloodsucker's own invisibility
+	// (invulnerable_while_invisible brings it back). The bloodsuckers a SCRIPT holds invisible
+	// (manual_activate, the alien scene, a drag jump) stay untouchable, as the scenes built around
+	// them expect: invisible_invulnerable, default on.
+	m_invisible_invulnerable        = !!READ_IF_EXISTS(pSettings, r_bool, section, "invisible_invulnerable", TRUE);
+	m_invulnerable_while_invisible  = !!READ_IF_EXISTS(pSettings, r_bool, section, "invulnerable_while_invisible", FALSE);
+	m_invisible_hit_factor          = READ_IF_EXISTS(pSettings, r_float, section, "invisible_hit_factor", 1.f);
+	clamp							(m_invisible_hit_factor, 0.f, 1.f);
 	if(!pSettings->line_exist(section,"is_friendly"))
 		com_man().add_ability			(ControlCom::eControlRunAttack);	
 	com_man().add_ability			(ControlCom::eControlRotationJump);
@@ -226,6 +247,50 @@ void CAI_Bloodsucker::Load(LPCSTR section)
 	m_vampire_want_speed			= pSettings->r_float(section,"Vampire_Want_Speed");
 	m_vampire_wound					= pSettings->r_float(section,"Vampire_Wound");
 
+	{
+		using namespace detail::bloodsucker;
+		m_vampire_gain_health		= READ_IF_EXISTS(pSettings, r_float, section, "Vampire_GainHealth", default_vampire_gain_health);
+		m_vampire_distance			= READ_IF_EXISTS(pSettings, r_float, section, "Vampire_Distance",   default_vampire_distance);
+		// The grab is lost once the actor is further than this from it (knocked back by another
+		// monster, say); and it gets Vampire_Approach_Time ms to close in to Vampire_Distance
+		// before it starts drinking, or the grab fails.
+		m_vampire_hold_distance		= READ_IF_EXISTS(pSettings, r_float, section, "Vampire_Hold_Distance", m_vampire_distance + 0.5f);
+		m_vampire_approach_time		= READ_IF_EXISTS(pSettings, r_u32,   section, "Vampire_Approach_Time", 1500);
+		// Blows before the grab: Vampire_Sufficient_Hits..Vampire_Sufficient_Hits_Max for every
+		// difficulty, overridden per difficulty by Vampire_Sufficient_Hits_<novice|stalker|veteran|master>
+		// = min[, max].
+		u32 const base_min			= READ_IF_EXISTS(pSettings, r_u32, section, "Vampire_Sufficient_Hits", default_sufficient_hits_before_vampire);
+		u32 const base_max			= READ_IF_EXISTS(pSettings, r_u32, section, "Vampire_Sufficient_Hits_Max", base_min);
+		static LPCSTR const difficulty_keys[eVampireDifficultyCount] = {
+			"Vampire_Sufficient_Hits_novice", "Vampire_Sufficient_Hits_stalker",
+			"Vampire_Sufficient_Hits_veteran", "Vampire_Sufficient_Hits_master" };
+		for (int i = 0; i < eVampireDifficultyCount; ++i)
+		{
+			u32 lo = base_min, hi = base_max;
+			if (pSettings->line_exist(section, difficulty_keys[i]))
+			{
+				LPCSTR const value	= pSettings->r_string(section, difficulty_keys[i]);
+				int const read		= sscanf(value, "%u , %u", &lo, &hi);
+				if (read < 2)		hi = lo;
+			}
+			m_sufficient_hits_min[i]	= lo;
+			m_sufficient_hits_max[i]	= _max(lo, hi);
+		}
+
+		// Or by its wounds: under Vampire_Wounded_Health of its max health (1 = any wound), no
+		// sooner than Vampire_Wounded_Delay ms after its own last grab.
+		m_vampire_wounded_health	= READ_IF_EXISTS(pSettings, r_float, section, "Vampire_Wounded_Health", 0.f);
+		m_vampire_wounded_delay		= READ_IF_EXISTS(pSettings, r_u32,   section, "Vampire_Wounded_Delay",  15000);
+		// ...and not on the instant of the wound: Vampire_Wounded_First_Delay ms after it first
+		// dropped under that health (back to it in full, the clock starts again).
+		m_vampire_wounded_first_delay = READ_IF_EXISTS(pSettings, r_u32, section, "Vampire_Wounded_First_Delay", 5000);
+
+		m_visibility_state_change_min_delay = READ_IF_EXISTS(pSettings, r_u32, section, "visibility_state_change_min_delay", default_visibility_state_change_min_delay);
+		m_full_visibility_radius	= READ_IF_EXISTS(pSettings, r_float, section, "full_visibility_radius",    default_full_visibility_radius);
+		m_partial_visibility_radius	= READ_IF_EXISTS(pSettings, r_float, section, "partial_visibility_radius", default_partial_visibility_radius);
+	}
+	reset_hits_before_vampire		();
+
 
 	invisible_particle_name			= pSettings->r_string(section,"Particle_Invisible");
 
@@ -239,12 +304,12 @@ void CAI_Bloodsucker::Load(LPCSTR section)
 	m_critical_hit_camera_effector_angle = READ_IF_EXISTS(pSettings, r_float, section, "critical_hit_camera_effector_angle",  
 										   default_critical_hit_camera_effector_angle);
 
-	m_camera_effector_move_angular_speed = READ_IF_EXISTS(pSettings, r_float, section, "camera_effector_move_angular_speed",  
+	m_camera_effector_move_angular_speed = READ_IF_EXISTS(pSettings, r_float, section, "camera_effector_move_angular_speed",
 										   default_camera_effector_move_angular_speed);
 
-	m_invisibility_activate_delay        = READ_IF_EXISTS(pSettings, r_u32, section, "invisibility_activate_delay",  
-										   default_invisibility_activate_delay);
-	
+	// Attack on the move, as Call of Pripyat's bloodsucker has it (aom_* keys, off without aom_enabled).
+	// Last, as load_attack_on_move_params() wants: the run velocities are in place by now.
+	load_attack_on_move_params		(section);
 }
 
 void CAI_Bloodsucker::reinit()
@@ -273,8 +338,15 @@ void CAI_Bloodsucker::reinit()
 	m_vampire_want_value		= 0.f;
 	m_predator					= false;
 	m_vis_state					= 0;
+	m_manual_invisible			= false;
+	reset_hits_before_vampire	();
+	m_time_own_last_vampire		= 0;
+	m_time_wounded				= 0;
 
-	start_invisible_predator();
+	// It comes out in the open; update_invisibility hides it once it has an enemy far enough away.
+	// (Stock CS started every bloodsucker in the predator visual and kept it there.)
+	m_visibility_state					= full_visibility;
+	m_visibility_state_last_changed_time = 0;
 }
 
 void CAI_Bloodsucker::reload(LPCSTR section)
@@ -374,6 +446,142 @@ void CAI_Bloodsucker::ActivateVampireEffector()
 	Actor()->Cameras().AddPPEffector(xr_new<CVampirePPEffector>(pp_vampire_effector, 6.0f));
 }
 
+void CAI_Bloodsucker::SatisfyVampire()
+{
+	m_vampire_want_value	= 0.f;
+
+	// The blood it drank heals it (Vampire_GainHealth), as in Call of Pripyat.
+	float health			= conditions().GetHealth() + m_vampire_gain_health;
+	conditions().SetHealth	(_min(health, conditions().GetMaxHealth()));
+}
+
+void CAI_Bloodsucker::reset_hits_before_vampire()
+{
+	m_hits_before_vampire	= 0;
+	m_sufficient_hits_roll	= ::Random.randF(0.f, 1.f);
+}
+
+bool CAI_Bloodsucker::done_enough_hits_before_vampire()
+{
+	// The range of the difficulty in force NOW, so a change in the options counts at once.
+	int const difficulty	= _min(_max(int(g_SingleGameDifficulty), 0), int(eVampireDifficultyCount) - 1);
+	u32 const lo			= m_sufficient_hits_min[difficulty];
+	u32 const hi			= m_sufficient_hits_max[difficulty];
+	u32 const needed		= lo + _min(u32(m_sufficient_hits_roll * float(hi - lo + 1)), hi - lo);
+
+	return m_hits_before_vampire >= needed;
+}
+
+bool CAI_Bloodsucker::wounded_enough_for_vampire()
+{
+	if (m_vampire_wounded_health <= 0.f)
+		return false;
+
+	if (conditions().GetHealth() >= conditions().GetMaxHealth() * m_vampire_wounded_health)
+		return false;
+
+	// m_time_wounded is kept by UpdateCL
+	if (!m_time_wounded || Device.dwTimeGlobal < m_time_wounded + m_vampire_wounded_first_delay)
+		return false;
+
+	return !m_time_own_last_vampire || Device.dwTimeGlobal >= m_time_own_last_vampire + m_vampire_wounded_delay;
+}
+
+void CAI_Bloodsucker::on_vampire_finished()
+{
+	reset_hits_before_vampire	();
+	m_time_own_last_vampire		= Device.dwTimeGlobal;
+}
+
+//--------------------------------------------------------------------
+// Visibility stages
+//--------------------------------------------------------------------
+// Ported from Call of Pripyat. Up to full_visibility_radius from its enemy the bloodsucker is plain
+// to see, up to partial_visibility_radius it shimmers (the predator visual), and further out it is
+// not drawn at all -- only the sound of the change and its step marks give it away. No enemy: in the
+// open. A stage holds for at least visibility_state_change_min_delay. Stock CS kept it shimmering the
+// whole time and decided in its attack state when to show it, for melee only.
+
+bool CAI_Bloodsucker::invisibility_scripted()
+{
+	// A script or a scene owns its visibility: set_invisible(), the alien scene, or a drag jump
+	// (set_vis / set_invis leave m_vis_state non-zero for good).
+	return m_manual_invisible || m_alien_control.active() || m_vis_state != 0;
+}
+
+void CAI_Bloodsucker::set_visibility_state(visibility_t new_state, bool immediate)
+{
+	if (new_state == unset || new_state == m_visibility_state)
+		return;
+
+	if (!immediate && Device.dwTimeGlobal < m_visibility_state_last_changed_time + m_visibility_state_change_min_delay)
+		return;
+
+	m_visibility_state_last_changed_time	= Device.dwTimeGlobal;
+	m_visibility_state						= new_state;
+
+	if (new_state == full_visibility)
+	{
+		stop_invisible_predator		();
+	}
+	else if (!state_invisible)
+	{
+		// into either invisible stage from the open: the predator visual, its sound and sparks
+		start_invisible_predator	();
+	}
+	else
+	{
+		// between the two invisible stages: it is in the predator visual already
+		sound().play				(CAI_Bloodsucker::eChangeVisibility);
+	}
+}
+
+void CAI_Bloodsucker::update_invisibility()
+{
+	if (!g_Alive())
+	{
+		set_visibility_state(full_visibility, true);
+		return;
+	}
+
+	if (invisibility_scripted())
+		return;
+
+	const CEntityAlive* enemy = EnemyMan.get_enemy();
+	if (!enemy)
+	{
+		set_visibility_state(full_visibility);
+		return;
+	}
+
+	float const dist = enemy->Position().distance_to(Position());
+
+	if (dist <= m_full_visibility_radius)
+		set_visibility_state(full_visibility);
+	else if (dist <= m_partial_visibility_radius)
+		set_visibility_state(partial_visibility);
+	else
+		set_visibility_state(no_visibility);
+}
+
+void CAI_Bloodsucker::renderable_Render()
+{
+	if (m_visibility_state == no_visibility && !invisibility_scripted())
+		return;
+
+	inherited::renderable_Render();
+}
+
+BOOL CAI_Bloodsucker::AlwaysTheCrow()
+{
+	// Not drawn means not a crow either: without this it would stop getting UpdateCL, and with it
+	// update_invisibility, the moment it vanished.
+	if (m_visibility_state == no_visibility)
+		return TRUE;
+
+	return inherited::AlwaysTheCrow();
+}
+
 
 void CAI_Bloodsucker::CheckSpecParams(u32 spec_params)
 {
@@ -441,6 +649,7 @@ void CAI_Bloodsucker::apply_actor_camera_effector()
 
 void CAI_Bloodsucker::UpdateCL()
 {
+	update_invisibility				();
 	inherited::UpdateCL				();
 	CControlledActor::frame_update	();
 	character_physics_support()->movement()->CollisionEnable(!is_collision_off());
@@ -450,6 +659,17 @@ void CAI_Bloodsucker::UpdateCL()
 		// update vampire need
 		m_vampire_want_value += m_vampire_want_speed * client_update_fdelta();
 		clamp(m_vampire_want_value,0.f,1.f);
+
+		// when it first went under Vampire_Wounded_Health, for the wounded grab's first delay
+		if (conditions().GetHealth() < conditions().GetMaxHealth() * m_vampire_wounded_health)
+		{
+			if (!m_time_wounded)
+				m_time_wounded = Device.dwTimeGlobal;
+		}
+		else
+		{
+			m_time_wounded = 0;
+		}
 		
 		apply_actor_camera_effector();
 	}
@@ -672,6 +892,13 @@ void CAI_Bloodsucker::HitEntity(const CEntity *pEntity, float fDamage, float imp
 		}
 	}
 
+	// Only blows that connected get here (CControlAnimationBase hit test), so this counts the
+	// actor's wounds towards the grab.
+	if ( pEntity == Actor() )
+	{
+		on_actor_hit_landed();
+	}
+
 	inherited::HitEntity(pEntity, fDamage, impulse, dir);
 }
 
@@ -682,9 +909,18 @@ bool CAI_Bloodsucker::in_solid_state ()
 
 void CAI_Bloodsucker::Hit(SHit* pHDS)
 {
-	if ( m_invisible_invulnerable && state_invisible )
+	if ( state_invisible )
 	{
-		return;
+		const bool scripted = invisibility_scripted();
+		if ( scripted ? m_invisible_invulnerable : m_invulnerable_while_invisible )
+		{
+			return;
+		}
+
+		// Hard to hit square while it shimmers or is gone: only invisible_hit_factor of the damage
+		// gets through. The impulse and the critical-wound power are left as they are, so it still
+		// flinches and staggers from a hit.
+		pHDS->power *= m_invisible_hit_factor;
 	}
 	if ( !collision_hit_off )
 	{
@@ -705,14 +941,21 @@ void CAI_Bloodsucker::stop_invisible_predator()
 
 void CAI_Bloodsucker::manual_activate()
 {
+	m_manual_invisible = true;
 	state_invisible = true;
 	setVisible		(FALSE);
 }
 
 void CAI_Bloodsucker::manual_deactivate()
 {
+	m_manual_invisible = false;
 	state_invisible = false;
 	setVisible		(TRUE);
+
+	// Hand it back to the stages from scratch: the next update applies whichever one fits, visual
+	// and all, instead of trusting a stage recorded before the script took over.
+	m_visibility_state					= unset;
+	m_visibility_state_last_changed_time = 0;
 }
 
 #ifdef DEBUG

@@ -15,6 +15,7 @@
 #include "../states/monster_state_hitted.h"
 
 #include "bloodsucker_vampire.h"
+#include "bloodsucker_vampire_execute.h"
 #include "bloodsucker_predator.h"
 #include "bloodsucker_state_capture_jump.h"
 #include "bloodsucker_attack_state.h"
@@ -29,7 +30,9 @@ CStateManagerBloodsucker::CStateManagerBloodsucker(CAI_Bloodsucker *monster) : i
 	add_state(eStateEat,				xr_new<CStateMonsterEat<CAI_Bloodsucker> >					(monster));
 	add_state(eStateHearInterestingSound,	xr_new<CStateMonsterHearInterestingSound<CAI_Bloodsucker> >	(monster));
 	add_state(eStateHitted,				xr_new<CStateMonsterHitted<CAI_Bloodsucker> >				(monster));
-	add_state(eStateCustom_Vampire,		xr_new<CStateBloodsuckerVampire<CAI_Bloodsucker> >			(monster));	
+	// The grab goes straight in from the fight once enough blows have landed (Call of Pripyat),
+	// instead of stock CS's separate hunt that stalked the actor until the thirst came on.
+	add_state(eStateVampire_Execute,		xr_new<CStateBloodsuckerVampireExecute<CAI_Bloodsucker> >	(monster));
 }
 
 void CStateManagerBloodsucker::drag_object()
@@ -65,6 +68,16 @@ void CStateManagerBloodsucker::drag_object()
 	}
 }
 
+bool CStateManagerBloodsucker::check_vampire()
+{
+	if ( prev_substate != eStateVampire_Execute )
+	{
+		return get_state(eStateVampire_Execute)->check_start_conditions();
+	}
+
+	return !get_state(eStateVampire_Execute)->check_completion();
+}
+
 void CStateManagerBloodsucker::update ()
 {
 	inherited::update();
@@ -80,9 +93,9 @@ void CStateManagerBloodsucker::execute ()
 	{
 		if ( enemy ) 
 		{
-			 if ( check_state(eStateCustom_Vampire) ) 
+			 if ( check_vampire() ) 
 			 {
-				state_id = eStateCustom_Vampire;
+				state_id = eStateVampire_Execute;
 			 } 
 			 else 
 			 {

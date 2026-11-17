@@ -859,6 +859,15 @@ void CCC_Register()
 	CMD1(CCC_SND_Restart,"snd_restart"			);
 	CMD3(CCC_Mask,		"snd_acceleration",		&psSoundFlags,		ss_Hardware	);
 	CMD3(CCC_Mask,		"snd_efx",				&psSoundFlags,		ss_EFX		);
+	// convolution reverb, configs\sound_reverb.ltx: on (the IRs) / off (the EAX zones), its wet level on top of
+	// the config's, a space forced for listening (-1 = by where the listener is, 0 outdoor, 1 indoor,
+	// 2 underground), and an IR per space to try instead of the config's ("default" = back to it)
+	CMD3(CCC_Mask,		"snd_reverb_conv",		&psSoundFlags,		ss_ConvReverb);
+	CMD4(CCC_Float,		"snd_reverb_gain",		&psSoundReverbGain,	0.f, 4.f	);
+	CMD4(CCC_Integer,	"snd_reverb_space",		&psSoundReverbSpace,-1, 2		);
+	CMD3(CCC_String,	"snd_reverb_ir_outdoor",	psSoundReverbIR[srs_Outdoor],		SND_REVERB_IR_LEN);
+	CMD3(CCC_String,	"snd_reverb_ir_indoor",		psSoundReverbIR[srs_Indoor],		SND_REVERB_IR_LEN);
+	CMD3(CCC_String,	"snd_reverb_ir_underground",psSoundReverbIR[srs_Underground],	SND_REVERB_IR_LEN);
 	CMD4(CCC_Integer,	"snd_targets",			&psSoundTargets,	4,64		);
 	CMD4(CCC_Float,		"snd_cull",				&psSoundCull,		0.0001f, 0.1f);	// amplitude below which an emitter is faded out and released; scaled by the master volume, see CSoundRender_Emitter::update_culling
 	CMD4(CCC_Integer,	"snd_cache_size",		&psSoundCacheSizeMB,4,32		);

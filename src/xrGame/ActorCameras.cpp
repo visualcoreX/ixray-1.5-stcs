@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #include "Actor.h"
 #include "../xrEngine/CameraBase.h"
+#include "../Include/xrRender/Kinematics.h"
+#include "../Include/xrRender/UIRender.h"
+#include "../Include/xrRender/UIShader.h"
 #ifdef DEBUG
 #include "PHDebug.h"
 #endif
@@ -181,6 +184,245 @@ void CActor::cam_UnsetLadder()
 	C->lim_yaw[1]			= 0;
 	C->bClampYaw			= false;
 }
+// ---- First-person death camera ----
+// Stock CS throws the view out to cam_3 (eacFreeLook) when the actor dies. The style still switches --
+// that is what shows the body (setVisible(!HUDview())) and drops the hands -- but the freelook camera's
+// pose is overwritten every frame with one riding on the corpse's bip01_head: looking along the head
+// bone's face axis, pushed death_cam_forward along that look and death_cam_up along the head's up so
+// the near plane clears the face.
+//
+// Which of the bone's axes is the face is not hard-coded -- the head's local frame is whatever the
+// skeleton's exporter left it as -- but found at the moment of death (death_cam_Capture).
+
+static IC Fvector dc_to_local(const Fmatrix& M, const Fvector& v)
+{
+	Fvector i = M.i, j = M.j, k = M.k;
+	i.normalize_safe(); j.normalize_safe(); k.normalize_safe();
+	return Fvector().set(v.dotproduct(i), v.dotproduct(j), v.dotproduct(k));
+}
+static IC Fvector dc_to_world(const Fmatrix& M, const Fvector& l)
+{
+	Fvector i = M.i, j = M.j, k = M.k;
+	i.normalize_safe(); j.normalize_safe(); k.normalize_safe();
+	Fvector r;	r.mul(i, l.x).mad(j, l.y).mad(k, l.z);
+	return r;
+}
+// v (in a bone's frame) snapped to the bone axis it lies closest to, sign kept; `skip` is an axis
+// already taken. axis = -1 when v is degenerate.
+static Fvector dc_snap_axis(const Fvector& v, int skip, int& axis)
+{
+	axis			= -1;
+	float best		= EPS_L;
+	for (int i = 0; i < 3; ++i)
+		if (i != skip && _abs(v[i]) > best)	{ best = _abs(v[i]); axis = i; }
+	Fvector r;		r.set(0.f, 0.f, 0.f);
+	if (axis >= 0)	r[axis] = (v[axis] < 0.f) ? -1.f : 1.f;
+	return			r;
+}
+// D normalized, N made perpendicular to it; false when the pair is degenerate
+static bool dc_orthonormalize(Fvector& D, Fvector& N)
+{
+	if (D.square_magnitude() < EPS_S)	return false;
+	D.normalize		();
+	Fvector R;		R.crossproduct(N, D);
+	if (R.square_magnitude() < EPS_S)	return false;
+	R.normalize		();
+	N.crossproduct	(D, R);
+	return			true;
+}
+
+bool CActor::death_cam_HeadMatrix(Fmatrix& head)
+{
+	IKinematics* K			= smart_cast<IKinematics*>(Visual());
+	if (!K || m_head < 0 || u16(m_head) == BI_NONE)	return false;
+	K->CalculateBones		();
+	head.mul_43				(XFORM(), K->LL_GetTransform(u16(m_head)));
+	return					!!_valid(head);
+}
+
+void CActor::death_cam_Capture()
+{
+	m_death_cam_valid		= false;
+	if (!m_death_cam_enabled || !psActorFlags.test(AF_FIRST_PERSON_DEATH))	return;
+
+	Fmatrix					H;
+	if (!death_cam_HeadMatrix(H))	return;
+
+	Fvector D				= cameras[eacFirstEye]->Direction();
+	Fvector N				= cameras[eacFirstEye]->Up();
+	if (!dc_orthonormalize(D, N))	return;
+
+	// The look is the head bone's OWN face axis, not the camera's: the torso follows the camera's pitch
+	// only partly (m_fTorsoFollowCamPitch eases to less than 1 with empty hands), so a look down at the
+	// moment of death pointed the eye below the head's line and into the chest. The axis is found on the
+	// head as the ANIMATION alone poses it -- no camera twist from the spine/head callbacks -- where the
+	// face looks along the model's +Z and the crown along +Y; each is snapped to the nearest of the bone's
+	// own axes, so whatever the clip did with the head at that instant does not leak in.
+	IKinematics* K			= smart_cast<IKinematics*>(Visual());
+	Fmatrix A;				K->Bone_GetAnimPos(A, u16(m_head), u8(-1), true);
+	int fa = -1, ua = -1;
+	Fvector f_loc			= dc_snap_axis(dc_to_local(A, Fvector().set(0.f,0.f,1.f)), -1, fa);
+	Fvector u_loc			= dc_snap_axis(dc_to_local(A, Fvector().set(0.f,1.f,0.f)), fa, ua);
+	if (fa < 0 || ua < 0)	return;
+	Msg						("* death cam: bip01_head face = %c%c, up = %c%c", (f_loc[fa] < 0.f) ? '-' : '+', "xyz"[fa], (u_loc[ua] < 0.f) ? '-' : '+', "xyz"[ua]);
+
+	// [actor] death_cam_pitch, degrees, + = up: trims a rig whose head bone is not quite level
+	const float p			= deg2rad(m_death_cam_pitch);
+	m_death_cam_dir_local.set(f_loc).mul(_cos(p)).mad(u_loc,  _sin(p));
+	m_death_cam_up_local.set (u_loc).mul(_cos(p)).mad(f_loc, -_sin(p));
+
+	m_death_cam_dir			= D;	// the smoothing eases from the view the actor died with
+	m_death_cam_nrm			= N;
+	m_death_cam_valid		= true;
+	m_death_time			= Device.dwTimeGlobal;
+
+	// Hide the head from the eye that now sits in front of it. Face down, the ragdoll's head can roll
+	// into the camera past any offset, and collide_camera does not push away from the actor's own body.
+	if (m_death_cam_hide_head && !m_death_cam_head_hidden && Level().CurrentEntity() == this)
+	{
+		const u16 head				= u16(m_head);
+		const u16 root				= K->LL_GetBoneRoot();
+		m_death_cam_head_bones.clear();
+		for (u16 i = 0, n = K->LL_BoneCount(); i < n; ++i)
+		{
+			u16 b					= i;
+			while (b != head && b != root && b != BI_NONE)
+				b					= K->LL_GetData(b).GetParentID();
+			if (b == head)
+				m_death_cam_head_bones.push_back(i);
+		}
+		if (!m_death_cam_head_bones.empty())
+		{
+			add_visual_callback		(&death_cam_HideHead);
+			m_death_cam_head_hidden	= true;
+			K->CalculateBones_Invalidate();		// collapse it from the very next draw
+		}
+	}
+}
+
+// Runs at the end of every full CalculateBones. Only the RENDER transforms of the head branch are
+// collapsed -- mTransform is left alone, so the ragdoll, the hit tests and death_cam_HeadMatrix still
+// see the real head. LL_SetBoneVisible(FALSE) would not do: it stops the bone being calculated at all
+// (the camera would lose it), takes it out of the physics shell's mask, and collapses the branch to the
+// model's origin, which stretches the collar vertices half weighted to the neck into a spike (see
+// player_legs_controller::collapse_bone_branch). Collapsing onto the head bone's own origin -- the
+// neck joint -- moves those blended vertices a few centimetres at most.
+void __stdcall CActor::death_cam_HideHead(IKinematics* K)
+{
+	CActor* A			= smart_cast<CActor*>(static_cast<CObject*>(K->GetUpdateCallbackParam()));
+	if (!A || A->g_Alive() || !A->m_death_cam_valid || !psActorFlags.test(AF_FIRST_PERSON_DEATH))	return;
+
+	const Fvector at	= K->LL_GetTransform(u16(A->m_head)).c;
+	Fmatrix collapsed;	collapsed.scale(0.f, 0.f, 0.f);
+	collapsed.c.set		(at);
+	for (xr_vector<u16>::const_iterator it = A->m_death_cam_head_bones.begin(); it != A->m_death_cam_head_bones.end(); ++it)
+		K->LL_GetBoneInstance(*it).mRenderTransform.mul_43(collapsed, K->LL_GetData(*it).m2b_transform);
+}
+
+void CActor::death_cam_Update(float dt)
+{
+	Fmatrix					H;
+	if (!death_cam_HeadMatrix(H))	return;		// keeps last frame's pose
+
+	Fvector D				= dc_to_world(H, m_death_cam_dir_local);
+	Fvector N				= dc_to_world(H, m_death_cam_up_local);
+	if (!dc_orthonormalize(D, N))	return;
+
+	// the eye is bolted to the head; only the look is eased, which takes the ragdoll's jitter out of it
+	Fvector P				= H.c;
+	P.mad					(D, m_death_cam_forward);
+	P.mad					(N, m_death_cam_up);
+
+	if (m_death_cam_smooth > 0.f)
+	{
+		const float k		= 1.f - expf(-m_death_cam_smooth * _max(dt, 0.f));
+		m_death_cam_dir.add	(Fvector().sub(D, m_death_cam_dir).mul(k));
+		m_death_cam_nrm.add	(Fvector().sub(N, m_death_cam_nrm).mul(k));
+		if (!dc_orthonormalize(m_death_cam_dir, m_death_cam_nrm))
+		{
+			m_death_cam_dir	= D;
+			m_death_cam_nrm	= N;
+		}
+	}
+	else
+	{
+		m_death_cam_dir		= D;
+		m_death_cam_nrm		= N;
+	}
+
+	cameras[eacFirstEye]->Set	(P, m_death_cam_dir, m_death_cam_nrm);
+}
+
+// ---- The eyes close ----
+// death_eyes_delay after death two black lids come in from the top and the bottom of the screen and
+// meet in the middle over death_eyes_time, eased in and out. The picture between them is an ellipse
+// drawn out to the sides (death_eyes_width) that flattens into a line, with a soft band of
+// death_eyes_feather inside its edge. Drawn in the UI pass under the
+// "game over" tutorial (that one is its own seqRender entry, after the level), with the crosshair's
+// flat-colour shader: the lids are just vertex colours.
+
+// a trapezoid between two edges running from x0 to x1 (t = upper, b = lower, in screen y)
+static IC void dc_lid_quad(float x0, float x1, float t0, float t1, float b0, float b1, u32 ct, u32 cb)
+{
+	UIRender->PushPoint(x0, b0, 0.f, cb, 0.f, 0.f);
+	UIRender->PushPoint(x0, t0, 0.f, ct, 0.f, 0.f);
+	UIRender->PushPoint(x1, b1, 0.f, cb, 0.f, 0.f);
+	UIRender->PushPoint(x1, b1, 0.f, cb, 0.f, 0.f);
+	UIRender->PushPoint(x0, t0, 0.f, ct, 0.f, 0.f);
+	UIRender->PushPoint(x1, t1, 0.f, ct, 0.f, 0.f);
+}
+
+void CActor::death_cam_RenderEyelids()
+{
+	if (!m_death_eyes_enabled || g_Alive() || !m_death_cam_valid)	return;
+	if (!psActorFlags.test(AF_FIRST_PERSON_DEATH) || Level().CurrentEntity() != this)	return;
+
+	const float t			= float(Device.dwTimeGlobal - m_death_time) / 1000.f - m_death_eyes_delay;
+	if (t <= 0.f)			return;
+	float p					= (m_death_eyes_time > EPS) ? (t / m_death_eyes_time) : 1.f;
+	clamp					(p, 0.f, 1.f);
+	p						= p * p * (3.f - 2.f * p);		// ease in and out
+
+	const float W			= float(Device.dwWidth);
+	const float H			= float(Device.dwHeight);
+	const float half_w		= 0.5f * W;
+	const float half_h		= 0.5f * H;
+	const float f			= _max(m_death_eyes_feather * H, 1.f);
+	// What is left of the picture is an ellipse drawn out to the sides: its half width `a` stays put,
+	// its half height `h` shrinks. A lid's edge is the ellipse's upper (lower) arc, so the lids are
+	// hollowed out and close at the corners first; past |x| = a they have already met.
+	const float a			= _max(m_death_eyes_width, 0.1f) * half_w;
+	// open: the arc clears the top corners, soft band included (an `a` inside the screen never opens
+	// them -- those corners stay black from the start)
+	const float corner		= (a > half_w) ? _sqrt(1.f - _sqr(half_w / a)) : 1.f;
+	const float h_open		= (half_h + f) / corner;
+	// closed at h = 0: both lids' solid parts then meet on the centre line, the soft bands lie over black
+	const float h			= h_open * (1.f - p);
+
+	if (!m_death_eyes_shader->inited())
+		m_death_eyes_shader->create("hud\\crosshair");
+
+	const int N				= 48;
+	const u32 solid			= color_rgba(0, 0, 0, 255);
+	const u32 clear			= color_rgba(0, 0, 0, 0);
+	UIRender->StartPrimitive(N * 4 * 6, IUIRender::ptTriList, IUIRender::pttTL);
+	for (int i = 0; i < N; ++i)
+	{
+		const float x0		= W * float(i) / float(N);
+		const float x1		= W * float(i + 1) / float(N);
+		const float e0		= half_h - h * _sqrt(_max(0.f, 1.f - _sqr((x0 - half_w) / a)));
+		const float e1		= half_h - h * _sqrt(_max(0.f, 1.f - _sqr((x1 - half_w) / a)));
+		// upper lid: solid down to the edge, then the soft band below it
+		dc_lid_quad			(x0, x1, -1.f, -1.f, e0, e1, solid, solid);
+		dc_lid_quad			(x0, x1, e0, e1, e0 + f, e1 + f, solid, clear);
+		// lower lid, the mirror image: the soft band above its edge, then solid to the bottom
+		dc_lid_quad			(x0, x1, H - e0 - f, H - e1 - f, H - e0, H - e1, clear, solid);
+		dc_lid_quad			(x0, x1, H - e0, H - e1, H + 1.f, H + 1.f, solid, solid);
+	}
+	UIRender->SetShader		(*m_death_eyes_shader);
+	UIRender->FlushPrimitive();
+}
+
 float CActor::CameraHeight()
 {
 	Fvector						R;
@@ -435,9 +677,20 @@ void CActor::cam_Update(float dt, float fFOV)
 	{
 		cameras[eacFirstEye]->Update	(point,dangle);
 		cameras[eacFirstEye]->f_fov		= fFOV;
-	} 
+	}
+
+	// dead: the first-eye camera is put on the corpse's head, pushed out of the walls like a living
+	// one, and then handed to the freelook camera that is still the active style (see death_cam_Update)
+	// (the option is read every frame too, so switching it off in the menu over the corpse gives cam_3 back)
+	const bool death_cam			= !g_Alive() && m_death_cam_valid && psActorFlags.test(AF_FIRST_PERSON_DEATH) && eacFirstEye != cam_active && Level().CurrentEntity() == this;
+	if (death_cam)
+		death_cam_Update			(dt);
+
 	if (Level().CurrentEntity() == this)
 		collide_camera( *cameras[eacFirstEye], _viewport_near );
+
+	if (death_cam)
+		C->Set						(cameras[eacFirstEye]->Position(), cameras[eacFirstEye]->Direction(), cameras[eacFirstEye]->Up());
 
 	if( psActorFlags.test(AF_PSP) )
 	{

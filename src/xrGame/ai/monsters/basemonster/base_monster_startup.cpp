@@ -102,6 +102,7 @@ void CBaseMonster::Load(LPCSTR section)
 
 	m_melee_rotation_factor			= READ_IF_EXISTS(pSettings,r_float,section,"Melee_Rotation_Factor", 1.5f);
 	berserk_always					= !!READ_IF_EXISTS(pSettings,r_bool,section,"berserk_always", false);
+	m_actor_hit_damage_factor		= READ_IF_EXISTS(pSettings,r_float,section,"actor_hit_damage_factor", 1.f);
 
 	m_feel_enemy_who_just_hit_max_distance = READ_IF_EXISTS(pSettings, r_float, section, 
 		                                        "feel_enemy_who_just_hit_max_distance", 
@@ -147,6 +148,18 @@ void CBaseMonster::load_attack_on_move_params(LPCSTR section)
 	aom.prepare_time		= READ_IF_EXISTS(pSettings, r_float, section, "aom_prepare_time",		detail::base_monster::aom_prepare_time);
 	aom.prepare_radius		= READ_IF_EXISTS(pSettings, r_float, section, "aom_prepare_radius",		detail::base_monster::aom_prepare_radius);
 	aom.max_go_close_time	= READ_IF_EXISTS(pSettings, r_float, section, "aom_max_go_close_time",	detail::base_monster::aom_max_go_close_time);
+	// How far out a strike may start, as a share of (distance run before the hit + melee reach):
+	// CoP's 0.9 unless the monster's own strike reaches less. And whether it strikes while looping
+	// out for the next pass too (CoP: only on the way in).
+	aom.allowed_dist_factor	= READ_IF_EXISTS(pSettings, r_float, section, "aom_allowed_dist_factor",	0.9f);
+	aom.attack_while_prepare = !!READ_IF_EXISTS(pSettings, r_bool, section, "aom_attack_while_prepare",	false);
+	// CoP will not start a strike closer than (distance run before the hit + half the melee reach):
+	// 2.8 m for a bloodsucker at a run. aom_min_attack_dist lowers that bound, for a monster whose
+	// melee reach does not cover what is left.
+	aom.min_attack_dist		= READ_IF_EXISTS(pSettings, r_float, section, "aom_min_attack_dist",		0.f);
+	// How far off its heading, in degrees, the target may be for it to strike: CoP's 30. It runs
+	// past the target aom_attack_radius to the side, so close in that angle opens up fast.
+	aom.attack_angle		= READ_IF_EXISTS(pSettings, r_float, section, "aom_attack_angle",		30.f);
 
 	if (!aom.enabled) return;
 

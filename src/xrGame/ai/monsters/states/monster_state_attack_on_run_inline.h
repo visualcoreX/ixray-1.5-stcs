@@ -362,7 +362,8 @@ void CStateMonsterAttackOnRunAbstract::update_attack()
 			if ((override_animation == eAnimAttackOnRunLeft) || (override_animation == eAnimAttackOnRunRight))
 				object->anim().clear_override_animation();
 		}
-	} else if (!m_is_jumping && !object->anim().has_override_animation() && (m_phaze == go_close)) {
+	} else if (!m_is_jumping && !object->anim().has_override_animation() &&
+			   ((m_phaze == go_close) || object->can_attack_on_move_while_prepare())) {
 
 		const ENEMIES_MAP		&memory	= object->EnemyMemory.get_memory();
 		const CEntityAlive *main_enemy	= object->EnemyMan.get_enemy();
@@ -386,14 +387,17 @@ void CStateMonsterAttackOnRunAbstract::update_attack()
 			float const	melee_max_distance	= object->MeleeChecker.get_max_distance();
 			float const	melee_min_distance	= object->MeleeChecker.get_min_distance();
 
-			float const	allowed_attack_distance		= (prepare_attack_dist + melee_max_distance) * 0.9f;
-			float const	disallowed_attack_distance	= (prepare_attack_dist + melee_min_distance * 0.5f) * 0.9f;
+			float const	allowed_attack_distance		= (prepare_attack_dist + melee_max_distance) * object->get_attack_on_move_allowed_dist_factor();
+			float const	cop_disallowed_distance		= (prepare_attack_dist + melee_min_distance * 0.5f) * 0.9f;
+			float const	min_attack_dist				= object->get_attack_on_move_min_attack_dist();
+			float const	disallowed_attack_distance	= (min_attack_dist > 0.f) ? _min(cop_disallowed_distance, min_attack_dist)
+																		  : cop_disallowed_distance;
 
 			Fvector	self_direction_xz	= object->Direction();
 			self_direction_xz.y			= 0;
 			float const	attack_angle	= angle_between_vectors(self_to_enemy_xz, self_direction_xz);
 
-			bool const	good_attack_angle	= attack_angle < deg2rad(30.f);
+			bool const	good_attack_angle	= attack_angle < deg2rad(object->get_attack_on_move_attack_angle());
 			bool const	good_attack_dist	= (current_attack_dist < allowed_attack_distance) &&
 											  (current_attack_dist > disallowed_attack_distance);
 

@@ -5,4 +5,21 @@ active = sr_idle
 on_info = {+val_night_bloodsucker_started} sr_idle@2
 
 [sr_idle@2]
-on_info = {=actor_has_item(device_pda_bloodsucker) -val_night_bloodsucker_fail} nil %+val_night_bloodsucker_complete =create_squad(val_bloodsucker_lair_9_4:val_smart_terrain_9_4)%
+on_info = {=actor_has_item(device_pda_bloodsucker) -val_night_bloodsucker_fail} sr_idle@hunt %+val_night_bloodsucker_complete =create_squad(val_bloodsucker_lair_9_4:val_smart_terrain_9_4)%
+
+; The bloodsuckers come out by a building some 60 m from the tanker the body lies on. Left to the smart
+; they were created at, they took its job: a mob_home at the camp 75 m off that called them back, and an
+; out restriction to the smart's defence zone they could not leave; on top of that its combat manager
+; kept them blind to an actor more than 30 m from them. squad_hunt_actor lifts all three and tells them
+; where the actor is, every second until dawn or until the squad is dead, so they make for him at once
+; and wait under the tanker while he is up on it. Only a bloodsucker within 150 m of him is put on him:
+; far enough that he shakes them off only by running for it, not by slipping past them by chance.
+[sr_idle@hunt]
+on_info = {=is_day} nil
+on_info2 = {!squad_exist(val_bloodsucker_lair_9_4)} nil
+on_timer = 1000 | sr_idle@hunt2 %=squad_hunt_actor(val_bloodsucker_lair_9_4:150)%
+
+[sr_idle@hunt2]
+on_info = {=is_day} nil
+on_info2 = {!squad_exist(val_bloodsucker_lair_9_4)} nil
+on_timer = 1000 | sr_idle@hunt %=squad_hunt_actor(val_bloodsucker_lair_9_4:150)%

@@ -148,6 +148,18 @@ bool IndoorSoundTest(const Fvector& pos)
 	return					indoor;
 }
 
+void UpdateReverbListener()
+{
+	if (!g_pGameLevel || !::Sound)	return;
+
+	static float			next = 0.f;
+	const float				now = Device.fTimeGlobal;
+	if (now<next && next-now<1.f)	return;		// the second test: the clock went back, a new game
+	next					= now+0.25f;
+
+	::Sound->set_reverb_listener	(*Level().name(), IndoorSoundTest(Device.vCameraPosition));
+}
+
 // GS (wpnpatch, WeaponSoundLoader.pas) moved the real volume out of the sound line and into a
 // separate per-alias key, in percent: "volume_snd_silncer_shot = 80". Absent = full volume.
 static float LoadSndVolume(CInifile* ini, LPCSTR section, LPCSTR line)
@@ -200,6 +212,11 @@ void HUD_SOUND_ITEM::LoadSound(	LPCSTR section, LPCSTR line,
 		LoadSound	(section, sound_line, s.snd, type, &s.unlock_freq, &s.delay, ini);
 		xr_sprintf		(sound_line,"%s%d",line,++k);
 	}//while
+
+	// an "_indoor" twin is a room's reverb, recorded: the convolution reverb on top would double it
+	if (strstr(line, "_indoor"))
+		for (xr_vector<SSnd>::iterator it=hud_snd.sounds.begin(); it!=hud_snd.sounds.end(); ++it)
+			it->snd.set_no_reverb	(true);
 }
 
 void  HUD_SOUND_ITEM::LoadSound(LPCSTR section,

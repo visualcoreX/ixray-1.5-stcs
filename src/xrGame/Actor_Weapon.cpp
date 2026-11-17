@@ -88,7 +88,10 @@ bool CActor::HudFireRay(const CHudItem* pHudItem, Fvector& P, Fvector& D, bool c
 	if (!g_player_hud || cam_Active() != cam_FirstEye() || !HUDview())	return false;
 	Fmatrix M;			Cameras().hud_camera_Matrix(M);
 	Fvector lp, ld;
-	if (!g_player_hud->fire_ray_local(pHudItem, M, lp, ld, crosshair, target_dist, target_obj))	return false;
+	// the target is asked for whoever calls: the barrel-in-a-wall case below aims at it
+	float tdist			= -1.f;
+	CObject* tobj		= NULL;
+	if (!g_player_hud->fire_ray_local(pHudItem, M, lp, ld, crosshair, &tdist, &tobj))	return false;
 
 	Fvector p, d;
 	M.transform_tiny	(p, lp);
@@ -98,9 +101,14 @@ bool CActor::HudFireRay(const CHudItem* pHudItem, Fvector& P, Fvector& D, bool c
 
 	// The hip ray starts out at the barrel, off the eye. With the barrel in a wall that start is past
 	// the surface, and the round would come out on its far side: start where the line from the eye to the
-	// muzzle meets the wall then, just short of it. That point is seen exactly where the muzzle is, so the
-	// crosshair stays on the muzzle instead of jumping to the middle of the screen, and the round hits the
-	// wall right there.
+	// muzzle meets the wall then, just short of it. That point is seen exactly where the muzzle is.
+	// The ray's direction is the one from the muzzle to the target; moved to that new start, nearer the
+	// eye, it would cross the middle of the view short of the target and run on past it -- looking along
+	// a wall at the shoulder, out of the wall into the open, and the crosshair and the round went off to
+	// the other side of the screen. So from the new start it is aimed at the target itself: the crosshair
+	// stays where it was the moment before the barrel met the wall, and the round goes there (the wall
+	// along the way may take it first). Close up the target is held on the barrel's line just past the
+	// muzzle (aim_clamp_depth), in the wall: the round hits the wall at the muzzle, as before.
 	Fvector to;			to.sub(p, M.c);
 	const float dist	= to.magnitude();
 	if (dist > EPS_L)
@@ -109,10 +117,24 @@ bool CActor::HudFireRay(const CHudItem* pHudItem, Fvector& P, Fvector& D, bool c
 		collide::rq_result RQ;
 		if (Level().ObjectSpace.RayPick(M.c, to, dist, collide::rqtBoth, RQ, this))
 		{
+			Fvector target;
+			if (tdist > 0.f)	target.mad(p, d, tdist);
 			p.mad		(M.c, to, _max(RQ.range - 0.02f, 0.f));
-			if (target_dist)	*target_dist = -1.f;	// not from where the target was measured
+			if (tdist > 0.f)
+			{
+				Fvector nd;	nd.sub(target, p);
+				const float nl	= nd.magnitude();
+				if (nl > EPS_L && _valid(nd))
+				{
+					d.mul	(nd, 1.f / nl);
+					tdist	= nl;
+				}
+				else		tdist = -1.f;
+			}
 		}
 	}
+	if (target_dist)	*target_dist = tdist;
+	if (target_obj)		*target_obj = tdist > 0.f ? tobj : NULL;
 	P					= p;
 	D					= d;
 	return				true;

@@ -228,7 +228,8 @@ public:
 
 	virtual	bool				IsSprintAllowed				() const		{return !!m_flags.test(FAllowSprint);} ;
 
-	virtual	float				GetControlInertionFactor(	) const			{return m_fControlInertionFactor;};
+	// Never below 1.0: an upgrade can bring an item down to the bare-hands handling, not past it.
+	virtual	float				GetControlInertionFactor(	) const			{return _max(m_fControlInertionFactor, 1.f);};
 
 
 	virtual void				UpdateXForm	();
