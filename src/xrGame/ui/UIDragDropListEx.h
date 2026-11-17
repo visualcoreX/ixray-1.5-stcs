@@ -142,6 +142,7 @@ public:
 
 			u32				ItemsCount			();
 			CUICellItem*	GetItemIdx			(u32 idx);
+			CUICellItem*	GetCellItemUnderCursor();	// the item in the cell under the mouse, NULL over an empty one
 	virtual CUICellItem*	RemoveItem			(CUICellItem* itm, bool force_root);
 			void			CreateDragItem		(CUICellItem* itm);
 			void			clear_select_armament();

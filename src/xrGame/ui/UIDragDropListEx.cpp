@@ -364,6 +364,15 @@ void CUIDragDropListEx::Draw()
 
 }
 
+CUICellItem* CUIDragDropListEx::GetCellItemUnderCursor()
+{
+	// PickCell works in the container's own grid, so a scrolled list picks the cell actually under the
+	// cursor; every cell an item covers points at its (root) cell item
+	const Ivector2	pos	= m_container->PickCell(GetUICursor()->GetCursorPosition());
+	if (!m_container->ValidCell(pos))	return NULL;
+	return m_container->GetCellAt(pos).m_item;
+}
+
 void CUIDragDropListEx::Update()
 {
 	inherited::Update			();
