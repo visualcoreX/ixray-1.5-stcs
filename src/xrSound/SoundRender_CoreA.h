@@ -93,7 +93,6 @@ class CSoundRender_CoreA: public CSoundRender_Core
 	shared_str				m_rv_level;
 	int						m_rv_level_space{-1};
 	bool					m_rv_indoor{false};
-	int						m_rv_space{-1};			// the space last cross-faded to
 	char					m_rv_console[srs_count][SND_REVERB_IR_LEN]{};	// snd_reverb_ir_* as last applied
 
 	void					conv_init				();

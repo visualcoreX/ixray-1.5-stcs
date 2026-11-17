@@ -311,11 +311,6 @@ void CSoundRender_CoreA::reverb_update(float dt)
 						: (m_rv_level_space>=0)		? m_rv_level_space
 						: (m_rv_indoor ? int(srs_Indoor) : int(srs_Outdoor));
 	while (target>0 && !m_conv[target].ok)	--target;
-	if (target!=m_rv_space)
-	{
-		m_rv_space		= target;
-		Msg				("SOUND: reverb: %s", space_name[target]);
-	}
 
 	// cross-fade, linear in power; straight there when nothing is sounding yet (a level just loaded)
 	float		total	= 0.f;
