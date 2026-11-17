@@ -751,6 +751,43 @@ void	R_dsgraph_structure::r_dsgraph_render_lens_undistort	()
 	RCache.set_xform_project(Device.mProject);
 }
 
+// The lens-off prism mode at full aim: pass 4 of an optic's glass (models_zoom*.s), the HDR half of the frame under the
+// glass resampled exactly as the lens resamples the picture (model_scope_hdr.ps), into the target the caller has bound.
+// The cut left the world there at the camera's share of the power; the lens zooms it further, bends and ripples it --
+// in the picture only. The bloom, built from the HDR half, glowed the world as the cut left it: out of place against
+// the lens's picture, most at the rim of the glass (a bright street outside a dark room glowed over the window's dark
+// frame there). Depth-tested in the hud's slice, as the late pass, so the eyepiece's rim keeps what it hides of the glass.
+void	R_dsgraph_structure::r_dsgraph_render_lens_hdr	()
+{
+	if (lstHUDLensLate.empty())	return;
+
+	extern ENGINE_API float psHUD_FOV;
+	Fmatrix Pold = Device.mProject;
+	Fmatrix FTold = Device.mFullTransform;
+	Device.mProject.build_projection(
+		deg2rad(psHUD_FOV * Device.fFOV_HUD),
+		Device.fASPECT, VIEWPORT_NEAR,
+		g_pGamePersistent->Environment().CurrentEnv->far_plane);
+	Device.mFullTransform.mul(Device.mProject, Device.mView);
+	RCache.set_xform_view	(Device.mView);			// the screen-space passes since have set their own
+	RCache.set_xform_project(Device.mProject);
+
+	RCache.set_CullMode			(CULL_CCW);
+	RCache.set_Stencil			(FALSE);
+	rmNear						();
+	RCache.set_Constants		((R_constant_table*)0);
+	r_dsgraph_hud_sorted_now	= true;
+	for (u32 i = 0; i < lstHUDLensLate.size(); ++i)
+		r_dsgraph_draw_pass		(lstHUDLensLate[i], 4);
+	r_dsgraph_hud_sorted_now	= false;
+	RCache.set_Constants		((R_constant_table*)0);
+	rmNormal					();
+
+	Device.mProject			= Pold;
+	Device.mFullTransform	= FTold;
+	RCache.set_xform_project(Device.mProject);
+}
+
 // Where the eyepieces cut the hud out this frame, stencil bit 0x80 once more: their mark (pass 1 of the lens_mask
 // element) drawn again. The cut itself zeroed the stencil there and the world and its lights have written it since,
 // so the caller clears the bit first. The mark is depth-tested in the hud's slice against the frame's depth, which

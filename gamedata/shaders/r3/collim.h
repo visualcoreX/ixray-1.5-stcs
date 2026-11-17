@@ -99,12 +99,11 @@ struct v2p_collim
 // Where the eyepiece cut the hud out the G-buffer holds the world, or 0 (only the sky: cleared by the cut), and the
 // glass is in front of either. (A wall nearer than the glass, the gun pushed into it, takes the late pass out too.)
 #define	COLLIM_LATE_EPS	0.001	// metres: the G-buffer's fp16 depth at the hud's distance is good to ~0.25 mm
-float	collim_late_cover( float3 pos_w, float2 pos2d )
+float	collim_late_cover_z( float z, float2 pos2d )		// z: the glass's view depth (model_scope_hdr.ps has no pos_w)
 {
 #ifndef USE_MSAA
 	return	1;
 #else
-	float	z	= mul( m_V, float4(pos_w, 1) ).z;
 	int2	p	= int2( pos2d );
 	float	n	= 0;
 	[unroll] for (int s = 0; s < MSAA_SAMPLES; s++)
@@ -113,6 +112,14 @@ float	collim_late_cover( float3 pos_w, float2 pos2d )
 		n	+= ( gz < COLLIM_LATE_EPS || gz > z - COLLIM_LATE_EPS ) ? 1 : 0;
 	}
 	return	n / MSAA_SAMPLES;
+#endif
+}
+float	collim_late_cover( float3 pos_w, float2 pos2d )
+{
+#ifndef USE_MSAA
+	return	1;
+#else
+	return	collim_late_cover_z( mul( m_V, float4(pos_w, 1) ).z, pos2d );
 #endif
 }
 

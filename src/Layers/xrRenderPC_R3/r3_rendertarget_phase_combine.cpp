@@ -339,6 +339,11 @@ void	CRenderTarget::phase_combine	()
    }
 
    // for msaa we need a resolved color buffer - Holger
+	// the lens-off prism mode at full aim: the HDR half under the glass resampled as the lens resamples the picture,
+	// so the bloom glows what the lens shows (phase_scope_hdr). Not while the lens fades: the frames with the cut
+	// measure nothing then, and the ones without it have the tube under a see-through lens, as the 3D lens has.
+	if (scope_prism && g_scope_prism_cut && !g_scope_prism_fade)
+		phase_scope_hdr	( );
 	// (the lens-off prism mode's frames without the cut keep the last measured bloom and adaptation, see above)
 	if (!scope_unmeasured)
 		phase_bloom		( );												// HDR RT invalidated here

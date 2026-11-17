@@ -415,6 +415,7 @@ CRenderTarget::CRenderTarget		()
 		rt_scope_late_cut.create("$user$scopelatec", s_dwWidth, s_dwHeight,
 			RImplementation.o.dx10_msaa ? D3DFMT_A8R8G8B8 : rt_Color->fmt, 1);
 		rt_scope_distort.create("$user$scopedistort", s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);
+		rt_scope_hdr.create("$user$scopehdr", s_dwWidth, s_dwHeight, D3DFMT_A8R8G8B8, 1);	// rt_Generic_1's format
 		// the cubemap the hud's glass mirrors (lens_cube.h LENS_CUBE_N)
 		{
 			const u32 N = 128;
@@ -1318,6 +1319,28 @@ void CRenderTarget::phase_scope_capture(BOOL distorted)
 	RCache.set_Element(s_scope_distort->E[0]);
 	RCache.set_Geometry(g_aa_AA);
 	RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
+}
+
+// The lens-off prism mode at full aim (phase_combine): the bloom is built from the HDR half of the frame
+// (rt_Generic_1, resolved into rt_Generic_1_r under MSAA), which the lens -- a forward pass into the picture -- never
+// reached. Under the glass it held the world as the eyepiece's cut left it, without the lens's own zoom, bend and
+// ripple, and its glow lay out of place over the lens's picture. Copied, then the glass resamples the copy into it as
+// the lens resamples the picture (r_dsgraph_render_lens_hdr, model_scope_hdr.ps). Under MSAA no depth can be bound to
+// the resolved target: the shader tests the G-buffer's depth itself (collim.h collim_late_cover_z).
+void CRenderTarget::phase_scope_hdr()
+{
+	const bool msaa	= !!RImplementation.o.dx10_msaa;
+	CRT* src		= msaa ? rt_Generic_1_r._get() : rt_Generic_1._get();
+	CRT* dst		= rt_scope_hdr._get();
+	if (!src || !src->pSurface || !dst || !dst->pSurface)	return;
+
+	PIX_EVENT(scope_hdr);
+	HW.pDevice->CopyResource(dst->pSurface, src->pSurface);
+	if (!msaa)	u_setrt(rt_Generic_1, 0, 0, HW.pBaseZB);
+	else		u_setrt(rt_Generic_1_r, 0, 0, 0);
+	RCache.set_Stencil		(FALSE);
+	RImplementation.r_dsgraph_render_lens_hdr();
+	RCache.set_CullMode		(CULL_NONE);
 }
 
 // 3D PiP scope: snapshot the scene into $user$scope (the scope lens material models\zoom samples it).
