@@ -332,9 +332,12 @@ visibility_state_change_min_delay = 1000
 
 ; Damage while invisible. invulnerable_while_invisible: its own invisibility (stock CS had
 ; it, CoP has not). invisible_invulnerable: a script holds it invisible (set_invisible /
-; mob state "invis", the alien scene, a drag jump) -- the scenes that expect it unkillable.
+; mob state "invis", the alien scene, a drag jump). Off: the logics hold their bloodsuckers
+; invisible for as long as they wait in ambush or flee (agr_scientists_bloodsucker until the
+; scientists walk into its zone, the Agroprom underground and Military ones beyond 5 and 10 m,
+; the Red Forest runners), and every bullet into them went for nothing all that time.
 invulnerable_while_invisible = false
-invisible_invulnerable       = true
+invisible_invulnerable       = false
 ; The part of a hit's damage that gets through while it is invisible (either stage, or held
 ; invisible by a script that leaves it killable). 1 = full damage; set per type below.
 invisible_hit_factor         = 1.0
@@ -573,7 +576,7 @@ ce_power      	= 3.0 ;0.7 ; power
 ;*********************************************************************************
 
 [bloodsucker_weak]:m_bloodsucker_e
-invisible_hit_factor = 0.8
+invisible_hit_factor = 0.7
 $spawn        	= "monsters\bloodsuckers\bloodsucker_01_weak"
 visual        	= monsters\krovosos\krovosos
 icon        	= ui_npc_monster_krovosos
@@ -619,7 +622,7 @@ stand_attack_run_0 =  bloodsucker_weak_run_attack_sect
 ;value2      = 0.60,   0.2,        20,        0.0, 0.5, 1.50,     -1.2, 1.2, -1.2, 1.2,         2.2
 
 [bloodsucker_normal]:m_bloodsucker_e
-invisible_hit_factor = 0.7
+invisible_hit_factor = 0.6
 $spawn        = "monsters\bloodsuckers\bloodsucker_02_normal"
 visual        = monsters\krovosos\krovosos
 
@@ -670,7 +673,7 @@ value2      = 0.60,   0.6,        900,       0.0, 0.5, 3.00,     -1.2, 1.2, -1.2
 
 
 [bloodsucker_strong]:m_bloodsucker_e
-invisible_hit_factor = 0.6
+invisible_hit_factor = 0.5
 $spawn        = "monsters\bloodsuckers\bloodsucker_03_strong"
 ;visual        = monsters\krovosos\krovosos_strong
 visual        = monsters\krovosos\krovosos
@@ -868,4 +871,4 @@ visual        	= monsters\krovosos\krovosos_green
 ;***************************************************************
 [bloodsucker_protections]
 skin_armor				= 0.28      ;0.293
-hit_fraction_monster	= 0.175   ;0.104
+hit_fraction_monster	= 0.15   ;0.104
