@@ -791,16 +791,24 @@ bool CUIActorMenu::OnItemDropped(PIItem itm, CUIDragDropListEx* new_owner, CUIDr
 // An addon dropped on a weapon that already carries one of its kind takes that one's place: the
 // attached addon goes back to the bag and the dragged one goes on. Only scopes come in more than one
 // kind per weapon (the GS scope list); a silencer or a launcher has a single section per weapon, so
-// the one on the gun is the same item and there is nothing to swap.
-bool CUIActorMenu::ReplaceAddon(PIItem weapon, PIItem addon)
+// the one on the gun is the same item and there is nothing to swap. Offered by a drop on the weapon
+// and by the addon's context menu ("attach to <weapon>").
+bool CUIActorMenu::CanReplaceAddon(PIItem weapon, PIItem addon)
 {
 	CWeapon*	wpn		= smart_cast<CWeapon*>(weapon);
-	if (!wpn || !smart_cast<CScope*>(addon) || !wpn->IsScopeAttached())	return false;
+	if (!wpn || !addon || !smart_cast<CScope*>(addon) || !wpn->IsScopeAttached())	return false;
 
 	shared_str	sect	= addon->object().cNameSect();
 	shared_str	current	= wpn->GetAttachedScopeName();
-	if (current == sect || !wpn->IsScopeItem(sect.c_str()) || !wpn->CanDetach(current.c_str()))
-		return false;
+	return current != sect && wpn->IsScopeItem(sect.c_str()) && wpn->CanDetach(current.c_str());
+}
+
+bool CUIActorMenu::ReplaceAddon(PIItem weapon, PIItem addon)
+{
+	if (!CanReplaceAddon(weapon, addon))	return false;
+
+	CWeapon*	wpn		= smart_cast<CWeapon*>(weapon);
+	shared_str	current	= wpn->GetAttachedScopeName();
 
 	// the same two steps the context menu's detach and a plain drop's attach take, in that order
 	if (OnClient())
@@ -980,7 +988,7 @@ void CUIActorMenu::PropertiesBoxForAddon( PIItem item, bool& b_show )
 	for ( u32 i = 0; i < 2; ++i )
 	{
 		PIItem tgt = inv->m_slots[wpn_slots[i]].m_pIItem;
-		if ( tgt && tgt->CanAttach(item) )
+		if ( tgt && (tgt->CanAttach(item) || CanReplaceAddon(tgt, item)) )	// a scope also replaces another one
 		{
 			string256 buf;
 			strconcat( sizeof(buf), buf, *CStringTable().translate(prefix), " ", tgt->NameItem() );
@@ -1088,7 +1096,11 @@ void CUIActorMenu::ProcessPropertiesBoxClicked( CUIWindow* w, void* d )
 			CUIDragDropListEx* const src_list = cell_item->OwnerList();
 			const bool foreign = (src_list && src_list == m_pDeadBodyBagList);
 
-			AttachAddon( (PIItem)(m_UIPropertiesBox->GetClickedItem()->GetData()) );
+			PIItem const target = (PIItem)(m_UIPropertiesBox->GetClickedItem()->GetData());
+			if ( target->CanAttach(CurrentIItem()) )
+				AttachAddon	( target );
+			else
+				ReplaceAddon( target, CurrentIItem() );	// the weapon has another scope on: swap it
 
 			if ( foreign )
 			{
