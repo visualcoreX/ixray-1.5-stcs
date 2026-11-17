@@ -1,0 +1,92 @@
+#include "common.h"
+#include "collim.h"
+
+// models_zoom*.s l_special pass 4 (r_dsgraph_render_lens_hdr): the lens-off prism mode's glass laid into the HDR
+// half of the frame ($user$generic1, what the bloom is built from), as the lens laid it into the LDR half. The cut
+// leaves the world under the glass at the camera's share of the power; the lens then zooms it by the eyepiece's,
+// bends its rim and ripples it -- but only in the picture. The bloom went on glowing the world as the cut left it:
+// in a dark room, looking out, the bright street's unmagnified glow came through at the rim of the glass where the
+// lens showed the dark frame of the window. Here the HDR under the glass is resampled exactly as the lens samples
+// the picture (model_scope_lense.ps), from a copy taken just before ($user$scopehdr, CRenderTarget::phase_scope_hdr).
+// Only at full aim on a frame with the cut: during the fade the frames with the cut measure nothing (no bloom), and
+// the ones without it have the tube under a see-through lens, as the 3D lens has.
+
+uniform	float4		m_hud_params;		// x = the eyepiece's share of the power, z = aberration, y / w = the lens's fade
+uniform	float4		m_scope_prism;		// w = 1: the lens-off prism mode, on a frame with the cut
+uniform	float4		m_scope_shadow;		// eye relief (model_scope_lense.ps)
+uniform	float4		screen_res;
+
+// kept in step with model_scope_lense.ps
+#define LENS_REST_RIM 0.875f
+#define LENS_GLASS_R  0.44f
+#include "scope_field.h"
+#define LENS_DIST_R0  0.45f
+
+float2 lens_warp_uv(float2 uv, float2 glass)
+{
+	if (m_scope_shadow.w <= 0.0001f)	return uv;
+	float r = length(glass - 0.5f) / LENS_GLASS_R;
+	float t = saturate((r - LENS_DIST_R0) / (1.0f - LENS_DIST_R0));
+	float k = 1.0f - m_scope_shadow.w * t * t;
+	return 0.5f + (uv - 0.5f) * k;
+}
+
+float lens_scope_shadow(float2 uv, float drift)
+{
+	if (m_scope_shadow.z <= 0.0f)		return 1.0f;
+	float  soft	= max(m_scope_shadow.z, 0.01f);
+	float2 pupil= 0.5f + m_scope_shadow.xy * drift * LENS_GLASS_R;
+	float  rad	= LENS_GLASS_R * LENS_REST_RIM / (1.0f - soft);
+	float  d	= length(uv - pupil) / rad;
+	return 1.0f - smoothstep(1.0f - soft, 1.0f, d);
+}
+
+Texture2D	s_scope_hdr;		// $user$generic1 as the world left it, before this pass
+
+struct 	v2p_eye
+{
+	float2	tc0:		TEXCOORD0;
+	float4	c0:			COLOR0;
+	float3	pos_v:		TEXCOORD1;	// view space (model_scope_eye.vs)
+	float3	axis_v:		TEXCOORD2;
+	float4	hpos:		SV_Position;
+};
+
+float4 main( v2p_eye I ) : SV_Target
+{
+	float2 uv_glass		= I.tc0.xy;
+	const float field	= lens_field_stop(I.pos_v, I.axis_v, uv_glass);	// first: it takes derivatives
+	const float a		= saturate(min(m_hud_params.y, m_hud_params.w));
+	clip( (m_scope_prism.w > 0.5f && m_scope_prism.w < 1.5f && a >= 0.999f) ? 1.0f : -1.0f );
+	const float cover	= collim_late_cover_z(I.pos_v.z, I.hpos.xy);		// MSAA: the depth test no depth is bound for
+	clip( cover - 0.001f );
+
+	// the reticle and the ocular's ring: the lens lays its art over the world by the art's alpha. The art is unlit and
+	// has no HDR of its own (nothing of the lens reached this target before either), so it only takes the world away.
+	const float art		= s_base.Sample(smp_base, uv_glass).a;
+
+	// where the lens samples the frame (model_scope_lense.ps, the prism branch)
+	float2 tc	= 0.5f + (I.hpos.xy / screen_res.xy - 0.5f) / max(m_hud_params.x, 1.0f);
+	tc			+= lens_prism_distort(tc);
+	tc			= lens_warp_uv(tc, uv_glass);
+
+	// ...and its aberration, channel by channel (the purple fringe is the picture's own touch, left out)
+	float	dist	= distance(tc, float2(0.5f, 0.5f));
+	float2	offset	= dist * m_hud_params.z * 0.5f;
+	float2	blur	= offset * 0.5f;
+	float4	c		= s_scope_hdr.SampleLevel(smp_rtlinear, tc, 0);
+	c.r	= ( s_scope_hdr.SampleLevel(smp_rtlinear, tc + offset - blur, 0).r
+		  + s_scope_hdr.SampleLevel(smp_rtlinear, tc + offset, 0).r
+		  + s_scope_hdr.SampleLevel(smp_rtlinear, tc + offset + blur, 0).r ) / 3.0f;
+	c.g	= ( s_scope_hdr.SampleLevel(smp_rtlinear, tc - blur, 0).g
+		  + c.g
+		  + s_scope_hdr.SampleLevel(smp_rtlinear, tc + blur, 0).g ) / 3.0f;
+	c.b	= ( s_scope_hdr.SampleLevel(smp_rtlinear, tc - offset - blur, 0).b
+		  + s_scope_hdr.SampleLevel(smp_rtlinear, tc - offset, 0).b
+		  + s_scope_hdr.SampleLevel(smp_rtlinear, tc - offset + blur, 0).b ) / 3.0f;
+
+	c.rgb	*= (1.0f - art) * lens_scope_shadow(uv_glass, 1.0f) * field;
+	// premultiplied by the share of the pixel the glass covers (MSAA: the rim's antialiased edge), as the late pass.
+	// (The target's alpha -- the sky blend -- is not read past here: the bloom takes rgb.)
+	return	float4(c.rgb * cover, cover);
+}

@@ -64,4 +64,16 @@ function l_special	(shader, t_base, t_second, t_detail)
 			: aref		(false,0)
 			: color_write_enable	(true, true, true, true)	-- DX9: never trust what an earlier pass's block left
 			: stencil	(false, cmp_func.always, 255, 255, stencil_op.keep, stencil_op.keep, stencil_op.keep)
+	-- pass 4: the glass laid into the HDR half of the frame, as the lens lays it into the picture, so the bloom glows
+	-- what the lens shows (r_dsgraph_render_lens_hdr, model_scope_hdr.ps)
+	shader:begin	("model_scope_eye","model_scope_hdr")
+			: fog		(false)
+			: zb		(true,false)
+			: blend		(false,blend.one,blend.zero)
+			: aref		(false,0)
+			: color_write_enable	(true, true, true, true)	-- DX9: never trust what an earlier pass's block left
+			: stencil	(false, cmp_func.always, 255, 255, stencil_op.keep, stencil_op.keep, stencil_op.keep)
+	shader:sampler	("s_base")		:texture	(t_base)
+	shader:sampler	("s_scope_hdr")	:texture	("$user$scopehdr")	: clamp() : f_linear ()	-- the HDR half as the world left it (CRenderTarget::phase_scope_hdr)
+	shader:sampler	("s_scope_distort")	:texture	("$user$scopedistort")
 end
