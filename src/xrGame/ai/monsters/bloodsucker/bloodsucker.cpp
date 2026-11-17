@@ -909,6 +909,16 @@ bool CAI_Bloodsucker::in_solid_state ()
 
 void CAI_Bloodsucker::Hit(SHit* pHDS)
 {
+	// A scene that drives its visibility itself (set_vis_state, a drag jump) is never hurt: the
+	// bloodsucker sr_bloodsucker sends at a squad (agr_bloodsucker_attack_duty) has to reach its
+	// victim and carry it off. Stock CS got this from every bloodsucker spawning invisible, and the
+	// scene's, captured by the script, never leaving that; with the visibility stages it was open
+	// to fire.
+	if ( m_vis_state != 0 )
+	{
+		return;
+	}
+
 	float hit_power_factor = 1.f;
 	if ( state_invisible )
 	{
