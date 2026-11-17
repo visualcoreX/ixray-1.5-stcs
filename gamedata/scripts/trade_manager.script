@@ -41,6 +41,18 @@ function trade_init(npc, cfg)
 	if str ~= nil then
 		trade_manager[npc:id()].buy_item_condition_factor = xr_logic.parse_condlist(npc, "trade_manager", "buy_item_condition_factor", str)
 	end
+
+	-- restock_supplies: items topped up to a set count without touching the rest of the
+	-- inventory, unlike buy_supplies, which destroys everything the NPC carries first.
+	-- Lets a trader whose stock comes from his profile's <supplies> (one-off goods)
+	-- still carry a few renewable lines. Section lines are "item_section = count".
+	str = utils.cfg_get_string(trade_manager[npc:id()].config, "trader", "restock_supplies", npc, false, "")
+	if str ~= nil then
+		trade_manager[npc:id()].restock_supplies = xr_logic.parse_condlist(npc, "trade_manager", "restock_supplies", str)
+		-- Right after going online the NPC's inventory items may not be attached yet;
+		-- counting them then would spawn duplicates, so hold the top-up for a moment.
+		trade_manager[npc:id()].restock_time = time_global() + 2000
+	end
 end
 
 
@@ -51,6 +63,55 @@ function update(npc)
 		return
 	end
 
+	update_trade(npc, tt)
+	update_restock(npc, tt)
+end
+
+
+-- Spawns item_section into npc's inventory until it holds count of them.
+local function restock(npc, ini, section)
+	if not ini:section_exist(section) then
+		abort("Cannot find restock_supplies section [%s] for npc [%s]", section, npc:name())
+	end
+
+	local have = {}
+	npc:iterate_inventory(function(owner, item)
+		local sect = item:section()
+		have[sect] = (have[sect] or 0) + 1
+	end, npc)
+
+	for i = 0, ini:line_count(section) - 1 do
+		local _, item_section, value = ini:r_line(section, i, "", "")
+		local count = tonumber(value)
+		if count == nil then
+			abort("Invalid count [%s] for [%s] in restock_supplies section [%s]", tostring(value), item_section, section)
+		end
+		for j = (have[item_section] or 0) + 1, count do
+			alife():create(item_section, npc:position(), npc:level_vertex_id(), npc:game_vertex_id(), npc:id())
+		end
+	end
+end
+
+
+-- Tops the stock up whenever the trade is (re)initialised -- a save loaded, the NPC
+-- going online, his logic reconfigured -- or the condlist picks another section,
+-- which is when buy_supplies traders get their stock renewed too.
+function update_restock(npc, tt)
+	if tt.restock_supplies == nil or time_global() < tt.restock_time then
+		return
+	end
+
+	local str = xr_logic.pick_section_from_condlist(db.actor, npc, tt.restock_supplies)
+	if str == nil or str == "" or str == "nil" or tt.current_restock_supplies == str then
+		return
+	end
+
+	restock(npc, tt.config, str)
+	tt.current_restock_supplies = str
+end
+
+
+function update_trade(npc, tt)
 	if tt.update_time ~= nil and tt.update_time < time_global() then
 		return
 	end
@@ -99,6 +160,9 @@ function update(npc)
 		--'printf("TRADE [%s]: buy_supplies = %s", npc:name(), str)
 		npc:buy_supplies(tt.config, str)
 		tt.current_buy_supplies = str
+		-- buy_supplies wiped the inventory; top it up again once the destroyed items are gone
+		tt.current_restock_supplies = nil
+		tt.restock_time = time_global() + 2000
 		tt.resuply_time = time_global() + 24*3600000
 	end
 end
