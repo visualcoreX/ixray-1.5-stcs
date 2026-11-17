@@ -384,6 +384,7 @@ public:
 	void						phase_luminance			();
 	void						phase_combine			();
 	void						phase_combine_volumetric();
+	void						phase_combine_volumetric_early();	// the lens-off prism mode: before the lens's world copy
 	void						phase_pp				();
 
 	virtual void				set_blur				(float	f)		{ param_blur=f;						}

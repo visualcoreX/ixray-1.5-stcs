@@ -597,6 +597,9 @@ void CRender::render_forward				()
 		// ones without hand the finished look through the glass to the next one (CaptureScopeHudLayer)
 		extern bool g_scope_prism_cut;
 		const bool scope_prism = g_pGamePersistent && g_pGamePersistent->hud_collim_prism.x > 170.5f;
+		// ...with the sun's volumetric shafts already in it, at the world's own angle of view (phase_combine_volumetric_early)
+		if (scope_prism)
+			Target->phase_combine_volumetric_early	();
 		if (scope_prism && g_scope_prism_cut)
 			CaptureScopePrism					();
 		r_dsgraph_render_sorted_hud				()	;

@@ -763,3 +763,22 @@ void CRenderTarget::phase_combine_volumetric()
 	}
 	RCache.set_ColorWriteEnable();
 }
+
+// The lens-off prism mode: the sun's volumetric shafts go into the world BEFORE the copy the optic's lens magnifies
+// (render_forward, CaptureScopePrism), instead of over the finished frame. Laid over it afterwards they were at the
+// world's angle of view while the lens showed that world magnified about the centre: through the glass the shafts fell
+// at another angle than the world they lit (user). Done here, the later call in phase_combine is skipped, and the
+// forward pass gets its target and states back. They go into the HDR half too, which phase_scope_hdr then resamples
+// under the glass with the rest of the world, so the bloom of the shafts is magnified with them. As r2.
+void CRenderTarget::phase_combine_volumetric_early()
+{
+	if (!m_bHasActiveVolumetric)	return;
+	phase_combine_volumetric		();
+	m_bHasActiveVolumetric			= false;
+	if (!RImplementation.o.dx10_msaa)	u_setrt(rt_Generic_0, 0, 0, HW.pBaseZB);		// LDR RT, as render_forward's phase has it
+	else								u_setrt(rt_Generic_0, 0, 0, rt_MSAADepth->pZRT);
+	RImplementation.rmNormal		();		// full-screen viewport + the lens scissor, if any (as laser_dens_end)
+	RCache.set_CullMode				(CULL_CCW);
+	RCache.set_Stencil				(FALSE);
+	RCache.set_ColorWriteEnable		();
+}
