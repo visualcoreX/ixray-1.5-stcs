@@ -268,6 +268,8 @@ CActor::CActor() : CEntityAlive()
 	m_death_eyes_time		= 1.5f;
 	m_death_eyes_width		= 1.2f;
 	m_death_eyes_feather	= 0.03f;
+	m_death_game_over_pending = false;
+	m_death_game_over_hold	= 0.f;
 	m_death_cam_dir_local.set(0.f,0.f,1.f);
 	m_death_cam_up_local.set(0.f,1.f,0.f);
 	m_death_cam_dir.set		(0.f,0.f,1.f);
@@ -515,6 +517,7 @@ void CActor::Load	(LPCSTR section )
 	m_death_eyes_time			= READ_IF_EXISTS(pSettings, r_float, section, "death_eyes_time", 1.5f);
 	m_death_eyes_width			= READ_IF_EXISTS(pSettings, r_float, section, "death_eyes_width", 1.2f);
 	m_death_eyes_feather		= READ_IF_EXISTS(pSettings, r_float, section, "death_eyes_feather", 0.03f);
+	m_death_game_over_hold		= READ_IF_EXISTS(pSettings, r_float, section, "death_game_over_delay", 0.f);
 	m_death_cam_hide_head		= !!READ_IF_EXISTS(pSettings, r_bool,  section, "death_cam_hide_head", TRUE);
 	character_physics_support()->movement()->SetJumpUpVelocity(m_fJumpSpeed);
 	float AirControlParam		= pSettings->r_float(section,"air_control_param"	);
@@ -1070,7 +1073,12 @@ void CActor::Die	(CObject* who)
 
 	if(IsGameTypeSingle())
 	{
-		start_tutorial		("game_over");
+		// A first-person death closes the eyes first: the "game over" screen comes up only once the
+		// screen has gone black (death_cam_UpdateGameOver)
+		if (m_death_eyes_enabled && m_death_cam_valid && Level().CurrentEntity() == this)
+			m_death_game_over_pending = true;
+		else
+			start_tutorial	("game_over");
 	}
 	xr_delete				(m_sndShockEffector);
 }
@@ -1414,6 +1422,7 @@ static float reticle_sensor_glow(IRender_ObjectSpecific* ros, const Fvector& ill
 
 void CActor::UpdateCL	()
 {
+	death_cam_UpdateGameOver		();
 	UpdateInventoryOwner			(Device.dwTimeDelta);
 	UpdateWeaponLowered				();
 	if (Level().CurrentControlEntity() == this)

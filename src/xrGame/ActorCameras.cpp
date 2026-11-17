@@ -372,6 +372,20 @@ static IC void dc_lid_quad(float x0, float x1, float t0, float t1, float b0, flo
 	UIRender->PushPoint(x1, t1, 0.f, ct, 0.f, 0.f);
 }
 
+// The "game over" tutorial held back by Die() starts once the lids have fully met and the screen has
+// then stayed black for death_game_over_delay. It is started here in the update, not from the
+// eyelids' draw, so it does not open a window in the middle of the UI pass.
+void CActor::death_cam_UpdateGameOver()
+{
+	if (!m_death_game_over_pending)	return;
+	const float closed		= _max(m_death_eyes_delay, 0.f) + _max(m_death_eyes_time, 0.f);
+	if (float(Device.dwTimeGlobal - m_death_time) < 1000.f * (closed + _max(m_death_game_over_hold, 0.f)))	return;
+
+	m_death_game_over_pending = false;
+	void start_tutorial		(LPCSTR name);
+	start_tutorial			("game_over");
+}
+
 void CActor::death_cam_RenderEyelids()
 {
 	if (!m_death_eyes_enabled || g_Alive() || !m_death_cam_valid)	return;

@@ -421,6 +421,9 @@ protected:
 	float					m_death_eyes_width;		// [actor] death_eyes_width, the opening's half width / half the screen's
 	float					m_death_eyes_feather;	// [actor] death_eyes_feather, soft edge, share of screen height
 	ui_shader				m_death_eyes_shader;
+	bool					m_death_game_over_pending;	// "game over" waits until the lids have met...
+	float					m_death_game_over_hold;		// [actor] death_game_over_delay, ...and this many s more on black
+	void					death_cam_UpdateGameOver	();	// UpdateCL
 public:
 	void					death_cam_RenderEyelids	();	// CHUDManager::RenderUI
 protected:
