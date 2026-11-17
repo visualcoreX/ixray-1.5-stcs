@@ -332,6 +332,7 @@ void CBulletManager::DynamicObjectHit	(CBulletManager::_event& E)
 		Hit.weaponID		= E.bullet.weapon_id;
 		Hit.BulletID		= E.bullet.m_dwID;
 		Hit.armor_frac		= E.bullet.armor_frac;
+		Hit.skin_frac		= E.bullet.skin_frac;
 
 		NET_Packet			np;
 		Hit.Write_Packet	(np);

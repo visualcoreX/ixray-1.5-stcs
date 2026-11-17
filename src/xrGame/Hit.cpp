@@ -24,6 +24,7 @@ SHit::SHit(float powerA, float power_criticalA, Fvector &dirA, CObject *whoA, u1
 		hit_type				= hit_typeA								;
 		armor_piercing			= armor_piercingA						;
 		armor_frac				= 1.0f									;
+		skin_frac				= 1.0f									;
 		PACKET_TYPE				= 0										;
 		BulletID				= 0										;
 		SenderID				= 0										;
@@ -57,6 +58,7 @@ void SHit::invalidate()
 
 	armor_piercing			= 0.0f;
 	armor_frac				= 1.0f;
+	skin_frac				= 1.0f;
 	BulletID				= 0;
 	SenderID				= 0;
 	aim_bullet				= false									;
@@ -106,7 +108,10 @@ void SHit::Read_Packet_Cont		(NET_Packet	Packet)
 	{
 		Packet.r_float	(armor_piercing);
 		if (IsGameTypeSingle())
+		{
 			Packet.r_float	(armor_frac);
+			Packet.r_float	(skin_frac);
+		}
 	}
 	if (PACKET_TYPE == GE_HIT_STATISTIC)
 	{
@@ -132,7 +137,10 @@ void SHit::Write_Packet_Cont		(NET_Packet	&Packet)
 	{
 		Packet.w_float	(armor_piercing);
 		if (IsGameTypeSingle())
+		{
 			Packet.w_float	(armor_frac);
+			Packet.w_float	(skin_frac);
+		}
 	}
 	if (PACKET_TYPE == GE_HIT_STATISTIC)
 	{

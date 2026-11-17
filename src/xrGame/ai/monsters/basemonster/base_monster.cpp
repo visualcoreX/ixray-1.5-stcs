@@ -306,6 +306,11 @@ void	CBaseMonster::Hit							(SHit* pHDS)
 		float	hit_power	= HDS.power;
 		float	ap			= HDS.armor_piercing;
 
+		// The round's k_skin_frac scales the skin's hit_fraction both ways: the share of a stopped
+		// round, and the floor of a piercing one. That floor is in health, not a share of the hit
+		// (as in CS's stalker armour), so it is all a weak piercing hit -- a pellet -- comes to.
+		hit_fraction		*= HDS.skin_frac;
+
 		if (ap > EPS && ap > skin_armor)
 		{
 			hit_power		*= (ap - skin_armor) / ap;

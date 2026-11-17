@@ -7,6 +7,7 @@ struct SCartridgeParam
 {
 	float	kDist, kDisp, kHit, kCritical, kImpulse, kAP, kAirRes;
 	float	kArmorFrac;		// k_armor_frac: scales the hit_fraction of armour that stops this round (stalkers, actor outfit)
+	float	kSkinFrac;		// k_skin_frac: scales a mutant's skin hit_fraction_monster against this round
 	int		buckShot;
 	float	impair;
 	float	fWallmarkSize;
@@ -19,6 +20,7 @@ struct SCartridgeParam
 		kAP       = 0.0f;
 		kAirRes   = 0.0f;
 		kArmorFrac= 1.0f;
+		kSkinFrac = 1.0f;
 		buckShot  = 1;
 		impair    = 1.0f;
 		fWallmarkSize = 0.0f;
