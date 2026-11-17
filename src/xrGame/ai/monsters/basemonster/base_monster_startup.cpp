@@ -73,6 +73,7 @@ void CBaseMonster::Load(LPCSTR section)
 	// hit_fraction_monster; absent section = no armour, i.e. stock Clear Sky behaviour.
 	m_skin_armor					= 0.0f;
 	m_hit_fraction_monster			= 1.0f;
+	m_hit_power_factor				= 1.0f;
 	if (pSettings->line_exist(section,"protections_sect")) {
 		LPCSTR prot_sect			= pSettings->r_string(section,"protections_sect");
 		m_skin_armor				= READ_IF_EXISTS(pSettings, r_float, prot_sect, "skin_armor", 0.0f);

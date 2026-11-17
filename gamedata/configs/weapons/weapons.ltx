@@ -1015,6 +1015,7 @@ k_impulse		= 0.5
 k_pierce		= 0.0
 k_ap			= 0.05	;0.05	; orig 0.0 (GS)
 k_armor_frac	= 0.35	; armour that stops a pellet (ap <= bone armour, stalkers and the actor's outfit) lets through only 0.35 of its hit_fraction. Point blank, Winchester (1.0), all 15 pellets in an NPC torso: exo (0.6/0.25) 1.89 -> 0.66 (two shots), heavy (0.6/0.4) 3.02 -> 1.06, suits (0.1/0.6) 4.54 -> 1.59, the 0.05 bandit jacket (it stops a 0.05 pellet) 5.29 -> 1.85. Armour 0 and monster skin are untouched
+k_skin_frac		= 1.0	; scales a mutant's skin hit_fraction_monster against this round: what a stopped round keeps, and the least a piercing one deals
 impair			= 1
 buck_shot		= 15	;13	; orig 15 (GS)
 tracer			= off
@@ -1054,6 +1055,7 @@ k_impulse		= 1
 k_pierce		= 0.3
 k_ap			= 0.4	; orig 0.96 (GS)
 k_armor_frac	= 0.9
+k_skin_frac		= 1.0	; scales a mutant's skin hit_fraction_monster against this round: what a stopped round keeps, and the least a piercing one deals
 impair			= 1
 buck_shot		= 1
 tracer			= on

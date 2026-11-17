@@ -1,6 +1,8 @@
 [logic]
 active = mob_home
 
+; Waits for the scientists, hidden, braindead and blind to combat. Their squad spawns some 24 m
+; off and walks straight through its zone on the way to agr_smart_terrain_1_2.
 [mob_home]
 path_home = agr_scientists_bloodsucker_home
 home_min_radius = 10
@@ -10,12 +12,24 @@ state = invis
 combat_ignore_cond = true
 combat_ignore_keep_when_attacked = true
 braindead = true
-on_info = {=squad_in_zone(agr_smart_terrain_1_3_scientists_squad:agr_scientists_bloodsucker)} mob_home@2
+on_info = {=squad_in_zone(agr_smart_terrain_1_3_scientists_squad:agr_scientists_bloodsucker)} mob_home@hunt
 ; The ambush is also sprung by whoever finds it first: the actor walking into it, or anyone's
 ; hit. Braindead and blind to combat, it otherwise stood its ground under fire until the
 ; scientists came, and for good if they never did.
-on_info2 = {=dist_to_actor_le(5)} mob_home@2, {=health_le(1)} mob_home@2
+on_info2 = {=dist_to_actor_le(5)} mob_home@hunt, {=health_le(1)} mob_home@hunt
 
+; Goes for them still hidden by the script: not drawn at all, and taking invisible_hit_factor of
+; the damage. Revealed in the open, out of the scripted invisibility, at arm's length from its
+; enemy, the scientists' or the actor.
+[mob_home@hunt]
+path_home = agr_scientists_bloodsucker_home
+home_min_radius = 10
+home_max_radius = 30
+aggressive = true
+state = invis
+on_info = {=enemy_dist_le(4)} mob_home@2
+
+; In the open: its own invisibility stages by the distance to its enemy from now on.
 [mob_home@2]
 path_home = agr_scientists_bloodsucker_home
 home_min_radius = 10

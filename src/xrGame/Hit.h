@@ -44,6 +44,10 @@ IC	ALife::EHitType		type					()		const	{VERIFY(is_valide());return hit_type;}
 	// actor's outfit applies when it stops the round (ap <= armour). Monster skin ignores it.
 	// Bullet hits only; on the wire in single player after armor_piercing.
 	float				armor_frac;
+	// Ammo's k_skin_frac (1 = stock): multiplies a mutant's skin hit_fraction_monster against the
+	// round, both the share a stopped round keeps and the least a piercing one deals (see
+	// CBaseMonster::Hit). Bullet hits only; on the wire in single player after armor_frac.
+	float				skin_frac;
 	bool				add_wound;
 	bool				aim_bullet;
 	//---------------------------------------------------

@@ -59,6 +59,7 @@ struct SBullet
 	float			max_dist			;			// maxdist*cartridge
 	float			armor_piercing		;			// ap
 	float			armor_frac			;			// k_armor_frac of the cartridge
+	float			skin_frac			;			// k_skin_frac of the cartridge
 	float			wallmark_size		;
 	//-------------------------------------------------------------------
 	u8				m_u8ColorID			;

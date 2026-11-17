@@ -453,6 +453,12 @@ IC	void					wake_up				(){m_bSleep = false;}
 	float					m_skin_armor;
 	float					m_hit_fraction_monster;
 
+	// Share of the hit being taken that reaches its health, applied AFTER the skin armour: set by
+	// a derived Hit around its call to CBaseMonster::Hit (the bloodsucker's invisible_hit_factor),
+	// 1 otherwise. Scaling the hit before the armour does not hold: the armour raises a piercing
+	// bullet to at least hit_fraction_monster in health, however little was left of it.
+	float					m_hit_power_factor;
+
 	// Per-bone skin armour from the same protections_sect: any line named after a bone,
 	// "bone = armor[, hit_fraction]", overrides the two values above for hits on that bone
 	// (hit_fraction defaults to hit_fraction_monster). Resolved in reload(), once the visual is

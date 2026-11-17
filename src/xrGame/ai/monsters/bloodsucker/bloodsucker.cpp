@@ -909,6 +909,7 @@ bool CAI_Bloodsucker::in_solid_state ()
 
 void CAI_Bloodsucker::Hit(SHit* pHDS)
 {
+	float hit_power_factor = 1.f;
 	if ( state_invisible )
 	{
 		const bool scripted = invisibility_scripted();
@@ -918,13 +919,15 @@ void CAI_Bloodsucker::Hit(SHit* pHDS)
 		}
 
 		// Hard to hit square while it shimmers or is gone: only invisible_hit_factor of the damage
-		// gets through. The impulse and the critical-wound power are left as they are, so it still
-		// flinches and staggers from a hit.
-		pHDS->power *= m_invisible_hit_factor;
+		// gets through, counted after its skin armour (see m_hit_power_factor). The impulse and the
+		// critical-wound power are left as they are, so it still flinches and staggers from a hit.
+		hit_power_factor = m_invisible_hit_factor;
 	}
 	if ( !collision_hit_off )
 	{
+		m_hit_power_factor = hit_power_factor;
 		inherited::Hit(pHDS);
+		m_hit_power_factor = 1.f;
 	}
 }
 
