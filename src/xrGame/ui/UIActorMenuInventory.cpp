@@ -778,12 +778,42 @@ bool CUIActorMenu::OnItemDropped(PIItem itm, CUIDragDropListEx* new_owner, CUIDr
 	PIItem _iitem	= _citem ? (PIItem)_citem->m_pData : NULL;
 
 	if(!_iitem)						return	false;
-	if(!_iitem->CanAttach(itm))		return	false;
-	
 	if(old_owner != m_pInventoryBagList)	return	false;
-	
+
+	if(!_iitem->CanAttach(itm))
+		return						ReplaceAddon(_iitem, itm);
+
 	AttachAddon						(_iitem);
 
+	return							true;
+}
+
+// An addon dropped on a weapon that already carries one of its kind takes that one's place: the
+// attached addon goes back to the bag and the dragged one goes on. Only scopes come in more than one
+// kind per weapon (the GS scope list); a silencer or a launcher has a single section per weapon, so
+// the one on the gun is the same item and there is nothing to swap.
+bool CUIActorMenu::ReplaceAddon(PIItem weapon, PIItem addon)
+{
+	CWeapon*	wpn		= smart_cast<CWeapon*>(weapon);
+	if (!wpn || !smart_cast<CScope*>(addon) || !wpn->IsScopeAttached())	return false;
+
+	shared_str	sect	= addon->object().cNameSect();
+	shared_str	current	= wpn->GetAttachedScopeName();
+	if (current == sect || !wpn->IsScopeItem(sect.c_str()) || !wpn->CanDetach(current.c_str()))
+		return false;
+
+	// the same two steps the context menu's detach and a plain drop's attach take, in that order
+	if (OnClient())
+	{
+		NET_Packet	P;
+		CGameObject::u_EventGen		(P, GE_ADDON_DETACH, wpn->ID());
+		P.w_stringZ					(current.c_str());
+		CGameObject::u_EventSend	(P);
+	}
+	wpn->Detach						(current.c_str(), true);
+
+	if (!weapon->CanAttach(addon))	return false;
+	AttachAddon						(weapon);	// plays the attach sound
 	return							true;
 }
 
