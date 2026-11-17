@@ -131,6 +131,37 @@ attack_effector     = m_bloodsucker_attack_effector
 vampire_effector    = m_bloodsucker_vampire_effector
 
 Melee_Rotation_Factor = 2.0
+; What reaches the actor of its blows, AFTER his suit has taken its part (the suit subtracts its
+; wound protection from the blow, so cutting hit_power instead would cut a suited actor's loss by
+; far more than 10%).
+actor_hit_damage_factor = 0.9
+
+; Attack on the move (Call of Pripyat): it strikes running instead of stopping to claw. CoP's
+; bloodsucker has its own left/right run strikes; the CS model has not, so both sides play the
+; CS run attack (stand_attack_run_0, the lunge), as the boar does.
+aom_enabled                 = 1
+aom_animation_left          = stand_attack_run_
+aom_animation_right         = stand_attack_run_
+aom_far_radius              = 10
+aom_max_go_close_time       = 8
+aom_prepare_time            = 5
+aom_attack_radius           = 0.6
+aom_update_side_period      = 4
+aom_prediction_factor       = 1.2
+; Its run strike connects some 0.4 s and 2 m into the swing, out to the strike's own test distance
+; (3 m below): started from CoP's full reach it struck at the air. It also strikes while circling
+; round for the next pass, so walking up to it is met with one. Within melee reach it claws in a
+; series instead.
+aom_allowed_dist_factor     = 0.8
+aom_attack_while_prepare    = 1
+; Strikes on the run from as close as this. CoP's own bound (2.8 m at a run) left a gap down to
+; melee reach (2.3 m, shrinking to 1.7 after misses) where it had neither a strike nor its claws,
+; and just ran round the actor.
+aom_min_attack_dist         = 0.75
+; It passes the actor aom_attack_radius to his side and strikes only with him within
+; aom_attack_angle of its heading: at CoP's 1 m and 30 degrees nothing nearer than 2 m qualified,
+; and its strike reaches 69 degrees to either side anyway.
+aom_attack_angle            = 45
 ; berserk_always = true forbids the grab (the vampire attack), and nothing else reads it: stock
 ; CS set it to switch the grab off. Call of Pripyat does not set it.
 berserk_always		  = false
@@ -317,8 +348,9 @@ invisible_hit_factor         = 1.0
 ; - enough blows have landed on him since its last grab: Vampire_Sufficient_Hits_<difficulty>
 ;   = min, max (where in the range is drawn anew after each grab; a difficulty without its own
 ;   key takes Vampire_Sufficient_Hits..Vampire_Sufficient_Hits_Max), OR
-; - it is wounded: health under Vampire_Wounded_Health of its max (1 = any wound, 0 = off),
-;   and its OWN last grab ended at least Vampire_Wounded_Delay ms ago.
+; - it is wounded: health under Vampire_Wounded_Health of its max (1 = any wound, 0 = off)
+;   for at least Vampire_Wounded_First_Delay ms, and its OWN last grab ended at least
+;   Vampire_Wounded_Delay ms ago.
 ; It holds him at once (no hud, weapon put away), closes to Vampire_Distance -- or as near as its
 ; body lets it, within Vampire_Hold_Distance -- and drinks; the blood heals it by
 ; Vampire_GainHealth. Not that close after Vampire_Approach_Time ms, the grab fails; pushed
@@ -333,12 +365,10 @@ Vampire_Hold_Distance = 1.7
 Vampire_Approach_Time = 1500
 Vampire_Sufficient_Hits     = 3
 Vampire_Sufficient_Hits_Max = 4
-Vampire_Sufficient_Hits_novice  = 3, 4
-Vampire_Sufficient_Hits_stalker = 3
-Vampire_Sufficient_Hits_veteran = 2, 3
-Vampire_Sufficient_Hits_master  = 1, 2
+; per difficulty, if wanted: Vampire_Sufficient_Hits_<novice|stalker|veteran|master> = min, max
 Vampire_Wounded_Health      = 1.0
-Vampire_Wounded_Delay       = 15000
+Vampire_Wounded_Delay       = 5000
+Vampire_Wounded_First_Delay = 5000
 
 ;--- OUTDATED :: REMOVE THIS PARAM ---------------
 Vampire_Reach_Time    = 15000
@@ -481,8 +511,11 @@ vampire_2   =     	  0.60,   0.5,       50,        0.0, 2.5, 4.50,    -1.2, 1.2,
 stand_attack_run_0 =  bloodsucker_run_attack_sect
 
 [bloodsucker_run_attack_sect]
-value1      = 0.20,   0.2,        55,        0.0, 2.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         4.5
-value2      = 0.60,   0.4,        55,        0.0, 2.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         4.5
+; impulse: the run strike throws the actor back (was 55)
+; hit_power as the claws' (was 0.2/0.4): the suit subtracts its wound protection (0.12-0.4)
+; from a blow, and next to nothing was left of these
+value1      = 0.20,   0.4,        600,       0.0, 2.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         3.0
+value2      = 0.60,   0.5,        700,       0.0, 2.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         3.0
 
 ;===========================================================================
 ; Immunities
@@ -629,8 +662,11 @@ vampire_2   =     	  0.60,   0.7,      50,        0.0, 2.5, 4.50,     -1.2, 1.2,
 stand_attack_run_0 =  bloodsucker_normal_run_attack_sect
 
 [bloodsucker_normal_run_attack_sect]
-value1      = 0.20,   0.2,        25,        0.0, 0.5, 3.00,     -1.2, 1.2, -1.2, 1.2,         2.2
-value2      = 0.60,   0.4,        30,        0.0, 0.5, 3.00,     -1.2, 1.2, -1.2, 1.2,         2.2
+; impulse: the run strike throws the actor back (was 25/30); test distance 3 (was 2.2: the
+; strike, started on the run, connected out of reach)
+; hit_power as the claws' (was 0.2/0.4), see above
+value1      = 0.20,   0.55,       800,       0.0, 0.5, 3.00,     -1.2, 1.2, -1.2, 1.2,         3.0
+value2      = 0.60,   0.6,        900,       0.0, 0.5, 3.00,     -1.2, 1.2, -1.2, 1.2,         3.0
 
 
 [bloodsucker_strong]:m_bloodsucker_e
@@ -677,8 +713,10 @@ vampire_2      =      0.60,   1.0,    	50,        0.0, 2.5, 4.50,     -1.2, 1.2,
 stand_attack_run_0 =  bloodsucker_strong_run_attack_sect
 
 [bloodsucker_strong_run_attack_sect]
-value1      = 0.20,   0.4,        35,        0.0, 0.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         2.2
-value2      = 0.60,   0.8,        40,        0.0, 0.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         2.2
+; impulse: the run strike throws the actor back (was 35/40); test distance 3 (was 2.2)
+; hit_power as the claws' (was 0.4/0.8), see above
+value1      = 0.20,   0.7,        1000,      0.0, 0.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         3.0
+value2      = 0.60,   0.8,        1100,      0.0, 0.5, 4.50,     -1.2, 1.2, -1.2, 1.2,         3.0
 
 
 ;*********************************************************************************
