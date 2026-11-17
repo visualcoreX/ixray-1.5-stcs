@@ -485,8 +485,26 @@ bool CUIActorMenu::ToSlot(CUICellItem* itm, bool force_place)
 	if (!b_own_item && iitem->SlotRequest() != NO_ACTIVE_SLOT && iitem->CanGoInSlot(iitem->SlotRequest()))
 		_slot								= iitem->SlotRequest();
 
-	if(m_pActorInvOwner->inventory().CanPutInSlot(iitem))
+	CInventory& inv							= m_pActorInvOwner->inventory();
+	if(inv.CanPutInSlot(iitem))
 	{
+		// CanPutInSlot is true when ANY of a weapon's interchangeable slots is free. An own item is placed
+		// by Slot() below, which picks the free one; a foreign one is not, so _slot (its default, or the
+		// slot it was dropped on) could be the TAKEN one. Its cell then went into a list that already held
+		// a weapon and FindFreeCell's R_ASSERT fired ("there are no free room to place item") -- a rifle
+		// dragged from a stash onto the occupied rifle slot with the pistol slot empty. Take the free slot
+		// the way Slot() resolves it and park it as the request, so the engine lands the item there too.
+		if (!b_own_item && _slot < inv.m_slots.size() && inv.m_slots[_slot].m_pIItem != NULL)
+		{
+			for (u16 s : iitem->AllowedSlots())
+				if (s < inv.m_slots.size() && inv.m_slots[s].m_pIItem == NULL && m_pActorInvOwner->CanPutInSlot(iitem, s))
+				{
+					_slot							= s;
+					break;
+				}
+			iitem->RequestSlot					(_slot);
+		}
+
 		if ( _slot == GRENADE_SLOT || !GetSlotList(_slot) )
 		{
 			return true; //fake, sorry (((
