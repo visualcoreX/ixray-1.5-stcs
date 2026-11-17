@@ -134,6 +134,13 @@ function dist_to_actor_ge(actor, npc, p)
 	return npc:position():distance_to_sqr(actor:position()) >= d * d
 end
 
+-- The npc (a stalker or a monster) has an enemy, no further than p[1] metres away.
+function enemy_dist_le(_, npc, p)
+	local enemy = npc:get_enemy()
+	local d = p[1]
+	return enemy ~= nil and npc:position():distance_to_sqr(enemy:position()) <= d * d
+end
+
 function is_obj_on_job(_, npc, p)
 
 	local smart = xr_gulag.get_npc_smart(npc)
