@@ -262,6 +262,12 @@ CActor::CActor() : CEntityAlive()
 	m_death_cam_valid		= false;
 	m_death_cam_hide_head	= true;
 	m_death_cam_head_hidden	= false;
+	m_death_time			= 0;
+	m_death_eyes_enabled	= true;
+	m_death_eyes_delay		= 1.f;
+	m_death_eyes_time		= 1.5f;
+	m_death_eyes_width		= 1.2f;
+	m_death_eyes_feather	= 0.03f;
 	m_death_cam_dir_local.set(0.f,0.f,1.f);
 	m_death_cam_up_local.set(0.f,1.f,0.f);
 	m_death_cam_dir.set		(0.f,0.f,1.f);
@@ -504,6 +510,11 @@ void CActor::Load	(LPCSTR section )
 	m_death_cam_up				= READ_IF_EXISTS(pSettings, r_float, section, "death_cam_up", 0.075f);
 	m_death_cam_smooth			= READ_IF_EXISTS(pSettings, r_float, section, "death_cam_smooth", 12.f);
 	m_death_cam_pitch			= READ_IF_EXISTS(pSettings, r_float, section, "death_cam_pitch", 0.f);
+	m_death_eyes_enabled		= !!READ_IF_EXISTS(pSettings, r_bool,  section, "death_eyes_close", TRUE);
+	m_death_eyes_delay			= READ_IF_EXISTS(pSettings, r_float, section, "death_eyes_delay", 1.f);
+	m_death_eyes_time			= READ_IF_EXISTS(pSettings, r_float, section, "death_eyes_time", 1.5f);
+	m_death_eyes_width			= READ_IF_EXISTS(pSettings, r_float, section, "death_eyes_width", 1.2f);
+	m_death_eyes_feather		= READ_IF_EXISTS(pSettings, r_float, section, "death_eyes_feather", 0.03f);
 	m_death_cam_hide_head		= !!READ_IF_EXISTS(pSettings, r_bool,  section, "death_cam_hide_head", TRUE);
 	character_physics_support()->movement()->SetJumpUpVelocity(m_fJumpSpeed);
 	float AirControlParam		= pSettings->r_float(section,"air_control_param"	);

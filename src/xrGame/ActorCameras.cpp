@@ -2,6 +2,8 @@
 #include "Actor.h"
 #include "../xrEngine/CameraBase.h"
 #include "../Include/xrRender/Kinematics.h"
+#include "../Include/xrRender/UIRender.h"
+#include "../Include/xrRender/UIShader.h"
 #ifdef DEBUG
 #include "PHDebug.h"
 #endif
@@ -272,6 +274,7 @@ void CActor::death_cam_Capture()
 	m_death_cam_dir			= D;	// the smoothing eases from the view the actor died with
 	m_death_cam_nrm			= N;
 	m_death_cam_valid		= true;
+	m_death_time			= Device.dwTimeGlobal;
 
 	// Hide the head from the eye that now sits in front of it. Face down, the ragdoll's head can roll
 	// into the camera past any offset, and collide_camera does not push away from the actor's own body.
@@ -348,6 +351,76 @@ void CActor::death_cam_Update(float dt)
 	}
 
 	cameras[eacFirstEye]->Set	(P, m_death_cam_dir, m_death_cam_nrm);
+}
+
+// ---- The eyes close ----
+// death_eyes_delay after death two black lids come in from the top and the bottom of the screen and
+// meet in the middle over death_eyes_time, eased in and out. The picture between them is an ellipse
+// drawn out to the sides (death_eyes_width) that flattens into a line, with a soft band of
+// death_eyes_feather inside its edge. Drawn in the UI pass under the
+// "game over" tutorial (that one is its own seqRender entry, after the level), with the crosshair's
+// flat-colour shader: the lids are just vertex colours.
+
+// a trapezoid between two edges running from x0 to x1 (t = upper, b = lower, in screen y)
+static IC void dc_lid_quad(float x0, float x1, float t0, float t1, float b0, float b1, u32 ct, u32 cb)
+{
+	UIRender->PushPoint(x0, b0, 0.f, cb, 0.f, 0.f);
+	UIRender->PushPoint(x0, t0, 0.f, ct, 0.f, 0.f);
+	UIRender->PushPoint(x1, b1, 0.f, cb, 0.f, 0.f);
+	UIRender->PushPoint(x1, b1, 0.f, cb, 0.f, 0.f);
+	UIRender->PushPoint(x0, t0, 0.f, ct, 0.f, 0.f);
+	UIRender->PushPoint(x1, t1, 0.f, ct, 0.f, 0.f);
+}
+
+void CActor::death_cam_RenderEyelids()
+{
+	if (!m_death_eyes_enabled || g_Alive() || !m_death_cam_valid)	return;
+	if (!psActorFlags.test(AF_FIRST_PERSON_DEATH) || Level().CurrentEntity() != this)	return;
+
+	const float t			= float(Device.dwTimeGlobal - m_death_time) / 1000.f - m_death_eyes_delay;
+	if (t <= 0.f)			return;
+	float p					= (m_death_eyes_time > EPS) ? (t / m_death_eyes_time) : 1.f;
+	clamp					(p, 0.f, 1.f);
+	p						= p * p * (3.f - 2.f * p);		// ease in and out
+
+	const float W			= float(Device.dwWidth);
+	const float H			= float(Device.dwHeight);
+	const float half_w		= 0.5f * W;
+	const float half_h		= 0.5f * H;
+	const float f			= _max(m_death_eyes_feather * H, 1.f);
+	// What is left of the picture is an ellipse drawn out to the sides: its half width `a` stays put,
+	// its half height `h` shrinks. A lid's edge is the ellipse's upper (lower) arc, so the lids are
+	// hollowed out and close at the corners first; past |x| = a they have already met.
+	const float a			= _max(m_death_eyes_width, 0.1f) * half_w;
+	// open: the arc clears the top corners, soft band included (an `a` inside the screen never opens
+	// them -- those corners stay black from the start)
+	const float corner		= (a > half_w) ? _sqrt(1.f - _sqr(half_w / a)) : 1.f;
+	const float h_open		= (half_h + f) / corner;
+	// closed at h = 0: both lids' solid parts then meet on the centre line, the soft bands lie over black
+	const float h			= h_open * (1.f - p);
+
+	if (!m_death_eyes_shader->inited())
+		m_death_eyes_shader->create("hud\\crosshair");
+
+	const int N				= 48;
+	const u32 solid			= color_rgba(0, 0, 0, 255);
+	const u32 clear			= color_rgba(0, 0, 0, 0);
+	UIRender->StartPrimitive(N * 4 * 6, IUIRender::ptTriList, IUIRender::pttTL);
+	for (int i = 0; i < N; ++i)
+	{
+		const float x0		= W * float(i) / float(N);
+		const float x1		= W * float(i + 1) / float(N);
+		const float e0		= half_h - h * _sqrt(_max(0.f, 1.f - _sqr((x0 - half_w) / a)));
+		const float e1		= half_h - h * _sqrt(_max(0.f, 1.f - _sqr((x1 - half_w) / a)));
+		// upper lid: solid down to the edge, then the soft band below it
+		dc_lid_quad			(x0, x1, -1.f, -1.f, e0, e1, solid, solid);
+		dc_lid_quad			(x0, x1, e0, e1, e0 + f, e1 + f, solid, clear);
+		// lower lid, the mirror image: the soft band above its edge, then solid to the bottom
+		dc_lid_quad			(x0, x1, H - e0 - f, H - e1 - f, H - e0, H - e1, clear, solid);
+		dc_lid_quad			(x0, x1, H - e0, H - e1, H + 1.f, H + 1.f, solid, solid);
+	}
+	UIRender->SetShader		(*m_death_eyes_shader);
+	UIRender->FlushPrimitive();
 }
 
 float CActor::CameraHeight()

@@ -413,6 +413,18 @@ protected:
 	void					death_cam_Update		(float dt);
 	static void __stdcall	death_cam_HideHead		(IKinematics* K);
 
+	// ...and the eyes close: black lids come in from the top and bottom of the screen
+	u32						m_death_time;			// Device.dwTimeGlobal at the moment of death
+	bool					m_death_eyes_enabled;	// [actor] death_eyes_close
+	float					m_death_eyes_delay;		// [actor] death_eyes_delay, s after death
+	float					m_death_eyes_time;		// [actor] death_eyes_time, s to close
+	float					m_death_eyes_width;		// [actor] death_eyes_width, the opening's half width / half the screen's
+	float					m_death_eyes_feather;	// [actor] death_eyes_feather, soft edge, share of screen height
+	ui_shader				m_death_eyes_shader;
+public:
+	void					death_cam_RenderEyelids	();	// CHUDManager::RenderUI
+protected:
+
 
 	//�������� ����������, ���� � ������� �������
 	CActorCameraManager*	m_pActorEffector;
