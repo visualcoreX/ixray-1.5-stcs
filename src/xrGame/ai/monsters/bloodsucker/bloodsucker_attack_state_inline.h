@@ -27,6 +27,7 @@ void CBloodsuckerStateAttackAbstract::initialize()
 {
 	inherited::initialize	();
 	m_last_health           = object->conditions().GetHealth();
+	m_time_hide_started     = 0;
 }
 
 TEMPLATE_SPECIALIZATION
@@ -49,6 +50,8 @@ namespace bloodsucker
 	const u32   encircle_time               = 3000;
 	const float loose_health_diff           = 0.15f;
 	const u32   change_behaviour_time       = 1000;
+	// with attack on the move: the longest it circles before it goes back in
+	const u32   max_hide_time               = 4000;
 
 } // namespace bloodsucker
 
@@ -73,10 +76,48 @@ void CBloodsuckerStateAttackAbstract::execute()
 	{
 		select_state(eStateAttack_FindEnemy);
 	} 
+	// with attack on the move, the circling is decided in its branch, after point-blank
+	else if ( object->can_attack_on_move() )
+	{
+		// Attack on the move (Call of Pripyat, aom_* keys) from range: it runs in and strikes, and
+		// the lunge (run attack) gives way to it. At point-blank -- in melee reach, facing him --
+		// it stops and claws in a series as stock CS did, until he gets out of reach; alone, the
+		// attack on the move had nothing for that range but to run on past him. A run strike
+		// already swinging is let finish first.
+		EMotionAnim const override_anim = object->anim().get_override_animation();
+		bool const run_strike_playing	= (current_substate == eStateAttack_Attack_On_Run) &&
+										  ((override_anim == eAnimAttackOnRunLeft) || (override_anim == eAnimAttackOnRunRight));
+
+		// Point-blank is judged by distance alone. The melee state's own start test also wants
+		// him in sight this very frame, and a bloodsucker running round him at arm's length has
+		// him behind its shoulder half the time: it ran on beside him for seconds, striking at
+		// nothing. The melee state turns it to face him before it claws.
+		bool b_melee = false;
+		if ( !run_strike_playing )
+		{
+			const CEntityAlive* enemy = object->EnemyMan.get_enemy();
+			if ( prev_substate == eStateAttack_Melee )
+				b_melee = !get_state(eStateAttack_Melee)->check_completion();
+			else
+				b_melee = object->MeleeChecker.distance_to_enemy(enemy) < object->MeleeChecker.get_min_distance();
+		}
+
+		// The circling (backstub) still follows a heavy wound or a critical hit, but never over a
+		// point-blank fight, a run strike in the swing, or for longer than detail::bloodsucker::
+		// max_hide_time: in its encircle mode it ends only once it is behind the actor unseen, and
+		// an actor who keeps turning to face it never lets that happen -- it ran round him for good,
+		// and neither the claws nor the run strike were ever looked at again.
+		if ( b_melee )
+			select_state(eStateAttack_Melee);
+		else if ( !run_strike_playing && check_hiding() )
+			select_state(eStateAttack_Hide);
+		else
+			select_state(eStateAttack_Attack_On_Run);
+	}
 	else if ( check_hiding() )
 	{
 		select_state(eStateAttack_Hide);
-	}  
+	}
 	else if ( check_run_attack_state() )
 	{
 		select_state(eStateAttack_RunAttack);
@@ -117,6 +158,11 @@ void CBloodsuckerStateAttackAbstract::execute()
 		{
 			select_state(eStateAttack_Run);
 		}
+	}
+
+	if ( current_substate == eStateAttack_Hide && prev_substate != eStateAttack_Hide )
+	{
+		m_time_hide_started = Device.dwTimeGlobal;
 	}
 
 	// clear behinder var if not melee state selected
@@ -167,10 +213,27 @@ bool CBloodsuckerStateAttackAbstract::check_hiding()
 
 	if ( current_substate == eStateAttack_Hide )
 	{
+		if ( object->can_attack_on_move() &&
+			 Device.dwTimeGlobal > m_time_hide_started + detail::bloodsucker::max_hide_time )
+		{
+			return false;
+		}
 		return !get_state_current()->check_completion();
 	}
 
 	m_start_with_encircle = false;
+
+	// With attack on the move the approach is the attack's own: it runs in and strikes from 3-4 m.
+	// Left to start whenever the actor is out of melee reach, as the stock CS approach is, the
+	// backstub took every approach and handed over to attack on the move only once the
+	// bloodsucker was already on top of him -- too close to swing, so it rammed him and looped
+	// out, over and over. It still breaks off to circle after a heavy wound or a critical hit
+	// (above).
+	if ( object->can_attack_on_move() )
+	{
+		return false;
+	}
+
 	return get_state(eStateAttack_Hide)->check_start_conditions();
 }
 

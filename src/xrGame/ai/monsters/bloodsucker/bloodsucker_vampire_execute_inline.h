@@ -29,9 +29,9 @@ void CStateBloodsuckerVampireExecuteAbstract::initialize()
 {
 	inherited::initialize					();
 
-	object->CControlledActor::install		();
-
-	look_head				();
+	// The actor is not held yet: that, the hud and the camera effector all come together with the
+	// first frame of the vampire animation (hold_actor), not while it is still closing in.
+	m_actor_held			= false;
 
 	m_action				= eActionApproach;
 	time_vampire_started	= 0;
@@ -42,24 +42,36 @@ void CStateBloodsuckerVampireExecuteAbstract::initialize()
 	// In the open for the grab, whatever the distance stages say (Call of Pripyat).
 	object->set_visibility_state			(CAI_Bloodsucker::full_visibility, true);
 
-	// The actor is held: no hud, the weapon put away and the slots locked, as for the
-	// controller's psy attack.
+	m_effector_activated			= false;
+}
+
+// The grab proper: the actor held (camera turned to its head, input taken), no hud, the weapon
+// put away and the slots locked as for the controller's psy attack, and the camera effector --
+// all on the frame the vampire animation starts. False if another bloodsucker got him first.
+TEMPLATE_SPECIALIZATION
+bool CStateBloodsuckerVampireExecuteAbstract::hold_actor()
+{
+	if (Actor()->input_external_handler_installed())
+		return false;
+
+	object->CControlledActor::install		();
+	m_actor_held							= true;
+	look_head								();
+
 	HUD().SetRenderable						(false);
 	Actor()->SetWeaponHideState				(INV_STATE_BLOCK_ALL, true);
 	m_hud_hidden							= true;
 
-	m_effector_activated			= false;
+	object->ActivateVampireEffector			();
+	m_effector_activated					= true;
+	return true;
 }
 
 TEMPLATE_SPECIALIZATION
 void CStateBloodsuckerVampireExecuteAbstract::execute()
 {
-	if (!object->CControlledActor::is_turning() && !m_effector_activated) {
-		object->ActivateVampireEffector	();
-		m_effector_activated			= true;
-	}
-	
-	look_head							();
+	if (m_actor_held)
+		look_head						();
 
 	Fvector const enemy_to_self	= Fvector().sub(object->EnemyMan.get_enemy()->Position(), object->Position());
 	float const dist_to_enemy	= enemy_to_self.magnitude();
@@ -67,12 +79,11 @@ void CStateBloodsuckerVampireExecuteAbstract::execute()
 
 	switch (m_action) {
 		case eActionApproach:
-			// It seizes him from melee reach (MinAttackDist, over 2 m) but drinks only from close
+			// It goes for him from melee reach (MinAttackDist, over 2 m) but drinks only from close
 			// up: the vampire animation pins it to the spot (the triple captures its movement), so
-			// it closes in first, while the actor is already held. It starts within Vampire_Distance,
-			// or as soon as it can get no closer -- its body against his stops it some 1.3-1.5 m off,
-			// and waiting there for the full Vampire_Approach_Time left the actor frozen for nothing.
-			// Still out of Vampire_Hold_Distance when the time is up: the grab fails.
+			// it closes in first -- a lunge, the actor still free. It starts within Vampire_Distance,
+			// or as soon as it gets no closer within Vampire_Hold_Distance. Not that near after
+			// Vampire_Approach_Time: no grab, and the actor never knew one was coming.
 			if (dist_to_enemy < m_approach_best_dist - 0.05f) {
 				m_approach_best_dist	= dist_to_enemy;
 				m_approach_best_time	= Device.dwTimeGlobal;
@@ -89,6 +100,10 @@ void CStateBloodsuckerVampireExecuteAbstract::execute()
 			break;
 
 		case eActionPrepare:
+			if (!hold_actor()) {
+				m_action = eActionCompleted;
+				break;
+			}
 			execute_vampire_prepare();
 			m_action = eActionContinue;
 			break;
@@ -113,19 +128,17 @@ void CStateBloodsuckerVampireExecuteAbstract::execute()
 
 	object->dir().face_target	(object->EnemyMan.get_enemy());
 
-	// Close in to Vampire_Distance (Call of Pripyat), while there is still somewhere to go.
-	if ( m_action == eActionApproach &&
-		 angle_between_vectors(object->Direction(), enemy_to_self) < deg2rad(20.f) && 
-		 dist_to_enemy > vampire_dist )
+	// Close in to Vampire_Distance, while there is still somewhere to go. Straight at the actor
+	// himself: aimed at the centre of his ai node (up to half a cell off him) and stopping dead
+	// whenever it was not facing him within 20 degrees, it groped round him instead.
+	if ( m_action == eActionApproach && dist_to_enemy > vampire_dist )
 	{
 		object->set_action					(ACT_RUN);
 		object->anim().accel_activate		(eAT_Aggressive);
 		object->anim().accel_set_braking	(false);
 
-		u32 const target_vertex		= object->EnemyMan.get_enemy()->ai_location().level_vertex_id();
-		Fvector const target_pos	= ai().level_graph().vertex_position(target_vertex);
-
-		object->path().set_target_point		(target_pos, target_vertex);
+		const CEntityAlive* enemy	= object->EnemyMan.get_enemy();
+		object->path().set_target_point		(enemy->Position(), enemy->ai_location().level_vertex_id());
 		object->path().set_rebuild_time		(100);
 		object->path().set_use_covers		(false);
 		object->path().set_distance_to_end	(vampire_dist);
@@ -142,8 +155,10 @@ void CStateBloodsuckerVampireExecuteAbstract::cleanup()
 	if (object->com_man().ta_is_active())
 		object->com_man().ta_deactivate();
 
-	if (object->CControlledActor::is_controlling())
+	bool const grabbed							= m_actor_held;
+	if (m_actor_held && object->CControlledActor::is_controlling())
 		object->CControlledActor::release		();
+	m_actor_held								= false;
 
 	if (m_hud_hidden)
 	{
@@ -152,9 +167,10 @@ void CStateBloodsuckerVampireExecuteAbstract::cleanup()
 		m_hud_hidden							= false;
 	}
 
-	// The next grab waits for a fresh run of hits (or its own wounded cooldown), and every
-	// bloodsucker for Vampire_Delay.
-	object->on_vampire_finished					();
+	// A grab that happened: the next one waits for a fresh run of hits (or its own wounded
+	// cooldown). A lunge that never got close keeps both; every bloodsucker waits Vampire_Delay.
+	if (grabbed)
+		object->on_vampire_finished				();
 	CAI_Bloodsucker::m_time_last_vampire		= Device.dwTimeGlobal;
 }
 

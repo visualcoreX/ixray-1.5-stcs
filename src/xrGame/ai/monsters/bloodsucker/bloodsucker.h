@@ -146,6 +146,8 @@ private:
 	u32						m_sufficient_hits_max[eVampireDifficultyCount];
 	float					m_vampire_wounded_health;
 	u32						m_vampire_wounded_delay;
+	u32						m_vampire_wounded_first_delay;
+	TTime					m_time_wounded;					// since when it is under Vampire_Wounded_Health
 	TTime					m_time_own_last_vampire;
 	float					m_vis_state;
 	bool					m_drag_anim_jump;

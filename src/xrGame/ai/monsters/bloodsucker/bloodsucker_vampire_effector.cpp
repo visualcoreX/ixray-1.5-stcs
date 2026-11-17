@@ -92,7 +92,13 @@ BOOL CVampireCameraEffector::ProcessCam(SCamEffectorInfo& info)
 	float time_passed	= 1-time_left_perc;
 	float cur_dist		= m_dist * (_sqrt(0.5f*0.5f - (time_passed - 0.5f)*(time_passed - 0.5f)) );
 
-	Mdef.c.mad(m_direction, cur_dist);
+	// The stock effector also slid the camera along the line between the two heads, out and back
+	// over the grab, to bring the eye BEST_DISTANCE from the bloodsucker's head. The direction it
+	// took runs from the bloodsucker TO the actor, so it pushed the eye back into the actor's own
+	// head and body -- by half the distance between the heads, which was large whenever the grab
+	// began from further off. With the first-person body that showed the inside of it. The eye
+	// stays put now; the shake below is all the effector does.
+	(void)cur_dist;
 	
 	// check the time to return
 	if (time_left_perc < 0.2f) {

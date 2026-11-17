@@ -67,6 +67,7 @@ CAI_Bloodsucker::CAI_Bloodsucker()
 	m_hits_before_vampire = 0;
 	m_sufficient_hits_roll = 0.f;
 	m_time_own_last_vampire = 0;
+	m_time_wounded = 0;
 
 	using namespace detail::bloodsucker;
 
@@ -280,6 +281,9 @@ void CAI_Bloodsucker::Load(LPCSTR section)
 		// sooner than Vampire_Wounded_Delay ms after its own last grab.
 		m_vampire_wounded_health	= READ_IF_EXISTS(pSettings, r_float, section, "Vampire_Wounded_Health", 0.f);
 		m_vampire_wounded_delay		= READ_IF_EXISTS(pSettings, r_u32,   section, "Vampire_Wounded_Delay",  15000);
+		// ...and not on the instant of the wound: Vampire_Wounded_First_Delay ms after it first
+		// dropped under that health (back to it in full, the clock starts again).
+		m_vampire_wounded_first_delay = READ_IF_EXISTS(pSettings, r_u32, section, "Vampire_Wounded_First_Delay", 5000);
 
 		m_visibility_state_change_min_delay = READ_IF_EXISTS(pSettings, r_u32, section, "visibility_state_change_min_delay", default_visibility_state_change_min_delay);
 		m_full_visibility_radius	= READ_IF_EXISTS(pSettings, r_float, section, "full_visibility_radius",    default_full_visibility_radius);
@@ -302,6 +306,10 @@ void CAI_Bloodsucker::Load(LPCSTR section)
 
 	m_camera_effector_move_angular_speed = READ_IF_EXISTS(pSettings, r_float, section, "camera_effector_move_angular_speed",
 										   default_camera_effector_move_angular_speed);
+
+	// Attack on the move, as Call of Pripyat's bloodsucker has it (aom_* keys, off without aom_enabled).
+	// Last, as load_attack_on_move_params() wants: the run velocities are in place by now.
+	load_attack_on_move_params		(section);
 }
 
 void CAI_Bloodsucker::reinit()
@@ -333,6 +341,7 @@ void CAI_Bloodsucker::reinit()
 	m_manual_invisible			= false;
 	reset_hits_before_vampire	();
 	m_time_own_last_vampire		= 0;
+	m_time_wounded				= 0;
 
 	// It comes out in the open; update_invisibility hides it once it has an enemy far enough away.
 	// (Stock CS started every bloodsucker in the predator visual and kept it there.)
@@ -469,6 +478,10 @@ bool CAI_Bloodsucker::wounded_enough_for_vampire()
 		return false;
 
 	if (conditions().GetHealth() >= conditions().GetMaxHealth() * m_vampire_wounded_health)
+		return false;
+
+	// m_time_wounded is kept by UpdateCL
+	if (!m_time_wounded || Device.dwTimeGlobal < m_time_wounded + m_vampire_wounded_first_delay)
 		return false;
 
 	return !m_time_own_last_vampire || Device.dwTimeGlobal >= m_time_own_last_vampire + m_vampire_wounded_delay;
@@ -646,6 +659,17 @@ void CAI_Bloodsucker::UpdateCL()
 		// update vampire need
 		m_vampire_want_value += m_vampire_want_speed * client_update_fdelta();
 		clamp(m_vampire_want_value,0.f,1.f);
+
+		// when it first went under Vampire_Wounded_Health, for the wounded grab's first delay
+		if (conditions().GetHealth() < conditions().GetMaxHealth() * m_vampire_wounded_health)
+		{
+			if (!m_time_wounded)
+				m_time_wounded = Device.dwTimeGlobal;
+		}
+		else
+		{
+			m_time_wounded = 0;
+		}
 		
 		apply_actor_camera_effector();
 	}

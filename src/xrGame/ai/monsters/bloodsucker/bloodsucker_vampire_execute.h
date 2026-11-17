@@ -19,7 +19,7 @@ class	CStateBloodsuckerVampireExecute : public CState<_Object> {
 	bool				m_effector_activated;
 
 public:
-						CStateBloodsuckerVampireExecute	(_Object *obj) : inherited(obj), m_hud_hidden(false) {}
+						CStateBloodsuckerVampireExecute	(_Object *obj) : inherited(obj), m_hud_hidden(false), m_actor_held(false) {}
 
 	virtual void		initialize						();
 	virtual	void		execute							();
@@ -36,8 +36,10 @@ private:
 
 			void		look_head						();
 			void		cleanup							();
+			bool		hold_actor						();
 
 	bool				m_hud_hidden;
+	bool				m_actor_held;
 	u32					m_time_approach_started;
 	float				m_approach_best_dist;		// closest it has got so far
 	u32					m_approach_best_time;		// when it last got closer

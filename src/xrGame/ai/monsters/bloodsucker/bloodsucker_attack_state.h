@@ -9,6 +9,7 @@ class	CBloodsuckerStateAttack : public CStateMonsterAttack<_Object> {
 
 	float           m_last_health;
 	bool            m_start_with_encircle;
+	TTime           m_time_hide_started;
 
 public:
 					CBloodsuckerStateAttack		(_Object *obj);
