@@ -827,6 +827,37 @@ bool CUIActorMenu::ReplaceAddon(PIItem weapon, PIItem addon)
 	return							true;
 }
 
+// An addon dragged within the bag and dropped onto a weapon there: attach it (or swap the scope) exactly
+// as a drop on a weapon slot does. False when the cell under the cursor is not a weapon that takes it,
+// so the drop goes on as an ordinary move inside the bag.
+bool CUIActorMenu::AttachAddonToBagWeapon(CUICellItem* addon_cell)
+{
+	PIItem	addon	= (PIItem)addon_cell->m_pData;
+	if (!addon || addon != CurrentIItem())	return false;	// AttachAddon takes the addon from CurrentIItem
+	if (!smart_cast<CScope*>(addon) && !smart_cast<CSilencer*>(addon) && !smart_cast<CGrenadeLauncher*>(addon))
+		return false;
+
+	CUICellItem*	target	= m_pInventoryBagList->GetCellItemUnderCursor();
+	if (!target || target == addon_cell)	return false;
+	PIItem	weapon	= (PIItem)target->m_pData;
+	if (!weapon || weapon == addon)			return false;
+
+	if (weapon->CanAttach(addon))
+		AttachAddon				(weapon);
+	else if (!ReplaceAddon(weapon, addon))
+		return false;
+
+	// Identical weapons share one cell in the bag. The one under the cursor is the cell's own item, and
+	// it is not identical to the rest any more: pop it (PopChild hands the popped cell the root's item,
+	// i.e. this weapon) and place it again, which now lands in a cell of its own.
+	if (target->ChildsCount())
+	{
+		CUICellItem*	single	= m_pInventoryBagList->RemoveItem(target, false);
+		m_pInventoryBagList->SetItem	(single);
+	}
+	return true;
+}
+
 void CUIActorMenu::TryHidePropertiesBox()
 {
 	if ( m_UIPropertiesBox->IsShown() )

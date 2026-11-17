@@ -132,6 +132,14 @@ bool CUIActorMenu::OnItemDrop(CUICellItem* itm)
 		return true;
 	}
 
+	// An addon dropped from the bag onto a weapon lying in the bag goes on that weapon, the way a drop on
+	// a weapon slot attaches it (OnItemDropped). Both ends are the bag here, so it has to come before the
+	// same-owner return below; anything else dropped in the bag falls through to it as before.
+	if ( old_owner == m_pInventoryBagList && new_owner == m_pInventoryBagList && AttachAddonToBagWeapon(itm) )
+	{
+		return true;
+	}
+
 	if ( old_owner==new_owner || !old_owner || !new_owner )
 	{
 		return false;
