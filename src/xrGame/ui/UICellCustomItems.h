@@ -79,6 +79,9 @@ public:
 protected:
 	CUIStatic*					m_addons					[eMaxAddon];
 	Fvector2					m_addon_offset				[eMaxAddon];
+	// the scope item the eScope sprite was drawn from: a scope swapped for another one keeps the
+	// "scope attached" flag, so Update() compares this to tell that the sprite is stale
+	shared_str					m_scope_icon_sect;
 	void						CreateIcon					(eAddonType);
 	void						DestroyIcon					(eAddonType);
 	void RefreshOffset();
