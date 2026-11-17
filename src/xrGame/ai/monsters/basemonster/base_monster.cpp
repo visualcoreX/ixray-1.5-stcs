@@ -319,8 +319,16 @@ void	CBaseMonster::Hit							(SHit* pHDS)
 		}
 
 		if (hit_power < 0.0f)	hit_power = 0.0f;
-		HDS.power			= hit_power;
+		HDS.power			= hit_power * m_hit_power_factor;
 
+		inherited::Hit(&HDS);
+		return;
+	}
+
+	if (m_hit_power_factor != 1.0f)
+	{
+		SHit	HDS			= *pHDS;
+		HDS.power			*= m_hit_power_factor;
 		inherited::Hit(&HDS);
 		return;
 	}
