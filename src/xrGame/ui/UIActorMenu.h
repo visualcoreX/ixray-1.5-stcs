@@ -269,6 +269,7 @@ private:
 
 	void						AttachAddon					(PIItem item_to_upgrade);
 	void						DetachAddon					(LPCSTR addon_name);
+	bool						CanReplaceAddon				(PIItem weapon, PIItem addon);
 	bool						ReplaceAddon				(PIItem weapon, PIItem addon);
 
 	void						SendEvent_Item2Slot			(PIItem	pItem, u16 parent);
