@@ -260,6 +260,7 @@ CRenderTarget::CRenderTarget		()
 		rt_scope_late.create		("$user$scopelate",w,h,D3DFMT_A8R8G8B8	);
 		rt_scope_late_cut.create	("$user$scopelatec",w,h,D3DFMT_A8R8G8B8	);
 		rt_scope_distort.create		("$user$scopedistort",w,h,D3DFMT_A8R8G8B8	);
+		rt_scope_hdr.create			("$user$scopehdr",w,h,D3DFMT_A8R8G8B8	);	// rt_Generic_1's format
 		//	Igor: for volumetric lights
 		//rt_Generic_2.create			(r2_RT_generic2,w,h,D3DFMT_A8R8G8B8		);
 		//	temp: for higher quality blends
@@ -759,6 +760,21 @@ void CRender::RenderPdaUIToRT()
 
 	HRESULT hr = D3DXLoadSurfaceFromSurface(rt->pRT, NULL, NULL, HW.pBaseRT, NULL, NULL, D3DX_DEFAULT, 0);
 	if (g_pda_dbg)	Msg("~ pda_rt: drew + blit hr=0x%08x rt=%dx%d", hr, rt->dwWidth, rt->dwHeight);
+}
+
+// The lens-off prism mode at full aim (phase_combine): the bloom is built from the HDR half of the frame
+// (rt_Generic_1), which the lens -- a forward pass into the picture -- never reached. Under the glass it held the world
+// as the eyepiece's cut left it, without the lens's own zoom, bend and ripple, and its glow lay out of place over the
+// lens's picture. Copied, then the glass resamples the copy into it as the lens resamples the picture
+// (r_dsgraph_render_lens_hdr, model_scope_hdr.ps). As r3.
+void CRenderTarget::phase_scope_hdr()
+{
+	if (!rt_Generic_1 || !rt_scope_hdr)	return;
+	HW.pDevice->StretchRect	(rt_Generic_1->pRT, NULL, rt_scope_hdr->pRT, NULL, D3DTEXF_NONE);
+	u_setrt					(rt_Generic_1, 0, 0, HW.pBaseZB);
+	RCache.set_Stencil		(FALSE);
+	RImplementation.r_dsgraph_render_lens_hdr();
+	RCache.set_CullMode		(CULL_NONE);
 }
 
 // 3D PiP scope: take the lens capture, and put the anomaly heat haze into it.

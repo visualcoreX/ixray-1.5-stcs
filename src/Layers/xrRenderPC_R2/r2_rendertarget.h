@@ -77,6 +77,9 @@ public:
 	// ...and the distortion mask of the frame before the glass took itself out of it, for that lens to warp its
 	// world by (the lens-off prism mode; phase_combine, scope_field.h lens_prism_distort) -- as r3
 	ref_rt						rt_scope_distort;
+	// ...and the HDR half of the frame as the world left it under the glass, for the glass to resample into it as the
+	// lens resamples the picture, before the bloom is built (phase_scope_hdr, model_scope_hdr.ps) -- as r3
+	ref_rt						rt_scope_hdr;
 	ref_rt						rt_Bloom_1;			// 32bit, dim/4	(r,g,b,?)
 	ref_rt						rt_Bloom_2;			// 32bit, dim/4	(r,g,b,?)
 	ref_rt						rt_LUM_64;			// 64bit, 64x64,	log-average in all components
@@ -233,6 +236,8 @@ public:
 	void phase_smaa(u32 pass);
 	// 3D PiP scope: take the lens capture, warped by the distortion mask when there is one.
 	void phase_scope_capture(BOOL distorted);
+	// the lens-off prism mode: the HDR half under the glass made to match the lens's picture, for the bloom
+	void phase_scope_hdr();
 	void						phase_downsamp			();
 	void						phase_scene_prepare		();
 	void						phase_scene_begin		();

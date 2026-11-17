@@ -103,6 +103,9 @@ public:
 	// ...and the distortion mask of the frame before the glass took itself out of it, for that lens to warp its
 	// world by (the lens-off prism mode; phase_combine, scope_field.h lens_prism_distort)
 	ref_rt						rt_scope_distort;
+	// ...and the HDR half of the frame as the world left it under the glass, for the glass to resample into it as the
+	// lens resamples the picture, before the bloom is built (phase_scope_hdr, model_scope_hdr.ps)
+	ref_rt						rt_scope_hdr;
 	// Laser beams: how much blend-shaded smoke/dust (R, G) and rain (B, A) covers each pixel and how far
 	// away it is (coverage, coverage-weighted view depth). Half-res, 1-sample, sampled by laser_beam.ps.
 	ref_rt						rt_laser_dens;
@@ -313,6 +316,8 @@ public:
 	void phase_smaa();
 	// 3D PiP scope: take the lens capture, warped by the distortion mask when there is one.
 	void phase_scope_capture(BOOL distorted);
+	// the lens-off prism mode: the HDR half under the glass made to match the lens's picture, for the bloom
+	void phase_scope_hdr();
 	void						phase_scene_prepare		();
 	void						phase_scene_begin		();
 	void						phase_scene_end			();

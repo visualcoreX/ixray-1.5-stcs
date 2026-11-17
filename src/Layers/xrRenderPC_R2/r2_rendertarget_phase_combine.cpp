@@ -229,6 +229,10 @@ void	CRenderTarget::phase_combine	()
 
 	// Perform blooming filter and distortion if needed
 	RCache.set_Stencil	(FALSE);
+	// the lens-off prism mode at full aim: the HDR half under the glass resampled as the lens resamples the picture,
+	// so the bloom glows what the lens shows (phase_scope_hdr; as r3)
+	if (scope_prism && g_scope_prism_cut && !g_scope_prism_fade)
+		phase_scope_hdr	( );
 	// (the lens-off prism mode's frames without the cut keep the last measured bloom and adaptation, see above)
 	if (!scope_unmeasured)
 		phase_bloom		( );												// HDR RT invalidated here
