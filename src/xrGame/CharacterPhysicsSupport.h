@@ -132,6 +132,10 @@ IC		CIKLimbsController				*ik_controller					( )	{ return m_ik_controller; }
 		void 							in_shedule_Update				( u32 DT )																											;
 		void 							in_NetSpawn						( CSE_Abstract* e )																									;
 		void 							in_NetDestroy					( )																													;
+		// Ends a running death motion (imotion_position) while the physics shell it holds is still alive.
+		// The owners call it FIRST in net_Destroy: their inherited::net_Destroy reaches
+		// CPhysicsShellHolder::net_Destroy, which deletes that shell before in_NetDestroy runs.
+		void 							in_NetDestroyMotion				( )																													;
 		void							in_NetRelcase					( CObject* O )																										;
 		void 							in_Init							( )																													;
 		void 							in_Load							( LPCSTR section )																									;

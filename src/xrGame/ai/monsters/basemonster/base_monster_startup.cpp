@@ -397,6 +397,7 @@ void CBaseMonster::net_Destroy()
 	if (m_controlled) m_controlled->on_destroy	();
 	if (StateMan) StateMan->critical_finalize	();
 
+	m_pPhysics_support->in_NetDestroyMotion();	// before the shell goes (CCharacterPhysicsSupport)
 	inherited::net_Destroy				();
 	
 	CInventoryOwner::net_Destroy		();

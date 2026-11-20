@@ -724,6 +724,7 @@ void CActor::net_Destroy	()
 	if (g_pGamePersistent)	g_pGamePersistent->pp_injury.set(0.f, 0.f, 0.f, 0.f);	// ...nor the injury one
 	if (g_pGamePersistent)	g_pGamePersistent->pp_hit.set(0.f, 0.f, 0.f, 0.f);		// ...nor a hit flash
 	if (g_pGamePersistent)	for (int i = 0; i < IGame_Persistent::PP_DROPLETS; ++i)	g_pGamePersistent->pp_droplets[i].set(0.f, 0.f, 0.f, 0.f);
+	m_pPhysics_support->in_NetDestroyMotion();	// before the shell goes (CCharacterPhysicsSupport)
 	inherited::net_Destroy	();
 
 	if (m_holder_id != ALife::_OBJECT_ID(-1))

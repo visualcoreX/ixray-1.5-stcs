@@ -480,6 +480,7 @@ BOOL CAI_Stalker::net_Spawn			(CSE_Abstract* DC)
 
 void CAI_Stalker::net_Destroy()
 {
+	m_pPhysics_support->in_NetDestroyMotion();	// before the shell goes (see there)
 	inherited::net_Destroy				();
 	CInventoryOwner::net_Destroy		();
 	m_pPhysics_support->in_NetDestroy	();
