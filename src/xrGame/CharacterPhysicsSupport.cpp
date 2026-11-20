@@ -300,9 +300,18 @@ void		CCharacterPhysicsSupport::					SpawnCharacterCreate			( )
 		
 }
 
+void CCharacterPhysicsSupport::in_NetDestroyMotion( )
+{
+	// imotion_position::state_end turns the shell it was set up with back on; it must not run on a shell
+	// that is gone. A player's crash ("pure virtual function call"): a save loaded within the second or
+	// two a killed stalker's death motion plays -- CLevel::remove_objects destroyed the stalker, its
+	// inherited::net_Destroy deleted the shell, and in_NetDestroy then ended the motion on it.
+	destroy( m_interactive_motion );
+}
+
 void CCharacterPhysicsSupport::in_NetDestroy( )
 {
-	destroy( m_interactive_motion );
+	destroy( m_interactive_motion );	// already done by in_NetDestroyMotion; harmless if not
 	m_PhysicMovementControl->DestroyCharacter( );
 
 	if( m_physics_skeleton )
