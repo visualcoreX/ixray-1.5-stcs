@@ -453,7 +453,7 @@ float3 pp_injury_rblur1(float2 uv, float3 c, float2 at)
 // the plain picture); pp_droplets_colour tints them and adds the glare over everything, on the lens. R2/R3
 // light the glare from the bloom; R1 has none, so it reads the picture itself once, at the droplet's centre,
 // from PP_DROPLET_GLARE_LO to PP_DROPLET_GLARE_HI of luma -- the whole droplet lights up or dims at once.
-#define PP_DROPLETS			20		// the bleeding's 8 and the rain's 12
+#define PP_DROPLETS			26		// the bleeding's 8 and the rain's 18
 #define PP_DROPLET_REFRACT	1.0f	// how strongly a drop bends what is behind it
 #define PP_DROPLET_TINT		float3(70.0f, 7.0f, 5.0f) / 255.0f	// was (140, 15, 10), halved
 #define PP_DROPLET_MIX		0.7f	// the tint, by overlay

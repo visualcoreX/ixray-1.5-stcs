@@ -1288,7 +1288,7 @@ struct SLensDropletLook
 	float	life	() const	{ return fade_in + fade_out; }
 };
 static const SLensDropletLook	LD_BLOOD	= { 128.f / 1080.f, 192.f / 1080.f, 0.25f, 3.f,		0.5f, 1.f, 0.5f, 0.8f, 0.2f, 0.85f, false };
-static const SLensDropletLook	LD_RAIN		= {  64.f / 1080.f,  96.f / 1080.f, 0.25f, 1.5f,	0.5f, 0.f, 0.5f, 0.7f, 0.25f, 0.7f, true };
+static const SLensDropletLook	LD_RAIN		= { 128.f / 1080.f, 192.f / 1080.f, 0.25f, 1.5f,	0.5f, 0.f, 0.5f, 0.7f, 0.25f, 0.7f, true };	// was 64..96: doubled
 static const float	LD_RX			= 0.5f;				// the ellipse the run follows: half-width (screen uv)...
 static const float	LD_RY			= 0.8f;				// ...and height up from the bottom edge
 static const float	LD_TRAVEL		= 0.055f;			// how far one runs over its life, share of the height
@@ -1963,8 +1963,8 @@ void CActor::UpdateCL	()
 
 	// RAIN ON THE LENS: while it rains, standing under an open sky (the rain effect's own sky factor, its fan of
 	// rays straight up, at least RAIN_SKY_OPEN) and looking up past RAIN_LOOK_UP, drops of rain land on the lens
-	// -- the same droplets as the bleeding's (lens_droplet_*) but in the upper middle of the view, half the size
-	// and quicker (LD_RAIN), clear
+	// -- the same droplets as the bleeding's (lens_droplet_*) but in the upper middle of the view, the same size
+	// but quicker (LD_RAIN), clear
 	// instead of red (w < 0 for the shader), coming evenly: RAIN_COUNT_LIGHT at once in a light rain
 	// (rain_density RAIN_LIGHT), RAIN_COUNT_HEAVY in a heavy one (RAIN_HEAVY). They come RAIN_OVERFILL times
 	// faster than that many would need, so the count is always full -- a new one as soon as one goes. Look down
@@ -1975,10 +1975,10 @@ void CActor::UpdateCL	()
 		const int		RAIN_SLOTS			= IGame_Persistent::PP_DROPLETS - RAIN_FIRST;
 		const float		RAIN_LIGHT			= 0.5f;		// rain_density of a light rain (the weathers' 0.5)...
 		const float		RAIN_HEAVY			= 1.f;		// ...and of a heavy one
-		const float		RAIN_COUNT_LIGHT	= 6.f;		// drops on the lens at once in a light rain...
-		const float		RAIN_COUNT_HEAVY	= 12.f;		// ...and in a heavy one (all of RAIN_SLOTS)
+		const float		RAIN_COUNT_LIGHT	= 8.f;		// drops on the lens at once in a light rain (was 6)...
+		const float		RAIN_COUNT_HEAVY	= 18.f;		// ...and in a heavy one (all of RAIN_SLOTS; was 12)
 		const float		RAIN_OVERFILL		= 1.5f;		// they come this much faster than the count needs: always full
-		const float		RAIN_LOOK_UP		= 0.5f;		// the view's rise past which they land: sin 30 degrees
+		const float		RAIN_LOOK_UP		= 0.259f;	// the view's rise past which they land: sin 15 degrees (was 30)
 		const float		RAIN_SKY_OPEN		= 0.8f;		// the sky over the camera, 0..1 (4 of the 5 rays clear)
 		static SLensDroplet	s_rain[RAIN_SLOTS] = {};
 		static float	s_rain_spawn = 0.f;

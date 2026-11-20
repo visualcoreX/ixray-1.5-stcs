@@ -588,7 +588,7 @@ float3 pp_injury_rblur1(float2 uv, float3 c, float2 at)
 // is lit like the big drops' one, by the bloom through PP_GLARE_LO..HI -- but read once, at the droplet's
 // centre, for the whole droplet: one cheap sample, and the drop lights up or dims as a whole. So are the
 // lights' (pp_glare_lights), there too.
-#define PP_DROPLETS			20		// the bleeding's 8 and the rain's 12
+#define PP_DROPLETS			26		// the bleeding's 8 and the rain's 18
 #define PP_DROPLET_REFRACT	1.0f	// how strongly a drop bends what is behind it
 #define PP_DROPLET_TINT		float3(70.0f, 7.0f, 5.0f) / 255.0f	// was (140, 15, 10), halved
 #define PP_DROPLET_MIX		0.7f	// the tint, by overlay
