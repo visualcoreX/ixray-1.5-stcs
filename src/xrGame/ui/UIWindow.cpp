@@ -122,14 +122,33 @@ CUIWindow::CUIWindow()
 #endif
 }
 
+// A window left in a list after it is gone is drawn from freed memory (a player's crash: CUIWindow::Draw
+// over the minimap's children, reading a node of a list that was no longer there). The two ways it can
+// happen are closed below and logged -- the first few times, with the names, to say which window it was.
+static void ui_window_lifetime_warn(LPCSTR what, CUIWindow* w, CUIWindow* a, CUIWindow* b)
+{
+	static u32	reports	= 0;
+	if (reports >= 20)	return;
+	++reports;
+	Msg("! [ui] %s: window %p [%s], %p [%s] (%s), %p [%s] (%s)", what,
+		w, w->WindowName().c_str() ? w->WindowName().c_str() : "",
+		a, (a && a->WindowName().c_str()) ? a->WindowName().c_str() : "", a ? typeid(*a).name() : "-",
+		b, (b && b->WindowName().c_str()) ? b->WindowName().c_str() : "", b ? typeid(*b).name() : "-");
+}
+
 CUIWindow::~CUIWindow()
 {
-	VERIFY( !(GetParent()&&IsAutoDelete()) );
-
 	CUIWindow* parent	= GetParent();
 	bool ad				= IsAutoDelete();
 	if( parent && !ad )
 		parent->CUIWindow::DetachChild( this );
+	else if( parent )
+	{
+		// An auto-delete window is deleted BY its parent (DetachChild clears the parent pointer first), so
+		// a parent here means it was deleted directly. Stock only VERIFYed that and left it in the list.
+		ui_window_lifetime_warn	("an auto-delete window deleted while still a child, taken out of the list of", this, parent, NULL);
+		parent->SafeRemoveChild	( this );
+	}
 
 	DetachAll();
 
@@ -209,8 +228,17 @@ void CUIWindow::Update()
 void CUIWindow::AttachChild(CUIWindow* pChild)
 {
 	if(!pChild) return;
-	
+
 	R_ASSERT( !IsChild(pChild) );
+	// A window has one parent pointer, and its destructor leaves only THAT parent's list. Attached here while
+	// still listed by another window, it used to stay in the other list too -- and once deleted, that window
+	// went on drawing it from freed memory. Take it out of the old list first.
+	CUIWindow* old_parent = pChild->GetParent();
+	if (old_parent && old_parent != this && old_parent->IsChild(pChild))
+	{
+		ui_window_lifetime_warn		("a window attached while still a child of another, moved from", pChild, old_parent, this);
+		old_parent->SafeRemoveChild	(pChild);
+	}
 	pChild->SetParent(this);
 	m_ChildWndList.push_back(pChild);
 }
