@@ -310,7 +310,7 @@ float3 pp_blur1(float2 uv, float3 c)
 uniform float4 m_pp_fatigue;
 #define PP_FATIGUE_R_PX		4.0f	// radius of the blur the sharpening works against, in pixels (was 2.5)
 #define PP_FATIGUE_CLAMP	0.25f	// the most one pixel's brightness may be pushed (before the scale below)
-#define PP_FATIGUE_CENTRE	0.25f	// share of it in the middle of the screen...
+#define PP_FATIGUE_CENTRE	0.125f	// share of it in the middle of the screen (was 0.25)...
 #define PP_FATIGUE_EDGE		2.5f	// ...and at the edges (was 1, then 2)
 float pp_fatigue_sharp_weight(float2 uv)
 {
