@@ -254,14 +254,30 @@ snd_switch              = weapons\groza_switch, 1.0, 0.5
 snd_bore				= $silent
 snd_bore1				= $silent
 
+;firing sounds (1st person)
+snd_shoot_1p						= weapons\mp5\mp5_shoot_1p_01, -1.1
+snd_shoot_1p1						= weapons\mp5\mp5_shoot_1p_02, -1.1
+snd_shoot_1p2						= weapons\mp5\mp5_shoot_1p_03, -1.1
+snd_shoot_1p3						= weapons\mp5\mp5_shoot_1p_04, -1.1
+snd_shoot_1p4						= weapons\mp5\mp5_shoot_1p_05, -1.1
+snd_shoot_1p5						= weapons\mp5\mp5_shoot_1p_06, -1.1
+snd_silncer_shot_1p	    			= weapons\mp5\mp5_shoot_sil_1p_01, -1.1
+snd_silncer_shot_1p1				= weapons\mp5\mp5_shoot_sil_1p_02, -1.1
+snd_silncer_shot_1p2				= weapons\mp5\mp5_shoot_sil_1p_03, -1.1
+snd_silncer_shot_1p3				= weapons\mp5\mp5_shoot_sil_1p_04, -1.1
+snd_silncer_shot_1p4				= weapons\mp5\mp5_shoot_sil_1p_05, -1.1
+snd_silncer_shot_1p5				= weapons\mp5\mp5_shoot_sil_1p_06, -1.1
+
+volume_snd_shoot_1p          = 125
+volume_snd_silncer_shot_1p   = 125
+
 ;firing sounds (3rd person)
-snd_shoot               = weapons\mp5\mp5_shoot, -1.1
-;snd_shoot          = weapons\mp5\mp5_shoot_3p_01, -1.1
-;snd_shoot1         = weapons\mp5\mp5_shoot_3p_02, -1.1
-;snd_shoot2         = weapons\mp5\mp5_shoot_3p_03, -1.1
-;snd_shoot3         = weapons\mp5\mp5_shoot_3p_04, -1.1
-;snd_shoot4         = weapons\mp5\mp5_shoot_3p_05, -1.1
-;snd_shoot5         = weapons\mp5\mp5_shoot_3p_06, -1.1
+snd_shoot          = weapons\mp5\mp5_shoot_3p_01, -1.1
+snd_shoot1         = weapons\mp5\mp5_shoot_3p_02, -1.1
+snd_shoot2         = weapons\mp5\mp5_shoot_3p_03, -1.1
+snd_shoot3         = weapons\mp5\mp5_shoot_3p_04, -1.1
+snd_shoot4         = weapons\mp5\mp5_shoot_3p_05, -1.1
+snd_shoot5         = weapons\mp5\mp5_shoot_3p_06, -1.1
 
 snd_shoot_dist          = weapons\shared\gen_smg_shoot_far_01, -1.1
 snd_shoot_dist1         = weapons\shared\gen_smg_shoot_far_02, -1.1
@@ -276,13 +292,12 @@ volume_snd_silncer_shot    = 150
 snd_shoot_blend_dist_start = 30
 snd_shoot_blend_dist_end   = 60
 
-snd_silncer_shot        = weapons\mp5\mp5sd_shoot, -1.1
-;snd_silncer_shot          = weapons\mp5\mp5_shoot_sil_3p_01, -1.1
-;snd_silncer_shot1         = weapons\mp5\mp5_shoot_sil_3p_02, -1.1
-;snd_silncer_shot2         = weapons\mp5\mp5_shoot_sil_3p_03, -1.1
-;snd_silncer_shot3         = weapons\mp5\mp5_shoot_sil_3p_04, -1.1
-;snd_silncer_shot4         = weapons\mp5\mp5_shoot_sil_3p_05, -1.1
-;snd_silncer_shot5         = weapons\mp5\mp5_shoot_sil_3p_06, -1.1
+snd_silncer_shot          = weapons\mp5\mp5_shoot_sil_3p_01, -1.1
+snd_silncer_shot1         = weapons\mp5\mp5_shoot_sil_3p_02, -1.1
+snd_silncer_shot2         = weapons\mp5\mp5_shoot_sil_3p_03, -1.1
+snd_silncer_shot3         = weapons\mp5\mp5_shoot_sil_3p_04, -1.1
+snd_silncer_shot4         = weapons\mp5\mp5_shoot_sil_3p_05, -1.1
+snd_silncer_shot5         = weapons\mp5\mp5_shoot_sil_3p_06, -1.1
 
 ;indoor sounds
 snd_shoot_1p_indoor               = weapons\shared\gen_tail_indoor_medium_1p_01
@@ -323,7 +338,7 @@ snd_low_ammo1			= weapons\mag_rattle\smg_mag_rattle_02, 1.05, 0.015
 snd_low_ammo2			= weapons\mag_rattle\smg_mag_rattle_03, 1.05, 0.015
 snd_low_ammo3			= weapons\mag_rattle\smg_mag_rattle_04, 1.05, 0.015
 volume_snd_low_ammo		= 125
-snd_low_ammo_threshold	= 25
+snd_low_ammo_threshold	= 15
 snd_low_ammo_gain		= 0.05, 1.0
 snd_low_ammo_db			= 12				; 0 - linear
 snd_low_ammo_duck		= 4					; d u c k
