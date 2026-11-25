@@ -666,11 +666,13 @@ hip_fire_point			= 0.106312, 0.058144, 0.799256
 hip_fire_dir			= 0.000000, 0.000366, 1.000000
 hud_recoil_pivot		= 0.106312, -0.125, 0.1
 hud_recoil_aim_pivot	= 0.0, -0.15, 0.0
+
 [de_laser]
 laser_installed                = true
 laserdot_correction            = true	; GS default: camera-pull -> converge to device + center-aim + constant size
 laser_ray_bones                = line
 laser_beam_section             = laser_beam_red	; volumetric beam + procedural dot on R3 (configs\weapons\laser_beams.ltx)
+laser_beam_attach_offset	   = 0,-0.01,0.03
 particles_count                = 4
 laserdot_particle_0            = laser\red_dot
 laserdot_particle_1            = laser\red_dot1
