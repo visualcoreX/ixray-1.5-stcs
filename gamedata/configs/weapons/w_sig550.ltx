@@ -193,7 +193,7 @@ grenade_launcher_y      = 29	; orig 30 (GS wpn_sig550)
 ;�����
 snd_draw                = weapons\sig550\sig550_draw
 snd_holster             = weapons\p90\p90_hide
-snd_shoot				= weapons\sig550\sig550_shoot, -1.1
+;snd_shoot				= weapons\sig550\sig550_shoot, -1.1
 
 snd_empty               = weapons\glock17\glock17_dry
 snd_changefiremode	= weapons\vss\vss_firemode
@@ -206,13 +206,43 @@ snd_change_grenade      = weapons\m203\m203_changegrenade	; GS base.ltx:220 -- t
 snd_changecartridgetype = weapons\sig550\sig550_reload	; GS base.ltx:217 -- the RIFLE ammo-type change
 snd_switch              = weapons\m203\m203_activate
 
+;firing sounds (1st person)
+snd_shoot_1p          = weapons\sig550\sig550_shoot_1p_01, -0.9
+snd_shoot_1p1         = weapons\sig550\sig550_shoot_1p_02, -0.9
+snd_shoot_1p2         = weapons\sig550\sig550_shoot_1p_03, -0.9
+snd_shoot_1p3         = weapons\sig550\sig550_shoot_1p_04, -0.9
+snd_shoot_1p4         = weapons\sig550\sig550_shoot_1p_05, -0.9
+snd_shoot_1p5         = weapons\sig550\sig550_shoot_1p_06, -0.9
+snd_shoot_1p6         = weapons\sig550\sig550_shoot_1p_07, -0.9
+snd_shoot_1p7         = weapons\sig550\sig550_shoot_1p_08, -0.9
+snd_shoot_1p8         = weapons\sig550\sig550_shoot_1p_09, -0.9
+snd_shoot_1p9         = weapons\sig550\sig550_shoot_1p_10, -0.9
+snd_shoot_1p10        = weapons\sig550\sig550_shoot_1p_11, -0.9
+snd_shoot_1p11        = weapons\sig550\sig550_shoot_1p_12, -0.9
+
+snd_silncer_shot_1p          = weapons\sig550\sig550_shoot_sil_1p_01, -0.9
+snd_silncer_shot_1p1         = weapons\sig550\sig550_shoot_sil_1p_02, -0.9
+snd_silncer_shot_1p2         = weapons\sig550\sig550_shoot_sil_1p_03, -0.9
+snd_silncer_shot_1p3         = weapons\sig550\sig550_shoot_sil_1p_04, -0.9
+snd_silncer_shot_1p4         = weapons\sig550\sig550_shoot_sil_1p_05, -0.9
+snd_silncer_shot_1p5         = weapons\sig550\sig550_shoot_sil_1p_06, -0.9
+snd_silncer_shot_1p6         = weapons\sig550\sig550_shoot_sil_1p_07, -0.9
+snd_silncer_shot_1p7         = weapons\sig550\sig550_shoot_sil_1p_08, -0.9
+snd_silncer_shot_1p8         = weapons\sig550\sig550_shoot_sil_1p_09, -0.9
+snd_silncer_shot_1p9         = weapons\sig550\sig550_shoot_sil_1p_10, -0.9
+snd_silncer_shot_1p10        = weapons\sig550\sig550_shoot_sil_1p_11, -0.9
+snd_silncer_shot_1p11        = weapons\sig550\sig550_shoot_sil_1p_12, -0.9
+
+volume_snd_shoot_1p          = 125
+volume_snd_silncer_shot_1p   = 125
+
 ;firing sounds (3rd person)
-;snd_shoot          = weapons\g36\g36_shoot_3p_01, -0.9
-;snd_shoot1         = weapons\g36\g36_shoot_3p_02, -0.9
-;snd_shoot2         = weapons\g36\g36_shoot_3p_03, -0.9
-;snd_shoot3         = weapons\g36\g36_shoot_3p_04, -0.9
-;snd_shoot4         = weapons\g36\g36_shoot_3p_05, -0.9
-;snd_shoot5         = weapons\g36\g36_shoot_3p_06, -0.9
+snd_shoot          = weapons\sig550\sig550_shoot_3p_01, -0.9
+snd_shoot1         = weapons\sig550\sig550_shoot_3p_02, -0.9
+snd_shoot2         = weapons\sig550\sig550_shoot_3p_03, -0.9
+snd_shoot3         = weapons\sig550\sig550_shoot_3p_04, -0.9
+snd_shoot4         = weapons\sig550\sig550_shoot_3p_05, -0.9
+snd_shoot5         = weapons\sig550\sig550_shoot_3p_06, -0.9
 
 snd_shoot_dist          = weapons\shared\gen_rifle_556_shoot_dist_01, -0.9
 snd_shoot_dist1         = weapons\shared\gen_rifle_556_shoot_dist_02, -0.9
@@ -227,12 +257,12 @@ volume_snd_silncer_shot    = 150
 snd_shoot_blend_dist_start = 30
 snd_shoot_blend_dist_end   = 60
 
-;snd_silncer_shot          = weapons\g36\g36_shoot_sil_3p_01, -0.9
-;snd_silncer_shot1         = weapons\g36\g36_shoot_sil_3p_02, -0.9
-;;snd_silncer_shot2         = weapons\g36\g36_shoot_sil_3p_03, -0.9
-;snd_silncer_shot3         = weapons\g36\g36_shoot_sil_3p_04, -0.9
-;snd_silncer_shot4         = weapons\g36\g36_shoot_sil_3p_05, -0.9
-;snd_silncer_shot5         = weapons\g36\g36_shoot_sil_3p_06, -0.9
+snd_silncer_shot          = weapons\sig550\sig550_shoot_sil_3p_01, -0.9
+snd_silncer_shot1         = weapons\sig550\sig550_shoot_sil_3p_02, -0.9
+snd_silncer_shot2         = weapons\sig550\sig550_shoot_sil_3p_03, -0.9
+snd_silncer_shot3         = weapons\sig550\sig550_shoot_sil_3p_04, -0.9
+snd_silncer_shot4         = weapons\sig550\sig550_shoot_sil_3p_05, -0.9
+snd_silncer_shot5         = weapons\sig550\sig550_shoot_sil_3p_06, -0.9
 
 ;grenade launcher sounds
 snd_shoot_grenade_1p    = weapons\shared\gen_launcher_shoot_1p_01
@@ -301,7 +331,7 @@ silencer_bullet_speed   = 600
 ;silencer_flame_particles  = weapons\generic_weapon01
 silencer_smoke_particles   = ghost_particles\weapons\suppressor_smoke_ar_common
 
-snd_silncer_shot        = weapons\sig550\sig550_shoot_silencer, 0.9
+;snd_silncer_shot        = weapons\sig550\sig550_shoot_silencer, 0.9
 
 silencer_light_color    = 0.6,0.5,0.3
 silencer_light_range    = 0.01

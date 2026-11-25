@@ -173,7 +173,7 @@ scope_y                 = 4
 ;звуки
 snd_draw                = weapons\svu\svu_draw
 snd_holster					= weapons\vss\vss_hide
-snd_shoot               = weapons\svu\svu_shoot, -1.1
+;snd_shoot               = weapons\svu\svu_shoot, -1.1
 snd_empty					= weapons\glock17\glock17_dry
 snd_reload              = weapons\svu\svu_reload
 snd_reload_empty        = weapons\svu\svu_reload_empty
@@ -256,16 +256,44 @@ snd_nv_off              = weapons\nv_deact
 snd_scope_brightness_plus = weapons\nv_intensity
 snd_scope_brightness_minus = weapons\nv_intensity
 
+;firing sounds (1st person)
+snd_shoot_1p          = weapons\svu\svu_shoot_1p_01, -0.9
+snd_shoot_1p1         = weapons\svu\svu_shoot_1p_02, -0.9
+snd_shoot_1p2         = weapons\svu\svu_shoot_1p_03, -0.9
+snd_shoot_1p3         = weapons\svu\svu_shoot_1p_04, -0.9
+
+snd_silncer_shot_1p          = weapons\svu\svu_shoot_sil_1p_01, -0.9
+snd_silncer_shot_1p1         = weapons\svu\svu_shoot_sil_1p_02, -0.9
+snd_silncer_shot_1p2         = weapons\svu\svu_shoot_sil_1p_03, -0.9
+snd_silncer_shot_1p3         = weapons\svu\svu_shoot_sil_1p_04, -0.9
+
+volume_snd_shoot_1p          = 125
+volume_snd_silncer_shot_1p   = 110
+
+;firing sounds (3rd person)
+snd_shoot          = weapons\svu\svu_shoot_3p_01, -0.9
+snd_shoot1         = weapons\svu\svu_shoot_3p_02, -0.9
+snd_shoot2         = weapons\svu\svu_shoot_3p_03, -0.9
+snd_shoot3         = weapons\svu\svu_shoot_3p_04, -0.9
+
+snd_silncer_shot          = weapons\svu\svu_shoot_sil_3p_01, -0.9
+snd_silncer_shot1         = weapons\svu\svu_shoot_sil_3p_02, -0.9
+snd_silncer_shot2         = weapons\svu\svu_shoot_sil_3p_03, -0.9
+snd_silncer_shot3         = weapons\svu\svu_shoot_sil_3p_04, -0.9
+
 snd_shoot_dist          = weapons\shared\gen_sniper_shoot_dist_01, -1.1
 snd_shoot_dist1         = weapons\shared\gen_sniper_shoot_dist_02, -1.1
 snd_shoot_dist2         = weapons\shared\gen_sniper_shoot_dist_03, -1.1
 snd_shoot_dist3         = weapons\shared\gen_sniper_shoot_dist_04, -1.1
 snd_shoot_dist4         = weapons\shared\gen_sniper_shoot_dist_05, -1.1
 snd_shoot_dist5         = weapons\shared\gen_sniper_shoot_dist_06, -1.1
+
+volume_snd_shoot           = 175
+volume_snd_silncer_shot    = 125
+
 snd_shoot_blend_dist_start = 30
 snd_shoot_blend_dist_end   = 60
 
-;indoor sounds
 ;indoor sounds
 snd_shoot_1p_indoor               = weapons\shared\gen_tail_indoor_large_1p_01
 snd_shoot_1p_indoor1              = weapons\shared\gen_tail_indoor_large_1p_02
