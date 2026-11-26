@@ -32,7 +32,22 @@ class CTextureDescrMngr
 
 	map_TD									m_texture_details;
 
+	// What one .thm contributes (only image, terrain and normal-map textures do). Read from the .thm
+	// itself or from the disk cache of them (TextureDescrManager.cpp), applied the same way either way.
+	struct thm_record
+	{
+		xr_string			name;			// texture name, extension dropped
+		bool				has_assoc;		// a detail texture (detail_* below)
+		xr_string			detail_name;
+		float				detail_scale;
+		u8					usage;			// bit 0 diffuse detail, bit 1 bump detail
+		float				material;		// material + material_weight
+		xr_string			bump_name;		// empty: no bump
+		bool				steep_parallax;
+	};
+
 	void		LoadTHM		(LPCSTR initial);
+	void		ApplyTHM	(const thm_record& r);
 
 public:
 	void		Load		();
