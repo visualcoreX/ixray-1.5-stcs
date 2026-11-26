@@ -1405,6 +1405,8 @@ struct reticle_sensor_state
 	float	glow	= -1.f;
 };
 
+static const float R1_SENSOR_LUM_SCALE = 4.f;	// the actor's lighting on R1, to R2's scale (below; 2 still lit it in fair light)
+
 static float reticle_sensor_glow(IRender_ObjectSpecific* ros, const Fvector& illum, reticle_sensor_state& st)
 {
 	float lum = g_pGamePersistent->frame_luminance;
@@ -1412,6 +1414,11 @@ static float reticle_sensor_glow(IRender_ObjectSpecific* ros, const Fvector& ill
 	{
 		st.lum	+= ((ros ? ros->get_luminocity() : 0.f) - st.lum) * _min(1.f, Device.fTimeDelta * 0.75f);
 		lum		= st.lum;
+		// R1's static lighting gives the actor a far lower figure than R2 does in the same light (about a quarter, by
+		// eye), so the glow came on already under a bright overcast. Scaled up, the thresholds in the configs (tuned on the tonemapped
+		// renderers) mean about the same light on every renderer.
+		if (::Render->get_generation() == IRender_interface::GENERATION_R1)
+			lum	*= R1_SENSOR_LUM_SCALE;
 	}
 	float target	= (illum.x - lum) / _max(illum.x - illum.y, EPS);
 	clamp(target, 0.f, 1.f);
