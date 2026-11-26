@@ -219,6 +219,9 @@ void CRenderTarget::phase_pp		()
 			RCache.set_ca	("m_pp_droplets", i, dr.x, dr.y, dr.z, dr.w);
 			if (dr.w != 0.f)	glare	= true;
 		}
+		// any of them set: the shader skips both droplet loops on one branch otherwise (postprocess.ps)
+		static	shared_str	s_pp_droplets_on	= "m_pp_droplets_on";
+		RCache.set_c		(s_pp_droplets_on, NeedDroplets() ? 1.f : 0.f, 0.f, 0.f, 0.f);
 		// the lights the drops and droplets catch a glare from, besides the bloom (glare_gather_lights): screen
 		// uv, then colour x weight, GLARE_LIGHTS pairs -- worked out only while there is a drop to catch it
 		if (glare)
@@ -226,6 +229,26 @@ void CRenderTarget::phase_pp		()
 			Fvector4	gl	[GLARE_LIGHTS*2];
 			glare_gather_lights	(gl);
 			for (u32 i = 0; i < GLARE_LIGHTS*2; ++i)	RCache.set_ca	("m_pp_glare_lights", i, gl[i]);
+			// ...and what each droplet catches of them, worked out here once per droplet: the shader did it per pixel
+			// inside every one of its 26 unrolled droplets (pp_glare_lights), 1600 instructions of code for a figure
+			// the whole droplet shares. The same formula as pp_glare_lights in the r2 postprocess.ps
+			// (PP_GLARE_LIGHT_R, _GAIN, _MAX).
+			const float	asp	= Device.dwHeight ? float(Device.dwWidth) / float(Device.dwHeight) : 1.f;
+			for (int i = 0; i < IGame_Persistent::PP_DROPLETS; ++i)
+			{
+				const Fvector4 dr = g_pGamePersistent ? g_pGamePersistent->pp_droplets[i] : Fvector4().set(0.f,0.f,0.f,0.f);
+				Fvector	sum	= {0.f, 0.f, 0.f};
+				if (dr.w != 0.f)
+					for (u32 l = 0; l < GLARE_LIGHTS; ++l)
+					{
+						const float dx	= (dr.x - gl[l*2].x) * asp, dy = dr.y - gl[l*2].y;
+						float		f	= 1.f - _sqrt(dx*dx + dy*dy) / 0.6f;
+						clamp		(f, 0.f, 1.f);
+						sum.mad		(Fvector().set(gl[l*2 + 1].x, gl[l*2 + 1].y, gl[l*2 + 1].z), f * f);
+					}
+				RCache.set_ca	("m_pp_droplet_glare", i, (1.f - expf(-sum.x * 2.5f)) * 0.75f,
+								 (1.f - expf(-sum.y * 2.5f)) * 0.75f, (1.f - expf(-sum.z * 2.5f)) * 0.75f, 0.f);
+			}
 		}
 	}
 	static	shared_str	s_brightness	= "c_brightness";
