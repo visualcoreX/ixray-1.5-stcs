@@ -355,6 +355,8 @@ local function cfg_get_overrides(ini, section, npc_st)
 	end
 
 	l.combat_ignore_keep_when_attacked = ini:line_exist(section, "combat_ignore_keep_when_attacked") and ini:r_bool(section, "combat_ignore_keep_when_attacked") or nil
+	-- no NPC takes this one for an enemy (xr_combat_ignore.is_enemy); the actor and monsters still can
+	l.ignored_by_npcs = ini:line_exist(section, "ignored_by_npcs") and ini:r_bool(section, "ignored_by_npcs") or nil
 
 	tmp = get_string_field(ini, section, "combat_ignore_cond")
 	if tmp then

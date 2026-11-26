@@ -34,6 +34,16 @@ function is_enemy(npc, enemy, st, not_check_sim)
 		return false
 	end
 
+	-- An NPC whose logic says ignored_by_npcs = true is nobody's target. The sim rules below make any NPC
+	-- without a squad fair game for everybody (enemy_squad == nil), so the Agroprom hermit, a lone trader
+	-- 18 m from the smart the bandits storm, got shot by every raid that passed and, once the actor had hit
+	-- him, shot back and died. Checked first: a fighter's own state (wounded, hit by the actor) must not
+	-- make him one.
+	local enemy_st = db.storage[enemy:id()]
+	if enemy_st ~= nil and enemy_st.overrides ~= nil and enemy_st.overrides.ignored_by_npcs == true then
+		return false
+	end
+
 	if npc:critically_wounded() then
 		return true
 	end
