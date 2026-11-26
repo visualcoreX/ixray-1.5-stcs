@@ -141,11 +141,15 @@ void CRenderTarget::calc_tc_duality_ss	(Fvector2& r0, Fvector2& r1, Fvector2& l0
 	l0.set(p0.x+shift_u,p0.y+shift_v);	l1.set(p1.x,p1.y);
 }
 
+// The lens droplets R1 draws: the bleeding's 8 and the rain's first 9 (CActor halves the rain here) --
+// PP_DROPLETS_USED in the r1 pp_scope.h, which sizes the shader's array by it.
+static const int	R1_PP_DROPLETS_USED	= IGame_Persistent::PP_DROPLETS_BLOOD + 9;
+
 // any lens droplet on screen (pp_droplets, CActor; w < 0 is a drop of rain)
 static bool NeedDroplets()
 {
 	if (!g_pGamePersistent)	return false;
-	for (int i = 0; i < IGame_Persistent::PP_DROPLETS; ++i)
+	for (int i = 0; i < R1_PP_DROPLETS_USED; ++i)
 		if (g_pGamePersistent->pp_droplets[i].w != 0.f)	return true;
 	return false;
 }
@@ -373,11 +377,18 @@ void CRenderTarget::End		()
 		RCache.set_c		(s_pp_blur, gp ? gp->pp_blur : 0.f,
 							 Device.dwWidth ? float(Device.dwHeight) / float(Device.dwWidth) : 1.f, 0.f, 0.f);
 		// the bleeding's lens droplets (pp_droplets, CActor): centre, radius (signed: mirrored), opacity
-		for (int i = 0; i < IGame_Persistent::PP_DROPLETS; ++i)
+		// Only the slots R1 uses (the bleeding's 8, the rain's first 9: CActor lets half as many drops of rain land
+		// here) -- the shader's array is that long (PP_DROPLETS_USED, r1\pp_scope.h). A constant knows no length on
+		// this side: writing all 26 ran past the array into the registers after it, and the empty slots zeroed the
+		// injury, the hit flash and the rest of the grading every frame.
+		for (int i = 0; i < R1_PP_DROPLETS_USED; ++i)
 		{
 			const Fvector4 dr = gp ? gp->pp_droplets[i] : Fvector4().set(0.f,0.f,0.f,0.f);
 			RCache.set_ca	("m_pp_droplets", i, dr.x, dr.y, dr.z, dr.w);
 		}
+		// any of them set: the shader skips both droplet loops on one branch otherwise (pp_scope.h)
+		static	shared_str	s_pp_droplets_on	= "m_pp_droplets_on";
+		RCache.set_c		(s_pp_droplets_on, NeedDroplets() ? 1.f : 0.f, 0.f, 0.f, 0.f);
 	}
 	static	shared_str	s_brightness	= "c_brightness";
 	RCache.set_c		(s_brightness,p_brightness.x,p_brightness.y,p_brightness.z,0);

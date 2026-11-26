@@ -17,6 +17,13 @@ uniform float4 m_pp_mask;
 // needs the second scene render the 3D lens does.
 uniform float4 m_pp_zoom;
 uniform float4 m_pp_shadow;
+
+// Every fetch in this file samples at mip 0 and with no gradients. A plain tex2D needs the screen-space
+// derivatives, which ps_3_0 cannot take inside a branch that differs per pixel, so the compiler
+// FLATTENED every effect below: the eyepiece's cubic zoom, the hit blur, the aberration and the fringe
+// were all sampled on every pixel of every frame (69 fetches) and then thrown away by a select when
+// the effect was off. The targets read here have no mips anyway, and the injury plates are drawn 1:1.
+#define PP_TEX(s, uv)	tex2Dlod(s, float4((uv), 0.0f, 0.0f))
 #define PP_DIST_R0  0.45f		// the middle of the glass this distortion does not touch at all
 #define PP_REST_RIM 0.875f		// where the rim shading sits with the eye centred (1.0 = none at all)
 
@@ -98,7 +105,7 @@ float pp_zoom_soft(float2 uv)	// 1 = this pixel is inside a magnified eyepiece
 
 float3 pp_cubic0(float2 uv, float on)
 {
-	if (on <= 0.0f || screen_res.z <= 0.0f)		return tex2D(s_base0, uv).rgb;
+	[branch] if (on <= 0.0f || screen_res.z <= 0.0f)	return PP_TEX(s_base0, uv).rgb;
 
 	float2 tsize = screen_res.xy;
 	float2 rcp   = screen_res.zw;
@@ -117,18 +124,18 @@ float3 pp_cubic0(float2 uv, float on)
 	float2 p12 = (tc1 + w2 / w12) * rcp;
 
 	float3 c = 0.0f;
-	c += tex2D(s_base0, float2(p12.x, p0.y)).rgb * (w12.x * w0.y);
-	c += tex2D(s_base0, float2(p0.x,  p12.y)).rgb * (w0.x  * w12.y);
-	c += tex2D(s_base0, float2(p12.x, p12.y)).rgb * (w12.x * w12.y);
-	c += tex2D(s_base0, float2(p3.x,  p12.y)).rgb * (w3.x  * w12.y);
-	c += tex2D(s_base0, float2(p12.x, p3.y)).rgb * (w12.x * w3.y);
+	c += PP_TEX(s_base0, float2(p12.x, p0.y)).rgb * (w12.x * w0.y);
+	c += PP_TEX(s_base0, float2(p0.x,  p12.y)).rgb * (w0.x  * w12.y);
+	c += PP_TEX(s_base0, float2(p12.x, p12.y)).rgb * (w12.x * w12.y);
+	c += PP_TEX(s_base0, float2(p3.x,  p12.y)).rgb * (w3.x  * w12.y);
+	c += PP_TEX(s_base0, float2(p12.x, p3.y)).rgb * (w12.x * w3.y);
 	float wsum = w12.x*w0.y + w0.x*w12.y + w12.x*w12.y + w3.x*w12.y + w12.x*w3.y;
 	return c / wsum;
 }
 
 float3 pp_cubic1(float2 uv, float on)
 {
-	if (on <= 0.0f || screen_res.z <= 0.0f)		return tex2D(s_base1, uv).rgb;
+	[branch] if (on <= 0.0f || screen_res.z <= 0.0f)	return PP_TEX(s_base1, uv).rgb;
 
 	float2 tsize = screen_res.xy;
 	float2 rcp   = screen_res.zw;
@@ -147,11 +154,11 @@ float3 pp_cubic1(float2 uv, float on)
 	float2 p12 = (tc1 + w2 / w12) * rcp;
 
 	float3 c = 0.0f;
-	c += tex2D(s_base1, float2(p12.x, p0.y)).rgb * (w12.x * w0.y);
-	c += tex2D(s_base1, float2(p0.x,  p12.y)).rgb * (w0.x  * w12.y);
-	c += tex2D(s_base1, float2(p12.x, p12.y)).rgb * (w12.x * w12.y);
-	c += tex2D(s_base1, float2(p3.x,  p12.y)).rgb * (w3.x  * w12.y);
-	c += tex2D(s_base1, float2(p12.x, p3.y)).rgb * (w12.x * w3.y);
+	c += PP_TEX(s_base1, float2(p12.x, p0.y)).rgb * (w12.x * w0.y);
+	c += PP_TEX(s_base1, float2(p0.x,  p12.y)).rgb * (w0.x  * w12.y);
+	c += PP_TEX(s_base1, float2(p12.x, p12.y)).rgb * (w12.x * w12.y);
+	c += PP_TEX(s_base1, float2(p3.x,  p12.y)).rgb * (w3.x  * w12.y);
+	c += PP_TEX(s_base1, float2(p12.x, p3.y)).rgb * (w12.x * w3.y);
 	float wsum = w12.x*w0.y + w0.x*w12.y + w12.x*w12.y + w3.x*w12.y + w12.x*w3.y;
 	return c / wsum;
 }
@@ -173,7 +180,7 @@ float3 pp_abber_rgb(float2 uv0, float2 uv1, float2 ab)
 		float  t = float(i) * (2.0f / float(PP_ABBER_TAPS - 1)) - 1.0f;		// -1 .. +1 along the offset
 		float  dr = t - 1.0f, dg = t, db = t + 1.0f;
 		float3 w = exp(-float3(dr*dr, dg*dg, db*db) * (0.5f / (PP_ABBER_SIGMA*PP_ABBER_SIGMA)));
-		float3 c = (tex2D(s_base0, uv0 + ab*t).rgb + tex2D(s_base1, uv1 + ab*t).rgb) * 0.5f;
+		float3 c = (PP_TEX(s_base0, uv0 + ab*t).rgb + PP_TEX(s_base1, uv1 + ab*t).rgb) * 0.5f;
 		sum  += c * w;
 		wsum += w;
 	}
@@ -187,8 +194,8 @@ float3 pp_abber_rgb(float2 uv0, float2 uv1, float2 ab)
 // eyepiece and an aberration to draw, so it costs nothing on a scope with scope_abberation == 0.
 float3 pp_sample_avg(float2 uv0, float2 uv1)
 {
-	float3 c0 = tex2D(s_base0, uv0).rgb;
-	float3 c1 = tex2D(s_base1, uv1).rgb;
+	float3 c0 = PP_TEX(s_base0, uv0).rgb;
+	float3 c1 = PP_TEX(s_base1, uv1).rgb;
 	return (c0 + c1) * 0.5f;
 }
 
@@ -318,21 +325,21 @@ static const float2 PP_BLUR_TAPS[12] = {
 	float2( 0.896420f,  0.412458f), float2(-0.321940f, -0.932615f), float2(-0.791559f, -0.597710f) };
 float3 pp_blur0(float2 uv, float3 c)
 {
-	if (m_pp_blur.x <= 0.001f)	return c;
+	[branch] if (m_pp_blur.x <= 0.001f)	return c;
 	float2 rad	= float2(m_pp_blur.y, 1.0f) * (PP_BLUR_R * m_pp_blur.x);
 	float3 sum	= c;
 	for (int i = 0; i < 12; i++)
-		sum += tex2D(s_base0, uv + PP_BLUR_TAPS[i] * rad).rgb;
+		sum += PP_TEX(s_base0, uv + PP_BLUR_TAPS[i] * rad).rgb;
 	return sum / 13.0f;
 }
 
 float3 pp_blur1(float2 uv, float3 c)
 {
-	if (m_pp_blur.x <= 0.001f)	return c;
+	[branch] if (m_pp_blur.x <= 0.001f)	return c;
 	float2 rad	= float2(m_pp_blur.y, 1.0f) * (PP_BLUR_R * m_pp_blur.x);
 	float3 sum	= c;
 	for (int i = 0; i < 12; i++)
-		sum += tex2D(s_base1, uv + PP_BLUR_TAPS[i] * rad).rgb;
+		sum += PP_TEX(s_base1, uv + PP_BLUR_TAPS[i] * rad).rgb;
 	return sum / 13.0f;
 }
 
@@ -404,7 +411,7 @@ float3 pp_injury_tint(float3 c, float2 uv)
 float3 pp_injury_drops(float3 c, float2 uv)
 {
 	float  m	= saturate(m_pp_injury.y * PP_DROPS_GAIN * pp_injury_mask(pp_injury_r(uv), m_pp_hit.w));
-	return lerp(c, pp_overlay(c, tex2D(s_blood_drops, uv).rgb), m);
+	return lerp(c, pp_overlay(c, PP_TEX(s_blood_drops, uv).rgb), m);
 }
 
 // The VESSELS: fx_blood_vessels_00, a grey (0.5) plate with the vessels darker/redder towards the rim, laid
@@ -415,7 +422,7 @@ uniform sampler2D	s_blood_vessels;
 float3 pp_injury_vessels(float3 c, float2 uv)
 {
 	float  m	= saturate(m_pp_injury.w * PP_VESSELS_GAIN * pp_injury_mask(pp_injury_r(uv), m_pp_hit.z));
-	return lerp(c, pp_overlay(c, tex2D(s_blood_vessels, uv).rgb), m);
+	return lerp(c, pp_overlay(c, PP_TEX(s_blood_vessels, uv).rgb), m);
 }
 
 // The RADIAL BLUR of the edges, as an optic's rim smears: the picture averaged along the line through the
@@ -454,6 +461,8 @@ float3 pp_injury_rblur1(float2 uv, float3 c, float2 at)
 // light the glare from the bloom; R1 has none, so it reads the picture itself once, at the droplet's centre,
 // from PP_DROPLET_GLARE_LO to PP_DROPLET_GLARE_HI of luma -- the whole droplet lights up or dims at once.
 #define PP_DROPLETS			26		// the bleeding's 8 and the rain's 18
+#define PP_DROPLETS_USED	17		// ...of which R1 fills the bleeding's 8 and the rain's first 9: it lets half as
+								// many drops of rain land (CActor), always into the first free slot
 #define PP_DROPLET_REFRACT	1.0f	// how strongly a drop bends what is behind it
 #define PP_DROPLET_TINT		float3(70.0f, 7.0f, 5.0f) / 255.0f	// was (140, 15, 10), halved
 #define PP_DROPLET_MIX		0.7f	// the tint, by overlay
@@ -461,7 +470,14 @@ float3 pp_injury_rblur1(float2 uv, float3 c, float2 at)
 #define PP_DROPLET_GLARE	1.0f	// the glare, added (x the light behind it)
 #define PP_DROPLET_GLARE_LO	0.6f	// the picture's luma where the glare starts to light...
 #define PP_DROPLET_GLARE_HI	1.0f	// ...and where it is full
-uniform float4 m_pp_droplets[PP_DROPLETS];
+// Declared as long as R1 uses it, and the engine writes that many (R1_PP_DROPLETS_USED): the compiler trims an
+// array to what is read, and a write past its end lands in whatever constant comes after it.
+uniform float4 m_pp_droplets[PP_DROPLETS_USED];
+// x > 0: at least one of them is set (the engine's NeedDroplets). Without it the two loops below cost
+// ~3000 instructions a pixel on every frame with nothing on the lens: ps_3_0 cannot index the constants
+// by a loop counter, so each m_pp_droplets[i] compiled into a chain of 26 selects. Unrolled, every drop
+// reads its own register, and an empty slot is one branch.
+uniform float4 m_pp_droplets_on;
 uniform sampler2D	s_blood_droplet;
 // the drop's own -1..1 square at this pixel; false outside it
 bool pp_droplet_local(float4 dr, float2 uv, out float2 p)
@@ -474,11 +490,13 @@ bool pp_droplet_local(float4 dr, float2 uv, out float2 p)
 float2 pp_droplets_refract(float2 uv)
 {
 	float2 off = float2(0.0f, 0.0f);
-	for (int i = 0; i < PP_DROPLETS; i++)
+	[branch] if (m_pp_droplets_on.x <= 0.0f)	return off;
+	[unroll] for (int i = 0; i < PP_DROPLETS_USED; i++)
 	{
 		float4 dr = m_pp_droplets[i];
+		[branch] if (dr.w == 0.0f)			continue;	// an empty slot: the same for every pixel
 		float2 p;
-		if (!pp_droplet_local(dr, uv, p))	continue;		// (lod 0 below: the branch differs per pixel)
+		[branch] if (!pp_droplet_local(dr, uv, p))	continue;		// (lod 0 below: the branch differs per pixel)
 		float4 t	= tex2Dlod(s_blood_droplet, float4(p * 0.5f + 0.5f, 0.0f, 0.0f));
 		float2 o	= (t.gb - 0.5f) * 4.0f;
 		if (dr.z < 0.0f)	o.x = -o.x;
@@ -489,11 +507,13 @@ float2 pp_droplets_refract(float2 uv)
 
 float3 pp_droplets_colour(float3 c, float2 uv)
 {
-	for (int i = 0; i < PP_DROPLETS; i++)
+	[branch] if (m_pp_droplets_on.x <= 0.0f)	return c;
+	[unroll] for (int i = 0; i < PP_DROPLETS_USED; i++)
 	{
 		float4 dr = m_pp_droplets[i];
+		[branch] if (dr.w == 0.0f)			continue;
 		float2 p;
-		if (!pp_droplet_local(dr, uv, p))	continue;
+		[branch] if (!pp_droplet_local(dr, uv, p))	continue;
 		float4 t	= tex2Dlod(s_blood_droplet, float4(p * 0.5f + 0.5f, 0.0f, 0.0f));
 		const float a = abs(dr.w);
 		if (dr.w > 0.0f)	c = lerp(c, pp_overlay(c, PP_DROPLET_TINT), t.r * a * PP_DROPLET_MIX);

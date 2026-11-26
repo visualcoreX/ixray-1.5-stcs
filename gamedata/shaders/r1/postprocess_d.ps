@@ -33,14 +33,14 @@ float4 	main	( v2p I )	: COLOR
 	float3	t_1 	= pp_cubic1(z_1, soft);
 	t_0		= pp_blur0(z_0, t_0);				// a hit's flash of blur
 	t_1		= pp_blur1(z_1, t_1);
-	if (m_pp_injury.z > 0.0f)						// the injury: the edges smear radially
+	[branch] if (m_pp_injury.z > 0.0f)						// the injury: the edges smear radially
 	{
 		t_0		= pp_injury_rblur0(z_0, t_0, I.tc0);
 		t_1		= pp_injury_rblur1(z_1, t_1, I.tc0);
 	}
 	float3 	image	= (t_0+t_1)*0.5f;					// add_d2
 	{	float2 ab = pp_abber_offset(z_0);			// the glass splits the colours towards its rim
-		if (ab.x > 0.0f)
+		[branch] if (ab.x > 0.0f)
 		{
 			image   = pp_abber_rgb(z_0, z_1, ab);
 			image   = pp_purple_fringe(z_0, z_1, image);
@@ -62,8 +62,8 @@ float4 	main	( v2p I )	: COLOR
 	// the injury: the edges dyed red, a hit's flash, the vessels, then the blood on the lens (m_pp_injury)
 	if (PP_INJURY_TINT_ON && m_pp_injury.x > 0.0f)	image = pp_injury_tint(image, I.tc0);
 	if (m_pp_hit.x > 0.0f || m_pp_hit.y > 0.0f)	image = pp_hit_flash(image, I.tc0);
-	if (m_pp_injury.w > 0.0f)	image = pp_injury_vessels(image, I.tc0);
-	if (m_pp_injury.y > 0.0f)	image = pp_injury_drops(image, I.tc0);
+	[branch] if (m_pp_injury.w > 0.0f)	image = pp_injury_vessels(image, I.tc0);
+	[branch] if (m_pp_injury.y > 0.0f)	image = pp_injury_drops(image, I.tc0);
 	image	= pp_droplets_colour(image, I.tc0);
 //		image	= (image + c_brightness) * I.color;		// mad ?
 

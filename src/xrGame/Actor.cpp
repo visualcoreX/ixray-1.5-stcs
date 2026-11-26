@@ -1993,6 +1993,10 @@ void CActor::UpdateCL	()
 			// how many at once, evenly: rising to RAIN_COUNT_LIGHT at a light rain, then on to RAIN_COUNT_HEAVY
 			float	count	= (density < RAIN_LIGHT) ? RAIN_COUNT_LIGHT * density / RAIN_LIGHT
 							: RAIN_COUNT_LIGHT + (RAIN_COUNT_HEAVY - RAIN_COUNT_LIGHT) * _min(1.f, (density - RAIN_LIGHT) / (RAIN_HEAVY - RAIN_LIGHT));
+			// R1 (static lighting, the weak machines' pick): half as many. Spawned into the first free slot, so they
+			// never go past RAIN_FIRST + 9, and its shader walks only those (PP_DROPLETS_USED in the R1 pp_scope.h).
+			if (::Render->get_generation() == IRender_interface::GENERATION_R1)
+				count		*= 0.5f;
 			s_rain_cap		= iCeil(count - 0.01f);
 			s_rain_spawn	+= Device.fTimeDelta * count * RAIN_OVERFILL / LD_RAIN.life() * ::Random.randF(0.5f, 1.5f);
 		}
