@@ -14,6 +14,7 @@ uniform	float4		m_collim_glass;
 uniform	float4		m_collim_mark;
 uniform	float4		m_collim_mark_proj;
 uniform sampler2D	s_mark;			// $user$collim_mark: the reticle picked
+uniform	float4		m_collim_prism;	// z = collimator_mark_dark: how dark an etched reticle's lines lay over the view
 
 struct v2p
 {
@@ -46,6 +47,11 @@ float4 main( v2p I ) : COLOR
 	float	inside	= ( ad > 0 && all(tc == saturate(tc)) ) ? 1 : 0;
 	float4	mark	= tex2D( s_mark, tc );
 	float3	glow	= mark.rgb * mark.a * m_collim_mark.rgb * inside;
+	// An etched reticle's lines (the Rakurs's): black over the view whatever the light, the glow added on top
+	// -- r2/r3 lay them in their late pass (collim_lines), R1 has none, so they darken through this pass's own
+	// alpha: the view behind keeps (1 - a)(1 - lines) of itself, the glass's texture stays as it was. Only for
+	// the held optic (m_collim_glass.y = 0 while it draws a shader reticle; the world's glasses get 1).
+	float	lines	= mark.a * inside * m_collim_prism.z * ( m_collim_glass.y <= 0 ? 1 : 0 );
 
-	return	float4( glass * a + refl + glow * (1 - a), a );
+	return	float4( glass * a + refl + glow * (1 - a), 1 - (1 - a) * (1 - lines) );
 }
