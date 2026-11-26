@@ -3,6 +3,65 @@
 
 #include "cpuid.h"
 
+#include <intrin.h>
+
+// What CPU-Z and Windows show: the name the processor reports itself, the family and model with
+// their extended fields (base family 0xF alone said "F15" for every Ryzen), and the core and thread
+// counts. Only for the log -- nothing in the engine picks a code path by these.
+static void _cpuid_details(_processor_info* P)
+{
+	int		r[4];
+	__cpuid	(r, 0x80000000);
+	P->brand[0]	= 0;
+	if (u32(r[0]) >= 0x80000004)
+	{
+		char	name[49];
+		__cpuid	(r, 0x80000002);	CopyMemory(name + 0,  r, 16);
+		__cpuid	(r, 0x80000003);	CopyMemory(name + 16, r, 16);
+		__cpuid	(r, 0x80000004);	CopyMemory(name + 32, r, 16);
+		name[48]	= 0;
+		LPCSTR	b	= name;
+		while (*b == ' ')	++b;				// Intel pads the name on the left
+		xr_strcpy	(P->brand, b);
+		for (int i = xr_strlen(P->brand) - 1; i >= 0 && P->brand[i] == ' '; --i)
+			P->brand[i] = 0;
+	}
+
+	__cpuid	(r, 1);
+	const int base_family	= (r[0] >> 8) & 0xF;
+	const int base_model	= (r[0] >> 4) & 0xF;
+	P->family	= base_family == 0xF ? base_family + ((r[0] >> 20) & 0xFF) : base_family;
+	P->model	= (base_family == 0x6 || base_family == 0xF) ? base_model | (((r[0] >> 16) & 0xF) << 4) : base_model;
+	P->stepping	= r[0] & 0xF;
+
+	// A 32-bit process sees at most 32 logical processors through GetSystemInfo; the processor
+	// groups call (Windows 7+) sees them all and is looked up so older systems still start.
+	SYSTEM_INFO	si;
+	GetNativeSystemInfo	(&si);
+	P->threads	= si.dwNumberOfProcessors;
+	typedef DWORD (WINAPI *active_count_fn)(WORD);
+	const active_count_fn active_count = (active_count_fn)GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetActiveProcessorCount");
+	if (active_count)
+	{
+		const DWORD n	= active_count(0xFFFF);	// ALL_PROCESSOR_GROUPS
+		if (n)			P->threads = n;
+	}
+
+	P->cores	= 0;
+	DWORD		bytes = 0;
+	GetLogicalProcessorInformation(0, &bytes);
+	if (bytes)
+	{
+		// The process heap, not xr_alloc: CPU::Detect runs before Memory._initialize (xrCore.cpp).
+		SYSTEM_LOGICAL_PROCESSOR_INFORMATION* info = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION*)HeapAlloc(GetProcessHeap(), 0, bytes);
+		if (info && GetLogicalProcessorInformation(info, &bytes))
+			for (DWORD i = 0; i < bytes / sizeof(*info); ++i)
+				if (info[i].Relationship == RelationProcessorCore)
+					++P->cores;
+		if (info)		HeapFree(GetProcessHeap(), 0, info);
+	}
+}
+
 #ifdef _M_AMD64
 
 int _cpuid (_processor_info *pinfo)
@@ -15,6 +74,7 @@ int _cpuid (_processor_info *pinfo)
 	P.stepping			=	0;
 	P.feature			=	_CPU_FEATURE_SSE | _CPU_FEATURE_SSE2;
 	P.os_support		=	_CPU_FEATURE_SSE | _CPU_FEATURE_SSE2;
+	_cpuid_details		(pinfo);
 	return P.feature;
 }
 
@@ -328,6 +388,7 @@ notamd:
         Ident.cBuf[12] = 0;
         xr_strcpy		(pinfo->v_name, Ident.cBuf);
         map_mname	(pinfo->family, pinfo->model, pinfo->v_name, pinfo->model_name);
+        _cpuid_details	(pinfo);
     }
    return feature;
 }

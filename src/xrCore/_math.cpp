@@ -222,9 +222,12 @@ bool g_initialize_cpu_called = false;
 //------------------------------------------------------------------------------------
 void _initialize_cpu	(void) 
 {
-	Msg("* Detected CPU: %s %s, F%d/M%d/S%d, %.2f mhz, %d-clk 'rdtsc'",
-		CPU::ID.v_name,CPU::ID.model_name,
+	// The processor's own name when it has one (every CPU since ~2003), the old table's guess otherwise.
+	// "mhz" is the rate of the time-stamp counter: the base clock, not the turbo one.
+	Msg("* Detected CPU: %s (%s), F%d/M%d/S%d, %u cores, %u threads, %.2f mhz, %d-clk 'rdtsc'",
+		CPU::ID.brand[0] ? CPU::ID.brand : CPU::ID.model_name, CPU::ID.v_name,
 		CPU::ID.family,CPU::ID.model,CPU::ID.stepping,
+		CPU::ID.cores, CPU::ID.threads,
 		float(CPU::clk_per_second/u64(1000000)),
 		u32(CPU::clk_overhead)
 		);

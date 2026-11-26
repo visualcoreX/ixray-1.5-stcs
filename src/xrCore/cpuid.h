@@ -14,6 +14,9 @@ struct _processor_info {
     int			stepping;							// Processor revision number
     int			feature;							// processor Feature ( same as return value).
     int			os_support;							// does OS Support the feature
+    string64	brand;								// the processor's own name (CPUID 0x80000002..4), "" if it has none
+    u32			cores;								// physical cores, 0 if unknown
+    u32			threads;							// logical processors
 };
 
 int _cpuid (_processor_info *);
